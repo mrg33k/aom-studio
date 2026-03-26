@@ -4,6 +4,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- GOLDEN RATIO TYPE SCALE (φ = 1.618) ---- */
+/* Base: 16px. Each step up multiplies by ~1.618, each step down divides. */
+/* Rounded to whole pixels for crisp rendering. */
+:root {
+  --fs-2xs: 9px;    /* 16 / φ² -- tiny labels, badges */
+  --fs-xs: 10px;    /* 16 / φ -- small caps, meta text */
+  --fs-sm: 12px;    /* minor step -- role labels, timestamps */
+  --fs-base: 14px;  /* body text, chat messages */
+  --fs-md: 16px;    /* default body, input text */
+  --fs-lg: 20px;    /* agent names, card titles */
+  --fs-xl: 26px;    /* section headers, featured names */
+  --fs-2xl: 34px;   /* page titles, hero text */
+  --fs-3xl: 42px;   /* display size */
+
+  /* Line heights: tighter for headings, looser for body */
+  --lh-tight: 1.2;
+  --lh-body: 1.5;
+  --lh-loose: 1.7;
+
+  /* Letter spacing scale */
+  --ls-tight: -0.02em;
+  --ls-normal: 0;
+  --ls-wide: 0.04em;
+  --ls-caps: 0.08em;   /* uppercase labels */
+  --ls-mega: 0.12em;   /* section headers */
+}
+
 /* FIX: Sticky nav overlaps scrolled content */
 html {
   scroll-padding-top: 72px;

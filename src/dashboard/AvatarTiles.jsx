@@ -1,6 +1,7 @@
 import React, { useState, forwardRef, useImperativeHandle, useEffect, useRef, useMemo, useCallback } from 'react'
 import { ALL_ROOMS } from './gridSpec.js'
 import { getClientId } from './lib/clientConfig.js'
+import { TYPE, LS } from './lib/typeScale.js'
 import {
   Wrench, BarChart3, Palette, Terminal, Megaphone, Video, Mail, Share2,
   Shield, Eye, Cpu, Bot, Crown, Camera, Heart, Lightbulb, FolderKanban,
@@ -44,7 +45,7 @@ function CtxItem({ label, onClick, color }) {
     <div
       onClick={onClick}
       style={{
-        padding: '9px 14px', fontSize: 13, fontWeight: 500,
+        padding: '9px 14px', fontSize: TYPE.base, fontWeight: 500,
         color: color || '#EDF2FA', cursor: 'pointer',
         transition: 'background 100ms',
       }}
@@ -364,9 +365,9 @@ const AvatarTiles = forwardRef(function AvatarTiles({
             padding: '0 4px', marginBottom: 8,
           }}>
             <span style={{
-              fontSize: 11, fontWeight: 700, color: '#4A6080',
+              fontSize: TYPE.sm, fontWeight: 700, color: '#4A6080',
               fontFamily: "'Inter', system-ui, sans-serif",
-              textTransform: 'uppercase', letterSpacing: '0.12em',
+              textTransform: 'uppercase', letterSpacing: LS.mega,
             }}>
               {section.label}
             </span>
@@ -456,8 +457,8 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                     </div>
                   )}
                   <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ fontSize: useHScroll ? (isMobile ? 15 : 18) : (isMobile ? 18 : 20), fontWeight: 800, color: '#EDF2FA', letterSpacing: '-0.01em', fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{name}</div>
-                    <div style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: color, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2, fontFamily: "'Inter', system-ui, sans-serif", textShadow: `0 0 12px ${color}40` }}>{room.role || room.type || ''}</div>
+                    <div style={{ fontSize: useHScroll ? TYPE.base : TYPE.lg, fontWeight: 800, color: '#EDF2FA', letterSpacing: LS.tight, fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{name}</div>
+                    <div style={{ fontSize: TYPE.xs, fontWeight: 700, color: color, letterSpacing: LS.caps, textTransform: 'uppercase', marginTop: 2, fontFamily: "'Inter', system-ui, sans-serif", textShadow: `0 0 12px ${color}40` }}>{room.role || room.type || ''}</div>
                   </div>
                   {isSel && <div style={{ position: 'absolute', inset: -1, borderRadius: 21, border: `2px solid ${color}`, boxShadow: `0 0 20px ${color}60, inset 0 0 20px ${color}15`, pointerEvents: 'none', zIndex: 3 }} />}
                 </div>
