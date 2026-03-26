@@ -116,12 +116,20 @@ export default async function handler(req, res) {
         return res.status(sbRes.status).json({ error: err })
       }
       const data = await sbRes.json()
-      // Supabase returns { signedURL: "/storage/v1/object/upload/sign/..." }
+      // Supabase returns { url: "/object/upload/sign/..." } (no /storage/v1 prefix)
       const signedPath = data.signedURL || data.url
       if (!signedPath) {
         return res.status(500).json({ error: 'Supabase did not return a signed URL' })
       }
-      const fullUploadUrl = signedPath.startsWith('http') ? signedPath : `${SUPABASE_URL}${signedPath}`
+      let fullUploadUrl
+      if (signedPath.startsWith('http')) {
+        fullUploadUrl = signedPath
+      } else if (signedPath.startsWith('/storage/')) {
+        fullUploadUrl = `${SUPABASE_URL}${signedPath}`
+      } else {
+        // Supabase returns /object/... without /storage/v1 prefix
+        fullUploadUrl = `${SUPABASE_URL}/storage/v1${signedPath}`
+      }
       const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${filePath}`
       return res.status(200).json({ uploadUrl: fullUploadUrl, publicUrl })
     }
