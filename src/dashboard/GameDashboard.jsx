@@ -9776,7 +9776,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     )}
 
                     {/* Message content */}
-                    <div style={{ maxWidth: '80%' }}>
+                    <div style={{ maxWidth: '80%', minWidth: 0, overflow: 'hidden' }}>
                       {/* Name + timestamp + project chip -- on every message in AOM Team Room */}
                       {!msg.streaming && (
                         <div style={{
@@ -9869,10 +9869,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       <div
                         className="msg-bubble"
                         style={{
-                          padding: '8px 12px',
+                          padding: '10px 14px',
                           borderRadius: 12,
                           fontSize: 14, fontWeight: 500, lineHeight: 1.5,
                           fontFamily: "'Inter', system-ui, sans-serif",
+                          wordBreak: 'break-word', overflowWrap: 'break-word',
                           ...(isUser
                             ? {
                                 background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)',
