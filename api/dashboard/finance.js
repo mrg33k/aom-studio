@@ -105,14 +105,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'transactions array required' })
       }
 
-      const rows = transactions.map(t => ({
-        date: t.date,
-        description: t.description,
-        amount: t.amount,
-        category: t.category || '',
-        owner: t.owner || 'Review',
-        notes: t.notes || '',
-      }))
+      // Deduplicate within the batch (same date+description+amount = keep first)
+      const seen = new Set()
+      const rows = []
+      for (const t of transactions) {
+        const key = `${t.date}|${t.description}|${t.amount}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        rows.push({
+          date: t.date,
+          description: t.description,
+          amount: t.amount,
+          category: t.category || '',
+          owner: t.owner || 'Review',
+          notes: t.notes || '',
+        })
+      }
 
       const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=date,description,amount`
       const sbRes = await fetch(url, {
