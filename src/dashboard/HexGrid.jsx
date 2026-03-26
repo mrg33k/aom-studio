@@ -111,6 +111,7 @@ const HexGrid = forwardRef(function HexGrid({
   const rowSizes = rooms === ALL_ROOMS ? DEFAULT_ROW_SIZES : computeRowSizes(rooms.filter(r => !r.hidden).length)
 
   const containerRef = useRef(null)
+  const gridRef = useRef(null) // inner grid div for accurate position calculations
   const [slotOrder, setSlotOrder] = useState(() => rooms.filter(r => !r.hidden).map(r => r.slug))
   const [dragSlug, setDragSlug] = useState(null)
   const [dragGridPos, setDragGridPos] = useState(null) // {row, col} -- snapped grid position while dragging
@@ -258,13 +259,13 @@ const HexGrid = forwardRef(function HexGrid({
   useEffect(() => {
     if (!dragSlug) return
     const onMove = (e) => {
-      const rect = containerRef.current?.getBoundingClientRect()
+      const rect = (gridRef.current || containerRef.current)?.getBoundingClientRect()
       if (!rect) return
       const cx = e.touches ? e.touches[0].clientX : e.clientX
       const cy = e.touches ? e.touches[0].clientY : e.clientY
       didDragRef.current = true
 
-      // Find nearest grid slot to cursor
+      // Find nearest grid slot to cursor (relative to inner grid, not outer container)
       const px = cx - rect.left
       const py = cy - rect.top
       const nearest = pixelToNearestSlot(px, py)
@@ -336,10 +337,8 @@ const HexGrid = forwardRef(function HexGrid({
 
   const onCtx = useCallback((e, slug) => {
     e.preventDefault()
-    const rect = containerRef.current?.getBoundingClientRect()
-    if (!rect) return
     const m = metaRef.current[slug] || {}
-    setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, roomId: slug, roomName: m.name || slug })
+    setContextMenu({ x: e.clientX, y: e.clientY, roomId: slug, roomName: m.name || slug })
   }, [])
 
   useEffect(() => {
@@ -369,7 +368,7 @@ const HexGrid = forwardRef(function HexGrid({
       }}
       onClick={(e) => { if (e.target === e.currentTarget) { setFocusedRoom(null); setContextMenu(null) } }}
     >
-      <div style={{ position: 'relative', width: gridW, height: gridH }}>
+      <div ref={gridRef} style={{ position: 'relative', width: gridW, height: gridH }}>
         {/* SVG subtle hex outlines */}
         <svg style={{ position: 'absolute', inset: 0, width: gridW, height: gridH, pointerEvents: 'none', zIndex: 0 }}>
           {Array.from({ length: GRID_ROWS }, (_, row) =>
@@ -463,10 +462,10 @@ const HexGrid = forwardRef(function HexGrid({
           )
         })}
 
-        {/* Context menu */}
+        {/* Context menu -- fixed position for accurate placement regardless of container centering */}
         {contextMenu && (
           <div
-            style={{ position: 'absolute', left: contextMenu.x, top: contextMenu.y, zIndex: 100, minWidth: 180, background: 'rgba(12,16,30,0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(96,165,250,0.25)', borderRadius: 10, padding: '6px 0', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', fontFamily: "'Inter',system-ui,sans-serif" }}
+            style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 1000, minWidth: 180, background: 'rgba(12,16,30,0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(96,165,250,0.25)', borderRadius: 10, padding: '6px 0', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', fontFamily: "'Inter',system-ui,sans-serif" }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
           >
