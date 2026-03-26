@@ -270,7 +270,7 @@ const HexGrid = forwardRef(function HexGrid({
                 const a = (Math.PI / 180) * (60 * i - 30)
                 return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
               }).join(' ')
-              return <polygon key={`bg-${row}-${col}`} points={pts} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />
+              return <polygon key={`bg-${row}-${col}`} points={pts} fill="none" stroke="rgba(59,130,246,0.18)" strokeWidth="1" />
             })
           )}
         </svg>
