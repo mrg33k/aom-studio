@@ -388,7 +388,7 @@ const AvatarTilesInner = forwardRef(function AvatarTilesInner({
 
   return (
     <div style={{
-      width: '100%', height: '100%', overflow: 'auto', WebkitOverflowScrolling: 'touch',
+      width: '100%', height: '100%', overflow: 'auto', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 1,
       background: '#050A14', padding: '12px',
     }}>
       <style>{`
