@@ -5604,12 +5604,12 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
 
       </div>
 
-      {/* View mode toggle: Game | Board -- fixed top-right, always visible (not in scrollable nav) */}
+      {/* View mode toggle: Game | Board -- top center, always visible (not in scrollable nav) */}
       <div style={{
         position: 'absolute',
         top: '50%',
-        right: isMobile ? 10 : 100,
-        transform: 'translateY(-50%)',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
         display: 'flex', alignItems: 'center',
         background: isNightMode ? 'rgba(8,16,38,0.92)' : 'rgba(12,24,52,0.82)',
         border: (viewMode === 'board')
