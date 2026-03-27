@@ -130,12 +130,54 @@ function useColumnChat(agentSlug, isActive) {
       .catch(() => setLoading(false))
   }, [agentSlug, isActive])
 
+  // Continuous background poll: fetch new messages every 3s for live updates
+  const bgPollRef = useRef(null)
+  const lastBgTsRef = useRef(new Date().toISOString())
+  useEffect(() => {
+    if (!agentSlug || !isActive) return
+    bgPollRef.current = setInterval(async () => {
+      if (document.hidden) return
+      try {
+        const cid = getClientId()
+        const url = IS_LOCAL
+          ? `/api/local/conversations?agent=${encodeURIComponent(agentSlug)}&limit=10`
+          : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=10&client=${encodeURIComponent(cid)}`
+        const res = await fetch(url)
+        if (!res.ok) return
+        const data = await res.json()
+        const newMsgs = (data.messages || []).filter(m => m.timestamp > lastBgTsRef.current && m.text)
+        if (newMsgs.length > 0) {
+          lastBgTsRef.current = newMsgs[newMsgs.length - 1].timestamp
+          setMessages(prev => {
+            let updated = [...prev]
+            for (const row of newMsgs) {
+              const msg = { role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
+              if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
+              if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
+              updated.push(msg)
+            }
+            return updated
+          })
+          if (newMsgs.some(m => m.role === 'assistant')) setSending(false)
+        }
+      } catch {}
+    }, 3000)
+    return () => clearInterval(bgPollRef.current)
+  }, [agentSlug, isActive])
+
   const sendMessage = useCallback(async (text) => {
-    if (!text.trim() || sending) return
+    if (!text.trim()) return
+    // No throttle: user can send multiple messages while waiting for response
     const sentTime = new Date().toISOString()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: text.trim(), time: sentTime }])
-    setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+    setMessages(prev => {
+      // Remove old streaming placeholders, then add new message + placeholder
+      const cleaned = prev.filter(m => !m.streaming || m.content)
+      return [...cleaned,
+        { role: 'user', content: text.trim(), time: sentTime },
+        { role: 'assistant', content: '', streaming: true, time: sentTime },
+      ]
+    })
     setSending(true)
     try {
       const clientId = getClientId()
