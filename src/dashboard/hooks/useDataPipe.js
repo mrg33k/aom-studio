@@ -391,6 +391,9 @@ export function useDataPipe(parsePunchList) {
   const [supabaseAgents, setSupabaseAgents] = useState([])
   // Events-derived agent statuses: agent slug -> 'WORKING'|'IDLE'|'STUCK'|'STALLED'
   const eventsAgentStatusRef = useRef({})
+  // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
+  // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
+  const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
 
   // Auto-check keywords stored in ref for stable callback
   const keywordsRef = useRef(new Set())
@@ -775,11 +778,12 @@ export function useDataPipe(parsePunchList) {
     let tasksChannel = null
     let messagesChannel = null
     if (supabase) {
-      console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages...')
+      const cid = channelIdRef.current
+      console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages... id:', cid)
 
       // agent_status table: any change triggers full refresh (RNB, alive dots, agent status)
       agentStatusChannel = supabase
-        .channel('agent-status-changes')
+        .channel(`agent-status-changes-${cid}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
           console.log('[Corner Realtime] agent_status changed')
           fetchAll()
@@ -788,7 +792,7 @@ export function useDataPipe(parsePunchList) {
 
       // events table: INSERT triggers refresh (task_started/completed -> RNB pills)
       eventsChannel = supabase
-        .channel('events-inserts')
+        .channel(`events-inserts-${cid}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, () => {
           console.log('[Corner Realtime] events INSERT')
           fetchAll()
@@ -797,7 +801,7 @@ export function useDataPipe(parsePunchList) {
 
       // tasks table: any change triggers refresh (new tasks, status changes -> pills + RNB)
       tasksChannel = supabase
-        .channel('tasks-changes')
+        .channel(`tasks-changes-${cid}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
           console.log('[Corner Realtime] tasks changed')
           fetchAll()
@@ -806,7 +810,7 @@ export function useDataPipe(parsePunchList) {
 
       // messages table: INSERT triggers refresh (new chat messages update throughput + unread)
       messagesChannel = supabase
-        .channel('messages-inserts')
+        .channel(`messages-inserts-${cid}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
           console.log('[Corner Realtime] messages INSERT')
           fetchAll()
