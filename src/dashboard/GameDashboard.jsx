@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, useContext, createContext } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, useContext, createContext, startTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useMotionValue, animate as fmAnimate } from 'framer-motion'
 import {
@@ -11768,7 +11768,7 @@ export default function GameDashboard() {
             .filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || (!m.agent || m.agent === room))) // AOM room: no agent filter
           if (newMsgs.length) {
             lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
-            setAgentChats(prev => {
+            startTransition(() => { setAgentChats(prev => {
               const current = prev[room]?._all || []
               let updated = [...current]
               let changed = false
@@ -11798,7 +11798,7 @@ export default function GameDashboard() {
               // Sort by timestamp so terminal/telegram user messages appear in correct order
               updated.sort(safeTimeSort)
               return { ...prev, [room]: { _all: updated } }
-            })
+            }) })
             if (newMsgs.some(m => m.role === 'assistant')) setPanelStreaming(false)
           }
         } catch {}
@@ -12357,22 +12357,25 @@ export default function GameDashboard() {
     }
     const sentTime = new Date().toISOString()
     const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    setAgentChats(prev => {
-      const current = prev[selectedRoom] || { _all: [] }
-      // Remove old "thinking" placeholders before adding new message + placeholder
-      const cleaned = (current._all || []).filter(m => !m.streaming || m.content)
-      const msgs = [...cleaned, {
-        role: 'user', content: text, time: sentTime,
-        source: 'via dashboard', id: localId,
-        ...(replyToId ? { reply_to: replyToId } : {}),
-        ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}),
-      }, {
-        role: 'assistant', content: '', streaming: true,
-        time: sentTime, id: `thinking-${localId}`,
-      }]
-      return { ...prev, [selectedRoom]: { _all: msgs } }
+    // Use startTransition to keep the UI responsive during the heavy chat re-render
+    startTransition(() => {
+      setAgentChats(prev => {
+        const current = prev[selectedRoom] || { _all: [] }
+        // Remove old "thinking" placeholders before adding new message + placeholder
+        const cleaned = (current._all || []).filter(m => !m.streaming || m.content)
+        const msgs = [...cleaned, {
+          role: 'user', content: text, time: sentTime,
+          source: 'via dashboard', id: localId,
+          ...(replyToId ? { reply_to: replyToId } : {}),
+          ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}),
+        }, {
+          role: 'assistant', content: '', streaming: true,
+          time: sentTime, id: `thinking-${localId}`,
+        }]
+        return { ...prev, [selectedRoom]: { _all: msgs } }
+      })
+      setPanelStreaming(true)
     })
-    setPanelStreaming(true)
     // Mobile: auto-snap drawer to full when user sends a message (they're in a conversation now)
     if (isMobile && drawerSnap !== 'full') {
       setDrawerSnap('full')
