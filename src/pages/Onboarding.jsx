@@ -2,20 +2,21 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
 
-// ---- Agent templates for Step 3 ----
+// ---- Agent role templates for Step 3 ----
+// Generic roles -- user names their own agents during onboarding.
+// No AOM-specific names leak to new clients.
 const AGENT_TEMPLATES = [
-  { slug: 'elon',    name: 'Elon',    role: 'Infrastructure',       desc: 'Owns the systems that keep everything running.',          color: '#60A5FA' },
-  { slug: 'bobby',   name: 'Bobby',   role: 'Web Dev',              desc: 'Builds every page, feature, and frontend.',               color: '#34D399' },
-  { slug: 'steffen', name: 'Steffen', role: 'Brand / Design',       desc: 'Visual identity, design specs, asset library.',           color: '#F472B6' },
-  { slug: 'cleo',    name: 'Cleo',    role: 'Content Production',   desc: 'Video edits, reels, motion graphics.',                    color: '#A78BFA' },
-  { slug: 'alex',    name: 'Alex',    role: 'Strategy / Biz Dev',   desc: 'Growth plan, offer architecture, GTM.',                   color: '#FBBF24' },
-  { slug: 'steve',   name: 'Steve',   role: 'AI Advisory',          desc: 'AI audit product, client demos, coaching.',               color: '#38BDF8' },
-  { slug: 'jacob',   name: 'Jacob',   role: 'Outreach',             desc: 'Cold email, lead generation, follow-ups.',                color: '#F87171' },
-  { slug: 'tony',    name: 'Tony',    role: 'Social Media',         desc: 'Schedule posts, manage platforms, engage.',               color: '#4ADE80' },
-  { slug: 'paige',   name: 'Paige',   role: 'Client Success',       desc: 'Tracks delivery, health, and client happiness.',          color: '#E879F9' },
-  { slug: 'elmo',    name: 'Elmo',    role: 'QA',                   desc: 'Tests everything before it ships.',                       color: '#FB923C' },
-  { slug: 'mom',     name: 'Mom',     role: 'Orchestrator',         desc: 'Coordinates the whole team. Nothing gets dropped.',       color: '#F59E0B' },
-  { slug: 'colton',  name: 'Colton',  role: 'Backup Builder',       desc: 'Overflow developer when Bobby needs support.',            color: '#86EFAC' },
+  { slug: 'system-manager', name: 'System Manager',    role: 'Infrastructure',       desc: 'Owns the systems that keep everything running.',          color: '#60A5FA' },
+  { slug: 'web-dev',        name: 'Web Developer',     role: 'Web Dev',              desc: 'Builds every page, feature, and frontend.',               color: '#34D399' },
+  { slug: 'designer',       name: 'Designer',          role: 'Brand / Design',       desc: 'Visual identity, design specs, asset library.',           color: '#F472B6' },
+  { slug: 'content-creator',name: 'Content Creator',   role: 'Content Production',   desc: 'Video edits, reels, motion graphics.',                    color: '#A78BFA' },
+  { slug: 'strategist',     name: 'Strategist',        role: 'Strategy / Biz Dev',   desc: 'Growth plan, offer architecture, GTM.',                   color: '#FBBF24' },
+  { slug: 'advisor',        name: 'Advisor',           role: 'Advisory',             desc: 'Client demos, coaching, sales support.',                  color: '#38BDF8' },
+  { slug: 'outreach',       name: 'Outreach Agent',    role: 'Outreach',             desc: 'Cold email, lead generation, follow-ups.',                color: '#F87171' },
+  { slug: 'social-media',   name: 'Social Manager',    role: 'Social Media',         desc: 'Schedule posts, manage platforms, engage.',               color: '#4ADE80' },
+  { slug: 'client-success', name: 'Client Success',    role: 'Client Success',       desc: 'Tracks delivery, health, and client happiness.',          color: '#E879F9' },
+  { slug: 'qa',             name: 'QA Tester',         role: 'QA',                   desc: 'Tests everything before it ships.',                       color: '#FB923C' },
+  { slug: 'orchestrator',   name: 'Orchestrator',      role: 'Orchestrator',         desc: 'Coordinates the whole team. Nothing gets dropped.',       color: '#F59E0B' },
 ]
 
 // ---- Office style options for Step 4 ----
