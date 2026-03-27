@@ -958,26 +958,68 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const inboxItems = pipeData?.inboxItems || []
   const vars = cssVars(isNightMode)
 
-  // Visible columns: set of slugs. Persisted to localStorage.
-  // Always include ALL agents -- merge saved preferences with full agent list
-  // so new agents (like Gary) appear even if localStorage has an old subset.
+  // Visible columns: set of slugs. Persisted to Supabase + localStorage fallback.
   const [visibleSlugs, setVisibleSlugs] = useState(() => {
     try { const s = localStorage.getItem('corner-board-visible'); return s ? new Set(JSON.parse(s)) : new Set(['bobby', 'gary', 'elon']) }
     catch { return new Set(['bobby', 'gary', 'elon']) }
   })
 
-  // Column order: array of slugs. Persisted to localStorage.
+  // Column order: array of slugs. Persisted to Supabase + localStorage fallback.
   const [colOrder, setColOrder] = useState(() => {
     try { const s = localStorage.getItem('corner-board-order'); return s ? JSON.parse(s) : null }
     catch { return null }
   })
 
-  // Persist visible + order
+  // Load from Supabase on mount (overrides localStorage if found)
+  useEffect(() => {
+    const cid = getClientId()
+    fetch(`/api/dashboard/preferences?key=board_visible&client=${encodeURIComponent(cid)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.value && Array.isArray(data.value)) {
+          setVisibleSlugs(new Set(data.value))
+          try { localStorage.setItem('corner-board-visible', JSON.stringify(data.value)) } catch {}
+        }
+      })
+      .catch(() => {})
+    fetch(`/api/dashboard/preferences?key=board_order&client=${encodeURIComponent(cid)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.value && Array.isArray(data.value)) {
+          setColOrder(data.value)
+          try { localStorage.setItem('corner-board-order', JSON.stringify(data.value)) } catch {}
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Persist visible + order to localStorage + Supabase (debounced)
+  const saveTimerRef = useRef(null)
   useEffect(() => {
     try { localStorage.setItem('corner-board-visible', JSON.stringify([...visibleSlugs])) } catch {}
+    clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      const cid = getClientId()
+      fetch('/api/dashboard/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'board_visible', client_id: cid, value: [...visibleSlugs] }),
+      }).catch(() => {})
+    }, 1000)
   }, [visibleSlugs])
+  const orderTimerRef = useRef(null)
   useEffect(() => {
     if (colOrder) try { localStorage.setItem('corner-board-order', JSON.stringify(colOrder)) } catch {}
+    if (!colOrder) return
+    clearTimeout(orderTimerRef.current)
+    orderTimerRef.current = setTimeout(() => {
+      const cid = getClientId()
+      fetch('/api/dashboard/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'board_order', client_id: cid, value: colOrder }),
+      }).catch(() => {})
+    }, 1000)
   }, [colOrder])
 
   // Context menu (tasks)
