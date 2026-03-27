@@ -345,6 +345,35 @@ function DetailModal({ place, onClose }) {
         </div>
 
         {/* Contacts */}
+        {/* Pre-enriched contact (from Census enrichment) */}
+        {place.contact_name && (
+          <div style={{ padding: '0 20px 8px' }}>
+            <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 6 }}>
+              Key Contact
+            </div>
+            <div style={{
+              background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
+              borderRadius: 6, padding: '10px 12px',
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: V.text, fontFamily: V.space }}>{place.contact_name}</div>
+              {place.contact_title && <div style={{ fontSize: 12, color: V.muted, marginTop: 1 }}>{place.contact_title}</div>}
+              <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+                {place.contact_phone && (
+                  <a href={`tel:${place.contact_phone}`} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: V.mono }}>
+                    {place.contact_phone}
+                  </a>
+                )}
+                {place.contact_email && (
+                  <a href={`mailto:${place.contact_email}`} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: V.mono }}>
+                    {place.contact_email}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Manual contacts (localStorage) */}
         <ContactSection geoid={place.geoid} />
 
         {/* Actions */}
@@ -826,8 +855,11 @@ export default function MunicipalDirectory() {
                 onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
               >
                 <td style={{ padding: '10px 14px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {p.name}
+                    {p.contact_name && (
+                      <span style={{ fontSize: 8, color: '#22C55E', lineHeight: 1 }} title={p.contact_name}>●</span>
+                    )}
                   </div>
                 </td>
                 <td style={{ padding: '10px 14px' }}>
