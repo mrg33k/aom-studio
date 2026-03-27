@@ -248,22 +248,26 @@ function ChatPanel({ chat, agentName }) {
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
         {chat.messages.map((m, i) => (
           <div key={i} style={{
-            padding: '10px 14px', borderRadius: 10, fontSize: 14, lineHeight: 1.6,
-            maxWidth: '90%', minWidth: 80,
-            wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
-            background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
-            border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
-            color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
-            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-            borderBottomLeftRadius: m.role !== 'user' ? 4 : 10,
-            borderBottomRightRadius: m.role === 'user' ? 4 : 10,
-            opacity: m.streaming ? 0.6 : 1,
+            display: 'flex',
+            justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
-              {m.role === 'user' ? 'You' : agentName}
-            </div>
-            <div style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
-              {m.streaming ? <span style={{ animation: 'bvPulse 1.5s infinite' }}>Thinking...</span> : m.content}
+            <div style={{
+              padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
+              maxWidth: '88%',
+              wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+              background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
+              border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
+              color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
+              borderBottomLeftRadius: m.role !== 'user' ? 4 : 12,
+              borderBottomRightRadius: m.role === 'user' ? 4 : 12,
+              opacity: m.streaming ? 0.6 : 1,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
+                {m.role === 'user' ? 'You' : agentName}
+              </div>
+              <div>
+                {m.streaming ? <span style={{ animation: 'bvPulse 1.5s infinite' }}>Thinking...</span> : m.content}
+              </div>
             </div>
           </div>
         ))}
