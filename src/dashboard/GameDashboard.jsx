@@ -11673,10 +11673,17 @@ export default function GameDashboard() {
     return 'game'
   })
 
-  // VIEW MODE: 'board' is now the default and only view (game view deprecated)
-  const [viewMode, setViewMode] = useState('board')
+  // Default to 'board' -- game view is power-user only, accessed via toggle
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('corner-view-mode')
+      if (saved === 'game' || saved === 'board') return saved
+    } catch {}
+    return 'board'
+  })
   const handleViewModeSwitch = useCallback((mode) => {
     setViewMode(mode)
+    try { localStorage.setItem('corner-view-mode', mode) } catch {}
   }, [])
 
   // CAMERA STATE: start in overview to see the full building
