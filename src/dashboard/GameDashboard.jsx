@@ -12849,6 +12849,11 @@ export default function GameDashboard() {
                 setPanelVisible(true)
               }
             }}
+            onAgentSelect={isMobile ? (slug) => {
+              setSelectedRoom(slug)
+              setChatAgent(slug)
+              setMobileDrawerActiveTab('chat')
+            } : undefined}
           />
         </BoardErrorBoundary>
       )}

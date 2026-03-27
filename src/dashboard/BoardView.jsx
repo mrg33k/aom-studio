@@ -669,7 +669,7 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
 
 // ── MAIN BOARD VIEW ──────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, onTaskTap, onViewDetail }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, onTaskTap, onViewDetail, onAgentSelect }) {
   const rightNow = pipeData?.rightNow || []
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
@@ -983,7 +983,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               {mobileItems.map((item, idx) => (
                 <div
                   key={item.slug}
-                  onClick={() => setMobileIdx(idx)}
+                  onClick={() => { setMobileIdx(idx); if (item.isAgent) onAgentSelect?.(item.slug) }}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                     padding: '3px 8px', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
