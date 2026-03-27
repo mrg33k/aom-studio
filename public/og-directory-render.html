@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    background: #0C0C0C; position: relative;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .grid-overlay {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .top-bar {
+    position: absolute; top: 40px; left: 60px; right: 60px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 24px; color: #F0ECE6; letter-spacing: -0.5px;
+  }
+  .logo .dot { color: #E85D26; }
+
+  .version-badge {
+    border: 1px solid #E85D26; border-radius: 20px;
+    padding: 4px 14px;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+    font-size: 12px; color: #E85D26; letter-spacing: 1px;
+  }
+
+  .tagline-badge {
+    position: absolute;
+    top: 100px; left: 60px;
+    border: 1px solid rgba(138,132,124,0.4); border-radius: 20px;
+    padding: 5px 16px;
+    font-size: 11px; font-weight: 500;
+    color: #8A847C; letter-spacing: 2.5px;
+    text-transform: uppercase;
+  }
+
+  .giant-text {
+    position: absolute;
+    top: 44%; left: 50%;
+    transform: translate(-50%, -55%);
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 92px; color: #F0ECE6;
+    letter-spacing: -3px; line-height: 1;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .subtitle {
+    position: absolute;
+    top: 56%; left: 50%;
+    transform: translate(-50%, 0);
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+    font-size: 24px; color: #E85D26;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .divider {
+    position: absolute;
+    top: 430px; left: 60px; right: 60px;
+    height: 1px;
+    background: rgba(255,255,255,0.10);
+  }
+
+  .meta-row {
+    position: absolute;
+    top: 450px; left: 60px; right: 60px;
+    display: flex; align-items: baseline; gap: 48px;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .meta-label {
+    font-size: 10px; font-weight: 500;
+    color: #8A847C; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .meta-value {
+    font-size: 16px; font-weight: 500;
+    color: #F0ECE6; letter-spacing: 0.3px;
+  }
+
+  .services-row {
+    position: absolute;
+    top: 530px; left: 60px; right: 60px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .service-tag {
+    font-size: 13px; font-weight: 500;
+    color: #8A847C; letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .service-sep {
+    font-size: 13px; color: rgba(255,255,255,0.15);
+  }
+
+  .url {
+    position: absolute;
+    bottom: 36px; right: 60px;
+    font-weight: 600; font-size: 15px;
+    color: #E85D26; letter-spacing: 1.5px;
+  }
+</style>
+</head>
+<body>
+  <div class="grid-overlay"></div>
+
+  <div class="top-bar">
+    <div class="logo">AOM<span class="dot">.</span></div>
+    <div class="version-badge">BUILT BY AOM</div>
+  </div>
+
+  <div class="tagline-badge">ARSENAL GPA / GOVERNMENT & PUBLIC AFFAIRS</div>
+
+  <div class="giant-text">Municipality<br>Directory</div>
+
+  <div class="subtitle">19,475 US Cities & Towns</div>
+
+  <div class="divider"></div>
+
+  <div class="meta-row">
+    <div class="meta-item">
+      <span class="meta-label">Data Source</span>
+      <span class="meta-value">US Census Bureau</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Coverage</span>
+      <span class="meta-value">49 States</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Features</span>
+      <span class="meta-value">Search, Filter, Export to CSV</span>
+    </div>
+  </div>
+
+  <div class="services-row">
+    <span class="service-tag">Search</span>
+    <span class="service-sep">/</span>
+    <span class="service-tag">Filter</span>
+    <span class="service-sep">/</span>
+    <span class="service-tag">Export</span>
+    <span class="service-sep">/</span>
+    <span class="service-tag">Analytics</span>
+  </div>
+
+  <div class="url">aheadofmarket.com/directory</div>
+</body>
+</html>

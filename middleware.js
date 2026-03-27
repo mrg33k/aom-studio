@@ -11,6 +11,7 @@ const PAGE_META = {
   '/directory': {
     title: 'US Municipality Directory | 19,475 Cities & Towns',
     description: 'Search, filter, and export data on 19,475 US municipalities. Population, location, type, and more. Built for government affairs teams.',
+    image: 'https://www.aheadofmarket.com/og-directory.png',
   },
   '/skills': {
     title: 'Skills | What Our AI Agents Can Do',
@@ -105,13 +106,13 @@ export default function middleware(request) {
   <meta property="og:title" content="${meta.title}" />
   <meta property="og:description" content="${meta.description}" />
   <meta property="og:url" content="${fullUrl}" />
-  <meta property="og:image" content="${OG_IMAGE}" />
+  <meta property="og:image" content="${meta.image || OG_IMAGE}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${meta.title}" />
   <meta name="twitter:description" content="${meta.description}" />
-  <meta name="twitter:image" content="${OG_IMAGE}" />
+  <meta name="twitter:image" content="${meta.image || OG_IMAGE}" />
 </head>
 <body>
   <h1>${meta.title}</h1>
