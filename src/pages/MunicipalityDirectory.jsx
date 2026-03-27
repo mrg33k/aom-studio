@@ -417,6 +417,11 @@ export default function MunicipalDirectory() {
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text, fontFamily: V.space }}>
+      <style>{`
+        @media (max-width: 520px) {
+          .md-area-col { display: none !important; }
+        }
+      `}</style>
 
       {/* ── Top Bar ─────────────────────────────────────────────────────────── */}
       <div style={{
@@ -426,7 +431,7 @@ export default function MunicipalDirectory() {
         {/* Title row */}
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
-          padding: '12px 16px 0', flexWrap: 'wrap',
+          padding: '12px 16px 10px', flexWrap: 'wrap',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -670,7 +675,7 @@ export default function MunicipalDirectory() {
               <th style={{ ...thStyle('population_2020'), textAlign: 'right' }} onClick={() => handleSort('population_2020')}>
                 Pop <SortIcon field="population_2020" />
               </th>
-              <th style={thStyle('land_area_sqmi')} onClick={() => handleSort('land_area_sqmi')}>
+              <th className="md-area-col" style={thStyle('land_area_sqmi')} onClick={() => handleSort('land_area_sqmi')}>
                 Area <SortIcon field="land_area_sqmi" />
               </th>
               <th style={{ ...thStyle(''), cursor: 'default', display: 'none' }}></th>
@@ -725,7 +730,7 @@ export default function MunicipalDirectory() {
                     <span style={{ fontSize: 12, color: V.dim, fontFamily: V.mono }}>N/A</span>
                   )}
                 </td>
-                <td style={{ padding: '10px 14px' }}>
+                <td className="md-area-col" style={{ padding: '10px 14px' }}>
                   <span style={{ fontSize: 13, fontFamily: V.mono, color: V.muted }}>
                     {p.land_area_sqmi ? p.land_area_sqmi.toFixed(1) + ' mi²' : '—'}
                   </span>
