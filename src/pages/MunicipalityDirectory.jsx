@@ -273,18 +273,19 @@ function StatsStrip({ meta, filtered, total }) {
   return (
     <div style={{
       display: 'flex', gap: 0, borderBottom: `1px solid ${V.border}`,
-      overflowX: 'auto', scrollbarWidth: 'none',
+      overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
     }}>
+      <style>{`.stats-strip::-webkit-scrollbar { display: none; }`}</style>
       {stats.map((s, i) => (
         <div key={s.label} style={{
-          flex: '0 0 auto', padding: '12px 20px',
+          flex: '0 0 auto', padding: '10px 14px',
           borderRight: i < stats.length - 1 ? `1px solid ${V.border}` : 'none',
-          minWidth: 80,
+          minWidth: 68,
         }}>
-          <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
+          <div style={{ fontSize: 10, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
             {s.label}
           </div>
-          <div style={{ fontSize: 18, fontWeight: 900, fontFamily: V.syne, color: s.color }}>
+          <div style={{ fontSize: 16, fontWeight: 900, fontFamily: V.syne, color: s.color }}>
             {s.value ?? '—'}
           </div>
         </div>
@@ -424,8 +425,8 @@ export default function MunicipalDirectory() {
       }}>
         {/* Title row */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '14px 20px 0', flexWrap: 'wrap',
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '12px 16px 0', flexWrap: 'wrap',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -437,8 +438,9 @@ export default function MunicipalDirectory() {
               <h1 style={{
                 fontFamily: V.syne, fontWeight: 900, fontSize: 20,
                 color: V.text, margin: 0, letterSpacing: '-0.02em',
+                whiteSpace: 'nowrap',
               }}>
-                US Municipality Directory
+                Municipality Directory
               </h1>
             </div>
             <div style={{ fontSize: 12, color: V.dim, marginTop: 2, fontFamily: V.space }}>
@@ -483,7 +485,7 @@ export default function MunicipalDirectory() {
 
         {/* Filter bar */}
         <div style={{
-          display: 'flex', gap: 8, padding: '10px 20px 12px',
+          display: 'flex', gap: 8, padding: '10px 16px 12px',
           flexWrap: 'wrap', alignItems: 'center',
         }}>
           {/* Search */}
@@ -655,7 +657,7 @@ export default function MunicipalDirectory() {
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
           <thead>
             <tr style={{ background: '#0F0F0D' }}>
               <th style={thStyle('name')} onClick={() => handleSort('name')}>
@@ -665,8 +667,8 @@ export default function MunicipalDirectory() {
                 State <SortIcon field="state_abbr" />
               </th>
               <th style={{ ...thStyle('type'), cursor: 'default' }}>Type</th>
-              <th style={thStyle('population_2020')} onClick={() => handleSort('population_2020')}>
-                Population <SortIcon field="population_2020" />
+              <th style={{ ...thStyle('population_2020'), textAlign: 'right' }} onClick={() => handleSort('population_2020')}>
+                Pop <SortIcon field="population_2020" />
               </th>
               <th style={thStyle('land_area_sqmi')} onClick={() => handleSort('land_area_sqmi')}>
                 Area <SortIcon field="land_area_sqmi" />
@@ -712,11 +714,11 @@ export default function MunicipalDirectory() {
                 <td style={{ padding: '10px 14px' }}>
                   <TypeBadge type={p.type} />
                 </td>
-                <td style={{ padding: '10px 14px' }}>
+                <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                   {p.population_2020 != null ? (
                     <div>
-                      <span style={{ fontSize: 14, fontWeight: 700, fontFamily: V.mono, color: V.text }}>
-                        {p.population_2020.toLocaleString()}
+                      <span style={{ fontSize: 14, fontWeight: 700, fontFamily: V.mono, color: V.text, whiteSpace: 'nowrap' }}>
+                        {fmtPop(p.population_2020)}
                       </span>
                     </div>
                   ) : (
