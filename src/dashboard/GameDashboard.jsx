@@ -12889,6 +12889,30 @@ export default function GameDashboard() {
       WebkitUserSelect: 'none',
       userSelect: 'none',
     }}>
+      {/* Top nav bar -- always visible */}
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => {
+  const results = {}
+  const [localResult, cloudResult] = await Promise.all([
+    IS_LOCAL
+      ? (() => {
+          const ctrl = new AbortController()
+          const tid = setTimeout(() => ctrl.abort(), 20000)
+          return fetch('/api/local/unstuck', { method: 'POST', signal: ctrl.signal })
+            .then(r => r.json())
+            .catch(e => ({ ok: false, error: e.message }))
+            .finally(() => clearTimeout(tid))
+        })()
+      : Promise.resolve(null),
+    fetch('/api/dashboard/unstuck', { method: 'POST' })
+      .then(r => r.json())
+      .catch(e => ({ ok: false, error: e.message })),
+  ])
+  if (localResult !== null) results.local = localResult
+  results.cloud = cloudResult
+  pipeData?.refetch?.()
+  return results
+}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
+
       {/* Board view: THE main view (game view killed Mar 27) */}
       <BoardErrorBoundary>
         <BoardView
