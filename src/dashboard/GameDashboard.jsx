@@ -12882,41 +12882,9 @@ export default function GameDashboard() {
       WebkitUserSelect: 'none',
       userSelect: 'none',
     }}>
-      {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => {
-  const results = {}
-  // Run local + cloud in parallel for speed
-  // Local: push commits, PID reconcile, queue refill, Supabase cleanup via creds -- only on localhost
-  // Cloud: Supabase cleanup via Vercel env -- only works in production
-  const [localResult, cloudResult] = await Promise.all([
-    IS_LOCAL
-      ? (() => {
-          // 20s hard timeout: if backend hangs (Python script, git, network), abort and return error.
-          // Without this the button stays stuck in '...' forever.
-          const ctrl = new AbortController()
-          const tid = setTimeout(() => ctrl.abort(), 20000)
-          return fetch('/api/local/unstuck', { method: 'POST', signal: ctrl.signal })
-            .then(r => r.json())
-            .catch(e => ({ ok: false, error: e.message }))
-            .finally(() => clearTimeout(tid))
-        })()
-      : Promise.resolve(null),
-    fetch('/api/dashboard/unstuck', { method: 'POST' })
-      .then(r => r.json())
-      .catch(e => ({ ok: false, error: e.message })),
-  ])
-  if (localResult !== null) results.local = localResult
-  results.cloud = cloudResult
-  pipeData?.refetch?.()
-  return results
-}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
-
-      {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
-
-      {/* Board view: Trello/kanban mode -- shown when viewMode === 'board', hides game canvas */}
-      {viewMode === 'board' && (
-        <BoardErrorBoundary>
-          <BoardView
+      {/* Board view: THE main view (game view killed Mar 27) */}
+      <BoardErrorBoundary>
+        <BoardView
             pipeData={pipeData}
             isMobile={isMobile}
             isNightMode={isNightMode}
@@ -12924,33 +12892,21 @@ export default function GameDashboard() {
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
             onViewDetail={(task) => {
               setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
-              if (task.agent) {
-                setSelectedRoom(task.agent)
-                setCameraTarget(task.agent)
-                setIsOverview(false)
-              }
-              if (isMobile) {
-                setDrawerSnap('half')
-                setMobileDrawerActiveTab('tasks')
-              } else {
-                // Switch out of board view so the sidebar is visible
-                setViewMode('game')
-                setPanelActiveTab('tasks')
-                setPanelVisible(true)
-              }
+              if (task.agent) setSelectedRoom(task.agent)
             }}
-            onAgentSelect={isMobile ? (slug) => {
+            onAgentSelect={(slug) => {
               setSelectedRoom(slug)
               setChatAgent(slug)
-              setMobileDrawerActiveTab('chat')
-            } : undefined}
+            }}
           />
         </BoardErrorBoundary>
-      )}
 
-      {/* Main content area -- game + sidebar side by side (flex row) */}
-      {/* GameHUD is position:fixed so no bottom padding needed on mobile -- removed to fix black gap */}
-      <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: 0, transition: 'padding-top 200ms ease' }}>
+      {/* Game view, sidebar, GameHUD, checklist, megaboard all KILLED Mar 27.
+          Board view is the only view now. All functionality lives in board column tabs. */}
+
+      {/* LEGACY CODE BELOW -- kept as dead code for reference during transition.
+          Will be fully removed in a future cleanup pass. */}
+      {false && <div style={{ display: 'none' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Game background: clean dark */}
@@ -13076,8 +13032,9 @@ export default function GameDashboard() {
               onFocusTaskHandled={() => setSidebarFocusTaskId(null)}
             />
           )}
-      </div>
+      </div>}
 
+      {false && <div style={{ display: 'none' }}>
       {/* Mini-map removed - camera lock makes it unnecessary */}
 
       {/* Game HUD (Sims x Chaart) - bottom strip with project pills + agent status */}
@@ -13230,6 +13187,7 @@ export default function GameDashboard() {
           </Suspense>
         </div>
       )}
+      </div>}
 
       {/* Task detail sheet -- slides up when a Trello card is tapped on mobile */}
       <AnimatePresence>
@@ -13285,6 +13243,8 @@ export default function GameDashboard() {
         )}
       </AnimatePresence>
 
+      {/* KILLED: Drawer backdrop, MobileDrawer, MobileFixedInput -- board view handles all mobile interaction now */}
+      {false && <>
       {/* Drawer backdrop scrim (dims map when drawer is open) */}
       {isMobile && drawerOpen && (
         <motion.div
@@ -13409,6 +13369,7 @@ export default function GameDashboard() {
           bottomOffset={hudBarHeight}
         />
       )}
+      </>}
 
       {/* Notification toasts */}
       <NotificationToast
@@ -13426,6 +13387,8 @@ export default function GameDashboard() {
         queuedCount={queuedNotificationCount}
       />
 
+      {/* KILLED: Unread badge, FAB, game context menus, sidebar task context, msg context, SendToMenu -- board handles all this now */}
+      {false && <>
       {/* Unread message badge (floating, visible when sidebar panel is closed) */}
       {unreadCount > 0 && !panelVisible && (
         <motion.div
@@ -13548,6 +13511,7 @@ export default function GameDashboard() {
           />
         )}
       </AnimatePresence>
+      </>}
 
       {/* Keyboard shortcuts overlay */}
       <AnimatePresence>
