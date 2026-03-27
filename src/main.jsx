@@ -44,6 +44,7 @@ import Skills from './pages/Skills.jsx'
 import Settings from './pages/Settings.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
+const MunicipalityDirectory = lazy(() => import('./pages/MunicipalityDirectory.jsx'))
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 const IncludedHealthBrand = lazy(() => import('./pages/IncludedHealthBrand.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
@@ -186,6 +187,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/finance" element={<FinanceTracker />} />
+          <Route path="/directory" element={<MunicipalityDirectory />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
