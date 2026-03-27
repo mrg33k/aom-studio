@@ -270,11 +270,12 @@ function ColTabBar({ tabs, active, onChange }) {
 
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
-function ChatPanel({ chat, agentName, agentSlug, agentColor }) {
+function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
   const isUserScrolledUp = useRef(false)
   const color = agentColor || getAgentColor(agentSlug)
+  const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role }
 
   // Check if any message is currently streaming
   const isStreaming = chat.messages.some(m => m.streaming)
@@ -337,7 +338,12 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor }) {
               display: 'flex',
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
             }}>
-              <div style={{
+              <div
+                onContextMenu={e => {
+                  e.preventDefault()
+                  setMsgCtx({ x: e.clientX, y: e.clientY, content: m.content, role: m.role })
+                }}
+                style={{
                 padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
                 maxWidth: '88%',
                 wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
@@ -346,6 +352,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor }) {
                 color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
                 borderBottomLeftRadius: m.role !== 'user' ? 4 : 12,
                 borderBottomRightRadius: m.role === 'user' ? 4 : 12,
+                cursor: 'context-menu',
               }}>
                 <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
                   {m.role === 'user' ? 'You' : agentName}
@@ -356,6 +363,71 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor }) {
           )
         ))}
       </div>
+
+      {/* Message context menu: right-click on any message */}
+      {msgCtx && (
+        <div
+          onClick={() => setMsgCtx(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              left: Math.min(msgCtx.x, window.innerWidth - 220),
+              top: Math.min(msgCtx.y, window.innerHeight - 300),
+              width: 200,
+              background: 'var(--bv-rail)', border: '1px solid var(--bv-divider)',
+              borderRadius: 10, padding: 4, zIndex: 1000,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }}
+          >
+            {/* Copy */}
+            <button
+              onClick={() => { navigator.clipboard?.writeText(msgCtx.content); setMsgCtx(null) }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px',
+                background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer',
+                color: 'var(--bv-text)', fontSize: 13, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-accent)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Copy
+            </button>
+            {/* Send to agent submenu */}
+            <div style={{ padding: '4px 10px 2px', fontSize: 10, fontWeight: 700, color: 'var(--bv-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Send to
+            </div>
+            {(allAgents || []).filter(a => a.slug !== agentSlug).slice(0, 8).map(a => (
+              <button
+                key={a.slug}
+                onClick={() => {
+                  onSendToAgent?.(a.slug, msgCtx.content, agentSlug)
+                  setMsgCtx(null)
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px',
+                  background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer',
+                  color: 'var(--bv-text)', fontSize: 13, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-accent)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span style={{
+                  width: 20, height: 20, borderRadius: 6,
+                  background: `${a.color || '#60A5FA'}30`, border: `1px solid ${a.color || '#60A5FA'}50`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 800, color: a.color || '#60A5FA',
+                }}>
+                  {(a.name || a.slug).charAt(0).toUpperCase()}
+                </span>
+                {a.name || a.slug}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Scroll to bottom button -- appears when user scrolls up */}
       {isUserScrolledUp.current && (
@@ -710,7 +782,7 @@ function AddColumnButton({ allItems, visibleSlugs, onToggle }) {
 
 // ── AGENT COLUMN ─────────────────────────────────────────────────────────────
 
-function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu }) {
+function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent }) {
   const chat = useColumnChat(agent.slug, true)
   const color = agent.color || getAgentColor(agent.slug)
   const status = agent.status || 'IDLE'
@@ -787,7 +859,7 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <ColTabBar tabs={['chat', 'tasks', 'info', 'files']} active={tab} onChange={setTab} />
 
       {/* Tab content */}
-      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} />}
+      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} />}
       {tab === 'tasks' && <TaskList tasks={tasks} onContextMenu={onContextMenu} />}
       {tab === 'info' && <InfoPanel slug={agent.slug} isAgent />}
       {tab === 'files' && <FilesTab agentSlug={agent.slug} clientId={getClientId()} />}
@@ -1068,6 +1140,20 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     }, 1000)
   }, [colOrder])
 
+  // Send message to another agent (from right-click menu)
+  const handleSendToAgent = useCallback(async (targetSlug, content, fromSlug) => {
+    const cid = getClientId()
+    const text = `[Forwarded from ${fromSlug}]: ${content}`
+    try {
+      const url = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: targetSlug, text, message: text, source: 'corner-dashboard', client_id: cid }),
+      })
+    } catch {}
+  }, [])
+
   // Context menu (tasks)
   const [ctxMenu, setCtxMenu] = useState(null)
 
@@ -1338,6 +1424,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                   onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
                   isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
                   onHeaderContextMenu={setHeaderCtx}
+                  allAgents={allItems.filter(it => it.isAgent)}
+                  onSendToAgent={handleSendToAgent}
                 />
               ) : (
                 <ProjectColumn
@@ -1404,7 +1492,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             {/* Active column */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               {activeMobileItem?.isAgent ? (
-                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} />
+                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} />
               ) : activeMobileItem ? (
                 <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} onHeaderContextMenu={setHeaderCtx} />
               ) : (
