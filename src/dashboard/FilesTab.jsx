@@ -121,7 +121,7 @@ function isMarkdown(file) {
 // ---- FilesTab Component ----
 
 export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileToChat }) {
-  const [subTab, setSubTab] = useState('text') // 'text' | 'docs' | 'images'
+  const [subTab, setSubTab] = useState('images') // 'images' | 'text' | 'docs'
   const [files, setFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -402,9 +402,9 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         flexShrink: 0,
       }}>
         {[
+          { id: 'images', label: 'Images', icon: Image },
           { id: 'text', label: 'Text', icon: FileText },
           { id: 'docs', label: 'Docs', icon: BookOpen },
-          { id: 'images', label: 'Images', icon: Image },
         ].map(tab => {
           const active = subTab === tab.id
           const Icon = tab.icon

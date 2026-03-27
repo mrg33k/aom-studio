@@ -3329,37 +3329,41 @@ function MobileFixedInput({
         }}
         style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
       >
-        {/* Powerup trigger button (left, inside input area) */}
+        {/* Plus trigger button (left, inside input area) */}
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) }}
-          aria-label={powerupOpen ? 'Close powerup menu' : 'Open powerup menu'}
+          aria-label={powerupOpen ? 'Close menu' : 'Open menu'}
           style={{
-            position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', left: 8, bottom: 8,
             width: 32, height: 32, borderRadius: 8, zIndex: 2, flexShrink: 0,
             background: powerupOpen
-              ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
-              : 'rgba(124, 58, 237, 0.38)',
+              ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+              : 'rgba(59, 130, 246, 0.20)',
             border: powerupOpen
-              ? '1.5px solid rgba(124,58,237,0.8)'
-              : '1.5px solid rgba(124,58,237,0.6)',
+              ? '1.5px solid rgba(59,130,246,0.8)'
+              : '1.5px solid rgba(59,130,246,0.35)',
             color: '#FFF',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease',
+            transform: powerupOpen ? 'rotate(45deg)' : 'rotate(0deg)',
           }}
         >
-          <Sparkles size={15} />
+          <Plus size={15} strokeWidth={2.5} />
         </button>
 
-        <input
-          type="text"
+        <textarea
           data-panel-chat-input
           data-mobile-fixed-input
           value={chatInput || ''}
+          rows={1}
           onChange={e => {
             isUserTypingRef.current = true
             onChatInputChange?.(e.target.value)
             if (powerupOpen) onPowerupToggle?.(false)
+            // Auto-expand: reset then set to scrollHeight, cap at 4 lines
+            e.target.style.height = 'auto'
+            e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
           }}
           onKeyDown={e => {
             if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
@@ -3368,16 +3372,15 @@ function MobileFixedInput({
               if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0]); return }
               if (e.key === 'Escape') { e.preventDefault(); onAtKeyDown?.('escape'); return }
             }
-            if (e.key === 'Enter') isUserTypingRef.current = false
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              isUserTypingRef.current = false
+              e.target.closest('form')?.requestSubmit()
+              setTimeout(() => { e.target.style.height = 'auto' }, 10)
+            }
           }}
           placeholder={`Talk to ${agentName}... (type @ to switch)`}
           disabled={false}
-          inputMode="text"
-          enterKeyHint="send"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="sentences"
-          spellCheck={false}
           style={{
             width: '100%',
             background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.10)',
@@ -3388,6 +3391,11 @@ function MobileFixedInput({
             fontFamily: "'Inter', system-ui, sans-serif",
             color: '#F1F5F9',
             outline: 'none',
+            resize: 'none',
+            overflow: 'hidden',
+            minHeight: 42,
+            maxHeight: 100,
+            lineHeight: '1.4',
             transition: 'border-color 200ms ease, box-shadow 200ms ease',
             userSelect: 'text',
             WebkitUserSelect: 'text',
@@ -3411,7 +3419,7 @@ function MobileFixedInput({
           type="submit"
           disabled={false}
           style={{
-            position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', right: 5, bottom: 5,
             width: 36, height: 36, borderRadius: 9,
             background: chatInput?.trim()
               ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
@@ -10487,6 +10495,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             onSendMessage(e, replyTo?.id, clarifyingTaskId)
             setReplyTo(null)
             setClarifyingTaskId(null)
+            // Reset textarea height after send
+            const ta = e.target?.querySelector('textarea')
+            if (ta) setTimeout(() => { ta.style.height = 'auto' }, 10)
           }} style={{ position: 'relative', flex: 1 }}>
             {/* @ autocomplete dropdown (floats above input) */}
             {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
@@ -10571,35 +10582,41 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 ))}
               </div>
             )}
-            {/* Mobile: powerup trigger icon on the LEFT inside the input */}
+            {/* Mobile: plus icon on the LEFT inside the input -- opens powerups or image upload */}
             {isMobile && (
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) }}
-                aria-label={powerupOpen ? 'Close powerup menu' : 'Open powerup menu'}
+                aria-label={powerupOpen ? 'Close menu' : 'Open menu'}
                 style={{
-                  position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
-                  width: 32, height: 32, borderRadius: 8,
+                  position: 'absolute', left: 8, bottom: 10,
+                  width: 34, height: 34, borderRadius: 10,
                   background: powerupOpen
-                    ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
-                    : 'rgba(124, 58, 237, 0.38)',
+                    ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                    : 'rgba(59, 130, 246, 0.20)',
                   border: powerupOpen
-                    ? '1.5px solid rgba(124,58,237,0.8)'
-                    : '1.5px solid rgba(124,58,237,0.6)',
+                    ? '1.5px solid rgba(59,130,246,0.8)'
+                    : '1.5px solid rgba(59,130,246,0.35)',
                   color: '#FFF',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 150ms ease',
                   zIndex: 2,
                   flexShrink: 0,
+                  transform: powerupOpen ? 'rotate(45deg)' : 'rotate(0deg)',
                 }}>
-                <Sparkles size={15} />
+                <Plus size={17} strokeWidth={2.5} />
               </button>
             )}
-            <input type="text" data-panel-chat-input value={chatInput || ''} onChange={e => {
+            <textarea data-panel-chat-input value={chatInput || ''}
+              rows={1}
+              onChange={e => {
                 isUserTypingRef.current = true
                 onChatInputChange?.(e.target.value)
                 if (powerupOpen) onPowerupToggle?.(false)
+                // Auto-expand: reset height then set to scrollHeight, cap at 4 lines (~120px)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
               }}
               onKeyDown={e => {
                 // @ autocomplete keyboard navigation
@@ -10625,7 +10642,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     return
                   }
                 }
-                if (e.key === 'Enter') isUserTypingRef.current = false
+                // Enter without shift = send, shift+enter = newline
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  isUserTypingRef.current = false
+                  // Submit the form
+                  e.target.closest('form')?.requestSubmit()
+                  // Reset height after send
+                  setTimeout(() => { e.target.style.height = 'auto' }, 10)
+                }
               }}
               placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={false}
               style={{
@@ -10633,13 +10658,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
                 border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
                 borderRadius: 12,
-                // Mobile: extra left padding to clear the powerup icon button
-                padding: isMobile ? '14px 56px 14px 48px' : '14px 56px 14px 18px',
+                // Mobile: extra left padding to clear the plus icon button
+                padding: isMobile ? '14px 56px 14px 50px' : '14px 56px 14px 18px',
                 fontSize: 18, fontWeight: 400,
                 fontFamily: "'Inter', system-ui, sans-serif",
                 color: isNightMode ? '#F1F5F9' : '#E2E8F0',
                 outline: 'none',
                 transition: 'border-color 200ms ease, box-shadow 200ms ease',
+                resize: 'none',
+                overflow: 'hidden',
+                minHeight: 52,
+                maxHeight: 120,
+                lineHeight: '1.4',
                 // iOS Safari: override parent userSelect:none so text can be selected/typed
                 userSelect: 'text',
                 WebkitUserSelect: 'text',
@@ -10665,7 +10695,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               type="submit"
               disabled={false}
               style={{
-                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', right: 6, bottom: 6,
                 width: 44, height: 44, borderRadius: 12,
                 background: chatInput?.trim()
                   ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
