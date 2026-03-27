@@ -3600,6 +3600,8 @@ function MobileDrawer({
   onPoke,
   // Files tab: send a file from the files tab into the chat
   onSendFileToChat,
+  // Image preview: pending image attachment above input
+  pendingImage, onClearPendingImage,
 }) {
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
@@ -3985,6 +3987,8 @@ function MobileDrawer({
               onPowerupActivate={onPowerupActivate}
               selectedPowerups={selectedPowerups}
               onRemovePowerup={onRemovePowerup}
+              pendingImage={pendingImage}
+              onClearPendingImage={onClearPendingImage}
               onDismissMessage={onDismissMessage}
               onTaskNotDone={onTaskNotDone}
               hideInputBar={true}
@@ -8811,7 +8815,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled, onPoke }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled, onPoke, pendingImage, onClearPendingImage }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -10490,6 +10494,52 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             isNightMode={isNightMode}
             hideTrigger={isMobile}
           />
+          {/* Pending image preview above input */}
+          {pendingImage?.url && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 12px',
+              background: isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
+              borderRadius: '10px 10px 0 0',
+              border: `1px solid ${isNightMode ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.12)'}`,
+              borderBottom: 'none',
+              marginBottom: -1,
+            }}>
+              <img src={pendingImage.url} alt={pendingImage.name}
+                style={{
+                  width: 48, height: 48, objectFit: 'cover', borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: isNightMode ? '#CBD5E1' : '#94A3B8',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {pendingImage.name}
+                </div>
+                <div style={{ fontSize: 11, color: isNightMode ? '#64748B' : '#475569' }}>
+                  Image attached
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onClearPendingImage?.()}
+                style={{
+                  width: 28, height: 28, borderRadius: 7,
+                  background: 'rgba(239,68,68,0.15)',
+                  border: '1px solid rgba(239,68,68,0.25)',
+                  color: '#F87171',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
           <form onSubmit={(e) => {
             isUserTypingRef.current = false
             onSendMessage(e, replyTo?.id, clarifyingTaskId)
@@ -11111,6 +11161,8 @@ export default function GameDashboard() {
 
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
+  // Pending image attachment: { url, name } -- shows preview above input, sent with next message
+  const [pendingImage, setPendingImage] = useState(null)
   // Powerup menu state
   const [powerupOpen, setPowerupOpen] = useState(false)
   const powerupPendingRef = useRef(null) // slash command to auto-submit (legacy single-skill path)
@@ -12358,6 +12410,11 @@ export default function GameDashboard() {
       setSelectedPowerups([])
       setPowerupOpen(false)
     }
+    // Append pending image as markdown (preview was shown above input)
+    if (pendingImage?.url) {
+      text = text ? `${text}\n\n![${pendingImage.name}](${pendingImage.url})` : `![${pendingImage.name}](${pendingImage.url})`
+      setPendingImage(null)
+    }
     const sentTime = new Date().toISOString()
     const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     setAgentChats(prev => {
@@ -12642,12 +12699,15 @@ export default function GameDashboard() {
     }
   }, [selectedRoom, msgContextMenu])
 
-  // Send file from Files tab to chat as inline image message
+  // Attach file from Files tab as pending image preview above chat input
   const handleSendFileToChat = useCallback((file) => {
     if (!file?.url) return
-    const imgMd = `![${file.name}](${file.url})`
-    setPanelChatInput(prev => prev ? prev + '\n' + imgMd : imgMd)
+    setPendingImage({ url: file.url, name: file.name || 'image' })
     setPanelActiveTab('chat')
+    // Focus the chat input after switching tabs
+    setTimeout(() => {
+      document.querySelector('[data-panel-chat-input]')?.focus()
+    }, 100)
   }, [])
 
   // Task confirm: dismiss a message card by ID (check button = confirmed)
@@ -13007,6 +13067,8 @@ export default function GameDashboard() {
               externalReplyTo={pendingReplyMsg}
               onClearExternalReply={() => setPendingReplyMsg(null)}
               onSendFileToChat={handleSendFileToChat}
+              pendingImage={pendingImage}
+              onClearPendingImage={() => setPendingImage(null)}
               onDismissMessage={handleDismissMessage}
               onTaskNotDone={handleTaskNotDone}
               onInputFocus={() => clearUnreadForRoom(selectedRoom)}
@@ -13297,6 +13359,8 @@ export default function GameDashboard() {
           focusTaskId={sidebarFocusTaskId}
           onFocusTaskHandled={() => setSidebarFocusTaskId(null)}
           onSendFileToChat={handleSendFileToChat}
+          pendingImage={pendingImage}
+          onClearPendingImage={() => setPendingImage(null)}
         />
       )}
 
