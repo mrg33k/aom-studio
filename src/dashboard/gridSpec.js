@@ -320,7 +320,7 @@ export const AGENTS = GRID_SPEC.rooms
 // Add Paige and Pixel as growth-zone agents (not in grid spec yet but in product)
 AGENTS.push(
   { slug: 'paige', name: 'Paige', role: 'Client Success', color: '#66BB6A', statusColors: { active: '#66BB6A', idle: '#3A7A3A', offline: '#1A401A' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#FFB74D', monitorColor: '#A5D6A7' },
-  { slug: 'pixel', name: 'Pixel', role: 'Extension', color: '#8B5CF6', statusColors: { active: '#8B5CF6', idle: '#5A3AA0', offline: '#2A1A50' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#CE93D8', monitorColor: '#B0BEC5' },
+  { slug: 'pixel', name: 'Pixel', role: 'Media Librarian', color: '#00BCD4', statusColors: { active: '#00BCD4', idle: '#007A8A', offline: '#003A42' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#80DEEA', monitorColor: '#B0BEC5' },
   { slug: 'mark', name: 'Mark', role: 'Photos & Lighting', color: '#8B9DAF', statusColors: { active: '#8B9DAF', idle: '#5A6E80', offline: '#2A3A48' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#B0C4D4', monitorColor: '#B0C4D4' },
 )
 
