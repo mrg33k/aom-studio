@@ -4554,10 +4554,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           ? '0 2px 12px rgba(0, 0, 0, 0.4)'
           : '0 2px 12px rgba(0,0,0,0.3), 0 1px 0 rgba(59,130,246,0.15)',
         display: 'flex', alignItems: 'center',
-        // Right padding reserves space for the fixed Game/Board toggle (overlaid at top-right)
-        // Mobile: ~88px for toggle (2 icon-only buttons) + 10px gap = ~98px
-        // Desktop: ~120px for toggle (2 labeled buttons) + 16px gap = ~136px
-        padding: isMobile ? '0 98px 0 12px' : '0 140px 0 20px',
+        // Switcher removed -- normal padding
+        padding: isMobile ? '0 12px' : '0 20px',
         gap: isMobile ? 8 : 12,
         overflowX: isMobile ? 'auto' : 'hidden',
         overflowY: 'hidden',
@@ -5619,81 +5617,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
 
       </div>
 
-      {/* View mode toggle: Game | Board -- top center, always visible (not in scrollable nav) */}
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        display: 'flex', alignItems: 'center',
-        background: isNightMode ? 'rgba(8,16,38,0.92)' : 'rgba(12,24,52,0.82)',
-        border: (viewMode === 'board')
-          ? '2px solid rgba(59,130,246,0.65)'
-          : (isNightMode ? '2px solid rgba(59,130,246,0.45)' : '2px solid rgba(59,130,246,0.55)'),
-        borderRadius: 10,
-        padding: 3,
-        gap: 2,
-        zIndex: 10,
-        boxShadow: (viewMode === 'board')
-          ? '0 2px 12px rgba(59,130,246,0.3), 0 0 20px rgba(59,130,246,0.12)'
-          : (isNightMode ? '0 2px 8px rgba(59,130,246,0.1)' : '0 2px 8px rgba(59,130,246,0.15)'),
-        transition: 'border-color 200ms ease, box-shadow 200ms ease',
-      }}>
-        {[
-          { id: 'game', label: 'Game' },
-          { id: 'board', label: 'Board' },
-        ].map(({ id, label }) => {
-          const active = (viewMode || 'game') === id
-          return (
-            <button
-              key={id}
-              onClick={() => onViewModeSwitch?.(id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: isMobile ? '5px 9px' : '4px 12px',
-                borderRadius: 7,
-                background: active
-                  ? (isNightMode ? 'rgba(59,130,246,0.28)' : 'rgba(59,130,246,0.22)')
-                  : 'transparent',
-                border: active
-                  ? (isNightMode ? '1px solid rgba(59,130,246,0.55)' : '1px solid rgba(59,130,246,0.50)')
-                  : '1px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 150ms ease',
-              }}
-              onMouseEnter={e => {
-                if (!active) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(59,130,246,0.1)'
-              }}
-              onMouseLeave={e => {
-                if (!active) e.currentTarget.style.background = 'transparent'
-              }}
-            >
-              {id === 'game' ? (
-                <Gamepad2
-                  size={isMobile ? 13 : 14}
-                  color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
-                />
-              ) : (
-                <FolderKanban
-                  size={isMobile ? 13 : 14}
-                  color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
-                />
-              )}
-              {!isMobile && (
-                <span style={{
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  fontSize: 12,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0'),
-                  letterSpacing: '0.02em',
-                }}>
-                  {label}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+      {/* View mode toggle: REMOVED per Patrik -- Board is the only view now */}
     </div>
   )
 }
