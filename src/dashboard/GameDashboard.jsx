@@ -11087,6 +11087,8 @@ export default function GameDashboard() {
   const [panelChatInput, setPanelChatInput] = useState('')
   // Pending image attachment: { url, name } -- shows preview above input, sent with next message
   const [pendingImage, setPendingImage] = useState(null)
+  // Typing guard: when true, suppress poll-triggered re-renders to prevent input lag
+  const isTypingRef = useRef(false)
   // Powerup menu state
   const [powerupOpen, setPowerupOpen] = useState(false)
   const powerupPendingRef = useRef(null) // slash command to auto-submit (legacy single-skill path)
@@ -11176,6 +11178,10 @@ export default function GameDashboard() {
   // Handle @ input parsing
   const handleAtInputChange = useCallback((value) => {
     setPanelChatInput(value)
+    // Mark typing so poll skips re-renders (prevents input lag)
+    isTypingRef.current = true
+    clearTimeout(isTypingRef._timer)
+    isTypingRef._timer = setTimeout(() => { isTypingRef.current = false }, 1500)
     const atMatch = value.match(/@(\S*)$/)
     if (atMatch) {
       setAtMenuOpen(true)
@@ -11749,6 +11755,7 @@ export default function GameDashboard() {
 
       const poll = setInterval(async () => {
         if (document.hidden) return // Skip when tab not visible
+        if (isTypingRef.current) return // Skip while user is typing (prevents input lag)
         try {
           // AOM Team Room: fetch all messages without agent filter
           const pollUrl = isAomTeamRoom
