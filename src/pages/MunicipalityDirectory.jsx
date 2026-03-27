@@ -117,6 +117,125 @@ function TypeBadge({ type }) {
   );
 }
 
+// ─── Contacts Store (localStorage, keyed by geoid) ───────────────────────────
+function getContacts(geoid) {
+  try {
+    const raw = localStorage.getItem(`arsenal-contacts-${geoid}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveContacts(geoid, contacts) {
+  localStorage.setItem(`arsenal-contacts-${geoid}`, JSON.stringify(contacts));
+}
+
+// ─── Contact Form ────────────────────────────────────────────────────────────
+function ContactSection({ geoid }) {
+  const [contacts, setContacts] = useState(() => getContacts(geoid));
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: '', title: '', phone: '', email: '', notes: '' });
+
+  const handleAdd = () => {
+    if (!form.name.trim()) return;
+    const updated = [...contacts, { ...form, id: Date.now() }];
+    setContacts(updated);
+    saveContacts(geoid, updated);
+    setForm({ name: '', title: '', phone: '', email: '', notes: '' });
+    setAdding(false);
+  };
+
+  const handleRemove = (id) => {
+    const updated = contacts.filter(c => c.id !== id);
+    setContacts(updated);
+    saveContacts(geoid, updated);
+  };
+
+  const inputStyle = {
+    width: '100%', background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.12)`,
+    color: '#F0ECE6', borderRadius: 5, padding: '7px 10px', fontSize: 13,
+    fontFamily: "'Space Grotesk', sans-serif", outline: 'none', boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={{ padding: '0 20px 12px' }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: 8,
+      }}>
+        <div style={{ fontSize: 11, color: '#8A847C', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
+          Contacts ({contacts.length})
+        </div>
+        <button
+          onClick={() => setAdding(!adding)}
+          style={{
+            background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.3)',
+            color: '#FDBA74', borderRadius: 4, padding: '3px 10px', fontSize: 11,
+            fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          {adding ? 'Cancel' : '+ Add'}
+        </button>
+      </div>
+
+      {contacts.map(c => (
+        <div key={c.id} style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 6, padding: '10px 12px', marginBottom: 6,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#F0ECE6', fontFamily: "'Space Grotesk', sans-serif" }}>{c.name}</div>
+              {c.title && <div style={{ fontSize: 12, color: '#8A847C', marginTop: 1 }}>{c.title}</div>}
+            </div>
+            <button onClick={() => handleRemove(c.id)} style={{
+              background: 'none', border: 'none', color: '#5a5550', fontSize: 14, cursor: 'pointer', padding: '0 4px',
+            }}>×</button>
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+            {c.phone && (
+              <a href={`tel:${c.phone}`} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: "'JetBrains Mono', monospace" }}>
+                {c.phone}
+              </a>
+            )}
+            {c.email && (
+              <a href={`mailto:${c.email}`} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: "'JetBrains Mono', monospace" }}>
+                {c.email}
+              </a>
+            )}
+          </div>
+          {c.notes && <div style={{ fontSize: 12, color: '#8A847C', marginTop: 6, lineHeight: 1.4 }}>{c.notes}</div>}
+        </div>
+      ))}
+
+      {adding && (
+        <div style={{
+          background: 'rgba(232,93,38,0.05)', border: '1px solid rgba(232,93,38,0.2)',
+          borderRadius: 6, padding: 12, display: 'flex', flexDirection: 'column', gap: 6,
+        }}>
+          <input placeholder="Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} />
+          <input placeholder="Title (e.g. City Manager)" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} style={inputStyle} />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
+            <input placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} style={inputStyle} />
+          </div>
+          <textarea placeholder="Notes (infrastructure needs, status, etc.)" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+          <button onClick={handleAdd} style={{
+            background: '#E85D26', border: 'none', color: '#fff', borderRadius: 5, padding: '8px 0',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Space Grotesk', sans-serif",
+          }}>
+            Save Contact
+          </button>
+        </div>
+      )}
+
+      {contacts.length === 0 && !adding && (
+        <div style={{ fontSize: 12, color: '#5a5550', fontStyle: 'italic', textAlign: 'center', padding: '8px 0' }}>
+          No contacts yet. Add your first lead.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 function DetailModal({ place, onClose }) {
   useEffect(() => {
@@ -224,6 +343,9 @@ function DetailModal({ place, onClose }) {
             </div>
           ))}
         </div>
+
+        {/* Contacts */}
+        <ContactSection geoid={place.geoid} />
 
         {/* Actions */}
         <div style={{ padding: '12px 20px 16px', display: 'flex', gap: 8 }}>
