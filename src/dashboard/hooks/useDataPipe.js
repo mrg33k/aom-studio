@@ -1,3 +1,4 @@
+// Realtime subscriptions: agent_status, messages, events, tasks -- unique channel IDs per instance
 // useDataPipe -- ONE hook, ONE poll, ONE truth.
 // Bobby2: Replaces useRightNowLiveTasks, useCompletedFeed, useAutoCheckFromNotifications,
 // usePatrikTodos, useCheckingInTasks, and usePunchListData across GameHUD + ChecklistMode.
