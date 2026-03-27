@@ -9,6 +9,8 @@ import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
 import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import { getAgentKnowledge } from './agentKnowledge.js'
+import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
+import FilesTab from './FilesTab.jsx'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -226,52 +228,110 @@ function ColTabBar({ tabs, active, onChange }) {
 
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
-function ChatPanel({ chat, agentName }) {
+function ChatPanel({ chat, agentName, agentSlug, agentColor }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
-  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight }, [chat.messages.length])
+  const isUserScrolledUp = useRef(false)
+  const color = agentColor || getAgentColor(agentSlug)
+
+  // Check if any message is currently streaming
+  const isStreaming = chat.messages.some(m => m.streaming)
+
+  // Smart scroll: auto-scroll unless user scrolled up
+  const scrollToBottom = useCallback(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
+  }, [])
+
+  useEffect(() => {
+    if (!isUserScrolledUp.current) scrollToBottom()
+  }, [chat.messages.length, scrollToBottom])
+
+  const handleScroll = useCallback(() => {
+    if (!ref.current) return
+    const { scrollTop, scrollHeight, clientHeight } = ref.current
+    isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 80
+  }, [])
 
   const doSend = () => {
     if (chat.input.trim()) {
       chat.sendMessage(chat.input)
+      isUserScrolledUp.current = false
+      setTimeout(scrollToBottom, 50)
     }
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}
       onClick={e => e.stopPropagation()}
     >
-      <div ref={ref} style={{
-        flex: 1, overflowY: 'auto', padding: '12px 14px',
+      <div ref={ref} onScroll={handleScroll} style={{
+        flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '12px 14px',
         display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0,
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
         {chat.messages.map((m, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
-          }}>
-            <div style={{
-              padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
-              maxWidth: '88%',
-              wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
-              background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
-              border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
-              color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
-              borderBottomLeftRadius: m.role !== 'user' ? 4 : 12,
-              borderBottomRightRadius: m.role === 'user' ? 4 : 12,
-              opacity: m.streaming ? 0.6 : 1,
+          m.streaming ? (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'flex-start',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
-                {m.role === 'user' ? 'You' : agentName}
-              </div>
-              <div>
-                {m.streaming ? <span style={{ animation: 'bvPulse 1.5s infinite' }}>Thinking...</span> : m.content}
+              <div style={{
+                padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
+                maxWidth: '88%',
+                background: 'var(--bv-chat-agent)', border: '1px solid var(--bv-card-border)',
+                color: 'var(--bv-text2)', borderBottomLeftRadius: 4,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>{agentName}</div>
+                <TypingIndicatorV2
+                  streaming={true}
+                  agentSlug={agentSlug}
+                  agentColor={color}
+                  agentName={agentName}
+                  compact={true}
+                />
               </div>
             </div>
-          </div>
+          ) : (
+            <div key={i} style={{
+              display: 'flex',
+              justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
+            }}>
+              <div style={{
+                padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
+                maxWidth: '88%',
+                wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+                background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
+                border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
+                color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
+                borderBottomLeftRadius: m.role !== 'user' ? 4 : 12,
+                borderBottomRightRadius: m.role === 'user' ? 4 : 12,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
+                  {m.role === 'user' ? 'You' : agentName}
+                </div>
+                <div>{m.content}</div>
+              </div>
+            </div>
+          )
         ))}
       </div>
+
+      {/* Scroll to bottom button -- appears when user scrolls up */}
+      {isUserScrolledUp.current && (
+        <button
+          onClick={() => { isUserScrolledUp.current = false; scrollToBottom() }}
+          style={{
+            position: 'absolute', bottom: 56, right: 16, zIndex: 5,
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'var(--bv-accent)', color: 'var(--bv-accent-text)',
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      )}
+
       <div style={{
         display: 'flex', gap: 6, padding: '8px 12px',
         borderTop: '1px solid var(--bv-divider)', flexShrink: 0, background: 'var(--bv-bar)',
@@ -396,9 +456,219 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
   )
 }
 
+// ── COLUMN HEADER CONTEXT MENU ───────────────────────────────────────────────
+
+function ColumnContextMenu({ position, slug, name, isAgent, onClose, onAction }) {
+  const menuRef = useRef(null)
+  const [adjusted, setAdjusted] = useState(position)
+
+  useEffect(() => {
+    const handleClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) onClose() }
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick, { passive: true })
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  useEffect(() => {
+    if (menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect()
+      const newPos = { ...position }
+      if (rect.right > window.innerWidth - 8) newPos.x = window.innerWidth - rect.width - 8
+      if (rect.bottom > window.innerHeight - 8) newPos.y = window.innerHeight - rect.height - 8
+      if (newPos.x < 8) newPos.x = 8
+      if (newPos.y < 8) newPos.y = 8
+      setAdjusted(newPos)
+    }
+  }, [position])
+
+  const items = isAgent ? [
+    { id: 'open-chat', label: 'Open Chat' },
+    { id: 'view-tasks', label: 'View Tasks' },
+    { id: 'view-info', label: 'View Info' },
+    { id: 'view-files', label: 'View Files' },
+    { divider: true },
+    { id: 'send-message', label: 'Send Message' },
+    { divider: true },
+    { id: 'close-column', label: 'Close Column', danger: true },
+  ] : [
+    { id: 'view-tasks', label: 'View Tasks' },
+    { id: 'add-task', label: 'Add Task' },
+    { id: 'view-files', label: 'View Files' },
+    { divider: true },
+    { id: 'close-column', label: 'Close Column', danger: true },
+  ]
+
+  return (
+    <div ref={menuRef} style={{
+      position: 'fixed', left: adjusted.x, top: adjusted.y, zIndex: 9999,
+      minWidth: 160, background: 'rgba(15,20,35,0.95)', backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(60,120,255,0.2)', borderRadius: 10, padding: '4px 0',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    }}>
+      <div style={{ padding: '6px 12px 4px', fontSize: 10, fontWeight: 700, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        {name || slug}
+      </div>
+      {items.map((item, i) => item.divider ? (
+        <div key={i} style={{ height: 1, background: 'rgba(60,120,255,0.1)', margin: '3px 8px' }} />
+      ) : (
+        <div
+          key={item.id}
+          onClick={() => { onAction(item.id); onClose() }}
+          style={{
+            padding: '7px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+            color: item.danger ? '#EF4444' : 'var(--bv-text2)', transition: 'background 0.1s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.12)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          {item.label}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── ADD COLUMN BUTTON + SEARCH POPUP ─────────────────────────────────────────
+
+function AddColumnButton({ allItems, visibleSlugs, onToggle }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const menuRef = useRef(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (open && inputRef.current) inputRef.current.focus()
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const handleClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false) }
+    const handleKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('keydown', handleKey) }
+  }, [open])
+
+  const filtered = allItems.filter(it =>
+    !search || it.name?.toLowerCase().includes(search.toLowerCase()) || it.slug?.includes(search.toLowerCase())
+  )
+  const agents = filtered.filter(it => it.isAgent)
+  const projects = filtered.filter(it => !it.isAgent)
+
+  return (
+    <div style={{ position: 'relative', alignSelf: 'flex-start', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: 44, height: 44, borderRadius: 12,
+          border: '2px dashed var(--bv-col-border)',
+          background: 'transparent', color: 'var(--bv-dim)',
+          fontSize: 22, fontWeight: 300, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.15s', marginTop: 10,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--bv-accent-border)'; e.currentTarget.style.color = 'var(--bv-accent-text)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--bv-col-border)'; e.currentTarget.style.color = 'var(--bv-dim)' }}
+        title="Add agent or project"
+      >+</button>
+
+      {open && (
+        <div ref={menuRef} style={{
+          position: 'absolute', top: 0, left: 52, zIndex: 9999,
+          width: 220, maxHeight: 360, background: 'rgba(15,20,35,0.95)', backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(60,120,255,0.2)', borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(60,120,255,0.1)' }}>
+            <input
+              ref={inputRef}
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search agents & projects..."
+              style={{
+                width: '100%', background: 'rgba(15,35,80,0.5)', border: '1px solid rgba(60,120,255,0.15)',
+                borderRadius: 8, padding: '7px 10px', color: 'var(--bv-text)', fontSize: 12,
+                fontFamily: "'Inter', sans-serif", outline: 'none',
+              }}
+            />
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+            {agents.length > 0 && (
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '6px 12px 3px' }}>Agents</div>
+            )}
+            {agents.map(it => (
+              <div
+                key={it.slug}
+                onClick={() => { onToggle(it.slug); setOpen(false); setSearch('') }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer',
+                  transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%',
+                  background: `${it.color}22`, border: `1.5px solid ${it.color}60`, color: it.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+                }}>{it.name?.charAt(0)}</div>
+                <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bv-text2)' }}>{it.name}</div>
+                {visibleSlugs.has(it.slug) && (
+                  <span style={{ fontSize: 10, color: '#22C55E' }}>&#10003;</span>
+                )}
+              </div>
+            ))}
+            {projects.length > 0 && (
+              <>
+                <div style={{ height: 1, background: 'rgba(60,120,255,0.08)', margin: '4px 8px' }} />
+                <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '6px 12px 3px' }}>Projects</div>
+              </>
+            )}
+            {projects.map(it => (
+              <div
+                key={it.slug}
+                onClick={() => { onToggle(it.slug); setOpen(false); setSearch('') }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer',
+                  transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: 6,
+                  background: `${it.color}22`, border: `1.5px solid ${it.color}60`, color: it.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+                }}>{it.name?.charAt(0)}</div>
+                <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bv-text2)' }}>{it.name}</div>
+                {visibleSlugs.has(it.slug) && (
+                  <span style={{ fontSize: 10, color: '#22C55E' }}>&#10003;</span>
+                )}
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ padding: '16px 12px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12 }}>
+                No matches
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── AGENT COLUMN ─────────────────────────────────────────────────────────────
 
-function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget }) {
+function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu }) {
   const chat = useColumnChat(agent.slug, true)
   const color = agent.color || getAgentColor(agent.slug)
   const status = agent.status || 'IDLE'
@@ -406,6 +676,11 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
     : status === 'DONE' ? { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', color: '#3B82F6', glow: false }
     : { bg: 'rgba(107,114,128,0.12)', border: 'rgba(107,114,128,0.3)', color: '#6B7280', glow: false }
   const [tab, setTab] = useState('chat')
+
+  const handleHeaderCtx = (e) => {
+    e.preventDefault()
+    onHeaderContextMenu?.({ position: { x: e.clientX, y: e.clientY }, slug: agent.slug, name: agent.name || agent.slug, isAgent: true, setTab })
+  }
 
   return (
     <div
@@ -425,12 +700,15 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
         animation: 'bvSlideIn 0.25s ease',
       }}
     >
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-        borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
-        cursor: isMobile ? 'default' : 'grab',
-      }}>
+      {/* Header -- right-click for context menu */}
+      <div
+        onContextMenu={handleHeaderCtx}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+          borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
+          cursor: isMobile ? 'default' : 'grab',
+        }}
+      >
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
         <div style={{
           width: 30, height: 30, borderRadius: '50%',
@@ -467,19 +745,17 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <ColTabBar tabs={['chat', 'tasks', 'info', 'files']} active={tab} onChange={setTab} />
 
       {/* Tab content */}
-      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} />}
+      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} />}
       {tab === 'tasks' && <TaskList tasks={tasks} onContextMenu={onContextMenu} />}
       {tab === 'info' && <InfoPanel slug={agent.slug} isAgent />}
-      {tab === 'files' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bv-dim)', fontSize: 12 }}>No files yet</div>
-      )}
+      {tab === 'files' && <FilesTab agentSlug={agent.slug} clientId={getClientId()} />}
     </div>
   )
 }
 
 // ── PROJECT COLUMN ───────────────────────────────────────────────────────────
 
-function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onClose, onDragStart, onDragOver, onDrop, isDragTarget }) {
+function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu }) {
   const color = project.color || '#60A5FA'
   const [tab, setTab] = useState('tasks')
   const [newTaskText, setNewTaskText] = useState('')
@@ -492,6 +768,11 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
     await onAddTask?.(newTaskText.trim(), project.slug)
     setNewTaskText('')
     setAdding(false)
+  }
+
+  const handleHeaderCtx = (e) => {
+    e.preventDefault()
+    onHeaderContextMenu?.({ position: { x: e.clientX, y: e.clientY }, slug: project.slug, name: project.name, isAgent: false, setTab })
   }
 
   return (
@@ -512,12 +793,15 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
         animation: 'bvSlideIn 0.25s ease',
       }}
     >
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-        borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
-        cursor: isMobile ? 'default' : 'grab',
-      }}>
+      {/* Header -- right-click for context menu */}
+      <div
+        onContextMenu={handleHeaderCtx}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+          borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
+          cursor: isMobile ? 'default' : 'grab',
+        }}
+      >
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
         <div style={{
           width: 30, height: 30, borderRadius: 10,
@@ -565,9 +849,7 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>Activity feed coming soon</div>
       )}
       {tab === 'info' && <InfoPanel slug={project.slug} isAgent={false} />}
-      {tab === 'files' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bv-dim)', fontSize: 12 }}>No files yet</div>
-      )}
+      {tab === 'files' && <FilesTab agentSlug={project.slug} clientId={getClientId()} />}
     </div>
   )
 }
@@ -680,17 +962,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   // Always include ALL agents -- merge saved preferences with full agent list
   // so new agents (like Gary) appear even if localStorage has an old subset.
   const [visibleSlugs, setVisibleSlugs] = useState(() => {
-    const allSlugs = new Set(AGENTS.map(a => a.slug))
-    try {
-      const s = localStorage.getItem('corner-board-visible')
-      if (s) {
-        const saved = JSON.parse(s)
-        // Merge: start with all agents, keep any saved that exist
-        // This ensures every agent is visible by default
-        return allSlugs
-      }
-    } catch {}
-    return allSlugs
+    try { const s = localStorage.getItem('corner-board-visible'); return s ? new Set(JSON.parse(s)) : new Set(['bobby', 'gary', 'elon']) }
+    catch { return new Set(['bobby', 'gary', 'elon']) }
   })
 
   // Column order: array of slugs. Persisted to localStorage.
@@ -707,8 +980,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     if (colOrder) try { localStorage.setItem('corner-board-order', JSON.stringify(colOrder)) } catch {}
   }, [colOrder])
 
-  // Context menu
+  // Context menu (tasks)
   const [ctxMenu, setCtxMenu] = useState(null)
+
+  // Column header context menu
+  const [headerCtx, setHeaderCtx] = useState(null) // { position, slug, name, isAgent, setTab }
 
   // Drag state
   const [dragSource, setDragSource] = useState(null)
@@ -798,6 +1074,20 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       })
       pipeData?.refetch?.()
     } catch {}
+  }
+
+  const handleHeaderContextAction = (actionId) => {
+    if (!headerCtx) return
+    const { slug, setTab: columnSetTab } = headerCtx
+    switch (actionId) {
+      case 'open-chat': columnSetTab?.('chat'); break
+      case 'view-tasks': columnSetTab?.('tasks'); break
+      case 'view-info': columnSetTab?.('info'); break
+      case 'view-files': columnSetTab?.('files'); break
+      case 'add-task': columnSetTab?.('tasks'); break
+      case 'send-message': columnSetTab?.('chat'); break
+      case 'close-column': toggleSlug(slug); break
+    }
   }
 
   const handleContextMenu = (e, task) => {
@@ -959,6 +1249,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                   onClose={() => toggleSlug(item.slug)}
                   onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
                   isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
+                  onHeaderContextMenu={setHeaderCtx}
                 />
               ) : (
                 <ProjectColumn
@@ -967,9 +1258,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                   onClose={() => toggleSlug(item.slug)}
                   onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
                   isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
+                  onHeaderContextMenu={setHeaderCtx}
                 />
               )
             ))}
+            {/* Add column button */}
+            <AddColumnButton allItems={allItems} visibleSlugs={visibleSlugs} onToggle={toggleSlug} />
           </div>
         ) : (
           /* Mobile: full-frame with tab bar */
@@ -1002,13 +1296,29 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                   <span style={{ fontSize: 8, fontWeight: 700, color: idx === mobileIdx ? 'var(--bv-accent-text)' : 'var(--bv-muted)' }}>{item.name}</span>
                 </div>
               ))}
+              {/* Mobile + button */}
+              <div
+                onClick={() => setRailOpen(true)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  padding: '3px 8px', cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  border: '2px dashed var(--bv-col-border)', color: 'var(--bv-dim)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, fontWeight: 300,
+                }}>+</div>
+                <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--bv-muted)' }}>Add</span>
+              </div>
             </div>
             {/* Active column */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               {activeMobileItem?.isAgent ? (
-                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} />
+                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} />
               ) : activeMobileItem ? (
-                <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} />
+                <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} onHeaderContextMenu={setHeaderCtx} />
               ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bv-dim)', fontSize: 13 }}>
                   Tap an agent or project in the rail
@@ -1019,13 +1329,25 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         )}
       </div>
 
-      {/* Context Menu */}
+      {/* Task Context Menu */}
       {ctxMenu && (
         <TaskContextMenu
           task={ctxMenu.task} position={ctxMenu.position}
           onClose={() => setCtxMenu(null)}
           onAction={(action, payload) => { handleTaskContextAction(action, ctxMenu.task, payload); setCtxMenu(null); pipeData?.refetch?.() }}
           isNightMode={isNightMode}
+        />
+      )}
+
+      {/* Column Header Context Menu */}
+      {headerCtx && (
+        <ColumnContextMenu
+          position={headerCtx.position}
+          slug={headerCtx.slug}
+          name={headerCtx.name}
+          isAgent={headerCtx.isAgent}
+          onClose={() => setHeaderCtx(null)}
+          onAction={handleHeaderContextAction}
         />
       )}
     </div>

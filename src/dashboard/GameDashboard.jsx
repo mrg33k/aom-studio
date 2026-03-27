@@ -11673,8 +11673,8 @@ export default function GameDashboard() {
     return 'game'
   })
 
-  // VIEW MODE: 'game' = isometric canvas, 'board' = Trello/kanban columns
-  const [viewMode, setViewMode] = useState('game')
+  // VIEW MODE: 'board' is now the default and only view (game view deprecated)
+  const [viewMode, setViewMode] = useState('board')
   const handleViewModeSwitch = useCallback((mode) => {
     setViewMode(mode)
   }, [])
