@@ -959,9 +959,13 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const vars = cssVars(isNightMode)
 
   // Visible columns: set of slugs. Persisted to Supabase + localStorage fallback.
+  // Default: AOM shows bobby/gary/elon, non-AOM shows all agents from pipeData
   const [visibleSlugs, setVisibleSlugs] = useState(() => {
-    try { const s = localStorage.getItem('corner-board-visible'); return s ? new Set(JSON.parse(s)) : new Set(['bobby', 'gary', 'elon']) }
-    catch { return new Set(['bobby', 'gary', 'elon']) }
+    try { const s = localStorage.getItem('corner-board-visible'); if (s) return new Set(JSON.parse(s)) }
+    catch {}
+    // No saved prefs: show all agents from pipeData (scoped by client_id)
+    if (agents.length > 0) return new Set(agents.map(a => a.slug))
+    return new Set(['bobby', 'gary', 'elon']) // AOM fallback
   })
 
   // Column order: array of slugs. Persisted to Supabase + localStorage fallback.

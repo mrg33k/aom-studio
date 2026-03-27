@@ -5072,13 +5072,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     color: isNightMode ? '#334155' : '#4A6585',
                     fontFamily: "'Inter', sans-serif",
                   }}>
-                    {AGENTS.length}
+                    {getClientId() === 'aom' ? AGENTS.length : agentStatuses.length}
                   </span>
                 </div>
 
-                {/* Agent list */}
+                {/* Agent list -- scoped per client. AOM uses full gridSpec, others use Supabase only */}
                 <div style={{ maxHeight: 320, overflowY: 'auto', padding: '0' }}>
-                  {AGENTS.map(agent => {
+                  {(getClientId() === 'aom' ? AGENTS : agentStatuses.map(a => ({ slug: a.slug, name: a.name || a.slug, color: a.color || '#60A5FA' }))).map(agent => {
                     const status = getAgentStatus(agent.slug)
                     const dotCol = statusDotColor[status] || '#6B7280'
                     const isSelected = selectedAgent === agent.slug
