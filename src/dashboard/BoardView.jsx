@@ -674,8 +674,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
   // Visible columns: set of slugs. Persisted to localStorage.
   const [visibleSlugs, setVisibleSlugs] = useState(() => {
-    try { const s = localStorage.getItem('corner-board-visible'); return s ? new Set(JSON.parse(s)) : new Set(['elon', 'bobby']) }
-    catch { return new Set(['elon', 'bobby']) }
+    try { const s = localStorage.getItem('corner-board-visible'); return s ? new Set(JSON.parse(s)) : new Set(AGENTS.map(a => a.slug)) }
+    catch { return new Set(AGENTS.map(a => a.slug)) }
   })
 
   // Column order: array of slugs. Persisted to localStorage.
