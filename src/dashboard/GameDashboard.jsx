@@ -12249,7 +12249,9 @@ export default function GameDashboard() {
     setAtMenuOpen(false)
     setAtMenuFilter('')
     let text = textOverride || panelChatInput?.trim()
-    if (!text || panelStreaming) return
+    if (!text) return
+    // No throttle: user can send multiple messages while agent is processing.
+    // Messages queue up in Supabase and the agent reads them in order.
 
     // DOT-PREFIX TASK CREATION: ".fix the nav bug" creates a task instead of sending a message
     if (text.startsWith('.') && text.length > 1) {
@@ -12357,7 +12359,9 @@ export default function GameDashboard() {
     const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     setAgentChats(prev => {
       const current = prev[selectedRoom] || { _all: [] }
-      const msgs = [...(current._all || []), {
+      // Remove old "thinking" placeholders before adding new message + placeholder
+      const cleaned = (current._all || []).filter(m => !m.streaming || m.content)
+      const msgs = [...cleaned, {
         role: 'user', content: text, time: sentTime,
         source: 'via dashboard', id: localId,
         ...(replyToId ? { reply_to: replyToId } : {}),
