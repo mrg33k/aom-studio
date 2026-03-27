@@ -314,6 +314,13 @@ export default function MunicipalDirectory() {
 
   // Load data
   useEffect(() => {
+    document.title = 'US Municipality Directory | 19,475 Cities & Towns';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'Search, filter, and export data on 19,475 US municipalities. Population, location, type, and more.');
+    return () => { document.title = 'AOM | We Make Companies Impossible to Ignore'; };
+  }, []);
+
+  useEffect(() => {
     fetch('/arsenal-municipality-data.json')
       .then(r => { if (!r.ok) throw new Error('Failed to load data'); return r.json(); })
       .then(j => { setData(j.places); setMeta(j.metadata); setLoading(false); })
