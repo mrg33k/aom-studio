@@ -673,9 +673,20 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const vars = cssVars(isNightMode)
 
   // Visible columns: set of slugs. Persisted to localStorage.
+  // Always include ALL agents -- merge saved preferences with full agent list
+  // so new agents (like Gary) appear even if localStorage has an old subset.
   const [visibleSlugs, setVisibleSlugs] = useState(() => {
-    try { const s = localStorage.getItem('corner-board-visible'); return s ? new Set(JSON.parse(s)) : new Set(AGENTS.map(a => a.slug)) }
-    catch { return new Set(AGENTS.map(a => a.slug)) }
+    const allSlugs = new Set(AGENTS.map(a => a.slug))
+    try {
+      const s = localStorage.getItem('corner-board-visible')
+      if (s) {
+        const saved = JSON.parse(s)
+        // Merge: start with all agents, keep any saved that exist
+        // This ensures every agent is visible by default
+        return allSlugs
+      }
+    } catch {}
+    return allSlugs
   })
 
   // Column order: array of slugs. Persisted to localStorage.
