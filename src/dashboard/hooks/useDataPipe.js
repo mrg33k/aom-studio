@@ -16,6 +16,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getClientId } from '../lib/clientConfig'
+import { AGENTS as GRID_AGENTS } from '../gridSpec'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -879,18 +880,20 @@ export function useDataPipe(parsePunchList) {
     // entries overlay status info but never shrink the list. AOM's agent
     // roster is curated in gridSpec -- Supabase may only have a subset.
     const sbMap = Object.fromEntries(supabaseAgents.map(a => [a.slug, a]))
+    const gridMap = Object.fromEntries(GRID_AGENTS.map(a => [a.slug, a]))
     agents = AOM_AGENT_SLUGS.map(slug => {
       const sb = sbMap[slug]
+      const grid = gridMap[slug]
       let status = 'IDLE'
       if (eventsStatuses[slug]) status = eventsStatuses[slug]
       else if (activeAgentSlugs.has(slug)) status = 'WORKING'
       else if (sb?.status) status = sb.status.toUpperCase()
       return {
         slug,
-        name: sb?.name || slug.charAt(0).toUpperCase() + slug.slice(1),
-        role: sb?.role || '',
+        name: sb?.name || grid?.name || slug.charAt(0).toUpperCase() + slug.slice(1),
+        role: sb?.role || grid?.role || '',
         status,
-        color: sb?.color || '#60A5FA',
+        color: sb?.color || grid?.color || '#60A5FA',
         updatedAt: sb?.updatedAt || null,
       }
     })
