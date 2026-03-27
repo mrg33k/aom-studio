@@ -991,9 +991,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             {/* Active column */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               {activeMobileItem?.isAgent ? (
-                <AgentColumn agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} />
+                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} />
               ) : activeMobileItem ? (
-                <ProjectColumn project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} />
+                <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} />
               ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bv-dim)', fontSize: 13 }}>
                   Tap an agent or project in the rail
