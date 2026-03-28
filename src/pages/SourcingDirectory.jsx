@@ -1,21 +1,46 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
-// ─── Scout Search ─────────────────────────────────────────────────────────────
-// EVERY search goes through Scout. Scout always tries to understand intent.
-// No "is this natural language?" gate. If you typed it, Scout parses it.
-
-async function callAiSearch(query) {
-  const res = await fetch('/api/ai-search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) throw new Error(`AI search failed: ${res.status}`);
-  return res.json();
+// ─── Scout Answer Card (streaming AI response) ───────────────────────────────
+function ScoutAnswerCard({ text, streaming, V }) {
+  if (!text && !streaming) return null;
+  return (
+    <div style={{
+      background: 'rgba(16,185,129,0.07)',
+      border: `1px solid rgba(16,185,129,0.3)`,
+      borderRadius: 10,
+      padding: '14px 18px',
+      marginBottom: 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: text ? 10 : 0 }}>
+        <div style={{
+          background: 'rgba(16,185,129,0.15)',
+          border: '1px solid rgba(16,185,129,0.35)',
+          borderRadius: 5, padding: '3px 8px',
+          fontSize: 10, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase',
+          display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          Scout · AI Answer
+        </div>
+        {streaming && (
+          <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(16,185,129,0.3)', borderTop: '2px solid #10b981', animation: 'spin 0.8s linear infinite' }} />
+        )}
+      </div>
+      {text && (
+        <div style={{ fontSize: 13, color: V.text, fontFamily: "'Space Grotesk', sans-serif", lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+          {text}
+          {streaming && <span style={{ display: 'inline-block', width: 2, height: 14, background: '#10b981', marginLeft: 2, verticalAlign: 'middle', animation: 'pulse 1s ease-in-out infinite' }} />}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Vertical config ──────────────────────────────────────────────────────────
@@ -385,6 +410,10 @@ function SourcingDirectoryInner() {
   const [aiResult, setAiResult] = useState(null);
   // For AI search results, we store companies separately so certs are already embedded
   const [aiCompanies, setAiCompanies] = useState(null);
+  // Scout agent streaming answer (shown above the grid)
+  const [scoutAnswer, setScoutAnswer] = useState('');
+  const [scoutStreaming, setScoutStreaming] = useState(false);
+  const scoutAbortRef = useRef(null);
 
   const fetchCompanies = useCallback(async (q, v) => {
     if (!supabase) { setLoading(false); return; }
@@ -440,12 +469,62 @@ function SourcingDirectoryInner() {
     }
   }, [query, vertical, fetchCompanies, aiCompanies]);
 
+  // Call Scout agent via SSE and stream the text answer
+  const callScoutAgent = useCallback(async (q) => {
+    // Cancel any in-flight request
+    if (scoutAbortRef.current) scoutAbortRef.current = false;
+    const token = {};
+    scoutAbortRef.current = token;
+
+    setScoutAnswer('');
+    setScoutStreaming(true);
+
+    try {
+      const res = await fetch('/api/sourcing/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: q, mode: 'scout' }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (token !== scoutAbortRef.current) break; // aborted
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'text') {
+              setScoutAnswer(prev => prev + event.text);
+            }
+          } catch { /* skip */ }
+        }
+      }
+    } catch (err) {
+      if (token === scoutAbortRef.current) {
+        setScoutAnswer(`Scout couldn't search right now. Results below are from the directory.`);
+      }
+    } finally {
+      if (token === scoutAbortRef.current) setScoutStreaming(false);
+    }
+  }, []);
+
   const handleSearch = async () => {
     const q = searchInput.trim();
     if (!q) {
-      // Clear AI state and reset
+      // Clear all search state and reset
       setAiResult(null);
       setAiCompanies(null);
+      setScoutAnswer('');
+      setScoutStreaming(false);
       setQuery('');
       setSearchParams({});
       return;
@@ -456,57 +535,23 @@ function SourcingDirectoryInner() {
     if (vertical !== 'all') params.v = vertical;
     setSearchParams(params);
 
-    // EVERY search goes through Scout. Single words, natural language, everything.
-    setAiLoading(true);
+    // Run Scout agent (streaming text answer) + standard grid in parallel
     setAiResult(null);
     setAiCompanies(null);
-    try {
-      const result = await callAiSearch(q);
-      setAiResult(result);
-      // Build certs map from embedded data
-      const companyCertsMap = {};
-      (result.results || []).forEach(c => {
-        if (c.directory_certifications) companyCertsMap[c.id] = c.directory_certifications;
-      });
-      setCerts(companyCertsMap);
-      setAiCompanies(result.results || []);
-    } catch (err) {
-      console.error('Scout search error, falling back to keyword:', err);
-      // Fallback to standard Supabase search
-      setAiResult(null);
-      setAiCompanies(null);
-      setQuery(q);
-      await fetchCompanies(q, vertical);
-    } finally {
-      setAiLoading(false);
-    }
+    callScoutAgent(q); // fire and forget -- streams into scoutAnswer
+    setQuery(q);
+    fetchCompanies(q, vertical);
   };
 
   const handleSuggestionClick = (suggestionQuery) => {
     setSearchInput(suggestionQuery);
-    // Trigger search after state update
     setTimeout(() => {
       const q = suggestionQuery.trim();
-      setAiLoading(true);
       setAiResult(null);
       setAiCompanies(null);
-      callAiSearch(q)
-        .then(result => {
-          setAiResult(result);
-          const companyCertsMap = {};
-          (result.results || []).forEach(c => {
-            if (c.directory_certifications) companyCertsMap[c.id] = c.directory_certifications;
-          });
-          setCerts(companyCertsMap);
-          setAiCompanies(result.results || []);
-        })
-        .catch(() => {
-          setAiResult(null);
-          setAiCompanies(null);
-          setQuery(q);
-          fetchCompanies(q, vertical);
-        })
-        .finally(() => setAiLoading(false));
+      callScoutAgent(q);
+      setQuery(q);
+      fetchCompanies(q, vertical);
     }, 0);
   };
 
@@ -519,6 +564,8 @@ function SourcingDirectoryInner() {
     if (searchInput) params.q = searchInput;
     if (v !== 'all') params.v = v;
     setSearchParams(params);
+    setScoutAnswer('');
+    setScoutStreaming(false);
   };
 
   const filteredCompanies = useMemo(() => {
@@ -678,39 +725,19 @@ function SourcingDirectoryInner() {
 
       {/* Results */}
       <div style={{ padding: '20px 24px 60px', maxWidth: 900, margin: '0 auto' }}>
-        {/* AI Summary Card */}
-        {aiResult && !aiLoading && (
-          <AiSummaryCard
-            aiResult={aiResult}
-            onSuggestionClick={handleSuggestionClick}
-            V={V}
-          />
-        )}
-
-        {/* AI Loading state */}
-        {aiLoading && (
-          <div style={{
-            background: 'rgba(16,185,129,0.07)',
-            border: '1px solid rgba(16,185,129,0.25)',
-            borderRadius: 10, padding: '16px 18px',
-            marginBottom: 20,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(16,185,129,0.3)', borderTop: '2px solid #10b981', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: '#10b981', fontFamily: V.mono }}>Scout is searching...</span>
-          </div>
-        )}
+        {/* Scout AI Answer Card -- streaming text response above the grid */}
+        <ScoutAnswerCard text={scoutAnswer} streaming={scoutStreaming} V={V} />
 
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 16,
         }}>
           <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
-            {(loading || aiLoading) ? 'Searching...' : (
+            {loading ? 'Searching...' : (
               <>
                 <span style={{ color: V.text, fontWeight: 600 }}>{filteredCompanies.length}</span>
                 {' '}compan{filteredCompanies.length === 1 ? 'y' : 'ies'} found
-                {query && !aiResult && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
+                {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
               </>
             )}
           </div>
