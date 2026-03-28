@@ -10587,32 +10587,30 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 ))}
               </div>
             )}
-            {/* Mobile: plus icon on the LEFT inside the input -- opens powerups or image upload */}
-            {isMobile && (
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) }}
-                aria-label={powerupOpen ? 'Close menu' : 'Open menu'}
-                style={{
-                  position: 'absolute', left: 8, bottom: 10,
-                  width: 34, height: 34, borderRadius: 10,
-                  background: powerupOpen
-                    ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                    : 'rgba(59, 130, 246, 0.20)',
-                  border: powerupOpen
-                    ? '1.5px solid rgba(59,130,246,0.8)'
-                    : '1.5px solid rgba(59,130,246,0.35)',
-                  color: '#FFF',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 150ms ease',
-                  zIndex: 2,
-                  flexShrink: 0,
-                  transform: powerupOpen ? 'rotate(45deg)' : 'rotate(0deg)',
-                }}>
-                <Plus size={17} strokeWidth={2.5} />
-              </button>
-            )}
+            {/* Plus icon on the LEFT inside the input -- opens powerups (mobile + desktop) */}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) }}
+              aria-label={powerupOpen ? 'Close menu' : 'Open menu'}
+              style={{
+                position: 'absolute', left: 8, bottom: 10,
+                width: 34, height: 34, borderRadius: 10,
+                background: powerupOpen
+                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                  : 'rgba(59, 130, 246, 0.20)',
+                border: powerupOpen
+                  ? '1.5px solid rgba(59,130,246,0.8)'
+                  : '1.5px solid rgba(59,130,246,0.35)',
+                color: '#FFF',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 150ms ease',
+                zIndex: 2,
+                flexShrink: 0,
+                transform: powerupOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+              }}>
+              <Plus size={17} strokeWidth={2.5} />
+            </button>
             <textarea data-panel-chat-input value={chatInput || ''}
               rows={1}
               onChange={e => {
@@ -10663,8 +10661,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
                 border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
                 borderRadius: 12,
-                // Mobile: extra left padding to clear the plus icon button
-                padding: isMobile ? '14px 56px 14px 50px' : '14px 56px 14px 18px',
+                // Left padding clears the plus icon button on both mobile and desktop
+                padding: '14px 56px 14px 50px',
                 fontSize: 18, fontWeight: 400,
                 fontFamily: "'Inter', system-ui, sans-serif",
                 color: isNightMode ? '#F1F5F9' : '#E2E8F0',
