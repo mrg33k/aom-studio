@@ -9,6 +9,8 @@ const AI_TRIGGER_WORDS = [
   'looking for', 'need', 'want', 'find me', 'show me', 'with ', 'under ',
   'over ', 'small', 'large', 'big', 'certified', 'certification',
   'who ', 'what ', 'which ', 'companies that', 'suppliers', 'partners',
+  'companies', 'company', 'semiconductor', 'space', 'biotech', 'defense',
+  'aerospace', 'military', 'medical', 'pharma', 'chip', 'fab',
 ];
 
 function isNaturalLanguage(q) {
@@ -16,7 +18,8 @@ function isNaturalLanguage(q) {
   const lower = q.toLowerCase().trim();
   const wordCount = lower.split(/\s+/).length;
   if (wordCount > 3) return true;
-  return AI_TRIGGER_WORDS.some(t => lower.includes(t));
+  if (wordCount >= 2) return AI_TRIGGER_WORDS.some(t => lower.includes(t));
+  return false;
 }
 
 async function callAiSearch(query) {
