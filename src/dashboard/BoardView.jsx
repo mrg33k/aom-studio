@@ -4,6 +4,7 @@
 // Same right-click context menu as sidebar (TaskContextMenu)
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
@@ -376,11 +377,11 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         ))}
       </div>
 
-      {/* Message context menu: right-click on any message */}
-      {msgCtx && (
+      {/* Message context menu: portal to body to escape transform containers */}
+      {msgCtx && createPortal(
         <div
           onClick={() => setMsgCtx(null)}
-          style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 99999 }}
         >
           <div
             onClick={e => e.stopPropagation()}
@@ -438,7 +439,8 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Scroll to bottom button -- appears when user scrolls up */}
