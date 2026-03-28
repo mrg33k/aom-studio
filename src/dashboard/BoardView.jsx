@@ -99,9 +99,10 @@ function useColumnChat(agentSlug, isActive) {
   const pollRef = useRef(null)
   const loadedRef = useRef(false)
 
-  // Terminal Bridge for super agents
-  const bridge = useBridge(agentSlug, { enabled: isBridgeAgent(agentSlug) && isActive })
-  const useBridgeForAgent = isBridgeAgent(agentSlug) && bridge.connected
+  // Terminal Bridge for super agents -- bridge is the ONLY path for these agents
+  const isBridgeSlug = isBridgeAgent(agentSlug)
+  const bridge = useBridge(agentSlug, { enabled: isBridgeSlug && isActive })
+  const useBridgeForAgent = isBridgeSlug // true for bridge agents regardless of connection state
 
   // Bridge: stream text into streaming placeholder (deltas only)
   useEffect(() => {
@@ -276,7 +277,10 @@ function useColumnChat(agentSlug, isActive) {
         // Checks come through bridge.check -> handled by useBridge hook
         return
       }
-      // Bridge send failed, fall through to relay
+      // Bridge send failed -- show error, don't fall through to relay (prevents cross-wire)
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Bridge disconnected. Reconnecting...', time: new Date().toISOString(), error: true }])
+      setSending(false)
+      return
     }
 
     try {
