@@ -154,9 +154,20 @@ function useColumnChat(agentSlug, isActive) {
             const txt = (m.text || '')
             if (txt.startsWith('[SESSION LOG]')) return false
             if (txt.startsWith('[From ')) return false
+            if (txt.startsWith('[Dashboard]')) return false
             if (txt.startsWith('You are ') && txt.includes('Working directory:')) return false
+            if (txt.startsWith('MANDATORY FIRST STEP:')) return false
+            if (txt.startsWith('PRIORITY:') || txt.startsWith('CRITICAL:') || txt.startsWith('NEW MANDATORY')) return false
             if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return false
-            if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed)/i.test(txt)) return false
+            if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed|Shipped|shipped)/i.test(txt)) return false
+            // Filter spawn-agent task prompts (system routing, not conversation)
+            if (txt.includes('Working directory:') && txt.includes('Read your context')) return false
+            if (txt.includes('Task ID:') && txt.includes('YOUR TASK:')) return false
+            if (txt.includes('REMINDER: Write your result summary')) return false
+            // Filter relay system messages
+            if (txt.includes('Read the output file to retrieve the result:')) return false
+            if (txt.startsWith('export CORNER_AGENT=')) return false
+            if (/^Fix Terminal Bridge/.test(txt) && txt.includes('server.js')) return false
             return true
           })
           .map(m => ({ role: m.role || 'assistant', content: m.text || '', time: m.timestamp || '', source: m.source }))
