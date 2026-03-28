@@ -277,9 +277,18 @@ function useColumnChat(agentSlug, isActive) {
         // Checks come through bridge.check -> handled by useBridge hook
         return
       }
-      // Bridge send failed -- show error, don't fall through to relay (prevents cross-wire)
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Bridge disconnected. Reconnecting...', time: new Date().toISOString(), error: true }])
-      setSending(false)
+      // Bridge send failed -- queue and retry when reconnected (no relay fallback)
+      const retryInterval = setInterval(() => {
+        if (bridge.send(text.trim())) {
+          clearInterval(retryInterval)
+          setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: new Date().toISOString() }])
+        }
+      }, 1000)
+      // Give up after 30s
+      setTimeout(() => {
+        clearInterval(retryInterval)
+        if (sending) setSending(false)
+      }, 30000)
       return
     }
 
