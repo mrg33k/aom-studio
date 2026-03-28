@@ -252,7 +252,15 @@ function AiSummaryCard({ aiResult, onSuggestionClick, V }) {
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          AI Search
+          Scout · AI Search
+        </div>
+        <div style={{
+          marginLeft: 'auto',
+          fontSize: 9, fontWeight: 700, fontFamily: V.mono,
+          color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', textTransform: 'uppercase',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          powered by <span style={{ color: '#f97316', fontWeight: 800 }}>CORNER</span>
         </div>
         <div style={{ fontSize: 13, color: V.text, fontFamily: V.space, lineHeight: 1.4 }}>
           {summary}
