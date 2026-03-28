@@ -11015,16 +11015,17 @@ export default function GameDashboard() {
     if (world.world === myWorld) {
       // Clicking own world clears any active override (return to home)
       setWorldOverride(null)
-      try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
+      localStorage.removeItem('corner-qa-mode')
       window.location.reload()
     } else if (world.world === 'q' || world.world === 'qa') {
       // QA War Room: every switch triggers fresh onboarding. Redirect to full 5-step flow.
       setWorldOverride(world.world)
-      try { sessionStorage.setItem('corner-qa-fresh', '1') } catch {}
+      localStorage.setItem('corner-qa-mode', 'true')
+      localStorage.removeItem('corner-onboarded')
       window.location.href = '/onboarding'
     } else {
       setWorldOverride(world.world)
-      try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
+      localStorage.removeItem('corner-qa-mode')
       window.location.reload()
     }
   }, [])
@@ -11032,7 +11033,7 @@ export default function GameDashboard() {
   // Clear the world override and reload (return to own world)
   const handleReturnToMyWorld = useCallback(() => {
     setWorldOverride(null)
-    try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
+    localStorage.removeItem('corner-qa-mode')
     window.location.reload()
   }, [])
 
