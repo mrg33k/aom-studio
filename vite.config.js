@@ -1693,6 +1693,64 @@ function localDashboardPlugin() {
               report.relayReset = { error: e.message }
             }
 
+            // 6.5 RESTART SUPER AGENT TMUX SESSIONS
+            // Kill and respawn bobby, elon, gary tmux sessions via spawn-agent.sh
+            // Each agent reads last messages from their relay inbox on startup
+            const SUPER_AGENTS = ['bobby', 'elon', 'gary']
+            const agentRestarts = []
+            for (const agent of SUPER_AGENTS) {
+              const sessionName = `${agent}-relay`
+              try {
+                // Check if session exists
+                const check = await runScript('tmux', ['has-session', '-t', sessionName], {})
+                if (check.code === 0) {
+                  // Kill existing session
+                  await runScript('tmux', ['kill-session', '-t', sessionName], {})
+                }
+                // Get last 3 unread messages for this agent from Supabase
+                const sbCreds2 = loadSupabaseCreds()
+                let lastMessages = ''
+                if (sbCreds2.SUPABASE_URL && sbCreds2.SUPABASE_SERVICE_ROLE_KEY) {
+                  try {
+                    const msgResp = await new Promise((resolveP) => {
+                      const url = new URL(`${sbCreds2.SUPABASE_URL}/rest/v1/messages?agent=eq.${agent}&role=eq.user&order=timestamp.desc&limit=3&select=text,timestamp`)
+                      https.get({
+                        hostname: url.hostname,
+                        path: url.pathname + url.search,
+                        headers: {
+                          'apikey': sbCreds2.SUPABASE_SERVICE_ROLE_KEY,
+                          'Authorization': `Bearer ${sbCreds2.SUPABASE_SERVICE_ROLE_KEY}`,
+                        },
+                      }, (resp) => {
+                        let data = ''
+                        resp.on('data', d => data += d)
+                        resp.on('end', () => {
+                          try { resolveP(JSON.parse(data)) } catch { resolveP([]) }
+                        })
+                      }).on('error', () => resolveP([]))
+                    })
+                    if (Array.isArray(msgResp) && msgResp.length > 0) {
+                      lastMessages = msgResp.reverse().map(m => m.text).join('\n\n')
+                    }
+                  } catch {}
+                }
+                // Respawn via spawn-agent.sh with last messages as context
+                const prompt = lastMessages
+                  ? `You are ${agent}. Read projects/${agent === 'elon' ? 'sys' : agent}/last-conversation.md for context. These are the last messages from Patrik that need your attention:\n\n${lastMessages}`
+                  : `You are ${agent}. Read projects/${agent === 'elon' ? 'sys' : agent}/last-conversation.md and check relay for new messages.`
+                const spawnResult = await runScript(
+                  'bash',
+                  [resolve(AOM_EA_SCRIPTS, 'spawn-agent.sh'), agent, prompt],
+                  { cwd: AOM_EA_ROOT, env: { ...process.env, CORNER_AGENT: agent } },
+                  5000 // 5s timeout -- spawn-agent.sh runs in background
+                )
+                agentRestarts.push({ agent, status: 'restarted', hadMessages: !!lastMessages })
+              } catch (e) {
+                agentRestarts.push({ agent, status: 'error', error: e.message })
+              }
+            }
+            report.agentRestarts = agentRestarts
+
             // 7. SUPABASE CLEANUP: clear active tasks + reset stuck agents
             // Runs on localhost using creds from ~/.config/supabase/corner.env
             // (Production uses /api/dashboard/unstuck Vercel function instead)
