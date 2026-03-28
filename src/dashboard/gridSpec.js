@@ -1,3 +1,4 @@
+// Corner Dashboard - Room Grid Specification
 // Corner C2 Grid Spec - loaded from Steffen's c2-grid-spec.json
 // Machine-readable room positions, furniture, animations, colors
 
