@@ -52,6 +52,10 @@ const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 const SourcingDirectory = lazy(() => import('./pages/SourcingDirectory.jsx'))
 const SourcingProfile = lazy(() => import('./pages/SourcingProfile.jsx'))
 const SourcingSignup = lazy(() => import('./pages/SourcingSignup.jsx'))
+const SourcingJobs = lazy(() => import('./pages/SourcingJobs.jsx'))
+const SourcingJobsPost = lazy(() => import('./pages/SourcingJobsPost.jsx'))
+const SourcingMarketplace = lazy(() => import('./pages/SourcingMarketplace.jsx'))
+const SourcingMarketplacePost = lazy(() => import('./pages/SourcingMarketplacePost.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
@@ -228,6 +232,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/directory" element={<MunicipalityDirectory />} />
           <Route path="/sourcing" element={<SourcingDirectory />} />
           <Route path="/sourcing/signup" element={<SourcingSignup />} />
+          <Route path="/sourcing/jobs" element={<SourcingJobs />} />
+          <Route path="/sourcing/jobs/post" element={<SourcingJobsPost />} />
+          <Route path="/sourcing/marketplace" element={<SourcingMarketplace />} />
+          <Route path="/sourcing/marketplace/post" element={<SourcingMarketplacePost />} />
           <Route path="/sourcing/:slug" element={<SourcingProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
