@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 // Same password pattern as the AOM dashboard
 const ADMIN_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'admin';
+
+// Admin client — uses service role key if available (bypasses RLS), falls back to anon
+// VITE_SOURCING_ADMIN_KEY should be set to service role key in Vercel env vars
+const _adminKey = import.meta.env.VITE_SOURCING_ADMIN_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+const _sbUrl = import.meta.env.VITE_SUPABASE_URL;
+const adminSupabase = (_sbUrl && _adminKey)
+  ? createClient(_sbUrl, _adminKey)
+  : supabase;
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, color, sub, V }) {
@@ -184,6 +193,22 @@ function SourcingAdminInner() {
   const [exportStatus, setExportStatus] = useState('');
   const [listingFilter, setListingFilter] = useState('all');
 
+  // Quick Add Company
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [addCompanyForm, setAddCompanyForm] = useState({
+    name: '', website: '', city: '', vertical: 'semiconductor',
+    description: '', employee_count: '', year_founded: '', email: '', phone: '',
+    membership_tier: 'free', featured: false,
+  });
+  const [addCompanyStatus, setAddCompanyStatus] = useState('');
+
+  // Create Organization
+  const [showAddOrg, setShowAddOrg] = useState(false);
+  const [addOrgForm, setAddOrgForm] = useState({
+    name: '', website: '', vertical: 'semiconductor', description: '',
+  });
+  const [addOrgStatus, setAddOrgStatus] = useState('');
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (pwInput === ADMIN_PASSWORD) {
@@ -194,13 +219,13 @@ function SourcingAdminInner() {
   };
 
   const fetchData = useCallback(async () => {
-    if (!supabase) return;
+    if (!adminSupabase) return;
     setLoading(true);
     try {
       const [compRes, orgsRes, listingsRes] = await Promise.all([
-        supabase.from('directory_companies').select('*').order('created_at', { ascending: false }),
-        supabase.from('directory_organizations').select('*').order('name'),
-        supabase.from('directory_listings').select('*').order('created_at', { ascending: false }).limit(200),
+        adminSupabase.from('directory_companies').select('*').order('created_at', { ascending: false }),
+        adminSupabase.from('directory_organizations').select('*').order('name'),
+        adminSupabase.from('directory_listings').select('*').order('created_at', { ascending: false }).limit(200),
       ]);
 
       const allCompanies = compRes.data || [];
@@ -247,7 +272,7 @@ function SourcingAdminInner() {
   }, [authed, fetchData]);
 
   const handleCompanyAction = async (id, action) => {
-    if (!supabase) return;
+    if (!adminSupabase) return;
     setRefreshing(prev => ({ ...prev, [id]: true }));
     try {
       const updates = {
@@ -256,7 +281,7 @@ function SourcingAdminInner() {
         feature:    { featured: true },
         unfeature:  { featured: false },
       };
-      await supabase.from('directory_companies').update(updates[action]).eq('id', id);
+      await adminSupabase.from('directory_companies').update(updates[action]).eq('id', id);
       await fetchData();
     } catch (err) {
       console.error('Company action error:', err);
@@ -266,19 +291,19 @@ function SourcingAdminInner() {
   };
 
   const handleApproveAll = async () => {
-    if (!supabase) return;
+    if (!adminSupabase) return;
     const pending = companies.filter(c => c.status === 'pending').map(c => c.id);
     if (pending.length === 0) return;
     await Promise.all(pending.map(id =>
-      supabase.from('directory_companies').update({ status: 'active' }).eq('id', id)
+      adminSupabase.from('directory_companies').update({ status: 'active' }).eq('id', id)
     ));
     await fetchData();
   };
 
   const handleListingToggle = async (id, action) => {
-    if (!supabase) return;
+    if (!adminSupabase) return;
     const status = action === 'activate' ? 'active' : 'expired';
-    await supabase.from('directory_listings').update({ status }).eq('id', id);
+    await adminSupabase.from('directory_listings').update({ status }).eq('id', id);
     await fetchData();
   };
 
@@ -297,6 +322,63 @@ function SourcingAdminInner() {
     URL.revokeObjectURL(url);
     setExportStatus('Downloaded');
     setTimeout(() => setExportStatus(''), 3000);
+  };
+
+  const handleAddCompany = async (e) => {
+    e.preventDefault();
+    if (!adminSupabase) return;
+    setAddCompanyStatus('Saving...');
+    const slug = addCompanyForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const orgId = orgs.find(o => o.vertical === addCompanyForm.vertical)?.id || null;
+    const { error } = await adminSupabase.from('directory_companies').insert({
+      name: addCompanyForm.name,
+      slug,
+      website: addCompanyForm.website || null,
+      city: addCompanyForm.city || null,
+      state: 'AZ',
+      country: 'US',
+      vertical: addCompanyForm.vertical,
+      description: addCompanyForm.description || null,
+      employee_count: addCompanyForm.employee_count || null,
+      year_founded: addCompanyForm.year_founded ? parseInt(addCompanyForm.year_founded) : null,
+      email: addCompanyForm.email || null,
+      phone: addCompanyForm.phone || null,
+      membership_tier: addCompanyForm.membership_tier,
+      featured: addCompanyForm.featured,
+      status: 'active',
+      organization_id: orgId,
+    });
+    if (error) {
+      setAddCompanyStatus('Error: ' + error.message);
+    } else {
+      setAddCompanyStatus('Added!');
+      setAddCompanyForm({ name: '', website: '', city: '', vertical: 'semiconductor', description: '', employee_count: '', year_founded: '', email: '', phone: '', membership_tier: 'free', featured: false });
+      setTimeout(() => { setAddCompanyStatus(''); setShowAddCompany(false); }, 1500);
+      await fetchData();
+    }
+  };
+
+  const handleAddOrg = async (e) => {
+    e.preventDefault();
+    if (!adminSupabase) return;
+    setAddOrgStatus('Saving...');
+    const slug = addOrgForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const { error } = await adminSupabase.from('directory_organizations').insert({
+      name: addOrgForm.name,
+      slug,
+      website: addOrgForm.website || null,
+      vertical: addOrgForm.vertical,
+      description: addOrgForm.description || null,
+      membership_tiers: [],
+    });
+    if (error) {
+      setAddOrgStatus('Error: ' + error.message);
+    } else {
+      setAddOrgStatus('Created!');
+      setAddOrgForm({ name: '', website: '', vertical: 'semiconductor', description: '' });
+      setTimeout(() => { setAddOrgStatus(''); setShowAddOrg(false); }, 1500);
+      await fetchData();
+    }
   };
 
   const filteredListings = listingFilter === 'all'
@@ -357,11 +439,12 @@ function SourcingAdminInner() {
 
   // ─── Admin Dashboard ──────────────────────────────────────────────────────
   const TABS = [
-    { key: 'stats',     label: 'Stats' },
-    { key: 'companies', label: `Companies${pendingCompanies.length > 0 ? ` (${pendingCompanies.length} pending)` : ''}` },
-    { key: 'orgs',      label: 'Organizations' },
-    { key: 'listings',  label: 'Listings' },
-    { key: 'actions',   label: 'Quick Actions' },
+    { key: 'stats',      label: 'Stats' },
+    { key: 'companies',  label: `Companies${pendingCompanies.length > 0 ? ` (${pendingCompanies.length} pending)` : ''}` },
+    { key: 'add',        label: '+ Add Company' },
+    { key: 'orgs',       label: 'Organizations' },
+    { key: 'listings',   label: 'Listings' },
+    { key: 'actions',    label: 'Quick Actions' },
   ];
 
   return (
@@ -426,7 +509,7 @@ function SourcingAdminInner() {
           <div style={{ textAlign: 'center', padding: '40px 0', color: V.muted, fontFamily: V.space }}>Loading...</div>
         )}
 
-        {!loading && !supabase && (
+        {!loading && !adminSupabase && (
           <div style={{ background: V.accentDim, border: `1px solid ${V.accentBrd}`, borderRadius: 8, padding: '24px', textAlign: 'center' }}>
             <div style={{ color: V.accent, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
             <div style={{ color: V.muted, fontFamily: V.space, fontSize: 12 }}>Run migrations 001-003 in Supabase SQL editor to activate the admin panel.</div>
@@ -523,12 +606,143 @@ function SourcingAdminInner() {
           </AdminSection>
         )}
 
+        {/* Add Company */}
+        {!loading && activeTab === 'add' && (
+          <AdminSection title="Add Company" V={V}>
+            <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '28px 24px', maxWidth: 600 }}>
+              <style>{`input,textarea,select { box-sizing: border-box; } input::placeholder,textarea::placeholder { color: ${V.dim}; } input:focus,textarea:focus,select:focus { outline: none; border-color: ${V.accentBrd} !important; }`}</style>
+              <form onSubmit={handleAddCompany} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { label: 'Company Name *', key: 'name', type: 'text', placeholder: 'e.g. Acme Semiconductors' },
+                  { label: 'Website', key: 'website', type: 'url', placeholder: 'https://example.com' },
+                  { label: 'City', key: 'city', type: 'text', placeholder: 'e.g. Chandler' },
+                  { label: 'Email', key: 'email', type: 'email', placeholder: 'info@example.com' },
+                  { label: 'Phone', key: 'phone', type: 'text', placeholder: '(480) 555-0000' },
+                  { label: 'Employee Count', key: 'employee_count', type: 'text', placeholder: 'e.g. 50-200' },
+                  { label: 'Year Founded', key: 'year_founded', type: 'number', placeholder: '2015' },
+                ].map(({ label, key, type, placeholder }) => (
+                  <div key={key}>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>{label}</label>
+                    <input
+                      type={type} placeholder={placeholder} value={addCompanyForm[key]}
+                      onChange={e => setAddCompanyForm(f => ({ ...f, [key]: e.target.value }))}
+                      required={key === 'name'}
+                      style={{ width: '100%', background: V.card2, border: `1px solid ${V.border}`, color: V.text, borderRadius: 7, padding: '9px 12px', fontSize: 13, fontFamily: V.space }}
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Description</label>
+                  <textarea
+                    placeholder="1-2 sentences describing what the company does..."
+                    value={addCompanyForm.description}
+                    onChange={e => setAddCompanyForm(f => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                    style={{ width: '100%', background: V.card2, border: `1px solid ${V.border}`, color: V.text, borderRadius: 7, padding: '9px 12px', fontSize: 13, fontFamily: V.space, resize: 'vertical' }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Vertical</label>
+                    <select value={addCompanyForm.vertical} onChange={e => setAddCompanyForm(f => ({ ...f, vertical: e.target.value }))}
+                      style={{ width: '100%', background: V.card2, border: `1px solid ${V.border}`, color: V.text, borderRadius: 7, padding: '9px 12px', fontSize: 13, fontFamily: V.space }}>
+                      <option value="semiconductor">Semiconductor</option>
+                      <option value="space">Space / Aerospace</option>
+                      <option value="biotech">Biotech</option>
+                      <option value="defense">Defense</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Membership Tier</label>
+                    <select value={addCompanyForm.membership_tier} onChange={e => setAddCompanyForm(f => ({ ...f, membership_tier: e.target.value }))}
+                      style={{ width: '100%', background: V.card2, border: `1px solid ${V.border}`, color: V.text, borderRadius: 7, padding: '9px 12px', fontSize: 13, fontFamily: V.space }}>
+                      <option value="free">Free</option>
+                      <option value="basic">Basic</option>
+                      <option value="pro">Pro</option>
+                      <option value="enterprise">Enterprise</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input type="checkbox" id="featured-cb" checked={addCompanyForm.featured} onChange={e => setAddCompanyForm(f => ({ ...f, featured: e.target.checked }))} style={{ accentColor: V.accent, width: 16, height: 16 }} />
+                  <label htmlFor="featured-cb" style={{ fontSize: 13, fontFamily: V.space, color: V.muted, cursor: 'pointer' }}>Mark as featured (shows first in directory)</label>
+                </div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+                  <button type="submit" style={{ background: V.accent, border: 'none', color: '#fff', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 700, fontFamily: V.space, cursor: 'pointer' }}>
+                    Add Company
+                  </button>
+                  {addCompanyStatus && (
+                    <span style={{ fontSize: 13, fontFamily: V.space, color: addCompanyStatus.startsWith('Error') ? '#EF4444' : V.accent }}>
+                      {addCompanyStatus}
+                    </span>
+                  )}
+                </div>
+              </form>
+            </div>
+          </AdminSection>
+        )}
+
         {/* Organizations */}
         {!loading && activeTab === 'orgs' && (
-          <AdminSection title="Organizations" V={V}>
+          <AdminSection
+            title="Organizations"
+            V={V}
+            action={
+              <button onClick={() => setShowAddOrg(s => !s)} style={{
+                background: showAddOrg ? V.accentDim : 'transparent',
+                border: `1px solid ${showAddOrg ? V.accentBrd : V.border}`,
+                color: showAddOrg ? V.accent : V.muted,
+                borderRadius: 6, padding: '6px 14px', fontSize: 12,
+                fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+              }}>
+                {showAddOrg ? 'Cancel' : '+ New Organization'}
+              </button>
+            }
+          >
+            {showAddOrg && (
+              <div style={{ background: V.card, border: `1px solid ${V.accentBrd}`, borderRadius: 10, padding: '20px 20px', marginBottom: 20, maxWidth: 500 }}>
+                <style>{`input,textarea,select { box-sizing: border-box; }`}</style>
+                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 14 }}>New Organization</div>
+                <form onSubmit={handleAddOrg} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { label: 'Name *', key: 'name', placeholder: 'e.g. AZ Biotech Alliance' },
+                    { label: 'Website', key: 'website', placeholder: 'https://example.org' },
+                    { label: 'Description', key: 'description', placeholder: 'What this org does...' },
+                  ].map(({ label, key, placeholder }) => (
+                    <div key={key}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 4 }}>{label}</label>
+                      <input
+                        type="text" placeholder={placeholder} value={addOrgForm[key]}
+                        onChange={e => setAddOrgForm(f => ({ ...f, [key]: e.target.value }))}
+                        required={key === 'name'}
+                        style={{ width: '100%', background: V.card2, border: `1px solid ${V.border}`, color: V.text, borderRadius: 6, padding: '8px 11px', fontSize: 13, fontFamily: V.space }}
+                      />
+                    </div>
+                  ))}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 4 }}>Vertical</label>
+                    <select value={addOrgForm.vertical} onChange={e => setAddOrgForm(f => ({ ...f, vertical: e.target.value }))}
+                      style={{ width: '100%', background: V.card2, border: `1px solid ${V.border}`, color: V.text, borderRadius: 6, padding: '8px 11px', fontSize: 13, fontFamily: V.space }}>
+                      <option value="semiconductor">Semiconductor</option>
+                      <option value="space">Space / Aerospace</option>
+                      <option value="biotech">Biotech</option>
+                      <option value="defense">Defense</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <button type="submit" style={{ background: V.accent, border: 'none', color: '#fff', borderRadius: 7, padding: '8px 18px', fontSize: 13, fontWeight: 700, fontFamily: V.space, cursor: 'pointer' }}>
+                      Create Organization
+                    </button>
+                    {addOrgStatus && <span style={{ fontSize: 13, fontFamily: V.space, color: addOrgStatus.startsWith('Error') ? '#EF4444' : V.accent }}>{addOrgStatus}</span>}
+                  </div>
+                </form>
+              </div>
+            )}
             <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 8, overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: 12, padding: '8px 16px', background: V.card2 }}>
-                {['Organization', 'Vertical', 'Tiers'].map(h => (
+                {['Organization', 'Vertical', 'Members'].map(h => (
                   <div key={h} style={{ fontSize: 10, fontWeight: 700, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{h}</div>
                 ))}
               </div>
@@ -549,7 +763,7 @@ function SourcingAdminInner() {
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: V.muted, fontFamily: V.mono, textTransform: 'capitalize' }}>{org.vertical}</div>
-                    <div style={{ fontSize: 12, color: V.muted, fontFamily: V.mono }}>{tiers.length} tier{tiers.length !== 1 ? 's' : ''}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.mono, color: V.accent }}>{memberCount}</div>
                   </div>
                 );
               })}
@@ -644,11 +858,16 @@ function SourcingAdminInner() {
                   Add Organization
                 </div>
                 <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
-                  Create a new industry org (Space Rising, SC3, etc.)
+                  Create a new industry vertical org (biotech, defense, etc.)
                 </div>
-                <div style={{ fontSize: 12, color: V.dim, fontFamily: V.space }}>
-                  Coming soon — use Supabase dashboard for now.
-                </div>
+                <button onClick={() => setActiveTab('orgs')} style={{
+                  width: '100%', background: 'rgba(59,130,246,0.12)',
+                  border: '1px solid rgba(59,130,246,0.35)', color: '#93C5FD',
+                  borderRadius: 7, padding: '9px 0', fontSize: 13,
+                  fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                }}>
+                  Go to Organizations
+                </button>
               </div>
 
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>

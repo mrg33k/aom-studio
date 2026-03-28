@@ -35,9 +35,14 @@ CREATE INDEX IF NOT EXISTS idx_dir_listings_condition  ON directory_listings(con
 -- ─── Public insert policy (for signup forms) ──────────────────────────────────
 -- Allow anyone to insert listings (pending review).
 -- In production, tie to authenticated users only.
-CREATE POLICY IF NOT EXISTS "public insert listings"
-  ON directory_listings FOR INSERT
-  WITH CHECK (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'public insert listings' AND tablename = 'directory_listings'
+  ) THEN
+    CREATE POLICY "public insert listings" ON directory_listings FOR INSERT WITH CHECK (true);
+  END IF;
+END $$;
 
 -- ─── Sample Equipment Listings ─────────────────────────────────────────────────
 INSERT INTO directory_listings (company_id, title, description, price, category, status, condition, vertical, contact_email)
