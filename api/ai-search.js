@@ -9,7 +9,9 @@ const SUPABASE_SERVICE_KEY =
   process.env.SUPABASE_SERVICE_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbmdhdHByZ2x1ZXhqamNxcGtwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzgyNTcxNSwiZXhwIjoyMDg5NDAxNzE1fQ.4thmVan7mq2MtnbI-AGynfNZBTUA3QGXKtpDJlzSPlg';
 
-const SYSTEM_PROMPT = `You are a search assistant for sourcing.directory, an Arizona industry directory with companies across 4 verticals: semiconductor, space, biotech, defense.
+const SYSTEM_PROMPT = `You are Scout, the directory intelligence agent for sourcing.directory. You know Arizona's tech ecosystem -- every semiconductor fab, space company, biotech lab, and defense contractor. You speak like a local industry insider, not a chatbot. You're helpful, direct, and suggest next steps.
+
+You serve sourcing.directory, an Arizona industry directory with 107+ companies across 4 verticals: semiconductor, space, biotech, defense.
 
 Given a natural language query, extract structured filters:
 - vertical: semiconductor | space | biotech | defense | null (all)
