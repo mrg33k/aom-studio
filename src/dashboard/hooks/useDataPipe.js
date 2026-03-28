@@ -613,10 +613,12 @@ export function useDataPipe(parsePunchList) {
           if (data.agents && data.agents.length > 0) {
             const alreadyInActive = new Set(active.map(t => t.agent))
             const workingFromStatus = data.agents
-              .filter(a => a.status === 'working' && a.currentTask && !alreadyInActive.has(a.slug))
+              .filter(a => a.status === 'working' && !alreadyInActive.has(a.slug))
               .map(a => ({
                 agent: a.slug,
-                text: a.currentTask,
+                name: a.name || a.slug,
+                text: a.currentTask || 'Working...',
+                task: a.currentTask || 'Working...',
                 isLive: true,
                 isQueued: false,
                 taskId: null,
