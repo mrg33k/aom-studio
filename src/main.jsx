@@ -49,6 +49,9 @@ const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 const IncludedHealthBrand = lazy(() => import('./pages/IncludedHealthBrand.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
 const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
+const SourcingDirectory = lazy(() => import('./pages/SourcingDirectory.jsx'))
+const SourcingProfile = lazy(() => import('./pages/SourcingProfile.jsx'))
+const SourcingSignup = lazy(() => import('./pages/SourcingSignup.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
@@ -223,6 +226,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
+          <Route path="/sourcing" element={<SourcingDirectory />} />
+          <Route path="/sourcing/signup" element={<SourcingSignup />} />
+          <Route path="/sourcing/:slug" element={<SourcingProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
