@@ -21,7 +21,7 @@ export const BRIDGE_AGENTS = ['elon', 'gary', 'bobby']
 
 // Bridge server URL -- Cloudflare tunnel provides wss:// with real cert
 // Bridge URL from env, or fallback to Cloudflare tunnel. Update VITE_BRIDGE_URL in .env.production when tunnel URL changes.
-const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || 'wss://anonymous-ppm-bullet-laws.trycloudflare.com'
+const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || 'wss://bridge.aheadofmarket.com'
 
 export function isBridgeAgent(slug) {
   return BRIDGE_AGENTS.includes(slug)
