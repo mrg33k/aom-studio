@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'all',           label: 'All Industries',   color: null },
@@ -244,6 +244,7 @@ function ArticleView({ listing, company, onClose, V }) {
 function SourcingArticlesInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenant, tenantSlug, loading: tenantLoading } = useTenant();
 
   const [listings, setListings] = useState([]);
   const [companies, setCompanies] = useState({});
@@ -264,6 +265,7 @@ function SourcingArticlesInner() {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
+      if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (q && q.trim()) qb = qb.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
 
@@ -286,11 +288,12 @@ function SourcingArticlesInner() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenant]);
 
   useEffect(() => {
+    if (tenantSlug && tenantLoading) return;
     fetchListings(query, vertical);
-  }, [query, vertical, fetchListings]);
+  }, [query, vertical, fetchListings, tenantLoading, tenantSlug]);
 
   const handleSearch = () => setQuery(searchInput.trim());
 
@@ -305,7 +308,7 @@ function SourcingArticlesInner() {
         input:focus { border-color: ${V.accentBrd} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
-      <SourcingNav active="articles" />
+      <SourcingNav active="articles" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
 
       {/* Hero */}
       <div style={{ padding: '40px 24px 28px', maxWidth: 960, margin: '0 auto' }}>
@@ -322,7 +325,7 @@ function SourcingArticlesInner() {
             </p>
           </div>
           <Link
-            to="/sourcing/articles/post"
+            to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/articles/post`}
             style={{
               background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 7, padding: '9px 18px', fontSize: 13,
@@ -436,7 +439,7 @@ function SourcingArticlesInner() {
               {query ? `No results for "${query}". Try different keywords.` : 'No articles published yet.'}
             </div>
             <Link
-              to="/sourcing/articles/post"
+              to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/articles/post`}
               style={{
                 background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,

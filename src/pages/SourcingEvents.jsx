@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'all',           label: 'All Industries',   color: '#9ca3af' },
@@ -318,6 +318,7 @@ function EventModal({ listing, company, onClose, V }) {
 function SourcingEventsInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenant, tenantSlug, loading: tenantLoading } = useTenant();
 
   const [listings, setListings] = useState([]);
   const [companies, setCompanies] = useState({});
@@ -341,6 +342,7 @@ function SourcingEventsInner() {
         .eq('status', 'active')
         .order('event_date', { ascending: true });
 
+      if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (et && et !== 'all') qb = qb.eq('event_type', et);
       if (upcoming) qb = qb.gte('event_date', new Date().toISOString());
@@ -364,9 +366,10 @@ function SourcingEventsInner() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenant]);
 
   useEffect(() => {
+    if (tenantSlug && tenantLoading) return;
     fetchListings(query, vertical, eventType, upcomingOnly);
   }, [query, vertical, eventType, upcomingOnly, fetchListings]);
 
@@ -383,7 +386,7 @@ function SourcingEventsInner() {
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
-      <SourcingNav active="events" />
+      <SourcingNav active="events" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
 
       <div style={{ padding: '40px 24px 28px', maxWidth: 860, margin: '0 auto' }}>
         <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -398,7 +401,7 @@ function SourcingEventsInner() {
               Conferences, meetups, and webinars for Arizona's advanced industries.
             </p>
           </div>
-          <Link to="/sourcing/events/post" style={{
+          <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/events/post`} style={{
             background: V.accent, color: '#fff', textDecoration: 'none',
             borderRadius: 7, padding: '9px 18px', fontSize: 13,
             fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap', flexShrink: 0,
@@ -540,7 +543,7 @@ function SourcingEventsInner() {
                 Show All Events
               </button>
             )}
-            <Link to="/sourcing/events/post" style={{
+            <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/events/post`} style={{
               background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 7, padding: '10px 20px', fontSize: 13,
               fontWeight: 700, fontFamily: V.space, display: 'inline-block',

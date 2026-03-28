@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor', color: '#29B6F6', icon: '💡' },
@@ -121,6 +121,8 @@ function SourcingSignupInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
   const navigate = useNavigate();
+  const { tenant, tenantSlug } = useTenant();
+  const basePath = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
   const [step, setStep] = useState(0);
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -262,7 +264,7 @@ function SourcingSignupInner() {
           </span>
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
-        <Link to="/sourcing" style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>
+        <Link to={basePath} style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>
           Sourcing Directory
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
@@ -570,7 +572,7 @@ function SourcingSignupInner() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 280, margin: '0 auto' }}>
               <Link
-                to="/sourcing"
+                to={basePath}
                 style={{
                   background: V.accent, color: '#fff', textDecoration: 'none',
                   borderRadius: 8, padding: '11px 0', fontSize: 14,

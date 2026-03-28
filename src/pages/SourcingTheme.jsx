@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 // ─── Theme Context ─────────────────────────────────────────────────────────────
 export const SourcingThemeContext = createContext({ dark: true, toggle: () => {} });
@@ -82,6 +83,42 @@ export function getTokens(dark) {
       mono:      "'JetBrains Mono', monospace",
     };
   }
+}
+
+// ─── Tenant Hook ──────────────────────────────────────────────────────────────
+// Reads tenantSlug from URL, fetches tenant record. Returns { tenant, tenantSlug, loading }.
+export function useTenant() {
+  const { tenantSlug } = useParams();
+  const [tenant, setTenant] = useState(null);
+  const [loading, setLoading] = useState(!!tenantSlug);
+
+  useEffect(() => {
+    if (!tenantSlug) { setLoading(false); return; }
+    let cancelled = false;
+    async function load() {
+      try {
+        // Try API
+        const res = await fetch(`/api/sourcing/tenants?slug=${tenantSlug}`);
+        if (res.ok && !cancelled) { setTenant(await res.json()); setLoading(false); return; }
+      } catch { /* fall through */ }
+      // Direct Supabase fallback
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (url && key) {
+          const sb = createClient(url, key);
+          const { data } = await sb.from('directory_tenants').select('*').eq('slug', tenantSlug).single();
+          if (data && !cancelled) setTenant(data);
+        }
+      } catch { /* ignore */ }
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [tenantSlug]);
+
+  return { tenant, tenantSlug, loading };
 }
 
 // ─── Theme Toggle Button ───────────────────────────────────────────────────────

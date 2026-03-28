@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
-import { SourcingThemeProvider, useSourcingTheme, getTokens, ThemeToggle } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, ThemeToggle, useTenant } from './SourcingTheme.jsx';
 
 // ─── Vertical / filter config ─────────────────────────────────────────────────
 const VERTICALS = [
@@ -34,17 +34,26 @@ const CONDITION_COLORS = {
 };
 
 // ─── Sourcing Nav ─────────────────────────────────────────────────────────────
-export function SourcingNav({ active }) {
+// tenantSlug: scope links to tenant. tenantName: display name. features: which tabs to show.
+// brandColor: accent override from tenant. All optional for backward compat.
+export function SourcingNav({ active, tenantSlug, tenantName, features, brandColor }) {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const accent = brandColor || V.accent;
 
-  const tabs = [
-    { key: 'directory',   label: 'Directory',    href: '/sourcing' },
-    { key: 'marketplace', label: 'Marketplace',  href: '/sourcing/marketplace' },
-    { key: 'jobs',        label: 'Jobs',         href: '/sourcing/jobs' },
-    { key: 'events',      label: 'Events',       href: '/sourcing/events' },
-    { key: 'articles',    label: 'Articles',     href: '/sourcing/articles' },
+  const base = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
+  const f = features || { jobs: true, marketplace: true, events: true, articles: true, signup: true };
+
+  const allTabs = [
+    { key: 'directory',   label: 'Directory',    href: base,                   show: true },
+    { key: 'marketplace', label: 'Marketplace',  href: `${base}/marketplace`,  show: f.marketplace !== false },
+    { key: 'jobs',        label: 'Jobs',         href: `${base}/jobs`,         show: f.jobs !== false },
+    { key: 'events',      label: 'Events',       href: `${base}/events`,       show: f.events !== false },
+    { key: 'articles',    label: 'Articles',     href: `${base}/articles`,     show: f.articles !== false },
   ];
+  const tabs = allTabs.filter(t => t.show);
+
+  const displayName = tenantName || 'Sourcing Directory';
 
   return (
     <div style={{
@@ -60,25 +69,35 @@ export function SourcingNav({ active }) {
         <Link to="/" style={{ textDecoration: 'none' }}>
           <span style={{
             fontSize: 13, fontWeight: 800, fontFamily: V.syne,
-            color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: accent, letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             AOM
           </span>
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
-        <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>Sourcing Directory</span>
+        <Link to="/sourcing" style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>
+          Sourcing
+        </Link>
+        {tenantSlug && (
+          <>
+            <span style={{ color: V.dim, fontSize: 13 }}>/</span>
+            <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>{displayName}</span>
+          </>
+        )}
         <div style={{ flex: 1 }} />
         <ThemeToggle />
-        <Link
-          to="/sourcing/signup"
-          style={{
-            background: V.accent, color: '#fff', textDecoration: 'none',
-            borderRadius: 6, padding: '6px 14px', fontSize: 12,
-            fontWeight: 700, fontFamily: V.space,
-          }}
-        >
-          List Your Company
-        </Link>
+        {f.signup !== false && (
+          <Link
+            to={`${base}/signup`}
+            style={{
+              background: accent, color: '#fff', textDecoration: 'none',
+              borderRadius: 6, padding: '6px 14px', fontSize: 12,
+              fontWeight: 700, fontFamily: V.space,
+            }}
+          >
+            List Your Company
+          </Link>
+        )}
       </div>
       {/* Section tabs */}
       <div style={{ padding: '0 24px', display: 'flex', gap: 0 }}>
@@ -94,8 +113,8 @@ export function SourcingNav({ active }) {
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
                 fontFamily: V.space,
-                color: isActive ? V.accent : V.muted,
-                borderBottom: isActive ? `2px solid ${V.accent}` : '2px solid transparent',
+                color: isActive ? accent : V.muted,
+                borderBottom: isActive ? `2px solid ${accent}` : '2px solid transparent',
                 transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
               }}
@@ -321,6 +340,7 @@ function ListingModal({ listing, company, onClose, V }) {
 function SourcingMarketplaceInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenant, tenantSlug, loading: tenantLoading } = useTenant();
 
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);
@@ -344,6 +364,7 @@ function SourcingMarketplaceInner() {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
+      if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (cond && cond !== 'all') qb = qb.eq('condition', cond);
 
@@ -378,11 +399,12 @@ function SourcingMarketplaceInner() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenant]);
 
   useEffect(() => {
+    if (tenantSlug && tenantLoading) return;
     fetchListings(query, vertical, condition, priceRange);
-  }, [query, vertical, condition, priceRange, fetchListings]);
+  }, [query, vertical, condition, priceRange, fetchListings, tenantLoading, tenantSlug]);
 
   const handleSearch = () => setQuery(searchInput.trim());
 
@@ -397,7 +419,7 @@ function SourcingMarketplaceInner() {
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
-      <SourcingNav active="marketplace" />
+      <SourcingNav active="marketplace" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
 
       {/* Hero */}
       <div style={{ padding: '40px 24px 28px', maxWidth: 960, margin: '0 auto' }}>
@@ -417,7 +439,7 @@ function SourcingMarketplaceInner() {
             </p>
           </div>
           <Link
-            to="/sourcing/marketplace/post"
+            to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/marketplace/post`}
             style={{
               background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 7, padding: '9px 18px', fontSize: 13,
@@ -566,7 +588,7 @@ function SourcingMarketplaceInner() {
               {query ? `No results for "${query}". Try different filters.` : 'No equipment listed yet.'}
             </div>
             <Link
-              to="/sourcing/marketplace/post"
+              to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/marketplace/post`}
               style={{
                 background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,

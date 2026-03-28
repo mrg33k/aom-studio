@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor' },
@@ -83,6 +83,8 @@ function SourcingArticlesPostInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
   const navigate = useNavigate();
+  const { tenantSlug } = useTenant();
+  const basePath = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
 
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -162,7 +164,7 @@ function SourcingArticlesPostInner() {
   if (done) {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
-        <SourcingNav active="articles" />
+        <SourcingNav active="articles" tenantSlug={tenantSlug} />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
@@ -180,7 +182,7 @@ function SourcingArticlesPostInner() {
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             <Link
-              to="/sourcing/articles"
+              to={`${basePath}/articles`}
               style={{
                 background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 8, padding: '10px 20px', fontSize: 13,
@@ -217,7 +219,7 @@ function SourcingArticlesPostInner() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <SourcingNav active="articles" />
+      <SourcingNav active="articles" tenantSlug={tenantSlug} />
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 32 }}>
@@ -350,7 +352,7 @@ function SourcingArticlesPostInner() {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <Link
-              to="/sourcing/articles"
+              to={`${basePath}/articles`}
               style={{
                 flex: 1, background: 'transparent', border: `1px solid ${V.border}`,
                 color: V.muted, borderRadius: 8, padding: '11px 0',

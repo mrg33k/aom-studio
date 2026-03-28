@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor' },
@@ -84,6 +84,8 @@ function SourcingMarketplacePostInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
   const navigate = useNavigate();
+  const { tenantSlug } = useTenant();
+  const basePath = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
 
   const [form, setForm] = useState({
     company_name: '',
@@ -175,7 +177,7 @@ function SourcingMarketplacePostInner() {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
         <style>{`* { box-sizing: border-box; }`}</style>
-        <SourcingNav active="marketplace" />
+        <SourcingNav active="marketplace" tenantSlug={tenantSlug} />
         <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
           <div style={{
             width: 56, height: 56, borderRadius: '50%', background: V.accentDim,
@@ -189,7 +191,7 @@ function SourcingMarketplacePostInner() {
             Your equipment listing has been submitted. It will appear in the marketplace once reviewed.
           </p>
           <Link
-            to="/sourcing/marketplace"
+            to={`${basePath}/marketplace`}
             style={{
               background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 8, padding: '11px 24px', fontSize: 14,
@@ -212,11 +214,11 @@ function SourcingMarketplacePostInner() {
         select option { background: ${V.card2}; }
       `}</style>
 
-      <SourcingNav active="marketplace" />
+      <SourcingNav active="marketplace" tenantSlug={tenantSlug} />
 
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
         <div style={{ marginBottom: 28 }}>
-          <Link to="/sourcing/marketplace" style={{ fontSize: 12, color: V.muted, fontFamily: V.space, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 16 }}>
+          <Link to={`${basePath}/marketplace`} style={{ fontSize: 12, color: V.muted, fontFamily: V.space, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 16 }}>
             <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             Back to Marketplace
           </Link>

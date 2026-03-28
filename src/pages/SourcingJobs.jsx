@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'all',           label: 'All Industries',   color: '#9ca3af' },
@@ -262,6 +262,7 @@ function JobModal({ listing, company, onClose, V }) {
 function SourcingJobsInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenant, tenantSlug, loading: tenantLoading } = useTenant();
 
   const [listings, setListings] = useState([]);
   const [companies, setCompanies] = useState({});
@@ -284,6 +285,7 @@ function SourcingJobsInner() {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
+      if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (jt && jt !== 'all') qb = qb.eq('job_type', jt);
       if (remote) qb = qb.eq('remote', true);
@@ -307,11 +309,12 @@ function SourcingJobsInner() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenant]);
 
   useEffect(() => {
+    if (tenantSlug && tenantLoading) return;
     fetchListings(query, vertical, jobType, remoteOnly);
-  }, [query, vertical, jobType, remoteOnly, fetchListings]);
+  }, [query, vertical, jobType, remoteOnly, fetchListings, tenantLoading, tenantSlug]);
 
   const handleSearch = () => setQuery(searchInput.trim());
 
@@ -326,7 +329,7 @@ function SourcingJobsInner() {
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
-      <SourcingNav active="jobs" />
+      <SourcingNav active="jobs" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
 
       <div style={{ padding: '40px 24px 28px', maxWidth: 860, margin: '0 auto' }}>
         <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -341,7 +344,7 @@ function SourcingJobsInner() {
               Positions at Arizona's semiconductor, space, and advanced tech companies.
             </p>
           </div>
-          <Link to="/sourcing/jobs/post" style={{
+          <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/jobs/post`} style={{
             background: V.accent, color: '#fff', textDecoration: 'none',
             borderRadius: 7, padding: '9px 18px', fontSize: 13,
             fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap', flexShrink: 0,
@@ -459,7 +462,7 @@ function SourcingJobsInner() {
             <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
               {query ? `No results for "${query}". Try different filters.` : 'No jobs posted yet.'}
             </div>
-            <Link to="/sourcing/jobs/post" style={{
+            <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/jobs/post`} style={{
               background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 7, padding: '10px 20px', fontSize: 13,
               fontWeight: 700, fontFamily: V.space, display: 'inline-block',

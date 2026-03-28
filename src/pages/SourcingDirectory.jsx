@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useParams } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
@@ -116,13 +116,13 @@ function CertPill({ name, V }) {
 }
 
 // ─── Company Card ─────────────────────────────────────────────────────────────
-function CompanyCard({ company, certs, V }) {
+function CompanyCard({ company, certs, V, tenantSlug }) {
   const [hovered, setHovered] = useState(false);
   const topCerts = (certs || []).slice(0, 3);
 
   return (
     <Link
-      to={`/sourcing/${company.slug}`}
+      to={tenantSlug ? `/sourcing/${tenantSlug}/${company.slug}` : `/sourcing/${company.slug}`}
       style={{ textDecoration: 'none' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -395,6 +395,11 @@ function SearchBar({ value, onChange, onSearch, loading, aiLoading, V }) {
 function SourcingDirectoryInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenantSlug } = useParams();
+
+  // Tenant state
+  const [tenant, setTenant] = useState(null);
+  const [tenantLoading, setTenantLoading] = useState(!!tenantSlug);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [companies, setCompanies] = useState([]);
@@ -415,6 +420,27 @@ function SourcingDirectoryInner() {
   const [scoutStreaming, setScoutStreaming] = useState(false);
   const scoutAbortRef = useRef(null);
 
+  // Fetch tenant info
+  useEffect(() => {
+    if (!tenantSlug) { setTenantLoading(false); return; }
+    async function loadTenant() {
+      try {
+        // Try API first
+        try {
+          const res = await fetch(`/api/sourcing/tenants?slug=${tenantSlug}`);
+          if (res.ok) { setTenant(await res.json()); setTenantLoading(false); return; }
+        } catch { /* fall through */ }
+        // Direct Supabase
+        if (supabase) {
+          const { data } = await supabase.from('directory_tenants').select('*').eq('slug', tenantSlug).single();
+          if (data) setTenant(data);
+        }
+      } catch (err) { console.error('Tenant fetch error:', err); }
+      finally { setTenantLoading(false); }
+    }
+    loadTenant();
+  }, [tenantSlug]);
+
   const fetchCompanies = useCallback(async (q, v) => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
@@ -427,6 +453,9 @@ function SourcingDirectoryInner() {
         .order('featured', { ascending: false })
         .order('membership_tier', { ascending: true })
         .order('name', { ascending: true });
+
+      // Scope to tenant if available
+      if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
 
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (q && q.trim()) {
@@ -460,14 +489,15 @@ function SourcingDirectoryInner() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenant]);
 
   useEffect(() => {
-    // Only run standard fetch when NOT in AI mode
+    // Wait for tenant to load if we have a slug, then fetch
+    if (tenantSlug && tenantLoading) return;
     if (aiCompanies === null) {
       fetchCompanies(query, vertical);
     }
-  }, [query, vertical, fetchCompanies, aiCompanies]);
+  }, [query, vertical, fetchCompanies, aiCompanies, tenantLoading, tenantSlug]);
 
   // Call Scout agent via SSE and stream the text answer
   const callScoutAgent = useCallback(async (q) => {
@@ -483,7 +513,7 @@ function SourcingDirectoryInner() {
       const res = await fetch('/api/sourcing/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: q, mode: 'scout' }),
+        body: JSON.stringify({ message: q, mode: 'scout', tenantId: tenant?.id || null }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -597,27 +627,33 @@ function SourcingDirectoryInner() {
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
-      <SourcingNav active="directory" />
+      <SourcingNav
+        active="directory"
+        tenantSlug={tenantSlug}
+        tenantName={tenant?.nav_label || tenant?.name}
+        features={tenant?.features}
+        brandColor={tenant?.brand_color}
+      />
 
       {/* Hero */}
       <div style={{ padding: '52px 24px 36px', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
         <div style={{
-          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent,
+          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: tenant?.brand_color || V.accent,
           letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 14,
         }}>
-          sourcing.directory — Arizona
+          {tenant ? (tenant.nav_label || tenant.name) : 'sourcing.directory — Arizona'}
         </div>
         <h1 style={{
           fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, fontFamily: V.syne,
           color: V.heading, lineHeight: 1.15, margin: '0 0 14px',
         }}>
-          Find Certified Suppliers & Partners
+          {tenant ? tenant.name : 'Find Certified Suppliers & Partners'}
         </h1>
         <p style={{
           fontSize: 16, color: V.muted, fontFamily: V.space,
           maxWidth: 580, margin: '0 auto 32px', lineHeight: 1.6,
         }}>
-          Arizona's semiconductor, space, and advanced industry directory. Verified companies, certifications, and capabilities in one place.
+          {tenant?.hero_text || "Arizona's semiconductor, space, and advanced industry directory. Verified companies, certifications, and capabilities in one place."}
         </p>
 
         <SearchBar
@@ -742,7 +778,7 @@ function SourcingDirectoryInner() {
             )}
           </div>
           <Link
-            to="/sourcing/signup"
+            to={tenantSlug ? `/sourcing/${tenantSlug}/signup` : '/sourcing/signup'}
             style={{
               fontSize: 12, color: V.muted, fontFamily: V.space,
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5,
@@ -803,6 +839,7 @@ function SourcingDirectoryInner() {
                 company={company}
                 certs={certs[company.id] || []}
                 V={V}
+                tenantSlug={tenantSlug}
               />
             ))}
           </div>
@@ -818,7 +855,7 @@ function SourcingDirectoryInner() {
               {query ? `No results for "${query}". Try different keywords.` : 'No companies in this vertical yet.'}
             </div>
             <Link
-              to="/sourcing/signup"
+              to={tenantSlug ? `/sourcing/${tenantSlug}/signup` : '/sourcing/signup'}
               style={{
                 background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,

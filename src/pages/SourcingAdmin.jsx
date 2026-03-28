@@ -5,7 +5,7 @@ import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 // ─── Scout Chat Panel ─────────────────────────────────────────────────────────
-function ScoutPanel({ V }) {
+function ScoutPanel({ V, tenantId }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -37,7 +37,7 @@ function ScoutPanel({ V }) {
       const res = await fetch('/api/sourcing/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, mode: 'admin' }),
+        body: JSON.stringify({ message: text, mode: 'admin', tenantId: tenantId || null }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -413,6 +413,11 @@ function SourcingAdminInner() {
   const [pwError, setPwError] = useState('');
   const [activeTab, setActiveTab] = useState('stats');
 
+  // Tenant switcher state
+  const [tenants, setTenants] = useState([]);
+  const [selectedTenantId, setSelectedTenantId] = useState(null); // null = global mode
+  const selectedTenant = tenants.find(t => t.id === selectedTenantId) || null;
+
   const [stats, setStats] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [orgs, setOrgs] = useState([]);
@@ -448,15 +453,32 @@ function SourcingAdminInner() {
     }
   };
 
+  // Fetch tenants list
+  useEffect(() => {
+    async function loadTenants() {
+      if (!adminSupabase) return;
+      try {
+        const { data } = await adminSupabase.from('directory_tenants').select('*').order('name');
+        setTenants(data || []);
+      } catch { /* ignore */ }
+    }
+    if (authed) loadTenants();
+  }, [authed]);
+
   const fetchData = useCallback(async () => {
     if (!adminSupabase) return;
     setLoading(true);
     try {
-      const [compRes, orgsRes, listingsRes] = await Promise.all([
-        adminSupabase.from('directory_companies').select('*').order('created_at', { ascending: false }),
-        adminSupabase.from('directory_organizations').select('*').order('name'),
-        adminSupabase.from('directory_listings').select('*').order('created_at', { ascending: false }).limit(200),
-      ]);
+      let compQ = adminSupabase.from('directory_companies').select('*').order('created_at', { ascending: false });
+      let orgsQ = adminSupabase.from('directory_organizations').select('*').order('name');
+      let listQ = adminSupabase.from('directory_listings').select('*').order('created_at', { ascending: false }).limit(200);
+      // Scope to tenant if selected
+      if (selectedTenantId) {
+        compQ = compQ.eq('tenant_id', selectedTenantId);
+        orgsQ = orgsQ.eq('tenant_id', selectedTenantId);
+        listQ = listQ.eq('tenant_id', selectedTenantId);
+      }
+      const [compRes, orgsRes, listingsRes] = await Promise.all([compQ, orgsQ, listQ]);
 
       const allCompanies = compRes.data || [];
       const allListings = listingsRes.data || [];
@@ -499,7 +521,7 @@ function SourcingAdminInner() {
 
   useEffect(() => {
     if (authed) fetchData();
-  }, [authed, fetchData]);
+  }, [authed, fetchData, selectedTenantId]);
 
   const handleCompanyAction = async (id, action) => {
     if (!adminSupabase) return;
@@ -696,6 +718,25 @@ function SourcingAdminInner() {
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>Admin</span>
         <div style={{ flex: 1 }} />
+        {/* Tenant switcher */}
+        {tenants.length > 0 && (
+          <select
+            value={selectedTenantId || ''}
+            onChange={e => setSelectedTenantId(e.target.value || null)}
+            style={{
+              background: V.card2, border: `1px solid ${selectedTenantId ? V.accentBrd : V.border}`,
+              color: selectedTenantId ? V.accent : V.muted,
+              borderRadius: 6, padding: '5px 10px', fontSize: 12,
+              fontFamily: V.space, cursor: 'pointer', outline: 'none',
+              maxWidth: 220,
+            }}
+          >
+            <option value="">All Directories (Global)</option>
+            {tenants.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        )}
         <button
           onClick={() => setAuthed(false)}
           style={{
@@ -1121,7 +1162,7 @@ function SourcingAdminInner() {
         )}
       </div>
 
-      <ScoutPanel V={V} />
+      <ScoutPanel V={V} tenantId={selectedTenantId} />
     </div>
   );
 }

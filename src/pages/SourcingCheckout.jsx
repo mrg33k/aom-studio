@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 function InputField({ label, required, V, ...props }) {
   return (
@@ -51,6 +51,8 @@ function FakeInput({ placeholder, mono, V }) {
 function SourcingCheckoutInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenant, tenantSlug } = useTenant();
+  const basePath = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -123,7 +125,7 @@ function SourcingCheckoutInner() {
   if (done) {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
-        <SourcingNav active="directory" />
+        <SourcingNav active="directory" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
@@ -145,7 +147,7 @@ function SourcingCheckoutInner() {
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             {orgSlug && (
               <Link
-                to={`/sourcing/org/${orgSlug}`}
+                to={`${basePath}/org/${orgSlug}`}
                 style={{
                   background: V.accent, color: '#fff', textDecoration: 'none',
                   borderRadius: 8, padding: '10px 20px', fontSize: 13,
@@ -156,7 +158,7 @@ function SourcingCheckoutInner() {
               </Link>
             )}
             <Link
-              to="/sourcing"
+              to={basePath}
               style={{
                 background: 'transparent', color: V.muted, textDecoration: 'none',
                 border: `1px solid ${V.border}`, borderRadius: 8, padding: '10px 20px',
@@ -180,7 +182,7 @@ function SourcingCheckoutInner() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <SourcingNav active="directory" />
+      <SourcingNav active="directory" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
 
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '48px 24px 80px', display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32, alignItems: 'start' }}>
         {/* Left: Form */}

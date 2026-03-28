@@ -146,7 +146,7 @@ function Section({ title, children, action, V }) {
 function SourcingProfileInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
-  const { slug } = useParams();
+  const { slug, tenantSlug } = useParams();
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [certs, setCerts] = useState([]);
@@ -208,7 +208,7 @@ function SourcingProfileInner() {
       <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
         <div style={{ fontSize: 48, color: V.text }}>404</div>
         <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text }}>Company not found</div>
-        <Link to="/sourcing" style={{ color: V.accent, fontFamily: V.space, fontSize: 14 }}>Back to directory</Link>
+        <Link to={tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'} style={{ color: V.accent, fontFamily: V.space, fontSize: 14 }}>Back to directory</Link>
       </div>
     );
   }
@@ -246,8 +246,8 @@ function SourcingProfileInner() {
           </span>
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
-        <Link to="/sourcing" style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>
-          Sourcing Directory
+        <Link to={tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'} style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>
+          Directory
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>
@@ -498,7 +498,7 @@ function SourcingProfileInner() {
             )}
 
             <Link
-              to="/sourcing"
+              to={tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 color: V.muted, textDecoration: 'none', fontSize: 13,

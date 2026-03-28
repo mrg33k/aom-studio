@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICAL_COLORS = {
   semiconductor: '#29B6F6',
@@ -78,7 +78,7 @@ function TierCard({ tier, orgSlug, isPopular, V }) {
       )}
       <div style={{ flex: 1 }} />
       <button
-        onClick={() => navigate(`/sourcing/checkout?org=${orgSlug}&tier=${encodeURIComponent(tier.name)}&price=${tier.price_yearly || 0}`)}
+        onClick={() => navigate(`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/checkout?org=${orgSlug}&tier=${encodeURIComponent(tier.name)}&price=${tier.price_yearly || 0}`)}
         style={{
           width: '100%', background: isPopular ? V.accent : 'transparent',
           border: `1px solid ${isPopular ? V.accent : V.border}`,
@@ -100,7 +100,7 @@ function MemberCard({ company, V }) {
   const vColor = VERTICAL_COLORS[company.vertical] || V.muted;
   return (
     <Link
-      to={`/sourcing/${company.slug}`}
+      to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/${company.slug}`}
       style={{ textDecoration: 'none' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -166,6 +166,7 @@ function SectionHeader({ title, count, V }) {
 function SourcingOrgInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenant, tenantSlug } = useTenant();
 
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
@@ -256,7 +257,7 @@ function SourcingOrgInner() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`* { box-sizing: border-box; } a { color: inherit; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <SourcingNav active="directory" />
+      <SourcingNav active="directory" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
 
       {/* Org Hero */}
       <div style={{
@@ -311,7 +312,7 @@ function SourcingOrgInner() {
                   </a>
                 )}
                 <Link
-                  to={`/sourcing/signup?org=${org.id}&vertical=${org.vertical}`}
+                  to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/signup?org=${org.id}&vertical=${org.vertical}`}
                   style={{
                     background: 'transparent', color: V.text, textDecoration: 'none',
                     border: `1px solid ${V.border}`, borderRadius: 7, padding: '8px 16px',
@@ -375,7 +376,7 @@ function SourcingOrgInner() {
           <div style={{ textAlign: 'center', padding: '40px 0', marginBottom: 40 }}>
             <div style={{ fontSize: 14, color: V.dim, fontFamily: V.space }}>No member companies yet.</div>
             <Link
-              to={`/sourcing/signup?org=${org.id}&vertical=${org.vertical}`}
+              to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/signup?org=${org.id}&vertical=${org.vertical}`}
               style={{ color: V.accent, fontFamily: V.space, fontSize: 14, textDecoration: 'none', display: 'block', marginTop: 10 }}
             >
               Be the first to join
@@ -416,7 +417,7 @@ function SourcingOrgInner() {
                     <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 3 }}>{ev.title}</div>
                     {ev.event_location && <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>{ev.event_location}</div>}
                   </div>
-                  <Link to="/sourcing/events" style={{
+                  <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/events`} style={{
                     fontSize: 11, color: V.accent, fontFamily: V.space,
                     textDecoration: 'none', fontWeight: 600, flexShrink: 0,
                   }}>
@@ -425,7 +426,7 @@ function SourcingOrgInner() {
                 </div>
               ))}
               {events.length > 5 && (
-                <Link to="/sourcing/events" style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
+                <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/events`} style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
                   View all {events.length} events →
                 </Link>
               )}
@@ -448,7 +449,7 @@ function SourcingOrgInner() {
                     <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading }}>{job.title}</div>
                     {job.location && <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>{job.location}</div>}
                   </div>
-                  <Link to="/sourcing/jobs" style={{
+                  <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/jobs`} style={{
                     fontSize: 11, color: V.accent, fontFamily: V.space,
                     textDecoration: 'none', fontWeight: 600, flexShrink: 0,
                   }}>
@@ -457,7 +458,7 @@ function SourcingOrgInner() {
                 </div>
               ))}
               {jobs.length > 5 && (
-                <Link to="/sourcing/jobs" style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
+                <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/jobs`} style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
                   View all {jobs.length} jobs →
                 </Link>
               )}
@@ -484,7 +485,7 @@ function SourcingOrgInner() {
                 </div>
               ))}
               {articles.length > 4 && (
-                <Link to="/sourcing/articles" style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
+                <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/articles`} style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
                   View all {articles.length} articles →
                 </Link>
               )}

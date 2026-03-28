@@ -50,6 +50,7 @@ const IncludedHealthBrand = lazy(() => import('./pages/IncludedHealthBrand.jsx')
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
 const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 const SourcingDirectory = lazy(() => import('./pages/SourcingDirectory.jsx'))
+const SourcingLanding = lazy(() => import('./pages/SourcingLanding.jsx'))
 const SourcingProfile = lazy(() => import('./pages/SourcingProfile.jsx'))
 const SourcingSignup = lazy(() => import('./pages/SourcingSignup.jsx'))
 const SourcingJobs = lazy(() => import('./pages/SourcingJobs.jsx'))
@@ -237,20 +238,23 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
-          <Route path="/sourcing" element={<SourcingDirectory />} />
-          <Route path="/sourcing/signup" element={<SourcingSignup />} />
-          <Route path="/sourcing/jobs" element={<SourcingJobs />} />
-          <Route path="/sourcing/jobs/post" element={<SourcingJobsPost />} />
-          <Route path="/sourcing/marketplace" element={<SourcingMarketplace />} />
-          <Route path="/sourcing/marketplace/post" element={<SourcingMarketplacePost />} />
-          <Route path="/sourcing/events" element={<SourcingEvents />} />
-          <Route path="/sourcing/events/post" element={<SourcingEventsPost />} />
-          <Route path="/sourcing/articles" element={<SourcingArticles />} />
-          <Route path="/sourcing/articles/post" element={<SourcingArticlesPost />} />
-          <Route path="/sourcing/org/:slug" element={<SourcingOrg />} />
-          <Route path="/sourcing/checkout" element={<SourcingCheckout />} />
+          {/* Sourcing: Global */}
+          <Route path="/sourcing" element={<SourcingLanding />} />
           <Route path="/sourcing/admin" element={<SourcingAdmin />} />
-          <Route path="/sourcing/:slug" element={<SourcingProfile />} />
+          {/* Sourcing: Tenant-scoped routes */}
+          <Route path="/sourcing/:tenantSlug" element={<SourcingDirectory />} />
+          <Route path="/sourcing/:tenantSlug/signup" element={<SourcingSignup />} />
+          <Route path="/sourcing/:tenantSlug/jobs" element={<SourcingJobs />} />
+          <Route path="/sourcing/:tenantSlug/jobs/post" element={<SourcingJobsPost />} />
+          <Route path="/sourcing/:tenantSlug/marketplace" element={<SourcingMarketplace />} />
+          <Route path="/sourcing/:tenantSlug/marketplace/post" element={<SourcingMarketplacePost />} />
+          <Route path="/sourcing/:tenantSlug/events" element={<SourcingEvents />} />
+          <Route path="/sourcing/:tenantSlug/events/post" element={<SourcingEventsPost />} />
+          <Route path="/sourcing/:tenantSlug/articles" element={<SourcingArticles />} />
+          <Route path="/sourcing/:tenantSlug/articles/post" element={<SourcingArticlesPost />} />
+          <Route path="/sourcing/:tenantSlug/org/:slug" element={<SourcingOrg />} />
+          <Route path="/sourcing/:tenantSlug/checkout" element={<SourcingCheckout />} />
+          <Route path="/sourcing/:tenantSlug/:slug" element={<SourcingProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor' },
@@ -104,6 +104,8 @@ function CheckboxField({ label, checked, onChange, V }) {
 function SourcingJobsPostInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const { tenantSlug } = useTenant();
+  const basePath = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
 
   const [form, setForm] = useState({
     company_name: '',
@@ -198,7 +200,7 @@ function SourcingJobsPostInner() {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
         <style>{`* { box-sizing: border-box; }`}</style>
-        <SourcingNav active="jobs" />
+        <SourcingNav active="jobs" tenantSlug={tenantSlug} />
         <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
           <div style={{
             width: 56, height: 56, borderRadius: '50%', background: V.accentDim,
@@ -212,7 +214,7 @@ function SourcingJobsPostInner() {
             Your job listing is live. Candidates can now find and apply for this role.
           </p>
           <Link
-            to="/sourcing/jobs"
+            to={`${basePath}/jobs`}
             style={{
               background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 8, padding: '11px 24px', fontSize: 14,
@@ -235,11 +237,11 @@ function SourcingJobsPostInner() {
         select option { background: ${V.card2}; }
       `}</style>
 
-      <SourcingNav active="jobs" />
+      <SourcingNav active="jobs" tenantSlug={tenantSlug} />
 
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
         <div style={{ marginBottom: 28 }}>
-          <Link to="/sourcing/jobs" style={{ fontSize: 12, color: V.muted, fontFamily: V.space, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 16 }}>
+          <Link to={`${basePath}/jobs`} style={{ fontSize: 12, color: V.muted, fontFamily: V.space, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 16 }}>
             <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             Back to Jobs
           </Link>
