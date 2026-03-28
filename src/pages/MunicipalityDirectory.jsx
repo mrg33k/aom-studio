@@ -357,15 +357,23 @@ function DetailModal({ place, onClose }) {
             }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: V.text, fontFamily: V.space }}>{place.contact_name}</div>
               {place.contact_title && <div style={{ fontSize: 12, color: V.muted, marginTop: 1 }}>{place.contact_title}</div>}
-              <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                 {place.contact_phone && (
-                  <a href={`tel:${place.contact_phone}`} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: V.mono }}>
-                    {place.contact_phone}
+                  <a href={`tel:${place.contact_phone}`} style={{
+                    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)',
+                    color: '#86EFAC', borderRadius: 5, padding: '6px 12px', fontSize: 12,
+                    fontFamily: V.mono, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                    Call {place.contact_phone}
                   </a>
                 )}
                 {place.contact_email && (
-                  <a href={`mailto:${place.contact_email}`} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: V.mono }}>
-                    {place.contact_email}
+                  <a href={`mailto:${place.contact_email}`} style={{
+                    background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)',
+                    color: '#93C5FD', borderRadius: 5, padding: '6px 12px', fontSize: 12,
+                    fontFamily: V.mono, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                    Email {place.contact_email}
                   </a>
                 )}
               </div>
@@ -855,12 +863,19 @@ export default function MunicipalDirectory() {
                 onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
               >
                 <td style={{ padding: '10px 14px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text }}>
                     {p.name}
-                    {p.contact_name && (
-                      <span style={{ fontSize: 8, color: '#22C55E', lineHeight: 1 }} title={p.contact_name}>●</span>
-                    )}
                   </div>
+                  {p.contact_name && (
+                    <div style={{ fontSize: 11, color: '#86EFAC', marginTop: 2, fontFamily: V.mono, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 6, lineHeight: 1 }}>●</span> {p.contact_name}
+                      {p.contact_phone && (
+                        <a href={`tel:${p.contact_phone}`} onClick={e => e.stopPropagation()} style={{ color: '#93C5FD', textDecoration: 'none', marginLeft: 6 }}>
+                          {p.contact_phone}
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td style={{ padding: '10px 14px' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: V.mono, color: V.muted }}>
