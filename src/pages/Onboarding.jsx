@@ -2,82 +2,336 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
 
-// Role templates -- 6 choices, no AOM-specific data
-const ROLE_TEMPLATES = [
-  { slug: 'system-manager',  name: 'System Manager',  role: 'Infrastructure',     desc: 'Owns the systems that keep everything running.',  color: '#60A5FA' },
-  { slug: 'builder',         name: 'Builder',          role: 'Web Dev / Build',    desc: 'Builds every page, feature, and frontend.',       color: '#34D399' },
-  { slug: 'content-creator', name: 'Content Creator',  role: 'Content Production', desc: 'Video edits, reels, motion graphics.',            color: '#A78BFA' },
-  { slug: 'designer',        name: 'Designer',         role: 'Brand / Design',     desc: 'Visual identity, design specs, asset library.',   color: '#F472B6' },
-  { slug: 'strategist',      name: 'Strategist',       role: 'Strategy / Biz Dev', desc: 'Growth plan, offer architecture, GTM.',           color: '#FBBF24' },
-  { slug: 'advisor',         name: 'Advisor',          role: 'Advisory',           desc: 'Client demos, coaching, sales support.',          color: '#38BDF8' },
-]
-
 function toSlug(str) {
   return str.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'my-world'
 }
 
-// Progress dots (steps 0-3, launch is 4)
+// --- DATA ---
+
+const AGE_RANGES = ['18-25', '26-35', '36-45', '46-55', '55+']
+
+const WHO_OPTIONS = [
+  { id: 'owner',      label: 'Business Owner', icon: '🏢' },
+  { id: 'employee',   label: 'Employee',        icon: '💼' },
+  { id: 'freelancer', label: 'Freelancer',      icon: '🧩' },
+  { id: 'student',    label: 'Student',         icon: '🎓' },
+  { id: 'other',      label: 'Other',           icon: '○' },
+]
+
+const INDUSTRIES = [
+  { id: 'construction', label: 'Construction', icon: '🏗️' },
+  { id: 'real-estate',  label: 'Real Estate',  icon: '🏠' },
+  { id: 'marketing',    label: 'Marketing',    icon: '📣' },
+  { id: 'tech',         label: 'Tech',         icon: '⚡' },
+  { id: 'healthcare',   label: 'Healthcare',   icon: '❤️' },
+  { id: 'legal',        label: 'Legal',        icon: '⚖️' },
+  { id: 'finance',      label: 'Finance',      icon: '📊' },
+  { id: 'restaurant',   label: 'Restaurant',   icon: '🍽️' },
+  { id: 'retail',       label: 'Retail',       icon: '🛍️' },
+  { id: 'other',        label: 'Other',        icon: '✦' },
+]
+
+const TEAM_SIZES = [
+  { id: 'solo',  label: 'Just me' },
+  { id: 's',     label: '2-5'     },
+  { id: 'm',     label: '6-15'    },
+  { id: 'l',     label: '16-50'   },
+  { id: 'xl',    label: '50+'     },
+]
+
+const ROLE_TEMPLATES = [
+  { slug: 'system-manager',  name: 'System Manager',  role: 'Infrastructure',     icon: '⚙️', color: '#60A5FA', defaultName: 'Alex'    },
+  { slug: 'builder',         name: 'Builder',          role: 'Web Dev / Build',    icon: '🔨', color: '#34D399', defaultName: 'Bobby'   },
+  { slug: 'content-creator', name: 'Content Creator',  role: 'Content Production', icon: '🎬', color: '#A78BFA', defaultName: 'Cleo'    },
+  { slug: 'designer',        name: 'Designer',         role: 'Brand / Design',     icon: '✏️', color: '#F472B6', defaultName: 'Steffen' },
+  { slug: 'strategist',      name: 'Strategist',       role: 'Strategy / Biz Dev', icon: '🎯', color: '#FBBF24', defaultName: 'Max'     },
+  { slug: 'sales',           name: 'Sales',            role: 'Sales / Growth',     icon: '💰', color: '#38BDF8', defaultName: 'Jordan'  },
+  { slug: 'outreach',        name: 'Outreach',         role: 'Outreach',           icon: '📧', color: '#FB923C', defaultName: 'Jacob'   },
+  { slug: 'social-media',    name: 'Social Media',     role: 'Social Media',       icon: '📱', color: '#4ADE80', defaultName: 'Nova'    },
+]
+
+// --- COMPONENTS ---
+
 function StepDots({ current, total }) {
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
       {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            width: i === current ? 20 : 6,
-            height: 6,
-            borderRadius: 3,
-            background: i === current ? '#E85D26' : i < current ? 'rgba(232,93,38,0.4)' : 'rgba(255,255,255,0.12)',
-            transition: 'all 300ms ease',
-          }}
-        />
+        <div key={i} style={{
+          width: i === current ? 20 : 6,
+          height: 6,
+          borderRadius: 3,
+          background: i === current
+            ? '#E85D26'
+            : i < current
+              ? 'rgba(232,93,38,0.4)'
+              : 'rgba(255,255,255,0.12)',
+          transition: 'all 300ms ease',
+        }} />
       ))}
     </div>
   )
 }
 
+// Compact horizontal tile (age, team size)
+function FlatTile({ label, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        background: selected ? 'rgba(232,93,38,0.1)' : 'rgba(255,255,255,0.03)',
+        border: `2px solid ${selected ? '#E85D26' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 10,
+        padding: '10px 4px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 140ms ease',
+        minHeight: 44,
+        position: 'relative',
+      }}
+    >
+      <span style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: selected ? '#F1F5F9' : '#94A3B8',
+        fontFamily: "'Inter', system-ui, sans-serif",
+        whiteSpace: 'nowrap',
+      }}>
+        {label}
+      </span>
+      {selected && (
+        <div style={{
+          position: 'absolute', top: 4, right: 4,
+          width: 10, height: 10,
+          background: '#E85D26', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 6, color: '#fff', fontWeight: 900,
+        }}>
+          ✓
+        </div>
+      )}
+    </button>
+  )
+}
+
+// Icon tile for "I am a" row
+function IconTile({ icon, label, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        background: selected ? 'rgba(232,93,38,0.1)' : 'rgba(255,255,255,0.03)',
+        border: `2px solid ${selected ? '#E85D26' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 10,
+        padding: '14px 6px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 7,
+        transition: 'all 140ms ease',
+        minHeight: 78,
+        position: 'relative',
+      }}
+    >
+      <span style={{ fontSize: 22, lineHeight: 1 }}>{icon}</span>
+      <span style={{
+        fontSize: 11,
+        fontWeight: 700,
+        color: selected ? '#F1F5F9' : '#94A3B8',
+        textAlign: 'center',
+        lineHeight: 1.2,
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}>
+        {label}
+      </span>
+      {selected && (
+        <div style={{
+          position: 'absolute', top: 5, right: 5,
+          width: 12, height: 12,
+          background: '#E85D26', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 7, color: '#fff', fontWeight: 900,
+        }}>
+          ✓
+        </div>
+      )}
+    </button>
+  )
+}
+
+// Industry grid tile
+function IndustryTile({ item, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: selected ? 'rgba(232,93,38,0.1)' : 'rgba(255,255,255,0.03)',
+        border: `2px solid ${selected ? '#E85D26' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 10,
+        padding: '12px 4px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        transition: 'all 140ms ease',
+        position: 'relative',
+        minHeight: 72,
+      }}
+    >
+      <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
+      <span style={{
+        fontSize: 10,
+        fontWeight: 700,
+        color: selected ? '#F1F5F9' : '#94A3B8',
+        textAlign: 'center',
+        lineHeight: 1.2,
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}>
+        {item.label}
+      </span>
+      {selected && (
+        <div style={{
+          position: 'absolute', top: 4, right: 4,
+          width: 11, height: 11,
+          background: '#E85D26', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 6, color: '#fff', fontWeight: 900,
+        }}>
+          ✓
+        </div>
+      )}
+    </button>
+  )
+}
+
+// Role card with color theming
+function RoleCard({ role, selected, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: selected ? `${role.color}14` : 'rgba(255,255,255,0.03)',
+        border: `2px solid ${selected ? role.color : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 12,
+        padding: '16px 8px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 8,
+        transition: 'all 140ms ease',
+        minHeight: 102,
+        position: 'relative',
+      }}
+    >
+      <span style={{ fontSize: 24, lineHeight: 1 }}>{role.icon}</span>
+      <div style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: selected ? '#F1F5F9' : '#94A3B8',
+        textAlign: 'center',
+        lineHeight: 1.2,
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}>
+        {role.name}
+      </div>
+      <div style={{
+        fontSize: 9,
+        color: selected ? role.color : '#475569',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        fontFamily: "'Inter', system-ui, sans-serif",
+        textAlign: 'center',
+        lineHeight: 1.2,
+      }}>
+        {role.role}
+      </div>
+      {selected && (
+        <div style={{
+          position: 'absolute', top: 6, right: 6,
+          width: 14, height: 14,
+          background: role.color, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 8, color: '#fff', fontWeight: 900,
+        }}>
+          ✓
+        </div>
+      )}
+    </button>
+  )
+}
+
+// --- MAIN ---
+
 export default function Onboarding() {
   const navigate = useNavigate()
-  // step 0: world, 1: agent name, 2: role, 3: context+priorities, 4: launch
-  const [step, setStep] = useState(0)
-  const [worldName, setWorldName]           = useState('')
-  const [agentName, setAgentName]           = useState('')
-  const [selectedRole, setSelectedRole]     = useState(null)
-  const [businessContext, setBusinessContext] = useState('')
-  const [priorities, setPriorities]         = useState(['', '', ''])
-  const [finishing, setFinishing]           = useState(false)
-  const [error, setError]                   = useState('')
-  const [animating, setAnimating]           = useState(false)
+  const TOTAL_STEPS = 5  // steps 0-3 + launch (4)
+
+  // Step 0: Who are you
+  const [ageRange, setAgeRange] = useState(null)
+  const [whoType, setWhoType]   = useState(null)
+
+  // Step 1: Your world
+  const [industry, setIndustry] = useState(null)
+  const [teamSize, setTeamSize] = useState(null)
+
+  // Step 2: First agent
+  const [selectedRole, setSelectedRole] = useState(null)
+  const [agentName, setAgentName]       = useState('')
+
+  // Step 3: Context (first text inputs)
+  const [worldName, setWorldName]               = useState('')
+  const [businessContext, setBusinessContext]   = useState('')
+  const [priorities, setPriorities]             = useState(['', '', ''])
+
+  // UI
+  const [step, setStep]         = useState(0)
+  const [animating, setAnimating] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+  const [error, setError]       = useState('')
 
   const worldInputRef = useRef(null)
-  const agentInputRef = useRef(null)
-  const TOTAL_STEPS = 5
 
-  // Auto-focus text inputs on step change
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (step === 0) worldInputRef.current?.focus()
-      if (step === 1) agentInputRef.current?.focus()
-    }, 320)
-    return () => clearTimeout(timer)
+    if (step === 3) {
+      const t = setTimeout(() => worldInputRef.current?.focus(), 320)
+      return () => clearTimeout(t)
+    }
   }, [step])
 
+  function canAdvance() {
+    if (step === 0) return ageRange && whoType
+    if (step === 1) return industry && teamSize
+    if (step === 2) return selectedRole && agentName.trim()
+    if (step === 3) return worldName.trim()
+    return false
+  }
+
   function goNext() {
-    if (animating) return
+    if (animating || !canAdvance()) return
     setAnimating(true)
-    setTimeout(() => {
-      setStep(s => s + 1)
-      setAnimating(false)
-    }, 210)
+    setTimeout(() => { setStep(s => s + 1); setAnimating(false) }, 210)
   }
 
   function goBack() {
     if (animating || step === 0) return
     setAnimating(true)
-    setTimeout(() => {
-      setStep(s => s - 1)
-      setAnimating(false)
-    }, 210)
+    setTimeout(() => { setStep(s => s - 1); setAnimating(false) }, 210)
+  }
+
+  function handleRoleSelect(r) {
+    setSelectedRole(r)
+    // Auto-fill name if empty or was a default from another role
+    const wasDefault = ROLE_TEMPLATES.some(rt => rt.defaultName === agentName)
+    if (!agentName.trim() || wasDefault) {
+      setAgentName(r.defaultName)
+    }
   }
 
   async function handleLaunch() {
@@ -91,31 +345,32 @@ export default function Onboarding() {
 
     try {
       if (supabase) {
-        // 1. Update user metadata -- sets world (client_id) + marks onboarding complete
         const { error: metaErr } = await supabase.auth.updateUser({
           data: {
-            world: worldSlug,
+            world:                    worldSlug,
             has_completed_onboarding: true,
-            onboarded: true,
-            business_context: businessContext.trim(),
-            priorities: priorities.filter(p => p.trim()),
+            onboarded:                true,
+            age_range:                ageRange,
+            who_type:                 whoType,
+            industry:                 industry,
+            team_size:                teamSize,
+            business_context:         businessContext.trim(),
+            priorities:               priorities.filter(p => p.trim()),
           },
         })
         if (metaErr) console.error('[Onboarding] metadata error:', metaErr)
 
-        // 2. Insert to agent_status -- this is what the dashboard reads for non-AOM worlds
         const { error: statusErr } = await supabase.from('agent_status').insert([{
-          slug:         agentSlug,
-          name:         agentName.trim() || agentSlug,
-          role:         roleChoice.role,
-          status:       'idle',
-          client_id:    worldSlug,
-          color:        roleChoice.color,
-          type:         'agent',
+          slug:      agentSlug,
+          name:      agentName.trim() || agentSlug,
+          role:      roleChoice.role,
+          status:    'idle',
+          client_id: worldSlug,
+          color:     roleChoice.color,
+          type:      'agent',
         }])
         if (statusErr) console.error('[Onboarding] agent_status error:', statusErr)
 
-        // 3. Insert to agents table
         await supabase.from('agents').insert([{
           slug:          agentSlug,
           name:          agentName.trim() || agentSlug,
@@ -127,7 +382,6 @@ export default function Onboarding() {
           if (agErr) console.error('[Onboarding] agents error:', agErr)
         })
 
-        // 4. Insert to rooms table (best effort -- schema may vary)
         await supabase.from('rooms').insert([{
           slug:      agentSlug,
           name:      agentName.trim() || agentSlug,
@@ -138,7 +392,6 @@ export default function Onboarding() {
         })
 
       } else {
-        // Localhost fallback (no Supabase env vars)
         localStorage.setItem('corner-onboarded', 'true')
         localStorage.setItem('corner-world', worldSlug)
         localStorage.setItem('corner-agent-name', agentName.trim())
@@ -154,6 +407,30 @@ export default function Onboarding() {
 
   const worldSlug = toSlug(worldName)
 
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1.5px solid rgba(59,130,246,0.2)',
+    borderRadius: 10,
+    padding: '14px 16px',
+    fontSize: 16,
+    fontWeight: 500,
+    color: '#F1F5F9',
+    fontFamily: "'Inter', system-ui, sans-serif",
+    outline: 'none',
+    display: 'block',
+    transition: 'border-color 150ms ease, box-shadow 150ms ease',
+  }
+
+  const onFocusInput = e => {
+    e.target.style.borderColor = 'rgba(59,130,246,0.5)'
+    e.target.style.boxShadow   = '0 0 0 3px rgba(59,130,246,0.08)'
+  }
+  const onBlurInput = e => {
+    e.target.style.borderColor = 'rgba(59,130,246,0.2)'
+    e.target.style.boxShadow   = 'none'
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -162,7 +439,7 @@ export default function Onboarding() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '24px 16px',
+      padding: '80px 16px 40px',
       fontFamily: "'Inter', system-ui, sans-serif",
       position: 'relative',
       overflow: 'hidden',
@@ -175,7 +452,7 @@ export default function Onboarding() {
         backgroundRepeat: 'repeat',
       }} />
 
-      {/* Ambient glow */}
+      {/* Orange ambient glow */}
       <div style={{
         position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)',
         width: 600, height: 400, pointerEvents: 'none',
@@ -193,7 +470,7 @@ export default function Onboarding() {
       {/* Back button */}
       {step > 0 && step < TOTAL_STEPS - 1 && (
         <button onClick={goBack} style={{
-          position: 'absolute', top: 26, left: 110, zIndex: 10,
+          position: 'absolute', top: 26, left: 112, zIndex: 10,
           background: 'none', border: 'none', cursor: 'pointer',
           fontSize: 13, color: '#475569',
           fontFamily: "'Inter', system-ui, sans-serif",
@@ -203,232 +480,234 @@ export default function Onboarding() {
         </button>
       )}
 
-      {/* Step dots (steps 0-3 only) */}
+      {/* Step dots */}
       {step < TOTAL_STEPS - 1 && (
         <div style={{ position: 'absolute', top: 32, right: 28, zIndex: 10 }}>
           <StepDots current={step} total={TOTAL_STEPS - 1} />
         </div>
       )}
 
-      {/* Content container */}
+      {/* Content */}
       <div style={{
         position: 'relative', zIndex: 1,
         width: '100%',
-        maxWidth: step === 2 ? 640 : 480,
+        maxWidth: (step === 2 || step === 1) ? 640 : 500,
         opacity: animating ? 0 : 1,
         transform: animating ? 'translateY(8px)' : 'translateY(0)',
         transition: 'opacity 210ms ease, transform 210ms ease',
       }}>
 
-        {/* ---- STEP 0: Name Your World ---- */}
+        {/* ---- STEP 0: WHO ARE YOU ---- */}
         {step === 0 && (
           <div>
-            <div style={labelStyle}>Step 1 of 4</div>
-            <h2 style={headingStyle}>Name your world.</h2>
-            <p style={subStyle}>Your company name, project, or workspace name.</p>
+            <div style={stepLabel}>Step 1 of 4</div>
+            <h2 style={heading}>Who are you?</h2>
+            <p style={sub}>No typing -- just tap to select.</p>
 
+            {/* Row 1: Age range */}
+            <div style={sectionHead}>Age range</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {AGE_RANGES.map(age => (
+                <FlatTile
+                  key={age}
+                  label={age}
+                  selected={ageRange === age}
+                  onClick={() => setAgeRange(age)}
+                />
+              ))}
+            </div>
+
+            {/* Row 2: I am a */}
+            <div style={sectionHead}>I am a</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 36 }}>
+              {WHO_OPTIONS.map(opt => (
+                <IconTile
+                  key={opt.id}
+                  icon={opt.icon}
+                  label={opt.label}
+                  selected={whoType === opt.id}
+                  onClick={() => setWhoType(opt.id)}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={goNext}
+              disabled={!canAdvance()}
+              style={canAdvance() ? primaryBtn : disabledBtn}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* ---- STEP 1: YOUR WORLD ---- */}
+        {step === 1 && (
+          <div>
+            <div style={stepLabel}>Step 2 of 4</div>
+            <h2 style={heading}>Your world.</h2>
+            <p style={sub}>What industry are you in?</p>
+
+            {/* Industry grid 5x2 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: 8,
+              marginBottom: 24,
+            }}>
+              {INDUSTRIES.map(ind => (
+                <IndustryTile
+                  key={ind.id}
+                  item={ind}
+                  selected={industry === ind.id}
+                  onClick={() => setIndustry(ind.id)}
+                />
+              ))}
+            </div>
+
+            {/* Team size */}
+            <div style={sectionHead}>Team size</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 36 }}>
+              {TEAM_SIZES.map(ts => (
+                <FlatTile
+                  key={ts.id}
+                  label={ts.label}
+                  selected={teamSize === ts.id}
+                  onClick={() => setTeamSize(ts.id)}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={goNext}
+              disabled={!canAdvance()}
+              style={canAdvance() ? primaryBtn : disabledBtn}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* ---- STEP 2: FIRST AGENT ---- */}
+        {step === 2 && (
+          <div>
+            <div style={stepLabel}>Step 3 of 4</div>
+            <h2 style={heading}>Your first agent.</h2>
+            <p style={sub}>Pick a role. We'll suggest a name.</p>
+
+            {/* Role grid 4x2 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 10,
+              marginBottom: 24,
+            }}>
+              {ROLE_TEMPLATES.map(r => (
+                <RoleCard
+                  key={r.slug}
+                  role={r}
+                  selected={selectedRole?.slug === r.slug}
+                  onClick={() => handleRoleSelect(r)}
+                />
+              ))}
+            </div>
+
+            {/* Agent name - auto-fills, editable */}
+            {selectedRole && (
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ ...sectionHead, marginBottom: 8 }}>Agent name</div>
+                <input
+                  type="text"
+                  value={agentName}
+                  onChange={e => setAgentName(e.target.value)}
+                  placeholder="Enter a name"
+                  maxLength={24}
+                  style={inputStyle}
+                  onFocus={onFocusInput}
+                  onBlur={onBlurInput}
+                />
+              </div>
+            )}
+
+            {!selectedRole && <div style={{ marginBottom: 32 }} />}
+
+            <button
+              onClick={goNext}
+              disabled={!canAdvance()}
+              style={canAdvance() ? primaryBtn : disabledBtn}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* ---- STEP 3: CONTEXT (first text inputs) ---- */}
+        {step === 3 && (
+          <div>
+            <div style={stepLabel}>Step 4 of 4</div>
+            <h2 style={heading}>Name your world.</h2>
+            <p style={sub}>And give {agentName.trim() || 'your agent'} some context.</p>
+
+            {/* World name */}
             <input
               ref={worldInputRef}
               type="text"
               value={worldName}
               onChange={e => setWorldName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && worldName.trim()) goNext() }}
+              onKeyDown={e => { if (e.key === 'Enter' && worldName.trim()) worldInputRef.current?.blur() }}
               placeholder="e.g. Apex Roofing"
               maxLength={32}
-              style={{ ...inputStyle, marginBottom: worldName.trim() ? 10 : 32 }}
-              onFocus={e => { e.target.style.borderColor = 'rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
+              style={{ ...inputStyle, marginBottom: worldName.trim() ? 8 : 20 }}
+              onFocus={onFocusInput}
+              onBlur={onBlurInput}
             />
-
             {worldName.trim() && (
-              <div style={{ fontSize: 11, color: '#475569', marginBottom: 28, fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+              <div style={{ fontSize: 11, color: '#475569', marginBottom: 18, fontFamily: 'monospace', letterSpacing: '0.02em' }}>
                 world: <span style={{ color: '#60A5FA' }}>{worldSlug}</span>
               </div>
             )}
 
-            <button
-              onClick={goNext}
-              disabled={!worldName.trim()}
-              style={worldName.trim() ? primaryBtn : disabledBtn}
-            >
-              Next
-            </button>
-          </div>
-        )}
-
-        {/* ---- STEP 1: Name Your First Agent ---- */}
-        {step === 1 && (
-          <div>
-            <div style={labelStyle}>Step 2 of 4</div>
-            <h2 style={headingStyle}>Name your first agent.</h2>
-            <p style={subStyle}>Your right-hand. What do you want to call them?</p>
-
-            <input
-              ref={agentInputRef}
-              type="text"
-              value={agentName}
-              onChange={e => setAgentName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && agentName.trim()) goNext() }}
-              placeholder="e.g. Alex, Nova, Scout"
-              maxLength={24}
-              style={{ ...inputStyle, marginBottom: 32 }}
-              onFocus={e => { e.target.style.borderColor = 'rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
-            />
-
-            <button
-              onClick={goNext}
-              disabled={!agentName.trim()}
-              style={agentName.trim() ? primaryBtn : disabledBtn}
-            >
-              Next
-            </button>
-          </div>
-        )}
-
-        {/* ---- STEP 2: Pick Role Template ---- */}
-        {step === 2 && (
-          <div>
-            <div style={labelStyle}>Step 3 of 4</div>
-            <h2 style={headingStyle}>Pick {agentName.trim() ? `${agentName.trim()}'s` : 'their'} role.</h2>
-            <p style={subStyle}>What do they specialize in?</p>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))',
-              gap: 10,
-              marginBottom: 32,
-              marginTop: 8,
-            }}>
-              {ROLE_TEMPLATES.map(r => {
-                const isSelected = selectedRole?.slug === r.slug
-                return (
-                  <button
-                    key={r.slug}
-                    onClick={() => setSelectedRole(r)}
-                    style={{
-                      background: isSelected ? `${r.color}18` : 'rgba(255,255,255,0.03)',
-                      border: isSelected ? `2px solid ${r.color}70` : '2px solid rgba(255,255,255,0.08)',
-                      borderRadius: 12,
-                      padding: '14px 14px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      position: 'relative',
-                      transition: 'all 140ms ease',
-                    }}
-                  >
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute', top: 8, right: 8,
-                        width: 18, height: 18,
-                        background: r.color,
-                        borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10, color: '#fff', fontWeight: 900,
-                      }}>
-                        ✓
-                      </div>
-                    )}
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: r.color, marginBottom: 10,
-                    }} />
-                    <div style={{
-                      fontSize: 14, fontWeight: 700,
-                      color: isSelected ? '#F1F5F9' : '#94A3B8',
-                      marginBottom: 2,
-                    }}>
-                      {r.name}
-                    </div>
-                    <div style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: isSelected ? r.color : '#475569',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      marginBottom: 6,
-                    }}>
-                      {r.role}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.4 }}>
-                      {r.desc}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-
-            <button
-              onClick={goNext}
-              disabled={!selectedRole}
-              style={selectedRole ? primaryBtn : disabledBtn}
-            >
-              Next
-            </button>
-          </div>
-        )}
-
-        {/* ---- STEP 3: Business Context + Priorities ---- */}
-        {step === 3 && (
-          <div>
-            <div style={labelStyle}>Step 4 of 4</div>
-            <h2 style={headingStyle}>About your business.</h2>
-            <p style={subStyle}>
-              Give {agentName.trim() || 'your agent'} context to work with.
-            </p>
-
+            {/* About your business */}
             <textarea
               value={businessContext}
               onChange={e => setBusinessContext(e.target.value)}
-              placeholder="What do you do, and what are you focused on right now? (optional)"
+              placeholder="What do you do? What are you focused on right now? (optional)"
               maxLength={500}
-              rows={4}
-              style={{
-                ...inputStyle,
-                resize: 'vertical',
-                lineHeight: 1.6,
-                marginBottom: 24,
-              }}
-              onFocus={e => { e.target.style.borderColor = 'rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)' }}
-              onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, marginBottom: 20 }}
+              onFocus={onFocusInput}
+              onBlur={onBlurInput}
             />
 
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              color: '#64748B',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              marginBottom: 12,
-            }}>
-              Top 3 priorities right now
-            </div>
-
+            {/* Top 3 priorities */}
+            <div style={{ ...sectionHead, marginBottom: 10 }}>Top 3 priorities</div>
             {[0, 1, 2].map(i => (
               <input
                 key={i}
                 type="text"
                 value={priorities[i]}
-                onChange={e => {
-                  const next = [...priorities]
-                  next[i] = e.target.value
-                  setPriorities(next)
-                }}
+                onChange={e => { const next = [...priorities]; next[i] = e.target.value; setPriorities(next) }}
                 placeholder={`Priority ${i + 1}${i > 0 ? ' (optional)' : ''}`}
                 maxLength={80}
                 style={{ ...inputStyle, marginBottom: 10 }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(59,130,246,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.08)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
+                onFocus={onFocusInput}
+                onBlur={onBlurInput}
               />
             ))}
 
-            <div style={{ marginTop: 28 }}>
-              <button onClick={goNext} style={primaryBtn}>
+            <div style={{ marginTop: 24 }}>
+              <button
+                onClick={goNext}
+                disabled={!canAdvance()}
+                style={canAdvance() ? primaryBtn : disabledBtn}
+              >
                 Continue
               </button>
             </div>
           </div>
         )}
 
-        {/* ---- STEP 4: Launch ---- */}
+        {/* ---- STEP 4: LAUNCH ---- */}
         {step === 4 && (
           <div style={{ textAlign: 'center' }}>
             <div style={{
@@ -459,12 +738,9 @@ export default function Onboarding() {
             </p>
 
             {/* Summary chips */}
-            <div style={{
-              display: 'flex', gap: 8, justifyContent: 'center',
-              flexWrap: 'wrap', marginBottom: 40,
-            }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
               {selectedRole && (
-                <div style={chipStyle(selectedRole.color)}>
+                <div style={chip(selectedRole.color)}>
                   <span style={{
                     width: 6, height: 6, borderRadius: '50%',
                     background: selectedRole.color,
@@ -473,11 +749,14 @@ export default function Onboarding() {
                   {agentName.trim()}
                 </div>
               )}
-              {selectedRole && (
-                <div style={chipStyle('#60A5FA')}>{selectedRole.name}</div>
+              {industry && (
+                <div style={chip('#60A5FA')}>
+                  {INDUSTRIES.find(i => i.id === industry)?.icon}{' '}
+                  {INDUSTRIES.find(i => i.id === industry)?.label}
+                </div>
               )}
               {priorities.filter(p => p.trim()).slice(0, 2).map((p, i) => (
-                <div key={i} style={chipStyle('#334155')}>
+                <div key={i} style={chip('#334155')}>
                   {p.length > 32 ? p.slice(0, 30) + '…' : p}
                 </div>
               ))}
@@ -517,9 +796,9 @@ export default function Onboarding() {
   )
 }
 
-// ---- Shared styles ----
+// ---- Styles ----
 
-const labelStyle = {
+const stepLabel = {
   fontSize: 11,
   fontWeight: 600,
   color: '#E85D26',
@@ -528,7 +807,7 @@ const labelStyle = {
   marginBottom: 12,
 }
 
-const headingStyle = {
+const heading = {
   fontSize: 'clamp(26px, 4vw, 40px)',
   fontWeight: 900,
   color: '#F1F5F9',
@@ -537,26 +816,21 @@ const headingStyle = {
   lineHeight: 1.1,
 }
 
-const subStyle = {
+const sub = {
   fontSize: 14,
   color: '#64748B',
   margin: '0 0 24px',
   lineHeight: 1.5,
 }
 
-const inputStyle = {
-  width: '100%',
-  background: 'rgba(255,255,255,0.04)',
-  border: '1.5px solid rgba(59,130,246,0.2)',
-  borderRadius: 10,
-  padding: '14px 16px',
-  fontSize: 16,
-  fontWeight: 500,
-  color: '#F1F5F9',
+const sectionHead = {
+  fontSize: 10,
+  fontWeight: 700,
+  color: '#475569',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  marginBottom: 10,
   fontFamily: "'Inter', system-ui, sans-serif",
-  outline: 'none',
-  transition: 'border-color 150ms ease, box-shadow 150ms ease',
-  display: 'block',
 }
 
 const primaryBtn = {
@@ -585,7 +859,7 @@ const disabledBtn = {
   opacity: 0.6,
 }
 
-function chipStyle(color) {
+function chip(color) {
   return {
     padding: '4px 12px',
     borderRadius: 100,
