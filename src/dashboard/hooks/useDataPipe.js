@@ -612,23 +612,9 @@ export function useDataPipe(parsePunchList) {
           // Only add agents not already represented in active[].
           if (data.agents && data.agents.length > 0) {
             const alreadyInActive = new Set(active.map(t => t.agent))
-            // Only show agents with a REAL task description. Agents just "listening"
-            // (status=working but no task) belong in chat header status, not RNB.
-            const workingFromStatus = data.agents
-              .filter(a => a.status === 'working' && a.currentTask && a.currentTask.trim() && !alreadyInActive.has(a.slug))
-              .map(a => ({
-                agent: a.slug,
-                name: a.name || a.slug,
-                text: a.currentTask,
-                task: a.currentTask,
-                isLive: true,
-                isQueued: false,
-                taskId: null,
-                source: 'agent_status',
-              }))
-            if (workingFromStatus.length > 0) {
-              active.push(...workingFromStatus)
-            }
+            // REMOVED: agent_status fallback for RNB. RNB only shows tasks from
+            // events table (task_started). Agent "alive" status belongs in chat header,
+            // not RNB. Prevents "listening" agents from polluting the NOW bar.
           }
 
           setRightNow(active)

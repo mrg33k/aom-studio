@@ -12897,7 +12897,7 @@ export default function GameDashboard() {
                   fontSize: 11, color: isNightMode ? '#94A3B8' : '#CBD5E1',
                   maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
-                  {task.name || task.task || ''}
+                  {task.text || task.task || ''}
                 </span>
               </div>
             )
