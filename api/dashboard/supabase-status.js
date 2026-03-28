@@ -50,8 +50,9 @@ export default async function handler(req, res) {
       supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
       // Projects table: scoped per client for multi-tenant isolation
       supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc${clientFilter}`),
-      // Events table: scoped per client for multi-tenant isolation
-      supabaseGet('events', `order=timestamp.desc&limit=200${clientFilter}`),
+      // Events table: no client_id column yet -- query without filter to avoid 400 error
+      // (Supabase returns 400, not silent ignore, when filtering on non-existent columns)
+      supabaseGet('events', `order=timestamp.desc&limit=200`),
     ]);
     const tasks = [...activeTasks, ...recentDone];
 
