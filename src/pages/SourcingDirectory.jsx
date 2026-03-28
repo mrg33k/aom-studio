@@ -4,23 +4,9 @@ import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
-// ─── AI Search helpers ─────────────────────────────────────────────────────────
-const AI_TRIGGER_WORDS = [
-  'looking for', 'need', 'want', 'find me', 'show me', 'with ', 'under ',
-  'over ', 'small', 'large', 'big', 'certified', 'certification',
-  'who ', 'what ', 'which ', 'companies that', 'suppliers', 'partners',
-  'companies', 'company', 'semiconductor', 'space', 'biotech', 'defense',
-  'aerospace', 'military', 'medical', 'pharma', 'chip', 'fab',
-];
-
-function isNaturalLanguage(q) {
-  if (!q || !q.trim()) return false;
-  const lower = q.toLowerCase().trim();
-  const wordCount = lower.split(/\s+/).length;
-  if (wordCount > 3) return true;
-  if (wordCount >= 2) return AI_TRIGGER_WORDS.some(t => lower.includes(t));
-  return false;
-}
+// ─── Scout Search ─────────────────────────────────────────────────────────────
+// EVERY search goes through Scout. Scout always tries to understand intent.
+// No "is this natural language?" gate. If you typed it, Scout parses it.
 
 async function callAiSearch(query) {
   const res = await fetch('/api/ai-search', {
@@ -316,11 +302,11 @@ function AiSummaryCard({ aiResult, onSuggestionClick, V }) {
 }
 
 // ─── Search Bar ───────────────────────────────────────────────────────────────
+// EVERY search goes through Scout. No gate. No trigger words.
 function SearchBar({ value, onChange, onSearch, loading, aiLoading, V }) {
   const handleKey = (e) => {
     if (e.key === 'Enter') onSearch();
   };
-  const isAI = isNaturalLanguage(value);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -330,11 +316,11 @@ function SearchBar({ value, onChange, onSearch, loading, aiLoading, V }) {
             value={value}
             onChange={e => onChange(e.target.value)}
             onKeyDown={handleKey}
-            placeholder='Search or ask: "ITAR certified space companies in Scottsdale"...'
+            placeholder='Search: "space", "ITAR", "Intel", or "ITAR certified companies in Scottsdale"...'
             style={{
               width: '100%', boxSizing: 'border-box',
               background: V.card2,
-              border: `1px solid ${isAI && value ? 'rgba(16,185,129,0.5)' : V.border}`,
+              border: `1px solid ${value ? 'rgba(16,185,129,0.5)' : V.border}`,
               color: V.text, borderRadius: 8, padding: '12px 46px 12px 16px',
               fontSize: 14, fontFamily: V.space, outline: 'none',
               transition: 'border-color 0.2s',
@@ -365,7 +351,7 @@ function SearchBar({ value, onChange, onSearch, loading, aiLoading, V }) {
           Search
         </button>
       </div>
-      {isAI && value && (
+      {value && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 5,
           fontSize: 11, color: '#10b981', fontFamily: V.mono,
@@ -373,7 +359,7 @@ function SearchBar({ value, onChange, onSearch, loading, aiLoading, V }) {
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          AI Search — understands natural language
+          Scout is ready — understands any search
         </div>
       )}
     </div>
@@ -470,36 +456,29 @@ function SourcingDirectoryInner() {
     if (vertical !== 'all') params.v = vertical;
     setSearchParams(params);
 
-    if (isNaturalLanguage(q)) {
-      // AI search path
-      setAiLoading(true);
-      setAiResult(null);
-      setAiCompanies(null);
-      try {
-        const result = await callAiSearch(q);
-        setAiResult(result);
-        // Build certs map from embedded data
-        const companyCertsMap = {};
-        (result.results || []).forEach(c => {
-          companyCertsMap[c.id] = c.certs || [];
-        });
-        setCerts(companyCertsMap);
-        setAiCompanies(result.results || []);
-      } catch (err) {
-        console.error('AI search error, falling back to keyword:', err);
-        // Fallback to standard search
-        setAiResult(null);
-        setAiCompanies(null);
-        setQuery(q);
-        await fetchCompanies(q, vertical);
-      } finally {
-        setAiLoading(false);
-      }
-    } else {
-      // Standard keyword search
+    // EVERY search goes through Scout. Single words, natural language, everything.
+    setAiLoading(true);
+    setAiResult(null);
+    setAiCompanies(null);
+    try {
+      const result = await callAiSearch(q);
+      setAiResult(result);
+      // Build certs map from embedded data
+      const companyCertsMap = {};
+      (result.results || []).forEach(c => {
+        if (c.directory_certifications) companyCertsMap[c.id] = c.directory_certifications;
+      });
+      setCerts(companyCertsMap);
+      setAiCompanies(result.results || []);
+    } catch (err) {
+      console.error('Scout search error, falling back to keyword:', err);
+      // Fallback to standard Supabase search
       setAiResult(null);
       setAiCompanies(null);
       setQuery(q);
+      await fetchCompanies(q, vertical);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -516,7 +495,7 @@ function SourcingDirectoryInner() {
           setAiResult(result);
           const companyCertsMap = {};
           (result.results || []).forEach(c => {
-            companyCertsMap[c.id] = c.certs || [];
+            if (c.directory_certifications) companyCertsMap[c.id] = c.directory_certifications;
           });
           setCerts(companyCertsMap);
           setAiCompanies(result.results || []);
@@ -718,7 +697,7 @@ function SourcingDirectoryInner() {
             display: 'flex', alignItems: 'center', gap: 10,
           }}>
             <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(16,185,129,0.3)', borderTop: '2px solid #10b981', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: '#10b981', fontFamily: V.mono }}>AI is parsing your query...</span>
+            <span style={{ fontSize: 13, color: '#10b981', fontFamily: V.mono }}>Scout is searching...</span>
           </div>
         )}
 
