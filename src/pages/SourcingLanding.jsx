@@ -118,6 +118,62 @@ function TenantCard({ tenant, V }) {
   );
 }
 
+// ─── Create Directory Card ───────────────────────────────────────────────────
+function CreateDirectoryCard({ V }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <Link
+      to="/sourcing/new"
+      style={{ textDecoration: 'none' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{
+        background: hovered ? V.cardHov : V.card,
+        border: `1px dashed ${hovered ? V.accent : V.border}`,
+        borderRadius: 12,
+        padding: '24px 22px',
+        transition: 'all 0.18s ease',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 14,
+        boxShadow: hovered ? `0 0 0 1px ${V.accent}20, 0 8px 24px rgba(0,0,0,0.15)` : 'none',
+        minHeight: 180,
+      }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: 10,
+          background: hovered ? `${V.accent}18` : `${V.dim}12`,
+          border: `1px solid ${hovered ? `${V.accent}40` : V.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.18s ease',
+        }}>
+          <svg width="24" height="24" fill="none" stroke={hovered ? V.accent : V.muted} strokeWidth="2" viewBox="0 0 24 24" style={{ transition: 'stroke 0.18s ease' }}>
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </div>
+        <div style={{
+          fontSize: 15, fontWeight: 700, fontFamily: "'Syne', sans-serif",
+          color: hovered ? V.accent : V.muted,
+          transition: 'color 0.18s ease',
+        }}>
+          Create New Directory
+        </div>
+        <div style={{
+          fontSize: 12, color: V.dim, fontFamily: "'Space Grotesk', sans-serif",
+          textAlign: 'center',
+        }}>
+          Add a new industry vertical
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 // ─── Inner component ──────────────────────────────────────────────────────────
 function SourcingLandingInner() {
   const { dark } = useSourcingTheme();
@@ -251,6 +307,7 @@ function SourcingLandingInner() {
             {tenants.map(tenant => (
               <TenantCard key={tenant.id} tenant={tenant} V={V} />
             ))}
+            <CreateDirectoryCard V={V} />
           </div>
         ) : (
           <div style={{
@@ -261,17 +318,17 @@ function SourcingLandingInner() {
               No directories yet
             </div>
             <div style={{ fontSize: 14, color: V.muted, fontFamily: "'Space Grotesk', sans-serif", marginBottom: 24 }}>
-              Run the migration to create tenant directories, or use Scout admin to create one.
+              Create your first industry directory to get started.
             </div>
             <Link
-              to="/sourcing/admin"
+              to="/sourcing/new"
               style={{
                 background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,
                 fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif", display: 'inline-block',
               }}
             >
-              Open Admin
+              Create New Directory
             </Link>
           </div>
         )}
