@@ -168,10 +168,11 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, isActive])
 
   // Continuous background poll: fetch new messages every 3s for live updates
+  // SKIP when bridge is connected -- bridge handles responses via WebSocket
   const bgPollRef = useRef(null)
   const lastBgTsRef = useRef(new Date().toISOString())
   useEffect(() => {
-    if (!agentSlug || !isActive) return
+    if (!agentSlug || !isActive || useBridgeForAgent) return
     bgPollRef.current = setInterval(async () => {
       if (document.hidden) return
       try {
