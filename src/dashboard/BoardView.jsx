@@ -638,6 +638,7 @@ function ColumnContextMenu({ position, slug, name, isAgent, onClose, onAction })
     { divider: true },
     { id: 'send-message', label: 'Send Message' },
     { divider: true },
+    { id: 'restart-agent', label: 'Restart Agent', accent: true },
     { id: 'close-column', label: 'Close Column', danger: true },
   ] : [
     { id: 'view-tasks', label: 'View Tasks' },
@@ -1290,6 +1291,14 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       case 'add-task': columnSetTab?.('tasks'); break
       case 'send-message': columnSetTab?.('chat'); break
       case 'close-column': toggleSlug(slug); break
+      case 'restart-agent': {
+        // Write restart signal to Supabase events table
+        const cid = getClientId()
+        fetch('/api/dashboard/unstuck', { method: 'POST' }).catch(() => {})
+        // Also try local restart if Vite is running
+        fetch('/api/local/unstuck', { method: 'POST' }).catch(() => {})
+        break
+      }
     }
   }
 
