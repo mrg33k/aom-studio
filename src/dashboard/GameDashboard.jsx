@@ -4066,7 +4066,7 @@ function MobileDrawer({
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
             <FilesTab
               agentSlug={agentSlug}
-              clientId={null}
+              clientId={getClientId()}
               isNightMode={isNightMode}
               onSendFileToChat={onSendFileToChat}
             />
@@ -4656,7 +4656,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             onMouseLeave={e => { if (!aomOpen) { e.currentTarget.style.background = 'rgba(232,93,38,0.08)'; e.currentTarget.style.borderColor = 'rgba(232,93,38,0.28)' } }}
           >
             <span style={{ fontSize: isMobile ? 12 : 13, fontWeight: 800, color: '#E85D26', fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em' }}>
-              {(currentWorldId || 'AOM').toUpperCase()}
+              {currentWorldId === 'q' ? 'QA' : (currentWorldId || 'AOM').toUpperCase()}
             </span>
             <svg width={10} height={10} viewBox="0 0 24 24" fill="none"
               stroke="#E85D26" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
@@ -4705,7 +4705,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       <div style={{ padding: '12px 14px 10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ fontSize: 14, fontWeight: 800, color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
-                            {(currentWorldId || 'aom').toUpperCase()}
+                            {currentWorldId === 'q' ? 'QA' : (currentWorldId || 'aom').toUpperCase()}
                           </div>
                           {isOverriding && (
                             <div style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 4, padding: '2px 6px', fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase' }}>
@@ -10005,7 +10005,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {activeTab === 'files' && (
           <FilesTab
             agentSlug={agentSlug}
-            clientId={null}
+            clientId={getClientId()}
             isNightMode={isNightMode}
             onSendFileToChat={onSendFileToChat}
           />
@@ -10814,7 +10814,13 @@ export default function GameDashboard() {
   // the cache if there's no real session. Setting sessionStorage in DevTools bypasses nothing.
   const [authed, setAuthed] = useState(() => IS_LOCAL ? sessionStorage.getItem('dash-auth') === '1' : false)
   const [authChecking, setAuthChecking] = useState(!IS_LOCAL) // true while Supabase auth check is in flight
-  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('corner_onboarded'))
+  // QA world: always show onboarding if we just switched in (sessionStorage flag set by handleEnterWorld)
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window !== 'undefined' && getClientId() === 'q' && sessionStorage.getItem('corner-qa-fresh')) {
+      return true
+    }
+    return !localStorage.getItem('corner_onboarded')
+  })
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
   const [showPrefsModal, setShowPrefsModal] = useState(false)
@@ -10988,17 +10994,16 @@ export default function GameDashboard() {
     if (world.world === myWorld) {
       // Clicking own world clears any active override (return to home)
       setWorldOverride(null)
-      localStorage.removeItem('corner-qa-mode')
+      try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
       window.location.reload()
     } else if (world.world === 'q' || world.world === 'qa') {
-      // QA War Room: always show onboarding flow for testing
+      // QA War Room: every switch triggers fresh onboarding. Redirect to full 5-step flow.
       setWorldOverride(world.world)
-      localStorage.setItem('corner-qa-mode', 'true')
-      localStorage.removeItem('corner-onboarded')
+      try { sessionStorage.setItem('corner-qa-fresh', '1') } catch {}
       window.location.href = '/onboarding'
     } else {
       setWorldOverride(world.world)
-      localStorage.removeItem('corner-qa-mode')
+      try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
       window.location.reload()
     }
   }, [])
@@ -11006,7 +11011,7 @@ export default function GameDashboard() {
   // Clear the world override and reload (return to own world)
   const handleReturnToMyWorld = useCallback(() => {
     setWorldOverride(null)
-    localStorage.removeItem('corner-qa-mode')
+    try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
     window.location.reload()
   }, [])
 
@@ -13994,8 +13999,12 @@ export default function GameDashboard() {
       `}</style>
 
       {/* Onboarding: shown on first visit. Overlays the office with Elon guiding setup. */}
+      {/* QA world: fresh onboarding on every switch-in. Completing it closes without persisting. */}
       {showOnboarding && (
-        <OnboardingGuide onComplete={() => setShowOnboarding(false)} />
+        <OnboardingGuide onComplete={() => {
+          try { sessionStorage.removeItem('corner-qa-fresh') } catch {}
+          setShowOnboarding(false)
+        }} />
       )}
 
       {/* AOM Modals */}

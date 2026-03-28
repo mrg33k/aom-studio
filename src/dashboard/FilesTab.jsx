@@ -377,14 +377,14 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     handleUpload(e.dataTransfer.files)
   }
 
-  // Styles
-  const panelBg = isDaytime ? '#0F1B2D' : '#0A0F1A'
-  const borderColor = isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.12)'
-  const mutedText = isDaytime ? '#6B8AB0' : '#4A6080'
-  const labelText = isDaytime ? '#8BA4C4' : '#6B8AB0'
-  const accentBg = isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)'
-  const accentBorder = isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.2)'
-  const accentColor = isDaytime ? '#60A5FA' : '#4D90D0'
+  // Styles -- daytime uses a clean light theme, night uses dark blues
+  const panelBg = isDaytime ? '#F4F7FF' : '#0A0F1A'
+  const borderColor = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)'
+  const mutedText = isDaytime ? '#64748B' : '#4A6080'
+  const labelText = isDaytime ? '#334155' : '#6B8AB0'
+  const accentBg = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.1)'
+  const accentBorder = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.2)'
+  const accentColor = isDaytime ? '#2563EB' : '#4D90D0'
 
   return (
     <div style={{
@@ -467,10 +467,10 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
                 minHeight: 300,
                 maxHeight: 500,
                 padding: 12,
-                background: isDaytime ? '#0B1423' : '#060B14',
+                background: isDaytime ? '#FFFFFF' : '#060B14',
                 border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                color: isDaytime ? '#1E293B' : '#A0B0C8',
                 fontSize: 14,
                 lineHeight: 1.6,
                 fontFamily: "'Inter', system-ui, sans-serif",
@@ -595,7 +595,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
               <ArrowLeft size={14} />
             </button>
             <span style={{
-              color: '#E8ECF0', fontSize: 12, fontWeight: 600,
+              color: isDaytime ? '#1E293B' : '#E8ECF0', fontSize: 12, fontWeight: 600,
               flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               {viewingFile.filename}
@@ -653,10 +653,10 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
                     height: '100%',
                     minHeight: 300,
                     padding: 12,
-                    background: isDaytime ? '#0B1423' : '#060B14',
+                    background: isDaytime ? '#FFFFFF' : '#060B14',
                     border: `1px solid ${borderColor}`,
                     borderRadius: 8,
-                    color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                    color: isDaytime ? '#1E293B' : '#A0B0C8',
                     fontSize: 13,
                     lineHeight: 1.6,
                     fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
@@ -879,7 +879,7 @@ function TextFileRow({ file, isDaytime, borderColor, mutedText, labelText, accen
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <FileText size={13} style={{ color: accentColor, flexShrink: 0 }} />
         <span style={{
-          fontSize: 13, fontWeight: 600, color: '#E8ECF0',
+          fontSize: 13, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E8ECF0',
           flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {file.filename}
@@ -1148,7 +1148,7 @@ function DocsDocViewer({ doc, isDaytime, borderColor, mutedText, accentColor, ac
           <ArrowLeft size={14} />
         </button>
         <span style={{
-          color: '#E8ECF0', fontSize: 12, fontWeight: 600,
+          color: isDaytime ? '#1E293B' : '#E8ECF0', fontSize: 12, fontWeight: 600,
           flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
           {doc.label}
@@ -1223,10 +1223,10 @@ function DocsDocViewer({ doc, isDaytime, borderColor, mutedText, accentColor, ac
                 height: '100%',
                 minHeight: 300,
                 padding: 12,
-                background: isDaytime ? '#0B1423' : '#060B14',
+                background: isDaytime ? '#FFFFFF' : '#060B14',
                 border: `1px solid ${borderColor}`,
                 borderRadius: 8,
-                color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                color: isDaytime ? '#1E293B' : '#A0B0C8',
                 fontSize: 13,
                 lineHeight: 1.6,
                 fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
@@ -1291,8 +1291,9 @@ function DocsDocViewer({ doc, isDaytime, borderColor, mutedText, accentColor, ac
 // ---- Markdown Doc Viewer ----
 
 const MD_READER_STYLES = `
+  /* Base (daytime): dark text on light background */
   .md-reader {
-    color: #C0D0E8;
+    color: #1E293B;
     font-size: 14px;
     line-height: 1.75;
     font-family: 'Inter', system-ui, sans-serif;
@@ -1300,39 +1301,39 @@ const MD_READER_STYLES = `
   }
   .md-reader h1, .md-reader h2, .md-reader h3,
   .md-reader h4, .md-reader h5, .md-reader h6 {
-    color: #E8F0FC;
+    color: #0F172A;
     font-weight: 700;
     line-height: 1.3;
     margin: 1.4em 0 0.5em;
   }
   .md-reader h1 {
     font-size: 20px;
-    border-bottom: 1px solid rgba(59,130,246,0.2);
+    border-bottom: 1px solid rgba(37,99,235,0.2);
     padding-bottom: 0.35em;
     margin-top: 0.5em;
   }
   .md-reader h2 { font-size: 17px; }
-  .md-reader h3 { font-size: 15px; color: #A8C0DC; }
-  .md-reader h4, .md-reader h5, .md-reader h6 { font-size: 13px; color: #7890A8; }
+  .md-reader h3 { font-size: 15px; color: #3B5A88; }
+  .md-reader h4, .md-reader h5, .md-reader h6 { font-size: 13px; color: #64748B; }
   .md-reader p { margin: 0.65em 0; }
   .md-reader p:first-child { margin-top: 0; }
-  .md-reader strong { color: #F0F6FF; font-weight: 700; }
+  .md-reader strong { color: #0F172A; font-weight: 700; }
   .md-reader em { font-style: italic; }
-  .md-reader a { color: #60A5FA; text-decoration: none; }
+  .md-reader a { color: #2563EB; text-decoration: none; }
   .md-reader a:hover { text-decoration: underline; }
   .md-reader code {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 12px;
-    background: rgba(59,130,246,0.1);
-    border: 1px solid rgba(59,130,246,0.2);
+    background: rgba(37,99,235,0.08);
+    border: 1px solid rgba(37,99,235,0.18);
     border-radius: 4px;
     padding: 1px 5px;
-    color: #7DD3FC;
+    color: #1D4ED8;
     white-space: pre-wrap;
   }
   .md-reader pre {
-    background: #080F1E;
-    border: 1px solid rgba(59,130,246,0.15);
+    background: #F1F5F9;
+    border: 1px solid rgba(37,99,235,0.15);
     border-radius: 8px;
     padding: 14px 16px;
     overflow-x: auto;
@@ -1342,7 +1343,7 @@ const MD_READER_STYLES = `
     background: none;
     border: none;
     padding: 0;
-    color: #90B4CC;
+    color: #334155;
     font-size: 12px;
     line-height: 1.65;
   }
@@ -1351,20 +1352,20 @@ const MD_READER_STYLES = `
     margin: 0.65em 0;
   }
   .md-reader li { margin: 0.25em 0; }
-  .md-reader li::marker { color: #60A5FA; }
+  .md-reader li::marker { color: #2563EB; }
   .md-reader ul li::marker { content: "• "; }
   .md-reader blockquote {
-    border-left: 3px solid rgba(59,130,246,0.5);
+    border-left: 3px solid rgba(37,99,235,0.4);
     margin: 1em 0;
     padding: 0.2em 0 0.2em 14px;
-    color: #6888A0;
-    background: rgba(59,130,246,0.04);
+    color: #475569;
+    background: rgba(37,99,235,0.04);
     border-radius: 0 6px 6px 0;
   }
   .md-reader blockquote p { margin: 0.25em 0; }
   .md-reader hr {
     border: none;
-    border-top: 1px solid rgba(59,130,246,0.2);
+    border-top: 1px solid rgba(37,99,235,0.18);
     margin: 1.5em 0;
   }
   .md-reader table {
@@ -1374,32 +1375,52 @@ const MD_READER_STYLES = `
     font-size: 13px;
   }
   .md-reader th {
-    background: rgba(59,130,246,0.1);
-    color: #A8C0DC;
+    background: rgba(37,99,235,0.07);
+    color: #1E3A5F;
     font-weight: 700;
     padding: 8px 12px;
     text-align: left;
-    border: 1px solid rgba(59,130,246,0.18);
+    border: 1px solid rgba(37,99,235,0.15);
   }
   .md-reader td {
     padding: 6px 12px;
-    border: 1px solid rgba(59,130,246,0.1);
-    color: #8AA8C0;
+    border: 1px solid rgba(37,99,235,0.08);
+    color: #334155;
   }
   .md-reader tr:nth-child(even) td {
-    background: rgba(59,130,246,0.03);
+    background: rgba(37,99,235,0.03);
   }
   .md-reader img {
     max-width: 100%;
     border-radius: 6px;
     margin: 0.5em 0;
   }
-  .md-reader-night h1, .md-reader-night h2, .md-reader-night h3 {
-    color: #C8DCF0;
-  }
+  /* Night mode overrides: light text on dark background */
   .md-reader-night {
     color: #8AA8C4;
   }
+  .md-reader-night h1, .md-reader-night h2, .md-reader-night h3,
+  .md-reader-night h4, .md-reader-night h5, .md-reader-night h6 {
+    color: #C8DCF0;
+  }
+  .md-reader-night h3 { color: #A8C0DC; }
+  .md-reader-night h4, .md-reader-night h5, .md-reader-night h6 { color: #7890A8; }
+  .md-reader-night p strong { color: #E0EFFF; }
+  .md-reader-night a { color: #60A5FA; }
+  .md-reader-night code {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.2);
+    color: #7DD3FC;
+  }
+  .md-reader-night pre {
+    background: #080F1E;
+    border-color: rgba(59,130,246,0.15);
+  }
+  .md-reader-night pre code { color: #90B4CC; }
+  .md-reader-night li::marker { color: #60A5FA; }
+  .md-reader-night blockquote { color: #6888A0; }
+  .md-reader-night th { background: rgba(59,130,246,0.1); color: #A8C0DC; border-color: rgba(59,130,246,0.18); }
+  .md-reader-night td { color: #8AA8C0; border-color: rgba(59,130,246,0.1); }
 `
 
 function MarkdownDocViewer({ content, isDaytime }) {
