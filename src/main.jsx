@@ -95,6 +95,14 @@ function AuthGuard({ children }) {
           navigate('/change-password', { replace: true })
           return
         }
+        // QA War Room: always show onboarding when in QA mode
+        if (localStorage.getItem('corner-qa-mode') === 'true') {
+          setChecked(true)
+          setAuthed(false)
+          navigate('/onboarding', { replace: true })
+          return
+        }
+
         // Check onboarding status: metadata flags, localStorage, OR world slug exists
         const meta = session.user?.user_metadata || {}
         let isOnboarded =

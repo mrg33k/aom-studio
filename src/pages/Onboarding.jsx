@@ -364,6 +364,8 @@ export default function Onboarding() {
     }
   }
 
+  const isQaMode = localStorage.getItem('corner-qa-mode') === 'true'
+
   async function handleLaunch() {
     if (finishing) return
     setFinishing(true)
@@ -375,67 +377,56 @@ export default function Onboarding() {
 
     try {
       if (supabase) {
-        // Check if this user already has a world (prevents duplicate creation)
-        const { data: existing } = await supabase
-          .from('agent_status')
-          .select('id, client_id')
-          .limit(1)
+        // QA Mode: skip the "already has world" check -- always create fresh
+        if (!isQaMode) {
+          // Check if this user already has a world (prevents duplicate creation)
+          const { data: existing } = await supabase
+            .from('agent_status')
+            .select('id, client_id')
+            .limit(1)
 
-        if (existing && existing.length > 0) {
-          // User already has a world. Update metadata and go to dashboard.
-          await supabase.auth.updateUser({
-            data: { onboarded: true, has_completed_onboarding: true, world: existing[0].client_id }
-          }).catch(() => {})
-          localStorage.setItem('corner-onboarded', 'true')
-          navigate('/dashboard', { replace: true })
-          return
+          if (existing && existing.length > 0) {
+            // User already has a world. Update metadata and go to dashboard.
+            await supabase.auth.updateUser({
+              data: { onboarded: true, has_completed_onboarding: true, world: existing[0].client_id }
+            }).catch(() => {})
+            localStorage.setItem('corner-onboarded', 'true')
+            navigate('/dashboard', { replace: true })
+            return
+        }
+        } // end if (!isQaMode)
+
+        // QA Mode: write to QA world, do NOT touch user metadata
+        // Normal Mode: write to new world + update user metadata
+        const targetClientId = isQaMode ? `qa-${worldSlug}` : worldSlug
+
+        if (!isQaMode) {
+          const { error: metaErr } = await supabase.auth.updateUser({
+            data: {
+              world:                    worldSlug,
+              has_completed_onboarding: true,
+              onboarded:                true,
+              age_range:                ageRange,
+              who_type:                 whoType,
+              industry:                 industry,
+              team_size:                teamSize,
+              business_context:         businessContext.trim(),
+              priorities:               priorities.filter(p => p.trim()),
+            },
+          })
+          if (metaErr) console.error('[Onboarding] metadata error:', metaErr)
         }
 
-        const { error: metaErr } = await supabase.auth.updateUser({
-          data: {
-            world:                    worldSlug,
-            has_completed_onboarding: true,
-            onboarded:                true,
-            age_range:                ageRange,
-            who_type:                 whoType,
-            industry:                 industry,
-            team_size:                teamSize,
-            business_context:         businessContext.trim(),
-            priorities:               priorities.filter(p => p.trim()),
-          },
-        })
-        if (metaErr) console.error('[Onboarding] metadata error:', metaErr)
-
-        const { error: statusErr } = await supabase.from('agent_status').insert([{
+        // Write agent to Supabase (QA uses qa- prefix, normal uses world slug)
+        await supabase.from('agent_status').insert([{
           slug:      agentSlug,
           name:      agentName.trim() || agentSlug,
           role:      roleChoice.role,
           status:    'idle',
-          client_id: worldSlug,
+          client_id: targetClientId,
           color:     roleChoice.color,
           type:      'agent',
-        }])
-        if (statusErr) console.error('[Onboarding] agent_status error:', statusErr)
-
-        await supabase.from('agents').insert([{
-          slug:          agentSlug,
-          name:          agentName.trim() || agentSlug,
-          role:          roleChoice.role,
-          client_id:     worldSlug,
-          color:         roleChoice.color,
-          is_assignable: true,
-        }]).then(({ error: agErr }) => {
-          if (agErr) console.error('[Onboarding] agents error:', agErr)
-        })
-
-        await supabase.from('rooms').insert([{
-          slug:      agentSlug,
-          name:      agentName.trim() || agentSlug,
-          client_id: worldSlug,
-          type:      'agent',
-        }]).then(({ error: roomErr }) => {
-          if (roomErr) console.error('[Onboarding] rooms error (non-critical):', roomErr)
-        })
+        }]).catch(e => console.error('[Onboarding] agent_status error:', e))
 
       } else {
         localStorage.setItem('corner-onboarded', 'true')
@@ -443,7 +434,13 @@ export default function Onboarding() {
         localStorage.setItem('corner-agent-name', agentName.trim())
       }
 
-      localStorage.setItem('corner-onboarded', 'true')
+      // QA Mode: go to dashboard with QA world override
+      if (isQaMode) {
+        localStorage.removeItem('corner-qa-mode')
+        localStorage.setItem('corner-onboarded', 'true')
+      } else {
+        localStorage.setItem('corner-onboarded', 'true')
+      }
       navigate('/dashboard', { replace: true })
     } catch (err) {
       console.error('[Onboarding] error:', err)

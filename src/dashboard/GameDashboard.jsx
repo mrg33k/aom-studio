@@ -10988,15 +10988,25 @@ export default function GameDashboard() {
     if (world.world === myWorld) {
       // Clicking own world clears any active override (return to home)
       setWorldOverride(null)
+      localStorage.removeItem('corner-qa-mode')
+      window.location.reload()
+    } else if (world.world === 'q' || world.world === 'qa') {
+      // QA War Room: always show onboarding flow for testing
+      setWorldOverride(world.world)
+      localStorage.setItem('corner-qa-mode', 'true')
+      localStorage.removeItem('corner-onboarded')
+      window.location.href = '/onboarding'
     } else {
       setWorldOverride(world.world)
+      localStorage.removeItem('corner-qa-mode')
+      window.location.reload()
     }
-    window.location.reload()
   }, [])
 
   // Clear the world override and reload (return to own world)
   const handleReturnToMyWorld = useCallback(() => {
     setWorldOverride(null)
+    localStorage.removeItem('corner-qa-mode')
     window.location.reload()
   }, [])
 
