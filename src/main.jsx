@@ -98,8 +98,10 @@ function AuthGuard({ children }) {
         // QA War Room: always show onboarding when in QA mode
         if (localStorage.getItem('corner-qa-mode') === 'true') {
           setChecked(true)
-          setAuthed(false)
-          navigate('/onboarding', { replace: true })
+          setAuthed(true) // keep authed so the check doesn't re-fire
+          if (window.location.pathname !== '/onboarding') {
+            navigate('/onboarding', { replace: true })
+          }
           return
         }
 

@@ -502,6 +502,38 @@ export default function Onboarding() {
       overflow: 'hidden',
     }}>
 
+      {/* QA Mode: Return to AOM bar */}
+      {isQaMode && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px',
+          background: 'rgba(59,130,246,0.12)',
+          borderBottom: '1px solid rgba(59,130,246,0.2)',
+          backdropFilter: 'blur(12px)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#60A5FA' }}>
+            QA Testing Mode
+          </span>
+          <button
+            onClick={() => {
+              localStorage.removeItem('corner-qa-mode')
+              localStorage.removeItem('corner-world-override')
+              window.location.href = '/dashboard'
+            }}
+            style={{
+              padding: '6px 14px', borderRadius: 8,
+              background: 'rgba(59,130,246,0.2)',
+              border: '1px solid rgba(59,130,246,0.3)',
+              color: '#93C5FD', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            Return to AOM
+          </button>
+        </div>
+      )}
+
       {/* Background hex grid */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
