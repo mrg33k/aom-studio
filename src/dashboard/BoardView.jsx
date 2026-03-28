@@ -187,13 +187,18 @@ function useColumnChat(agentSlug, isActive) {
     try {
       const clientId = getClientId()
       const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
+      const sendStart = Date.now()
       await fetch(sendUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: agentSlug, text: text.trim(), message: text.trim(), source: 'corner-dashboard', client_id: clientId }),
       })
-      // Step 2: double gray check (delivered to Supabase)
-      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'delivered' } : m))
+      // Step 2: double gray check (delivered) -- min 800ms after send so the single check is visible
+      const elapsed = Date.now() - sendStart
+      const delay = Math.max(0, 800 - elapsed)
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'delivered' } : m))
+      }, delay)
       if (pollRef.current) clearInterval(pollRef.current)
       pollRef.current = setInterval(async () => {
         try {
@@ -207,14 +212,17 @@ function useColumnChat(agentSlug, isActive) {
           const newResp = (data.messages || []).filter(m => m.role === 'assistant' && m.timestamp > sentTime)
           if (newResp.length > 0) {
             const latest = newResp[newResp.length - 1]
-            setMessages(prev => {
-              // Step 3: mark all user messages as 'read' (double blue check) + add assistant response
-              let u = prev.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
-              u = u.filter(m => !m.streaming)
-              u.push({ role: 'assistant', content: latest.text, time: latest.timestamp })
-              return u
-            })
-            setSending(false)
+            // Step 3a: double blue check (read) -- show before response appears
+            setMessages(prev => prev.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m))
+            // Step 3b: after 600ms, show the actual response
+            setTimeout(() => {
+              setMessages(prev => {
+                let u = prev.filter(m => !m.streaming)
+                u.push({ role: 'assistant', content: latest.text, time: latest.timestamp })
+                return u
+              })
+              setSending(false)
+            }, 600)
             clearInterval(pollRef.current)
             pollRef.current = null
           }
