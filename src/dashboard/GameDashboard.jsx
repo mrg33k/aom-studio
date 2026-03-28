@@ -161,10 +161,17 @@ function filterChatMessages(msgs) {
     // Filter system sources
     if (src === 'terminal') return false
     if (src.startsWith('agent-')) return false
+    // Filter task lifecycle messages (belong in RNB, not chat)
+    if (src === 'corner-dashboard-task') return false
+    if (m.is_task) return false
+    if (src === 'task-creation') return false
     // Filter system content patterns
     if (txt.startsWith('[SESSION LOG]')) return false
     if (txt.startsWith('[From ')) return false
     if (txt.startsWith('You are ') && txt.includes('Working directory:')) return false
+    // Filter task lifecycle text patterns from backend agents
+    if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return false
+    if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed)/i.test(txt)) return false
     if (!txt.trim()) return false
     // Dedup by content + role (same message appearing multiple times)
     const key = `${m.role || ''}:${txt.slice(0, 120)}`
@@ -12260,18 +12267,7 @@ export default function GameDashboard() {
         setPanelChatInput('')
         const agent = selectedRoom
         const clientId = getClientId()
-        // Optimistic UI: show task creation confirmation in chat
-        setAgentChats(prev => {
-          const current = prev[agent]?._all || []
-          const taskMsg = {
-            id: `task-${Date.now()}`,
-            role: 'user',
-            content: `📋 Task created: ${taskText}`,
-            time: new Date().toISOString(),
-            source: 'task-creation',
-          }
-          return { ...prev, [agent]: { _all: [...current, taskMsg] } }
-        })
+        // Task lifecycle belongs in RNB, not chat. No optimistic chat message.
         // Create task in Supabase via API
         try {
           await fetch('/api/dashboard/supabase-messages', {

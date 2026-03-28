@@ -113,14 +113,19 @@ function useColumnChat(agentSlug, isActive) {
           .filter(m => !m.agent || m.agent === agentSlug)
           .filter(m => {
             // Only show dashboard user messages + relay/assistant responses
-            // Filter out: terminal spawn prompts, inter-agent routing, session logs
+            // Filter out: terminal, inter-agent, task lifecycle, session logs
             const src = (m.source || '').toLowerCase()
             if (src === 'terminal') return false
             if (src.startsWith('agent-')) return false
+            if (src === 'corner-dashboard-task') return false
+            if (src === 'task-creation') return false
+            if (m.is_task) return false
             const txt = (m.text || '')
             if (txt.startsWith('[SESSION LOG]')) return false
             if (txt.startsWith('[From ')) return false
             if (txt.startsWith('You are ') && txt.includes('Working directory:')) return false
+            if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return false
+            if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed)/i.test(txt)) return false
             return true
           })
           .map(m => ({ role: m.role || 'assistant', content: m.text || '', time: m.timestamp || '', source: m.source }))
