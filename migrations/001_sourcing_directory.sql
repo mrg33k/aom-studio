@@ -231,3 +231,300 @@ ON CONFLICT DO NOTHING;
 INSERT INTO directory_certifications (company_id, cert_name, cert_value, vertical)
 SELECT id, 'ISO 9001', 'true', 'space' FROM directory_companies WHERE slug = 'honeywell-aerospace'
 ON CONFLICT DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- STEP 4 SEED BLOCK — Run in Supabase SQL editor after initial schema:
+--   https://supabase.com/dashboard/project/mcngatprgluexjjcqpkp/sql/new
+-- Appended 2026-03-28
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Add job-specific columns to directory_listings (safe to run multiple times)
+ALTER TABLE directory_listings ADD COLUMN IF NOT EXISTS salary_range text;
+ALTER TABLE directory_listings ADD COLUMN IF NOT EXISTS employment_type text;
+ALTER TABLE directory_listings ADD COLUMN IF NOT EXISTS location text;
+
+-- ─── 12 More AZ Semiconductor Companies ──────────────────────────────────────
+INSERT INTO directory_companies (name, slug, description, website, phone, email, vertical, city, state, employee_count, year_founded, membership_tier, status, featured)
+VALUES
+  (
+    'Skyworks Solutions',
+    'skyworks-solutions',
+    'Tempe-based global leader in RF semiconductors powering mobile devices, IoT, automotive, and infrastructure applications worldwide.',
+    'https://skyworksinc.com',
+    '(480) 917-6000',
+    'info@skyworksinc.com',
+    'semiconductor',
+    'Tempe', 'AZ', '9000+', 1962, 'enterprise', 'active', true
+  ),
+  (
+    'NXP Semiconductors',
+    'nxp-semiconductors',
+    'Chandler operations for one of the world''s leading semiconductor companies, specializing in automotive and IoT chip solutions.',
+    'https://nxp.com',
+    '(480) 784-7000',
+    'contact@nxp.com',
+    'semiconductor',
+    'Chandler', 'AZ', '34000+', 2006, 'enterprise', 'active', false
+  ),
+  (
+    'Amkor Technology',
+    'amkor-technology',
+    'Chandler-headquartered global leader in semiconductor packaging and test services, serving fabless and integrated device manufacturers.',
+    'https://amkor.com',
+    '(480) 786-7000',
+    'info@amkor.com',
+    'semiconductor',
+    'Chandler', 'AZ', '30000+', 1968, 'enterprise', 'active', true
+  ),
+  (
+    'Qorvo',
+    'qorvo',
+    'RF solutions company with Arizona fab operations, delivering radio frequency products for mobile, defense, and infrastructure markets.',
+    'https://qorvo.com',
+    NULL,
+    NULL,
+    'semiconductor',
+    'Chandler', 'AZ', '8000+', 2015, 'enterprise', 'active', false
+  ),
+  (
+    'Entegris',
+    'entegris',
+    'Tempe-based provider of advanced semiconductor materials, filtration systems, and contamination control solutions for chip fabrication.',
+    'https://entegris.com',
+    '(480) 556-0910',
+    'contact@entegris.com',
+    'semiconductor',
+    'Tempe', 'AZ', '6000+', 1966, 'enterprise', 'active', false
+  ),
+  (
+    'Applied Materials',
+    'applied-materials',
+    'Mesa operations for the world''s largest semiconductor equipment company, providing deposition, etching, and CMP systems for chip manufacturing.',
+    'https://appliedmaterials.com',
+    '(480) 308-3400',
+    'info@appliedmaterials.com',
+    'semiconductor',
+    'Mesa', 'AZ', '35000+', 1967, 'enterprise', 'active', false
+  ),
+  (
+    'Axcelis Technologies',
+    'axcelis-technologies',
+    'Arizona site operations for a leading ion implant system manufacturer, serving advanced semiconductor fabs worldwide.',
+    'https://axcelis.com',
+    NULL,
+    NULL,
+    'semiconductor',
+    'Chandler', 'AZ', '800+', 2000, 'enterprise', 'active', false
+  ),
+  (
+    'PDF Solutions',
+    'pdf-solutions',
+    'Tempe office for semiconductor process control and data analytics company, helping fabs optimize yields and manufacturing efficiency.',
+    'https://pdfsol.com',
+    '(408) 280-7900',
+    NULL,
+    'semiconductor',
+    'Tempe', 'AZ', '400+', 1992, 'pro', 'active', false
+  ),
+  (
+    'Benchmark Electronics',
+    'benchmark-electronics',
+    'Arizona contract electronics manufacturing operations providing design, supply chain, and production services for complex electronics.',
+    'https://bench.com',
+    '(602) 437-3000',
+    NULL,
+    'semiconductor',
+    'Phoenix', 'AZ', '11000+', 1979, 'enterprise', 'active', false
+  ),
+  (
+    'Sanmina',
+    'sanmina',
+    'Phoenix operations for a global contract electronics manufacturer serving communications, industrial, medical, and defense markets.',
+    'https://sanmina.com',
+    '(602) 437-4000',
+    NULL,
+    'semiconductor',
+    'Phoenix', 'AZ', '40000+', 1980, 'enterprise', 'active', false
+  ),
+  (
+    'Jabil',
+    'jabil',
+    'Tucson manufacturing site for one of the world''s largest electronics manufacturing services companies, serving global OEM customers.',
+    'https://jabil.com',
+    '(520) 748-2000',
+    NULL,
+    'semiconductor',
+    'Tucson', 'AZ', '260000+', 1966, 'enterprise', 'active', false
+  ),
+  (
+    'OSI Systems',
+    'osi-systems',
+    'Scottsdale operations for a global provider of security inspection and optoelectronics solutions for government, defense, and commercial markets.',
+    'https://osi-systems.com',
+    '(480) 858-0095',
+    NULL,
+    'semiconductor',
+    'Scottsdale', 'AZ', '8700+', 1987, 'enterprise', 'active', false
+  )
+ON CONFLICT (slug) DO NOTHING;
+
+-- ─── 12 More AZ Space Companies ───────────────────────────────────────────────
+INSERT INTO directory_companies (name, slug, description, website, phone, email, vertical, city, state, employee_count, year_founded, membership_tier, status, featured)
+VALUES
+  (
+    'Northrop Grumman',
+    'northrop-grumman',
+    'Gilbert campus focused on space systems, satellite manufacturing, and defense programs including James Webb Space Telescope components.',
+    'https://northropgrumman.com',
+    '(480) 592-4000',
+    NULL,
+    'space',
+    'Gilbert', 'AZ', '100000+', 1939, 'enterprise', 'active', true
+  ),
+  (
+    'Raytheon Intelligence & Space',
+    'raytheon-intelligence-space',
+    'Tucson is Raytheon''s largest site globally, developing precision guidance systems, missiles, and advanced sensors for defense and space.',
+    'https://rtx.com',
+    '(520) 794-3000',
+    NULL,
+    'space',
+    'Tucson', 'AZ', '15000+', 1950, 'enterprise', 'active', true
+  ),
+  (
+    'General Dynamics Mission Systems',
+    'general-dynamics-mission-systems',
+    'Scottsdale operations delivering advanced space communications, C4ISR systems, and mission-critical electronics for government customers.',
+    'https://gd.com',
+    '(480) 441-3000',
+    NULL,
+    'space',
+    'Scottsdale', 'AZ', '10000+', 1952, 'enterprise', 'active', false
+  ),
+  (
+    'L3Harris Technologies',
+    'l3harris-technologies',
+    'Phoenix facility producing space electronics, sensor systems, and tactical communications for defense and intelligence community customers.',
+    'https://l3harris.com',
+    '(602) 231-4000',
+    NULL,
+    'space',
+    'Phoenix', 'AZ', '47000+', 2019, 'enterprise', 'active', false
+  ),
+  (
+    'Orbital Sciences',
+    'orbital-sciences',
+    'Chandler legacy site now part of Northrop Grumman, with deep heritage in satellite manufacturing and launch vehicle development.',
+    'https://northropgrumman.com',
+    NULL,
+    NULL,
+    'space',
+    'Chandler', 'AZ', '500+', 1982, 'enterprise', 'active', false
+  ),
+  (
+    'Paragon Space Development',
+    'paragon-space-development',
+    'Tucson-based specialist in life support systems, thermal control, and environmental control for crewed spacecraft and extreme environments.',
+    'https://paragonsdc.com',
+    '(520) 903-1000',
+    'info@paragonsdc.com',
+    'space',
+    'Tucson', 'AZ', '50-100', 1993, 'basic', 'active', false
+  ),
+  (
+    'Global Aerospace Corporation',
+    'global-aerospace-corporation',
+    'Aerospace research firm with AZ contracts, specializing in advanced aviation, atmospheric science, and defense system analysis.',
+    'https://globalaerocorp.com',
+    NULL,
+    NULL,
+    'space',
+    'Scottsdale', 'AZ', '11-50', 1989, 'basic', 'active', false
+  ),
+  (
+    'ASU Space and Earth Exploration',
+    'asu-sese',
+    'Arizona State University''s School of Earth and Space Exploration driving research in planetary science, astrobiology, and space missions.',
+    'https://sese.asu.edu',
+    '(480) 965-3561',
+    'sese@asu.edu',
+    'space',
+    'Tempe', 'AZ', '500+', 2006, 'free', 'active', false
+  ),
+  (
+    'Rincon Research',
+    'rincon-research',
+    'Tucson defense electronics firm specializing in signals intelligence, electronic warfare systems, and advanced sensor processing.',
+    'https://rincon.com',
+    '(520) 519-0500',
+    NULL,
+    'space',
+    'Tucson', 'AZ', '100-500', 1997, 'pro', 'active', false
+  ),
+  (
+    'Sierra Space',
+    'sierra-space',
+    'Arizona operations for commercial space company developing the Dream Chaser spaceplane and LIFE habitat for orbital and lunar missions.',
+    'https://sierraspace.com',
+    NULL,
+    NULL,
+    'space',
+    'Phoenix', 'AZ', '1000+', 2021, 'pro', 'active', false
+  ),
+  (
+    'SpaceX Starlink AZ',
+    'spacex-starlink-az',
+    'Phoenix operations hub supporting Starlink satellite internet service deployment, installation, and customer infrastructure across the Southwest.',
+    'https://starlink.com',
+    NULL,
+    NULL,
+    'space',
+    'Phoenix', 'AZ', '5000+', 2019, 'enterprise', 'active', false
+  ),
+  (
+    'Kitty Hawk',
+    'kitty-hawk',
+    'Chandler-based advanced air mobility startup developing autonomous electric aircraft for urban and regional transportation networks.',
+    'https://kittyhawk.aero',
+    NULL,
+    NULL,
+    'space',
+    'Chandler', 'AZ', '11-50', 2010, 'basic', 'active', false
+  )
+ON CONFLICT (slug) DO NOTHING;
+
+-- ─── Sample Job Listings ──────────────────────────────────────────────────────
+-- NOTE: Requires salary_range / employment_type / location columns (added above)
+INSERT INTO directory_listings (company_id, title, description, category, status, salary_range, employment_type, location)
+VALUES
+  (
+    (SELECT id FROM directory_companies WHERE slug = 'honeywell-aerospace'),
+    'RF Systems Engineer',
+    'Design and develop RF systems for aerospace and defense platforms. 5+ years RF engineering experience, active clearance preferred.',
+    'jobs', 'active', '$120-160K', 'Full Time', 'Phoenix, AZ'
+  ),
+  (
+    (SELECT id FROM directory_companies WHERE slug = 'world-view-enterprises'),
+    'Satellite Integration Technician',
+    'Hands-on integration and testing of stratospheric balloon payloads and satellite systems. Mechanical aptitude and ITAR eligibility required.',
+    'jobs', 'active', '$65-85K', 'Full Time', 'Tucson, AZ'
+  ),
+  (
+    (SELECT id FROM directory_companies WHERE slug = 'tsmc-arizona'),
+    'Semiconductor Process Engineer',
+    'Develop and optimize advanced node semiconductor processes at TSMC''s North Phoenix fab. MS/PhD preferred, fab experience required.',
+    'jobs', 'active', '$130-170K', 'Full Time', 'Phoenix, AZ'
+  ),
+  (
+    (SELECT id FROM directory_companies WHERE slug = 'intel-chandler'),
+    'Yield Engineer',
+    'Drive yield improvement across Intel''s Chandler manufacturing lines. Statistical analysis, DOE, and fab process experience required.',
+    'jobs', 'active', '$110-150K', 'Full Time', 'Chandler, AZ'
+  ),
+  (
+    (SELECT id FROM directory_companies WHERE slug = 'applied-materials'),
+    'Equipment Engineer',
+    'Support semiconductor equipment installation, qualification, and maintenance at Applied Materials'' Mesa facility. EE/ME degree required.',
+    'jobs', 'active', '$100-130K', 'Full Time', 'Mesa, AZ'
+  )
+ON CONFLICT DO NOTHING;
