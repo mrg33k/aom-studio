@@ -173,13 +173,20 @@ function SourcingLandingInner() {
         @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
+        .sourcing-landing-nav::-webkit-scrollbar { display: none; }
       `}</style>
 
       {/* Nav */}
       <div style={{ borderBottom: `1px solid ${V.border}`, background: V.navBg }}>
         <div style={{
           padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16, height: 56,
-        }}>
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+          className="sourcing-landing-nav"
+        >
           <Link to="/" style={{ textDecoration: 'none' }}>
             <span style={{
               fontSize: 13, fontWeight: 800, fontFamily: "'Syne', sans-serif",

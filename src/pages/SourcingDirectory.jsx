@@ -625,6 +625,7 @@ function SourcingDirectoryInner() {
         a { color: inherit; }
         input::placeholder { color: ${V.dim}; }
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
 
       <SourcingNav
@@ -669,8 +670,14 @@ function SourcingDirectoryInner() {
       {/* Vertical Tabs */}
       <div style={{
         padding: '0 24px 0', maxWidth: 900, margin: '0 auto',
-        display: 'flex', gap: 8, overflowX: 'auto',
-      }}>
+        display: 'flex', gap: 8,
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
+        className="hide-scrollbar"
+      >
         {VERTICALS.map(v => (
           <button
             key={v.key}

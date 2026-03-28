@@ -60,6 +60,7 @@ export function SourcingNav({ active, tenantSlug, tenantName, features, brandCol
       borderBottom: `1px solid ${V.border}`,
       background: V.navBg,
     }}>
+      <style>{`.sourcing-nav-tabs::-webkit-scrollbar { display: none; }`}</style>
       {/* Top bar */}
       <div style={{
         padding: '0 24px',
@@ -100,7 +101,16 @@ export function SourcingNav({ active, tenantSlug, tenantName, features, brandCol
         )}
       </div>
       {/* Section tabs */}
-      <div style={{ padding: '0 24px', display: 'flex', gap: 0 }}>
+      <div style={{
+        padding: '0 24px',
+        display: 'flex', gap: 0,
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
+        className="sourcing-nav-tabs"
+      >
         {tabs.map(tab => {
           const isActive = tab.key === active;
           return (
