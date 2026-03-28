@@ -1,28 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, ThemeToggle } from './SourcingTheme.jsx';
 
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  cardHov:   '#1F1F1C',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
-
+// ─── Vertical / filter config ─────────────────────────────────────────────────
 const VERTICALS = [
-  { key: 'all',           label: 'All Industries',   color: V.muted },
+  { key: 'all',           label: 'All Industries',   color: '#9ca3af' },
   { key: 'semiconductor', label: 'Semiconductor',     color: '#29B6F6' },
   { key: 'space',         label: 'Space & Aerospace', color: '#7C3AED' },
   { key: 'biotech',       label: 'Biotech',           color: '#22C55E' },
@@ -52,6 +35,9 @@ const CONDITION_COLORS = {
 
 // ─── Sourcing Nav ─────────────────────────────────────────────────────────────
 export function SourcingNav({ active }) {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const tabs = [
     { key: 'directory',   label: 'Directory',    href: '/sourcing' },
     { key: 'marketplace', label: 'Marketplace',  href: '/sourcing/marketplace' },
@@ -59,10 +45,11 @@ export function SourcingNav({ active }) {
     { key: 'events',      label: 'Events',       href: '/sourcing/events' },
     { key: 'articles',    label: 'Articles',     href: '/sourcing/articles' },
   ];
+
   return (
     <div style={{
       borderBottom: `1px solid ${V.border}`,
-      background: '#0A0A0A',
+      background: V.navBg,
     }}>
       {/* Top bar */}
       <div style={{
@@ -71,17 +58,21 @@ export function SourcingNav({ active }) {
         borderBottom: `1px solid ${V.border}`,
       }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.orange, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <span style={{
+            fontSize: 13, fontWeight: 800, fontFamily: V.syne,
+            color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase',
+          }}>
             AOM
           </span>
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>Sourcing Directory</span>
         <div style={{ flex: 1 }} />
+        <ThemeToggle />
         <Link
           to="/sourcing/signup"
           style={{
-            background: V.orange, color: '#fff', textDecoration: 'none',
+            background: V.accent, color: '#fff', textDecoration: 'none',
             borderRadius: 6, padding: '6px 14px', fontSize: 12,
             fontWeight: 700, fontFamily: V.space,
           }}
@@ -103,8 +94,8 @@ export function SourcingNav({ active }) {
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
                 fontFamily: V.space,
-                color: isActive ? V.orange : V.muted,
-                borderBottom: isActive ? `2px solid ${V.orange}` : '2px solid transparent',
+                color: isActive ? V.accent : V.muted,
+                borderBottom: isActive ? `2px solid ${V.accent}` : '2px solid transparent',
                 transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
               }}
@@ -119,7 +110,7 @@ export function SourcingNav({ active }) {
 }
 
 // ─── Condition Badge ──────────────────────────────────────────────────────────
-function ConditionBadge({ condition }) {
+function ConditionBadge({ condition, V }) {
   if (!condition) return null;
   const c = CONDITION_COLORS[condition] || CONDITION_COLORS.used;
   return (
@@ -135,7 +126,7 @@ function ConditionBadge({ condition }) {
 }
 
 // ─── Listing Card ─────────────────────────────────────────────────────────────
-function ListingCard({ listing, company, onClick }) {
+function ListingCard({ listing, company, onClick, V }) {
   const [hovered, setHovered] = useState(false);
   const photos = Array.isArray(listing.photo_urls) ? listing.photo_urls : [];
   const hasPhoto = photos.length > 0 || listing.image_url;
@@ -155,6 +146,7 @@ function ListingCard({ listing, company, onClick }) {
         transition: 'all 0.15s ease',
         display: 'flex',
         flexDirection: 'column',
+        boxShadow: hovered ? `0 0 0 1px ${V.accent}20` : 'none',
       }}
     >
       {/* Photo */}
@@ -197,9 +189,9 @@ function ListingCard({ listing, company, onClick }) {
         <div style={{ flex: 1 }} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-          <ConditionBadge condition={listing.condition} />
+          <ConditionBadge condition={listing.condition} V={V} />
           {listing.price && (
-            <span style={{ fontSize: 16, fontWeight: 800, color: V.green, fontFamily: V.mono }}>
+            <span style={{ fontSize: 16, fontWeight: 800, color: V.accent, fontFamily: V.mono }}>
               ${listing.price >= 1000 ? `${(listing.price / 1000).toFixed(listing.price % 1000 === 0 ? 0 : 1)}k` : listing.price.toLocaleString()}
             </span>
           )}
@@ -220,7 +212,7 @@ function ListingCard({ listing, company, onClick }) {
 }
 
 // ─── Listing Detail Modal ─────────────────────────────────────────────────────
-function ListingModal({ listing, company, onClose }) {
+function ListingModal({ listing, company, onClose, V }) {
   const photos = Array.isArray(listing.photo_urls) ? listing.photo_urls : [];
   const hasPhoto = photos.length > 0 || listing.image_url;
   const photoSrc = photos[0] || listing.image_url;
@@ -265,9 +257,9 @@ function ListingModal({ listing, company, onClose }) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <ConditionBadge condition={listing.condition} />
+            <ConditionBadge condition={listing.condition} V={V} />
             {listing.price && (
-              <span style={{ fontSize: 22, fontWeight: 800, color: V.green, fontFamily: V.mono }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color: V.accent, fontFamily: V.mono }}>
                 ${listing.price.toLocaleString()}
               </span>
             )}
@@ -307,7 +299,7 @@ function ListingModal({ listing, company, onClose }) {
               href={`mailto:${listing.contact_email}?subject=Inquiry: ${encodeURIComponent(listing.title)}`}
               style={{
                 display: 'block', width: '100%', boxSizing: 'border-box',
-                background: V.orange, color: '#fff', textDecoration: 'none',
+                background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 8, padding: '12px', fontSize: 14,
                 fontWeight: 700, fontFamily: V.space, textAlign: 'center',
               }}
@@ -325,8 +317,11 @@ function ListingModal({ listing, company, onClose }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingMarketplace() {
+// ─── Inner component (uses theme) ─────────────────────────────────────────────
+function SourcingMarketplaceInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [companies, setCompanies] = useState({});
@@ -398,8 +393,8 @@ export default function SourcingMarketplace() {
         @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
-        input::placeholder { color: #4A4540; }
-        input:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
+        input::placeholder { color: ${V.dim}; }
+        input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
       <SourcingNav active="marketplace" />
@@ -407,14 +402,14 @@ export default function SourcingMarketplace() {
       {/* Hero */}
       <div style={{ padding: '40px 24px 28px', maxWidth: 960, margin: '0 auto' }}>
         <div style={{
-          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.orange,
+          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent,
           letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10,
         }}>
           Equipment Marketplace
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 6px', lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 6px', lineHeight: 1.15 }}>
               Equipment, Parts & Materials
             </h1>
             <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0 }}>
@@ -424,7 +419,7 @@ export default function SourcingMarketplace() {
           <Link
             to="/sourcing/marketplace/post"
             style={{
-              background: V.orange, color: '#fff', textDecoration: 'none',
+              background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 7, padding: '9px 18px', fontSize: 13,
               fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap',
               flexShrink: 0,
@@ -445,20 +440,20 @@ export default function SourcingMarketplace() {
               placeholder="Search equipment, parts, materials..."
               style={{
                 width: '100%',
-                background: V.card2, border: `1px solid ${V.borderHov}`,
+                background: V.card2, border: `1px solid ${V.border}`,
                 color: V.text, borderRadius: 8, padding: '10px 42px 10px 14px',
                 fontSize: 14, fontFamily: V.space, outline: 'none',
               }}
             />
             <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: V.muted }}>
               {loading
-                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.orange}`, animation: 'spin 0.8s linear infinite' }} />
+                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
                 : <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               }
             </div>
           </div>
           <button onClick={handleSearch} style={{
-            background: V.orange, border: 'none', color: '#fff',
+            background: V.accent, border: 'none', color: '#fff',
             borderRadius: 8, padding: '0 18px', fontSize: 13,
             fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
           }}>
@@ -489,9 +484,9 @@ export default function SourcingMarketplace() {
           {/* Condition */}
           {CONDITIONS.map(c => (
             <button key={c.key} onClick={() => setCondition(c.key)} style={{
-              background: condition === c.key ? 'rgba(255,255,255,0.08)' : 'transparent',
-              border: `1px solid ${condition === c.key ? V.borderHov : V.border}`,
-              color: condition === c.key ? V.text : V.muted,
+              background: condition === c.key ? V.accentDim : 'transparent',
+              border: `1px solid ${condition === c.key ? V.accentBrd : V.border}`,
+              color: condition === c.key ? V.accent : V.muted,
               borderRadius: 6, padding: '6px 12px', fontSize: 12,
               fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
               transition: 'all 0.15s',
@@ -505,9 +500,9 @@ export default function SourcingMarketplace() {
           {/* Price */}
           {PRICE_RANGES.map(r => (
             <button key={r.key} onClick={() => setPriceRange(r.key)} style={{
-              background: priceRange === r.key ? 'rgba(255,255,255,0.08)' : 'transparent',
-              border: `1px solid ${priceRange === r.key ? V.borderHov : V.border}`,
-              color: priceRange === r.key ? V.text : V.muted,
+              background: priceRange === r.key ? V.accentDim : 'transparent',
+              border: `1px solid ${priceRange === r.key ? V.accentBrd : V.border}`,
+              color: priceRange === r.key ? V.accent : V.muted,
               borderRadius: 6, padding: '6px 12px', fontSize: 12,
               fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
               transition: 'all 0.15s',
@@ -526,15 +521,15 @@ export default function SourcingMarketplace() {
               <>
                 <span style={{ color: V.text, fontWeight: 600 }}>{listings.length}</span>
                 {' '}listing{listings.length !== 1 ? 's' : ''}
-                {query && <> for <span style={{ color: V.orange }}>"{query}"</span></>}
+                {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
               </>
             )}
           </div>
         </div>
 
         {!supabase && (
-          <div style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
-            <div style={{ color: V.orange, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
+          <div style={{ background: V.accentDim, border: `1px solid ${V.accentBrd}`, borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
+            <div style={{ color: V.accent, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
             <div style={{ color: V.muted, fontFamily: V.space, fontSize: 12 }}>Run migration 001 + 002 in Supabase SQL editor to activate.</div>
           </div>
         )}
@@ -555,6 +550,7 @@ export default function SourcingMarketplace() {
                 listing={listing}
                 company={companies[listing.company_id]}
                 onClick={() => setSelected(listing)}
+                V={V}
               />
             ))}
           </div>
@@ -572,7 +568,7 @@ export default function SourcingMarketplace() {
             <Link
               to="/sourcing/marketplace/post"
               style={{
-                background: V.orange, color: '#fff', textDecoration: 'none',
+                background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,
                 fontWeight: 700, fontFamily: V.space, display: 'inline-block',
               }}
@@ -589,8 +585,18 @@ export default function SourcingMarketplace() {
           listing={selected}
           company={companies[selected.company_id]}
           onClose={() => setSelected(null)}
+          V={V}
         />
       )}
     </div>
+  );
+}
+
+// ─── Main export (wrapped with theme provider) ────────────────────────────────
+export default function SourcingMarketplace() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingMarketplaceInner />
+    </SourcingThemeProvider>
   );
 }

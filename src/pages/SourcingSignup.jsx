@@ -1,26 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
-
-// ─── Vertical + cert config ───────────────────────────────────────────────────
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor', color: '#29B6F6', icon: '💡' },
   { key: 'space',         label: 'Space & Aerospace', color: '#7C3AED', icon: '🚀' },
@@ -45,19 +27,15 @@ const EMP_RANGES = [
   { value: '10000+',   label: '10,000+' },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function slugify(str) {
-  return str
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function InputField({ label, required, ...props }) {
+function InputField({ label, required, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <input
         {...props}
@@ -73,11 +51,11 @@ function InputField({ label, required, ...props }) {
   );
 }
 
-function TextareaField({ label, required, ...props }) {
+function TextareaField({ label, required, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <textarea
         {...props}
@@ -94,11 +72,11 @@ function TextareaField({ label, required, ...props }) {
   );
 }
 
-function SelectField({ label, required, options, value, onChange }) {
+function SelectField({ label, required, options, value, onChange, V }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <select
         value={value}
@@ -110,9 +88,9 @@ function SelectField({ label, required, options, value, onChange }) {
           width: '100%', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer',
         }}
       >
-        <option value="" style={{ background: '#1A1A17' }}>Select...</option>
+        <option value="" style={{ background: V.card2 }}>Select...</option>
         {options.map(opt => (
-          <option key={opt.value || opt} value={opt.value || opt} style={{ background: '#1A1A17' }}>
+          <option key={opt.value || opt} value={opt.value || opt} style={{ background: V.card2 }}>
             {opt.label || opt}
           </option>
         ))}
@@ -121,8 +99,7 @@ function SelectField({ label, required, options, value, onChange }) {
   );
 }
 
-// ─── Step indicator ───────────────────────────────────────────────────────────
-function StepBar({ step, total }) {
+function StepBar({ step, total, V }) {
   return (
     <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
       {Array.from({ length: total }, (_, i) => (
@@ -130,7 +107,7 @@ function StepBar({ step, total }) {
           key={i}
           style={{
             flex: 1, height: 3, borderRadius: 2,
-            background: i < step ? V.orange : i === step ? `${V.orange}60` : 'rgba(255,255,255,0.1)',
+            background: i < step ? V.accent : i === step ? `${V.accent}60` : 'rgba(255,255,255,0.1)',
             transition: 'all 0.3s',
           }}
         />
@@ -139,14 +116,15 @@ function StepBar({ step, total }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingSignup() {
+// ─── Inner component ──────────────────────────────────────────────────────────
+function SourcingSignupInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
   const navigate = useNavigate();
-  const [step, setStep] = useState(0); // 0: vertical, 1: company info, 2: certs + org, 3: done
+  const [step, setStep] = useState(0);
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [companyId, setCompanyId] = useState(null);
 
   const [form, setForm] = useState({
     vertical: '',
@@ -163,7 +141,6 @@ export default function SourcingSignup() {
     selectedCerts: [],
   });
 
-  // Fetch orgs when vertical is chosen
   useEffect(() => {
     if (!form.vertical || !supabase) return;
     supabase
@@ -208,7 +185,6 @@ export default function SourcingSignup() {
     try {
       const slug = slugify(form.name);
 
-      // Insert company
       const { data: company, error: companyErr } = await supabase
         .from('directory_companies')
         .insert({
@@ -225,16 +201,13 @@ export default function SourcingSignup() {
           year_founded: form.year_founded ? parseInt(form.year_founded) : null,
           organization_id: form.org_id || null,
           membership_tier: 'free',
-          status: 'pending',  // Admin reviews before going active
+          status: 'pending',
         })
         .select()
         .single();
 
       if (companyErr) throw companyErr;
 
-      setCompanyId(company.id);
-
-      // Insert certifications
       if (form.selectedCerts.length > 0) {
         const certRows = form.selectedCerts.map(cert => ({
           company_id: company.id,
@@ -265,10 +238,11 @@ export default function SourcingSignup() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         * { box-sizing: border-box; }
-        input::placeholder, textarea::placeholder { color: #3A3530; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input::placeholder, textarea::placeholder { color: ${V.dim}; }
         input:focus, textarea:focus, select:focus {
-          border-color: rgba(232,93,38,0.5) !important;
-          box-shadow: 0 0 0 2px rgba(232,93,38,0.08);
+          border-color: ${V.accent} !important;
+          box-shadow: 0 0 0 2px ${V.accentDim};
         }
       `}</style>
 
@@ -277,10 +251,10 @@ export default function SourcingSignup() {
         borderBottom: `1px solid ${V.border}`,
         padding: '0 24px',
         display: 'flex', alignItems: 'center', gap: 16, height: 60,
-        background: '#0A0A0A',
+        background: V.navBg,
       }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.orange, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             AOM
           </span>
         </Link>
@@ -293,12 +267,11 @@ export default function SourcingSignup() {
       </div>
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '48px 24px 80px' }}>
-        {/* Header */}
         <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: V.orange, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+          <div style={{ fontSize: 11, color: V.accent, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
             Free Listing
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 10px', lineHeight: 1.15 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 10px', lineHeight: 1.15 }}>
             List Your Company
           </h1>
           <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0, lineHeight: 1.6 }}>
@@ -306,7 +279,7 @@ export default function SourcingSignup() {
           </p>
         </div>
 
-        {step < 3 && <StepBar step={step} total={3} />}
+        {step < 3 && <StepBar step={step} total={3} V={V} />}
 
         {/* Step 0: Choose vertical */}
         {step === 0 && (
@@ -346,7 +319,7 @@ export default function SourcingSignup() {
               onClick={handleNext}
               disabled={!form.vertical}
               style={{
-                width: '100%', background: form.vertical ? V.orange : 'rgba(255,255,255,0.08)',
+                width: '100%', background: form.vertical ? V.accent : V.accentDim,
                 border: 'none', color: form.vertical ? '#fff' : V.dim,
                 borderRadius: 8, padding: '12px 0', fontSize: 15,
                 fontWeight: 700, fontFamily: V.space, cursor: form.vertical ? 'pointer' : 'not-allowed',
@@ -369,80 +342,24 @@ export default function SourcingSignup() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <InputField
-                label="Company Name"
-                required
-                placeholder="Acme Semiconductor LLC"
-                value={form.name}
-                onChange={e => set('name', e.target.value)}
-              />
-
-              <TextareaField
-                label="Description"
-                required
-                placeholder="Brief description of your company, capabilities, and specialties..."
-                value={form.description}
-                onChange={e => set('description', e.target.value)}
-                rows={3}
-              />
+              <InputField label="Company Name" required placeholder="Acme Semiconductor LLC" value={form.name} onChange={e => set('name', e.target.value)} V={V} />
+              <TextareaField label="Description" required placeholder="Brief description of your company, capabilities, and specialties..." value={form.description} onChange={e => set('description', e.target.value)} rows={3} V={V} />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <InputField
-                  label="City"
-                  placeholder="Phoenix"
-                  value={form.city}
-                  onChange={e => set('city', e.target.value)}
-                />
-                <InputField
-                  label="State"
-                  placeholder="AZ"
-                  value={form.state}
-                  onChange={e => set('state', e.target.value)}
-                  maxLength={2}
-                />
+                <InputField label="City" placeholder="Phoenix" value={form.city} onChange={e => set('city', e.target.value)} V={V} />
+                <InputField label="State" placeholder="AZ" value={form.state} onChange={e => set('state', e.target.value)} maxLength={2} V={V} />
               </div>
 
-              <InputField
-                label="Website"
-                placeholder="https://yourcompany.com"
-                type="url"
-                value={form.website}
-                onChange={e => set('website', e.target.value)}
-              />
+              <InputField label="Website" placeholder="https://yourcompany.com" type="url" value={form.website} onChange={e => set('website', e.target.value)} V={V} />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <InputField
-                  label="Phone"
-                  placeholder="(480) 555-0100"
-                  type="tel"
-                  value={form.phone}
-                  onChange={e => set('phone', e.target.value)}
-                />
-                <InputField
-                  label="Email"
-                  placeholder="info@company.com"
-                  type="email"
-                  value={form.email}
-                  onChange={e => set('email', e.target.value)}
-                />
+                <InputField label="Phone" placeholder="(480) 555-0100" type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} V={V} />
+                <InputField label="Email" placeholder="info@company.com" type="email" value={form.email} onChange={e => set('email', e.target.value)} V={V} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <SelectField
-                  label="Employees"
-                  options={EMP_RANGES}
-                  value={form.employee_count}
-                  onChange={v => set('employee_count', v)}
-                />
-                <InputField
-                  label="Year Founded"
-                  placeholder="2010"
-                  type="number"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  value={form.year_founded}
-                  onChange={e => set('year_founded', e.target.value)}
-                />
+                <SelectField label="Employees" options={EMP_RANGES} value={form.employee_count} onChange={v => set('employee_count', v)} V={V} />
+                <InputField label="Year Founded" placeholder="2010" type="number" min="1900" max={new Date().getFullYear()} value={form.year_founded} onChange={e => set('year_founded', e.target.value)} V={V} />
               </div>
             </div>
 
@@ -462,7 +379,7 @@ export default function SourcingSignup() {
               <button
                 onClick={handleNext}
                 style={{
-                  flex: 2, background: V.orange, border: 'none', color: '#fff',
+                  flex: 2, background: V.accent, border: 'none', color: '#fff',
                   borderRadius: 8, padding: '11px 0',
                   fontSize: 14, fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
                 }}
@@ -480,16 +397,12 @@ export default function SourcingSignup() {
               Certifications & Memberships
             </div>
             <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space, marginBottom: 20 }}>
-              Select all certifications that apply. This helps buyers find you faster.
+              Select all certifications that apply.
             </div>
 
-            {/* Cert checklist */}
             {availableCerts.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{
-                  fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted,
-                  textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
-                }}>
+                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
                   Certifications
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -500,27 +413,22 @@ export default function SourcingSignup() {
                         key={cert}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 12,
-                          background: checked ? 'rgba(34,197,94,0.08)' : V.card,
-                          border: `1px solid ${checked ? 'rgba(34,197,94,0.3)' : V.border}`,
+                          background: checked ? V.accentDim : V.card,
+                          border: `1px solid ${checked ? V.accentBrd : V.border}`,
                           borderRadius: 7, padding: '10px 14px',
                           cursor: 'pointer', transition: 'all 0.12s',
                         }}
                       >
                         <div style={{
                           width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                          background: checked ? V.green : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${checked ? V.green : V.border}`,
+                          background: checked ? V.accent : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${checked ? V.accent : V.border}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 11, color: '#fff',
                         }}>
                           {checked ? '✓' : ''}
                         </div>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleCert(cert)}
-                          style={{ display: 'none' }}
-                        />
+                        <input type="checkbox" checked={checked} onChange={() => toggleCert(cert)} style={{ display: 'none' }} />
                         <span style={{ fontSize: 13, fontFamily: V.mono, color: checked ? V.text : V.muted }}>
                           {cert}
                         </span>
@@ -531,13 +439,9 @@ export default function SourcingSignup() {
               </div>
             )}
 
-            {/* Organization */}
             {orgs.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{
-                  fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted,
-                  textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
-                }}>
+                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
                   Member Organization (optional)
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -548,32 +452,24 @@ export default function SourcingSignup() {
                         key={org.id}
                         style={{
                           display: 'flex', alignItems: 'flex-start', gap: 12,
-                          background: selected ? 'rgba(59,130,246,0.08)' : V.card,
-                          border: `1px solid ${selected ? 'rgba(59,130,246,0.3)' : V.border}`,
+                          background: selected ? V.accentDim : V.card,
+                          border: `1px solid ${selected ? V.accentBrd : V.border}`,
                           borderRadius: 7, padding: '12px 14px', cursor: 'pointer',
                           transition: 'all 0.12s',
                         }}
                       >
                         <div style={{
                           width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                          background: selected ? V.blue : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${selected ? V.blue : V.border}`,
+                          background: selected ? V.accent : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${selected ? V.accent : V.border}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 9, color: '#fff', marginTop: 1,
                         }}>
                           {selected ? '●' : ''}
                         </div>
-                        <input
-                          type="radio"
-                          name="org"
-                          checked={selected}
-                          onChange={() => set('org_id', org.id)}
-                          style={{ display: 'none' }}
-                        />
+                        <input type="radio" name="org" checked={selected} onChange={() => set('org_id', org.id)} style={{ display: 'none' }} />
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.space, color: V.text, marginBottom: 2 }}>
-                            {org.name}
-                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.space, color: V.text, marginBottom: 2 }}>{org.name}</div>
                           {org.description && (
                             <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, lineHeight: 1.4 }}>
                               {org.description.slice(0, 100)}...
@@ -583,15 +479,12 @@ export default function SourcingSignup() {
                       </label>
                     );
                   })}
-                  {/* No org option */}
-                  <label
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      background: form.org_id === '' ? 'rgba(138,132,124,0.08)' : V.card,
-                      border: `1px solid ${form.org_id === '' ? V.muted : V.border}`,
-                      borderRadius: 7, padding: '10px 14px', cursor: 'pointer',
-                    }}
-                  >
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: form.org_id === '' ? `${V.muted}15` : V.card,
+                    border: `1px solid ${form.org_id === '' ? V.muted : V.border}`,
+                    borderRadius: 7, padding: '10px 14px', cursor: 'pointer',
+                  }}>
                     <div style={{
                       width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                       background: form.org_id === '' ? V.muted : 'rgba(255,255,255,0.05)',
@@ -601,13 +494,7 @@ export default function SourcingSignup() {
                     }}>
                       {form.org_id === '' ? '●' : ''}
                     </div>
-                    <input
-                      type="radio"
-                      name="org"
-                      checked={form.org_id === ''}
-                      onChange={() => set('org_id', '')}
-                      style={{ display: 'none' }}
-                    />
+                    <input type="radio" name="org" checked={form.org_id === ''} onChange={() => set('org_id', '')} style={{ display: 'none' }} />
                     <span style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
                       Not a member of any organization
                     </span>
@@ -616,12 +503,11 @@ export default function SourcingSignup() {
               </div>
             )}
 
-            {/* No supabase warning */}
             {!supabase && (
               <div style={{
-                background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)',
+                background: V.accentDim, border: `1px solid ${V.accentBrd}`,
                 borderRadius: 7, padding: '12px 14px', marginBottom: 16,
-                fontSize: 12, color: V.orange, fontFamily: V.space,
+                fontSize: 12, color: V.accent, fontFamily: V.space,
               }}>
                 Supabase not configured -- listing cannot be saved yet. Run the migration first.
               </div>
@@ -644,7 +530,7 @@ export default function SourcingSignup() {
                 onClick={handleSubmit}
                 disabled={loading}
                 style={{
-                  flex: 2, background: loading ? 'rgba(232,93,38,0.4)' : V.orange,
+                  flex: 2, background: loading ? `${V.accent}60` : V.accent,
                   border: 'none', color: '#fff', borderRadius: 8, padding: '11px 0',
                   fontSize: 14, fontWeight: 700, fontFamily: V.space,
                   cursor: loading ? 'not-allowed' : 'pointer',
@@ -667,26 +553,25 @@ export default function SourcingSignup() {
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div style={{
               width: 64, height: 64, borderRadius: '50%',
-              background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)',
+              background: V.accentDim, border: `2px solid ${V.accentBrd}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 28, margin: '0 auto 20px',
+              fontSize: 28, margin: '0 auto 20px', color: V.accent,
             }}>
               ✓
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 12px' }}>
+            <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 12px' }}>
               You're on the list.
             </h2>
             <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, maxWidth: 380, margin: '0 auto 28px', lineHeight: 1.6 }}>
-              Your listing is under review and will go live within 24 hours. We'll confirm via email once it's active.
+              Your listing is under review and will go live within 24 hours.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 280, margin: '0 auto' }}>
               <Link
                 to="/sourcing"
                 style={{
-                  background: V.orange, color: '#fff', textDecoration: 'none',
+                  background: V.accent, color: '#fff', textDecoration: 'none',
                   borderRadius: 8, padding: '11px 0', fontSize: 14,
-                  fontWeight: 700, fontFamily: V.space, display: 'block',
-                  textAlign: 'center',
+                  fontWeight: 700, fontFamily: V.space, display: 'block', textAlign: 'center',
                 }}
               >
                 Browse the Directory
@@ -696,8 +581,7 @@ export default function SourcingSignup() {
                 style={{
                   background: 'transparent', color: V.muted, textDecoration: 'none',
                   border: `1px solid ${V.border}`, borderRadius: 8, padding: '11px 0',
-                  fontSize: 14, fontWeight: 600, fontFamily: V.space, display: 'block',
-                  textAlign: 'center',
+                  fontSize: 14, fontWeight: 600, fontFamily: V.space, display: 'block', textAlign: 'center',
                 }}
               >
                 Back to AOM
@@ -706,8 +590,14 @@ export default function SourcingSignup() {
           </div>
         )}
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+export default function SourcingSignup() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingSignupInner />
+    </SourcingThemeProvider>
   );
 }

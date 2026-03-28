@@ -2,30 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
-
-function InputField({ label, required, ...props }) {
+function InputField({ label, required, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <input
         {...props}
@@ -41,8 +24,7 @@ function InputField({ label, required, ...props }) {
   );
 }
 
-// ─── Credit card placeholder ──────────────────────────────────────────────────
-function CardField({ label, children, style }) {
+function CardField({ label, children, style, V }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, ...style }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>{label}</label>
@@ -51,7 +33,7 @@ function CardField({ label, children, style }) {
   );
 }
 
-function FakeInput({ placeholder, mono }) {
+function FakeInput({ placeholder, mono, V }) {
   return (
     <div style={{
       background: V.card2, border: `1px solid ${V.border}`,
@@ -65,8 +47,11 @@ function FakeInput({ placeholder, mono }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingCheckout() {
+// ─── Inner Component ──────────────────────────────────────────────────────────
+function SourcingCheckoutInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -88,7 +73,6 @@ export default function SourcingCheckout() {
   });
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
-  // Fetch org + company
   useEffect(() => {
     if (!supabase) return;
     if (orgSlug) {
@@ -120,7 +104,6 @@ export default function SourcingCheckout() {
     setLoading(true);
     setError('');
     try {
-      // If we have a company, update its membership tier
       if (company) {
         const { error: updateErr } = await supabase
           .from('directory_companies')
@@ -128,7 +111,6 @@ export default function SourcingCheckout() {
           .eq('id', company.id);
         if (updateErr) throw updateErr;
       }
-
       setDone(true);
     } catch (err) {
       console.error('Checkout error:', err);
@@ -145,13 +127,13 @@ export default function SourcingCheckout() {
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
-            background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)',
+            background: V.accentDim, border: `2px solid ${V.accentBrd}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, margin: '0 auto 20px',
+            fontSize: 28, margin: '0 auto 20px', color: V.accent,
           }}>
             ✓
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 12px' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 12px' }}>
             Membership Confirmed
           </h2>
           <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, maxWidth: 380, margin: '0 auto 8px', lineHeight: 1.6 }}>
@@ -165,7 +147,7 @@ export default function SourcingCheckout() {
               <Link
                 to={`/sourcing/org/${orgSlug}`}
                 style={{
-                  background: V.orange, color: '#fff', textDecoration: 'none',
+                  background: V.accent, color: '#fff', textDecoration: 'none',
                   borderRadius: 8, padding: '10px 20px', fontSize: 13,
                   fontWeight: 700, fontFamily: V.space,
                 }}
@@ -193,8 +175,8 @@ export default function SourcingCheckout() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         * { box-sizing: border-box; }
-        input::placeholder { color: #3A3530; }
-        input:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.08); }
+        input::placeholder { color: ${V.dim}; }
+        input:focus { border-color: ${V.accentBrd} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
@@ -204,10 +186,10 @@ export default function SourcingCheckout() {
         {/* Left: Form */}
         <div>
           <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 11, color: V.orange, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: V.accent, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
               Membership
             </div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 8px', lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 8px', lineHeight: 1.15 }}>
               Complete Membership
             </h1>
             <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0, lineHeight: 1.6 }}>
@@ -230,6 +212,7 @@ export default function SourcingCheckout() {
                 placeholder="Acme Semiconductor LLC"
                 value={form.company_name}
                 onChange={e => set('company_name', e.target.value)}
+                V={V}
               />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <InputField
@@ -237,6 +220,7 @@ export default function SourcingCheckout() {
                   placeholder="Jane Smith"
                   value={form.contact_name}
                   onChange={e => set('contact_name', e.target.value)}
+                  V={V}
                 />
                 <InputField
                   label="Contact Email"
@@ -244,6 +228,7 @@ export default function SourcingCheckout() {
                   placeholder="jane@company.com"
                   value={form.contact_email}
                   onChange={e => set('contact_email', e.target.value)}
+                  V={V}
                 />
               </div>
             </div>
@@ -259,8 +244,8 @@ export default function SourcingCheckout() {
                 Payment Details
               </div>
               <div style={{
-                background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
-                color: V.green, fontSize: 10, fontFamily: V.mono, fontWeight: 700,
+                background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+                color: V.accent, fontSize: 10, fontFamily: V.mono, fontWeight: 700,
                 padding: '3px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.08em',
               }}>
                 Secure
@@ -276,15 +261,15 @@ export default function SourcingCheckout() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: 0.5, pointerEvents: 'none' }}>
-              <CardField label="Card Number">
-                <FakeInput placeholder="•••• •••• •••• ••••" mono />
+              <CardField label="Card Number" V={V}>
+                <FakeInput placeholder="•••• •••• •••• ••••" mono V={V} />
               </CardField>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <CardField label="Expiry">
-                  <FakeInput placeholder="MM / YY" mono />
+                <CardField label="Expiry" V={V}>
+                  <FakeInput placeholder="MM / YY" mono V={V} />
                 </CardField>
-                <CardField label="CVC">
-                  <FakeInput placeholder="•••" mono />
+                <CardField label="CVC" V={V}>
+                  <FakeInput placeholder="•••" V={V} />
                 </CardField>
               </div>
             </div>
@@ -292,9 +277,9 @@ export default function SourcingCheckout() {
 
           {!supabase && (
             <div style={{
-              background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)',
+              background: V.accentDim, border: `1px solid ${V.accentBrd}`,
               borderRadius: 7, padding: '12px 14px', marginBottom: 16,
-              fontSize: 12, color: V.orange, fontFamily: V.space,
+              fontSize: 12, color: V.accent, fontFamily: V.space,
             }}>
               Supabase not configured. Run migrations to enable this.
             </div>
@@ -309,7 +294,7 @@ export default function SourcingCheckout() {
             disabled={loading}
             style={{
               width: '100%',
-              background: loading ? 'rgba(232,93,38,0.4)' : V.orange,
+              background: loading ? `${V.accent}66` : V.accent,
               border: 'none', color: '#fff', borderRadius: 8, padding: '14px 0',
               fontSize: 15, fontWeight: 700, fontFamily: V.space,
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -337,31 +322,39 @@ export default function SourcingCheckout() {
           {org && (
             <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${V.border}` }}>
               <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space, marginBottom: 4 }}>Organization</div>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.text }}>{org.name}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.heading }}>{org.name}</div>
             </div>
           )}
 
           <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${V.border}` }}>
             <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space, marginBottom: 4 }}>Plan</div>
-            <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.text }}>{tierName}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.heading }}>{tierName}</div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 20 }}>
             <span style={{ fontSize: 14, color: V.muted, fontFamily: V.space }}>Annual fee</span>
-            <span style={{ fontSize: 22, fontWeight: 800, fontFamily: V.mono, color: V.text }}>
+            <span style={{ fontSize: 22, fontWeight: 800, fontFamily: V.mono, color: V.heading }}>
               ${price.toLocaleString()}
             </span>
           </div>
 
           <div style={{
-            background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)',
+            background: V.accentDim, border: `1px solid ${V.accentBrd}`,
             borderRadius: 7, padding: '10px 12px',
-            fontSize: 12, color: '#86EFAC', fontFamily: V.space, lineHeight: 1.5,
+            fontSize: 12, color: V.accent, fontFamily: V.space, lineHeight: 1.5,
           }}>
             No charge today. Ben will contact you to finalize payment.
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SourcingCheckout() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingCheckoutInner />
+    </SourcingThemeProvider>
   );
 }

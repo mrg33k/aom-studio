@@ -2,40 +2,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  cardHov:   '#1F1F1C',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 const VERTICALS = [
-  { key: 'all',           label: 'All Industries',   color: V.muted },
+  { key: 'all',           label: 'All Industries',   color: null },
   { key: 'semiconductor', label: 'Semiconductor',     color: '#29B6F6' },
   { key: 'space',         label: 'Space & Aerospace', color: '#7C3AED' },
   { key: 'biotech',       label: 'Biotech',           color: '#22C55E' },
   { key: 'defense',       label: 'Defense',           color: '#EF4444' },
 ];
 
-function VerticalBadge({ vertical }) {
+function VerticalBadge({ vertical, V }) {
   const v = VERTICALS.find(x => x.key === vertical);
   if (!v || v.key === 'all') return null;
+  const col = v.color || V.accent;
   return (
     <span style={{
-      background: `${v.color}18`, border: `1px solid ${v.color}50`, color: v.color,
+      background: `${col}18`, border: `1px solid ${col}50`, color: col,
       fontSize: 10, fontWeight: 700, fontFamily: V.mono,
       padding: '2px 7px', borderRadius: 3,
       textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -45,10 +28,10 @@ function VerticalBadge({ vertical }) {
   );
 }
 
-function TagPill({ tag }) {
+function TagPill({ tag, V }) {
   return (
     <span style={{
-      background: 'rgba(255,255,255,0.05)',
+      background: V.accentDim,
       border: `1px solid ${V.border}`,
       color: V.muted, fontSize: 10, fontFamily: V.mono,
       padding: '2px 7px', borderRadius: 3,
@@ -59,7 +42,7 @@ function TagPill({ tag }) {
 }
 
 // ─── Article Card ─────────────────────────────────────────────────────────────
-function ArticleCard({ listing, company }) {
+function ArticleCard({ listing, company, V }) {
   const [hovered, setHovered] = useState(false);
   const tags = Array.isArray(listing.tags) ? listing.tags : [];
   const postedDate = new Date(listing.created_at).toLocaleDateString('en-US', {
@@ -75,10 +58,11 @@ function ArticleCard({ listing, company }) {
     >
       <div style={{
         background: hovered ? V.cardHov : V.card,
-        border: `1px solid ${hovered ? V.borderHov : V.border}`,
+        border: `1px solid ${hovered ? V.accentBrd : V.border}`,
         borderRadius: 10, overflow: 'hidden',
         cursor: 'pointer', transition: 'all 0.15s ease',
         display: 'flex', flexDirection: 'column',
+        boxShadow: hovered ? `0 0 0 1px ${V.accent}20` : 'none',
       }}>
         {/* Cover image */}
         {listing.cover_image_url && (
@@ -95,7 +79,7 @@ function ArticleCard({ listing, company }) {
         <div style={{ padding: '16px 18px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{
             fontSize: 16, fontWeight: 700, fontFamily: V.syne,
-            color: V.text, lineHeight: 1.3,
+            color: V.heading, lineHeight: 1.3,
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}>
             {listing.title}
@@ -112,7 +96,7 @@ function ArticleCard({ listing, company }) {
 
           {tags.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {tags.slice(0, 3).map(tag => <TagPill key={tag} tag={tag} />)}
+              {tags.slice(0, 3).map(tag => <TagPill key={tag} tag={tag} V={V} />)}
             </div>
           )}
 
@@ -128,7 +112,7 @@ function ArticleCard({ listing, company }) {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              <VerticalBadge vertical={listing.vertical} />
+              <VerticalBadge vertical={listing.vertical} V={V} />
               {listing.read_time_min && (
                 <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, whiteSpace: 'nowrap' }}>
                   {listing.read_time_min} min read
@@ -143,7 +127,7 @@ function ArticleCard({ listing, company }) {
 }
 
 // ─── Article Full View ────────────────────────────────────────────────────────
-function ArticleView({ listing, company, onClose }) {
+function ArticleView({ listing, company, onClose, V }) {
   const tags = Array.isArray(listing.tags) ? listing.tags : [];
   const postedDate = new Date(listing.created_at).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
@@ -180,7 +164,7 @@ function ArticleView({ listing, company, onClose }) {
         )}
         <div style={{ padding: '28px 32px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: 0, lineHeight: 1.2, flex: 1 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: 0, lineHeight: 1.2, flex: 1 }}>
               {listing.title}
             </h1>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: V.muted, cursor: 'pointer', fontSize: 22, flexShrink: 0, padding: 0 }}>
@@ -200,7 +184,7 @@ function ArticleView({ listing, company, onClose }) {
                 <span style={{ fontSize: 12, color: V.dim, fontFamily: V.mono }}>{listing.read_time_min} min read</span>
               </>
             )}
-            <VerticalBadge vertical={listing.vertical} />
+            <VerticalBadge vertical={listing.vertical} V={V} />
           </div>
 
           {listing.excerpt && (
@@ -218,7 +202,7 @@ function ArticleView({ listing, company, onClose }) {
           {tags.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 28, paddingTop: 20, borderTop: `1px solid ${V.border}` }}>
               <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.1em', alignSelf: 'center' }}>Tags:</span>
-              {tags.map(tag => <TagPill key={tag} tag={tag} />)}
+              {tags.map(tag => <TagPill key={tag} tag={tag} V={V} />)}
             </div>
           )}
 
@@ -230,19 +214,19 @@ function ArticleView({ listing, company, onClose }) {
             }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-                background: 'rgba(255,255,255,0.06)', border: `1px solid ${V.border}`,
+                background: V.accentDim, border: `1px solid ${V.accentBrd}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 800, fontFamily: V.syne, color: V.muted,
+                fontSize: 18, fontWeight: 800, fontFamily: V.syne, color: V.accent,
               }}>
                 {company.name.charAt(0)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text }}>{company.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading }}>{company.name}</div>
                 <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>{[company.city, company.state].filter(Boolean).join(', ')}</div>
               </div>
               <Link to={`/sourcing/${company.slug}`} style={{
-                background: 'transparent', color: V.orange,
-                border: `1px solid rgba(232,93,38,0.4)`, textDecoration: 'none',
+                background: 'transparent', color: V.accent,
+                border: `1px solid ${V.accentBrd}`, textDecoration: 'none',
                 borderRadius: 6, padding: '6px 14px', fontSize: 12,
                 fontWeight: 700, fontFamily: V.space, flexShrink: 0,
               }}>
@@ -256,8 +240,11 @@ function ArticleView({ listing, company, onClose }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingArticles() {
+// ─── Inner Component ──────────────────────────────────────────────────────────
+function SourcingArticlesInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const [listings, setListings] = useState([]);
   const [companies, setCompanies] = useState({});
   const [loading, setLoading] = useState(true);
@@ -314,20 +301,20 @@ export default function SourcingArticles() {
         @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
-        input::placeholder { color: #4A4540; }
-        input:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
+        input::placeholder { color: ${V.dim}; }
+        input:focus { border-color: ${V.accentBrd} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
       <SourcingNav active="articles" />
 
       {/* Hero */}
       <div style={{ padding: '40px 24px 28px', maxWidth: 960, margin: '0 auto' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.orange, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
           Industry Articles
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 6px', lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 6px', lineHeight: 1.15 }}>
               News & Insights
             </h1>
             <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0 }}>
@@ -337,7 +324,7 @@ export default function SourcingArticles() {
           <Link
             to="/sourcing/articles/post"
             style={{
-              background: V.orange, color: '#fff', textDecoration: 'none',
+              background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 7, padding: '9px 18px', fontSize: 13,
               fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap', flexShrink: 0,
             }}
@@ -357,20 +344,20 @@ export default function SourcingArticles() {
               placeholder="Search articles, topics, companies..."
               style={{
                 width: '100%',
-                background: V.card2, border: `1px solid ${V.borderHov}`,
+                background: V.card2, border: `1px solid ${V.border}`,
                 color: V.text, borderRadius: 8, padding: '10px 42px 10px 14px',
                 fontSize: 14, fontFamily: V.space, outline: 'none',
               }}
             />
             <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: V.muted }}>
               {loading
-                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.orange}`, animation: 'spin 0.8s linear infinite' }} />
+                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
                 : <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               }
             </div>
           </div>
           <button onClick={handleSearch} style={{
-            background: V.orange, border: 'none', color: '#fff',
+            background: V.accent, border: 'none', color: '#fff',
             borderRadius: 8, padding: '0 18px', fontSize: 13,
             fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
           }}>
@@ -380,18 +367,22 @@ export default function SourcingArticles() {
 
         {/* Vertical filters */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {VERTICALS.map(v => (
-            <button key={v.key} onClick={() => setVertical(v.key)} style={{
-              background: vertical === v.key ? `${v.color}20` : 'transparent',
-              border: `1px solid ${vertical === v.key ? v.color : V.border}`,
-              color: vertical === v.key ? v.color : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
-            }}>
-              {v.label}
-            </button>
-          ))}
+          {VERTICALS.map(vf => {
+            const col = vf.key === 'all' ? V.accent : (vf.color || V.accent);
+            const isActive = vertical === vf.key;
+            return (
+              <button key={vf.key} onClick={() => setVertical(vf.key)} style={{
+                background: isActive ? `${col}20` : 'transparent',
+                border: `1px solid ${isActive ? col : V.border}`,
+                color: isActive ? col : V.muted,
+                borderRadius: 6, padding: '6px 12px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}>
+                {vf.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -402,14 +393,14 @@ export default function SourcingArticles() {
             <>
               <span style={{ color: V.text, fontWeight: 600 }}>{listings.length}</span>
               {' '}article{listings.length !== 1 ? 's' : ''}
-              {query && <> for <span style={{ color: V.orange }}>"{query}"</span></>}
+              {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
             </>
           )}
         </div>
 
         {!supabase && (
-          <div style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
-            <div style={{ color: V.orange, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
+          <div style={{ background: V.accentDim, border: `1px solid ${V.accentBrd}`, borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
+            <div style={{ color: V.accent, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
             <div style={{ color: V.muted, fontFamily: V.space, fontSize: 12 }}>Run migrations 001-003 in Supabase SQL editor to activate.</div>
           </div>
         )}
@@ -429,7 +420,7 @@ export default function SourcingArticles() {
                 key={listing.id}
                 listing={listing}
                 company={companies[listing.company_id]}
-                onClick={() => setSelected(listing)}
+                V={V}
               />
             ))}
           </div>
@@ -438,7 +429,7 @@ export default function SourcingArticles() {
         {!loading && supabase && listings.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>📄</div>
-            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
               No articles found
             </div>
             <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
@@ -447,7 +438,7 @@ export default function SourcingArticles() {
             <Link
               to="/sourcing/articles/post"
               style={{
-                background: V.orange, color: '#fff', textDecoration: 'none',
+                background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,
                 fontWeight: 700, fontFamily: V.space, display: 'inline-block',
               }}
@@ -463,8 +454,17 @@ export default function SourcingArticles() {
           listing={selected}
           company={companies[selected.company_id]}
           onClose={() => setSelected(null)}
+          V={V}
         />
       )}
     </div>
+  );
+}
+
+export default function SourcingArticles() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingArticlesInner />
+    </SourcingThemeProvider>
   );
 }

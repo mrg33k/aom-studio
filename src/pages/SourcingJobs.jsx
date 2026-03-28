@@ -2,28 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  cardHov:   '#1F1F1C',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 const VERTICALS = [
-  { key: 'all',           label: 'All Industries',   color: V.muted },
+  { key: 'all',           label: 'All Industries',   color: '#9ca3af' },
   { key: 'semiconductor', label: 'Semiconductor',     color: '#29B6F6' },
   { key: 'space',         label: 'Space & Aerospace', color: '#7C3AED' },
   { key: 'biotech',       label: 'Biotech',           color: '#22C55E' },
@@ -45,7 +27,7 @@ const JOB_TYPE_COLORS = {
   'part-time':  { bg: 'rgba(138,132,124,0.1)', border: 'rgba(138,132,124,0.4)', text: '#8A847C' },
 };
 
-function JobTypeBadge({ jobType }) {
+function JobTypeBadge({ jobType, V }) {
   if (!jobType) return null;
   const c = JOB_TYPE_COLORS[jobType] || JOB_TYPE_COLORS['part-time'];
   return (
@@ -60,7 +42,7 @@ function JobTypeBadge({ jobType }) {
   );
 }
 
-function VerticalDot({ vertical }) {
+function VerticalDot({ vertical, V }) {
   const v = VERTICALS.find(x => x.key === vertical);
   if (!v || v.key === 'all') return null;
   return (
@@ -86,8 +68,7 @@ function formatSalary(min, max, jobType) {
   return `Up to ${fmt(max)}${unit}`;
 }
 
-// ─── Job Card ─────────────────────────────────────────────────────────────────
-function JobCard({ listing, company, onClick }) {
+function JobCard({ listing, company, onClick, V }) {
   const [hovered, setHovered] = useState(false);
   const salary = formatSalary(listing.salary_min, listing.salary_max, listing.job_type);
   const postedAgo = (() => {
@@ -110,19 +91,19 @@ function JobCard({ listing, company, onClick }) {
         borderRadius: 10, padding: '18px 20px',
         cursor: 'pointer', transition: 'all 0.15s ease',
         display: 'flex', gap: 14, alignItems: 'flex-start',
+        boxShadow: hovered ? `0 0 0 1px ${V.accent}20` : 'none',
       }}
     >
-      {/* Company logo / initial */}
       <div style={{
         width: 44, height: 44, borderRadius: 8, flexShrink: 0,
-        background: company?.logo_url ? 'transparent' : 'rgba(255,255,255,0.06)',
+        background: company?.logo_url ? 'transparent' : V.accentDim,
         border: `1px solid ${V.border}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
       }}>
         {company?.logo_url
           ? <img src={company.logo_url} alt={company.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          : <span style={{ fontSize: 18, fontWeight: 800, fontFamily: V.syne, color: V.dim }}>
+          : <span style={{ fontSize: 18, fontWeight: 800, fontFamily: V.syne, color: V.accent }}>
               {(company?.name || '?').charAt(0)}
             </span>
         }
@@ -147,10 +128,10 @@ function JobCard({ listing, company, onClick }) {
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <JobTypeBadge jobType={listing.job_type} />
-          <VerticalDot vertical={listing.vertical} />
+          <JobTypeBadge jobType={listing.job_type} V={V} />
+          <VerticalDot vertical={listing.vertical} V={V} />
           {salary && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: V.green, fontFamily: V.mono }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: V.accent, fontFamily: V.mono }}>
               {salary}
             </span>
           )}
@@ -173,8 +154,7 @@ function JobCard({ listing, company, onClick }) {
   );
 }
 
-// ─── Job Detail Modal ─────────────────────────────────────────────────────────
-function JobModal({ listing, company, onClose }) {
+function JobModal({ listing, company, onClose, V }) {
   const salary = formatSalary(listing.salary_min, listing.salary_max, listing.job_type);
 
   useEffect(() => {
@@ -198,8 +178,7 @@ function JobModal({ listing, company, onClose }) {
         style={{
           background: V.card, border: `1px solid ${V.border}`,
           borderRadius: 12, maxWidth: 640, width: '100%',
-          maxHeight: '85vh', overflow: 'auto',
-          padding: 28,
+          maxHeight: '85vh', overflow: 'auto', padding: 28,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
@@ -212,24 +191,20 @@ function JobModal({ listing, company, onClose }) {
         </div>
 
         <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 16 }}>
-          {company?.name}
-          {listing.location && ` · ${listing.location}`}
-          {listing.remote && ' · Remote OK'}
+          {company?.name}{listing.location && ` · ${listing.location}`}{listing.remote && ' · Remote OK'}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-          <JobTypeBadge jobType={listing.job_type} />
-          <VerticalDot vertical={listing.vertical} />
-          {salary && <span style={{ fontSize: 16, fontWeight: 800, color: V.green, fontFamily: V.mono }}>{salary}</span>}
+          <JobTypeBadge jobType={listing.job_type} V={V} />
+          <VerticalDot vertical={listing.vertical} V={V} />
+          {salary && <span style={{ fontSize: 16, fontWeight: 800, color: V.accent, fontFamily: V.mono }}>{salary}</span>}
           {listing.remote && (
             <span style={{
               background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)',
               color: V.blue, fontSize: 10, fontFamily: V.mono,
               padding: '2px 7px', borderRadius: 3, fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '0.08em',
-            }}>
-              Remote
-            </span>
+            }}>Remote</span>
           )}
         </div>
 
@@ -244,15 +219,9 @@ function JobModal({ listing, company, onClose }) {
             background: V.card2, border: `1px solid ${V.border}`,
             borderRadius: 8, padding: '14px 16px', marginBottom: 20,
           }}>
-            <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontWeight: 700 }}>
-              Company
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 2 }}>
-              {company.name}
-            </div>
-            <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
-              {[company.city, company.state].filter(Boolean).join(', ')}
-            </div>
+            <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontWeight: 700 }}>Company</div>
+            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 2 }}>{company.name}</div>
+            <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>{[company.city, company.state].filter(Boolean).join(', ')}</div>
             {company.website && (
               <a href={company.website} target="_blank" rel="noreferrer"
                 style={{ fontSize: 12, color: V.blue, fontFamily: V.space, textDecoration: 'none', display: 'block', marginTop: 4 }}>
@@ -263,29 +232,21 @@ function JobModal({ listing, company, onClose }) {
         )}
 
         {listing.apply_url ? (
-          <a
-            href={listing.apply_url}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              display: 'block', width: '100%', boxSizing: 'border-box',
-              background: V.orange, color: '#fff', textDecoration: 'none',
-              borderRadius: 8, padding: '12px', fontSize: 14,
-              fontWeight: 700, fontFamily: V.space, textAlign: 'center',
-            }}
-          >
+          <a href={listing.apply_url} target="_blank" rel="noreferrer" style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            background: V.accent, color: '#fff', textDecoration: 'none',
+            borderRadius: 8, padding: '12px', fontSize: 14,
+            fontWeight: 700, fontFamily: V.space, textAlign: 'center',
+          }}>
             Apply Now
           </a>
         ) : listing.contact_email && (
-          <a
-            href={`mailto:${listing.contact_email}?subject=Application: ${encodeURIComponent(listing.title)}`}
-            style={{
-              display: 'block', width: '100%', boxSizing: 'border-box',
-              background: V.orange, color: '#fff', textDecoration: 'none',
-              borderRadius: 8, padding: '12px', fontSize: 14,
-              fontWeight: 700, fontFamily: V.space, textAlign: 'center',
-            }}
-          >
+          <a href={`mailto:${listing.contact_email}?subject=Application: ${encodeURIComponent(listing.title)}`} style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            background: V.accent, color: '#fff', textDecoration: 'none',
+            borderRadius: 8, padding: '12px', fontSize: 14,
+            fontWeight: 700, fontFamily: V.space, textAlign: 'center',
+          }}>
             Apply via Email
           </a>
         )}
@@ -298,8 +259,10 @@ function JobModal({ listing, company, onClose }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingJobs() {
+function SourcingJobsInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const [listings, setListings] = useState([]);
   const [companies, setCompanies] = useState({});
   const [loading, setLoading] = useState(true);
@@ -332,8 +295,7 @@ export default function SourcingJobs() {
 
       if (data && data.length > 0) {
         const companyIds = [...new Set(data.map(l => l.company_id))];
-        const { data: compData } = await supabase
-          .from('directory_companies').select('*').in('id', companyIds);
+        const { data: compData } = await supabase.from('directory_companies').select('*').in('id', companyIds);
         const map = {};
         (compData || []).forEach(c => { map[c.id] = c; });
         setCompanies(map);
@@ -360,39 +322,34 @@ export default function SourcingJobs() {
         @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
-        input::placeholder { color: #4A4540; }
-        input:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
+        input::placeholder { color: ${V.dim}; }
+        input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
       <SourcingNav active="jobs" />
 
-      {/* Hero */}
       <div style={{ padding: '40px 24px 28px', maxWidth: 860, margin: '0 auto' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.orange, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
           Job Board
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 6px', lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 6px', lineHeight: 1.15 }}>
               Industry Jobs
             </h1>
             <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0 }}>
               Positions at Arizona's semiconductor, space, and advanced tech companies.
             </p>
           </div>
-          <Link
-            to="/sourcing/jobs/post"
-            style={{
-              background: V.orange, color: '#fff', textDecoration: 'none',
-              borderRadius: 7, padding: '9px 18px', fontSize: 13,
-              fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
+          <Link to="/sourcing/jobs/post" style={{
+            background: V.accent, color: '#fff', textDecoration: 'none',
+            borderRadius: 7, padding: '9px 18px', fontSize: 13,
+            fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
             + Post a Job
           </Link>
         </div>
 
-        {/* Search */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
@@ -403,20 +360,20 @@ export default function SourcingJobs() {
               placeholder="Search job title, company, location..."
               style={{
                 width: '100%',
-                background: V.card2, border: `1px solid ${V.borderHov}`,
+                background: V.card2, border: `1px solid ${V.border}`,
                 color: V.text, borderRadius: 8, padding: '10px 42px 10px 14px',
                 fontSize: 14, fontFamily: V.space, outline: 'none',
               }}
             />
             <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: V.muted }}>
               {loading
-                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.orange}`, animation: 'spin 0.8s linear infinite' }} />
+                ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
                 : <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               }
             </div>
           </div>
           <button onClick={handleSearch} style={{
-            background: V.orange, border: 'none', color: '#fff',
+            background: V.accent, border: 'none', color: '#fff',
             borderRadius: 8, padding: '0 18px', fontSize: 13,
             fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
           }}>
@@ -424,7 +381,6 @@ export default function SourcingJobs() {
           </button>
         </div>
 
-        {/* Filters */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {VERTICALS.map(v => (
             <button key={v.key} onClick={() => setVertical(v.key)} style={{
@@ -432,8 +388,7 @@ export default function SourcingJobs() {
               border: `1px solid ${vertical === v.key ? v.color : V.border}`,
               color: vertical === v.key ? v.color : V.muted,
               borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
+              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
             }}>
               {v.label}
             </button>
@@ -441,12 +396,11 @@ export default function SourcingJobs() {
           <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
           {JOB_TYPES.map(jt => (
             <button key={jt.key} onClick={() => setJobType(jt.key)} style={{
-              background: jobType === jt.key ? 'rgba(255,255,255,0.08)' : 'transparent',
-              border: `1px solid ${jobType === jt.key ? V.borderHov : V.border}`,
-              color: jobType === jt.key ? V.text : V.muted,
+              background: jobType === jt.key ? V.accentDim : 'transparent',
+              border: `1px solid ${jobType === jt.key ? V.accentBrd : V.border}`,
+              color: jobType === jt.key ? V.accent : V.muted,
               borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
+              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
             }}>
               {jt.label}
             </button>
@@ -457,29 +411,27 @@ export default function SourcingJobs() {
             border: `1px solid ${remoteOnly ? 'rgba(59,130,246,0.5)' : V.border}`,
             color: remoteOnly ? '#93C5FD' : V.muted,
             borderRadius: 6, padding: '6px 12px', fontSize: 12,
-            fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-            transition: 'all 0.15s',
+            fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
           }}>
             Remote OK
           </button>
         </div>
       </div>
 
-      {/* Results */}
       <div style={{ padding: '0 24px 60px', maxWidth: 860, margin: '0 auto' }}>
         <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space, marginBottom: 16 }}>
           {loading ? 'Loading...' : (
             <>
               <span style={{ color: V.text, fontWeight: 600 }}>{listings.length}</span>
               {' '}job{listings.length !== 1 ? 's' : ''}
-              {query && <> for <span style={{ color: V.orange }}>"{query}"</span></>}
+              {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
             </>
           )}
         </div>
 
         {!supabase && (
-          <div style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
-            <div style={{ color: V.orange, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
+          <div style={{ background: V.accentDim, border: `1px solid ${V.accentBrd}`, borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
+            <div style={{ color: V.accent, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
             <div style={{ color: V.muted, fontFamily: V.space, fontSize: 12 }}>Run migrations 001 + 002 in Supabase SQL editor to activate.</div>
           </div>
         )}
@@ -495,12 +447,7 @@ export default function SourcingJobs() {
         {!loading && listings.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {listings.map(listing => (
-              <JobCard
-                key={listing.id}
-                listing={listing}
-                company={companies[listing.company_id]}
-                onClick={() => setSelected(listing)}
-              />
+              <JobCard key={listing.id} listing={listing} company={companies[listing.company_id]} onClick={() => setSelected(listing)} V={V} />
             ))}
           </div>
         )}
@@ -508,20 +455,15 @@ export default function SourcingJobs() {
         {!loading && supabase && listings.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>💼</div>
-            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
-              No jobs found
-            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>No jobs found</div>
             <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
               {query ? `No results for "${query}". Try different filters.` : 'No jobs posted yet.'}
             </div>
-            <Link
-              to="/sourcing/jobs/post"
-              style={{
-                background: V.orange, color: '#fff', textDecoration: 'none',
-                borderRadius: 7, padding: '10px 20px', fontSize: 13,
-                fontWeight: 700, fontFamily: V.space, display: 'inline-block',
-              }}
-            >
+            <Link to="/sourcing/jobs/post" style={{
+              background: V.accent, color: '#fff', textDecoration: 'none',
+              borderRadius: 7, padding: '10px 20px', fontSize: 13,
+              fontWeight: 700, fontFamily: V.space, display: 'inline-block',
+            }}>
               Post a Job
             </Link>
           </div>
@@ -529,12 +471,16 @@ export default function SourcingJobs() {
       </div>
 
       {selected && (
-        <JobModal
-          listing={selected}
-          company={companies[selected.company_id]}
-          onClose={() => setSelected(null)}
-        />
+        <JobModal listing={selected} company={companies[selected.company_id]} onClose={() => setSelected(null)} V={V} />
       )}
     </div>
+  );
+}
+
+export default function SourcingJobs() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingJobsInner />
+    </SourcingThemeProvider>
   );
 }

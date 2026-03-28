@@ -2,24 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor' },
@@ -34,11 +17,11 @@ const CONDITIONS = [
   { key: 'refurbished', label: 'Refurbished' },
 ];
 
-function InputField({ label, required, hint, ...props }) {
+function InputField({ label, required, hint, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       {hint && <div style={{ fontSize: 11, color: V.dim, fontFamily: V.space }}>{hint}</div>}
       <input
@@ -55,11 +38,11 @@ function InputField({ label, required, hint, ...props }) {
   );
 }
 
-function SelectField({ label, required, children, ...props }) {
+function SelectField({ label, required, children, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <select
         {...props}
@@ -77,11 +60,11 @@ function SelectField({ label, required, children, ...props }) {
   );
 }
 
-function TextareaField({ label, required, ...props }) {
+function TextareaField({ label, required, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <textarea
         {...props}
@@ -97,8 +80,11 @@ function TextareaField({ label, required, ...props }) {
   );
 }
 
-export default function SourcingMarketplacePost() {
+function SourcingMarketplacePostInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     company_name: '',
     company_email: '',
@@ -130,9 +116,6 @@ export default function SourcingMarketplacePost() {
     setError(null);
 
     try {
-      // Find or create a placeholder company record
-      // In production this would require auth + company verification
-      // For now, look up by email
       let companyId = null;
 
       const { data: existingCo } = await supabase
@@ -144,7 +127,6 @@ export default function SourcingMarketplacePost() {
       if (existingCo) {
         companyId = existingCo.id;
       } else {
-        // Create a pending company stub
         const slug = form.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
         const { data: newCo, error: coError } = await supabase
           .from('directory_companies')
@@ -195,8 +177,12 @@ export default function SourcingMarketplacePost() {
         <style>{`* { box-sizing: border-box; }`}</style>
         <SourcingNav active="marketplace" />
         <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>✓</div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.text, marginBottom: 10 }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: '50%', background: V.accentDim,
+            border: `2px solid ${V.accentBrd}`, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: 24, color: V.accent, margin: '0 auto 20px',
+          }}>✓</div>
+          <h2 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.heading, marginBottom: 10 }}>
             Listing Submitted
           </h2>
           <p style={{ fontSize: 15, color: V.muted, fontFamily: V.space, lineHeight: 1.6, marginBottom: 28 }}>
@@ -205,7 +191,7 @@ export default function SourcingMarketplacePost() {
           <Link
             to="/sourcing/marketplace"
             style={{
-              background: V.orange, color: '#fff', textDecoration: 'none',
+              background: V.accent, color: '#fff', textDecoration: 'none',
               borderRadius: 8, padding: '11px 24px', fontSize: 14,
               fontWeight: 700, fontFamily: V.space, display: 'inline-block',
             }}
@@ -221,9 +207,9 @@ export default function SourcingMarketplacePost() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         * { box-sizing: border-box; }
-        input::placeholder, textarea::placeholder { color: #4A4540; }
-        input:focus, textarea:focus, select:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
-        select option { background: #1A1A17; }
+        input::placeholder, textarea::placeholder { color: ${V.dim}; }
+        input:focus, textarea:focus, select:focus { border-color: ${V.accentBrd} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
+        select option { background: ${V.card2}; }
       `}</style>
 
       <SourcingNav active="marketplace" />
@@ -234,107 +220,48 @@ export default function SourcingMarketplacePost() {
             <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             Back to Marketplace
           </Link>
-          <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.orange, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
             Post a Listing
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: 0 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: 0 }}>
             List Equipment for Sale
           </h1>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Section: Company */}
             <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
                 Your Company
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <InputField
-                  label="Company Name"
-                  required
-                  value={form.company_name}
-                  onChange={set('company_name')}
-                  placeholder="Acme Semiconductor Inc."
-                />
-                <InputField
-                  label="Company Email"
-                  required
-                  type="email"
-                  value={form.company_email}
-                  onChange={set('company_email')}
-                  placeholder="contact@company.com"
-                  hint="Used to link listing to your company profile."
-                />
+                <InputField label="Company Name" required value={form.company_name} onChange={set('company_name')} placeholder="Acme Semiconductor Inc." V={V} />
+                <InputField label="Company Email" required type="email" value={form.company_email} onChange={set('company_email')} placeholder="contact@company.com" hint="Used to link listing to your company profile." V={V} />
               </div>
             </div>
 
-            {/* Section: Listing Details */}
             <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
                 Listing Details
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <InputField
-                  label="Title"
-                  required
-                  value={form.title}
-                  onChange={set('title')}
-                  placeholder="Used Lam Research Etch System — 200mm"
-                />
-                <TextareaField
-                  label="Description"
-                  value={form.description}
-                  onChange={set('description')}
-                  placeholder="Include make, model, year, condition details, reason for sale, etc."
-                />
+                <InputField label="Title" required value={form.title} onChange={set('title')} placeholder="Used Lam Research Etch System — 200mm" V={V} />
+                <TextareaField label="Description" value={form.description} onChange={set('description')} placeholder="Include make, model, year, condition details, reason for sale, etc." V={V} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <InputField
-                    label="Price (USD)"
-                    type="number"
-                    min="0"
-                    value={form.price}
-                    onChange={set('price')}
-                    placeholder="25000"
-                  />
-                  <SelectField
-                    label="Condition"
-                    required
-                    value={form.condition}
-                    onChange={set('condition')}
-                  >
+                  <InputField label="Price (USD)" type="number" min="0" value={form.price} onChange={set('price')} placeholder="25000" V={V} />
+                  <SelectField label="Condition" required value={form.condition} onChange={set('condition')} V={V}>
                     {CONDITIONS.map(c => (
                       <option key={c.key} value={c.key}>{c.label}</option>
                     ))}
                   </SelectField>
                 </div>
-                <SelectField
-                  label="Industry Vertical"
-                  required
-                  value={form.vertical}
-                  onChange={set('vertical')}
-                >
+                <SelectField label="Industry Vertical" required value={form.vertical} onChange={set('vertical')} V={V}>
                   {VERTICALS.map(v => (
                     <option key={v.key} value={v.key}>{v.label}</option>
                   ))}
                 </SelectField>
-                <InputField
-                  label="Photo URL"
-                  type="url"
-                  value={form.photo_url}
-                  onChange={set('photo_url')}
-                  placeholder="https://..."
-                  hint="Link to a hosted photo of the equipment."
-                />
-                <InputField
-                  label="Contact Email"
-                  required
-                  type="email"
-                  value={form.contact_email}
-                  onChange={set('contact_email')}
-                  placeholder="sales@company.com"
-                  hint="Buyers will contact you at this address."
-                />
+                <InputField label="Photo URL" type="url" value={form.photo_url} onChange={set('photo_url')} placeholder="https://..." hint="Link to a hosted photo of the equipment." V={V} />
+                <InputField label="Contact Email" required type="email" value={form.contact_email} onChange={set('contact_email')} placeholder="sales@company.com" hint="Buyers will contact you at this address." V={V} />
               </div>
             </div>
 
@@ -348,7 +275,7 @@ export default function SourcingMarketplacePost() {
               type="submit"
               disabled={submitting}
               style={{
-                background: submitting ? V.dim : V.orange,
+                background: submitting ? `${V.accent}66` : V.accent,
                 border: 'none', color: '#fff', borderRadius: 8,
                 padding: '13px', fontSize: 15, fontWeight: 700,
                 fontFamily: V.space, cursor: submitting ? 'not-allowed' : 'pointer',
@@ -361,5 +288,13 @@ export default function SourcingMarketplacePost() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SourcingMarketplacePost() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingMarketplacePostInner />
+    </SourcingThemeProvider>
   );
 }

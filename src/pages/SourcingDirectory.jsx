@@ -2,29 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  cardHov:   '#1F1F1C',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 // ─── Vertical config ──────────────────────────────────────────────────────────
 const VERTICALS = [
-  { key: 'all',           label: 'All Industries',  color: V.muted },
+  { key: 'all',           label: 'All Industries',  color: '#9ca3af' },
   { key: 'semiconductor', label: 'Semiconductor',    color: '#29B6F6' },
   { key: 'space',         label: 'Space & Aerospace',color: '#7C3AED' },
   { key: 'biotech',       label: 'Biotech',          color: '#22C55E' },
@@ -38,14 +20,12 @@ const VERTICAL_CERTS = {
   defense:       ['ITAR Registered', 'ISO 9001', 'AS9100D', 'CMMC Level 2', 'MIL-STD-810', 'DoD Secret Cleared', 'NIST 800-171'],
 };
 
-const EMP_RANGES = ['1-10', '11-50', '51-200', '200-500', '500-2000', '2000+'];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function verticalColor(v) {
-  return VERTICALS.find(x => x.key === v)?.color || V.muted;
+  return VERTICALS.find(x => x.key === v)?.color || '#9ca3af';
 }
 
-function VerticalBadge({ vertical }) {
+function VerticalBadge({ vertical, V }) {
   const color = verticalColor(vertical);
   const label = VERTICALS.find(x => x.key === vertical)?.label || vertical;
   return (
@@ -63,9 +43,9 @@ function VerticalBadge({ vertical }) {
   );
 }
 
-function TierBadge({ tier }) {
+function TierBadge({ tier, V }) {
   const colors = {
-    enterprise: { bg: 'rgba(232,93,38,0.12)', border: '#E85D26', text: '#FDBA74' },
+    enterprise: { bg: `${V.accent}18`, border: V.accent, text: V.accent },
     pro:        { bg: 'rgba(59,130,246,0.12)', border: '#3B82F6', text: '#93C5FD' },
     basic:      { bg: 'rgba(34,197,94,0.12)', border: '#22C55E', text: '#86EFAC' },
     free:       { bg: 'rgba(138,132,124,0.1)', border: '#8A847C', text: '#8A847C' },
@@ -83,12 +63,12 @@ function TierBadge({ tier }) {
   );
 }
 
-function CertPill({ name }) {
+function CertPill({ name, V }) {
   return (
     <span style={{
-      background: 'rgba(255,255,255,0.05)',
-      border: `1px solid ${V.border}`,
-      color: V.text, fontSize: 11, fontFamily: V.mono,
+      background: V.accentDim,
+      border: `1px solid ${V.accentBrd}`,
+      color: V.muted, fontSize: 11, fontFamily: V.mono,
       padding: '2px 8px', borderRadius: 4,
     }}>
       {name}
@@ -97,7 +77,7 @@ function CertPill({ name }) {
 }
 
 // ─── Company Card ─────────────────────────────────────────────────────────────
-function CompanyCard({ company, certs }) {
+function CompanyCard({ company, certs, V }) {
   const [hovered, setHovered] = useState(false);
   const topCerts = (certs || []).slice(0, 3);
 
@@ -118,6 +98,7 @@ function CompanyCard({ company, certs }) {
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
+        boxShadow: hovered ? `0 0 0 1px ${V.accent}20` : 'none',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -125,7 +106,7 @@ function CompanyCard({ company, certs }) {
             <img
               src={company.logo_url}
               alt={company.name}
-              style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'contain', background: '#1a1a17', flexShrink: 0 }}
+              style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'contain', background: V.card2, flexShrink: 0 }}
             />
           ) : (
             <div style={{
@@ -154,8 +135,8 @@ function CompanyCard({ company, certs }) {
           </div>
           {company.featured && (
             <div style={{
-              background: 'rgba(232,93,38,0.15)', border: '1px solid rgba(232,93,38,0.4)',
-              color: '#E85D26', fontSize: 9, fontWeight: 700, fontFamily: V.mono,
+              background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+              color: V.accent, fontSize: 9, fontWeight: 700, fontFamily: V.mono,
               padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase',
               letterSpacing: '0.1em', whiteSpace: 'nowrap', flexShrink: 0,
             }}>
@@ -179,7 +160,7 @@ function CompanyCard({ company, certs }) {
         {/* Certs */}
         {topCerts.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-            {topCerts.map(c => <CertPill key={c.id} name={c.cert_name} />)}
+            {topCerts.map(c => <CertPill key={c.id} name={c.cert_name} V={V} />)}
             {certs.length > 3 && (
               <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, alignSelf: 'center' }}>
                 +{certs.length - 3} more
@@ -190,8 +171,8 @@ function CompanyCard({ company, certs }) {
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <VerticalBadge vertical={company.vertical} />
-          <TierBadge tier={company.membership_tier} />
+          <VerticalBadge vertical={company.vertical} V={V} />
+          <TierBadge tier={company.membership_tier} V={V} />
           {company.employee_count && (
             <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
               {company.employee_count} employees
@@ -204,7 +185,7 @@ function CompanyCard({ company, certs }) {
 }
 
 // ─── Search Bar ───────────────────────────────────────────────────────────────
-function SearchBar({ value, onChange, onSearch, loading }) {
+function SearchBar({ value, onChange, onSearch, loading, V }) {
   const handleKey = (e) => {
     if (e.key === 'Enter') onSearch();
   };
@@ -216,10 +197,10 @@ function SearchBar({ value, onChange, onSearch, loading }) {
           value={value}
           onChange={e => onChange(e.target.value)}
           onKeyDown={handleKey}
-          placeholder='Search companies, certifications, capabilities... (e.g. "ISO certified PCB manufacturer Phoenix")'
+          placeholder='Search companies, certifications, capabilities...'
           style={{
             width: '100%', boxSizing: 'border-box',
-            background: V.card2, border: `1px solid ${V.borderHov}`,
+            background: V.card2, border: `1px solid ${V.border}`,
             color: V.text, borderRadius: 8, padding: '12px 46px 12px 16px',
             fontSize: 14, fontFamily: V.space, outline: 'none',
           }}
@@ -229,7 +210,7 @@ function SearchBar({ value, onChange, onSearch, loading }) {
           color: V.muted, pointerEvents: 'none',
         }}>
           {loading ? (
-            <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.orange}`, animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
           ) : (
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -240,7 +221,7 @@ function SearchBar({ value, onChange, onSearch, loading }) {
       <button
         onClick={onSearch}
         style={{
-          background: V.orange, border: 'none', color: '#fff',
+          background: V.accent, border: 'none', color: '#fff',
           borderRadius: 8, padding: '0 20px', fontSize: 14,
           fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
           whiteSpace: 'nowrap',
@@ -252,11 +233,14 @@ function SearchBar({ value, onChange, onSearch, loading }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingDirectory() {
+// ─── Inner component ──────────────────────────────────────────────────────────
+function SourcingDirectoryInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [companies, setCompanies] = useState([]);
-  const [certs, setCerts] = useState({});  // { company_id: [cert, ...] }
+  const [certs, setCerts] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -264,13 +248,8 @@ export default function SourcingDirectory() {
   const [selectedCerts, setSelectedCerts] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch companies and their certs
   const fetchCompanies = useCallback(async (q, v) => {
-    if (!supabase) {
-      // Dev fallback: empty state
-      setLoading(false);
-      return;
-    }
+    if (!supabase) { setLoading(false); return; }
     setLoading(true);
     try {
       let qb = supabase
@@ -282,9 +261,7 @@ export default function SourcingDirectory() {
         .order('name', { ascending: true });
 
       if (v && v !== 'all') qb = qb.eq('vertical', v);
-
       if (q && q.trim()) {
-        // Full-text search on name + description
         qb = qb.or(`name.ilike.%${q}%,description.ilike.%${q}%`);
       }
 
@@ -293,7 +270,6 @@ export default function SourcingDirectory() {
 
       setCompanies(companies || []);
 
-      // Fetch certs for all returned companies
       if (companies && companies.length > 0) {
         const ids = companies.map(c => c.id);
         const { data: certsData } = await supabase
@@ -338,7 +314,6 @@ export default function SourcingDirectory() {
     setSearchParams(params);
   };
 
-  // Client-side cert filter
   const filteredCompanies = useMemo(() => {
     if (selectedCerts.length === 0) return companies;
     return companies.filter(c => {
@@ -359,10 +334,11 @@ export default function SourcingDirectory() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
-        input::placeholder { color: #4A4540; }
-        input:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
+        input::placeholder { color: ${V.dim}; }
+        input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
       `}</style>
 
       <SourcingNav active="directory" />
@@ -370,14 +346,14 @@ export default function SourcingDirectory() {
       {/* Hero */}
       <div style={{ padding: '52px 24px 36px', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
         <div style={{
-          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.orange,
+          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent,
           letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 14,
         }}>
           sourcing.directory — Arizona
         </div>
         <h1 style={{
           fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, fontFamily: V.syne,
-          color: V.text, lineHeight: 1.15, margin: '0 0 14px',
+          color: V.heading, lineHeight: 1.15, margin: '0 0 14px',
         }}>
           Find Certified Suppliers & Partners
         </h1>
@@ -393,13 +369,14 @@ export default function SourcingDirectory() {
           onChange={setSearchInput}
           onSearch={handleSearch}
           loading={loading}
+          V={V}
         />
       </div>
 
       {/* Vertical Tabs */}
       <div style={{
         padding: '0 24px 0', maxWidth: 900, margin: '0 auto',
-        display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 0,
+        display: 'flex', gap: 8, overflowX: 'auto',
       }}>
         {VERTICALS.map(v => (
           <button
@@ -422,9 +399,9 @@ export default function SourcingDirectory() {
           <button
             onClick={() => setShowFilters(f => !f)}
             style={{
-              background: showFilters ? 'rgba(255,255,255,0.06)' : 'transparent',
-              border: `1px solid ${showFilters ? V.borderHov : V.border}`,
-              color: showFilters ? V.text : V.muted,
+              background: showFilters ? V.accentDim : 'transparent',
+              border: `1px solid ${showFilters ? V.accentBrd : V.border}`,
+              color: showFilters ? V.accent : V.muted,
               borderRadius: 6, padding: '7px 14px', fontSize: 12,
               fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
               whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5,
@@ -436,7 +413,7 @@ export default function SourcingDirectory() {
             Filters
             {selectedCerts.length > 0 && (
               <span style={{
-                background: V.orange, color: '#fff', borderRadius: 10,
+                background: V.accent, color: '#fff', borderRadius: 10,
                 fontSize: 9, fontWeight: 800, padding: '1px 5px',
               }}>
                 {selectedCerts.length}
@@ -462,9 +439,9 @@ export default function SourcingDirectory() {
                   key={cert}
                   onClick={() => toggleCert(cert)}
                   style={{
-                    background: selectedCerts.includes(cert) ? 'rgba(232,93,38,0.15)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${selectedCerts.includes(cert) ? 'rgba(232,93,38,0.5)' : V.border}`,
-                    color: selectedCerts.includes(cert) ? '#FDBA74' : V.muted,
+                    background: selectedCerts.includes(cert) ? V.accentDim : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${selectedCerts.includes(cert) ? V.accentBrd : V.border}`,
+                    color: selectedCerts.includes(cert) ? V.accent : V.muted,
                     borderRadius: 4, padding: '5px 10px', fontSize: 11,
                     fontFamily: V.mono, cursor: 'pointer', transition: 'all 0.12s',
                   }}
@@ -478,7 +455,7 @@ export default function SourcingDirectory() {
                 onClick={() => setSelectedCerts([])}
                 style={{
                   marginTop: 10, background: 'none', border: 'none',
-                  color: V.orange, fontSize: 12, fontFamily: V.space,
+                  color: V.accent, fontSize: 12, fontFamily: V.space,
                   cursor: 'pointer', padding: 0,
                 }}
               >
@@ -491,7 +468,6 @@ export default function SourcingDirectory() {
 
       {/* Results */}
       <div style={{ padding: '20px 24px 60px', maxWidth: 900, margin: '0 auto' }}>
-        {/* Count + query summary */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 16,
@@ -501,7 +477,7 @@ export default function SourcingDirectory() {
               <>
                 <span style={{ color: V.text, fontWeight: 600 }}>{filteredCompanies.length}</span>
                 {' '}compan{filteredCompanies.length === 1 ? 'y' : 'ies'} found
-                {query && <> for <span style={{ color: V.orange }}>"{query}"</span></>}
+                {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
               </>
             )}
           </div>
@@ -519,13 +495,12 @@ export default function SourcingDirectory() {
           </Link>
         </div>
 
-        {/* No supabase configured */}
         {!supabase && (
           <div style={{
-            background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)',
+            background: V.accentDim, border: `1px solid ${V.accentBrd}`,
             borderRadius: 8, padding: '20px 24px', textAlign: 'center',
           }}>
-            <div style={{ color: V.orange, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>
+            <div style={{ color: V.accent, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>
               Supabase not configured
             </div>
             <div style={{ color: V.muted, fontFamily: V.space, fontSize: 12 }}>
@@ -534,7 +509,6 @@ export default function SourcingDirectory() {
           </div>
         )}
 
-        {/* Loading skeleton */}
         {loading && supabase && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
             {[1,2,3,4,5,6].map(i => (
@@ -542,14 +516,11 @@ export default function SourcingDirectory() {
                 background: V.card, border: `1px solid ${V.border}`,
                 borderRadius: 10, padding: '18px 20px', height: 160,
                 animation: 'pulse 1.5s ease-in-out infinite',
-              }}>
-                <style>{`@keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }`}</style>
-              </div>
+              }} />
             ))}
           </div>
         )}
 
-        {/* Results grid */}
         {!loading && filteredCompanies.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
             {filteredCompanies.map(company => (
@@ -557,12 +528,12 @@ export default function SourcingDirectory() {
                 key={company.id}
                 company={company}
                 certs={certs[company.id] || []}
+                V={V}
               />
             ))}
           </div>
         )}
 
-        {/* Empty state */}
         {!loading && supabase && filteredCompanies.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>🔍</div>
@@ -575,7 +546,7 @@ export default function SourcingDirectory() {
             <Link
               to="/sourcing/signup"
               style={{
-                background: V.orange, color: '#fff', textDecoration: 'none',
+                background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 7, padding: '10px 20px', fontSize: 13,
                 fontWeight: 700, fontFamily: V.space, display: 'inline-block',
               }}
@@ -586,5 +557,14 @@ export default function SourcingDirectory() {
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
+export default function SourcingDirectory() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingDirectoryInner />
+    </SourcingThemeProvider>
   );
 }

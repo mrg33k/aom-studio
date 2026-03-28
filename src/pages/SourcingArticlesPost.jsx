@@ -2,24 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 const VERTICALS = [
   { key: 'semiconductor', label: 'Semiconductor' },
@@ -28,11 +11,11 @@ const VERTICALS = [
   { key: 'defense',       label: 'Defense' },
 ];
 
-function InputField({ label, required, hint, ...props }) {
+function InputField({ label, required, hint, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       {hint && <div style={{ fontSize: 11, color: V.dim, fontFamily: V.space }}>{hint}</div>}
       <input
@@ -49,11 +32,11 @@ function InputField({ label, required, hint, ...props }) {
   );
 }
 
-function TextareaField({ label, required, hint, ...props }) {
+function TextareaField({ label, required, hint, V, ...props }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       {hint && <div style={{ fontSize: 11, color: V.dim, fontFamily: V.space }}>{hint}</div>}
       <textarea
@@ -71,11 +54,11 @@ function TextareaField({ label, required, hint, ...props }) {
   );
 }
 
-function SelectField({ label, required, options, value, onChange }) {
+function SelectField({ label, required, options, value, onChange, V }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
-        {label}{required && <span style={{ color: V.orange }}> *</span>}
+        {label}{required && <span style={{ color: V.accent }}> *</span>}
       </label>
       <select
         value={value}
@@ -87,18 +70,20 @@ function SelectField({ label, required, options, value, onChange }) {
           width: '100%', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer',
         }}
       >
-        <option value="" style={{ background: '#1A1A17' }}>Select...</option>
+        <option value="" style={{ background: V.card2 }}>Select...</option>
         {options.map(opt => (
-          <option key={opt.key} value={opt.key} style={{ background: '#1A1A17' }}>{opt.label}</option>
+          <option key={opt.key} value={opt.key} style={{ background: V.card2 }}>{opt.label}</option>
         ))}
       </select>
     </div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingArticlesPost() {
+function SourcingArticlesPostInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
   const navigate = useNavigate();
+
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -115,7 +100,6 @@ export default function SourcingArticlesPost() {
     read_time_min: '',
   });
 
-  // Fetch active companies for the dropdown
   useEffect(() => {
     if (!supabase) return;
     supabase
@@ -182,13 +166,13 @@ export default function SourcingArticlesPost() {
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
-            background: 'rgba(34,197,94,0.15)', border: '2px solid rgba(34,197,94,0.4)',
+            background: V.accentDim, border: `2px solid ${V.accentBrd}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, margin: '0 auto 20px',
+            fontSize: 28, margin: '0 auto 20px', color: V.accent,
           }}>
             ✓
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 12px' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 12px' }}>
             Article Published
           </h2>
           <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, maxWidth: 360, margin: '0 auto 28px', lineHeight: 1.6 }}>
@@ -198,7 +182,7 @@ export default function SourcingArticlesPost() {
             <Link
               to="/sourcing/articles"
               style={{
-                background: V.orange, color: '#fff', textDecoration: 'none',
+                background: V.accent, color: '#fff', textDecoration: 'none',
                 borderRadius: 8, padding: '10px 20px', fontSize: 13,
                 fontWeight: 700, fontFamily: V.space,
               }}
@@ -225,21 +209,22 @@ export default function SourcingArticlesPost() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         * { box-sizing: border-box; }
-        input::placeholder, textarea::placeholder { color: #3A3530; }
+        input::placeholder, textarea::placeholder { color: ${V.dim}; }
         input:focus, textarea:focus, select:focus {
-          border-color: rgba(232,93,38,0.5) !important;
-          box-shadow: 0 0 0 2px rgba(232,93,38,0.08);
+          border-color: ${V.accentBrd} !important;
+          box-shadow: 0 0 0 2px ${V.accentDim};
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <SourcingNav active="articles" />
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 11, color: V.orange, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+          <div style={{ fontSize: 11, color: V.accent, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
             Industry Articles
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: '0 0 10px', lineHeight: 1.15 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 10px', lineHeight: 1.15 }}>
             Post an Article
           </h1>
           <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0, lineHeight: 1.6 }}>
@@ -248,7 +233,6 @@ export default function SourcingArticlesPost() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {/* Company + vertical */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
@@ -271,9 +255,9 @@ export default function SourcingArticlesPost() {
                   width: '100%', appearance: 'none', cursor: 'pointer',
                 }}
               >
-                <option value="" style={{ background: '#1A1A17' }}>Select company...</option>
+                <option value="" style={{ background: V.card2 }}>Select company...</option>
                 {companies.map(c => (
-                  <option key={c.id} value={c.id} style={{ background: '#1A1A17' }}>{c.name}</option>
+                  <option key={c.id} value={c.id} style={{ background: V.card2 }}>{c.name}</option>
                 ))}
               </select>
             </div>
@@ -283,6 +267,7 @@ export default function SourcingArticlesPost() {
               options={VERTICALS}
               value={form.vertical}
               onChange={v => set('vertical', v)}
+              V={V}
             />
           </div>
 
@@ -292,6 +277,7 @@ export default function SourcingArticlesPost() {
             placeholder="e.g. Arizona's Semiconductor Workforce: What 2026 Holds"
             value={form.title}
             onChange={e => set('title', e.target.value)}
+            V={V}
           />
 
           <TextareaField
@@ -301,6 +287,7 @@ export default function SourcingArticlesPost() {
             value={form.excerpt}
             onChange={e => set('excerpt', e.target.value)}
             rows={2}
+            V={V}
           />
 
           <TextareaField
@@ -311,7 +298,8 @@ export default function SourcingArticlesPost() {
             value={form.body}
             onChange={e => set('body', e.target.value)}
             rows={16}
-            style={{ minHeight: 320, fontFamily: V.mono, fontSize: 13 }}
+            style={{ minHeight: 320, fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}
+            V={V}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -322,6 +310,7 @@ export default function SourcingArticlesPost() {
               type="url"
               value={form.cover_image_url}
               onChange={e => set('cover_image_url', e.target.value)}
+              V={V}
             />
             <InputField
               label="Read Time (minutes)"
@@ -332,6 +321,7 @@ export default function SourcingArticlesPost() {
               max="120"
               value={form.read_time_min}
               onChange={e => set('read_time_min', e.target.value)}
+              V={V}
             />
           </div>
 
@@ -341,13 +331,14 @@ export default function SourcingArticlesPost() {
             placeholder="Supply Chain, Semiconductor, Arizona"
             value={tagsInput}
             onChange={e => setTagsInput(e.target.value)}
+            V={V}
           />
 
           {!supabase && (
             <div style={{
-              background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)',
+              background: V.accentDim, border: `1px solid ${V.accentBrd}`,
               borderRadius: 7, padding: '12px 14px',
-              fontSize: 12, color: V.orange, fontFamily: V.space,
+              fontSize: 12, color: V.accent, fontFamily: V.space,
             }}>
               Supabase not configured -- article cannot be saved yet. Run the migrations first.
             </div>
@@ -373,7 +364,7 @@ export default function SourcingArticlesPost() {
               type="submit"
               disabled={loading}
               style={{
-                flex: 2, background: loading ? 'rgba(232,93,38,0.4)' : V.orange,
+                flex: 2, background: loading ? `${V.accent}66` : V.accent,
                 border: 'none', color: '#fff', borderRadius: 8, padding: '11px 0',
                 fontSize: 14, fontWeight: 700, fontFamily: V.space,
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -390,7 +381,14 @@ export default function SourcingArticlesPost() {
           </div>
         </form>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+export default function SourcingArticlesPost() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingArticlesPostInner />
+    </SourcingThemeProvider>
   );
 }

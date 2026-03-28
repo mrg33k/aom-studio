@@ -1,38 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  cardHov:   '#1F1F1C',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 const VERTICALS = {
   semiconductor: { label: 'Semiconductor', color: '#29B6F6' },
   space:         { label: 'Space & Aerospace', color: '#7C3AED' },
   biotech:       { label: 'Biotech', color: '#22C55E' },
   defense:       { label: 'Defense', color: '#EF4444' },
-};
-
-const TIER_COLORS = {
-  enterprise: { bg: 'rgba(232,93,38,0.12)', border: '#E85D26', text: '#FDBA74' },
-  pro:        { bg: 'rgba(59,130,246,0.12)', border: '#3B82F6', text: '#93C5FD' },
-  basic:      { bg: 'rgba(34,197,94,0.12)', border: '#22C55E', text: '#86EFAC' },
-  free:       { bg: 'rgba(138,132,124,0.1)', border: '#8A847C', text: '#8A847C' },
 };
 
 const LISTING_ICONS = {
@@ -43,10 +18,10 @@ const LISTING_ICONS = {
 };
 
 function verticalColor(v) {
-  return VERTICALS[v]?.color || V.muted;
+  return VERTICALS[v]?.color || '#9ca3af';
 }
 
-function Chip({ children, color }) {
+function Chip({ children, color, V }) {
   return (
     <span style={{
       background: `${color || V.muted}15`,
@@ -61,23 +36,23 @@ function Chip({ children, color }) {
   );
 }
 
-function CertGrid({ certs }) {
+function CertGrid({ certs, V }) {
   if (!certs || certs.length === 0) return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
       {certs.map(cert => (
         <div key={cert.id} style={{
-          background: 'rgba(34,197,94,0.08)',
-          border: '1px solid rgba(34,197,94,0.25)',
+          background: V.accentDim,
+          border: `1px solid ${V.accentBrd}`,
           borderRadius: 6, padding: '8px 12px',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <div style={{
             width: 18, height: 18, borderRadius: '50%',
-            background: 'rgba(34,197,94,0.2)',
-            border: '1px solid rgba(34,197,94,0.5)',
+            background: `${V.accent}20`,
+            border: `1px solid ${V.accent}50`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, color: V.green, flexShrink: 0,
+            fontSize: 10, color: V.accent, flexShrink: 0,
           }}>
             ✓
           </div>
@@ -90,7 +65,7 @@ function CertGrid({ certs }) {
   );
 }
 
-function ListingCard({ listing }) {
+function ListingCard({ listing, V }) {
   const icon = LISTING_ICONS[listing.category] || '📋';
   const isExpired = listing.expires_at && new Date(listing.expires_at) < new Date();
 
@@ -103,7 +78,7 @@ function ListingCard({ listing }) {
     }}>
       <div style={{
         width: 36, height: 36, borderRadius: 8,
-        background: 'rgba(255,255,255,0.05)',
+        background: V.accentDim,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 18, flexShrink: 0,
       }}>
@@ -122,20 +97,20 @@ function ListingCard({ listing }) {
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-          <Chip color={V.muted}>{listing.category}</Chip>
+          <Chip color={V.muted} V={V}>{listing.category}</Chip>
           {listing.price && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: V.green, fontFamily: V.mono }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: V.accent, fontFamily: V.mono }}>
               ${listing.price.toLocaleString()}
             </span>
           )}
-          {isExpired && <Chip color="#EF4444">Expired</Chip>}
+          {isExpired && <Chip color="#EF4444" V={V}>Expired</Chip>}
         </div>
       </div>
       {listing.contact_email && (
         <a
           href={`mailto:${listing.contact_email}`}
           style={{
-            background: V.orange, color: '#fff', textDecoration: 'none',
+            background: V.accent, color: '#fff', textDecoration: 'none',
             borderRadius: 5, padding: '5px 10px', fontSize: 11,
             fontWeight: 700, fontFamily: V.space, flexShrink: 0,
           }}
@@ -147,7 +122,7 @@ function ListingCard({ listing }) {
   );
 }
 
-function Section({ title, children, action }) {
+function Section({ title, children, action, V }) {
   return (
     <div style={{ marginBottom: 32 }}>
       <div style={{
@@ -167,8 +142,10 @@ function Section({ title, children, action }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function SourcingProfile() {
+// ─── Inner component ──────────────────────────────────────────────────────────
+function SourcingProfileInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
   const { slug } = useParams();
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
@@ -195,7 +172,6 @@ export default function SourcingProfile() {
 
         setCompany(data);
 
-        // Parallel: certs + listings + org
         const [certsRes, listingsRes, orgRes] = await Promise.all([
           supabase.from('directory_certifications').select('*').eq('company_id', data.id),
           supabase.from('directory_listings').select('*').eq('company_id', data.id).eq('status', 'active').order('created_at', { ascending: false }),
@@ -221,7 +197,7 @@ export default function SourcingProfile() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.orange}`, animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -230,18 +206,23 @@ export default function SourcingProfile() {
   if (notFound || !company) {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 48 }}>404</div>
+        <div style={{ fontSize: 48, color: V.text }}>404</div>
         <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text }}>Company not found</div>
-        <Link to="/sourcing" style={{ color: V.orange, fontFamily: V.space, fontSize: 14 }}>Back to directory</Link>
+        <Link to="/sourcing" style={{ color: V.accent, fontFamily: V.space, fontSize: 14 }}>Back to directory</Link>
       </div>
     );
   }
 
   const vColor = verticalColor(company.vertical);
   const vLabel = VERTICALS[company.vertical]?.label || company.vertical;
-  const tierColor = TIER_COLORS[company.membership_tier] || TIER_COLORS.free;
+  const tierColors = {
+    enterprise: { bg: `${V.accent}18`, border: V.accent, text: V.accent },
+    pro:        { bg: 'rgba(59,130,246,0.12)', border: '#3B82F6', text: '#93C5FD' },
+    basic:      { bg: 'rgba(34,197,94,0.12)', border: '#22C55E', text: '#86EFAC' },
+    free:       { bg: 'rgba(138,132,124,0.1)', border: '#8A847C', text: '#8A847C' },
+  };
+  const tierColor = tierColors[company.membership_tier] || tierColors.free;
 
-  // Group listings by category
   const listingsByCategory = listings.reduce((acc, l) => {
     if (!acc[l.category]) acc[l.category] = [];
     acc[l.category].push(l);
@@ -257,10 +238,10 @@ export default function SourcingProfile() {
         borderBottom: `1px solid ${V.border}`,
         padding: '0 24px',
         display: 'flex', alignItems: 'center', gap: 16, height: 60,
-        background: '#0A0A0A',
+        background: V.navBg,
       }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.orange, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             AOM
           </span>
         </Link>
@@ -282,14 +263,13 @@ export default function SourcingProfile() {
           marginBottom: 32,
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
-            {/* Logo */}
             {company.logo_url ? (
               <img
                 src={company.logo_url}
                 alt={company.name}
                 style={{
                   width: 80, height: 80, borderRadius: 14,
-                  objectFit: 'contain', background: '#1a1a17',
+                  objectFit: 'contain', background: V.card2,
                   border: `1px solid ${V.border}`, flexShrink: 0,
                 }}
               />
@@ -307,13 +287,13 @@ export default function SourcingProfile() {
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                <h1 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, fontFamily: V.syne, color: V.text, margin: 0, lineHeight: 1.1 }}>
+                <h1 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: 0, lineHeight: 1.1 }}>
                   {company.name}
                 </h1>
                 {company.featured && (
                   <span style={{
-                    background: 'rgba(232,93,38,0.15)', border: '1px solid rgba(232,93,38,0.4)',
-                    color: '#E85D26', fontSize: 10, fontWeight: 700, fontFamily: V.mono,
+                    background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+                    color: V.accent, fontSize: 10, fontWeight: 700, fontFamily: V.mono,
                     padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.1em',
                   }}>
                     Featured
@@ -328,7 +308,7 @@ export default function SourcingProfile() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <Chip color={vColor}>{vLabel}</Chip>
+                <Chip color={vColor} V={V}>{vLabel}</Chip>
                 <span style={{
                   background: tierColor.bg, border: `1px solid ${tierColor.border}`,
                   color: tierColor.text, fontSize: 10, fontWeight: 700,
@@ -353,7 +333,7 @@ export default function SourcingProfile() {
                   target="_blank"
                   rel="noreferrer"
                   style={{
-                    background: V.orange, color: '#fff', textDecoration: 'none',
+                    background: V.accent, color: '#fff', textDecoration: 'none',
                     borderRadius: 7, padding: '8px 16px', fontSize: 13,
                     fontWeight: 700, fontFamily: V.space, textAlign: 'center',
                   }}
@@ -380,34 +360,30 @@ export default function SourcingProfile() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 24, alignItems: 'start' }}>
           {/* Left column */}
           <div>
-            {/* About */}
             {company.description && (
-              <Section title="About">
+              <Section title="About" V={V}>
                 <p style={{ fontSize: 15, color: V.muted, fontFamily: V.space, lineHeight: 1.7, margin: 0 }}>
                   {company.description}
                 </p>
               </Section>
             )}
 
-            {/* Certifications */}
             {certs.length > 0 && (
-              <Section title={`Certifications (${certs.length})`}>
-                <CertGrid certs={certs} />
+              <Section title={`Certifications (${certs.length})`} V={V}>
+                <CertGrid certs={certs} V={V} />
               </Section>
             )}
 
-            {/* Listings by category */}
             {Object.entries(listingsByCategory).map(([category, items]) => (
-              <Section key={category} title={`${category.charAt(0).toUpperCase() + category.slice(1)}s (${items.length})`}>
+              <Section key={category} title={`${category.charAt(0).toUpperCase() + category.slice(1)}s (${items.length})`} V={V}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {items.map(l => <ListingCard key={l.id} listing={l} />)}
+                  {items.map(l => <ListingCard key={l.id} listing={l} V={V} />)}
                 </div>
               </Section>
             ))}
 
-            {/* Empty state for no listings */}
             {listings.length === 0 && (
-              <Section title="Listings">
+              <Section title="Listings" V={V}>
                 <div style={{
                   textAlign: 'center', padding: '28px 0',
                   color: V.dim, fontSize: 13, fontFamily: V.space,
@@ -485,7 +461,6 @@ export default function SourcingProfile() {
               </div>
             </div>
 
-            {/* Org membership */}
             {org && (
               <div style={{
                 background: `${vColor}10`,
@@ -506,20 +481,14 @@ export default function SourcingProfile() {
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <Link
                     to={`/sourcing/org/${org.slug}`}
-                    style={{
-                      fontSize: 12, color: vColor, fontFamily: V.space,
-                      textDecoration: 'none', fontWeight: 600,
-                    }}
+                    style={{ fontSize: 12, color: vColor, fontFamily: V.space, textDecoration: 'none', fontWeight: 600 }}
                   >
                     View Organization →
                   </Link>
                   {org.website && (
                     <a
                       href={org.website} target="_blank" rel="noreferrer"
-                      style={{
-                        fontSize: 12, color: V.muted, fontFamily: V.space,
-                        textDecoration: 'none', fontWeight: 600,
-                      }}
+                      style={{ fontSize: 12, color: V.muted, fontFamily: V.space, textDecoration: 'none', fontWeight: 600 }}
                     >
                       Website
                     </a>
@@ -528,7 +497,6 @@ export default function SourcingProfile() {
               </div>
             )}
 
-            {/* Back link */}
             <Link
               to="/sourcing"
               style={{
@@ -546,8 +514,15 @@ export default function SourcingProfile() {
         </div>
       </div>
 
-      {/* Footer padding */}
       <div style={{ height: 60 }} />
     </div>
+  );
+}
+
+export default function SourcingProfile() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingProfileInner />
+    </SourcingThemeProvider>
   );
 }

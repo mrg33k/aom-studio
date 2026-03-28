@@ -1,32 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
-
-// ─── Brand tokens ─────────────────────────────────────────────────────────────
-const V = {
-  bg:        '#0C0C0C',
-  card:      '#141412',
-  card2:     '#1A1A17',
-  cardHov:   '#1F1F1C',
-  orange:    '#E85D26',
-  blue:      '#3B82F6',
-  text:      '#F0ECE6',
-  muted:     '#8A847C',
-  dim:       '#4A4540',
-  border:    'rgba(255,255,255,0.08)',
-  borderHov: 'rgba(255,255,255,0.16)',
-  green:     '#22C55E',
-  red:       '#EF4444',
-  syne:      "'Syne', sans-serif",
-  space:     "'Space Grotesk', sans-serif",
-  mono:      "'JetBrains Mono', monospace",
-};
+import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
 // Same password pattern as the AOM dashboard
 const ADMIN_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'admin';
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, color, sub }) {
+function StatCard({ label, value, color, sub, V }) {
   return (
     <div style={{
       background: V.card, border: `1px solid ${V.border}`,
@@ -35,7 +16,7 @@ function StatCard({ label, value, color, sub }) {
       <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
         {label}
       </div>
-      <div style={{ fontSize: 32, fontWeight: 800, fontFamily: V.syne, color: color || V.text, lineHeight: 1 }}>
+      <div style={{ fontSize: 32, fontWeight: 800, fontFamily: V.syne, color: color || V.heading, lineHeight: 1 }}>
         {value}
       </div>
       {sub && <div style={{ fontSize: 12, color: V.dim, fontFamily: V.space, marginTop: 6 }}>{sub}</div>}
@@ -44,14 +25,14 @@ function StatCard({ label, value, color, sub }) {
 }
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
-function AdminSection({ title, children, action }) {
+function AdminSection({ title, children, action, V }) {
   return (
     <div style={{ marginBottom: 40 }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 16, paddingBottom: 10, borderBottom: `1px solid ${V.border}`,
       }}>
-        <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.syne, color: V.text }}>{title}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.syne, color: V.heading }}>{title}</div>
         {action}
       </div>
       {children}
@@ -72,7 +53,7 @@ function StatusPill({ status }) {
   return (
     <span style={{
       background: c.bg, border: `1px solid ${c.border}`, color: c.text,
-      fontSize: 10, fontWeight: 700, fontFamily: V.mono,
+      fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
       padding: '2px 7px', borderRadius: 3,
       textTransform: 'uppercase', letterSpacing: '0.08em',
     }}>
@@ -82,7 +63,7 @@ function StatusPill({ status }) {
 }
 
 // ─── Company Row ──────────────────────────────────────────────────────────────
-function CompanyRow({ company, onAction, refreshing }) {
+function CompanyRow({ company, onAction, refreshing, V }) {
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px',
@@ -121,8 +102,8 @@ function CompanyRow({ company, onAction, refreshing }) {
         )}
         {!company.featured && company.status === 'active' && (
           <button onClick={() => onAction(company.id, 'feature')} style={{
-            background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.3)',
-            color: '#FDBA74', borderRadius: 5, padding: '4px 8px', fontSize: 11,
+            background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+            color: V.accent, borderRadius: 5, padding: '4px 8px', fontSize: 11,
             fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
           }}>
             Feature
@@ -143,7 +124,7 @@ function CompanyRow({ company, onAction, refreshing }) {
 }
 
 // ─── Listing Row ──────────────────────────────────────────────────────────────
-function ListingRow({ listing, company, onToggle }) {
+function ListingRow({ listing, company, onToggle, V }) {
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: '1fr 80px 70px 80px',
@@ -183,8 +164,11 @@ function ListingRow({ listing, company, onToggle }) {
   );
 }
 
-// ─── Main Admin Panel ─────────────────────────────────────────────────────────
-export default function SourcingAdmin() {
+// ─── Inner Component ──────────────────────────────────────────────────────────
+function SourcingAdminInner() {
+  const { dark } = useSourcingTheme();
+  const V = getTokens(dark);
+
   const [authed, setAuthed] = useState(false);
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState('');
@@ -230,7 +214,6 @@ export default function SourcingAdmin() {
       allCompanies.forEach(c => { map[c.id] = c; });
       setCompanyMap(map);
 
-      // Compute stats
       const byVertical = {};
       allCompanies.forEach(c => {
         if (!byVertical[c.vertical]) byVertical[c.vertical] = 0;
@@ -326,16 +309,16 @@ export default function SourcingAdmin() {
   if (!authed) {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <style>{`* { box-sizing: border-box; } input::placeholder { color: #3A3530; } input:focus { border-color: rgba(232,93,38,0.5) !important; outline: none; }`}</style>
+        <style>{`* { box-sizing: border-box; } input::placeholder { color: ${V.dim}; } input:focus { border-color: ${V.accentBrd} !important; outline: none; }`}</style>
         <div style={{
           background: V.card, border: `1px solid ${V.border}`,
           borderRadius: 12, padding: '36px 32px', width: '100%', maxWidth: 380,
         }}>
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ fontSize: 11, color: V.orange, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: V.accent, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
               sourcing.directory
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: V.syne, color: V.text }}>Admin Panel</div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: V.syne, color: V.heading }}>Admin Panel</div>
           </div>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -355,7 +338,7 @@ export default function SourcingAdmin() {
             </div>
             {pwError && <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>{pwError}</div>}
             <button type="submit" style={{
-              background: V.orange, border: 'none', color: '#fff',
+              background: V.accent, border: 'none', color: '#fff',
               borderRadius: 8, padding: '12px 0', fontSize: 14,
               fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
             }}>
@@ -387,11 +370,11 @@ export default function SourcingAdmin() {
 
       {/* Top bar */}
       <div style={{
-        borderBottom: `1px solid ${V.border}`, background: '#0A0A0A',
+        borderBottom: `1px solid ${V.border}`, background: V.navBg,
         padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16, height: 56,
       }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.orange, letterSpacing: '0.12em', textTransform: 'uppercase' }}>AOM</span>
+          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase' }}>AOM</span>
         </Link>
         <span style={{ color: V.dim, fontSize: 13 }}>/</span>
         <Link to="/sourcing" style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>
@@ -413,7 +396,7 @@ export default function SourcingAdmin() {
       </div>
 
       {/* Tab bar */}
-      <div style={{ padding: '0 24px', borderBottom: `1px solid ${V.border}`, background: '#0A0A0A', display: 'flex', gap: 0 }}>
+      <div style={{ padding: '0 24px', borderBottom: `1px solid ${V.border}`, background: V.navBg, display: 'flex', gap: 0 }}>
         {TABS.map(tab => {
           const isActive = tab.key === activeTab;
           const isPending = tab.key === 'companies' && pendingCompanies.length > 0;
@@ -426,8 +409,8 @@ export default function SourcingAdmin() {
                 padding: '12px 16px', fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
                 fontFamily: V.space,
-                color: isActive ? V.orange : isPending ? '#FDBA74' : V.muted,
-                borderBottom: isActive ? `2px solid ${V.orange}` : '2px solid transparent',
+                color: isActive ? V.accent : isPending ? '#FDBA74' : V.muted,
+                borderBottom: isActive ? `2px solid ${V.accent}` : '2px solid transparent',
                 cursor: 'pointer', transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
               }}
@@ -444,8 +427,8 @@ export default function SourcingAdmin() {
         )}
 
         {!loading && !supabase && (
-          <div style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: 8, padding: '24px', textAlign: 'center' }}>
-            <div style={{ color: V.orange, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
+          <div style={{ background: V.accentDim, border: `1px solid ${V.accentBrd}`, borderRadius: 8, padding: '24px', textAlign: 'center' }}>
+            <div style={{ color: V.accent, fontFamily: V.mono, fontSize: 13, marginBottom: 8 }}>Supabase not configured</div>
             <div style={{ color: V.muted, fontFamily: V.space, fontSize: 12 }}>Run migrations 001-003 in Supabase SQL editor to activate the admin panel.</div>
           </div>
         )}
@@ -454,16 +437,15 @@ export default function SourcingAdmin() {
         {!loading && activeTab === 'stats' && stats && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14, marginBottom: 32 }}>
-              <StatCard label="Total Companies" value={stats.totalCompanies} />
-              <StatCard label="Active Companies" value={stats.activeCompanies} color={V.green} />
-              <StatCard label="Pending Approval" value={stats.pendingCompanies} color={stats.pendingCompanies > 0 ? '#FDBA74' : V.muted} />
-              <StatCard label="Organizations" value={stats.totalOrgs} color={V.blue} />
-              <StatCard label="Total Listings" value={stats.totalListings} />
-              <StatCard label="Active Listings" value={stats.activeListings} color={V.green} />
+              <StatCard label="Total Companies" value={stats.totalCompanies} V={V} />
+              <StatCard label="Active Companies" value={stats.activeCompanies} color={V.accent} V={V} />
+              <StatCard label="Pending Approval" value={stats.pendingCompanies} color={stats.pendingCompanies > 0 ? '#FDBA74' : V.muted} V={V} />
+              <StatCard label="Organizations" value={stats.totalOrgs} color="#3B82F6" V={V} />
+              <StatCard label="Total Listings" value={stats.totalListings} V={V} />
+              <StatCard label="Active Listings" value={stats.activeListings} color={V.accent} V={V} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              {/* By vertical */}
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Companies by Vertical</div>
                 {Object.entries(stats.byVertical).map(([v, count]) => (
@@ -474,7 +456,6 @@ export default function SourcingAdmin() {
                 ))}
               </div>
 
-              {/* By listing category */}
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Listings by Category</div>
                 {Object.entries(stats.byCategory).length === 0 && (
@@ -495,6 +476,7 @@ export default function SourcingAdmin() {
         {!loading && activeTab === 'companies' && (
           <AdminSection
             title="Companies"
+            V={V}
             action={
               pendingCompanies.length > 0 && (
                 <button onClick={handleApproveAll} style={{
@@ -507,7 +489,6 @@ export default function SourcingAdmin() {
               )
             }
           >
-            {/* Pending first */}
             {pendingCompanies.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: '#FDBA74', fontFamily: V.mono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
@@ -520,13 +501,12 @@ export default function SourcingAdmin() {
                     ))}
                   </div>
                   {pendingCompanies.map(c => (
-                    <CompanyRow key={c.id} company={c} onAction={handleCompanyAction} refreshing={refreshing[c.id]} />
+                    <CompanyRow key={c.id} company={c} onAction={handleCompanyAction} refreshing={refreshing[c.id]} V={V} />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* All companies */}
             <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 8, overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 120px', gap: 12, padding: '8px 16px', background: V.card2 }}>
                 {['Company', 'Status', 'Tier', 'Actions'].map(h => (
@@ -534,7 +514,7 @@ export default function SourcingAdmin() {
                 ))}
               </div>
               {companies.filter(c => c.status !== 'pending').map(c => (
-                <CompanyRow key={c.id} company={c} onAction={handleCompanyAction} refreshing={refreshing[c.id]} />
+                <CompanyRow key={c.id} company={c} onAction={handleCompanyAction} refreshing={refreshing[c.id]} V={V} />
               ))}
               {companies.filter(c => c.status !== 'pending').length === 0 && (
                 <div style={{ padding: '24px 16px', color: V.dim, fontSize: 13, fontFamily: V.space }}>No companies yet.</div>
@@ -545,7 +525,7 @@ export default function SourcingAdmin() {
 
         {/* Organizations */}
         {!loading && activeTab === 'orgs' && (
-          <AdminSection title="Organizations">
+          <AdminSection title="Organizations" V={V}>
             <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 8, overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: 12, padding: '8px 16px', background: V.card2 }}>
                 {['Organization', 'Vertical', 'Tiers'].map(h => (
@@ -565,7 +545,7 @@ export default function SourcingAdmin() {
                       <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text }}>{org.name}</div>
                       <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
                         {memberCount} member{memberCount !== 1 ? 's' : ''}
-                        {org.website && <> · <a href={org.website} target="_blank" rel="noreferrer" style={{ color: V.blue, textDecoration: 'none' }}>site</a></>}
+                        {org.website && <> · <a href={org.website} target="_blank" rel="noreferrer" style={{ color: '#3B82F6', textDecoration: 'none' }}>site</a></>}
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: V.muted, fontFamily: V.mono, textTransform: 'capitalize' }}>{org.vertical}</div>
@@ -582,14 +562,13 @@ export default function SourcingAdmin() {
 
         {/* Listings */}
         {!loading && activeTab === 'listings' && (
-          <AdminSection title="Listings">
-            {/* Filter bar */}
+          <AdminSection title="Listings" V={V}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
               {['all', 'equipment', 'job', 'event', 'article'].map(cat => (
                 <button key={cat} onClick={() => setListingFilter(cat)} style={{
-                  background: listingFilter === cat ? 'rgba(255,255,255,0.08)' : 'transparent',
-                  border: `1px solid ${listingFilter === cat ? V.borderHov : V.border}`,
-                  color: listingFilter === cat ? V.text : V.muted,
+                  background: listingFilter === cat ? V.accentDim : 'transparent',
+                  border: `1px solid ${listingFilter === cat ? V.accentBrd : V.border}`,
+                  color: listingFilter === cat ? V.accent : V.muted,
                   borderRadius: 6, padding: '5px 12px', fontSize: 12,
                   fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
                   textTransform: 'capitalize',
@@ -606,7 +585,7 @@ export default function SourcingAdmin() {
                 ))}
               </div>
               {filteredListings.slice(0, 50).map(listing => (
-                <ListingRow key={listing.id} listing={listing} company={companyMap[listing.company_id]} onToggle={handleListingToggle} />
+                <ListingRow key={listing.id} listing={listing} company={companyMap[listing.company_id]} onToggle={handleListingToggle} V={V} />
               ))}
               {filteredListings.length === 0 && (
                 <div style={{ padding: '24px 16px', color: V.dim, fontSize: 13, fontFamily: V.space }}>No listings.</div>
@@ -622,11 +601,11 @@ export default function SourcingAdmin() {
 
         {/* Quick Actions */}
         {!loading && activeTab === 'actions' && (
-          <AdminSection title="Quick Actions">
+          <AdminSection title="Quick Actions" V={V}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
               {pendingCompanies.length > 0 && (
                 <div style={{ background: V.card, border: `1px solid rgba(234,179,8,0.25)`, borderRadius: 10, padding: '18px 20px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
                     Approve Pending ({pendingCompanies.length})
                   </div>
                   <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
@@ -644,14 +623,14 @@ export default function SourcingAdmin() {
               )}
 
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
                   Export Contacts CSV
                 </div>
                 <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
                   Download all company contacts as CSV.
                 </div>
                 <button onClick={handleExportCSV} style={{
-                  width: '100%', background: V.orange,
+                  width: '100%', background: V.accent,
                   border: 'none', color: '#fff',
                   borderRadius: 7, padding: '9px 0', fontSize: 13,
                   fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
@@ -661,7 +640,7 @@ export default function SourcingAdmin() {
               </div>
 
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
                   Add Organization
                 </div>
                 <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
@@ -673,7 +652,7 @@ export default function SourcingAdmin() {
               </div>
 
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
                   Refresh Data
                 </div>
                 <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
@@ -681,7 +660,7 @@ export default function SourcingAdmin() {
                 </div>
                 <button onClick={fetchData} style={{
                   width: '100%', background: 'transparent',
-                  border: `1px solid ${V.borderHov}`, color: V.text,
+                  border: `1px solid ${V.border}`, color: V.text,
                   borderRadius: 7, padding: '9px 0', fontSize: 13,
                   fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
                 }}>
@@ -693,5 +672,13 @@ export default function SourcingAdmin() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SourcingAdmin() {
+  return (
+    <SourcingThemeProvider>
+      <SourcingAdminInner />
+    </SourcingThemeProvider>
   );
 }
