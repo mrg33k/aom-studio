@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getClientId } from '../lib/clientConfig'
 import { AGENTS as GRID_AGENTS } from '../gridSpec'
+import { useSystemToast } from '../SystemToast'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -396,6 +397,15 @@ export function useDataPipe(parsePunchList) {
   // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
   const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
 
+  // Liveness detection -- toast when agents go silent or tasks stall
+  const { showToast } = useSystemToast()
+  const showToastRef = useRef(showToast)
+  showToastRef.current = showToast
+  // slug -> ms timestamp of last "stuck" toast (dedup: re-toast only after 5min cooldown)
+  const stuckAgentToastsRef = useRef(new Map())
+  // Set of task_ids already toasted for timeout (one toast per task, ever)
+  const stuckTaskToastsRef = useRef(new Set())
+
   // Auto-check keywords stored in ref for stable callback
   const keywordsRef = useRef(new Set())
 
@@ -749,6 +759,76 @@ export function useDataPipe(parsePunchList) {
 
           setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
         }
+
+        // ── LIVENESS DETECTION ────────────────────────────────────────────────
+        // 1. Agent heartbeat check: working agents with no heartbeat in 60s
+        if (showToastRef.current && data.agents) {
+          const now = Date.now()
+          const HEARTBEAT_STALE_MS = 60 * 1000
+          const TOAST_COOLDOWN_MS  = 5 * 60 * 1000
+
+          for (const agent of data.agents) {
+            const isWorking = (agent.status || '').toLowerCase() === 'working'
+            if (!isWorking) {
+              // Agent recovered or never stuck -- clear dedup record
+              stuckAgentToastsRef.current.delete(agent.slug)
+              continue
+            }
+            if (!agent.updatedAt) continue
+            const ageMs = now - new Date(agent.updatedAt).getTime()
+            if (ageMs > HEARTBEAT_STALE_MS) {
+              const lastToasted = stuckAgentToastsRef.current.get(agent.slug)
+              if (!lastToasted || now - lastToasted > TOAST_COOLDOWN_MS) {
+                stuckAgentToastsRef.current.set(agent.slug, now)
+                showToastRef.current(
+                  `Agent ${agent.name || agent.slug} may be stuck (no heartbeat for 60s)`,
+                  'warning',
+                  8000
+                )
+              }
+            } else {
+              // Heartbeat is fresh -- clear stuck record
+              stuckAgentToastsRef.current.delete(agent.slug)
+            }
+          }
+        }
+
+        // 2. Task timeout check: task_started with no completion after 5 minutes
+        if (showToastRef.current && data.events && data.events.length > 0) {
+          const now = Date.now()
+          const TASK_TIMEOUT_MS = 5 * 60 * 1000
+
+          // Build a map: task_id -> most-recent event (events arrive newest-first)
+          const taskMap = new Map()
+          for (const ev of data.events) {
+            const taskId = ev.payload?.task_id || ev.id
+            if (!taskId || taskMap.has(taskId)) continue
+            taskMap.set(taskId, {
+              event_type:  ev.event_type,
+              description: ev.payload?.description || ev.payload?.task || ev.payload?.text || 'Unknown task',
+              agent:       ev.agent,
+              timestamp:   ev.timestamp,
+            })
+          }
+
+          for (const [taskId, info] of taskMap) {
+            if (info.event_type !== 'task_started') continue
+            if (!info.timestamp) continue
+            const ageMs = now - new Date(info.timestamp).getTime()
+            if (ageMs > TASK_TIMEOUT_MS && !stuckTaskToastsRef.current.has(taskId)) {
+              stuckTaskToastsRef.current.add(taskId)
+              const desc = info.description.length > 50
+                ? info.description.slice(0, 47) + '...'
+                : info.description
+              showToastRef.current(
+                `Task "${desc}" may have failed (no completion in 5m)`,
+                'warning',
+                10000
+              )
+            }
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         setPunchLoading(false)
         setLastUpdated(Date.now())
