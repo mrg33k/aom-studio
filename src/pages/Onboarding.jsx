@@ -372,6 +372,19 @@ export default function Onboarding() {
     setError('')
 
     const worldSlug  = toSlug(worldName) || 'my-world'
+
+    // AOM GUARD: NEVER overwrite AOM world. If current user is AOM, force QA mode.
+    let currentWorld = null
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      currentWorld = user?.user_metadata?.world
+    } catch {}
+    if (currentWorld === 'aom' && !isQaMode) {
+      // AOM user hit onboarding without QA mode -- this would overwrite their world. Block it.
+      setError('AOM world is protected. Use QA mode from the world switcher to test onboarding.')
+      setFinishing(false)
+      return
+    }
     const agentSlug  = toSlug(agentName) || 'my-agent'
     const roleChoice = selectedRole || ROLE_TEMPLATES[0]
 
