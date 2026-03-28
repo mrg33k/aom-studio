@@ -503,17 +503,28 @@ export default function SourcingProfile() {
                     {org.description.slice(0, 120)}{org.description.length > 120 ? '...' : ''}
                   </div>
                 )}
-                {org.website && (
-                  <a
-                    href={org.website} target="_blank" rel="noreferrer"
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <Link
+                    to={`/sourcing/org/${org.slug}`}
                     style={{
                       fontSize: 12, color: vColor, fontFamily: V.space,
                       textDecoration: 'none', fontWeight: 600,
                     }}
                   >
-                    Learn more →
-                  </a>
-                )}
+                    View Organization →
+                  </Link>
+                  {org.website && (
+                    <a
+                      href={org.website} target="_blank" rel="noreferrer"
+                      style={{
+                        fontSize: 12, color: V.muted, fontFamily: V.space,
+                        textDecoration: 'none', fontWeight: 600,
+                      }}
+                    >
+                      Website
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 

@@ -58,6 +58,11 @@ const SourcingMarketplace = lazy(() => import('./pages/SourcingMarketplace.jsx')
 const SourcingMarketplacePost = lazy(() => import('./pages/SourcingMarketplacePost.jsx'))
 const SourcingEvents = lazy(() => import('./pages/SourcingEvents.jsx'))
 const SourcingEventsPost = lazy(() => import('./pages/SourcingEventsPost.jsx'))
+const SourcingArticles = lazy(() => import('./pages/SourcingArticles.jsx'))
+const SourcingArticlesPost = lazy(() => import('./pages/SourcingArticlesPost.jsx'))
+const SourcingOrg = lazy(() => import('./pages/SourcingOrg.jsx'))
+const SourcingCheckout = lazy(() => import('./pages/SourcingCheckout.jsx'))
+const SourcingAdmin = lazy(() => import('./pages/SourcingAdmin.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
@@ -240,6 +245,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/sourcing/marketplace/post" element={<SourcingMarketplacePost />} />
           <Route path="/sourcing/events" element={<SourcingEvents />} />
           <Route path="/sourcing/events/post" element={<SourcingEventsPost />} />
+          <Route path="/sourcing/articles" element={<SourcingArticles />} />
+          <Route path="/sourcing/articles/post" element={<SourcingArticlesPost />} />
+          <Route path="/sourcing/org/:slug" element={<SourcingOrg />} />
+          <Route path="/sourcing/checkout" element={<SourcingCheckout />} />
+          <Route path="/sourcing/admin" element={<SourcingAdmin />} />
           <Route path="/sourcing/:slug" element={<SourcingProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />

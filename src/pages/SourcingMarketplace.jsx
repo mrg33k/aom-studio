@@ -57,6 +57,7 @@ export function SourcingNav({ active }) {
     { key: 'marketplace', label: 'Marketplace',  href: '/sourcing/marketplace' },
     { key: 'jobs',        label: 'Jobs',         href: '/sourcing/jobs' },
     { key: 'events',      label: 'Events',       href: '/sourcing/events' },
+    { key: 'articles',    label: 'Articles',     href: '/sourcing/articles' },
   ];
   return (
     <div style={{
