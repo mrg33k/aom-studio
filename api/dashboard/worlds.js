@@ -38,10 +38,22 @@ export default async function handler(req, res) {
         id: u.id,
         email: u.email || '',
         world: u.user_metadata?.world || 'aom',
-        name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Unknown',
+        name: u.user_metadata?.workspace_name
+           || u.user_metadata?.display_name
+           || u.user_metadata?.name
+           || u.user_metadata?.full_name
+           || (u.user_metadata?.world || '').toUpperCase()
+           || u.email?.split('@')[0]
+           || 'Unknown',
         created_at: u.created_at || '',
       }))
       // Deduplicate by world slug (multiple users can share a world)
+      // Sort: users with workspace_name first (they're the world "owner")
+      worlds.sort((a, b) => {
+        const aHas = users.find(u => u.id === a.id)?.user_metadata?.workspace_name ? 0 : 1
+        const bHas = users.find(u => u.id === b.id)?.user_metadata?.workspace_name ? 0 : 1
+        return aHas - bHas
+      })
       const seen = new Set()
       const unique = worlds.filter(w => {
         if (seen.has(w.world)) return false
