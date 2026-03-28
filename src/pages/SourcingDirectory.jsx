@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
+import { SourcingNav } from './SourcingMarketplace.jsx';
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const V = {
@@ -364,32 +365,7 @@ export default function SourcingDirectory() {
         input:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
       `}</style>
 
-      {/* Nav */}
-      <div style={{
-        borderBottom: `1px solid ${V.border}`,
-        padding: '0 24px',
-        display: 'flex', alignItems: 'center', gap: 20, height: 60,
-        background: '#0A0A0A',
-      }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.orange, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            AOM
-          </span>
-        </Link>
-        <span style={{ color: V.dim, fontSize: 13 }}>/</span>
-        <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>Sourcing Directory</span>
-        <div style={{ flex: 1 }} />
-        <Link
-          to="/sourcing/signup"
-          style={{
-            background: V.orange, color: '#fff', textDecoration: 'none',
-            borderRadius: 6, padding: '6px 14px', fontSize: 12,
-            fontWeight: 700, fontFamily: V.space,
-          }}
-        >
-          List Your Company
-        </Link>
-      </div>
+      <SourcingNav active="directory" />
 
       {/* Hero */}
       <div style={{ padding: '52px 24px 36px', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
