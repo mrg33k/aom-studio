@@ -531,7 +531,7 @@ export default function FinanceTracker() {
             <button onClick={() => fileRef.current?.click()} style={{
               background: V4.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px',
               fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: V4.syne, textTransform: 'uppercase', letterSpacing: '0.1em',
-              transition: 'background 0.2s'
+              transition: 'background 0.2s', minHeight: 44
             }}
               onMouseEnter={e => e.currentTarget.style.background = V4.accentHover}
               onMouseLeave={e => e.currentTarget.style.background = V4.accent}
@@ -541,7 +541,7 @@ export default function FinanceTracker() {
             <button onClick={exportCSV} style={{
               background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 20px',
               fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em',
-              transition: 'border-color 0.2s'
+              transition: 'border-color 0.2s', minHeight: 44
             }}
               onMouseEnter={e => e.currentTarget.style.borderColor = V4.accent + '55'}
               onMouseLeave={e => e.currentTarget.style.borderColor = V4.border}
@@ -550,13 +550,13 @@ export default function FinanceTracker() {
             </button>
             <button onClick={handleRefresh} style={{
               background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 20px',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em'
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em', minHeight: 44
             }}>
               Refresh
             </button>
             <button onClick={clearData} style={{
               background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 16px',
-              fontSize: 12, cursor: 'pointer', fontFamily: V4.space, opacity: 0.5
+              fontSize: 12, cursor: 'pointer', fontFamily: V4.space, opacity: 0.5, minHeight: 44
             }}>
               Reset
             </button>
