@@ -227,27 +227,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing query' });
     }
 
-    // ── Step 1: Log query to scout_messages (Corner relay pattern) ────────────
-    // This creates the relay infrastructure. A persistent Scout agent watching
-    // this table can take over processing later. For now, we process inline.
+    // ── Step 1: Write query to scout_messages and let Scout handle it ─────────
+    // Scout watcher polls this table. If Scout is running, it processes with
+    // full Claude intelligence. If not, we fall back to the parser.
     let messageId = null;
+    let scoutHandled = false;
     try {
       const { data: msgRow } = await supabase
         .from('scout_messages')
         .insert({
           query,
-          status: 'processing',
+          status: 'pending',
           session_id: session_id || null,
         })
         .select('id')
         .single();
       if (msgRow) messageId = msgRow.id;
+
+      // Poll for Scout's response (up to 12 seconds)
+      if (messageId) {
+        for (let i = 0; i < 24; i++) {
+          await new Promise(r => setTimeout(r, 500));
+          const { data: check } = await supabase
+            .from('scout_messages')
+            .select('status, response')
+            .eq('id', messageId)
+            .single();
+          if (check && check.status === 'complete' && check.response) {
+            // Scout handled it!
+            return res.status(200).json(check.response);
+          }
+        }
+      }
     } catch (logErr) {
-      // Non-fatal: log the error but keep processing
-      console.warn('scout_messages insert failed (table may not exist yet):', logErr.message);
+      console.warn('scout_messages relay failed, falling back to parser:', logErr.message);
     }
 
-    // ── Step 2: Parse the query ───────────────────────────────────────────────
+    // ── Fallback: Scout didn't respond in time, use parser ──────────────────
     const parsed = parseQuery(query);
 
     // ── Step 3: Query the directory ──────────────────────────────────────────
