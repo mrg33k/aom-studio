@@ -181,6 +181,11 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
     }
   }, [connect, enabled])
 
+  // Reset check state -- call before sending a new message to clear stale receipt
+  const resetCheck = useCallback(() => {
+    setCheck(null)
+  }, [])
+
   // Send a message
   const send = useCallback((text) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -203,6 +208,7 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
     streamText,  // accumulated streaming text (real-time)
     lastResponse, // { text, time, error? } -- latest complete response
     send,        // (text) => boolean
+    resetCheck,  // () => void -- reset check to null before sending a new message
     connected: status === 'connected',
   }
 }

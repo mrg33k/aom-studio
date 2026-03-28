@@ -295,6 +295,10 @@ function useColumnChat(agentSlug, isActive) {
     const sentTime = new Date().toISOString()
     const msgId = `usr-${Date.now()}`
     setInput('')
+    // Reset stale check state BEFORE adding the new message so the bridge.check
+    // useEffect cannot fire with a leftover 'blue' value and instantly mark the
+    // new message as read.
+    if (useBridgeForAgent) bridge.resetCheck()
     // Step 1: single gray check (sent)
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
