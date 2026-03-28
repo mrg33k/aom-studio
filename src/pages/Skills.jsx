@@ -250,7 +250,7 @@ function SkillCard({ skill, catId, index }) {
             {skill.name}
           </h3>
           <span
-            className="shrink-0 font-mono text-[10px] px-2 py-0.5 rounded border"
+            className="shrink-0 font-mono text-xs px-2 py-0.5 rounded border"
             style={{ color: accentColor, borderColor: accentColor + '40', backgroundColor: accentColor + '10' }}
           >
             {skill.trigger}
@@ -299,7 +299,7 @@ function CategorySection({ cat, searchQuery }) {
               {cat.label}
             </h2>
             <span
-              className="font-mono text-[10px] px-2 py-0.5 rounded-full border"
+              className="font-mono text-xs px-2 py-0.5 rounded-full border"
               style={{ color: cat.color, borderColor: cat.color + '40', backgroundColor: cat.color + '10' }}
             >
               {filtered.length} skills
@@ -460,7 +460,7 @@ export default function Skills() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveFilter('all')}
-                className={`px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-widest border transition-all ${
+                className={`px-3 py-2 min-h-[44px] rounded-lg font-mono text-xs uppercase tracking-widest border transition-all ${
                   activeFilter === 'all'
                     ? 'bg-[#E85D26]/15 border-[#E85D26]/40 text-[#E85D26]'
                     : 'bg-white/[0.03] border-white/[0.06] text-[#8A847C] hover:text-[#F0ECE6] hover:border-white/20'
@@ -472,7 +472,7 @@ export default function Skills() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveFilter(cat.id === activeFilter ? 'all' : cat.id)}
-                  className={`px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-widest border transition-all ${
+                  className={`px-3 py-2 min-h-[44px] rounded-lg font-mono text-xs uppercase tracking-widest border transition-all ${
                     activeFilter === cat.id
                       ? 'border-opacity-40 opacity-100'
                       : 'bg-white/[0.03] border-white/[0.06] text-[#8A847C] hover:text-[#F0ECE6] hover:border-white/20'
