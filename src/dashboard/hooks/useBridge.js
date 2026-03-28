@@ -20,7 +20,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 export const BRIDGE_AGENTS = ['elon', 'gary', 'bobby']
 
 // Bridge server URL -- Cloudflare tunnel provides wss:// with real cert
-const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || 'wss://xbox-geek-thermal-feels.trycloudflare.com'
+// Bridge URL from env, or fallback to Cloudflare tunnel. Update VITE_BRIDGE_URL in .env.production when tunnel URL changes.
+const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || 'wss://exterior-bonus-questionnaire-entrance.trycloudflare.com'
 
 export function isBridgeAgent(slug) {
   return BRIDGE_AGENTS.includes(slug)
