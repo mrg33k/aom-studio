@@ -83,7 +83,28 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, cleared, reset, queueDepth, clearedTasks, resetAgents });
+    // 4. SIGNAL HOME MAC: write restart_agents event to events table.
+    // The home Mac's supabase-listener picks this up and restarts tmux sessions.
+    let signalSent = false;
+    try {
+      const signalResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/events`,
+        {
+          method: 'POST',
+          headers: { ...headers, Prefer: 'return=minimal' },
+          body: JSON.stringify({
+            event_type: 'restart_agents',
+            agent: 'system',
+            client_id: 'aom',
+            timestamp: now,
+            payload: { source: 'unstuck-button', agents: ['bobby', 'elon', 'gary'] },
+          }),
+        }
+      );
+      signalSent = signalResp.ok;
+    } catch {}
+
+    return res.status(200).json({ ok: true, cleared, reset, queueDepth, clearedTasks, resetAgents, signalSent });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
