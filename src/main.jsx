@@ -95,6 +95,15 @@ function AuthGuard({ children }) {
           navigate('/change-password', { replace: true })
           return
         }
+        // QA account (elmo@corner.aheadofmarket.com) always skips onboarding --
+        // QA War Room mode must not reset a verified QA account to onboarding.
+        const userEmail = session.user?.email || ''
+        if (userEmail.includes('elmo@corner')) {
+          setAuthed(true)
+          setChecked(true)
+          return
+        }
+
         // QA War Room: always show onboarding when in QA mode
         if (localStorage.getItem('corner-qa-mode') === 'true') {
           setChecked(true)
