@@ -821,7 +821,7 @@ export default function MunicipalDirectory() {
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
           <thead>
             <tr style={{ background: '#0F0F0D' }}>
               <th style={thStyle('name')} onClick={() => handleSort('name')}>
@@ -834,6 +834,8 @@ export default function MunicipalDirectory() {
               <th style={{ ...thStyle('population_2020'), textAlign: 'right' }} onClick={() => handleSort('population_2020')}>
                 Pop <SortIcon field="population_2020" />
               </th>
+              <th style={{ ...thStyle('contact_name'), cursor: 'default' }}>Contact</th>
+              <th style={{ ...thStyle(''), cursor: 'default' }}>Phone / Email</th>
               <th className="md-area-col" style={thStyle('land_area_sqmi')} onClick={() => handleSort('land_area_sqmi')}>
                 Area <SortIcon field="land_area_sqmi" />
               </th>
@@ -843,7 +845,7 @@ export default function MunicipalDirectory() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{
+                <td colSpan={7} style={{
                   padding: '48px 20px', textAlign: 'center',
                   color: V.muted, fontSize: 14, fontFamily: V.space,
                 }}>
@@ -866,16 +868,6 @@ export default function MunicipalDirectory() {
                   <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text }}>
                     {p.name}
                   </div>
-                  {p.contact_name && (
-                    <div style={{ fontSize: 11, color: '#86EFAC', marginTop: 2, fontFamily: V.mono, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ fontSize: 6, lineHeight: 1 }}>●</span> {p.contact_name}
-                      {p.contact_phone && (
-                        <a href={`tel:${p.contact_phone}`} onClick={e => e.stopPropagation()} style={{ color: '#93C5FD', textDecoration: 'none', marginLeft: 6 }}>
-                          {p.contact_phone}
-                        </a>
-                      )}
-                    </div>
-                  )}
                 </td>
                 <td style={{ padding: '10px 14px' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: V.mono, color: V.muted }}>
@@ -897,6 +889,34 @@ export default function MunicipalDirectory() {
                     </div>
                   ) : (
                     <span style={{ fontSize: 12, color: V.dim, fontFamily: V.mono }}>N/A</span>
+                  )}
+                </td>
+                <td style={{ padding: '10px 14px' }}>
+                  {p.contact_name ? (
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#86EFAC', fontFamily: V.space, whiteSpace: 'nowrap' }}>{p.contact_name}</div>
+                      {p.contact_title && <div style={{ fontSize: 10, color: V.dim, fontFamily: V.mono }}>{p.contact_title}</div>}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 11, color: V.dim }}>—</span>
+                  )}
+                </td>
+                <td style={{ padding: '10px 14px' }}>
+                  {(p.contact_phone || p.contact_email) ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {p.contact_phone && (
+                        <a href={`tel:${p.contact_phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#93C5FD', textDecoration: 'none', fontFamily: V.mono, whiteSpace: 'nowrap' }}>
+                          {p.contact_phone}
+                        </a>
+                      )}
+                      {p.contact_email && (
+                        <a href={`mailto:${p.contact_email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 11, color: '#93C5FD', textDecoration: 'none', fontFamily: V.mono, whiteSpace: 'nowrap' }}>
+                          {p.contact_email}
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 11, color: V.dim }}>—</span>
                   )}
                 </td>
                 <td className="md-area-col" style={{ padding: '10px 14px' }}>
