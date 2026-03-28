@@ -298,6 +298,36 @@ export default function Onboarding() {
 
   const worldInputRef = useRef(null)
 
+  // On mount: check if user already has a world. If so, skip onboarding entirely.
+  useEffect(() => {
+    async function checkExistingWorld() {
+      if (!supabase) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        const meta = user?.user_metadata || {}
+        // If metadata already has a world slug, they were onboarded before
+        if (meta.world && meta.world.trim()) {
+          localStorage.setItem('corner-onboarded', 'true')
+          navigate('/dashboard', { replace: true })
+          return
+        }
+        // Check if they have any agents in the DB (metadata write might have failed)
+        const { data } = await supabase.from('agent_status').select('id, client_id').limit(1)
+        if (data && data.length > 0) {
+          // Self-heal metadata
+          await supabase.auth.updateUser({
+            data: { onboarded: true, has_completed_onboarding: true, world: data[0].client_id }
+          }).catch(() => {})
+          localStorage.setItem('corner-onboarded', 'true')
+          navigate('/dashboard', { replace: true })
+        }
+      } catch {
+        // Can't check, proceed with onboarding normally
+      }
+    }
+    checkExistingWorld()
+  }, [navigate])
+
   useEffect(() => {
     if (step === 3) {
       const t = setTimeout(() => worldInputRef.current?.focus(), 320)
@@ -345,6 +375,22 @@ export default function Onboarding() {
 
     try {
       if (supabase) {
+        // Check if this user already has a world (prevents duplicate creation)
+        const { data: existing } = await supabase
+          .from('agent_status')
+          .select('id, client_id')
+          .limit(1)
+
+        if (existing && existing.length > 0) {
+          // User already has a world. Update metadata and go to dashboard.
+          await supabase.auth.updateUser({
+            data: { onboarded: true, has_completed_onboarding: true, world: existing[0].client_id }
+          }).catch(() => {})
+          localStorage.setItem('corner-onboarded', 'true')
+          navigate('/dashboard', { replace: true })
+          return
+        }
+
         const { error: metaErr } = await supabase.auth.updateUser({
           data: {
             world:                    worldSlug,
@@ -397,6 +443,7 @@ export default function Onboarding() {
         localStorage.setItem('corner-agent-name', agentName.trim())
       }
 
+      localStorage.setItem('corner-onboarded', 'true')
       navigate('/dashboard', { replace: true })
     } catch (err) {
       console.error('[Onboarding] error:', err)

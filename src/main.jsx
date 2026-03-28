@@ -78,7 +78,7 @@ function BrandRedirect() {
 
 // AuthGuard: checks Supabase session before rendering dashboard routes.
 // Falls through immediately if Supabase is not configured (localhost without env vars).
-// First-time users (user_metadata.onboarded !== true) are redirected to /onboarding.
+// First-time users are redirected to /onboarding. Checks metadata + DB for robustness.
 function AuthGuard({ children }) {
   const navigate = useNavigate()
   const [checked, setChecked] = useState(false)
@@ -86,7 +86,7 @@ function AuthGuard({ children }) {
 
   useEffect(() => {
     // onAuthStateChange fires immediately with current session, then on changes.
-    const unsubscribe = onAuthStateChange((session) => {
+    const unsubscribe = onAuthStateChange(async (session) => {
       if (session) {
         // Admin-created accounts must change their temp password first
         if (isTempPassword(session.user)) {
@@ -95,11 +95,35 @@ function AuthGuard({ children }) {
           navigate('/change-password', { replace: true })
           return
         }
-        // Check onboarding status from user_metadata or localStorage fallback
-        const isOnboarded =
-          session.user?.user_metadata?.onboarded === true ||
-          session.user?.user_metadata?.has_completed_onboarding === true ||
+        // Check onboarding status: metadata flags, localStorage, OR world slug exists
+        const meta = session.user?.user_metadata || {}
+        let isOnboarded =
+          meta.onboarded === true ||
+          meta.has_completed_onboarding === true ||
+          (meta.world && meta.world.trim().length > 0) ||
           localStorage.getItem('corner-onboarded') === 'true'
+
+        // Fallback: if metadata says no but user already has agents in DB, skip onboarding.
+        // This catches cleared cookies + metadata write failures.
+        if (!isOnboarded && supabase) {
+          try {
+            const { data } = await supabase
+              .from('agent_status')
+              .select('id, client_id')
+              .limit(1)
+            if (data && data.length > 0) {
+              isOnboarded = true
+              // Self-heal: fix the metadata so this check doesn't repeat
+              localStorage.setItem('corner-onboarded', 'true')
+              supabase.auth.updateUser({
+                data: { onboarded: true, has_completed_onboarding: true, world: data[0].client_id }
+              }).catch(() => {})
+            }
+          } catch {
+            // DB check failed, fall through to onboarding
+          }
+        }
+
         if (!isOnboarded) {
           // First-time user -- send to onboarding before dashboard
           setChecked(true)
