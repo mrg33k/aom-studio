@@ -42,6 +42,7 @@ import FilesTab from './FilesTab.jsx'
 import { getClientId, setClientIdFromUser, setWorldOverride, getUserWorld } from './lib/clientConfig.js'
 import { marked } from 'marked'
 import OnboardingGuide from './OnboardingGuide.jsx'
+import SystemToastContainer, { useSystemToast } from './SystemToast.jsx'
 import AgentInfoTab from './components/AgentInfoTab.jsx'
 import { getTypingPhrases } from './agentTypingPhrases.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
@@ -14071,6 +14072,7 @@ export default function GameDashboard() {
           />
         )}
       </AnimatePresence>
+      <SystemToastContainer />
     </div>
     </RoomsWithRendersContext.Provider>
     </SpriteAgentsContext.Provider>
