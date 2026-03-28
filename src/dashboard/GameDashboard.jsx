@@ -8266,7 +8266,8 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '10px 20px 14px',
+              padding: '10px 20px 20px',
+              marginBottom: 8,
               borderBottom: '2px solid rgba(59,130,246,0.08)',
               background: isNightMode ? 'rgba(34,197,94,0.03)' : 'rgba(34,197,94,0.02)',
             }}>
@@ -8340,7 +8341,8 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '10px 20px 14px',
+              padding: '10px 20px 20px',
+              marginBottom: 8,
               borderBottom: '2px solid rgba(59,130,246,0.08)',
               background: isNightMode ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.02)',
             }}>
@@ -11016,17 +11018,17 @@ export default function GameDashboard() {
     if (world.world === myWorld) {
       // Clicking own world clears any active override (return to home)
       setWorldOverride(null)
-      localStorage.removeItem('corner-qa-mode')
+      sessionStorage.removeItem('corner-qa-active'); sessionStorage.removeItem('corner-qa-completed')
       window.location.reload()
     } else if (world.world === 'q' || world.world === 'qa') {
       // QA War Room: every switch triggers fresh onboarding. Redirect to full 5-step flow.
       setWorldOverride(world.world)
-      localStorage.setItem('corner-qa-mode', 'true')
+      sessionStorage.setItem('corner-qa-active', 'true')
       localStorage.removeItem('corner-onboarded')
       window.location.href = '/onboarding'
     } else {
       setWorldOverride(world.world)
-      localStorage.removeItem('corner-qa-mode')
+      sessionStorage.removeItem('corner-qa-active'); sessionStorage.removeItem('corner-qa-completed')
       window.location.reload()
     }
   }, [])
@@ -11034,7 +11036,7 @@ export default function GameDashboard() {
   // Clear the world override and reload (return to own world)
   const handleReturnToMyWorld = useCallback(() => {
     setWorldOverride(null)
-    localStorage.removeItem('corner-qa-mode')
+    sessionStorage.removeItem('corner-qa-active'); sessionStorage.removeItem('corner-qa-completed')
     window.location.reload()
   }, [])
 

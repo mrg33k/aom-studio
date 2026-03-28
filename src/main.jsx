@@ -95,13 +95,14 @@ function AuthGuard({ children }) {
           navigate('/change-password', { replace: true })
           return
         }
-        // QA War Room: always show onboarding when in QA mode
-        if (localStorage.getItem('corner-qa-mode') === 'true') {
+        // QA Mode: force onboarding for testing the new-user experience.
+        // corner-qa-active = QA mode on. corner-qa-completed = just finished onboarding, show dashboard.
+        // "Return to AOM" clears both. World switcher sets corner-qa-active.
+        if (sessionStorage.getItem('corner-qa-active') === 'true' &&
+            sessionStorage.getItem('corner-qa-completed') !== 'true') {
           setChecked(true)
-          setAuthed(true) // keep authed so the check doesn't re-fire
-          if (window.location.pathname !== '/onboarding') {
-            navigate('/onboarding', { replace: true })
-          }
+          setAuthed(true)
+          navigate('/onboarding', { replace: true })
           return
         }
 

@@ -364,7 +364,7 @@ export default function Onboarding() {
     }
   }
 
-  const isQaMode = localStorage.getItem('corner-qa-mode') === 'true'
+  const isQaMode = sessionStorage.getItem('corner-qa-active') === 'true'
 
   async function handleLaunch() {
     if (finishing) return
@@ -447,12 +447,10 @@ export default function Onboarding() {
         localStorage.setItem('corner-agent-name', agentName.trim())
       }
 
-      // QA Mode: go to dashboard with QA world override
+      localStorage.setItem('corner-onboarded', 'true')
+      // QA Mode: mark this round as completed so AuthGuard lets us through to dashboard
       if (isQaMode) {
-        localStorage.removeItem('corner-qa-mode')
-        localStorage.setItem('corner-onboarded', 'true')
-      } else {
-        localStorage.setItem('corner-onboarded', 'true')
+        sessionStorage.setItem('corner-qa-completed', 'true')
       }
       navigate('/dashboard', { replace: true })
     } catch (err) {
@@ -517,8 +515,10 @@ export default function Onboarding() {
           </span>
           <button
             onClick={() => {
-              localStorage.removeItem('corner-qa-mode')
-              localStorage.removeItem('corner-world-override')
+              sessionStorage.removeItem('corner-qa-active')
+              sessionStorage.removeItem('corner-qa-completed')
+              sessionStorage.removeItem('corner-world-override')
+              try { sessionStorage.removeItem('corner-world-override') } catch {}
               window.location.href = '/dashboard'
             }}
             style={{
