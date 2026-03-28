@@ -307,7 +307,20 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}
       onClick={e => e.stopPropagation()}
     >
-      <div ref={ref} onScroll={handleScroll} style={{
+      <div ref={ref} onScroll={handleScroll}
+        onContextMenu={e => {
+          // Delegate: find closest message bubble and show context menu
+          const bubble = e.target.closest('[data-msg-idx]')
+          if (bubble) {
+            e.preventDefault()
+            const idx = parseInt(bubble.dataset.msgIdx, 10)
+            const m = chat.messages[idx]
+            if (m && !m.streaming) {
+              setMsgCtx({ x: e.clientX, y: e.clientY, content: m.content, role: m.role })
+            }
+          }
+        }}
+        style={{
         flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '12px 14px',
         display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0,
       }}>
@@ -339,10 +352,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
             }}>
               <div
-                onContextMenu={e => {
-                  e.preventDefault()
-                  setMsgCtx({ x: e.clientX, y: e.clientY, content: m.content, role: m.role })
-                }}
+                data-msg-idx={i}
                 style={{
                 padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
                 maxWidth: '88%',
