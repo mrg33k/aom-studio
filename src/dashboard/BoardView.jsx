@@ -459,9 +459,12 @@ function ReadReceipt({ status }) {
 function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
   const isUserScrolledUp = useRef(false)
   const color = agentColor || getAgentColor(agentSlug)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role }
+  const [pendingFiles, setPendingFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
 
   // Check if any message is currently streaming
   const isStreaming = chat.messages.some(m => m.streaming)
@@ -481,9 +484,50 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 80
   }, [])
 
-  const doSend = () => {
-    if (chat.input.trim()) {
-      chat.sendMessage(chat.input)
+  const doSend = async () => {
+    const hasText = chat.input.trim()
+    const hasFiles = pendingFiles.length > 0
+    if (!hasText && !hasFiles) return
+
+    let messageText = chat.input.trim()
+
+    // Upload files if any
+    if (hasFiles) {
+      setUploading(true)
+      const urls = []
+      for (const file of pendingFiles) {
+        try {
+          const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          const ext = file.name.split('.').pop()
+          const storagePath = `${agentSlug}/chat/${id}.${ext}`
+          const signRes = await fetch('/api/dashboard/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sign-upload', path: storagePath, contentType: file.type }),
+          })
+          if (signRes.ok) {
+            const { uploadUrl } = await signRes.json()
+            const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file })
+            if (putRes.ok) {
+              const supaUrl = import.meta.env.VITE_SUPABASE_URL || ''
+              urls.push(`${supaUrl}/storage/v1/object/public/corner-files/${storagePath}`)
+            }
+          }
+        } catch (err) {
+          console.warn('[ChatPanel] Upload failed:', file.name, err)
+        }
+      }
+      setPendingFiles([])
+      setUploading(false)
+      if (urls.length > 0) {
+        const fileBlock = urls.map(u => `[file](${u})`).join('\n')
+        messageText = messageText ? `${messageText}\n\n${fileBlock}` : fileBlock
+      }
+    }
+
+    if (messageText) {
+      chat.sendMessage(messageText)
+      chat.setInput('')
       isUserScrolledUp.current = false
       setTimeout(scrollToBottom, 50)
     }
@@ -674,10 +718,71 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         </div>
       )}
 
+      {/* File preview strip */}
+      {pendingFiles.length > 0 && (
+        <div style={{
+          display: 'flex', gap: 6, padding: '6px 12px', borderTop: '1px solid var(--bv-divider)',
+          background: 'var(--bv-bar)', overflowX: 'auto', flexShrink: 0,
+        }}>
+          {pendingFiles.map((file, i) => {
+            const isImage = file.type.startsWith('image/')
+            return (
+              <div key={i} style={{
+                position: 'relative', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 8px', borderRadius: 8, background: 'var(--bv-card)',
+                border: '1px solid var(--bv-card-border)', fontSize: 11, color: 'var(--bv-text2)',
+                maxWidth: 160, flexShrink: 0,
+              }}>
+                {isImage ? (
+                  <img src={URL.createObjectURL(file)} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.5 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                )}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                <button type="button" onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))} style={{
+                  position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%',
+                  background: '#EF4444', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                }}>x</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <div style={{
-        display: 'flex', gap: 6, padding: '8px 12px',
+        display: 'flex', gap: 6, padding: '8px 12px', alignItems: 'center',
         borderTop: '1px solid var(--bv-divider)', flexShrink: 0, background: 'var(--bv-bar)',
       }}>
+        {/* + button: attach images/files */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.md"
+          style={{ display: 'none' }}
+          onChange={e => {
+            if (e.target.files?.length) {
+              setPendingFiles(prev => [...prev, ...Array.from(e.target.files)])
+              e.target.value = ''
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+          style={{
+            width: 32, height: 32, borderRadius: 8, border: '1.5px solid var(--bv-input-border)',
+            background: 'var(--bv-input-bg)', color: 'var(--bv-muted)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            transition: 'color 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--bv-text)'; e.currentTarget.style.borderColor = 'var(--bv-accent)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--bv-muted)'; e.currentTarget.style.borderColor = 'var(--bv-input-border)' }}
+          title="Attach images or files"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <input
           ref={inputRef}
           value={chat.input}
@@ -694,13 +799,19 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         <button
           type="button"
           onClick={e => { e.stopPropagation(); doSend() }}
+          disabled={uploading}
           style={{
             width: 36, height: 36, borderRadius: 10, border: 'none',
             background: 'var(--bv-accent)', color: 'var(--bv-accent-text)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            opacity: uploading ? 0.5 : 1,
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          {uploading ? (
+            <div className="animate-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          )}
         </button>
       </div>
     </div>
