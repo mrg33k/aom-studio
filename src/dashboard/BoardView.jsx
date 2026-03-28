@@ -104,6 +104,20 @@ function useColumnChat(agentSlug, isActive) {
   const bridge = useBridge(agentSlug, { enabled: isBridgeSlug && isActive })
   const useBridgeForAgent = isBridgeSlug // true for bridge agents regardless of connection state
 
+  // Bridge: map check states to message read receipts (single -> double -> blue)
+  useEffect(() => {
+    if (!bridge.check) return
+    const statusMap = { single: 'sent', double: 'delivered', blue: 'read' }
+    const newStatus = statusMap[bridge.check]
+    if (!newStatus) return
+    setMessages(prev => {
+      const last = [...prev].reverse().find(m => m.role === 'user')
+      if (!last) return prev
+      if (last.status === newStatus) return prev
+      return prev.map(m => m === last ? { ...m, status: newStatus } : m)
+    })
+  }, [bridge.check])
+
   // Bridge: stream text into streaming placeholder (deltas only)
   useEffect(() => {
     if (!useBridgeForAgent || !bridge.streaming || !bridge.streamText) return
