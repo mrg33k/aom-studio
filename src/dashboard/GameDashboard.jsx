@@ -10855,13 +10855,6 @@ export default function GameDashboard() {
         setClientIdFromUser(user)
         setAuthed(true)
         sessionStorage.setItem('dash-auth', '1') // cache for refresh UX
-        // QA account always bypasses onboarding -- can't get stuck in welcome screen
-        if (user.email?.includes('elmo@corner')) {
-          localStorage.setItem('corner_onboarded', '1')
-          setShowOnboarding(false)
-          window.__cornerClientId = getClientId()
-          return
-        }
         // Existing accounts: skip onboarding ONLY if they've been onboarded before.
         // New workspaces (non-AOM) always get onboarding until they complete it.
         // AOM (Patrik) skips onboarding if account is >10min old.
