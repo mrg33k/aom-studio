@@ -517,7 +517,7 @@ function SourcingAdminInner() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedTenantId]);
 
   useEffect(() => {
     if (authed) fetchData();
@@ -599,6 +599,7 @@ function SourcingAdminInner() {
       featured: addCompanyForm.featured,
       status: 'active',
       organization_id: orgId,
+      ...(selectedTenantId ? { tenant_id: selectedTenantId } : {}),
     });
     if (error) {
       setAddCompanyStatus('Error: ' + error.message);
@@ -622,6 +623,7 @@ function SourcingAdminInner() {
       vertical: addOrgForm.vertical,
       description: addOrgForm.description || null,
       membership_tiers: [],
+      ...(selectedTenantId ? { tenant_id: selectedTenantId } : {}),
     });
     if (error) {
       setAddOrgStatus('Error: ' + error.message);
