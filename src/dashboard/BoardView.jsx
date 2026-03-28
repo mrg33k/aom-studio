@@ -283,7 +283,8 @@ function ReadReceipt({ status }) {
   if (!status || status === 'read-old') return null
   const isDouble = status === 'delivered' || status === 'read'
   const isBlue = status === 'read'
-  const color = isBlue ? '#3B82F6' : '#6B7280'
+  // sent = gray, delivered = white, read = blue (WhatsApp exact)
+  const color = isBlue ? '#3B82F6' : status === 'delivered' ? '#E2E8F0' : '#6B7280'
   // Single check SVG for 'sent', double check for 'delivered'/'read'
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 6, flexShrink: 0 }}>
