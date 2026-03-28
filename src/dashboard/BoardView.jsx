@@ -202,13 +202,39 @@ function useColumnChat(agentSlug, isActive) {
         const res = await fetch(url)
         if (!res.ok) return
         const data = await res.json()
-        const newMsgs = (data.messages || []).filter(m => m.timestamp > lastBgTsRef.current && m.text)
+        const newMsgs = (data.messages || [])
+          .filter(m => m.timestamp > lastBgTsRef.current && m.text)
+          .filter(m => !m.agent || m.agent === agentSlug)
+          .filter(m => {
+            const src = (m.source || '').toLowerCase()
+            if (src === 'terminal') return false
+            if (src.startsWith('agent-')) return false
+            if (src === 'corner-dashboard-task') return false
+            if (src === 'task-creation') return false
+            if (m.is_task) return false
+            const txt = (m.text || '')
+            if (txt.startsWith('[SESSION LOG]')) return false
+            if (txt.startsWith('[From ')) return false
+            if (txt.startsWith('[Dashboard]')) return false
+            if (txt.startsWith('You are ') && txt.includes('Working directory:')) return false
+            if (txt.startsWith('MANDATORY FIRST STEP:')) return false
+            if (txt.startsWith('PRIORITY:') || txt.startsWith('CRITICAL:') || txt.startsWith('NEW MANDATORY')) return false
+            if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return false
+            if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed|Shipped|shipped)/i.test(txt)) return false
+            if (txt.includes('Working directory:') && txt.includes('Read your context')) return false
+            if (txt.includes('Task ID:') && txt.includes('YOUR TASK:')) return false
+            if (txt.includes('REMINDER: Write your result summary')) return false
+            if (txt.includes('Read the output file to retrieve the result:')) return false
+            if (txt.startsWith('export CORNER_AGENT=')) return false
+            if (/^Fix Terminal Bridge/.test(txt) && txt.includes('server.js')) return false
+            if (/^(confirmed|task complete|done|completed)\s*[.!]?\s*$/i.test(txt)) return false
+            return true
+          })
         if (newMsgs.length > 0) {
           lastBgTsRef.current = newMsgs[newMsgs.length - 1].timestamp
           setMessages(prev => {
             let updated = [...prev]
             const hasAssistant = newMsgs.some(m => m.role === 'assistant')
-            // Mark user messages as read when assistant responds
             if (hasAssistant) {
               updated = updated.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
             }
