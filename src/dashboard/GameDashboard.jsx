@@ -12870,7 +12870,7 @@ export default function GameDashboard() {
           }}>
             NOW
           </span>
-          {rightNowTasks.filter(t => t.isLive).map((task, i) => {
+          {rightNowTasks.filter(t => t.isLive).filter((t, i, arr) => arr.findIndex(x => x.agent === t.agent) === i).map((task, i) => {
             const agentColor = AGENTS.find(a => a.slug === task.agent)?.color || '#FF6B3D'
             return (
               <div key={task.agent + i}
@@ -12912,7 +12912,7 @@ export default function GameDashboard() {
             isMobile={isMobile}
             isNightMode={isNightMode}
             hudHeight={hudBarHeight}
-            hasRightNow={rightNowTasks.filter(t => t.isLive).length > 0}
+            hasRightNow={rightNowTasks.some(t => t.isLive)}
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
             onViewDetail={(task) => {
               setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
