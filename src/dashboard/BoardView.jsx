@@ -390,9 +390,10 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               left: Math.min(msgCtx.x, window.innerWidth - 220),
               top: Math.min(msgCtx.y, window.innerHeight - 300),
               width: 200,
-              background: 'var(--bv-rail)', border: '1px solid var(--bv-divider)',
-              borderRadius: 10, padding: 4, zIndex: 1000,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              background: '#1A2744', border: '1px solid rgba(59,130,246,0.2)',
+              borderRadius: 10, padding: 4, zIndex: 100000,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)',
+              backdropFilter: 'blur(16px)',
             }}
           >
             {/* Copy */}
@@ -401,15 +402,15 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               style={{
                 display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px',
                 background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer',
-                color: 'var(--bv-text)', fontSize: 13, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                color: '#E2E8F0', fontSize: 13, fontFamily: "'Inter', sans-serif", textAlign: 'left',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-accent)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.15)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               Copy
             </button>
             {/* Send to agent submenu */}
-            <div style={{ padding: '4px 10px 2px', fontSize: 10, fontWeight: 700, color: 'var(--bv-dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ padding: '4px 10px 2px', fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Send to
             </div>
             {(allAgents || []).filter(a => a.slug !== agentSlug).slice(0, 8).map(a => (
@@ -422,9 +423,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 10px',
                   background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer',
-                  color: 'var(--bv-text)', fontSize: 13, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                  color: '#E2E8F0', fontSize: 13, fontFamily: "'Inter', sans-serif", textAlign: 'left',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-accent)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.15)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <span style={{
