@@ -1226,14 +1226,25 @@ export default function GameHUD({
             <Search size={isMobile ? 18 : 15} />
           </motion.button>
 
+          {/* Pill bar wrapper: position:relative so fade gradient can overlay right edge */}
+          <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          {/* Fade gradient on right edge -- hints at scroll on mobile */}
+          <div style={{
+            position: 'absolute',
+            top: 0, right: 0, bottom: 0,
+            width: 32,
+            pointerEvents: 'none',
+            background: isDaytime
+              ? 'linear-gradient(to right, rgba(240,245,255,0), rgba(240,245,255,0.95))'
+              : 'linear-gradient(to right, rgba(6,11,20,0), rgba(6,11,20,0.95))',
+            zIndex: 2,
+          }} />
           {/* Pill bar: horizontally scrollable. minWidth:0 is critical -- without it, flex:1
               child expands to content width and overflowX:auto never triggers. */}
           <div
             ref={pillBarRef}
             className="hud-pills-scroll"
             style={{
-              flex: 1,
-              minWidth: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-start',
@@ -1241,6 +1252,7 @@ export default function GameHUD({
               padding: '2px 4px',
               overflowX: 'auto',
               overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
             }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
@@ -1391,6 +1403,7 @@ export default function GameHUD({
                 )}
               </>
             )}
+          </div>
           </div>
         </div>
       </div>

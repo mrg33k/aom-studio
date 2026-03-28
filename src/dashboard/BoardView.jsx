@@ -104,20 +104,6 @@ function useColumnChat(agentSlug, isActive) {
   const bridge = useBridge(agentSlug, { enabled: isBridgeSlug && isActive })
   const useBridgeForAgent = isBridgeSlug // true for bridge agents regardless of connection state
 
-  // Bridge: map check states to message read receipts (single -> double -> blue)
-  useEffect(() => {
-    if (!bridge.check) return
-    const statusMap = { single: 'sent', double: 'delivered', blue: 'read' }
-    const newStatus = statusMap[bridge.check]
-    if (!newStatus) return
-    setMessages(prev => {
-      const last = [...prev].reverse().find(m => m.role === 'user')
-      if (!last) return prev
-      if (last.status === newStatus) return prev
-      return prev.map(m => m === last ? { ...m, status: newStatus } : m)
-    })
-  }, [bridge.check])
-
   // Bridge: stream text into streaming placeholder (deltas only)
   useEffect(() => {
     if (!useBridgeForAgent || !bridge.streaming || !bridge.streamText) return
@@ -170,6 +156,14 @@ function useColumnChat(agentSlug, isActive) {
     })
     setSending(false)
   }, [bridge.lastResponse])
+
+  // Bridge: reset sending state on disconnect (catches pre-stream disconnects)
+  useEffect(() => {
+    if (!useBridgeForAgent) return
+    if (bridge.status === 'disconnected') {
+      setSending(false)
+    }
+  }, [useBridgeForAgent, bridge.status])
 
   useEffect(() => {
     if (!agentSlug || !isActive || loadedRef.current) return
@@ -495,7 +489,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0,
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
-        {chat.messages.filter(m => !m.streaming).map((m, i) => (
+        {chat.messages.map((m, i) => (
             <div key={i} style={{
               display: 'flex',
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
@@ -516,7 +510,19 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
                   {m.role === 'user' ? 'You' : agentName}
                 </div>
-                <div>{m.content}</div>
+                {/* Streaming placeholder: show TypingIndicatorV2 if no content yet, else show live text */}
+                {m.streaming && !m.content ? (
+                  <TypingIndicatorV2
+                    streaming={true}
+                    agentSlug={agentSlug}
+                    agentColor={color}
+                    agentName={agentName}
+                    onPoke={(text) => chat.sendMessage(text)}
+                    compact={true}
+                  />
+                ) : (
+                  <div>{m.content}</div>
+                )}
                 {/* WhatsApp-style read receipts on user messages */}
                 {m.role === 'user' && m.status && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
@@ -526,6 +532,28 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               </div>
             </div>
         ))}
+        {/* Bridge typing indicator: shown when bridge is streaming but no streaming message exists yet */}
+        {chat.bridge?.streaming && !chat.messages.some(m => m.streaming) && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{
+              padding: '10px 14px', borderRadius: 12,
+              maxWidth: '88%',
+              background: 'var(--bv-chat-agent)',
+              border: '1px solid var(--bv-card-border)',
+              borderBottomLeftRadius: 4,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>{agentName}</div>
+              <TypingIndicatorV2
+                streaming={true}
+                agentSlug={agentSlug}
+                agentColor={color}
+                agentName={agentName}
+                onPoke={(text) => chat.sendMessage(text)}
+                compact={true}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Message context menu: portal to body to escape transform containers */}

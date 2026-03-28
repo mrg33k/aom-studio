@@ -98,9 +98,8 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
             break
 
           case 'done':
-            // Response complete
+            // Response complete -- keep check state (blue) so last user message stays read
             setStreaming(false)
-            setCheck(null)
             const finalText = msg.text || streamBuffer.current
             setStreamText('')
             streamBuffer.current = ''
@@ -131,6 +130,20 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
       ws.onclose = () => {
         setStatus('disconnected')
         wsRef.current = null
+        // If we were mid-stream when disconnect happened, recover the UI
+        setStreaming(prev => {
+          if (prev) {
+            // Was streaming -- surface an error response so UI doesn't stay stuck
+            setStreamText('')
+            streamBuffer.current = ''
+            setLastResponse({
+              text: 'Connection lost. Message may still be processing.',
+              time: new Date().toISOString(),
+              error: true,
+            })
+          }
+          return false
+        })
         // Auto-reconnect after 3s
         reconnectTimer.current = setTimeout(connect, 3000)
       }

@@ -147,7 +147,10 @@ function SourcingSignupInner() {
       .from('directory_organizations')
       .select('*')
       .eq('vertical', form.vertical)
-      .then(({ data }) => setOrgs(data || []));
+      .then(({ data, error }) => {
+        if (!error) setOrgs(data || []);
+        // On error, silently leave orgs empty -- org select is optional
+      });
   }, [form.vertical]);
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
@@ -235,7 +238,7 @@ function SourcingSignupInner() {
   const vConfig = VERTICALS.find(v => v.key === form.vertical);
 
   return (
-    <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
+    <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden', maxWidth: '100vw' }}>
       <style>{`
         * { box-sizing: border-box; }
         @keyframes spin { to { transform: rotate(360deg); } }

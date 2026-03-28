@@ -242,6 +242,7 @@ function SourcingDirectoryInner() {
   const [companies, setCompanies] = useState([]);
   const [certs, setCerts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [vertical, setVertical] = useState(searchParams.get('v') || 'all');
@@ -251,6 +252,7 @@ function SourcingDirectoryInner() {
   const fetchCompanies = useCallback(async (q, v) => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
+    setFetchError(false);
     try {
       let qb = supabase
         .from('directory_companies')
@@ -288,6 +290,7 @@ function SourcingDirectoryInner() {
       }
     } catch (err) {
       console.error('Sourcing directory fetch error:', err);
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -331,7 +334,7 @@ function SourcingDirectoryInner() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
+    <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden', maxWidth: '100vw' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
@@ -509,7 +512,21 @@ function SourcingDirectoryInner() {
           </div>
         )}
 
-        {loading && supabase && (
+        {fetchError && (
+          <div style={{
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 8, padding: '40px 24px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
+              No listings yet
+            </div>
+            <div style={{ color: V.muted, fontFamily: V.space, fontSize: 13 }}>
+              The directory is coming soon. Check back shortly.
+            </div>
+          </div>
+        )}
+
+        {loading && supabase && !fetchError && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
             {[1,2,3,4,5,6].map(i => (
               <div key={i} style={{

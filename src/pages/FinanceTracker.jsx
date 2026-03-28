@@ -511,7 +511,7 @@ export default function FinanceTracker() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: V4.bg, color: V4.textPrimary, fontFamily: V4.space }}>
+    <div style={{ minHeight: '100vh', background: V4.bg, color: V4.textPrimary, fontFamily: V4.space, overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Header with diagonal pattern */}
       <div style={{
         padding: '32px 24px 24px', maxWidth: 1400, margin: '0 auto', position: 'relative',

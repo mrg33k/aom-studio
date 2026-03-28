@@ -230,7 +230,7 @@ function SourcingProfileInner() {
   }, {});
 
   return (
-    <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
+    <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden', maxWidth: '100vw' }}>
       <style>{`* { box-sizing: border-box; } a { color: inherit; }`}</style>
 
       {/* Nav */}
