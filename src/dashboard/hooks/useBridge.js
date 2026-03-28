@@ -19,9 +19,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 // Bridge agents (super agents with direct terminal connections)
 export const BRIDGE_AGENTS = ['elon', 'gary', 'bobby']
 
-// Bridge server URL -- auto-detect protocol (wss for HTTPS pages, ws for HTTP)
-const IS_SECURE = typeof window !== 'undefined' && window.location.protocol === 'https:'
-const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || (IS_SECURE ? 'wss://localhost:3847' : 'ws://localhost:3847')
+// Bridge server URL -- Cloudflare tunnel provides wss:// with real cert
+const BRIDGE_URL = import.meta.env.VITE_BRIDGE_URL || 'wss://xbox-geek-thermal-feels.trycloudflare.com'
 
 export function isBridgeAgent(slug) {
   return BRIDGE_AGENTS.includes(slug)

@@ -519,6 +519,18 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         </button>
       )}
 
+      {/* Bridge indicator */}
+      {chat.bridge && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+          padding: '3px 0', borderTop: '1px solid var(--bv-divider)',
+          background: 'rgba(59,130,246,0.06)', flexShrink: 0,
+        }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3B82F6' }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: '#3B82F6', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }}>BRIDGE</span>
+        </div>
+      )}
+
       <div style={{
         display: 'flex', gap: 6, padding: '8px 12px',
         borderTop: '1px solid var(--bv-divider)', flexShrink: 0, background: 'var(--bv-bar)',
@@ -528,7 +540,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
           value={chat.input}
           onChange={e => chat.setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
-          placeholder={`Message ${agentName}...`}
+          placeholder={chat.bridge ? `${agentName} (bridge)...` : `Message ${agentName}...`}
           onClick={e => e.stopPropagation()}
           style={{
             flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
