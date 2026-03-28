@@ -150,6 +150,11 @@ function useColumnChat(agentSlug, isActive) {
           lastBgTsRef.current = newMsgs[newMsgs.length - 1].timestamp
           setMessages(prev => {
             let updated = [...prev]
+            const hasAssistant = newMsgs.some(m => m.role === 'assistant')
+            // Mark user messages as read when assistant responds
+            if (hasAssistant) {
+              updated = updated.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
+            }
             for (const row of newMsgs) {
               const msg = { role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
               if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
@@ -167,15 +172,14 @@ function useColumnChat(agentSlug, isActive) {
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim()) return
-    // No throttle: user can send multiple messages while waiting for response
     const sentTime = new Date().toISOString()
+    const msgId = `usr-${Date.now()}`
     setInput('')
+    // Step 1: single gray check (sent) -- no streaming placeholder
     setMessages(prev => {
-      // Remove old streaming placeholders, then add new message + placeholder
       const cleaned = prev.filter(m => !m.streaming || m.content)
       return [...cleaned,
-        { role: 'user', content: text.trim(), time: sentTime },
-        { role: 'assistant', content: '', streaming: true, time: sentTime },
+        { role: 'user', content: text.trim(), time: sentTime, id: msgId, status: 'sent' },
       ]
     })
     setSending(true)
@@ -187,6 +191,8 @@ function useColumnChat(agentSlug, isActive) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: agentSlug, text: text.trim(), message: text.trim(), source: 'corner-dashboard', client_id: clientId }),
       })
+      // Step 2: double gray check (delivered to Supabase)
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'delivered' } : m))
       if (pollRef.current) clearInterval(pollRef.current)
       pollRef.current = setInterval(async () => {
         try {
@@ -201,10 +207,10 @@ function useColumnChat(agentSlug, isActive) {
           if (newResp.length > 0) {
             const latest = newResp[newResp.length - 1]
             setMessages(prev => {
-              const u = [...prev]
-              const last = u[u.length - 1]
-              if (last?.streaming) u[u.length - 1] = { ...last, content: latest.text, streaming: false, time: latest.timestamp }
-              else u.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
+              // Step 3: mark all user messages as 'read' (double blue check) + add assistant response
+              let u = prev.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
+              u = u.filter(m => !m.streaming)
+              u.push({ role: 'assistant', content: latest.text, time: latest.timestamp })
               return u
             })
             setSending(false)
@@ -217,12 +223,7 @@ function useColumnChat(agentSlug, isActive) {
         if (pollRef.current) {
           clearInterval(pollRef.current)
           pollRef.current = null
-          setMessages(prev => {
-            const u = [...prev]
-            const last = u[u.length - 1]
-            if (last?.streaming) u[u.length - 1] = { ...last, content: 'Agent is offline. Message saved.', streaming: false }
-            return u
-          })
+          // Keep delivered checks -- agent will process when back online
           setSending(false)
         }
       }, 60000)
@@ -265,6 +266,23 @@ function ColTabBar({ tabs, active, onChange }) {
         </div>
       ))}
     </div>
+  )
+}
+
+// ── READ RECEIPTS (WhatsApp-style checks) ────────────────────────────────────
+function ReadReceipt({ status }) {
+  if (!status || status === 'read-old') return null
+  const isDouble = status === 'delivered' || status === 'read'
+  const isBlue = status === 'read'
+  const color = isBlue ? '#3B82F6' : '#6B7280'
+  // Single check SVG for 'sent', double check for 'delivered'/'read'
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 6, flexShrink: 0 }}>
+      <svg width={isDouble ? 18 : 12} height="10" viewBox={isDouble ? '0 0 18 10' : '0 0 12 10'} fill="none">
+        <path d={isDouble ? 'M1 5.5L4 8.5L11 1.5' : 'M1 5.5L4 8.5L11 1.5'} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        {isDouble && <path d="M6 5.5L9 8.5L16 1.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
+      </svg>
+    </span>
   )
 }
 
@@ -325,28 +343,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0,
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
-        {chat.messages.map((m, i) => (
-          m.streaming ? (
-            <div key={i} style={{
-              display: 'flex', justifyContent: 'flex-start',
-            }}>
-              <div style={{
-                padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
-                maxWidth: '88%',
-                background: 'var(--bv-chat-agent)', border: '1px solid var(--bv-card-border)',
-                color: 'var(--bv-text2)', borderBottomLeftRadius: 4,
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>{agentName}</div>
-                <TypingIndicatorV2
-                  streaming={true}
-                  agentSlug={agentSlug}
-                  agentColor={color}
-                  agentName={agentName}
-                  compact={true}
-                />
-              </div>
-            </div>
-          ) : (
+        {chat.messages.filter(m => !m.streaming).map((m, i) => (
             <div key={i} style={{
               display: 'flex',
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
@@ -368,9 +365,14 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                   {m.role === 'user' ? 'You' : agentName}
                 </div>
                 <div>{m.content}</div>
+                {/* WhatsApp-style read receipts on user messages */}
+                {m.role === 'user' && m.status && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                    <ReadReceipt status={m.status} />
+                  </div>
+                )}
               </div>
             </div>
-          )
         ))}
       </div>
 
