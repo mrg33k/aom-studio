@@ -132,6 +132,25 @@ function useColumnChat(agentSlug, isActive) {
     })
   }, [useBridgeForAgent, bridge.streaming, bridge.streamText])
 
+  // Bridge: map check events to per-message status (single/double/blue)
+  useEffect(() => {
+    if (!useBridgeForAgent || !bridge.check) return
+    const statusMap = { single: 'sent', double: 'delivered', blue: 'read' }
+    const newStatus = statusMap[bridge.check]
+    if (!newStatus) return
+    setMessages(prev => {
+      // Find last user message, update its status
+      for (let i = prev.length - 1; i >= 0; i--) {
+        if (prev[i].role === 'user') {
+          const updated = [...prev]
+          updated[i] = { ...updated[i], status: newStatus }
+          return updated
+        }
+      }
+      return prev
+    })
+  }, [useBridgeForAgent, bridge.check])
+
   // Bridge: handle completed responses
   useEffect(() => {
     if (!bridge.lastResponse) return
