@@ -1,0 +1,349 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../dashboard/lib/supabase.js';
+import { SourcingNav } from './SourcingMarketplace.jsx';
+
+// ─── Brand tokens ─────────────────────────────────────────────────────────────
+const V = {
+  bg:        '#0C0C0C',
+  card:      '#141412',
+  card2:     '#1A1A17',
+  orange:    '#E85D26',
+  blue:      '#3B82F6',
+  text:      '#F0ECE6',
+  muted:     '#8A847C',
+  dim:       '#4A4540',
+  border:    'rgba(255,255,255,0.08)',
+  borderHov: 'rgba(255,255,255,0.16)',
+  green:     '#22C55E',
+  syne:      "'Syne', sans-serif",
+  space:     "'Space Grotesk', sans-serif",
+  mono:      "'JetBrains Mono', monospace",
+};
+
+const VERTICALS = [
+  { key: 'semiconductor', label: 'Semiconductor' },
+  { key: 'space',         label: 'Space & Aerospace' },
+  { key: 'biotech',       label: 'Biotech' },
+  { key: 'defense',       label: 'Defense' },
+];
+
+const EVENT_TYPES = [
+  { key: 'conference', label: 'Conference' },
+  { key: 'meetup',     label: 'Meetup' },
+  { key: 'webinar',    label: 'Webinar' },
+  { key: 'workshop',   label: 'Workshop' },
+  { key: 'expo',       label: 'Expo' },
+];
+
+function InputField({ label, required, hint, ...props }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
+        {label}{required && <span style={{ color: V.orange }}> *</span>}
+      </label>
+      {hint && <div style={{ fontSize: 11, color: V.dim, fontFamily: V.space }}>{hint}</div>}
+      <input
+        {...props}
+        style={{
+          background: V.card2, border: `1px solid ${V.border}`,
+          color: V.text, borderRadius: 7, padding: '10px 12px',
+          fontSize: 14, fontFamily: V.space, outline: 'none',
+          width: '100%', boxSizing: 'border-box',
+          ...(props.style || {}),
+        }}
+      />
+    </div>
+  );
+}
+
+function SelectField({ label, required, children, ...props }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
+        {label}{required && <span style={{ color: V.orange }}> *</span>}
+      </label>
+      <select
+        {...props}
+        style={{
+          background: V.card2, border: `1px solid ${V.border}`,
+          color: V.text, borderRadius: 7, padding: '10px 12px',
+          fontSize: 14, fontFamily: V.space, outline: 'none',
+          width: '100%', boxSizing: 'border-box', cursor: 'pointer',
+          ...(props.style || {}),
+        }}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+function TextareaField({ label, required, ...props }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>
+        {label}{required && <span style={{ color: V.orange }}> *</span>}
+      </label>
+      <textarea
+        {...props}
+        style={{
+          background: V.card2, border: `1px solid ${V.border}`,
+          color: V.text, borderRadius: 7, padding: '10px 12px',
+          fontSize: 14, fontFamily: V.space, outline: 'none',
+          width: '100%', boxSizing: 'border-box', resize: 'vertical', minHeight: 120,
+          ...(props.style || {}),
+        }}
+      />
+    </div>
+  );
+}
+
+export default function SourcingEventsPost() {
+  const [form, setForm] = useState({
+    company_name: '',
+    company_email: '',
+    title: '',
+    description: '',
+    event_type: 'meetup',
+    event_date: '',
+    event_end_date: '',
+    event_location: '',
+    virtual_url: '',
+    organizer: '',
+    contact_email: '',
+    vertical: 'semiconductor',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [done, setDone] = useState(false);
+
+  const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.title || !form.event_type || !form.vertical || !form.company_email) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+    if (!form.event_date) {
+      setError('Event date is required.');
+      return;
+    }
+    if (!supabase) {
+      setError('Database not configured. Contact the administrator.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      let companyId = null;
+      const { data: existingCo } = await supabase
+        .from('directory_companies')
+        .select('id')
+        .eq('email', form.company_email)
+        .single();
+
+      if (existingCo) {
+        companyId = existingCo.id;
+      } else {
+        const slug = (form.company_name || 'organizer').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+        const { data: newCo, error: coError } = await supabase
+          .from('directory_companies')
+          .insert({
+            name: form.company_name || 'Unknown Organizer',
+            slug,
+            email: form.company_email,
+            vertical: form.vertical,
+            status: 'pending',
+          })
+          .select('id')
+          .single();
+        if (coError) throw coError;
+        companyId = newCo.id;
+      }
+
+      const { error: insertError } = await supabase
+        .from('directory_listings')
+        .insert({
+          company_id: companyId,
+          title: form.title,
+          description: form.description,
+          category: 'event',
+          status: 'active',
+          event_type: form.event_type,
+          event_date: form.event_date ? new Date(form.event_date).toISOString() : null,
+          event_end_date: form.event_end_date ? new Date(form.event_end_date).toISOString() : null,
+          event_location: form.event_location || null,
+          virtual_url: form.virtual_url || null,
+          organizer: form.organizer || form.company_name || null,
+          contact_email: form.contact_email || null,
+          vertical: form.vertical,
+        });
+
+      if (insertError) throw insertError;
+      setDone(true);
+    } catch (err) {
+      console.error('Post event error:', err);
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
+        <style>{`* { box-sizing: border-box; }`}</style>
+        <SourcingNav active="events" />
+        <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>✓</div>
+          <h2 style={{ fontSize: 26, fontWeight: 800, fontFamily: V.syne, color: V.text, marginBottom: 10 }}>
+            Event Posted
+          </h2>
+          <p style={{ fontSize: 15, color: V.muted, fontFamily: V.space, lineHeight: 1.6, marginBottom: 28 }}>
+            Your event is now listed. Industry professionals in Arizona can find and RSVP.
+          </p>
+          <Link
+            to="/sourcing/events"
+            style={{
+              background: V.orange, color: '#fff', textDecoration: 'none',
+              borderRadius: 8, padding: '11px 24px', fontSize: 14,
+              fontWeight: 700, fontFamily: V.space, display: 'inline-block',
+            }}
+          >
+            Back to Events
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        input::placeholder, textarea::placeholder { color: #4A4540; }
+        input:focus, textarea:focus, select:focus { border-color: rgba(232,93,38,0.5) !important; box-shadow: 0 0 0 2px rgba(232,93,38,0.1); }
+        select option { background: #1A1A17; }
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(0.4); }
+      `}</style>
+
+      <SourcingNav active="events" />
+
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ marginBottom: 28 }}>
+          <Link to="/sourcing/events" style={{ fontSize: 12, color: V.muted, fontFamily: V.space, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 16 }}>
+            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Back to Events
+          </Link>
+          <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.orange, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Post an Event
+          </div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.text, margin: 0 }}>
+            List an Industry Event
+          </h1>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Organizer */}
+            <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+                Organizer
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <InputField label="Organization / Company Name" required value={form.company_name} onChange={set('company_name')} placeholder="SC3 Arizona" />
+                <InputField label="Organization Email" required type="email" value={form.company_email} onChange={set('company_email')} placeholder="events@organization.org" hint="Used to link event to your directory profile." />
+                <InputField label="Organizer Display Name" value={form.organizer} onChange={set('organizer')} placeholder="SC3 Arizona Events Team" hint="Shown on the event listing. Defaults to your organization name." />
+              </div>
+            </div>
+
+            {/* Event Details */}
+            <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+                Event Details
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <InputField label="Event Title" required value={form.title} onChange={set('title')} placeholder="AZ Semiconductor Summit 2026" />
+                <TextareaField label="Description" value={form.description} onChange={set('description')} placeholder="What will attendees experience? Include agenda highlights, speakers, networking opportunities..." />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <SelectField label="Event Type" required value={form.event_type} onChange={set('event_type')}>
+                    {EVENT_TYPES.map(et => <option key={et.key} value={et.key}>{et.label}</option>)}
+                  </SelectField>
+                  <SelectField label="Industry Vertical" required value={form.vertical} onChange={set('vertical')}>
+                    {VERTICALS.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
+                  </SelectField>
+                </div>
+              </div>
+            </div>
+
+            {/* Date & Location */}
+            <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+                Date & Location
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <InputField label="Start Date & Time" required type="datetime-local" value={form.event_date} onChange={set('event_date')} />
+                  <InputField label="End Date & Time" type="datetime-local" value={form.event_end_date} onChange={set('event_end_date')} />
+                </div>
+                <InputField
+                  label="Physical Location"
+                  value={form.event_location}
+                  onChange={set('event_location')}
+                  placeholder="Phoenix Convention Center, 100 N 3rd St, Phoenix, AZ"
+                  hint="Full address. Leave blank if virtual-only."
+                />
+                <InputField
+                  label="Virtual / Livestream URL"
+                  type="url"
+                  value={form.virtual_url}
+                  onChange={set('virtual_url')}
+                  placeholder="https://zoom.us/j/..."
+                  hint="For webinars or hybrid events."
+                />
+              </div>
+            </div>
+
+            {/* Registration */}
+            <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+                Registration / RSVP
+              </div>
+              <InputField
+                label="Contact Email for RSVPs"
+                type="email"
+                value={form.contact_email}
+                onChange={set('contact_email')}
+                placeholder="rsvp@organization.org"
+                hint="Attendees will RSVP to this email."
+              />
+            </div>
+
+            {error && (
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 7, padding: '12px 14px', fontSize: 13, color: '#FCA5A5', fontFamily: V.space }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{
+                background: submitting ? V.dim : V.orange,
+                border: 'none', color: '#fff', borderRadius: 8,
+                padding: '13px', fontSize: 15, fontWeight: 700,
+                fontFamily: V.space, cursor: submitting ? 'not-allowed' : 'pointer',
+                width: '100%',
+              }}
+            >
+              {submitting ? 'Posting Event...' : 'Post Event'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
