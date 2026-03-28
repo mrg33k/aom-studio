@@ -51,8 +51,10 @@ export default async function handler(req, res) {
       // Projects table: no client_id column yet -- query without filter to avoid 400 error
       // (Supabase returns 400, not silent ignore, when filtering on non-existent columns)
       supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc`),
-      // Events table: no client_id column yet -- same reason
-      supabaseGet('events', `order=timestamp.desc&limit=200`),
+      // Events table: last 30 minutes only -- prevents stale ghost pills in the RNB.
+      // task_started events older than 30 min with no matching task_completed are ghosts.
+      // The 10-min client-side filter in deriveStateFromEvents catches anything that slips through.
+      supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}`),
     ]);
     const tasks = [...activeTasks, ...recentDone];
 
