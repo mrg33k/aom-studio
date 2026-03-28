@@ -4,6 +4,31 @@ import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 
+// ─── AI Search helpers ─────────────────────────────────────────────────────────
+const AI_TRIGGER_WORDS = [
+  'looking for', 'need', 'want', 'find me', 'show me', 'with ', 'under ',
+  'over ', 'small', 'large', 'big', 'certified', 'certification',
+  'who ', 'what ', 'which ', 'companies that', 'suppliers', 'partners',
+];
+
+function isNaturalLanguage(q) {
+  if (!q || !q.trim()) return false;
+  const lower = q.toLowerCase().trim();
+  const wordCount = lower.split(/\s+/).length;
+  if (wordCount > 3) return true;
+  return AI_TRIGGER_WORDS.some(t => lower.includes(t));
+}
+
+async function callAiSearch(query) {
+  const res = await fetch('/api/ai-search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) throw new Error(`AI search failed: ${res.status}`);
+  return res.json();
+}
+
 // ─── Vertical config ──────────────────────────────────────────────────────────
 const VERTICALS = [
   { key: 'all',           label: 'All Industries',  color: '#9ca3af' },
@@ -184,51 +209,162 @@ function CompanyCard({ company, certs, V }) {
   );
 }
 
+// ─── AI Summary Card ──────────────────────────────────────────────────────────
+function AiSummaryCard({ aiResult, onSuggestionClick, V }) {
+  if (!aiResult) return null;
+  const { summary, filters_applied, suggestion } = aiResult;
+
+  const filterChips = [];
+  if (filters_applied.vertical) {
+    const vInfo = VERTICALS.find(v => v.key === filters_applied.vertical);
+    if (vInfo) filterChips.push({ label: vInfo.label, color: vInfo.color });
+  }
+  if (filters_applied.employee_range) {
+    filterChips.push({ label: `${filters_applied.employee_range} employees`, color: V.blue });
+  }
+  if (filters_applied.certifications && filters_applied.certifications.length > 0) {
+    filters_applied.certifications.forEach(c => {
+      filterChips.push({ label: c, color: '#f59e0b' });
+    });
+  }
+  if (filters_applied.location) {
+    filterChips.push({ label: filters_applied.location, color: '#a78bfa' });
+  }
+
+  return (
+    <div style={{
+      background: 'rgba(16,185,129,0.07)',
+      border: `1px solid rgba(16,185,129,0.3)`,
+      borderRadius: 10,
+      padding: '14px 18px',
+      marginBottom: 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{
+          background: 'rgba(16,185,129,0.15)',
+          border: '1px solid rgba(16,185,129,0.35)',
+          borderRadius: 5,
+          padding: '3px 8px',
+          fontSize: 10, fontWeight: 800, fontFamily: V.mono,
+          color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase',
+          display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          AI Search
+        </div>
+        <div style={{ fontSize: 13, color: V.text, fontFamily: V.space, lineHeight: 1.4 }}>
+          {summary}
+        </div>
+      </div>
+
+      {filterChips.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: suggestion ? 8 : 0 }}>
+          <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, alignSelf: 'center' }}>Filters:</span>
+          {filterChips.map((chip, i) => (
+            <span key={i} style={{
+              background: `${chip.color}15`,
+              border: `1px solid ${chip.color}40`,
+              color: chip.color,
+              fontSize: 11, fontFamily: V.mono, fontWeight: 600,
+              padding: '2px 7px', borderRadius: 4,
+            }}>
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {suggestion && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+          </svg>
+          <span style={{ fontSize: 12, color: V.dim, fontFamily: V.space }}>
+            {suggestion.startsWith('Try:') ? (
+              <>
+                Try:{' '}
+                <button
+                  onClick={() => onSuggestionClick(suggestion.replace(/^Try:\s*[""]?/, '').replace(/[""]$/, ''))}
+                  style={{
+                    background: 'none', border: 'none', color: '#10b981',
+                    fontSize: 12, fontFamily: V.space, cursor: 'pointer',
+                    textDecoration: 'underline', padding: 0,
+                  }}
+                >
+                  {suggestion.replace(/^Try:\s*[""]?/, '').replace(/[""]$/, '')}
+                </button>
+              </>
+            ) : suggestion}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Search Bar ───────────────────────────────────────────────────────────────
-function SearchBar({ value, onChange, onSearch, loading, V }) {
+function SearchBar({ value, onChange, onSearch, loading, aiLoading, V }) {
   const handleKey = (e) => {
     if (e.key === 'Enter') onSearch();
   };
+  const isAI = isNaturalLanguage(value);
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <div style={{ flex: 1, position: 'relative' }}>
-        <input
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder='Search companies, certifications, capabilities...'
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            background: V.card2, border: `1px solid ${V.border}`,
-            color: V.text, borderRadius: 8, padding: '12px 46px 12px 16px',
-            fontSize: 14, fontFamily: V.space, outline: 'none',
-          }}
-        />
-        <div style={{
-          position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-          color: V.muted, pointerEvents: 'none',
-        }}>
-          {loading ? (
-            <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
-          ) : (
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-          )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <input
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder='Search or ask: "ITAR certified space companies in Scottsdale"...'
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: V.card2,
+              border: `1px solid ${isAI && value ? 'rgba(16,185,129,0.5)' : V.border}`,
+              color: V.text, borderRadius: 8, padding: '12px 46px 12px 16px',
+              fontSize: 14, fontFamily: V.space, outline: 'none',
+              transition: 'border-color 0.2s',
+            }}
+          />
+          <div style={{
+            position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+            color: V.muted, pointerEvents: 'none',
+          }}>
+            {(loading || aiLoading) ? (
+              <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
+            ) : (
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            )}
+          </div>
         </div>
+        <button
+          onClick={onSearch}
+          style={{
+            background: V.accent, border: 'none', color: '#fff',
+            borderRadius: 8, padding: '0 20px', fontSize: 14,
+            fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Search
+        </button>
       </div>
-      <button
-        onClick={onSearch}
-        style={{
-          background: V.accent, border: 'none', color: '#fff',
-          borderRadius: 8, padding: '0 20px', fontSize: 14,
-          fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Search
-      </button>
+      {isAI && value && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontSize: 11, color: '#10b981', fontFamily: V.mono,
+        }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          AI Search — understands natural language
+        </div>
+      )}
     </div>
   );
 }
@@ -242,12 +378,16 @@ function SourcingDirectoryInner() {
   const [companies, setCompanies] = useState([]);
   const [certs, setCerts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [vertical, setVertical] = useState(searchParams.get('v') || 'all');
   const [selectedCerts, setSelectedCerts] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  // For AI search results, we store companies separately so certs are already embedded
+  const [aiCompanies, setAiCompanies] = useState(null);
 
   const fetchCompanies = useCallback(async (q, v) => {
     if (!supabase) { setLoading(false); return; }
@@ -297,33 +437,109 @@ function SourcingDirectoryInner() {
   }, []);
 
   useEffect(() => {
-    fetchCompanies(query, vertical);
-  }, [query, vertical, fetchCompanies]);
+    // Only run standard fetch when NOT in AI mode
+    if (aiCompanies === null) {
+      fetchCompanies(query, vertical);
+    }
+  }, [query, vertical, fetchCompanies, aiCompanies]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const q = searchInput.trim();
-    setQuery(q);
+    if (!q) {
+      // Clear AI state and reset
+      setAiResult(null);
+      setAiCompanies(null);
+      setQuery('');
+      setSearchParams({});
+      return;
+    }
+
     const params = {};
     if (q) params.q = q;
     if (vertical !== 'all') params.v = vertical;
     setSearchParams(params);
+
+    if (isNaturalLanguage(q)) {
+      // AI search path
+      setAiLoading(true);
+      setAiResult(null);
+      setAiCompanies(null);
+      try {
+        const result = await callAiSearch(q);
+        setAiResult(result);
+        // Build certs map from embedded data
+        const companyCertsMap = {};
+        (result.results || []).forEach(c => {
+          companyCertsMap[c.id] = c.certs || [];
+        });
+        setCerts(companyCertsMap);
+        setAiCompanies(result.results || []);
+      } catch (err) {
+        console.error('AI search error, falling back to keyword:', err);
+        // Fallback to standard search
+        setAiResult(null);
+        setAiCompanies(null);
+        setQuery(q);
+        await fetchCompanies(q, vertical);
+      } finally {
+        setAiLoading(false);
+      }
+    } else {
+      // Standard keyword search
+      setAiResult(null);
+      setAiCompanies(null);
+      setQuery(q);
+    }
+  };
+
+  const handleSuggestionClick = (suggestionQuery) => {
+    setSearchInput(suggestionQuery);
+    // Trigger search after state update
+    setTimeout(() => {
+      const q = suggestionQuery.trim();
+      setAiLoading(true);
+      setAiResult(null);
+      setAiCompanies(null);
+      callAiSearch(q)
+        .then(result => {
+          setAiResult(result);
+          const companyCertsMap = {};
+          (result.results || []).forEach(c => {
+            companyCertsMap[c.id] = c.certs || [];
+          });
+          setCerts(companyCertsMap);
+          setAiCompanies(result.results || []);
+        })
+        .catch(() => {
+          setAiResult(null);
+          setAiCompanies(null);
+          setQuery(q);
+          fetchCompanies(q, vertical);
+        })
+        .finally(() => setAiLoading(false));
+    }, 0);
   };
 
   const handleVerticalChange = (v) => {
+    // Clear AI state when changing vertical
+    setAiResult(null);
+    setAiCompanies(null);
     setVertical(v);
     const params = {};
-    if (query) params.q = query;
+    if (searchInput) params.q = searchInput;
     if (v !== 'all') params.v = v;
     setSearchParams(params);
   };
 
   const filteredCompanies = useMemo(() => {
-    if (selectedCerts.length === 0) return companies;
-    return companies.filter(c => {
+    // Use AI results if available, otherwise use standard fetch results
+    const source = aiCompanies !== null ? aiCompanies : companies;
+    if (selectedCerts.length === 0) return source;
+    return source.filter(c => {
       const companyCerts = (certs[c.id] || []).map(cert => cert.cert_name);
       return selectedCerts.every(sc => companyCerts.includes(sc));
     });
-  }, [companies, certs, selectedCerts]);
+  }, [companies, aiCompanies, certs, selectedCerts]);
 
   const availableCerts = VERTICAL_CERTS[vertical] || [];
 
@@ -372,6 +588,7 @@ function SourcingDirectoryInner() {
           onChange={setSearchInput}
           onSearch={handleSearch}
           loading={loading}
+          aiLoading={aiLoading}
           V={V}
         />
       </div>
@@ -471,16 +688,39 @@ function SourcingDirectoryInner() {
 
       {/* Results */}
       <div style={{ padding: '20px 24px 60px', maxWidth: 900, margin: '0 auto' }}>
+        {/* AI Summary Card */}
+        {aiResult && !aiLoading && (
+          <AiSummaryCard
+            aiResult={aiResult}
+            onSuggestionClick={handleSuggestionClick}
+            V={V}
+          />
+        )}
+
+        {/* AI Loading state */}
+        {aiLoading && (
+          <div style={{
+            background: 'rgba(16,185,129,0.07)',
+            border: '1px solid rgba(16,185,129,0.25)',
+            borderRadius: 10, padding: '16px 18px',
+            marginBottom: 20,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <div style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(16,185,129,0.3)', borderTop: '2px solid #10b981', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: '#10b981', fontFamily: V.mono }}>AI is parsing your query...</span>
+          </div>
+        )}
+
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 16,
         }}>
           <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
-            {loading ? 'Searching...' : (
+            {(loading || aiLoading) ? 'Searching...' : (
               <>
                 <span style={{ color: V.text, fontWeight: 600 }}>{filteredCompanies.length}</span>
                 {' '}compan{filteredCompanies.length === 1 ? 'y' : 'ies'} found
-                {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
+                {query && !aiResult && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
               </>
             )}
           </div>
@@ -526,7 +766,7 @@ function SourcingDirectoryInner() {
           </div>
         )}
 
-        {loading && supabase && !fetchError && (
+        {(loading && supabase && !fetchError && !aiLoading) && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
             {[1,2,3,4,5,6].map(i => (
               <div key={i} style={{
