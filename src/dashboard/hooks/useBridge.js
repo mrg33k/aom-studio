@@ -54,6 +54,12 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
       ws.onopen = () => {
         // Don't set connected yet, wait for ACK
+        // Keepalive ping every 30s to prevent idle timeout
+        ws._pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }))
+          }
+        }, 30000)
       }
 
       ws.onmessage = (event) => {
@@ -128,6 +134,7 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
       }
 
       ws.onclose = () => {
+        if (ws._pingInterval) clearInterval(ws._pingInterval)
         setStatus('disconnected')
         wsRef.current = null
         // If we were mid-stream when disconnect happened, recover the UI

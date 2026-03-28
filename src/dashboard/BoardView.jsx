@@ -306,6 +306,15 @@ function useColumnChat(agentSlug, isActive) {
 
     // Terminal Bridge: direct WebSocket for super agents
     if (useBridgeForAgent) {
+      // Persist user message to Supabase immediately (belt and suspenders -- bridge server is the backup)
+      const clientId = getClientId()
+      const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
+      fetch(sendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, text: text.trim(), message: text.trim(), source: 'corner-dashboard', client_id: clientId, role: 'user' }),
+      }).catch(() => {}) // fire and forget
+
       const sent = bridge.send(text.trim())
       if (sent) {
         // Add streaming placeholder for bridge response
