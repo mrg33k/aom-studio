@@ -12,6 +12,7 @@ import TaskContextMenu, { handleTaskContextAction } from './components/TaskConte
 import { getAgentKnowledge } from './agentKnowledge.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
+import { useBridge, isBridgeAgent } from './hooks/useBridge.js'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -98,6 +99,36 @@ function useColumnChat(agentSlug, isActive) {
   const pollRef = useRef(null)
   const loadedRef = useRef(false)
 
+  // Terminal Bridge for super agents
+  const bridge = useBridge(agentSlug, { enabled: isBridgeAgent(agentSlug) && isActive })
+  const useBridgeForAgent = isBridgeAgent(agentSlug) && bridge.connected
+
+  // Bridge: stream text into streaming placeholder
+  useEffect(() => {
+    if (!useBridgeForAgent || !bridge.streaming || !bridge.streamText) return
+    setMessages(prev => {
+      const idx = prev.findIndex(m => m.streaming)
+      if (idx === -1) return prev
+      const updated = [...prev]
+      updated[idx] = { ...updated[idx], content: bridge.streamText }
+      return updated
+    })
+  }, [useBridgeForAgent, bridge.streaming, bridge.streamText])
+
+  // Bridge: handle completed responses
+  useEffect(() => {
+    if (!bridge.lastResponse) return
+    const resp = bridge.lastResponse
+    setMessages(prev => {
+      const filtered = prev.filter(m => !m.streaming)
+      // Mark all user messages as read
+      const updated = filtered.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
+      updated.push({ role: 'assistant', content: resp.text, time: resp.time, source: 'bridge' })
+      return updated.slice(-100)
+    })
+    setSending(false)
+  }, [bridge.lastResponse])
+
   useEffect(() => {
     if (!agentSlug || !isActive || loadedRef.current) return
     loadedRef.current = true
@@ -181,7 +212,7 @@ function useColumnChat(agentSlug, isActive) {
     const sentTime = new Date().toISOString()
     const msgId = `usr-${Date.now()}`
     setInput('')
-    // Step 1: single gray check (sent) -- no streaming placeholder
+    // Step 1: single gray check (sent)
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
       return [...cleaned,
@@ -189,6 +220,19 @@ function useColumnChat(agentSlug, isActive) {
       ]
     })
     setSending(true)
+
+    // Terminal Bridge: direct WebSocket for super agents
+    if (useBridgeForAgent) {
+      const sent = bridge.send(text.trim())
+      if (sent) {
+        // Add streaming placeholder for bridge response
+        setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+        // Checks come through bridge.check -> handled by useBridge hook
+        return
+      }
+      // Bridge send failed, fall through to relay
+    }
+
     try {
       const clientId = getClientId()
       const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
@@ -253,7 +297,7 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, sending])
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
-  return { messages, input, setInput, loading, sending, sendMessage }
+  return { messages, input, setInput, loading, sending, sendMessage, bridge: useBridgeForAgent ? bridge : null }
 }
 
 // ── COLUMN TAB BAR ───────────────────────────────────────────────────────────
