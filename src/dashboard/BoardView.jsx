@@ -103,12 +103,14 @@ function useColumnChat(agentSlug, isActive) {
   const bridge = useBridge(agentSlug, { enabled: isBridgeAgent(agentSlug) && isActive })
   const useBridgeForAgent = isBridgeAgent(agentSlug) && bridge.connected
 
-  // Bridge: stream text into streaming placeholder
+  // Bridge: stream text into streaming placeholder (deltas only)
   useEffect(() => {
     if (!useBridgeForAgent || !bridge.streaming || !bridge.streamText) return
     setMessages(prev => {
       const idx = prev.findIndex(m => m.streaming)
       if (idx === -1) return prev
+      // Only update if content actually changed
+      if (prev[idx].content === bridge.streamText) return prev
       const updated = [...prev]
       updated[idx] = { ...updated[idx], content: bridge.streamText }
       return updated
@@ -120,7 +122,13 @@ function useColumnChat(agentSlug, isActive) {
     if (!bridge.lastResponse) return
     const resp = bridge.lastResponse
     setMessages(prev => {
+      // Remove streaming placeholder
       const filtered = prev.filter(m => !m.streaming)
+      // Check if this response is already in the list (dedup)
+      const respNorm = (resp.text || '').trim().slice(0, 100)
+      if (respNorm && filtered.some(m => m.role === 'assistant' && m.source === 'bridge' && (m.content || '').trim().slice(0, 100) === respNorm)) {
+        return filtered
+      }
       // Mark all user messages as read
       const updated = filtered.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
       updated.push({ role: 'assistant', content: resp.text, time: resp.time, source: 'bridge' })
@@ -309,7 +317,8 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, sending])
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
-  return { messages, input, setInput, loading, sending, sendMessage, bridge: useBridgeForAgent ? bridge : null }
+  // Expose bridge for all bridge-eligible agents (show indicator even when disconnected)
+  return { messages, input, setInput, loading, sending, sendMessage, bridge: isBridgeAgent(agentSlug) ? bridge : null }
 }
 
 // ── COLUMN TAB BAR ───────────────────────────────────────────────────────────
@@ -531,15 +540,15 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         </button>
       )}
 
-      {/* Bridge indicator */}
+      {/* Bridge indicator: always visible for bridge agents, grey when disconnected, blue when connected */}
       {chat.bridge && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
           padding: '3px 0', borderTop: '1px solid var(--bv-divider)',
-          background: 'rgba(59,130,246,0.06)', flexShrink: 0,
+          background: chat.bridge.connected ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.02)', flexShrink: 0,
         }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3B82F6' }} />
-          <span style={{ fontSize: 9, fontWeight: 700, color: '#3B82F6', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }}>BRIDGE</span>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: chat.bridge.connected ? '#3B82F6' : '#4B5563' }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: chat.bridge.connected ? '#3B82F6' : '#4B5563', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }}>BRIDGE</span>
         </div>
       )}
 
