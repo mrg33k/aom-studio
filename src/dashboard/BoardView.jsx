@@ -1080,7 +1080,7 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
 
 // ── MAIN BOARD VIEW ──────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, onTaskTap, onViewDetail, onAgentSelect }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, hasRightNow = false, onTaskTap, onViewDetail, onAgentSelect }) {
   const rightNow = pipeData?.rightNow || []
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
@@ -1303,7 +1303,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       ...vars, display: 'flex', flexDirection: 'column',
       height: '100%', width: '100%', background: 'var(--bv-bg)',
       overflow: 'hidden', transition: 'background 0.4s',
-      paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52,
+      paddingTop: isMobile ? `calc(${hudHeight + (hasRightNow ? 34 : 0)}px + env(safe-area-inset-top, 0px))` : hudHeight + (hasRightNow ? 34 : 0),
     }}>
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

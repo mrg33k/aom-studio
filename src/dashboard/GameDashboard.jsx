@@ -12851,6 +12851,64 @@ export default function GameDashboard() {
   return results
 }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
 
+      {/* Right Now Bar -- active task pills, sits under nav bar */}
+      {rightNowTasks.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52,
+          left: 0, right: 0, zIndex: 34,
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '6px 16px',
+          background: isNightMode
+            ? 'linear-gradient(180deg, rgba(10,15,30,0.95) 0%, rgba(10,15,30,0.85) 100%)'
+            : 'linear-gradient(180deg, rgba(14,38,74,0.95) 0%, rgba(14,38,74,0.85) 100%)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: isNightMode ? '1px solid rgba(255,107,61,0.15)' : '1px solid rgba(255,107,61,0.2)',
+          overflowX: 'auto', overflowY: 'hidden',
+          scrollbarWidth: 'none',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 800, color: '#FF6B3D',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            flexShrink: 0, opacity: 0.8,
+          }}>
+            NOW
+          </span>
+          {rightNowTasks.filter(t => t.isLive).map((task, i) => {
+            const agentColor = AGENTS.find(a => a.slug === task.agent)?.color || '#FF6B3D'
+            return (
+              <div key={task.agent + i}
+                onClick={() => { setSelectedRoom(task.agent); setCameraTarget(task.agent); setIsOverview(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '4px 10px', borderRadius: 8, flexShrink: 0,
+                  background: `${agentColor}18`,
+                  border: `1px solid ${agentColor}35`,
+                  cursor: 'pointer',
+                  transition: 'all 150ms',
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: agentColor,
+                  boxShadow: `0 0 6px ${agentColor}80`,
+                  animation: 'bvPulse 2s ease-in-out infinite',
+                }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: agentColor }}>
+                  {task.agent ? task.agent.charAt(0).toUpperCase() + task.agent.slice(1) : ''}
+                </span>
+                <span style={{
+                  fontSize: 11, color: isNightMode ? '#94A3B8' : '#CBD5E1',
+                  maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {task.name || task.task || ''}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* Board view: THE main view (game view killed Mar 27) */}
       <BoardErrorBoundary>
         <BoardView
@@ -12858,6 +12916,7 @@ export default function GameDashboard() {
             isMobile={isMobile}
             isNightMode={isNightMode}
             hudHeight={hudBarHeight}
+            hasRightNow={rightNowTasks.filter(t => t.isLive).length > 0}
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
             onViewDetail={(task) => {
               setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
