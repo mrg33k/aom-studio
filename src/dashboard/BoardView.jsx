@@ -208,6 +208,7 @@ function useColumnChat(agentSlug, isActive) {
             if (src === 'task-creation') return false
             if (src === 'completion-hook') return false
             if (src === 'agent-status') return false
+            if (src === 'poke_agent') return false
             if (m.is_task) return false
             const txt = (m.text || '')
             if (txt.startsWith('[SESSION LOG]')) return false
@@ -274,6 +275,7 @@ function useColumnChat(agentSlug, isActive) {
             if (src === 'task-creation') return false
             if (src === 'completion-hook') return false
             if (src === 'agent-status') return false
+            if (src === 'poke_agent') return false
             if (m.is_task) return false
             const txt = (m.text || '')
             if (txt.startsWith('[SESSION LOG]')) return false
@@ -1255,6 +1257,24 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
     : status === 'DONE' ? { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', color: '#3B82F6', glow: false }
     : { bg: 'rgba(107,114,128,0.12)', border: 'rgba(107,114,128,0.3)', color: '#6B7280', glow: false }
   const [tab, setTab] = useState('chat')
+  const [pokeState, setPokeState] = useState(null) // null | 'poking' | 'poked'
+
+  const handlePoke = async (e) => {
+    e.stopPropagation()
+    if (pokeState) return
+    setPokeState('poking')
+    try {
+      await fetch(`/api/dashboard/poke-agent?agent=${encodeURIComponent(agent.slug)}`)
+    } catch {}
+    setPokeState('poked')
+    setTimeout(() => setPokeState(null), 2500)
+  }
+
+  const pokeCfg = pokeState === 'poked'
+    ? { bg: 'rgba(139,92,246,0.18)', border: 'rgba(139,92,246,0.45)', color: '#A78BFA', label: 'POKED', glow: true }
+    : pokeState === 'poking'
+    ? { ...statusCfg, label: '...' }
+    : { ...statusCfg, label: status }
 
   const handleHeaderCtx = (e) => {
     e.preventDefault()
@@ -1307,18 +1327,30 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
           {/* V5: role in JetBrains Mono */}
           {agent.role && <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: 2 }}>{agent.role}</div>}
         </div>
-        {/* V5: status pill */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          padding: '4px 10px', borderRadius: 20,
-          background: statusCfg.bg, border: `1px solid ${statusCfg.border}`,
-          fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-          textTransform: 'uppercase', letterSpacing: '0.06em', color: statusCfg.color,
-          flexShrink: 0,
-        }}>
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusCfg.color, boxShadow: statusCfg.glow ? `0 0 6px ${statusCfg.color}` : 'none', flexShrink: 0 }} />
-          {status}
-        </div>
+        {/* V5: status pill -- tappable poke button */}
+        <button
+          onClick={handlePoke}
+          title={`Poke ${agent.name || agent.slug}`}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 20,
+            background: pokeCfg.bg, border: `1px solid ${pokeCfg.border}`,
+            fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+            textTransform: 'uppercase', letterSpacing: '0.06em', color: pokeCfg.color,
+            flexShrink: 0, cursor: pokeState ? 'default' : 'pointer',
+            outline: 'none', transition: 'all 0.2s ease',
+            animation: pokeState === 'poked' ? 'bvPokeFlash 0.45s ease' : 'none',
+          }}
+        >
+          <span style={{
+            width: 5, height: 5, borderRadius: '50%',
+            background: pokeCfg.color,
+            boxShadow: pokeCfg.glow ? `0 0 6px ${pokeCfg.color}` : 'none',
+            flexShrink: 0,
+            animation: pokeState === 'poked' ? 'bvPulse 0.4s ease 2' : 'none',
+          }} />
+          {pokeCfg.label}
+        </button>
         {!isMobile && (
           <button onClick={e => { e.stopPropagation(); onClose?.() }} style={{
             width: 20, height: 20, borderRadius: 5, border: '1px solid var(--bv-col-border)',
@@ -1781,6 +1813,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes bvSlideIn { from { opacity: 0; transform: translateX(20px) scale(0.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        @keyframes bvPokeFlash { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
         .bv-rail-scroll::-webkit-scrollbar { display: none; }
         .bv-col-scroll::-webkit-scrollbar { width: 4px; }
         .bv-col-scroll::-webkit-scrollbar-track { background: transparent; }
