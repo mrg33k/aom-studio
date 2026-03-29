@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
@@ -140,6 +140,487 @@ function Section({ title, children, action, V }) {
         {action}
       </div>
       {children}
+    </div>
+  );
+}
+
+// ─── Star Rating ─────────────────────────────────────────────────────────────
+function StarRating({ rating, size = 14, interactive = false, onRate }) {
+  return (
+    <div style={{ display: 'inline-flex', gap: 2 }}>
+      {[1,2,3,4,5].map(i => (
+        <span
+          key={i}
+          onClick={interactive ? () => onRate(i) : undefined}
+          style={{
+            fontSize: size, color: i <= rating ? '#F59E0B' : 'rgba(255,255,255,0.15)',
+            cursor: interactive ? 'pointer' : 'default',
+            lineHeight: 1,
+          }}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ─── Unclaimed Banner ────────────────────────────────────────────────────────
+function UnclaimedBanner({ slug, tenantSlug, V }) {
+  return (
+    <div style={{
+      border: '1px solid rgba(232,93,38,0.35)',
+      background: 'rgba(232,93,38,0.06)',
+      borderRadius: 8,
+      padding: '12px 16px',
+      display: 'flex', alignItems: 'center', gap: 14,
+      marginBottom: 20,
+      flexWrap: 'wrap',
+    }}>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, fontFamily: V.space, color: '#E85D26', marginBottom: 2 }}>
+          Is this your business?
+        </div>
+        <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
+          Claim this listing to update your info, add photos, and respond to reviews.
+        </div>
+      </div>
+      <Link
+        to={(tenantSlug ? `/sourcing/${tenantSlug}/signup` : '/sourcing/sc3/signup') + `?claim=${slug}`}
+        style={{
+          background: '#E85D26', color: '#fff', textDecoration: 'none',
+          borderRadius: 6, padding: '7px 16px', fontSize: 12,
+          fontWeight: 700, fontFamily: V.space, whiteSpace: 'nowrap', flexShrink: 0,
+        }}
+      >
+        Claim This Listing
+      </Link>
+    </div>
+  );
+}
+
+// ─── Photo Gallery ───────────────────────────────────────────────────────────
+function PhotoGallery({ photos, tier, V }) {
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
+  if (!photos || photos.length === 0) return null;
+
+  const maxPhotos = tier === 'enterprise' ? 10 : tier === 'pro' ? 5 : tier === 'basic' ? 2 : 0;
+  if (maxPhotos === 0) return null;
+
+  const visiblePhotos = photos.slice(0, maxPhotos);
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted,
+        textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14,
+        paddingBottom: 10, borderBottom: `1px solid ${V.border}`,
+      }}>
+        Photos ({visiblePhotos.length})
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: tier === 'enterprise' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+        gap: 8,
+      }}>
+        {visiblePhotos.map((url, i) => (
+          <div
+            key={i}
+            onClick={() => setLightboxIdx(i)}
+            style={{
+              position: 'relative', borderRadius: 8, overflow: 'hidden',
+              cursor: 'pointer', aspectRatio: '16/10',
+              border: `1px solid ${V.border}`,
+            }}
+          >
+            <img
+              src={url}
+              alt={`Photo ${i + 1}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s ease' }}
+              onMouseEnter={e => e.target.style.transform = 'scale(1.04)'}
+              onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && (
+        <div
+          onClick={() => setLightboxIdx(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh' }}>
+            <img
+              src={visiblePhotos[lightboxIdx]}
+              alt=""
+              style={{ maxWidth: '90vw', maxHeight: '85vh', borderRadius: 8, objectFit: 'contain' }}
+            />
+            <button
+              onClick={() => setLightboxIdx(null)}
+              style={{
+                position: 'absolute', top: -16, right: -16,
+                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', borderRadius: '50%', width: 32, height: 32,
+                cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              ×
+            </button>
+            {visiblePhotos.length > 1 && (
+              <>
+                <button
+                  onClick={e => { e.stopPropagation(); setLightboxIdx(i => Math.max(0, i - 1)); }}
+                  style={{
+                    position: 'absolute', left: -48, top: '50%', transform: 'translateY(-50%)',
+                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#fff', borderRadius: 6, width: 36, height: 36,
+                    cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setLightboxIdx(i => Math.min(visiblePhotos.length - 1, i + 1)); }}
+                  style={{
+                    position: 'absolute', right: -48, top: '50%', transform: 'translateY(-50%)',
+                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#fff', borderRadius: 6, width: 36, height: 36,
+                    cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Reviews Section ─────────────────────────────────────────────────────────
+function ReviewCard({ review, V }) {
+  return (
+    <div style={{
+      background: V.card2, border: `1px solid ${V.border}`,
+      borderRadius: 8, padding: '14px 16px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+            <StarRating rating={review.rating} size={13} />
+            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: V.space, color: V.text }}>
+              {review.reviewer_name}
+            </span>
+            {review.verified && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, fontFamily: V.mono,
+                color: V.accent, background: `${V.accent}15`, border: `1px solid ${V.accent}30`,
+                borderRadius: 3, padding: '1px 5px', textTransform: 'uppercase', letterSpacing: '0.08em',
+              }}>
+                Verified
+              </span>
+            )}
+          </div>
+          {review.title && (
+            <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.space, color: V.text, marginBottom: 6 }}>
+              {review.title}
+            </div>
+          )}
+          {review.body && (
+            <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space, lineHeight: 1.6 }}>
+              {review.body}
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+        {new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+      </div>
+    </div>
+  );
+}
+
+function ReviewsSection({ companyId, reviews, V }) {
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', rating: 5, title: '', body: '' });
+  const [status, setStatus] = useState('');
+  const [page, setPage] = useState(0);
+  const PER_PAGE = 5;
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
+
+  const visibleReviews = reviews.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!supabase || !companyId) return;
+    setStatus('sending');
+    try {
+      const { error } = await supabase.from('directory_reviews').insert({
+        company_id: companyId,
+        reviewer_name: form.name,
+        reviewer_email: form.email || null,
+        rating: form.rating,
+        title: form.title || null,
+        body: form.body || null,
+        status: 'pending',
+      });
+      if (error) throw error;
+      setStatus('success');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  const inputStyle = (V) => ({
+    width: '100%', background: V.card2, border: `1px solid ${V.border}`,
+    color: V.text, borderRadius: 7, padding: '9px 12px',
+    fontSize: 13, fontFamily: V.space, boxSizing: 'border-box',
+  });
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${V.border}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Reviews
+          </div>
+          {avgRating && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <StarRating rating={Math.round(parseFloat(avgRating))} size={12} />
+              <span style={{ fontSize: 12, color: V.text, fontFamily: V.mono }}>
+                {avgRating} ({reviews.length})
+              </span>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            background: V.accent, border: 'none', color: '#fff',
+            borderRadius: 6, padding: '5px 14px', fontSize: 12,
+            fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+          }}
+        >
+          Write a Review
+        </button>
+      </div>
+
+      {reviews.length === 0 ? (
+        <div style={{
+          textAlign: 'center', padding: '28px 16px',
+          background: V.card2, borderRadius: 8, border: `1px dashed ${V.border}`,
+        }}>
+          <div style={{ fontSize: 13, color: V.dim, fontFamily: V.space }}>No reviews yet. Be the first.</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {visibleReviews.map(r => <ReviewCard key={r.id} review={r} V={V} />)}
+          </div>
+          {reviews.length > PER_PAGE && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                style={{
+                  background: 'transparent', border: `1px solid ${V.border}`,
+                  color: page === 0 ? V.dim : V.muted, borderRadius: 5, padding: '5px 12px',
+                  fontSize: 12, fontFamily: V.space, cursor: page === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Prev
+              </button>
+              <span style={{ fontSize: 12, color: V.dim, fontFamily: V.mono, alignSelf: 'center' }}>
+                {page + 1} / {Math.ceil(reviews.length / PER_PAGE)}
+              </span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={(page + 1) * PER_PAGE >= reviews.length}
+                style={{
+                  background: 'transparent', border: `1px solid ${V.border}`,
+                  color: (page + 1) * PER_PAGE >= reviews.length ? V.dim : V.muted, borderRadius: 5, padding: '5px 12px',
+                  fontSize: 12, fontFamily: V.space, cursor: (page + 1) * PER_PAGE >= reviews.length ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Write a Review Modal */}
+      {showModal && (
+        <div
+          onClick={() => { setShowModal(false); setStatus(''); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9000,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: V.bg, border: `1px solid ${V.border}`,
+              borderRadius: 12, padding: '28px 24px',
+              width: '100%', maxWidth: 480,
+              maxHeight: '85vh', overflowY: 'auto',
+            }}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20,
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.text }}>
+                Write a Review
+              </div>
+              <button
+                onClick={() => { setShowModal(false); setStatus(''); }}
+                style={{ background: 'transparent', border: 'none', color: V.muted, cursor: 'pointer', fontSize: 20, lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+
+            {status === 'success' ? (
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <div style={{ fontSize: 28, marginBottom: 10 }}>✓</div>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 6 }}>
+                  Review submitted
+                </div>
+                <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
+                  Thanks! Your review is pending approval and will appear shortly.
+                </div>
+                <button
+                  onClick={() => { setShowModal(false); setStatus(''); setForm({ name: '', email: '', rating: 5, title: '', body: '' }); }}
+                  style={{
+                    marginTop: 16, background: V.accent, border: 'none', color: '#fff',
+                    borderRadius: 6, padding: '8px 20px', fontSize: 13, fontFamily: V.space,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <style>{`
+                  .review-form input::placeholder,
+                  .review-form textarea::placeholder { color: ${V.dim}; }
+                  .review-form input:focus,
+                  .review-form textarea:focus { outline: none; border-color: ${V.accent} !important; }
+                `}</style>
+                <div className="review-form" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Rating *</label>
+                    <StarRating rating={form.rating} size={22} interactive onRate={r => setForm(f => ({ ...f, rating: r }))} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Your Name *</label>
+                      <input
+                        required type="text" placeholder="Jane Smith"
+                        value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        style={inputStyle(V)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Email (optional)</label>
+                      <input
+                        type="email" placeholder="jane@company.com"
+                        value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        style={inputStyle(V)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Review Title</label>
+                    <input
+                      type="text" placeholder="Great partner for semiconductor sourcing"
+                      value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                      style={inputStyle(V)}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>Review *</label>
+                    <textarea
+                      required rows={4} placeholder="Share your experience..."
+                      value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                      style={{ ...inputStyle(V), resize: 'vertical', lineHeight: 1.5 }}
+                    />
+                  </div>
+                  {status === 'error' && (
+                    <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>Something went wrong. Please try again.</div>
+                  )}
+                  <button
+                    type="submit" disabled={status === 'sending'}
+                    style={{
+                      background: status === 'sending' ? `${V.accent}70` : V.accent,
+                      border: 'none', color: '#fff', borderRadius: 7,
+                      padding: '10px 24px', fontSize: 13, fontWeight: 700,
+                      fontFamily: V.space, cursor: status === 'sending' ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {status === 'sending' ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Map Embed ────────────────────────────────────────────────────────────────
+function MapEmbed({ company, V }) {
+  const mapsKey = typeof window !== 'undefined' ? (window.__VITE_GOOGLE_MAPS_KEY || import.meta.env?.VITE_GOOGLE_MAPS_KEY || '') : '';
+  const location = [company.city, company.state].filter(Boolean).join(', ');
+  if (!location) return null;
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.muted,
+        textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
+      }}>
+        Location
+      </div>
+      {mapsKey ? (
+        <iframe
+          title="Company location"
+          width="100%" height="180"
+          style={{ border: 0, borderRadius: 8, display: 'block' }}
+          referrerPolicy="no-referrer-when-downgrade"
+          src={`https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(`${company.name} ${location}`)}&zoom=13`}
+          allowFullScreen
+        />
+      ) : (
+        <div style={{
+          background: V.card2, border: `1px solid ${V.border}`,
+          borderRadius: 8, padding: '12px 14px',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 16 }}>📍</span>
+          <span style={{ fontSize: 13, color: V.text, fontFamily: V.space }}>{location}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -356,6 +837,7 @@ function SourcingProfileInner() {
   const [company, setCompany] = useState(null);
   const [certs, setCerts] = useState([]);
   const [listings, setListings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [org, setOrg] = useState(null);
   const [tenant, setTenant] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -399,7 +881,7 @@ function SourcingProfileInner() {
 
         setCompany(data);
 
-        const [certsRes, listingsRes, orgRes, tenantRes] = await Promise.all([
+        const [certsRes, listingsRes, orgRes, tenantRes, reviewsRes] = await Promise.all([
           supabase.from('directory_certifications').select('*').eq('company_id', data.id),
           supabase.from('directory_listings').select('*').eq('company_id', data.id).eq('status', 'active').order('created_at', { ascending: false }),
           data.organization_id
@@ -408,10 +890,12 @@ function SourcingProfileInner() {
           data.tenant_id
             ? supabase.from('directory_tenants').select('id').eq('id', data.tenant_id).single()
             : Promise.resolve({ data: null }),
+          supabase.from('directory_reviews').select('*').eq('company_id', data.id).eq('status', 'approved').order('created_at', { ascending: false }),
         ]);
 
         setCerts(certsRes.data || []);
         setListings(listingsRes.data || []);
+        setReviews(reviewsRes.data || []);
         setOrg(orgRes.data || null);
         if (tenantRes.data) {
           setTenant(tenantRes.data);
@@ -591,6 +1075,16 @@ function SourcingProfileInner() {
               }}>
                 {company.name}
               </h1>
+              {company.claimed && (
+                <span style={{
+                  background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.5)',
+                  color: '#86EFAC', fontSize: 10, fontWeight: 700, fontFamily: V.mono,
+                  padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}>
+                  ✓ Verified Listing
+                </span>
+              )}
               {company.featured && (
                 <span style={{
                   background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.5)',
@@ -653,9 +1147,16 @@ function SourcingProfileInner() {
       </div>
 
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px' }}>
+        {/* Unclaimed Banner */}
+        {!company.claimed && (
+          <div style={{ paddingTop: 20 }}>
+            <UnclaimedBanner slug={company.slug} tenantSlug={tenantSlug} V={V} />
+          </div>
+        )}
+
         {/* Chips below hero */}
         <div style={{
-          padding: '32px 0 28px',
+          padding: company.claimed ? '32px 0 28px' : '12px 0 28px',
           borderBottom: `1px solid ${V.border}`,
           marginBottom: 32,
           display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
@@ -669,6 +1170,14 @@ function SourcingProfileInner() {
           }}>
             {company.membership_tier} member
           </span>
+          {reviews.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <StarRating rating={Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length)} size={13} />
+              <span style={{ fontSize: 12, color: V.muted, fontFamily: V.mono }}>
+                {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)} ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
+              </span>
+            </div>
+          )}
           {org && (
             <span style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
               via {org.name}
@@ -685,6 +1194,15 @@ function SourcingProfileInner() {
                   {company.description}
                 </p>
               </Section>
+            )}
+
+            {/* Photo Gallery */}
+            {company.photos && company.photos.length > 0 && (
+              <PhotoGallery
+                photos={company.photos}
+                tier={company.membership_tier}
+                V={V}
+              />
             )}
 
             {tenant && (
@@ -724,6 +1242,9 @@ function SourcingProfileInner() {
                 </div>
               </Section>
             )}
+
+            {/* Reviews */}
+            <ReviewsSection companyId={company.id} reviews={reviews} V={V} />
           </div>
 
           {/* Right sidebar */}
@@ -828,6 +1349,9 @@ function SourcingProfileInner() {
                 </div>
               </div>
             )}
+
+            {/* Map */}
+            <MapEmbed company={company} V={V} />
 
             <Link
               to={tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}

@@ -118,7 +118,7 @@ function CertPill({ name, V }) {
 }
 
 // ─── Company Card ─────────────────────────────────────────────────────────────
-function CompanyCard({ company, certs, V, tenantSlug }) {
+function CompanyCard({ company, certs, V, tenantSlug, isFavorite, onToggleFavorite, reviewStat }) {
   const [hovered, setHovered] = useState(false);
   const topCerts = (certs || []).slice(0, 3);
   const vColor = verticalColor(company.vertical);
@@ -150,6 +150,24 @@ function CompanyCard({ company, certs, V, tenantSlug }) {
           opacity: hovered ? 1 : 0.6,
           transition: 'opacity 0.15s ease',
         }} />
+
+        {/* Heart / Favorite button */}
+        <button
+          onClick={e => onToggleFavorite && onToggleFavorite(company.slug, e)}
+          title={isFavorite ? 'Remove from saved' : 'Save company'}
+          style={{
+            position: 'absolute', top: 10, right: 10,
+            background: isFavorite ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${isFavorite ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.1)'}`,
+            color: isFavorite ? '#EF4444' : 'rgba(255,255,255,0.35)',
+            borderRadius: '50%', width: 28, height: 28,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', fontSize: 14, zIndex: 2,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {isFavorite ? '♥' : '♡'}
+        </button>
 
         {/* Logo / Avatar area */}
         <div style={{ padding: '16px 20px 0' }}>
@@ -256,6 +274,16 @@ function CompanyCard({ company, certs, V, tenantSlug }) {
               <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
                 {company.employee_count} employees
               </span>
+            )}
+            {reviewStat && reviewStat.count > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto' }}>
+                <span style={{ fontSize: 11, color: '#F59E0B' }}>
+                  {'★'.repeat(Math.round(reviewStat.avg))}
+                </span>
+                <span style={{ fontSize: 10, color: V.dim, fontFamily: V.mono }}>
+                  ({reviewStat.count})
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -460,6 +488,18 @@ function SourcingDirectoryInner() {
   const [scoutAnswer, setScoutAnswer] = useState('');
   const [scoutStreaming, setScoutStreaming] = useState(false);
   const scoutAbortRef = useRef(null);
+
+  // Favorites (localStorage)
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sourcing_favorites') || '[]'); } catch { return []; }
+  });
+  const [showSaved, setShowSaved] = useState(false);
+
+  // Map toggle
+  const [showMap, setShowMap] = useState(false);
+
+  // Reviews map: company slug -> { avg, count }
+  const [reviewStats, setReviewStats] = useState({});
 
   // Fetch tenant info
   useEffect(() => {
@@ -675,13 +715,14 @@ function SourcingDirectoryInner() {
 
   const filteredCompanies = useMemo(() => {
     // Use AI results if available, otherwise use standard fetch results
-    const source = aiCompanies !== null ? aiCompanies : companies;
+    let source = aiCompanies !== null ? aiCompanies : companies;
+    if (showSaved) source = source.filter(c => favorites.includes(c.slug));
     if (selectedCerts.length === 0) return source;
     return source.filter(c => {
       const companyCerts = (certs[c.id] || []).map(cert => cert.cert_name);
       return selectedCerts.every(sc => companyCerts.includes(sc));
     });
-  }, [companies, aiCompanies, certs, selectedCerts]);
+  }, [companies, aiCompanies, certs, selectedCerts, showSaved, favorites]);
 
   const availableCerts = VERTICAL_CERTS[vertical] || [];
 
@@ -690,6 +731,39 @@ function SourcingDirectoryInner() {
       prev.includes(cert) ? prev.filter(c => c !== cert) : [...prev, cert]
     );
   };
+
+  const toggleFavorite = useCallback((slug, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavorites(prev => {
+      const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug];
+      try { localStorage.setItem('sourcing_favorites', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  // Fetch review stats for visible companies
+  useEffect(() => {
+    if (!supabase || companies.length === 0) return;
+    const ids = companies.map(c => c.id);
+    supabase.from('directory_reviews')
+      .select('company_id, rating')
+      .in('company_id', ids)
+      .eq('status', 'approved')
+      .then(({ data }) => {
+        if (!data) return;
+        const stats = {};
+        data.forEach(r => {
+          if (!stats[r.company_id]) stats[r.company_id] = { sum: 0, count: 0 };
+          stats[r.company_id].sum += r.rating;
+          stats[r.company_id].count++;
+        });
+        Object.keys(stats).forEach(id => {
+          stats[id].avg = stats[id].sum / stats[id].count;
+        });
+        setReviewStats(stats);
+      });
+  }, [companies]);
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden', maxWidth: '100vw' }}>
@@ -801,11 +875,11 @@ function SourcingDirectoryInner() {
         {VERTICALS.map(v => (
           <button
             key={v.key}
-            onClick={() => handleVerticalChange(v.key)}
+            onClick={() => { handleVerticalChange(v.key); setShowSaved(false); }}
             style={{
-              background: vertical === v.key ? `${v.color}20` : 'transparent',
-              border: `1px solid ${vertical === v.key ? v.color : V.border}`,
-              color: vertical === v.key ? v.color : V.muted,
+              background: !showSaved && vertical === v.key ? `${v.color}20` : 'transparent',
+              border: `1px solid ${!showSaved && vertical === v.key ? v.color : V.border}`,
+              color: !showSaved && vertical === v.key ? v.color : V.muted,
               borderRadius: 6, padding: '7px 14px', fontSize: 12,
               fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
               whiteSpace: 'nowrap', transition: 'all 0.15s',
@@ -814,7 +888,54 @@ function SourcingDirectoryInner() {
             {v.label}
           </button>
         ))}
+
+        {/* Saved tab */}
+        <button
+          onClick={() => setShowSaved(s => !s)}
+          style={{
+            background: showSaved ? 'rgba(239,68,68,0.12)' : 'transparent',
+            border: `1px solid ${showSaved ? 'rgba(239,68,68,0.4)' : V.border}`,
+            color: showSaved ? '#EF4444' : V.muted,
+            borderRadius: 6, padding: '7px 14px', fontSize: 12,
+            fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+            whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'all 0.15s',
+          }}
+        >
+          {showSaved ? '♥' : '♡'}
+          Saved
+          {favorites.length > 0 && (
+            <span style={{
+              background: '#EF4444', color: '#fff', borderRadius: 10,
+              fontSize: 9, fontWeight: 800, padding: '1px 5px',
+            }}>
+              {favorites.length}
+            </span>
+          )}
+        </button>
+
         <div style={{ flex: 1 }} />
+
+        {/* Map toggle */}
+        <button
+          onClick={() => setShowMap(m => !m)}
+          title={showMap ? 'Grid view' : 'Map view'}
+          style={{
+            background: showMap ? V.accentDim : 'transparent',
+            border: `1px solid ${showMap ? V.accentBrd : V.border}`,
+            color: showMap ? V.accent : V.muted,
+            borderRadius: 6, padding: '7px 10px', fontSize: 12,
+            fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+            transition: 'all 0.15s',
+          }}
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M1 6l7-4 8 4 7-4v16l-7 4-8-4-7 4V6z"/><path d="M8 2v16M16 6v16"/>
+          </svg>
+          Map
+        </button>
+
         {availableCerts.length > 0 && (
           <button
             onClick={() => setShowFilters(f => !f)}
@@ -973,6 +1094,47 @@ function SourcingDirectoryInner() {
           </div>
         )}
 
+        {/* Map view */}
+        {showMap && !loading && filteredCompanies.length > 0 && (() => {
+          const mapsKey = typeof window !== 'undefined' ? (import.meta.env?.VITE_GOOGLE_MAPS_KEY || '') : '';
+          const forMap = filteredCompanies.filter(c => c.city && c.state).slice(0, 20);
+          if (!mapsKey || forMap.length === 0) {
+            return (
+              <div style={{
+                background: V.card, border: `1px solid ${V.border}`,
+                borderRadius: 10, padding: '40px 24px', textAlign: 'center',
+                marginBottom: 20,
+              }}>
+                <div style={{ fontSize: 28, marginBottom: 10 }}>📍</div>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 6 }}>
+                  {forMap.length === 0 ? 'No locations to show' : 'Map view unavailable'}
+                </div>
+                <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
+                  {forMap.length === 0 ? 'None of the visible companies have location data.' : 'Set VITE_GOOGLE_MAPS_KEY to enable the map view.'}
+                </div>
+                {forMap.length > 0 && (
+                  <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {forMap.slice(0, 5).map(c => (
+                      <div key={c.id} style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
+                        📍 {c.name} -- {[c.city, c.state].filter(Boolean).join(', ')}
+                      </div>
+                    ))}
+                    {forMap.length > 5 && <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>+{forMap.length - 5} more</div>}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          const markers = forMap.map(c => `markers=label:${encodeURIComponent(c.name.charAt(0))}|${encodeURIComponent(`${c.city},${c.state}`)}`).join('&');
+          const center = forMap[0] ? `${forMap[0].city},${forMap[0].state}` : 'Phoenix,AZ';
+          const src = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(center)}&zoom=8&size=900x400&maptype=roadmap&${markers}&key=${mapsKey}`;
+          return (
+            <div style={{ marginBottom: 20, borderRadius: 10, overflow: 'hidden', border: `1px solid ${V.border}` }}>
+              <img src={src} alt="Companies map" style={{ width: '100%', display: 'block' }} />
+            </div>
+          );
+        })()}
+
         {!loading && filteredCompanies.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
             {filteredCompanies.map(company => (
@@ -982,6 +1144,9 @@ function SourcingDirectoryInner() {
                 certs={certs[company.id] || []}
                 V={V}
                 tenantSlug={tenantSlug}
+                isFavorite={favorites.includes(company.slug)}
+                onToggleFavorite={toggleFavorite}
+                reviewStat={reviewStats[company.id]}
               />
             ))}
           </div>
@@ -993,14 +1158,20 @@ function SourcingDirectoryInner() {
             background: V.card, border: `1px solid ${V.border}`,
             borderRadius: 12,
           }}>
-            <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
+            {showSaved ? (
+              <div style={{ fontSize: 32, marginBottom: 12 }}>♡</div>
+            ) : (
+              <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            )}
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
-              No companies found
+              {showSaved ? 'No saved companies yet' : 'No companies found'}
             </div>
             <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
-              {query ? `No results for "${query}". Try different keywords or broaden your filters.` : 'No companies in this vertical yet. Be the first to join.'}
+              {showSaved
+                ? 'Click ♡ on any listing to save it.'
+                : (query ? `No results for "${query}". Try different keywords or broaden your filters.` : 'No companies in this vertical yet. Be the first to join.')}
             </div>
             <Link
               to={tenantSlug ? `/sourcing/${tenantSlug}/signup` : '/sourcing/signup'}
