@@ -11697,93 +11697,66 @@ export default function GameDashboard() {
       const isAomTeamRoom = room === 'aom' || room === 'aom-team'
       let lastSeenTs = new Date().toISOString()
 
+      // Shared merge helper: dedup-merge a set of server rows into agentChats state
+      const mergeServerRows = (rows) => {
+        const eligible = rows.filter(m => isAomTeamRoom || m.agent === room)
+        if (!eligible.length) return
+        if (eligible[eligible.length - 1]?.timestamp > lastSeenTs) {
+          lastSeenTs = eligible[eligible.length - 1].timestamp
+        }
+        startTransition(() => { setAgentChats(prev => {
+          const current = prev[room]?._all || []
+          let updated = [...current]
+          let changed = false
+          for (const row of eligible) {
+            const msg = {
+              id: row.id, role: row.role || 'assistant', content: row.text || '',
+              time: row.timestamp, source: row.source || 'supabase',
+              agentTag: isAomTeamRoom ? (row.agent || null) : null,
+              projectPath: isAomTeamRoom ? (row.project_path || null) : null,
+            }
+            if (updated.some(m => m.id === msg.id)) continue
+            const msgTime = new Date(msg.time).getTime()
+            const isDupContent = updated.some(m =>
+              m.role === msg.role &&
+              m.content === msg.content &&
+              Math.abs(new Date(m.time).getTime() - msgTime) < 5000
+            )
+            if (isDupContent) continue
+            if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
+            updated.push(msg)
+            changed = true
+          }
+          if (!changed) return prev
+          updated.sort(safeTimeSort)
+          return { ...prev, [room]: { _all: updated } }
+        }) })
+        if (eligible.some(m => m.role === 'assistant')) setPanelStreaming(false)
+      }
+
+      // fetchLatest: shared by poll, visibility, and focus events
+      const pollUrl = isAomTeamRoom
+        ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=50&client=${encodeURIComponent(getClientId())}`
+        : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`
+      const fetchLatest = () => {
+        fetch(pollUrl)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => { if (data?.messages?.length) mergeServerRows(data.messages) })
+          .catch(() => {})
+      }
+
       const poll = setInterval(async () => {
         if (document.hidden) return // Skip when tab not visible
         if (isTypingRef.current) return // Skip while user is typing (prevents input lag)
-        try {
-          // AOM Team Room: fetch all messages without agent filter
-          const pollUrl = isAomTeamRoom
-            ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=50&client=${encodeURIComponent(getClientId())}`
-            : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`
-          const res = await fetch(pollUrl)
-          if (!res.ok) return
-          const data = await res.json()
-          const newMsgs = (data?.messages || [])
-            .filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || m.agent === room))
-          if (newMsgs.length) {
-            lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
-            startTransition(() => { setAgentChats(prev => {
-              const current = prev[room]?._all || []
-              let updated = [...current]
-              let changed = false
-              for (const row of newMsgs) {
-                const msg = {
-                  id: row.id, role: row.role || 'assistant', content: row.text || '',
-                  time: row.timestamp, source: row.source || 'supabase',
-                  agentTag: isAomTeamRoom ? (row.agent || null) : null,
-                  projectPath: isAomTeamRoom ? (row.project_path || null) : null,
-                }
-                // Primary dedup: by server UUID
-                if (updated.some(m => m.id === msg.id)) continue
-                // Secondary dedup: same role+content within 5s (catches optimistic local messages
-                // whose dash-* ID wasn't yet replaced with server UUID, preventing double-send)
-                const msgTime = new Date(msg.time).getTime()
-                const isDupContent = updated.some(m =>
-                  m.role === msg.role &&
-                  m.content === msg.content &&
-                  Math.abs(new Date(m.time).getTime() - msgTime) < 5000
-                )
-                if (isDupContent) continue
-                if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
-                updated.push(msg)
-                changed = true
-              }
-              if (!changed) return prev
-              // Sort by timestamp so terminal/telegram user messages appear in correct order
-              updated.sort(safeTimeSort)
-              return { ...prev, [room]: { _all: updated } }
-            }) })
-            if (newMsgs.some(m => m.role === 'assistant')) setPanelStreaming(false)
-          }
-        } catch {}
+        fetchLatest()
       }, 3000) // 3s poll for near-instant chat updates
 
-      // Visibility change: force-refresh when tab becomes visible again
-      const visHandler = () => {
-        if (!document.hidden) {
-          // Immediately fetch latest messages when user returns to tab
-          fetch(isAomTeamRoom
-            ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=50&client=${encodeURIComponent(getClientId())}`
-            : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`)
-            .then(res => res.ok ? res.json() : null)
-            .then(data => {
-              if (!data?.messages?.length) return
-              const newMsgs = data.messages.filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || m.agent === room))
-              if (newMsgs.length) {
-                lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
-                setAgentChats(prev => {
-                  const current = prev[room]?._all || []
-                  let updated = [...current]
-                  let changed = false
-                  for (const row of newMsgs) {
-                    const msg = { id: row.id, role: row.role || 'assistant', content: row.text || '', time: row.timestamp, source: row.source || 'supabase', agentTag: isAomTeamRoom ? (row.agent || null) : null, projectPath: isAomTeamRoom ? (row.project_path || null) : null }
-                    if (updated.some(m => m.id === msg.id)) continue
-                    const isDupContent = updated.some(m => m.role === msg.role && m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)
-                    if (isDupContent) continue
-                    if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
-                    updated.push(msg)
-                    changed = true
-                  }
-                  if (!changed) return prev
-                  updated.sort(safeTimeSort)
-                  return { ...prev, [room]: { _all: updated } }
-                })
-              }
-            })
-            .catch(() => {})
-        }
-      }
+      // Visibility / focus handlers: catch iOS PWA app-switch (visibilitychange unreliable on iOS)
+      const visHandler = () => { if (!document.hidden) fetchLatest() }
+      const focusHandler = () => fetchLatest()
       document.addEventListener('visibilitychange', visHandler)
+      window.addEventListener('focus', focusHandler)
+      window.addEventListener('pageshow', focusHandler)
 
       // Supabase Realtime: instant push when new messages are inserted for this agent.
       // Triggers the poll function immediately instead of waiting for the 5s interval.
@@ -11840,6 +11813,8 @@ export default function GameDashboard() {
       return () => {
         clearInterval(poll)
         document.removeEventListener('visibilitychange', visHandler)
+        window.removeEventListener('focus', focusHandler)
+        window.removeEventListener('pageshow', focusHandler)
         if (realtimeChannel) supabase.removeChannel(realtimeChannel)
       }
     }
