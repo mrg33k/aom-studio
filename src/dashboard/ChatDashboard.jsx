@@ -13,7 +13,7 @@ import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
 import { getTypingPhrases } from './agentTypingPhrases'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
-import { useBridge, isBridgeAgent } from './hooks/useBridge'
+import { useBridge, isBridgeAgent, BRIDGE_AGENTS } from './hooks/useBridge'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -317,7 +317,7 @@ function StatusPill({ status }) {
 }
 
 // ─── AGENT CARD (isometric room) ─────────────────────────────────────────────
-function AgentCard({ agent, statusData, onClick, isActive }) {
+function AgentCard({ agent, statusData, onClick, isActive, hasUnread }) {
   const status = statusData?.status || 'IDLE'
   const task = statusData?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -332,10 +332,21 @@ function AgentCard({ agent, statusData, onClick, isActive }) {
       className={`relative w-full text-left rounded-sm overflow-hidden transition-all duration-300 group ${
         isActive
           ? 'ring-2 ring-[#E85D26]/60 bg-[#1A1A17]'
+          : hasUnread
+          ? 'ring-2 ring-[#E85D26]/40 bg-[#141412] hover:bg-[#1A1A17]'
           : 'bg-[#141412] hover:bg-[#1A1A17]'
       }`}
-      style={{ border: `1px solid ${isActive ? 'rgba(232,93,38,0.4)' : '#292524'}` }}
+      style={{ border: `1px solid ${isActive ? 'rgba(232,93,38,0.4)' : hasUnread ? 'rgba(232,93,38,0.25)' : '#292524'}` }}
     >
+      {/* Unread pulse indicator */}
+      {hasUnread && !isActive && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E85D26] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#E85D26]" />
+          </span>
+        </div>
+      )}
       {/* Room image */}
       {agent.img ? (
         <div className="relative w-full aspect-[16/10] overflow-hidden">
@@ -914,7 +925,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, 30000)
+    }, 5000)
 
     // FAST-PATH OUTBOX POLL: 30s poll of relay-outbox (local only)
     if (IS_LOCAL) {
@@ -2503,8 +2514,13 @@ export default function ChatDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [activeAgent, setActiveAgent] = useState(null)
   const [clock, setClock] = useState(azTime())
+  const [unreadAgents, setUnreadAgents] = useState(new Set())
   const { data, error, loading } = useDashboardData(30000)
   const isMobile = useIsMobile()
+
+  // Keep a ref so subscription callbacks can read activeAgent without stale closure
+  const activeAgentRef = useRef(null)
+  useEffect(() => { activeAgentRef.current = activeAgent }, [activeAgent])
 
   // Check URL for agent slug or team room on mount
   useEffect(() => {
@@ -2528,6 +2544,54 @@ export default function ChatDashboard() {
     const timer = setInterval(() => setClock(azTime()), 60000)
     return () => clearInterval(timer)
   }, [])
+
+  // Global new-message detection: marks unread dot + auto-opens panel when idle
+  // Production: Supabase Realtime INSERT on messages table
+  // Local: poll bridge agents every 5s (lightweight)
+  useEffect(() => {
+    const markUnread = (slug) => {
+      if (!slug || activeAgentRef.current?.slug === slug) return
+      setUnreadAgents(prev => new Set([...prev, slug]))
+      // Auto-open if no panel is currently active
+      if (!activeAgentRef.current) {
+        const agentObj = AGENTS.find(a => a.slug === slug)
+        if (agentObj) setActiveAgent(agentObj)
+      }
+    }
+
+    if (supabase) {
+      // Production: realtime subscription catches every assistant INSERT
+      const channel = supabase
+        .channel('dashboard-unread-monitor')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: 'role=eq.assistant',
+        }, (payload) => markUnread(payload.new?.agent))
+        .subscribe()
+      return () => supabase.removeChannel(channel)
+    } else {
+      // Local: poll bridge agents every 5s for new assistant messages
+      const lastSeen = {}
+      const check = async () => {
+        for (const a of AGENTS.filter(ag => BRIDGE_AGENTS.includes(ag.slug))) {
+          const since = lastSeen[a.slug] || new Date(Date.now() - 8000).toISOString()
+          try {
+            const res = await fetch(`/api/local/conversations?target=${a.slug}&type=agent&limit=3&since=${encodeURIComponent(since)}`)
+            if (!res.ok) continue
+            const d = await res.json()
+            const newAsst = (d.messages || []).filter(m => m.role === 'assistant')
+            if (!newAsst.length) continue
+            lastSeen[a.slug] = newAsst[newAsst.length - 1].timestamp
+            markUnread(a.slug)
+          } catch {}
+        }
+      }
+      const timer = setInterval(check, 5000)
+      return () => clearInterval(timer)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update URL when agent or team room changes
   useEffect(() => {
@@ -2556,6 +2620,12 @@ export default function ChatDashboard() {
 
   const openChat = (agent) => {
     setActiveAgent(agent)
+    // Clear unread when user opens the panel
+    setUnreadAgents(prev => {
+      const next = new Set(prev)
+      next.delete(agent.slug)
+      return next
+    })
   }
 
   const closeChat = () => {
@@ -2630,6 +2700,7 @@ export default function ChatDashboard() {
                     statusData={agentStatus[agent.slug]}
                     onClick={() => openChat(agent)}
                     isActive={activeAgent?.slug === agent.slug}
+                    hasUnread={unreadAgents.has(agent.slug)}
                   />
                 </motion.div>
               ))}
