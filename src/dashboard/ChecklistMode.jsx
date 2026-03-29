@@ -1857,6 +1857,12 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         delete next[key]
         return next
       })
+      // Remove from checkedTasks so localStorage is cleared on undo
+      setCheckedTasks(prev => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
       return
     }
     // Already committed done → toggle back immediately (no undo window needed for un-checking)
@@ -1869,7 +1875,9 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       supabasePatchTaskStatus(task, 'todo')
       return
     }
-    // Not done → start 30s pending window
+    // Not done → start 30s pending window + immediately persist to localStorage
+    // so a page reload during the undo window doesn't lose the checkmark
+    setCheckedTasks(prev => ({ ...prev, [key]: true }))
     setPendingCompletion(prev => ({
       ...prev,
       [key]: { task, checkedAt: Date.now() },
