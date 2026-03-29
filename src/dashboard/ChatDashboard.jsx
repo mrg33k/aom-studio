@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
-import { getTypingPhrases } from './agentTypingPhrases'
 import { useBridge, isBridgeAgent, BRIDGE_AGENTS } from './hooks/useBridge'
 
 // Configure marked for safe, minimal rendering
@@ -403,45 +402,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [streamStartTime, setStreamStartTime] = useState(null)
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [thinkingPhrase, setThinkingPhrase] = useState(0)
-  const [motivationalPhrase, setMotivationalPhrase] = useState(0)
   const [isSending, setIsSending] = useState(false)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role, id }
-
-  // Fun rotating thinking phrases -- per-agent personality
-  const thinkingPhrases = useMemo(() => getTypingPhrases(agent.slug), [agent.slug])
-
-  // Motivational phrases for the work wait
-  const motivationalPhrases = useMemo(() => [
-    `Give ${agent.name} a minute. He's actually doing shit.`,
-    'He\'s working hard. Real work takes time.',
-    `${agent.name}'s cooking. This might take a bit.`,
-    'The system works, just not instantly.',
-    'He\'s doing real work behind the scenes.',
-    'No rush. Quality over speed.',
-    `${agent.name} doesn't cut corners.`,
-    'Real work happening right now.',
-  ], [agent.name])
-
-  // Unified streaming tick: elapsed (1s), thinking phrases (3s), motivational phrases (5s)
-  // Consolidates 3 separate setIntervals into 1
-  useEffect(() => {
-    if (!streaming || !streamStartTime) {
-      setElapsedSeconds(0)
-      setThinkingPhrase(0)
-      setMotivationalPhrase(0)
-      return
-    }
-    let tickCount = 0
-    const interval = setInterval(() => {
-      tickCount++
-      setElapsedSeconds(Math.floor((Date.now() - streamStartTime) / 1000))
-      if (tickCount % 3 === 0) setThinkingPhrase(prev => (prev + 1) % thinkingPhrases.length)
-      if (tickCount % 5 === 0) setMotivationalPhrase(prev => (prev + 1) % motivationalPhrases.length)
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [streaming, streamStartTime, thinkingPhrases.length, motivationalPhrases.length])
 
   // ── BRIDGE: Handle streaming text from WebSocket ──
   useEffect(() => {
@@ -1084,7 +1046,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     })
     if (!streaming) {
       setStreamStartTime(Date.now())
-      setThinkingPhrase(0)
     }
     setStreaming(true)
     startChatTimeout()
@@ -1685,7 +1646,6 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [streamStartTime, setStreamStartTime] = useState(null)
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const [councilDoneCount, setCouncilDoneCount] = useState(0)
   const [msgCtx, setMsgCtx] = useState(null)
@@ -1704,13 +1664,6 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
   const hasNewMessagesRef = useRef(false)
 
   useEffect(() => { streamingRef.current = streaming }, [streaming])
-
-  // Elapsed timer while waiting
-  useEffect(() => {
-    if (!streaming || !streamStartTime) { setElapsedSeconds(0); return }
-    const interval = setInterval(() => setElapsedSeconds(Math.floor((Date.now() - streamStartTime) / 1000)), 1000)
-    return () => clearInterval(interval)
-  }, [streaming, streamStartTime])
 
   const formatTime = (dateStr) => {
     if (!dateStr) return ''
@@ -2725,10 +2678,6 @@ export default function ChatDashboard() {
         @keyframes chatBounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-6px); opacity: 1; }
-        }
-        @keyframes typingPhraseIn {
-          0% { opacity: 0; transform: translateY(4px); }
-          100% { opacity: 1; transform: translateY(0); }
         }
         .chat-messages-area::-webkit-scrollbar { width: 4px; }
         .chat-messages-area::-webkit-scrollbar-track { background: transparent; }

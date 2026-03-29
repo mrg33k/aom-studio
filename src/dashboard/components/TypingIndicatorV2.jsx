@@ -1,19 +1,10 @@
-// TypingIndicatorV2 -- typewriter phrases (cocky -> steady -> honest),
-// 15s phrase cycle, green/yellow/red timer pill, poke button at 5min.
-//
+// TypingIndicatorV2 -- minimal bouncing dots while waiting for relay response
 // compact=true  : fits inside a message bubble (ChatBar inline)
 // compact=false : stands alone below messages (UnifiedPanel, ChatDashboard)
 import React, { useState, useEffect, useRef } from 'react'
-import { getPhrasedTyping } from '../agentTypingPhrases'
 
-// Phase thresholds (ms) -- Patrik spec: green 0-30s, yellow 30s-2min, red 2min+
-const COCKY_END  = 30_000   // 0-30s  (green: cocky/confident)
-const STEADY_END = 120_000  // 30s-2min (yellow: working phrases)
-const POKE_MS    = 300_000  // 5min  (poke button appears)
-const MS_PER_PHRASE = 15_000 // each phrase gets 15s
-const CHAR_DELAY = 50        // ms per character (typewriter speed)
+const POKE_MS = 300_000  // 5min (poke button appears)
 
-// Inject animation keyframes once (works in any host component)
 let _stylesInjected = false
 function ensureStyles() {
   if (_stylesInjected || typeof document === 'undefined') return
@@ -21,11 +12,9 @@ function ensureStyles() {
   const s = document.createElement('style')
   s.id = 'tw-v2-styles'
   s.textContent = `
-    @keyframes twCursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
     @keyframes twDotBounce { 0%,60%,100%{transform:translateY(0);opacity:.4} 30%{transform:translateY(-4px);opacity:1} }
     @keyframes twDotVegas { 0%,100%{transform:translateY(0);opacity:0.6} 30%{transform:translateY(-5px);opacity:1} 60%{transform:translateY(0);opacity:0.7} }
     @keyframes twPokeIn { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
-    @keyframes twDotPulse { 0%,100%{box-shadow:0 0 0 0 currentColor} 50%{box-shadow:0 0 6px 2px currentColor} }
   `
   document.head.appendChild(s)
 }
@@ -43,10 +32,9 @@ export function TypingIndicatorV2({
   const [pokeUsed, setPokeUsed] = useState(false)
   const startRef = useRef(null)
 
-  // Inject styles on first render
   useEffect(() => { ensureStyles() }, [])
 
-  // Master tick at 80ms for smooth typewriter + accurate timer
+  // Track elapsed only to trigger poke button at 5min -- no longer displayed
   useEffect(() => {
     if (!streaming) {
       setMsElapsed(0)
@@ -57,45 +45,11 @@ export function TypingIndicatorV2({
     startRef.current = Date.now()
     const tick = setInterval(() => {
       if (startRef.current) setMsElapsed(Date.now() - startRef.current)
-    }, 80)
+    }, 1000)
     return () => clearInterval(tick)
   }, [streaming])
 
   if (!streaming) return null
-
-  const elapsed = Math.floor(msElapsed / 1000)
-
-  // Phase
-  const phase = msElapsed < COCKY_END ? 'cocky'
-    : msElapsed < STEADY_END ? 'steady'
-    : 'honest'
-
-  // Timer color: green -> yellow -> red
-  const timerColor = phase === 'cocky' ? '#22C55E'
-    : phase === 'steady' ? '#F59E0B'
-    : '#EF4444'
-
-  // Which 15s slot within the current phase
-  const phaseStartMs = phase === 'cocky' ? 0
-    : phase === 'steady' ? COCKY_END
-    : STEADY_END
-  const msInPhase  = msElapsed - phaseStartMs
-  const slotIdx    = Math.floor(msInPhase / MS_PER_PHRASE)
-  const msInSlot   = msInPhase % MS_PER_PHRASE
-
-  // Current phrase + typewriter
-  const phaseList    = getPhrasedTyping(agentSlug)[phase]
-  const currentPhrase = phaseList[slotIdx % phaseList.length]
-  const charIdx      = Math.min(Math.floor(msInSlot / CHAR_DELAY), currentPhrase.length)
-  const displayText  = currentPhrase.slice(0, charIdx)
-  const showCursor   = charIdx < currentPhrase.length
-
-  // Timer label
-  const min = Math.floor(elapsed / 60)
-  const sec = elapsed % 60
-  const timerLabel = min > 0
-    ? `${min}m${sec.toString().padStart(2, '0')}s`
-    : `${elapsed}s`
 
   const showPoke = msElapsed >= POKE_MS && !pokeUsed
 
@@ -105,36 +59,8 @@ export function TypingIndicatorV2({
   }
 
   if (compact) {
-    // Inside message bubble (ChatBar)
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '4px 2px', flexWrap: 'wrap',
-      }}>
-        {/* Typewriter phrase */}
-        <span style={{
-          color: agentColor, fontSize: 11,
-          fontFamily: "'JetBrains Mono', monospace",
-          opacity: 0.9, minWidth: 80,
-        }}>
-          {displayText}
-          {showCursor && (
-            <span style={{ animation: 'twCursorBlink 0.7s ease-in-out infinite' }}>▋</span>
-          )}
-        </span>
-
-        {/* Timer pill */}
-        <span style={{
-          fontSize: 10, fontWeight: 700, color: timerColor,
-          fontFamily: "'JetBrains Mono', monospace",
-          background: timerColor + '18',
-          padding: '1px 6px', borderRadius: 5,
-          fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-          transition: 'color 600ms ease, background 600ms ease',
-        }}>
-          {timerLabel}
-        </span>
-
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px', flexWrap: 'wrap' }}>
         {/* Bouncing dots */}
         <span style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
           {[0, 1, 2].map(i => (
@@ -151,10 +77,10 @@ export function TypingIndicatorV2({
           <button
             onClick={handlePoke}
             style={{
-              background: timerColor + '15',
-              border: `1px solid ${timerColor}35`,
+              background: '#EF444415',
+              border: '1px solid #EF444435',
               borderRadius: 5, padding: '2px 8px',
-              color: timerColor, fontSize: 10, fontWeight: 700,
+              color: '#EF4444', fontSize: 10, fontWeight: 700,
               fontFamily: "'JetBrains Mono', monospace",
               cursor: 'pointer', flexShrink: 0,
               animation: 'twPokeIn 0.35s ease-out',
@@ -181,33 +107,6 @@ export function TypingIndicatorV2({
             }} />
           ))}
         </span>
-
-        {/* Typewriter phrase */}
-        <span style={{
-          color: agentColor, fontSize: 13,
-          fontFamily: "'JetBrains Mono', monospace",
-          fontWeight: 500, opacity: 0.92, minWidth: 100,
-        }}>
-          {displayText}
-          {showCursor && (
-            <span style={{
-              animation: 'twCursorBlink 0.7s ease-in-out infinite', opacity: 0.8,
-            }}>▋</span>
-          )}
-        </span>
-
-        {/* Timer pill */}
-        <span style={{
-          fontSize: 11, fontWeight: 700, color: timerColor,
-          fontFamily: "'JetBrains Mono', monospace",
-          background: timerColor + '15',
-          border: `1px solid ${timerColor}25`,
-          padding: '2px 8px', borderRadius: 6,
-          fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-          transition: 'color 600ms ease, background 600ms ease, border-color 600ms ease',
-        }}>
-          {timerLabel}
-        </span>
       </div>
 
       {/* Poke button (5min+) */}
@@ -216,22 +115,22 @@ export function TypingIndicatorV2({
           onClick={handlePoke}
           style={{
             alignSelf: 'flex-start',
-            background: timerColor + '12',
-            border: `1px solid ${timerColor}30`,
+            background: '#EF444412',
+            border: '1px solid #EF444430',
             borderRadius: 8, padding: '5px 14px',
-            color: timerColor, fontSize: 12, fontWeight: 700,
+            color: '#EF4444', fontSize: 12, fontWeight: 700,
             fontFamily: "'JetBrains Mono', monospace",
             cursor: 'pointer', letterSpacing: '0.04em',
             transition: 'all 150ms',
             animation: 'twPokeIn 0.35s ease-out',
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = timerColor + '25'
-            e.currentTarget.style.borderColor = timerColor + '50'
+            e.currentTarget.style.background = '#EF444425'
+            e.currentTarget.style.borderColor = '#EF444450'
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.background = timerColor + '12'
-            e.currentTarget.style.borderColor = timerColor + '30'
+            e.currentTarget.style.background = '#EF444412'
+            e.currentTarget.style.borderColor = '#EF444430'
           }}
         >
           Poke {agentName || 'agent'}
