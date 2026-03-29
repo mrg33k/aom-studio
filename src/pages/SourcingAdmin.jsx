@@ -437,6 +437,11 @@ function SourcingAdminInner() {
   const [exportStatus, setExportStatus] = useState('');
   const [listingFilter, setListingFilter] = useState('all');
 
+  // Analytics + Messages state
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [expandedContact, setExpandedContact] = useState(null);
+
   // Quick Add Company
   const [showAddCompany, setShowAddCompany] = useState(false);
   const [addCompanyForm, setAddCompanyForm] = useState({
@@ -452,6 +457,12 @@ function SourcingAdminInner() {
     name: '', website: '', vertical: 'semiconductor', description: '',
   });
   const [addOrgStatus, setAddOrgStatus] = useState('');
+
+  // CSV Import
+  const [showImport, setShowImport] = useState(false);
+  const [importPreview, setImportPreview] = useState(null); // { headers, rows }
+  const [importStatus, setImportStatus] = useState('');
+  const importFileRef = useRef(null);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -532,6 +543,90 @@ function SourcingAdminInner() {
     if (authed) fetchData();
   }, [authed, fetchData, selectedTenantId]);
 
+  const fetchAnalytics = useCallback(async () => {
+    if (!adminSupabase || !selectedTenantId) { setAnalyticsData(null); return; }
+    try {
+      const now = new Date();
+      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [weekViews, monthViews, recentSearches, profileViews] = await Promise.all([
+        adminSupabase
+          .from('directory_analytics')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', selectedTenantId)
+          .eq('event_type', 'page_view')
+          .gte('created_at', weekAgo),
+        adminSupabase
+          .from('directory_analytics')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', selectedTenantId)
+          .eq('event_type', 'page_view')
+          .gte('created_at', monthAgo),
+        adminSupabase
+          .from('directory_analytics')
+          .select('metadata, created_at')
+          .eq('tenant_id', selectedTenantId)
+          .eq('event_type', 'search')
+          .order('created_at', { ascending: false })
+          .limit(20),
+        adminSupabase
+          .from('directory_analytics')
+          .select('company_id')
+          .eq('tenant_id', selectedTenantId)
+          .eq('event_type', 'profile_view')
+          .gte('created_at', monthAgo),
+      ]);
+
+      // Top companies by profile view count
+      const viewCounts = {};
+      (profileViews.data || []).forEach(r => {
+        if (r.company_id) viewCounts[r.company_id] = (viewCounts[r.company_id] || 0) + 1;
+      });
+      const topCompanyIds = Object.entries(viewCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([id, count]) => ({ id, count }));
+
+      setAnalyticsData({
+        pageViewsWeek: weekViews.count || 0,
+        pageViewsMonth: monthViews.count || 0,
+        recentSearches: recentSearches.data || [],
+        topCompanies: topCompanyIds,
+      });
+    } catch (err) {
+      console.error('Analytics fetch error:', err);
+    }
+  }, [selectedTenantId]);
+
+  const fetchContacts = useCallback(async () => {
+    if (!adminSupabase || !selectedTenantId) { setContacts([]); return; }
+    try {
+      const { data } = await adminSupabase
+        .from('directory_contacts')
+        .select('*')
+        .eq('tenant_id', selectedTenantId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      setContacts(data || []);
+    } catch (err) {
+      console.error('Contacts fetch error:', err);
+    }
+  }, [selectedTenantId]);
+
+  useEffect(() => {
+    if (authed && selectedTenantId) {
+      fetchAnalytics();
+      fetchContacts();
+    }
+  }, [authed, selectedTenantId, fetchAnalytics, fetchContacts]);
+
+  const handleContactStatusUpdate = async (id, status) => {
+    if (!adminSupabase) return;
+    await adminSupabase.from('directory_contacts').update({ status }).eq('id', id);
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+  };
+
   const handleCompanyAction = async (id, action) => {
     if (!adminSupabase) return;
     setRefreshing(prev => ({ ...prev, [id]: true }));
@@ -568,21 +663,162 @@ function SourcingAdminInner() {
     await fetchData();
   };
 
-  const handleExportCSV = () => {
-    const rows = [['Name', 'Email', 'Phone', 'Vertical', 'City', 'State', 'Tier', 'Status']];
+  const handleExportCSV = async () => {
+    // Fetch certs for all companies to include in export
+    let certsMap = {};
+    if (adminSupabase && companies.length > 0) {
+      const ids = companies.map(c => c.id);
+      const { data: certsData } = await adminSupabase
+        .from('directory_certifications')
+        .select('*')
+        .in('company_id', ids);
+      (certsData || []).forEach(cert => {
+        if (!certsMap[cert.company_id]) certsMap[cert.company_id] = [];
+        certsMap[cert.company_id].push(cert.cert_name);
+      });
+    }
+
+    const headers = ['name', 'description', 'website', 'phone', 'email', 'city', 'state', 'vertical', 'employee_count', 'membership_tier', 'status', 'featured', 'year_founded', 'certifications'];
+    const rows = [headers];
     companies.forEach(c => {
-      rows.push([c.name, c.email || '', c.phone || '', c.vertical, c.city || '', c.state || '', c.membership_tier, c.status]);
+      const certList = (certsMap[c.id] || []).join(';');
+      rows.push([
+        c.name || '',
+        c.description || '',
+        c.website || '',
+        c.phone || '',
+        c.email || '',
+        c.city || '',
+        c.state || '',
+        c.vertical || '',
+        c.employee_count || '',
+        c.membership_tier || '',
+        c.status || '',
+        c.featured ? 'true' : 'false',
+        c.year_founded || '',
+        certList,
+      ]);
     });
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csvStr = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvStr], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sourcing-directory-${new Date().toISOString().slice(0, 10)}.csv`;
+    const tenantSlug = selectedTenant?.slug || 'all';
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `${tenantSlug}-companies-${date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setExportStatus('Downloaded');
     setTimeout(() => setExportStatus(''), 3000);
+  };
+
+  // ─── CSV Parser (no external library) ──────────────────────────────────────
+  const parseCSV = (text) => {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const parseRow = (line) => {
+      const fields = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === ',' && !inQuotes) {
+          fields.push(cur.trim());
+          cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      fields.push(cur.trim());
+      return fields;
+    };
+    const nonEmpty = lines.filter(l => l.trim());
+    if (nonEmpty.length < 2) return null;
+    const headers = parseRow(nonEmpty[0]).map(h => h.toLowerCase().replace(/\s+/g, '_'));
+    const rows = nonEmpty.slice(1).map(l => {
+      const vals = parseRow(l);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+      return obj;
+    });
+    return { headers, rows };
+  };
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const parsed = parseCSV(ev.target.result);
+      if (!parsed) { setImportStatus('Could not parse CSV.'); return; }
+      setImportPreview(parsed);
+      setImportStatus('');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImportConfirm = async () => {
+    if (!adminSupabase || !importPreview || !selectedTenantId) return;
+    const { rows } = importPreview;
+    let imported = 0;
+    let skipped = 0;
+    const skippedNames = [];
+
+    setImportStatus(`Importing 0 of ${rows.length} companies...`);
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row.name || !row.name.trim()) { skipped++; skippedNames.push(`Row ${i + 2}: missing name`); continue; }
+
+      const slug = row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now() + '-' + i;
+      const insertData = {
+        name: row.name.trim(),
+        slug,
+        description: row.description || null,
+        website: row.website || null,
+        phone: row.phone || null,
+        email: row.email || null,
+        city: row.city || null,
+        state: row.state || null,
+        vertical: row.vertical || 'other',
+        employee_count: row.employee_count || null,
+        membership_tier: row.membership_tier || 'free',
+        status: 'active',
+        tenant_id: selectedTenantId,
+        country: 'US',
+      };
+
+      const { data: inserted, error } = await adminSupabase
+        .from('directory_companies')
+        .insert(insertData)
+        .select('id')
+        .single();
+
+      if (error) { skipped++; skippedNames.push(`Row ${i + 2}: ${error.message}`); continue; }
+
+      // Handle certifications
+      if (row.certifications && row.certifications.trim() && inserted?.id) {
+        const certNames = row.certifications.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+        if (certNames.length > 0) {
+          await adminSupabase.from('directory_certifications').insert(
+            certNames.map(cert_name => ({ company_id: inserted.id, cert_name, tenant_id: selectedTenantId }))
+          );
+        }
+      }
+
+      imported++;
+      setImportStatus(`Importing ${imported} of ${rows.length} companies...`);
+    }
+
+    let summary = `Done. Imported ${imported} of ${rows.length} companies.`;
+    if (skipped > 0) summary += ` Skipped ${skipped}: ${skippedNames.slice(0, 3).join('; ')}${skippedNames.length > 3 ? '...' : ''}`;
+    setImportStatus(summary);
+    setImportPreview(null);
+    if (importFileRef.current) importFileRef.current.value = '';
+    await fetchData();
   };
 
   const handleAddCompany = async (e) => {
@@ -882,17 +1118,105 @@ function SourcingAdminInner() {
             title="Companies"
             V={V}
             action={
-              pendingCompanies.length > 0 && (
-                <button onClick={handleApproveAll} style={{
-                  background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
-                  color: '#86EFAC', borderRadius: 6, padding: '6px 14px',
-                  fontSize: 12, fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
-                }}>
-                  Approve All Pending ({pendingCompanies.length})
-                </button>
-              )
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {selectedTenantId && (
+                  <label style={{
+                    background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.35)',
+                    color: '#93C5FD', borderRadius: 6, padding: '6px 14px',
+                    fontSize: 12, fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    Import CSV
+                    <input
+                      ref={importFileRef}
+                      type="file"
+                      accept=".csv"
+                      style={{ display: 'none' }}
+                      onChange={handleImportFile}
+                      onClick={e => { e.target.value = ''; setImportPreview(null); setImportStatus(''); }}
+                    />
+                  </label>
+                )}
+                {pendingCompanies.length > 0 && (
+                  <button onClick={handleApproveAll} style={{
+                    background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
+                    color: '#86EFAC', borderRadius: 6, padding: '6px 14px',
+                    fontSize: 12, fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    Approve All Pending ({pendingCompanies.length})
+                  </button>
+                )}
+              </div>
             }
           >
+            {/* CSV Import Preview */}
+            {importPreview && (
+              <div style={{ background: V.card, border: `1px solid rgba(59,130,246,0.35)`, borderRadius: 10, padding: '20px', marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 4 }}>
+                  Import Preview — {importPreview.rows.length} rows detected
+                </div>
+                <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
+                  Columns: {importPreview.headers.join(', ')}
+                </div>
+                <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: V.space }}>
+                    <thead>
+                      <tr style={{ background: V.card2 }}>
+                        {['name', 'description', 'website', 'city', 'vertical', 'membership_tier', 'certifications'].map(col => (
+                          <th key={col} style={{ padding: '6px 10px', textAlign: 'left', color: V.dim, fontFamily: V.mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: `1px solid ${V.border}` }}>
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.rows.slice(0, 5).map((row, i) => (
+                        <tr key={i} style={{ borderBottom: `1px solid ${V.border}`, opacity: !row.name ? 0.4 : 1 }}>
+                          {['name', 'description', 'website', 'city', 'vertical', 'membership_tier', 'certifications'].map(col => (
+                            <td key={col} style={{ padding: '7px 10px', color: V.text, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {row[col] || <span style={{ color: V.dim }}>—</span>}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {importPreview.rows.length > 5 && (
+                    <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, padding: '6px 10px' }}>
+                      + {importPreview.rows.length - 5} more rows not shown
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <button onClick={handleImportConfirm} style={{
+                    background: V.accent, border: 'none', color: '#fff',
+                    borderRadius: 7, padding: '8px 20px', fontSize: 13,
+                    fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                  }}>
+                    Import {importPreview.rows.length} Companies
+                  </button>
+                  <button onClick={() => { setImportPreview(null); setImportStatus(''); }} style={{
+                    background: 'transparent', border: `1px solid ${V.border}`,
+                    color: V.muted, borderRadius: 7, padding: '8px 16px',
+                    fontSize: 13, fontFamily: V.space, cursor: 'pointer',
+                  }}>
+                    Cancel
+                  </button>
+                  {importStatus && (
+                    <span style={{ fontSize: 12, color: importStatus.startsWith('Error') || importStatus.startsWith('Could') ? '#EF4444' : V.accent, fontFamily: V.space }}>
+                      {importStatus}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            {!importPreview && importStatus && (
+              <div style={{ fontSize: 13, color: V.accent, fontFamily: V.space, marginBottom: 14 }}>
+                {importStatus}
+              </div>
+            )}
+
             {pendingCompanies.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: '#FDBA74', fontFamily: V.mono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
@@ -1159,10 +1483,10 @@ function SourcingAdminInner() {
 
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
-                  Export Contacts CSV
+                  Export Companies CSV
                 </div>
                 <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
-                  Download all company contacts as CSV.
+                  Download all company data + certifications as CSV.
                 </div>
                 <button onClick={handleExportCSV} style={{
                   width: '100%', background: V.accent,
@@ -1173,6 +1497,25 @@ function SourcingAdminInner() {
                   {exportStatus || 'Export CSV'}
                 </button>
               </div>
+
+              {selectedTenantId && (
+                <div style={{ background: V.card, border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 10, padding: '18px 20px' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
+                    Import Companies CSV
+                  </div>
+                  <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginBottom: 14 }}>
+                    Bulk-import companies from a CSV file with preview.
+                  </div>
+                  <button onClick={() => setActiveTab('companies')} style={{
+                    width: '100%', background: 'rgba(59,130,246,0.12)',
+                    border: '1px solid rgba(59,130,246,0.35)', color: '#93C5FD',
+                    borderRadius: 7, padding: '9px 0', fontSize: 13,
+                    fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                  }}>
+                    Go to Companies
+                  </button>
+                </div>
+              )}
 
               <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '18px 20px' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>

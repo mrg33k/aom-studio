@@ -3,6 +3,7 @@ import { Link, useSearchParams, useParams } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { trackEvent } from './sourcingAnalytics.js';
 
 // ─── Scout Answer Card (streaming AI response) ───────────────────────────────
 function ScoutAnswerCard({ text, streaming, V }) {
@@ -428,18 +429,49 @@ function SourcingDirectoryInner() {
         // Try API first
         try {
           const res = await fetch(`/api/sourcing/tenants?slug=${tenantSlug}`);
-          if (res.ok) { setTenant(await res.json()); setTenantLoading(false); return; }
+          if (res.ok) {
+            const data = await res.json();
+            setTenant(data);
+            setTenantLoading(false);
+            trackEvent(data.id, 'page_view', { path: window.location.pathname });
+            return;
+          }
         } catch { /* fall through */ }
         // Direct Supabase
         if (supabase) {
           const { data } = await supabase.from('directory_tenants').select('*').eq('slug', tenantSlug).single();
-          if (data) setTenant(data);
+          if (data) {
+            setTenant(data);
+            trackEvent(data.id, 'page_view', { path: window.location.pathname });
+          }
         }
       } catch (err) { console.error('Tenant fetch error:', err); }
       finally { setTenantLoading(false); }
     }
     loadTenant();
   }, [tenantSlug]);
+
+  // SEO meta tags
+  useEffect(() => {
+    const setMeta = (attr, key, content) => {
+      if (!content) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+
+    if (tenant) {
+      document.title = `${tenant.name} | Sourcing Directory`;
+      setMeta('name', 'description', tenant.hero_text || tenant.description);
+      setMeta('property', 'og:title', `${tenant.name} | Sourcing Directory`);
+      setMeta('property', 'og:description', tenant.hero_text || tenant.description);
+    } else if (!tenantSlug) {
+      document.title = 'Sourcing Directory | Find Certified Suppliers';
+      setMeta('name', 'description', 'Verified supplier directories for Arizona\'s advanced industries. Find certified companies, explore job boards, marketplaces, and events.');
+    }
+
+    return () => { document.title = 'Sourcing Directory | Find Certified Suppliers'; };
+  }, [tenant, tenantSlug]);
 
   const fetchCompanies = useCallback(async (q, v) => {
     if (!supabase) { setLoading(false); return; }
@@ -571,6 +603,9 @@ function SourcingDirectoryInner() {
     callScoutAgent(q); // fire and forget -- streams into scoutAnswer
     setQuery(q);
     fetchCompanies(q, vertical);
+
+    // Track search
+    if (tenant?.id) trackEvent(tenant.id, 'search', { query: q, vertical });
   };
 
   const handleSuggestionClick = (suggestionQuery) => {

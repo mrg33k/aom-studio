@@ -125,6 +125,19 @@ function SourcingLandingInner() {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // SEO meta tags for global landing
+  useEffect(() => {
+    document.title = 'Sourcing Directory | Find Certified Suppliers';
+    const setMeta = (attr, key, content) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    setMeta('name', 'description', 'Verified supplier directories for Arizona\'s advanced industries. Find certified companies, explore job boards, marketplaces, and events.');
+    setMeta('property', 'og:title', 'Sourcing Directory | Find Certified Suppliers');
+    setMeta('property', 'og:description', 'Verified supplier directories for Arizona\'s advanced industries.');
+  }, []);
+
   useEffect(() => {
     async function loadTenants() {
       try {

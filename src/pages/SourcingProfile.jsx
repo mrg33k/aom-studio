@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { trackEvent } from './sourcingAnalytics.js';
 
 const VERTICALS = {
   semiconductor: { label: 'Semiconductor', color: '#29B6F6' },
@@ -142,6 +143,209 @@ function Section({ title, children, action, V }) {
   );
 }
 
+// ─── Contact / RFQ Form ───────────────────────────────────────────────────────
+function ContactForm({ company, tenantId, V }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '', type: 'contact' });
+  const [status, setStatus] = useState(''); // '', 'sending', 'success', 'error'
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!supabase || !tenantId) return;
+    setStatus('sending');
+    setErrorMsg('');
+    try {
+      const { error } = await supabase.from('directory_contacts').insert({
+        tenant_id: tenantId,
+        company_id: company.id,
+        sender_name: form.name,
+        sender_email: form.email,
+        sender_phone: form.phone || null,
+        message: form.message,
+        type: form.type,
+      });
+      if (error) throw error;
+      // Track contact click
+      trackEvent(tenantId, 'contact_click', { company_id: company.id, type: form.type }, company.id);
+      setStatus('success');
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err.message || 'Something went wrong. Please try again.');
+    }
+  };
+
+  const inputStyle = {
+    width: '100%', background: V.card2, border: `1px solid ${V.border}`,
+    color: V.text, borderRadius: 7, padding: '9px 12px',
+    fontSize: 13, fontFamily: V.space,
+    boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: open ? 14 : 0,
+        paddingBottom: open ? 10 : 0,
+        borderBottom: open ? `1px solid ${V.border}` : 'none',
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, fontFamily: V.mono,
+          color: V.muted, textTransform: 'uppercase', letterSpacing: '0.1em',
+        }}>
+          Contact This Company
+        </div>
+        <button
+          onClick={() => { setOpen(o => !o); setStatus(''); setErrorMsg(''); }}
+          style={{
+            background: open ? 'transparent' : V.accent,
+            border: open ? `1px solid ${V.border}` : 'none',
+            color: open ? V.muted : '#fff',
+            borderRadius: 6, padding: '5px 14px',
+            fontSize: 12, fontWeight: 700, fontFamily: V.space,
+            cursor: 'pointer',
+          }}
+        >
+          {open ? 'Cancel' : 'Send Message / Request Quote'}
+        </button>
+      </div>
+
+      {open && (
+        <div style={{
+          background: V.card, border: `1px solid ${V.border}`,
+          borderRadius: 10, padding: '20px 20px',
+        }}>
+          <style>{`
+            .sourcing-contact-form input::placeholder,
+            .sourcing-contact-form textarea::placeholder { color: ${V.dim}; }
+            .sourcing-contact-form input:focus,
+            .sourcing-contact-form textarea:focus,
+            .sourcing-contact-form select:focus { outline: none; border-color: ${V.accentBrd} !important; }
+          `}</style>
+
+          {status === 'success' ? (
+            <div style={{
+              textAlign: 'center', padding: '24px 0',
+            }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>✓</div>
+              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 6 }}>
+                Message sent to {company.name}
+              </div>
+              <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
+                Your message has been sent to {company.name}. They will be in touch shortly.
+              </div>
+              <button
+                onClick={() => { setStatus(''); setForm({ name: '', email: '', phone: '', message: '', type: 'contact' }); }}
+                style={{
+                  marginTop: 16, background: 'transparent', border: `1px solid ${V.border}`,
+                  color: V.muted, borderRadius: 6, padding: '6px 16px',
+                  fontSize: 12, fontFamily: V.space, cursor: 'pointer',
+                }}
+              >
+                Send another
+              </button>
+            </div>
+          ) : (
+            <form className="sourcing-contact-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>
+                    Your Name *
+                  </label>
+                  <input
+                    required type="text" placeholder="Jane Smith"
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>
+                    Email *
+                  </label>
+                  <input
+                    required type="email" placeholder="jane@company.com"
+                    value={form.email}
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>
+                    Phone (optional)
+                  </label>
+                  <input
+                    type="tel" placeholder="(480) 555-0000"
+                    value={form.phone}
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>
+                    Type
+                  </label>
+                  <select
+                    value={form.type}
+                    onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="contact">General Inquiry</option>
+                    <option value="rfq">Request for Quote</option>
+                    <option value="inquiry">Partnership Inquiry</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, fontFamily: V.space, color: V.muted, marginBottom: 5 }}>
+                  Message *
+                </label>
+                <textarea
+                  required rows={4}
+                  placeholder="Describe your needs, project, or question..."
+                  value={form.message}
+                  onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                  style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+                />
+              </div>
+
+              {status === 'error' && (
+                <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>
+                  {errorMsg}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button
+                  type="submit"
+                  disabled={status === 'sending'}
+                  style={{
+                    background: status === 'sending' ? `${V.accent}70` : V.accent,
+                    border: 'none', color: '#fff', borderRadius: 7,
+                    padding: '10px 24px', fontSize: 13,
+                    fontWeight: 700, fontFamily: V.space,
+                    cursor: status === 'sending' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {status === 'sending' ? 'Sending...' : 'Send Message'}
+                </button>
+                <span style={{ fontSize: 12, color: V.dim, fontFamily: V.space }}>
+                  Your info will only be shared with {company.name}.
+                </span>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Inner component ──────────────────────────────────────────────────────────
 function SourcingProfileInner() {
   const { dark } = useSourcingTheme();
@@ -152,8 +356,30 @@ function SourcingProfileInner() {
   const [certs, setCerts] = useState([]);
   const [listings, setListings] = useState([]);
   const [org, setOrg] = useState(null);
+  const [tenant, setTenant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // SEO meta tags
+  useEffect(() => {
+    if (!company) return;
+    const tenantName = 'Sourcing Directory';
+    document.title = `${company.name} | ${tenantName}`;
+
+    const setMeta = (attr, key, content) => {
+      if (!content) return;
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+
+    setMeta('name', 'description', company.description);
+    setMeta('property', 'og:title', company.name);
+    setMeta('property', 'og:description', company.description);
+    if (company.logo_url) setMeta('property', 'og:image', company.logo_url);
+
+    return () => { document.title = 'Sourcing Directory | Find Certified Suppliers'; };
+  }, [company]);
 
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
@@ -172,17 +398,24 @@ function SourcingProfileInner() {
 
         setCompany(data);
 
-        const [certsRes, listingsRes, orgRes] = await Promise.all([
+        const [certsRes, listingsRes, orgRes, tenantRes] = await Promise.all([
           supabase.from('directory_certifications').select('*').eq('company_id', data.id),
           supabase.from('directory_listings').select('*').eq('company_id', data.id).eq('status', 'active').order('created_at', { ascending: false }),
           data.organization_id
             ? supabase.from('directory_organizations').select('*').eq('id', data.organization_id).single()
+            : Promise.resolve({ data: null }),
+          data.tenant_id
+            ? supabase.from('directory_tenants').select('id').eq('id', data.tenant_id).single()
             : Promise.resolve({ data: null }),
         ]);
 
         setCerts(certsRes.data || []);
         setListings(listingsRes.data || []);
         setOrg(orgRes.data || null);
+        if (tenantRes.data) {
+          setTenant(tenantRes.data);
+          trackEvent(tenantRes.data.id, 'profile_view', { company_id: data.id, company_name: data.name }, data.id);
+        }
       } catch (err) {
         console.error('Profile fetch error:', err);
         setNotFound(true);
@@ -366,6 +599,10 @@ function SourcingProfileInner() {
                   {company.description}
                 </p>
               </Section>
+            )}
+
+            {tenant && (
+              <ContactForm company={company} tenantId={tenant.id} V={V} />
             )}
 
             {certs.length > 0 && (
