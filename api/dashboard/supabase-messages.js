@@ -25,7 +25,7 @@ function supabaseHeaders() {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
@@ -62,6 +62,26 @@ export default async function handler(req, res) {
     // Reverse so oldest first (fetched desc to get the LATEST N, display asc)
     messages.reverse()
     return res.status(200).json({ messages })
+  }
+
+  // ---- PATCH: update status on an existing message (read receipt persistence) -
+  if (req.method === 'PATCH') {
+    const { id, status } = req.body || {}
+    if (!id || !status) return res.status(400).json({ error: 'id and status required' })
+    const allowed = ['sent', 'delivered', 'read']
+    if (!allowed.includes(status)) return res.status(400).json({ error: 'invalid status' })
+
+    const url = `${SUPABASE_URL}/rest/v1/messages?id=eq.${encodeURIComponent(id)}`
+    const sbRes = await fetch(url, {
+      method: 'PATCH',
+      headers: supabaseHeaders(),
+      body: JSON.stringify({ status }),
+    })
+    if (!sbRes.ok) {
+      const err = await sbRes.text()
+      return res.status(sbRes.status).json({ error: err })
+    }
+    return res.status(200).json({ ok: true })
   }
 
   // ---- POST: write a new message (user send from dashboard) ---------------

@@ -231,8 +231,16 @@ function useColumnChat(agentSlug, isActive) {
             if (/^Fix Terminal Bridge/.test(txt) && txt.includes('server.js')) return false
             return true
           })
-          .map(m => ({ role: m.role || 'assistant', content: m.text || '', time: m.timestamp || '', source: m.source }))
+          .map(m => ({ id: m.id, role: m.role || 'assistant', content: m.text || '', time: m.timestamp || '', source: m.source, status: m.status || null }))
           .filter(m => m.content)
+        // Infer 'read' for user messages that have a following assistant reply.
+        // Fills the gap for messages saved before the status column was added.
+        for (let i = 0; i < msgs.length; i++) {
+          if (msgs[i].role === 'user' && !msgs[i].status) {
+            const hasReply = msgs.slice(i + 1).some(m => m.role === 'assistant')
+            if (hasReply) msgs[i] = { ...msgs[i], status: 'read' }
+          }
+        }
         setMessages(msgs)
         setLoading(false)
       })
