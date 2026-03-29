@@ -416,18 +416,20 @@ function ColTabBar({ tabs, active, onChange }) {
   return (
     <div style={{
       display: 'flex', borderBottom: '1px solid var(--bv-divider)', flexShrink: 0,
+      padding: '5px 10px',
     }}>
       {tabs.map(t => (
         <div
           key={t}
           onClick={() => onChange(t)}
           style={{
-            flex: 1, padding: '7px 0', textAlign: 'center',
+            flex: 1, padding: '6px 0', textAlign: 'center',
             fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-            textTransform: 'uppercase', letterSpacing: '0.1em',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
             color: active === t ? 'var(--bv-accent-text)' : 'var(--bv-dim)',
-            borderBottom: `2px solid ${active === t ? 'var(--bv-accent-text)' : 'transparent'}`,
-            cursor: 'pointer', transition: 'all 0.15s',
+            borderRadius: 7, margin: '0 2px',
+            background: active === t ? 'var(--bv-accent)' : 'transparent',
+            cursor: 'pointer', transition: 'all 0.18s',
           }}
         >
           {t}
@@ -874,13 +876,13 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
           key={t.taskId || t.id || t.text || i}
           onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
           style={{
-            padding: '7px 10px', borderRadius: 8, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
-            marginBottom: 4, cursor: 'context-menu', transition: 'background 0.15s',
-            display: 'flex', gap: 8, alignItems: 'flex-start',
+            padding: '10px 12px', borderRadius: 10, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
+            marginBottom: 5, cursor: 'context-menu', transition: 'all 0.2s',
+            display: 'flex', gap: 10, alignItems: 'flex-start',
             opacity: t.done || t.status === 'completed' ? 0.5 : 1,
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-card-hover)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--bv-card)'}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-card-hover)'; e.currentTarget.style.transform = 'translateX(2px)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.transform = 'translateX(0)' }}
         >
           <div style={{
             width: 14, height: 14, borderRadius: 3, marginTop: 1, flexShrink: 0,
@@ -894,7 +896,7 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              fontSize: 12, color: 'var(--bv-text2)', lineHeight: 1.4,
+              fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
               textDecoration: t.done || t.status === 'completed' ? 'line-through' : 'none',
             }}>{t.text || 'Task'}</div>
             {showAgent && t.agent && (
@@ -1358,7 +1360,7 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
       <div style={{
         width: expanded ? 36 : (isActive ? 36 : 32),
         height: expanded ? 36 : (isActive ? 36 : 32),
-        borderRadius: isAgent ? '50%' : 10,
+        borderRadius: 10,
         background: `${color}${isActive ? '22' : '10'}`,
         border: `1.5px solid ${color}${isActive ? '60' : '30'}`,
         color, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1671,33 +1673,16 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         background: 'radial-gradient(ellipse at 15% 50%, rgba(59,130,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(168,85,247,0.02) 0%, transparent 50%)',
       }}>
 
-        {/* LEFT RAIL -- collapsible. V5: 56px collapsed, 240px expanded */}
+        {/* LEFT RAIL -- collapsible. V5: 56px collapsed, 280px expanded */}
         <div style={{
-          width: railOpen ? 240 : 56, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: railOpen ? 280 : 56, flexShrink: 0, display: 'flex', flexDirection: 'column',
           background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
           transition: 'width 0.28s cubic-bezier(0.34,1.56,0.64,1)', overflow: 'hidden', position: 'relative',
         }}>
-          {/* Toggle button -- V5 style */}
-          <button
-            onClick={() => setRailOpen(!railOpen)}
-            style={{
-              position: 'absolute',
-              top: 8, right: 8,
-              width: 22, height: 22, borderRadius: 6,
-              border: '1px solid var(--bv-col-border)',
-              background: 'var(--bv-card)', color: 'var(--bv-muted)',
-              fontSize: 11, cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              zIndex: 3, flexShrink: 0, transition: 'all 0.15s',
-            }}
-            title={railOpen ? 'Collapse rail' : 'Expand rail'}
-          >
-            {railOpen ? '\u2039' : '\u203A'}
-          </button>
 
           {/* Collapsed: V5 avatar initials with status dots */}
           {!railOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '30px 0 8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 0 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none' }}>
               {allItems.map(it => (
                 <div key={it.slug}
                   onClick={() => { toggleSlug(it.slug); if (isMobile) setMobileIdx(0) }}
@@ -1748,15 +1733,31 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             }} className="bv-rail-scroll">
               {/* Search */}
               <div style={{ padding: '4px 8px 8px' }}>
-                <input
-                  value={railSearch} onChange={e => setRailSearch(e.target.value)}
-                  placeholder="Search..."
-                  style={{
-                    width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
-                    borderRadius: 8, padding: '6px 10px', color: 'var(--bv-text)', fontSize: 12,
-                    fontFamily: "'Inter', sans-serif", outline: 'none',
-                  }}
-                />
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 7, height: 34,
+                  background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
+                  borderRadius: 9, padding: '0 10px', transition: 'border-color 0.15s',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ color: 'var(--bv-muted)', flexShrink: 0 }}>
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input
+                    value={railSearch} onChange={e => setRailSearch(e.target.value)}
+                    placeholder="Search..."
+                    style={{
+                      flex: 1, background: 'transparent', border: 'none',
+                      color: 'var(--bv-text)', fontSize: 12,
+                      fontFamily: "'Inter', sans-serif", outline: 'none', minWidth: 0,
+                    }}
+                  />
+                  {railSearch && (
+                    <button onClick={() => setRailSearch('')} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--bv-muted)', fontSize: 11, padding: 0, lineHeight: 1,
+                    }}>×</button>
+                  )}
+                </div>
               </div>
 
               {/* Agents section */}
@@ -1793,6 +1794,34 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               ))}
             </div>
           )}
+
+          {/* V5: Bottom collapse/expand toggle button */}
+          <div style={{
+            padding: '8px', borderTop: '1px solid var(--bv-divider)',
+            flexShrink: 0, display: 'flex',
+          }}>
+            <button
+              onClick={() => setRailOpen(!railOpen)}
+              title={railOpen ? 'Collapse rail' : 'Expand rail'}
+              style={{
+                width: '100%', height: 30, borderRadius: 7,
+                border: '1px solid var(--bv-col-border)',
+                background: 'var(--bv-card)', color: 'var(--bv-muted)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-col-exp)'; e.currentTarget.style.color = 'var(--bv-text2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-muted)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: railOpen ? 'none' : 'rotate(180deg)', transition: 'transform 0.3s' }}>
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              {railOpen && <span>Collapse</span>}
+            </button>
+          </div>
         </div>
 
         {/* COLUMNS AREA */}
