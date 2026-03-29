@@ -12821,6 +12821,10 @@ export default function GameDashboard() {
       )}
 
       {/* Board view: THE main view (game view killed Mar 27) */}
+      {/* flex: 1 + minHeight: 0 makes BoardView fill remaining space after TaskHUD.
+          Without this, BoardView's height:100% resolves to full viewport and overflows
+          the flex column by ~52px, clipping the rail's collapse button and bottom content. */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
       <BoardErrorBoundary>
         <BoardView
             pipeData={pipeData}
@@ -12839,6 +12843,7 @@ export default function GameDashboard() {
             }}
           />
         </BoardErrorBoundary>
+      </div>
 
       {/* Game view, sidebar, GameHUD, checklist, megaboard all KILLED Mar 27.
           Board view is the only view now. All functionality lives in board column tabs. */}

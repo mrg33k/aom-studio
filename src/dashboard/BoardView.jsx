@@ -367,7 +367,7 @@ function useColumnChat(agentSlug, isActive) {
           const res = await fetch(pollUrl)
           if (!res.ok) return
           const data = await res.json()
-          const newResp = (data.messages || []).filter(m => m.role === 'assistant' && m.timestamp > sentTime)
+          const newResp = (data.messages || []).filter(m => m.role === 'assistant' && m.timestamp > sentTime && (!m.agent || m.agent === agentSlug))
           if (newResp.length > 0) {
             const latest = newResp[newResp.length - 1]
             // Step 3a: double blue check (read) -- show before response appears
@@ -1736,7 +1736,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
           {/* Collapsed: V5 avatar initials with status dots */}
           {!railOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 0 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 0 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', paddingBottom: 54 }}>
               {allItems.map(it => (
                 <div key={it.slug}
                   onClick={() => { toggleSlug(it.slug); if (isMobile) setMobileIdx(0) }}
@@ -1783,7 +1783,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               display: 'flex', flexDirection: 'column', flex: 1,
               overflowY: 'auto', overflowX: 'hidden',
               scrollbarWidth: 'none', msOverflowStyle: 'none',
-              padding: '6px 0',
+              padding: '6px 0', paddingBottom: 54,
             }} className="bv-rail-scroll">
               {/* Search */}
               <div style={{ padding: '4px 8px 8px' }}>
@@ -1849,10 +1849,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             </div>
           )}
 
-          {/* V5: Bottom collapse/expand toggle button */}
+          {/* V5: Bottom collapse/expand toggle button -- absolute so overflow:hidden never clips it */}
           <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
             padding: '8px', borderTop: '1px solid var(--bv-divider)',
-            flexShrink: 0, display: 'flex',
+            background: 'var(--bv-rail)', display: 'flex',
           }}>
             <button
               onClick={() => setRailOpen(!railOpen)}
