@@ -76,7 +76,7 @@ function TenantCard({ tenant, V }) {
             </div>
             <div style={{
               fontSize: 12, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
-              color: brandColor, textTransform: 'uppercase', letterSpacing: '0.08em',
+              color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.08em',
               marginTop: 3, textShadow: '0 1px 3px rgba(0,0,0,0.5)',
             }}>
               {tenant.vertical}
@@ -118,12 +118,12 @@ function TenantCard({ tenant, V }) {
 
           <div style={{ marginLeft: 'auto' }}>
             <div style={{
-              background: `${brandColor}25`,
-              border: `1px solid ${brandColor}50`,
+              background: 'rgba(74,222,128,0.15)',
+              border: '1px solid rgba(74,222,128,0.3)',
               borderRadius: 6,
               padding: '4px 10px',
               fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-              color: brandColor, textTransform: 'uppercase', letterSpacing: '0.06em',
+              color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.06em',
               display: 'flex', alignItems: 'center', gap: 5,
               backdropFilter: 'blur(4px)',
             }}>
