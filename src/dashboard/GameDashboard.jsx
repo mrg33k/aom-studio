@@ -12759,14 +12759,37 @@ export default function GameDashboard() {
   return results
 }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
 
-      {/* Right Now Bar -- V5 style: 40px, deep bg, ghost border */}
+      {/* Board view: THE main view (game view killed Mar 27) */}
+      {/* flex: 1 + minHeight: 0 makes BoardView fill remaining space.
+          Now Bar is a flex child below, so BoardView naturally shrinks when it's present. */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <BoardErrorBoundary>
+        <BoardView
+            pipeData={pipeData}
+            isMobile={isMobile}
+            isNightMode={isNightMode}
+            hudHeight={hudBarHeight}
+            hasRightNow={rightNowTasks.length > 0}
+            onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
+            onViewDetail={(task) => {
+              setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
+              if (task.agent) setSelectedRoom(task.agent)
+            }}
+            onAgentSelect={(slug) => {
+              setSelectedRoom(slug)
+              setChatAgent(slug)
+            }}
+          />
+        </BoardErrorBoundary>
+      </div>
+
+      {/* Right Now Bar -- flex child at bottom, pushes BoardView up naturally */}
       {rightNowTasks.length > 0 && (
         <div style={{
-          position: 'fixed',
-          bottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : 0,
-          left: 0, right: 0, zIndex: 34,
+          flexShrink: 0,
           height: 40, display: 'flex', alignItems: 'center', gap: 8,
-          padding: '0 20px',
+          padding: isMobile ? '0 12px env(safe-area-inset-bottom, 0px) 12px' : '0 20px',
+          zIndex: 34,
           background: isNightMode
             ? 'rgba(6,10,18,0.92)'
             : 'linear-gradient(180deg, rgba(14,38,74,0.95) 0%, rgba(14,38,74,0.85) 100%)',
@@ -12819,31 +12842,6 @@ export default function GameDashboard() {
           })}
         </div>
       )}
-
-      {/* Board view: THE main view (game view killed Mar 27) */}
-      {/* flex: 1 + minHeight: 0 makes BoardView fill remaining space after TaskHUD.
-          Without this, BoardView's height:100% resolves to full viewport and overflows
-          the flex column by ~52px, clipping the rail's collapse button and bottom content. */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-      <BoardErrorBoundary>
-        <BoardView
-            pipeData={pipeData}
-            isMobile={isMobile}
-            isNightMode={isNightMode}
-            hudHeight={hudBarHeight}
-            hasRightNow={rightNowTasks.some(t => t.isLive)}
-            onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
-            onViewDetail={(task) => {
-              setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
-              if (task.agent) setSelectedRoom(task.agent)
-            }}
-            onAgentSelect={(slug) => {
-              setSelectedRoom(slug)
-              setChatAgent(slug)
-            }}
-          />
-        </BoardErrorBoundary>
-      </div>
 
       {/* Game view, sidebar, GameHUD, checklist, megaboard all KILLED Mar 27.
           Board view is the only view now. All functionality lives in board column tabs. */}
