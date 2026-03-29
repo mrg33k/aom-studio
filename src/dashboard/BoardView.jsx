@@ -90,6 +90,18 @@ function cssVars(isNight) {
   }
 }
 
+// ── READ RECEIPT PERSISTENCE ─────────────────────────────────────────────────
+// Fire-and-forget PATCH to mark a message as read in Supabase.
+// Only called when status reaches 'read' -- sent/delivered are transient.
+function persistReadReceipt(msgId) {
+  if (!msgId || IS_LOCAL) return
+  fetch('/api/dashboard/supabase-messages', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: msgId, status: 'read' }),
+  }).catch(() => {}) // fire and forget -- UI state is source of truth
+}
+
 // ── COLUMN CHAT HOOK ─────────────────────────────────────────────────────────
 
 function useColumnChat(agentSlug, isActive) {
@@ -129,6 +141,7 @@ function useColumnChat(agentSlug, isActive) {
       // Find last user message, update its status
       for (let i = prev.length - 1; i >= 0; i--) {
         if (prev[i].role === 'user') {
+          if (newStatus === 'read') persistReadReceipt(prev[i].id)
           const updated = [...prev]
           updated[i] = { ...updated[i], status: newStatus }
           return updated
@@ -151,7 +164,13 @@ function useColumnChat(agentSlug, isActive) {
         return filtered
       }
       // Mark all user messages as read
-      const updated = filtered.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
+      const updated = filtered.map(m => {
+        if (m.role === 'user' && m.status !== 'read') {
+          persistReadReceipt(m.id)
+          return { ...m, status: 'read' }
+        }
+        return m
+      })
       updated.push({ role: 'assistant', content: resp.text, time: resp.time, source: 'bridge' })
       return updated.slice(-100)
     })
@@ -274,10 +293,16 @@ function useColumnChat(agentSlug, isActive) {
             let updated = [...prev]
             const hasAssistant = newMsgs.some(m => m.role === 'assistant')
             if (hasAssistant) {
-              updated = updated.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
+              updated = updated.map(m => {
+                if (m.role === 'user' && m.status !== 'read') {
+                  persistReadReceipt(m.id)
+                  return { ...m, status: 'read' }
+                }
+                return m
+              })
             }
             for (const row of newMsgs) {
-              const msg = { role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
+              const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
               if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
               if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
               updated.push(msg)
@@ -371,7 +396,13 @@ function useColumnChat(agentSlug, isActive) {
           if (newResp.length > 0) {
             const latest = newResp[newResp.length - 1]
             // Step 3a: double blue check (read) -- show before response appears
-            setMessages(prev => prev.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m))
+            setMessages(prev => prev.map(m => {
+              if (m.role === 'user' && m.status !== 'read') {
+                persistReadReceipt(m.id)
+                return { ...m, status: 'read' }
+              }
+              return m
+            }))
             // Step 3b: after 600ms, show the actual response
             setTimeout(() => {
               setMessages(prev => {
@@ -1709,7 +1740,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       height: '100%', width: '100%', background: 'var(--bv-bg)',
       overflow: 'hidden', transition: 'background 0.4s',
       paddingTop: isMobile ? `calc(${hudHeight}px + env(safe-area-inset-top, 0px))` : hudHeight,
-      paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : 0,
+      // Now Bar is a flex child -- it owns the SAI-bottom gap when present.
+      // Only apply SAI clearance here when there's no Now Bar (home indicator coverage).
+      paddingBottom: (isMobile && !hasRightNow) ? 'env(safe-area-inset-bottom, 0px)' : 0,
     }}>
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -1861,7 +1894,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               onClick={() => setRailOpen(!railOpen)}
               title={railOpen ? 'Collapse rail' : 'Expand rail'}
               style={{
-                width: '100%', height: 30, borderRadius: 7,
+                width: '100%', height: 36, borderRadius: 8,
                 border: railOpen ? '1px solid var(--bv-col-border)' : '1px solid rgba(59,130,246,0.3)',
                 background: railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)',
                 color: railOpen ? 'var(--bv-muted)' : '#60A5FA',

@@ -10729,6 +10729,19 @@ export default function GameDashboard() {
   const isMobile = useIsMobile()
   const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
 
+  // Track visual viewport height so the outer container shrinks when iOS keyboard opens.
+  // On iOS, position:fixed containers don't shrink with the keyboard -- explicit height fixes it.
+  const [boardKbHeight, setBoardKbHeight] = useState(null)
+  useEffect(() => {
+    if (!isMobile || !window.visualViewport) return
+    const handler = () => {
+      const reduction = window.innerHeight - window.visualViewport.height
+      setBoardKbHeight(reduction > 100 ? window.visualViewport.height : null)
+    }
+    window.visualViewport.addEventListener('resize', handler)
+    return () => window.visualViewport.removeEventListener('resize', handler)
+  }, [isMobile])
+
   // Load Supabase user on mount + watch for auth state changes.
   // On production: Supabase confirmation is the GATE. sessionStorage is just a cache.
   // Derives client_id from user metadata (world field) for multi-tenant data isolation.
@@ -12720,6 +12733,10 @@ export default function GameDashboard() {
     <div style={{
       position: 'fixed', inset: 0,
       width: '100vw', maxWidth: '100vw',
+      // On iOS, position:fixed containers don't shrink when keyboard opens.
+      // Explicit height = visualViewport.height shrinks the container with the keyboard,
+      // pushing the chat input above it instead of hiding behind it.
+      height: boardKbHeight || undefined,
       background: currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#141E30'),
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
