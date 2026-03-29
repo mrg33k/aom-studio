@@ -1734,34 +1734,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           transition: 'width 0.28s cubic-bezier(0.34,1.56,0.64,1)', overflow: 'hidden', position: 'relative',
         }}>
 
-          {/* V5: Top collapse/expand toggle button */}
-          <div style={{
-            padding: '8px', borderBottom: '1px solid var(--bv-divider)',
-            flexShrink: 0, display: 'flex',
-          }}>
-            <button
-              onClick={() => setRailOpen(!railOpen)}
-              title={railOpen ? 'Collapse rail' : 'Expand rail'}
-              style={{
-                width: '100%', height: 30, borderRadius: 7,
-                border: '1px solid var(--bv-col-border)',
-                background: 'var(--bv-card)', color: 'var(--bv-muted)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-col-exp)'; e.currentTarget.style.color = 'var(--bv-text2)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-muted)' }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                style={{ transform: railOpen ? 'none' : 'rotate(180deg)', transition: 'transform 0.3s' }}>
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-              {railOpen && <span>Collapse</span>}
-            </button>
-          </div>
-
           {/* Collapsed: V5 avatar initials with status dots */}
           {!railOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 0 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none' }}>
@@ -1876,6 +1848,34 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               ))}
             </div>
           )}
+
+          {/* V5: Bottom collapse/expand toggle button */}
+          <div style={{
+            padding: '8px', borderTop: '1px solid var(--bv-divider)',
+            flexShrink: 0, display: 'flex',
+          }}>
+            <button
+              onClick={() => setRailOpen(!railOpen)}
+              title={railOpen ? 'Collapse rail' : 'Expand rail'}
+              style={{
+                width: '100%', height: 30, borderRadius: 7,
+                border: '1px solid var(--bv-col-border)',
+                background: 'var(--bv-card)', color: 'var(--bv-muted)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-col-exp)'; e.currentTarget.style.color = 'var(--bv-text2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-muted)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: railOpen ? 'none' : 'rotate(180deg)', transition: 'transform 0.3s' }}>
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              {railOpen && <span>Collapse</span>}
+            </button>
+          </div>
 
         </div>
 

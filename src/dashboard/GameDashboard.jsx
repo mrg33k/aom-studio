@@ -3921,45 +3921,6 @@ function MobileDrawer({
         </div>
       </div>
 
-      {/* Tab bar (Chat / List / Info / Files) */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '2px solid rgba(59, 130, 246, 0.15)',
-        flexShrink: 0,
-      }}>
-        {tabs.map(tab => {
-          const active = activeTab === tab.id
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 6, padding: '10px 0', minHeight: 44,
-                fontSize: 13, fontWeight: active ? 800 : 600,
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-                color: active ? '#60A5FA' : '#6B8AB0',
-                background: active ? 'rgba(59, 130, 246, 0.06)' : 'none',
-                border: 'none', cursor: 'pointer',
-                fontFamily: "'Inter', system-ui, sans-serif",
-                position: 'relative',
-                transition: 'color 200ms, background 200ms',
-              }}
-            >
-              <Icon size={14} />
-              {tab.label}
-              {active && (
-                <div style={{
-                  position: 'absolute', bottom: -2, left: '20%', right: '20%',
-                  height: 2, background: '#3B82F6', borderRadius: 1,
-                }} />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
       {/* Tab content (fills remaining height, content is always within visible area) */}
       <div style={{
         flex: 1, overflow: 'hidden',
@@ -4085,6 +4046,45 @@ function MobileDrawer({
             />
           </div>
         )}
+      </div>
+
+      {/* Tab bar (Chat / List / Info / Files) -- moved to bottom */}
+      <div style={{
+        display: 'flex',
+        borderTop: '2px solid rgba(59, 130, 246, 0.15)',
+        flexShrink: 0,
+      }}>
+        {tabs.map(tab => {
+          const active = activeTab === tab.id
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 6, padding: '10px 0', minHeight: 44,
+                fontSize: 13, fontWeight: active ? 800 : 600,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+                color: active ? '#60A5FA' : '#6B8AB0',
+                background: active ? 'rgba(59, 130, 246, 0.06)' : 'none',
+                border: 'none', cursor: 'pointer',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                position: 'relative',
+                transition: 'color 200ms, background 200ms',
+              }}
+            >
+              <Icon size={14} />
+              {tab.label}
+              {active && (
+                <div style={{
+                  position: 'absolute', top: -2, left: '20%', right: '20%',
+                  height: 2, background: '#3B82F6', borderRadius: 1,
+                }} />
+              )}
+            </button>
+          )
+        })}
       </div>
     </motion.div>
   )
@@ -8758,15 +8758,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     prevMessageCountRef.current = newCount
 
     if (isNewMessage) {
-      if (isNearBottomRef.current || userJustSentRef.current) {
-        // At bottom or user just sent: follow the conversation
-        requestAnimationFrame(() => {
-          el.scrollTop = el.scrollHeight
-        })
-        userJustSentRef.current = false
-      } else {
-        setShowNewMsgIndicator(true)
-      }
+      // Always scroll to bottom on new message
+      requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight
+      })
+      userJustSentRef.current = false
+      setShowNewMsgIndicator(false)
     }
   }, [chatMessages, activeTab])
 
@@ -9294,86 +9291,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </div>
           )}
         </div>
-      </div>
-
-      {/* ---- TAB BAR (3 tabs: Live / List / Info) ---- */}
-      {/* Hidden on mobile: MobileDrawer has its own tab bar */}
-      {/* Tablet: compressed to ~32px height to maximize chat space */}
-      <div style={{
-        display: isMobile ? 'none' : 'flex',
-        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
-        flexShrink: 0,
-        position: 'relative',
-      }}>
-        {(agentSlug === 'patrik'
-          ? [
-              { id: 'notes', label: 'NOTES' },
-              { id: 'tasks', label: 'LIST' },
-              { id: 'info', label: 'INFO' },
-            ]
-          : [
-              { id: 'chat', label: 'CHAT' },
-              { id: 'tasks', label: 'LIST' },
-              { id: 'info', label: 'INFO' },
-              { id: 'files', label: 'FILES' },
-            ]
-        ).map(tab => {
-          const active = activeTab === tab.id
-          return (
-            <motion.button
-              key={tab.id}
-              onClick={() => {
-                if (activeTab === tab.id) {
-                  // Already on this tab, toggle expand/collapse
-                  onToggleExtend?.()
-                } else {
-                  setActiveTab(tab.id)
-                }
-              }}
-              whileHover={{ y: -2, background: active ? 'none' : 'rgba(59,130,246,0.04)', transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-              whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
-              style={{
-                flex: 1, textAlign: 'center',
-                padding: isMobile ? '12px 0' : isTablet ? '7px 0' : '14px 0',
-                minHeight: isMobile ? 44 : isTablet ? 32 : 'auto',
-                fontSize: isMobile ? 13 : isTablet ? 11 : 16, fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: active ? (isNightMode ? '#F1F5F9' : '#60A5FA') : (isNightMode ? '#475569' : '#6B8AB0'),
-                cursor: 'pointer',
-                position: 'relative',
-                background: 'none', border: 'none',
-                fontFamily: "'Inter', system-ui, sans-serif",
-                transition: 'color 200ms, background 200ms',
-              }}
-            >
-              {/* Active tab glow background */}
-              {active && (
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0, height: '100%',
-                  background: 'linear-gradient(180deg, transparent 0%, rgba(59,130,246,0.06) 100%)',
-                  pointerEvents: 'none',
-                }} />
-              )}
-              {/* Active tab blue bar */}
-              {active && (
-                <motion.div
-                  layoutId="vegas-tab-glow"
-                  style={{
-                    position: 'absolute', bottom: -2, left: 8, right: 8,
-                    height: 3, borderRadius: '3px 3px 0 0',
-                    background: '#3B82F6',
-                    boxShadow: '0 0 12px rgba(59,130,246,0.6), 0 0 24px rgba(59,130,246,0.2)',
-                  }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                />
-              )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {tab.label}
-              </span>
-            </motion.button>
-          )
-        })}
       </div>
 
       {/* ---- TAB CONTENT ---- */}
@@ -10211,6 +10128,83 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
         )
       })()}
+
+      {/* ---- TAB BAR (3 tabs: Live / List / Info) -- moved below content ---- */}
+      {/* Hidden on mobile: MobileDrawer has its own tab bar */}
+      {/* Tablet: compressed to ~32px height to maximize chat space */}
+      <div style={{
+        display: isMobile ? 'none' : 'flex',
+        borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
+        flexShrink: 0,
+        position: 'relative',
+      }}>
+        {(agentSlug === 'patrik'
+          ? [
+              { id: 'notes', label: 'NOTES' },
+              { id: 'tasks', label: 'LIST' },
+              { id: 'info', label: 'INFO' },
+            ]
+          : [
+              { id: 'chat', label: 'CHAT' },
+              { id: 'tasks', label: 'LIST' },
+              { id: 'info', label: 'INFO' },
+              { id: 'files', label: 'FILES' },
+            ]
+        ).map(tab => {
+          const active = activeTab === tab.id
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => {
+                if (activeTab === tab.id) {
+                  onToggleExtend?.()
+                } else {
+                  setActiveTab(tab.id)
+                }
+              }}
+              whileHover={{ y: 2, background: active ? 'none' : 'rgba(59,130,246,0.04)', transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+              whileTap={{ scale: 0.92, y: -2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+              style={{
+                flex: 1, textAlign: 'center',
+                padding: isMobile ? '12px 0' : isTablet ? '7px 0' : '14px 0',
+                minHeight: isMobile ? 44 : isTablet ? 32 : 'auto',
+                fontSize: isMobile ? 13 : isTablet ? 11 : 16, fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: active ? (isNightMode ? '#F1F5F9' : '#60A5FA') : (isNightMode ? '#475569' : '#6B8AB0'),
+                cursor: 'pointer',
+                position: 'relative',
+                background: 'none', border: 'none',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                transition: 'color 200ms, background 200ms',
+              }}
+            >
+              {active && (
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
+                  background: 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+              {active && (
+                <motion.div
+                  layoutId="vegas-tab-glow"
+                  style={{
+                    position: 'absolute', top: -2, left: 8, right: 8,
+                    height: 3, borderRadius: '0 0 3px 3px',
+                    background: '#3B82F6',
+                    boxShadow: '0 0 12px rgba(59,130,246,0.6), 0 0 24px rgba(59,130,246,0.2)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                />
+              )}
+              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {tab.label}
+              </span>
+            </motion.button>
+          )
+        })}
+      </div>
 
       {/* Chat input -- rendered as SIBLING of the tab content div, OUTSIDE overflow:hidden.
           This fixes the iPhone half-drawer clipping bug: at 52% snap the overflow:hidden
