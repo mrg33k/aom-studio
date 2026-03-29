@@ -26,6 +26,18 @@ const RELAY_OUTBOX_PATH = fs.existsSync(APPDATA_OUTBOX) ? APPDATA_OUTBOX : resol
 const REPO_INBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
 const REPO_OUTBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
 
+// Per-agent inbox routing: super agents get their own inbox file.
+// relay-hook.sh reads relay-inbox-{agent}.jsonl when CORNER_AGENT is set.
+const SUPER_AGENTS = new Set(['elon', 'bobby', 'gary'])
+function getAgentInboxPath(agentSlug) {
+  if (agentSlug && SUPER_AGENTS.has(agentSlug)) {
+    const appDataPath = resolve(APPDATA_ROOT, `context/relay-inbox-${agentSlug}.jsonl`)
+    const repoPath = resolve(AOM_EA_ROOT, `context/relay-inbox-${agentSlug}.jsonl`)
+    return { primary: appDataPath, repo: repoPath }
+  }
+  return { primary: RELAY_INBOX_PATH, repo: REPO_INBOX_PATH }
+}
+
 // ---- RELAY BULLETPROOFING ----
 
 // Write lock: prevents concurrent writes from corrupting JSONL files
@@ -530,17 +542,20 @@ function localDashboardPlugin() {
               agent: data.agent || null,
             }
             const line = JSON.stringify(entry) + '\n'
-            // Write with lock to prevent concurrent corruption
-            withFileLock(RELAY_INBOX_PATH, () => {
-              fs.appendFileSync(RELAY_INBOX_PATH, line)
-              if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
-                fs.appendFileSync(REPO_INBOX_PATH, line)
+            // Route to per-agent inbox for super agents (elon/bobby/gary).
+            // Each agent's relay-hook reads their own inbox keyed by CORNER_AGENT.
+            // Writing to shared inbox would cause any session without CORNER_AGENT to pick it up.
+            const agentInbox = getAgentInboxPath(data.agent)
+            withFileLock(agentInbox.primary, () => {
+              fs.appendFileSync(agentInbox.primary, line)
+              if (agentInbox.primary !== agentInbox.repo) {
+                fs.appendFileSync(agentInbox.repo, line)
               }
             })
             // Prune old messages periodically (every ~50 writes)
             if (Math.random() < 0.02) {
-              pruneOldMessages(RELAY_INBOX_PATH)
-              if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) pruneOldMessages(REPO_INBOX_PATH)
+              pruneOldMessages(agentInbox.primary)
+              if (agentInbox.primary !== agentInbox.repo) pruneOldMessages(agentInbox.repo)
             }
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ ok: true, id }))
