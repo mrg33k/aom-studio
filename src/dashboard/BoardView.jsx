@@ -1852,7 +1852,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
           {/* V5: Bottom collapse/expand toggle button -- absolute so overflow:hidden never clips it */}
           <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
+            position: 'absolute', bottom: hasRightNow ? 40 : 0, left: 0, right: 0, zIndex: 2,
             padding: '8px', borderTop: '1px solid var(--bv-divider)',
             background: 'var(--bv-rail)', display: 'flex',
           }}>
@@ -1883,7 +1883,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
         {/* COLUMNS AREA */}
         {!isMobile ? (
-          <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '4px 14px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
+          <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '4px 14px', paddingBottom: hasRightNow ? 44 : 4, overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
             {orderedVisibleItems.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--bv-dim)' }}>
                 <div style={{ fontSize: 36, opacity: 0.2 }}>&#9776;</div>
@@ -1919,7 +1919,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           </div>
         ) : (
           /* Mobile: full-frame with tab bar */
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: hasRightNow ? 40 : 0 }}>
             {/* Mobile tab bar */}
             <div style={{
               display: 'flex', gap: 2, padding: '6px 8px', overflowX: 'auto', flexShrink: 0,
