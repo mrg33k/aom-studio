@@ -941,7 +941,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
 function InfoPanel({ slug, isAgent }) {
   const knowledge = isAgent ? getAgentKnowledge(slug) : null
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '12px 14px' }}>
       {knowledge?.superpower && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 5 }}>Superpower</div>
@@ -979,7 +979,7 @@ function InfoPanel({ slug, isAgent }) {
 
 function TaskList({ tasks, onContextMenu, showAgent = false }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 12px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '6px 12px' }}>
       {tasks.length === 0 && (
         <div style={{ padding: '16px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>No tasks</div>
       )}
@@ -1361,7 +1361,7 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       </div>
 
       {/* Tabs */}
-      <ColTabBar tabs={['chat', 'tasks', 'info', 'files']} active={tab} onChange={setTab} />
+      <ColTabBar tabs={['chat', 'files', 'tasks', 'info']} active={tab} onChange={setTab} />
 
       {/* Tab content */}
       {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} />}
