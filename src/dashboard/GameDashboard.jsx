@@ -11584,7 +11584,7 @@ export default function GameDashboard() {
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           const rawMsgs = (data?.messages || [])
-            .filter(m => isAomTeamRoom || (!m.agent || m.agent === room))
+            .filter(m => isAomTeamRoom || m.agent === room)
             .map(m => ({
               id: m.id, role: m.role || 'assistant', content: m.text || '',
               time: m.timestamp || '', source: m.source || 'supabase',
@@ -11684,7 +11684,7 @@ export default function GameDashboard() {
           if (!res.ok) return
           const data = await res.json()
           const newMsgs = (data?.messages || [])
-            .filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || (!m.agent || m.agent === room))) // AOM room: no agent filter
+            .filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || m.agent === room))
           if (newMsgs.length) {
             lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
             startTransition(() => { setAgentChats(prev => {
@@ -11733,7 +11733,7 @@ export default function GameDashboard() {
             .then(res => res.ok ? res.json() : null)
             .then(data => {
               if (!data?.messages?.length) return
-              const newMsgs = data.messages.filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || (!m.agent || m.agent === room)))
+              const newMsgs = data.messages.filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || m.agent === room))
               if (newMsgs.length) {
                 lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
                 setAgentChats(prev => {

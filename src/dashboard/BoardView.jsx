@@ -178,7 +178,7 @@ function useColumnChat(agentSlug, isActive) {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         const msgs = (data?.messages || [])
-          .filter(m => !m.agent || m.agent === agentSlug)
+          .filter(m => m.agent === agentSlug)
           .filter(m => {
             // Only show dashboard user messages + relay/assistant responses
             // Filter out: terminal, inter-agent, task lifecycle, session logs
@@ -238,7 +238,7 @@ function useColumnChat(agentSlug, isActive) {
         const data = await res.json()
         const newMsgs = (data.messages || [])
           .filter(m => m.timestamp > lastBgTsRef.current && m.text)
-          .filter(m => !m.agent || m.agent === agentSlug)
+          .filter(m => m.agent === agentSlug)
           .filter(m => {
             const src = (m.source || '').toLowerCase()
             if (src === 'terminal') return false
@@ -367,7 +367,7 @@ function useColumnChat(agentSlug, isActive) {
           const res = await fetch(pollUrl)
           if (!res.ok) return
           const data = await res.json()
-          const newResp = (data.messages || []).filter(m => m.role === 'assistant' && m.timestamp > sentTime && (!m.agent || m.agent === agentSlug))
+          const newResp = (data.messages || []).filter(m => m.role === 'assistant' && m.timestamp > sentTime && m.agent === agentSlug)
           if (newResp.length > 0) {
             const latest = newResp[newResp.length - 1]
             // Step 3a: double blue check (read) -- show before response appears
@@ -808,8 +808,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       )}
 
       <div style={{
-        display: 'flex', gap: 6, padding: '8px 12px', alignItems: 'center',
-        borderTop: '1px solid var(--bv-divider)', flexShrink: 0, background: 'var(--bv-bar)',
+        display: 'flex', gap: 6, padding: '10px 12px', alignItems: 'center',
+        borderTop: '1px solid rgba(59,130,246,0.15)', flexShrink: 0, background: 'var(--bv-bar)',
+        minHeight: 52,
       }}>
         {/* + button: attach images/files */}
         <input
@@ -1861,15 +1862,16 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               title={railOpen ? 'Collapse rail' : 'Expand rail'}
               style={{
                 width: '100%', height: 30, borderRadius: 7,
-                border: '1px solid var(--bv-col-border)',
-                background: 'var(--bv-card)', color: 'var(--bv-muted)',
+                border: railOpen ? '1px solid var(--bv-col-border)' : '1px solid rgba(59,130,246,0.3)',
+                background: railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)',
+                color: railOpen ? 'var(--bv-muted)' : '#60A5FA',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 transition: 'all 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-col-exp)'; e.currentTarget.style.color = 'var(--bv-text2)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-muted)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = railOpen ? 'var(--bv-col-exp)' : 'rgba(59,130,246,0.2)'; e.currentTarget.style.color = railOpen ? 'var(--bv-text2)' : '#93C5FD' }}
+              onMouseLeave={e => { e.currentTarget.style.background = railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)'; e.currentTarget.style.color = railOpen ? 'var(--bv-muted)' : '#60A5FA' }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 style={{ transform: railOpen ? 'none' : 'rotate(180deg)', transition: 'transform 0.3s' }}>
