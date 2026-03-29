@@ -1495,37 +1495,30 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* LEFT RAIL -- collapsible */}
-        {/* Collapsed: thin 20px strip with pull tab */}
-        {/* Expanded: 200px with names, status, search */}
+        {/* LEFT RAIL: collapsed = 20px strip, expanded = 220px */}
         <div style={{
-          width: railOpen ? 200 : 20, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: railOpen ? 220 : 20, flexShrink: 0, display: 'flex', flexDirection: 'column',
           background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
           transition: 'width 0.2s ease', overflow: 'hidden', position: 'relative',
         }}>
-          {/* Toggle button */}
-          <button
-            onClick={() => setRailOpen(!railOpen)}
-            style={{
-              position: railOpen ? 'absolute' : 'relative',
-              top: railOpen ? 6 : 6,
-              right: railOpen ? 6 : 'auto',
-              left: railOpen ? 'auto' : '50%',
-              transform: railOpen ? 'none' : 'translateX(-50%)',
-              width: 18, height: 18, borderRadius: 5,
-              border: '1px solid var(--bv-col-border)',
-              background: 'var(--bv-card)', color: 'var(--bv-dim)',
-              fontSize: 10, cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              zIndex: 2, flexShrink: 0, transition: 'all 0.15s',
-            }}
-            title={railOpen ? 'Collapse rail' : 'Expand rail'}
-          >
-            {railOpen ? '\u2039' : '\u203A'}
-          </button>
-
-          {/* Collapsed: just colored dots */}
+          {/* Collapsed: pull tab + colored dots */}
           {!railOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '30px 0 6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 0 6px' }}>
+              {/* Pull-to-expand tab */}
+              <button
+                onClick={() => setRailOpen(true)}
+                style={{
+                  width: 16, height: 28, borderRadius: 4,
+                  border: '1px solid var(--bv-col-border)',
+                  background: 'var(--bv-card)', color: 'var(--bv-dim)',
+                  fontSize: 11, cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, marginBottom: 6,
+                }}
+                title="Expand rail"
+              >
+                {'\u203A'}
+              </button>
               {allItems.filter(it => visibleSlugs.has(it.slug)).map(it => (
                 <div key={it.slug} style={{
                   width: 8, height: 8, borderRadius: it.isAgent ? '50%' : 2,
@@ -1547,56 +1540,79 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           {/* Expanded content */}
           {railOpen && (
             <div style={{
-              display: 'flex', flexDirection: 'column', flex: 1,
-              overflowY: 'auto', overflowX: 'hidden',
-              scrollbarWidth: 'none', msOverflowStyle: 'none',
-              padding: '6px 0',
-            }} className="bv-rail-scroll">
-              {/* Search */}
-              <div style={{ padding: '4px 8px 8px' }}>
-                <input
-                  value={railSearch} onChange={e => setRailSearch(e.target.value)}
-                  placeholder="Search..."
-                  style={{
-                    width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
-                    borderRadius: 8, padding: '6px 10px', color: 'var(--bv-text)', fontSize: 12,
-                    fontFamily: "'Inter', sans-serif", outline: 'none',
-                  }}
-                />
+              display: 'flex', flexDirection: 'column', height: '100%',
+            }}>
+              {/* Scrollable list */}
+              <div style={{
+                flex: 1, overflowY: 'auto', overflowX: 'hidden',
+                scrollbarWidth: 'none', msOverflowStyle: 'none',
+                padding: '6px 0',
+              }} className="bv-rail-scroll">
+                {/* Search */}
+                <div style={{ padding: '4px 8px 8px' }}>
+                  <input
+                    value={railSearch} onChange={e => setRailSearch(e.target.value)}
+                    placeholder="Search..."
+                    style={{
+                      width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
+                      borderRadius: 8, padding: '6px 10px', color: 'var(--bv-text)', fontSize: 12,
+                      fontFamily: "'Inter', sans-serif", outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* Agents section */}
+                <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Team</div>
+                {railAgents
+                  .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
+                  .map(a => (
+                  <RailAvatar
+                    key={a.slug} slug={a.slug} name={a.name} color={a.color}
+                    status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
+                    unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
+                    taskCount={a.tasks?.length || 0}
+                    role={a.role}
+                    onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
+                    expanded
+                  />
+                ))}
+
+                {/* Divider */}
+                <div style={{ height: 1, background: 'var(--bv-divider)', margin: '8px 12px' }} />
+
+                {/* Projects section */}
+                <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Projects</div>
+                {railProjects
+                  .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
+                  .map(p => (
+                  <RailAvatar
+                    key={p.slug} slug={p.slug} name={p.name} color={p.color}
+                    status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
+                    unreadCount={0} taskCount={p.tasks?.length || 0} role="Project"
+                    onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
+                    expanded
+                  />
+                ))}
               </div>
 
-              {/* Agents section */}
-              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Team</div>
-              {railAgents
-                .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
-                .map(a => (
-                <RailAvatar
-                  key={a.slug} slug={a.slug} name={a.name} color={a.color}
-                  status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
-                  unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
-                  taskCount={a.tasks?.length || 0}
-                  role={a.role}
-                  onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
-                  expanded
-                />
-              ))}
-
-              {/* Divider */}
-              <div style={{ height: 1, background: 'var(--bv-divider)', margin: '8px 12px' }} />
-
-              {/* Projects section */}
-              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Projects</div>
-              {railProjects
-                .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
-                .map(p => (
-                <RailAvatar
-                  key={p.slug} slug={p.slug} name={p.name} color={p.color}
-                  status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
-                  unreadCount={0} taskCount={p.tasks?.length || 0} role="Project"
-                  onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
-                  expanded
-                />
-              ))}
+              {/* Full-width COLLAPSE button pinned to bottom */}
+              <button
+                onClick={() => setRailOpen(false)}
+                style={{
+                  width: '100%', height: 34, flexShrink: 0,
+                  border: 'none', borderTop: '1px solid var(--bv-divider)',
+                  background: 'var(--bv-card)', color: 'var(--bv-dim)',
+                  fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-accent)'; e.currentTarget.style.color = 'var(--bv-accent-text)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-dim)' }}
+                title="Collapse rail"
+              >
+                {'\u2039'} Collapse
+              </button>
             </div>
           )}
         </div>

@@ -11123,7 +11123,10 @@ export default function GameDashboard() {
   })
   const drawerOpen = drawerSnap === 'half' || drawerSnap === 'full'
   // GameHUD bar height (px) -- reported by GameHUD via onHeightChange, used by CanvasOffice to offset camera
-  const [hudBarHeight, setHudBarHeight] = useState(60) // 60px = safe estimate before first measurement
+  const [hudBarHeight, setHudBarHeight] = useState(() => {
+    if (typeof window === 'undefined') return 52
+    return window.innerWidth < 768 ? 48 : 52
+  }) // matches TaskHUD height: 48px mobile, 52px desktop
   const [hudKbOpen, setHudKbOpen] = useState(false) // keyboard visible on mobile -- tuck HUD behind keyboard
   const [taskDetailSheet, setTaskDetailSheet] = useState(null) // { task, project } -- Trello tap detail sheet
   // Mobile drawer active tab: lifted from MobileDrawer so MobileFixedInput can react to it
