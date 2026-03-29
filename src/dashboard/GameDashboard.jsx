@@ -9571,12 +9571,24 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       const touch = e.touches[0]
                       const cx = touch ? touch.clientX : window.innerWidth / 2
                       const cy = touch ? touch.clientY : window.innerHeight / 2
+                      msgLongPressRef._startX = cx
+                      msgLongPressRef._startY = cy
                       msgLongPressRef.current = setTimeout(() => {
                         onMessageContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {}, _msgLongPress: true }, msg)
                       }, 500)
                     }}
                     onTouchEnd={() => clearTimeout(msgLongPressRef.current)}
-                    onTouchMove={() => clearTimeout(msgLongPressRef.current)}
+                    onTouchMove={(e) => {
+                      // Only cancel if finger moved >10px -- tiny tremors shouldn't abort long-press
+                      const t = e.touches[0]
+                      if (t) {
+                        const dx = t.clientX - (msgLongPressRef._startX || t.clientX)
+                        const dy = t.clientY - (msgLongPressRef._startY || t.clientY)
+                        if (Math.sqrt(dx*dx + dy*dy) > 10) clearTimeout(msgLongPressRef.current)
+                      } else {
+                        clearTimeout(msgLongPressRef.current)
+                      }
+                    }}
                   >
                     {/* Avatar -- 28px mobile, 36px desktop */}
                     {isUser ? (
