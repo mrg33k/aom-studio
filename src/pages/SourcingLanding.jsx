@@ -30,7 +30,7 @@ function TenantCard({ tenant, V }) {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={{
-        backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 10%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%), url(${bgImage})`,
+        backgroundImage: `linear-gradient(to top, #0f1419 0%, rgba(15,20,25,0.92) 12%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.18) 100%), url(${bgImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         border: `1px solid ${hovered ? `${brandColor}60` : 'rgba(255,255,255,0.08)'}`,
