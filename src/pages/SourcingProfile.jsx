@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 import { trackEvent } from './sourcingAnalytics.js';
+import { getVerticalImage } from './SourcingLanding.jsx';
 
 const VERTICALS = {
   semiconductor: { label: 'Semiconductor', color: '#29B6F6' },
@@ -537,106 +538,142 @@ function SourcingProfileInner() {
         </span>
       </div>
 
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px' }}>
-        {/* Profile Hero */}
+      {/* Profile Hero Banner with industry background */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        minHeight: 180,
+        backgroundImage: `linear-gradient(to top, ${V.bg} 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.35) 100%), url(${getVerticalImage(company.vertical)})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}>
         <div style={{
-          padding: '36px 0 28px',
-          borderBottom: `1px solid ${V.border}`,
-          marginBottom: 32,
+          maxWidth: 860, margin: '0 auto', padding: '32px 24px 0',
+          display: 'flex', alignItems: 'flex-end', gap: 20,
+          position: 'relative',
         }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
-            {company.logo_url ? (
-              <img
-                src={company.logo_url}
-                alt={company.name}
-                style={{
-                  width: 80, height: 80, borderRadius: 14,
-                  objectFit: 'contain', background: V.card2,
-                  border: `1px solid ${V.border}`, flexShrink: 0,
-                }}
-              />
-            ) : (
-              <div style={{
-                width: 80, height: 80, borderRadius: 14, flexShrink: 0,
-                background: `${vColor}18`,
-                border: `1px solid ${vColor}40`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 32, fontWeight: 800, fontFamily: V.syne, color: vColor,
-              }}>
-                {company.name.charAt(0)}
-              </div>
-            )}
-
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                <h1 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: 0, lineHeight: 1.1 }}>
-                  {company.name}
-                </h1>
-                {company.featured && (
-                  <span style={{
-                    background: V.accentDim, border: `1px solid ${V.accentBrd}`,
-                    color: V.accent, fontSize: 10, fontWeight: 700, fontFamily: V.mono,
-                    padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.1em',
-                  }}>
-                    Featured
-                  </span>
-                )}
-              </div>
-
-              <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 12, lineHeight: 1.5 }}>
-                {[company.city, company.state, company.country !== 'US' ? company.country : null].filter(Boolean).join(', ')}
-                {company.year_founded && ` · Founded ${company.year_founded}`}
-                {company.employee_count && ` · ${company.employee_count} employees`}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <Chip color={vColor} V={V}>{vLabel}</Chip>
-                <span style={{
-                  background: tierColor.bg, border: `1px solid ${tierColor.border}`,
-                  color: tierColor.text, fontSize: 10, fontWeight: 700,
-                  fontFamily: V.mono, padding: '3px 8px', borderRadius: 4,
-                  textTransform: 'uppercase', letterSpacing: '0.07em',
-                }}>
-                  {company.membership_tier} member
-                </span>
-                {org && (
-                  <span style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
-                    via {org.name}
-                  </span>
-                )}
-              </div>
+          {/* Logo / Avatar - overlapping the banner bottom */}
+          {company.logo_url ? (
+            <img
+              src={company.logo_url}
+              alt={company.name}
+              style={{
+                width: 96, height: 96, borderRadius: 16,
+                objectFit: 'contain', background: V.bg,
+                border: `3px solid ${V.bg}`,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                flexShrink: 0,
+                position: 'relative',
+                top: 24,
+              }}
+            />
+          ) : (
+            <div style={{
+              width: 96, height: 96, borderRadius: 16, flexShrink: 0,
+              background: V.bg,
+              border: `3px solid ${V.bg}`,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 38, fontWeight: 800, fontFamily: V.syne, color: vColor,
+              position: 'relative',
+              top: 24,
+            }}>
+              {company.name.charAt(0)}
             </div>
+          )}
 
-            {/* Contact CTA */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-              {company.website && (
-                <a
-                  href={company.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    background: V.accent, color: '#fff', textDecoration: 'none',
-                    borderRadius: 7, padding: '8px 16px', fontSize: 13,
-                    fontWeight: 700, fontFamily: V.space, textAlign: 'center',
-                  }}
-                >
-                  Visit Website
-                </a>
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+              <h1 style={{
+                fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, fontFamily: V.syne,
+                color: '#fff', margin: 0, lineHeight: 1.1,
+                textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              }}>
+                {company.name}
+              </h1>
+              {company.featured && (
+                <span style={{
+                  background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.5)',
+                  color: '#6ee7b7', fontSize: 10, fontWeight: 700, fontFamily: V.mono,
+                  padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.1em',
+                }}>
+                  Featured
+                </span>
               )}
-              {company.email && (
-                <a
-                  href={`mailto:${company.email}`}
-                  style={{
-                    background: 'transparent', color: V.muted, textDecoration: 'none',
-                    border: `1px solid ${V.border}`, borderRadius: 7, padding: '7px 16px',
-                    fontSize: 13, fontWeight: 600, fontFamily: V.space, textAlign: 'center',
-                  }}
-                >
-                  Send Email
-                </a>
+            </div>
+            <div style={{
+              fontSize: 14, color: 'rgba(255,255,255,0.75)', fontFamily: V.space, lineHeight: 1.5,
+              textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}>
+              {[company.city, company.state, company.country !== 'US' ? company.country : null].filter(Boolean).join(', ')}
+              {company.year_founded && ` · Founded ${company.year_founded}`}
+              {company.employee_count && ` · ${company.employee_count} employees`}
+              {company.website && (
+                <>
+                  {' · '}
+                  <a href={company.website} target="_blank" rel="noreferrer" style={{ color: 'rgba(255,255,255,0.85)', textDecoration: 'underline' }}>
+                    {company.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
+                </>
               )}
             </div>
           </div>
+
+          {/* Contact CTA */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, paddingBottom: 12 }}>
+            {company.website && (
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  background: V.accent, color: '#fff', textDecoration: 'none',
+                  borderRadius: 7, padding: '8px 16px', fontSize: 13,
+                  fontWeight: 700, fontFamily: V.space, textAlign: 'center',
+                }}
+              >
+                Visit Website
+              </a>
+            )}
+            {company.email && (
+              <a
+                href={`mailto:${company.email}`}
+                style={{
+                  background: 'rgba(255,255,255,0.1)', color: '#fff', textDecoration: 'none',
+                  border: '1px solid rgba(255,255,255,0.2)', borderRadius: 7, padding: '7px 16px',
+                  fontSize: 13, fontWeight: 600, fontFamily: V.space, textAlign: 'center',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >
+                Send Email
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px' }}>
+        {/* Chips below hero */}
+        <div style={{
+          padding: '32px 0 28px',
+          borderBottom: `1px solid ${V.border}`,
+          marginBottom: 32,
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+        }}>
+          <Chip color={vColor} V={V}>{vLabel}</Chip>
+          <span style={{
+            background: tierColor.bg, border: `1px solid ${tierColor.border}`,
+            color: tierColor.text, fontSize: 10, fontWeight: 700,
+            fontFamily: V.mono, padding: '3px 8px', borderRadius: 4,
+            textTransform: 'uppercase', letterSpacing: '0.07em',
+          }}>
+            {company.membership_tier} member
+          </span>
+          {org && (
+            <span style={{ fontSize: 12, color: V.muted, fontFamily: V.space }}>
+              via {org.name}
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 24, alignItems: 'start' }}>
@@ -671,10 +708,19 @@ function SourcingProfileInner() {
             {listings.length === 0 && (
               <Section title="Listings" V={V}>
                 <div style={{
-                  textAlign: 'center', padding: '28px 0',
-                  color: V.dim, fontSize: 13, fontFamily: V.space,
+                  textAlign: 'center', padding: '36px 16px',
+                  background: V.card2, borderRadius: 8,
+                  border: `1px dashed ${V.border}`,
                 }}>
-                  No active listings yet.
+                  <svg width="36" height="36" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 10, opacity: 0.5 }}>
+                    <rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 11h5"/>
+                  </svg>
+                  <div style={{ color: V.dim, fontSize: 13, fontFamily: V.space, marginBottom: 6 }}>
+                    No active listings yet
+                  </div>
+                  <div style={{ color: V.dim, fontSize: 11, fontFamily: V.space, opacity: 0.7 }}>
+                    Jobs, equipment, and events from this company will appear here.
+                  </div>
                 </div>
               </Section>
             )}

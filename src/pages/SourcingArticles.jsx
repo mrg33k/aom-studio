@@ -556,13 +556,19 @@ function SourcingArticlesInner() {
         )}
 
         {!loading && supabase && visibleListings.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>📄</div>
+          <div style={{
+            textAlign: 'center', padding: '60px 24px',
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 12,
+          }}>
+            <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
               No articles found
             </div>
-            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
-              {query ? `No results for "${query}". Try different keywords.` : activeTag ? `No articles tagged "${activeTag}".` : 'No articles published yet.'}
+            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+              {query ? `No results for "${query}". Try different keywords.` : activeTag ? `No articles tagged "${activeTag}". Try browsing all articles.` : 'No articles published yet. Industry news and insights will appear here.'}
             </div>
             <Link
               to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/articles/post`}

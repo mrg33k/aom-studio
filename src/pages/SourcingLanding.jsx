@@ -3,10 +3,24 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens, ThemeToggle } from './SourcingTheme.jsx';
 
+// ─── Industry background images ──────────────────────────────────────────────
+const VERTICAL_IMAGES = {
+  semiconductor: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
+  space:         'https://images.unsplash.com/photo-1516849841032-87cbac4d88f7?w=800&q=80',
+  biotech:       'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&q=80',
+  defense:       'https://images.unsplash.com/photo-1580752300992-559f8e0734e0?w=800&q=80',
+  default:       'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80',
+};
+
+function getVerticalImage(vertical) {
+  return VERTICAL_IMAGES[vertical] || VERTICAL_IMAGES.default;
+}
+
 // ─── Tenant Card ──────────────────────────────────────────────────────────────
 function TenantCard({ tenant, V }) {
   const [hovered, setHovered] = useState(false);
   const brandColor = tenant.brand_color || V.accent;
+  const bgImage = getVerticalImage(tenant.vertical);
 
   return (
     <Link
@@ -16,17 +30,21 @@ function TenantCard({ tenant, V }) {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={{
-        background: hovered ? V.cardHov : V.card,
-        border: `1px solid ${hovered ? `${brandColor}60` : V.border}`,
+        backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%), url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        border: `1px solid ${hovered ? `${brandColor}60` : 'rgba(255,255,255,0.08)'}`,
         borderRadius: 12,
         padding: '24px 22px',
-        transition: 'all 0.18s ease',
+        transition: 'all 0.25s ease',
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
         gap: 14,
-        boxShadow: hovered ? `0 0 0 1px ${brandColor}20, 0 8px 24px rgba(0,0,0,0.15)` : 'none',
-        minHeight: 180,
+        boxShadow: hovered ? `0 0 0 1px ${brandColor}30, 0 12px 32px rgba(0,0,0,0.3)` : '0 4px 16px rgba(0,0,0,0.15)',
+        minHeight: 220,
+        transform: hovered ? 'scale(1.02)' : 'scale(1)',
+        filter: hovered ? 'brightness(1.08)' : 'brightness(1)',
       }}>
         {/* Header: logo + name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -34,31 +52,32 @@ function TenantCard({ tenant, V }) {
             <img
               src={tenant.logo_url}
               alt={tenant.name}
-              style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'contain', background: V.card2, flexShrink: 0 }}
+              style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'contain', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', flexShrink: 0 }}
             />
           ) : (
             <div style={{
               width: 48, height: 48, borderRadius: 10,
-              background: `${brandColor}18`,
-              border: `1px solid ${brandColor}40`,
+              background: `${brandColor}30`,
+              border: `1px solid ${brandColor}50`,
+              backdropFilter: 'blur(8px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 22, fontWeight: 800, fontFamily: "'Syne', sans-serif",
-              color: brandColor, flexShrink: 0,
+              color: '#fff', flexShrink: 0,
             }}>
               {tenant.name.charAt(0)}
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              fontSize: 17, fontWeight: 700, fontFamily: "'Syne', sans-serif",
-              color: V.heading, lineHeight: 1.2,
+              fontSize: 18, fontWeight: 700, fontFamily: "'Syne', sans-serif",
+              color: '#fff', lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)',
             }}>
               {tenant.nav_label || tenant.name}
             </div>
             <div style={{
               fontSize: 12, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
               color: brandColor, textTransform: 'uppercase', letterSpacing: '0.08em',
-              marginTop: 3,
+              marginTop: 3, textShadow: '0 1px 3px rgba(0,0,0,0.5)',
             }}>
               {tenant.vertical}
             </div>
@@ -68,10 +87,11 @@ function TenantCard({ tenant, V }) {
         {/* Description */}
         {tenant.description && (
           <div style={{
-            fontSize: 13, color: V.muted, fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: "'Space Grotesk', sans-serif",
             lineHeight: 1.55,
             display: '-webkit-box', WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            textShadow: '0 1px 3px rgba(0,0,0,0.4)',
           }}>
             {tenant.description}
           </div>
@@ -87,24 +107,25 @@ function TenantCard({ tenant, V }) {
             </svg>
             <span style={{
               fontSize: 13, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-              color: V.text,
+              color: '#fff',
             }}>
               {tenant.company_count || 0}
             </span>
-            <span style={{ fontSize: 12, color: V.muted, fontFamily: "'Space Grotesk', sans-serif" }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: "'Space Grotesk', sans-serif" }}>
               companies
             </span>
           </div>
 
           <div style={{ marginLeft: 'auto' }}>
             <div style={{
-              background: `${brandColor}15`,
-              border: `1px solid ${brandColor}35`,
+              background: `${brandColor}25`,
+              border: `1px solid ${brandColor}50`,
               borderRadius: 6,
               padding: '4px 10px',
               fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
               color: brandColor, textTransform: 'uppercase', letterSpacing: '0.06em',
               display: 'flex', alignItems: 'center', gap: 5,
+              backdropFilter: 'blur(4px)',
             }}>
               Explore
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -255,7 +276,7 @@ function SourcingLandingInner() {
               <div key={i} style={{
                 background: V.card, border: `1px solid ${V.border}`,
                 borderRadius: 12, padding: '24px 22px',
-                display: 'flex', flexDirection: 'column', gap: 14, minHeight: 180,
+                display: 'flex', flexDirection: 'column', gap: 14, minHeight: 220,
                 animation: 'pulse 1.5s ease-in-out infinite',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -282,6 +303,9 @@ function SourcingLandingInner() {
             background: V.card, border: `1px solid ${V.border}`,
             borderRadius: 12, padding: '60px 24px', textAlign: 'center',
           }}>
+            <svg width="48" height="48" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+              <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/>
+            </svg>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Syne', sans-serif", color: V.text, marginBottom: 8 }}>
               No directories yet
             </div>
@@ -294,6 +318,9 @@ function SourcingLandingInner() {
     </div>
   );
 }
+
+// ─── Shared image map export ─────────────────────────────────────────────────
+export { VERTICAL_IMAGES, getVerticalImage };
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 export default function SourcingLanding() {

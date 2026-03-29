@@ -591,11 +591,17 @@ function SourcingJobsInner() {
         )}
 
         {!loading && supabase && listings.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>💼</div>
+          <div style={{
+            textAlign: 'center', padding: '60px 24px',
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 12,
+          }}>
+            <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>No jobs found</div>
-            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
-              {query ? `No results for "${query}". Try different filters.` : 'No jobs posted yet.'}
+            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+              {query ? `No results for "${query}". Try different filters or broaden your search.` : 'No jobs posted yet. Companies in this directory can post open positions here.'}
             </div>
             <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/jobs/post`} style={{
               background: V.accent, color: '#fff', textDecoration: 'none',

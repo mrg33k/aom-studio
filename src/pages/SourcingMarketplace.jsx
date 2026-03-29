@@ -751,13 +751,19 @@ function SourcingMarketplaceInner() {
         )}
 
         {!loading && supabase && listings.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>⚙️</div>
+          <div style={{
+            textAlign: 'center', padding: '60px 24px',
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 12,
+          }}>
+            <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
-              No listings found
+              No equipment listed
             </div>
-            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
-              {query ? `No results for "${query}". Try different filters.` : 'No equipment listed yet.'}
+            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+              {query ? `No results for "${query}". Try different filters or keywords.` : 'No equipment listed yet. Buy, sell, and trade industry equipment here.'}
             </div>
             <Link
               to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/marketplace/post`}
@@ -767,7 +773,7 @@ function SourcingMarketplaceInner() {
                 fontWeight: 700, fontFamily: V.space, display: 'inline-block',
               }}
             >
-              Post a Listing
+              List Equipment
             </Link>
           </div>
         )}

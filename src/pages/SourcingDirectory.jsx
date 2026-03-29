@@ -4,6 +4,7 @@ import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
 import { trackEvent } from './sourcingAnalytics.js';
+import { getVerticalImage } from './SourcingLanding.jsx';
 
 // ─── Scout Answer Card (streaming AI response) ───────────────────────────────
 function ScoutAnswerCard({ text, streaming, V }) {
@@ -120,6 +121,7 @@ function CertPill({ name, V }) {
 function CompanyCard({ company, certs, V, tenantSlug }) {
   const [hovered, setHovered] = useState(false);
   const topCerts = (certs || []).slice(0, 3);
+  const vColor = verticalColor(company.vertical);
 
   return (
     <Link
@@ -132,35 +134,81 @@ function CompanyCard({ company, certs, V, tenantSlug }) {
         background: hovered ? V.cardHov : V.card,
         border: `1px solid ${hovered ? V.borderHov : V.border}`,
         borderRadius: 10,
-        padding: '18px 20px',
+        padding: 0,
         transition: 'all 0.15s ease',
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
+        overflow: 'hidden',
         boxShadow: hovered ? `0 0 0 1px ${V.accent}20` : 'none',
+        position: 'relative',
       }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        {/* Subtle industry accent strip at top */}
+        <div style={{
+          height: 3,
+          background: `linear-gradient(90deg, ${vColor}, ${vColor}40)`,
+          opacity: hovered ? 1 : 0.6,
+          transition: 'opacity 0.15s ease',
+        }} />
+
+        {/* Logo / Avatar area */}
+        <div style={{ padding: '16px 20px 0' }}>
           {company.logo_url ? (
-            <img
-              src={company.logo_url}
-              alt={company.name}
-              style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'contain', background: V.card2, flexShrink: 0 }}
-            />
-          ) : (
             <div style={{
-              width: 44, height: 44, borderRadius: 8,
-              background: `${verticalColor(company.vertical)}20`,
-              border: `1px solid ${verticalColor(company.vertical)}40`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 800, fontFamily: V.syne,
-              color: verticalColor(company.vertical), flexShrink: 0,
+              width: '100%', height: 64,
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+              gap: 14,
             }}>
-              {company.name.charAt(0)}
+              <img
+                src={company.logo_url}
+                alt={company.name}
+                style={{
+                  maxWidth: 120, maxHeight: 56, borderRadius: 8,
+                  objectFit: 'contain', background: V.card2,
+                  border: `1px solid ${V.border}`,
+                  padding: 6,
+                }}
+              />
+              {company.featured && (
+                <div style={{
+                  background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+                  color: V.accent, fontSize: 9, fontWeight: 700, fontFamily: V.mono,
+                  padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase',
+                  letterSpacing: '0.1em', whiteSpace: 'nowrap', marginLeft: 'auto',
+                }}>
+                  Featured
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 12,
+                background: `${vColor}15`,
+                border: `1px solid ${vColor}35`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 24, fontWeight: 800, fontFamily: V.syne,
+                color: vColor, flexShrink: 0,
+              }}>
+                {company.name.charAt(0)}
+              </div>
+              {company.featured && (
+                <div style={{
+                  background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+                  color: V.accent, fontSize: 9, fontWeight: 700, fontFamily: V.mono,
+                  padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase',
+                  letterSpacing: '0.1em', whiteSpace: 'nowrap', marginLeft: 'auto',
+                }}>
+                  Featured
+                </div>
+              )}
             </div>
           )}
-          <div style={{ flex: 1, minWidth: 0 }}>
+        </div>
+
+        <div style={{ padding: '12px 20px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Name + location */}
+          <div>
             <div style={{
               fontSize: 16, fontWeight: 700, fontFamily: V.syne,
               color: V.text, lineHeight: 1.2,
@@ -170,56 +218,46 @@ function CompanyCard({ company, certs, V, tenantSlug }) {
             }}>
               {company.name}
             </div>
-            <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: V.muted, fontFamily: V.space, marginTop: 3 }}>
               {[company.city, company.state].filter(Boolean).join(', ')}
               {company.year_founded && ` · Est. ${company.year_founded}`}
             </div>
           </div>
-          {company.featured && (
+
+          {/* Description */}
+          {company.description && (
             <div style={{
-              background: V.accentDim, border: `1px solid ${V.accentBrd}`,
-              color: V.accent, fontSize: 9, fontWeight: 700, fontFamily: V.mono,
-              padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase',
-              letterSpacing: '0.1em', whiteSpace: 'nowrap', flexShrink: 0,
+              fontSize: 13, color: V.muted, fontFamily: V.space,
+              lineHeight: 1.5,
+              display: '-webkit-box', WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }}>
-              Featured
+              {company.description}
             </div>
           )}
-        </div>
 
-        {/* Description */}
-        {company.description && (
-          <div style={{
-            fontSize: 13, color: V.muted, fontFamily: V.space,
-            lineHeight: 1.5,
-            display: '-webkit-box', WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          }}>
-            {company.description}
-          </div>
-        )}
+          {/* Certs */}
+          {topCerts.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {topCerts.map(c => <CertPill key={c.id} name={c.cert_name} V={V} />)}
+              {certs.length > 3 && (
+                <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, alignSelf: 'center' }}>
+                  +{certs.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
 
-        {/* Certs */}
-        {topCerts.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-            {topCerts.map(c => <CertPill key={c.id} name={c.cert_name} V={V} />)}
-            {certs.length > 3 && (
-              <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, alignSelf: 'center' }}>
-                +{certs.length - 3} more
+          {/* Footer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <VerticalBadge vertical={company.vertical} V={V} />
+            <TierBadge tier={company.membership_tier} V={V} />
+            {company.employee_count && (
+              <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                {company.employee_count} employees
               </span>
             )}
           </div>
-        )}
-
-        {/* Footer */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <VerticalBadge vertical={company.vertical} V={V} />
-          <TierBadge tier={company.membership_tier} V={V} />
-          {company.employee_count && (
-            <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
-              {company.employee_count} employees
-            </span>
-          )}
         </div>
       </div>
     </Link>
@@ -673,36 +711,81 @@ function SourcingDirectoryInner() {
         brandColor={tenant?.brand_color}
       />
 
-      {/* Hero */}
-      <div style={{ padding: '52px 24px 36px', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+      {/* Hero Banner with industry image */}
+      {tenant ? (
         <div style={{
-          fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: tenant?.brand_color || V.accent,
-          letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 14,
+          position: 'relative',
+          width: '100%',
+          minHeight: 200,
+          backgroundImage: `linear-gradient(to top, ${V.bg} 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.3) 100%), url(${getVerticalImage(tenant.vertical)})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
         }}>
-          {tenant ? (tenant.nav_label || tenant.name) : 'sourcing.directory — Arizona'}
+          <div style={{ padding: '48px 24px 32px', maxWidth: 900, width: '100%', textAlign: 'center' }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: tenant.brand_color || V.accent,
+              letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10,
+              textShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            }}>
+              {tenant.nav_label || tenant.name}
+            </div>
+            <h1 style={{
+              fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, fontFamily: V.syne,
+              color: '#fff', lineHeight: 1.15, margin: '0 0 10px',
+              textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            }}>
+              {tenant.name}
+            </h1>
+            <p style={{
+              fontSize: 16, color: 'rgba(255,255,255,0.8)', fontFamily: V.space,
+              maxWidth: 580, margin: '0 auto 28px', lineHeight: 1.6,
+              textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}>
+              {tenant.hero_text || "Verified companies, certifications, and capabilities in one place."}
+            </p>
+            <SearchBar
+              value={searchInput}
+              onChange={setSearchInput}
+              onSearch={handleSearch}
+              loading={loading}
+              aiLoading={aiLoading}
+              V={V}
+            />
+          </div>
         </div>
-        <h1 style={{
-          fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, fontFamily: V.syne,
-          color: V.heading, lineHeight: 1.15, margin: '0 0 14px',
-        }}>
-          {tenant ? tenant.name : 'Find Certified Suppliers & Partners'}
-        </h1>
-        <p style={{
-          fontSize: 16, color: V.muted, fontFamily: V.space,
-          maxWidth: 580, margin: '0 auto 32px', lineHeight: 1.6,
-        }}>
-          {tenant?.hero_text || "Arizona's semiconductor, space, and advanced industry directory. Verified companies, certifications, and capabilities in one place."}
-        </p>
-
-        <SearchBar
-          value={searchInput}
-          onChange={setSearchInput}
-          onSearch={handleSearch}
-          loading={loading}
-          aiLoading={aiLoading}
-          V={V}
-        />
-      </div>
+      ) : (
+        <div style={{ padding: '52px 24px 36px', maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent,
+            letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 14,
+          }}>
+            sourcing.directory -- Arizona
+          </div>
+          <h1 style={{
+            fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, fontFamily: V.syne,
+            color: V.heading, lineHeight: 1.15, margin: '0 0 14px',
+          }}>
+            Find Certified Suppliers & Partners
+          </h1>
+          <p style={{
+            fontSize: 16, color: V.muted, fontFamily: V.space,
+            maxWidth: 580, margin: '0 auto 32px', lineHeight: 1.6,
+          }}>
+            Arizona's semiconductor, space, and advanced industry directory. Verified companies, certifications, and capabilities in one place.
+          </p>
+          <SearchBar
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={handleSearch}
+            loading={loading}
+            aiLoading={aiLoading}
+            V={V}
+          />
+        </div>
+      )}
 
       {/* Vertical Tabs */}
       <div style={{
@@ -905,13 +988,19 @@ function SourcingDirectoryInner() {
         )}
 
         {!loading && supabase && filteredCompanies.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>🔍</div>
+          <div style={{
+            textAlign: 'center', padding: '60px 24px',
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 12,
+          }}>
+            <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
               No companies found
             </div>
-            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
-              {query ? `No results for "${query}". Try different keywords.` : 'No companies in this vertical yet.'}
+            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+              {query ? `No results for "${query}". Try different keywords or broaden your filters.` : 'No companies in this vertical yet. Be the first to join.'}
             </div>
             <Link
               to={tenantSlug ? `/sourcing/${tenantSlug}/signup` : '/sourcing/signup'}

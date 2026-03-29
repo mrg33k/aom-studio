@@ -657,28 +657,36 @@ function SourcingEventsInner() {
         )}
 
         {!loading && supabase && listings.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>📅</div>
+          <div style={{
+            textAlign: 'center', padding: '60px 24px',
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 12,
+          }}>
+            <svg width="56" height="56" fill="none" stroke={V.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 16, opacity: 0.5 }}>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>No events found</div>
-            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
-              {query ? `No results for "${query}". Try different filters.` : upcomingOnly ? 'No upcoming events. Try showing all events.' : 'No events posted yet.'}
+            <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
+              {query ? `No results for "${query}". Try different filters.` : upcomingOnly ? 'No upcoming events scheduled. Try showing past events too.' : 'No events posted yet. Conferences, meetups, and expos will appear here.'}
             </div>
-            {upcomingOnly && (
-              <button onClick={() => setUpcomingOnly(false)} style={{
-                background: 'transparent', color: V.muted, textDecoration: 'none',
-                border: `1px solid ${V.border}`, borderRadius: 7, padding: '10px 20px', fontSize: 13,
-                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', marginRight: 10,
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {upcomingOnly && (
+                <button onClick={() => setUpcomingOnly(false)} style={{
+                  background: 'transparent', color: V.muted, textDecoration: 'none',
+                  border: `1px solid ${V.border}`, borderRadius: 7, padding: '10px 20px', fontSize: 13,
+                  fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+                }}>
+                  Show All Events
+                </button>
+              )}
+              <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/events/post`} style={{
+                background: V.accent, color: '#fff', textDecoration: 'none',
+                borderRadius: 7, padding: '10px 20px', fontSize: 13,
+                fontWeight: 700, fontFamily: V.space, display: 'inline-block',
               }}>
-                Show All Events
-              </button>
-            )}
-            <Link to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/events/post`} style={{
-              background: V.accent, color: '#fff', textDecoration: 'none',
-              borderRadius: 7, padding: '10px 20px', fontSize: 13,
-              fontWeight: 700, fontFamily: V.space, display: 'inline-block',
-            }}>
-              Post an Event
-            </Link>
+                Post an Event
+              </Link>
+            </div>
           </div>
         )}
       </div>
