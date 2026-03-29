@@ -1928,7 +1928,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               onClick={() => setRailOpen(!railOpen)}
               title={railOpen ? 'Collapse rail' : 'Expand rail'}
               style={{
-                width: '100%', height: 36, borderRadius: 8,
+                width: '100%', height: 66, borderRadius: 8,
                 border: railOpen ? '1px solid var(--bv-col-border)' : '1px solid rgba(59,130,246,0.3)',
                 background: railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)',
                 color: railOpen ? 'var(--bv-muted)' : '#60A5FA',
