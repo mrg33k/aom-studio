@@ -1907,8 +1907,21 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
       return
     }
 
+    // @agent routing: "@bobby fix the nav" routes to bobby, sends "fix the nav"
+    let targetAgent = 'elon'
+    let messageText = text
+    const atMatch = text.match(/^@(\S+)\s*(.*)$/)
+    if (atMatch) {
+      const atTarget = atMatch[1].toLowerCase()
+      const found = AGENTS.find(a => a.slug === atTarget || a.name.toLowerCase() === atTarget)
+      if (found) {
+        targetAgent = found.slug
+        messageText = atMatch[2]?.trim() || text
+      }
+    }
+
     setMessages(prev => {
-      const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard', agent: null, id: crypto.randomUUID() }]
+      const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard', agent: targetAgent, id: crypto.randomUUID() }]
       sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
       if (!sorted.some(m => m.streaming)) {
         sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
@@ -1935,19 +1948,19 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
         const res = await fetch('/api/local/relay-send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: 'elon', message: text, source: 'corner-dashboard' }),
+          body: JSON.stringify({ agent: targetAgent, message: messageText, source: 'corner-dashboard' }),
         })
         if (!res.ok) throw new Error('Failed to write to relay')
       } else if (supabase) {
         const { error: insertErr } = await supabase.from('messages').insert({
-          id: crypto.randomUUID(), agent: 'elon', role: 'user', text, source: 'corner-dashboard',
+          id: crypto.randomUUID(), agent: targetAgent, role: 'user', text: messageText, source: 'corner-dashboard',
         })
         if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
       } else {
         const res = await fetch(RELAY_SEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, agent: 'elon' }),
+          body: JSON.stringify({ message: messageText, agent: targetAgent }),
         })
         if (!res.ok) throw new Error('Failed to send via relay')
       }
@@ -2282,7 +2295,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={streaming ? (councilDoneCount > 0 ? `Council: ${councilDoneCount}/${COUNCIL_AGENTS.length} agents responding...` : 'Team is working...') : 'Message the team... (type @all for council)'}
+            placeholder={streaming ? (councilDoneCount > 0 ? `Council: ${councilDoneCount}/${COUNCIL_AGENTS.length} agents responding...` : 'Team is working...') : 'Message the team... (@bobby, @all for council)'}
             className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
             style={{ touchAction: 'manipulation', WebkitUserSelect: 'text' }}
           />
