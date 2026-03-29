@@ -1612,8 +1612,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
   const [selectedProject, setSelectedProject] = useState(null)
   const [collapsedProjects, setCollapsedProjects] = useState({})
-  // TODO: Persist checkbox state in Supabase (C4) -- localStorage stripped
-  const [checkedTasks, setCheckedTasks] = useState({})
+  // Checkbox state -- persists to localStorage so checked tasks survive page reload.
+  // Falls back to task.done (Supabase) if a task has no local override.
+  const [checkedTasks, setCheckedTasks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('corner-checklist-checked') || '{}') } catch { return {} }
+  })
   const [pendingCompletion, setPendingCompletion] = useState({}) // { taskKey: { task, checkedAt } } -- 30s undo window
   const [tick, setTick] = useState(0) // increments every second when tasks are pending (drives countdown display)
   const pendingRef = useRef({}) // stable ref so the interval can read pending state without re-creating
@@ -1635,6 +1638,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [rightNowOrder, setRightNowOrder] = useState(() => {
     try { return JSON.parse(localStorage.getItem('corner-rightnow-order') || '[]') } catch { return [] }
   })
+
+  // Sync checkedTasks → localStorage whenever it changes
+  useEffect(() => {
+    try { localStorage.setItem('corner-checklist-checked', JSON.stringify(checkedTasks)) } catch {}
+  }, [checkedTasks])
 
   // On mount: hydrate task orders from Supabase (overrides localStorage, cross-device)
   useEffect(() => {
