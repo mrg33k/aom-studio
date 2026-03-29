@@ -7,7 +7,7 @@ import {
   MessageSquare, Send, X, ArrowLeft, ChevronRight, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
-  Search as SearchIcon, ChevronUp, Folder, Users,
+  Search as SearchIcon, ChevronUp, Folder, Users, Copy, Reply, RotateCcw,
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
@@ -397,6 +397,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [thinkingPhrase, setThinkingPhrase] = useState(0)
   const [motivationalPhrase, setMotivationalPhrase] = useState(0)
   const [isSending, setIsSending] = useState(false)
+  const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role, id }
 
   // Fun rotating thinking phrases -- per-agent personality
   const thinkingPhrases = useMemo(() => getTypingPhrases(agent.slug), [agent.slug])
@@ -1324,7 +1325,25 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
 
           return (
-            <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+              onContextMenu={(e) => {
+                if (msg.streaming) return
+                e.preventDefault()
+                setMsgCtx({ x: e.clientX, y: e.clientY, content: msg.content, role: msg.role, id: msg.id })
+              }}
+              onTouchStart={(e) => {
+                if (msg.streaming) return
+                const touch = e.touches[0]
+                const cx = touch?.clientX || 0
+                const cy = touch?.clientY || 0
+                e.currentTarget._longPress = setTimeout(() => {
+                  setMsgCtx({ x: cx, y: cy, content: msg.content, role: msg.role, id: msg.id })
+                }, 500)
+              }}
+              onTouchEnd={(e) => clearTimeout(e.currentTarget._longPress)}
+              onTouchMove={(e) => clearTimeout(e.currentTarget._longPress)}
+              style={{ cursor: 'context-menu' }}
+            >
               {/* Avatar: smaller, cleaner */}
               <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 isUser
@@ -1380,6 +1399,33 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Right-click context menu on messages */}
+      {msgCtx && (
+        <>
+          <div className="fixed inset-0 z-[99999]" onClick={() => setMsgCtx(null)} />
+          <div
+            className="fixed z-[100000] w-[200px] rounded-xl border border-[#292524] bg-[#1A1A18]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+            style={{
+              left: Math.min(msgCtx.x, window.innerWidth - 220),
+              top: Math.min(msgCtx.y, window.innerHeight - 200),
+            }}
+          >
+            <button
+              onClick={() => { navigator.clipboard?.writeText(msgCtx.content); setMsgCtx(null) }}
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-[#F0ECE6] hover:bg-[#292524] transition-colors text-left"
+            >
+              <Copy className="w-3.5 h-3.5 text-[#78716C]" /> Copy Text
+            </button>
+            <button
+              onClick={() => { setInput(msgCtx.content); setMsgCtx(null) }}
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-[#F0ECE6] hover:bg-[#292524] transition-colors text-left"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-[#78716C]" /> Resend
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Jump to latest / New messages indicator -- positioned relative to the chat area */}
       <AnimatePresence>
@@ -1643,6 +1689,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const [councilDoneCount, setCouncilDoneCount] = useState(0)
+  const [msgCtx, setMsgCtx] = useState(null)
 
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -2206,7 +2253,25 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             }
 
             return (
-              <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+                onContextMenu={(e) => {
+                  if (msg.streaming) return
+                  e.preventDefault()
+                  setMsgCtx({ x: e.clientX, y: e.clientY, content: msg.content, role: msg.role, id: msg.id })
+                }}
+                onTouchStart={(e) => {
+                  if (msg.streaming) return
+                  const touch = e.touches[0]
+                  const cx = touch?.clientX || 0
+                  const cy = touch?.clientY || 0
+                  e.currentTarget._longPress = setTimeout(() => {
+                    setMsgCtx({ x: cx, y: cy, content: msg.content, role: msg.role, id: msg.id })
+                  }, 500)
+                }}
+                onTouchEnd={(e) => clearTimeout(e.currentTarget._longPress)}
+                onTouchMove={(e) => clearTimeout(e.currentTarget._longPress)}
+                style={{ cursor: 'context-menu' }}
+              >
                 {/* Avatar: agent-colored initial or "P" for user */}
                 <div
                   className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
@@ -2264,6 +2329,33 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
           })}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Right-click context menu on messages */}
+      {msgCtx && (
+        <>
+          <div className="fixed inset-0 z-[99999]" onClick={() => setMsgCtx(null)} />
+          <div
+            className="fixed z-[100000] w-[200px] rounded-xl border border-[#292524] bg-[#1A1A18]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+            style={{
+              left: Math.min(msgCtx.x, window.innerWidth - 220),
+              top: Math.min(msgCtx.y, window.innerHeight - 200),
+            }}
+          >
+            <button
+              onClick={() => { navigator.clipboard?.writeText(msgCtx.content); setMsgCtx(null) }}
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-[#F0ECE6] hover:bg-[#292524] transition-colors text-left"
+            >
+              <Copy className="w-3.5 h-3.5 text-[#78716C]" /> Copy Text
+            </button>
+            <button
+              onClick={() => { setInput(msgCtx.content); setMsgCtx(null) }}
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-[#F0ECE6] hover:bg-[#292524] transition-colors text-left"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-[#78716C]" /> Resend
+            </button>
+          </div>
+        </>
+      )}
 
       {/* New messages indicator */}
       <AnimatePresence>
