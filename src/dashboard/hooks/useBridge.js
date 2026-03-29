@@ -36,7 +36,9 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
+  const disconnectGraceTimer = useRef(null)
   const streamBuffer = useRef('')
+  const wasStreamingOnClose = useRef(false)
 
   // Connect to bridge
   const connect = useCallback(() => {
@@ -53,6 +55,12 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
       wsRef.current = ws
 
       ws.onopen = () => {
+        // Reconnected before grace period expired -- cancel the disconnect
+        if (disconnectGraceTimer.current) {
+          clearTimeout(disconnectGraceTimer.current)
+          disconnectGraceTimer.current = null
+          wasStreamingOnClose.current = false
+        }
         // Don't set connected yet, wait for ACK
         // Keepalive ping every 30s to prevent idle timeout
         ws._pingInterval = setInterval(() => {
@@ -72,6 +80,12 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
         switch (msg.type) {
           case 'connected':
+            // Successfully reconnected -- cancel any pending grace timer
+            if (disconnectGraceTimer.current) {
+              clearTimeout(disconnectGraceTimer.current)
+              disconnectGraceTimer.current = null
+              wasStreamingOnClose.current = false
+            }
             setStatus('connected')
             break
 
@@ -135,12 +149,21 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
       ws.onclose = () => {
         if (ws._pingInterval) clearInterval(ws._pingInterval)
-        setStatus('disconnected')
         wsRef.current = null
-        // If we were mid-stream when disconnect happened, recover the UI
-        setStreaming(prev => {
-          if (prev) {
-            // Was streaming -- surface an error response so UI doesn't stay stuck
+
+        // Track if we were streaming when connection dropped
+        setStreaming(prev => { wasStreamingOnClose.current = prev; return prev })
+
+        // Grace period: try to reconnect before showing disconnected state.
+        // Momentary blips (< 5s) stay invisible to the user.
+        reconnectTimer.current = setTimeout(connect, 1000)
+
+        disconnectGraceTimer.current = setTimeout(() => {
+          disconnectGraceTimer.current = null
+          // Still disconnected after grace period -- now surface it
+          setStatus('disconnected')
+          if (wasStreamingOnClose.current) {
+            setStreaming(false)
             setStreamText('')
             streamBuffer.current = ''
             setLastResponse({
@@ -148,11 +171,9 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
               time: new Date().toISOString(),
               error: true,
             })
+            wasStreamingOnClose.current = false
           }
-          return false
-        })
-        // Auto-reconnect after 3s
-        reconnectTimer.current = setTimeout(connect, 3000)
+        }, 5000)
       }
 
       ws.onerror = () => {
@@ -173,6 +194,7 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
+      if (disconnectGraceTimer.current) clearTimeout(disconnectGraceTimer.current)
       if (wsRef.current) {
         wsRef.current.onclose = null // prevent reconnect on intentional close
         wsRef.current.close()
