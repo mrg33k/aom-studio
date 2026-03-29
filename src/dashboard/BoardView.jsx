@@ -538,7 +538,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}
       onClick={e => e.stopPropagation()}
     >
-      <div ref={ref} onScroll={handleScroll}
+      <div ref={ref} onScroll={handleScroll} className="bv-col-scroll"
         onContextMenu={e => {
           // Delegate: find closest message bubble and show context menu
           const bubble = e.target.closest('[data-msg-idx]')
@@ -803,9 +803,12 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
           disabled={uploading}
           style={{
             width: 36, height: 36, borderRadius: 10, border: 'none',
-            background: 'var(--bv-accent)', color: 'var(--bv-accent-text)',
+            background: chat.input?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+            color: '#fff',
             cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             opacity: uploading ? 0.5 : 1,
+            boxShadow: chat.input?.trim() ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
+            transition: 'all 0.15s',
           }}
         >
           {uploading ? (
@@ -1654,57 +1657,84 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes bvSlideIn { from { opacity: 0; transform: translateX(20px) scale(0.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
         .bv-rail-scroll::-webkit-scrollbar { display: none; }
+        .bv-col-scroll::-webkit-scrollbar { width: 4px; }
+        .bv-col-scroll::-webkit-scrollbar-track { background: transparent; }
+        .bv-col-scroll::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.15); border-radius: 3px; }
+        .bv-col-scroll::-webkit-scrollbar-thumb:hover { background: rgba(96,165,250,0.25); }
+        .bv-columns-area::-webkit-scrollbar { height: 4px; }
+        .bv-columns-area::-webkit-scrollbar-track { background: transparent; }
+        .bv-columns-area::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.12); border-radius: 3px; }
       `}</style>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* V5 board background: radial gradients over void */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden',
+        background: 'radial-gradient(ellipse at 15% 50%, rgba(59,130,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(168,85,247,0.02) 0%, transparent 50%)',
+      }}>
 
-        {/* LEFT RAIL -- collapsible */}
-        {/* Collapsed: thin 20px strip with pull tab */}
-        {/* Expanded: 200px with names, status, search */}
+        {/* LEFT RAIL -- collapsible. V5: 56px collapsed, 240px expanded */}
         <div style={{
-          width: railOpen ? 200 : 20, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: railOpen ? 240 : 56, flexShrink: 0, display: 'flex', flexDirection: 'column',
           background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
-          transition: 'width 0.2s ease', overflow: 'hidden', position: 'relative',
+          transition: 'width 0.28s cubic-bezier(0.34,1.56,0.64,1)', overflow: 'hidden', position: 'relative',
         }}>
-          {/* Toggle button */}
+          {/* Toggle button -- V5 style */}
           <button
             onClick={() => setRailOpen(!railOpen)}
             style={{
-              position: railOpen ? 'absolute' : 'relative',
-              top: railOpen ? 6 : 6,
-              right: railOpen ? 6 : 'auto',
-              left: railOpen ? 'auto' : '50%',
-              transform: railOpen ? 'none' : 'translateX(-50%)',
-              width: 18, height: 18, borderRadius: 5,
+              position: 'absolute',
+              top: 8, right: 8,
+              width: 22, height: 22, borderRadius: 6,
               border: '1px solid var(--bv-col-border)',
-              background: 'var(--bv-card)', color: 'var(--bv-dim)',
-              fontSize: 10, cursor: 'pointer', display: 'flex',
+              background: 'var(--bv-card)', color: 'var(--bv-muted)',
+              fontSize: 11, cursor: 'pointer', display: 'flex',
               alignItems: 'center', justifyContent: 'center',
-              zIndex: 2, flexShrink: 0, transition: 'all 0.15s',
+              zIndex: 3, flexShrink: 0, transition: 'all 0.15s',
             }}
             title={railOpen ? 'Collapse rail' : 'Expand rail'}
           >
             {railOpen ? '\u2039' : '\u203A'}
           </button>
 
-          {/* Collapsed: just colored dots */}
+          {/* Collapsed: V5 avatar initials with status dots */}
           {!railOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '30px 0 6px' }}>
-              {allItems.filter(it => visibleSlugs.has(it.slug)).map(it => (
-                <div key={it.slug} style={{
-                  width: 8, height: 8, borderRadius: it.isAgent ? '50%' : 2,
-                  background: it.color || '#60A5FA', opacity: 0.7,
-                  boxShadow: it.status === 'WORKING' ? `0 0 4px ${it.color}` : 'none',
-                }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '30px 0 8px' }}>
+              {allItems.map(it => (
+                <div key={it.slug}
+                  onClick={() => { toggleSlug(it.slug); if (isMobile) setMobileIdx(0) }}
+                  title={it.name || it.slug}
+                  style={{
+                    width: 36, height: 36, borderRadius: it.isAgent ? 10 : 8,
+                    background: visibleSlugs.has(it.slug) ? `${it.color}20` : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${visibleSlugs.has(it.slug) ? `${it.color}50` : 'rgba(255,255,255,0.06)'}`,
+                    color: visibleSlugs.has(it.slug) ? it.color : 'var(--bv-dim)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+                    cursor: 'pointer', position: 'relative', flexShrink: 0,
+                    transition: 'all 0.15s',
+                    boxShadow: it.status === 'WORKING' && visibleSlugs.has(it.slug) ? `0 0 8px ${it.color}40` : 'none',
+                  }}
+                >
+                  {(it.name || it.slug)?.charAt(0)?.toUpperCase()}
+                  {/* Status dot */}
+                  <div style={{
+                    position: 'absolute', bottom: -1, right: -1,
+                    width: 9, height: 9, borderRadius: '50%',
+                    border: '2px solid var(--bv-rail)',
+                    background: it.status === 'WORKING' ? '#22C55E' : it.status === 'DONE' ? '#3B82F6' : '#4B5563',
+                    boxShadow: it.status === 'WORKING' ? '0 0 5px #22C55E' : 'none',
+                  }} />
+                  {/* Unread badge */}
+                  {!visibleSlugs.has(it.slug) && (unreadMap[it.slug] || 0) > 0 && (
+                    <div style={{
+                      position: 'absolute', top: -4, right: -4,
+                      minWidth: 14, height: 14, borderRadius: 7,
+                      background: '#E85D26', color: '#fff',
+                      fontSize: 8, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+                    }}>{unreadMap[it.slug]}</div>
+                  )}
+                </div>
               ))}
-              {/* Show notification pulse if any hidden agent has unread */}
-              {allItems.some(it => !visibleSlugs.has(it.slug) && (unreadMap[it.slug] || 0) > 0) && (
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: '#F97316', marginTop: 4,
-                  animation: 'bvPulse 1.5s infinite',
-                }} />
-              )}
             </div>
           )}
 
@@ -1767,7 +1797,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
         {/* COLUMNS AREA */}
         {!isMobile ? (
-          <div style={{ flex: 1, display: 'flex', gap: 10, padding: '12px 16px', overflowX: 'auto', overflowY: 'hidden' }}>
+          <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '12px 14px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
             {orderedVisibleItems.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--bv-dim)' }}>
                 <div style={{ fontSize: 36, opacity: 0.2 }}>&#9776;</div>
