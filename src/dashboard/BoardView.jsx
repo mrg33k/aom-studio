@@ -1708,6 +1708,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       height: '100%', width: '100%', background: 'var(--bv-bg)',
       overflow: 'hidden', transition: 'background 0.4s',
       paddingTop: isMobile ? `calc(${hudHeight}px + env(safe-area-inset-top, 0px))` : hudHeight,
+      paddingBottom: hasRightNow ? (isMobile ? 'calc(40px + env(safe-area-inset-bottom, 0px))' : '40px') : (isMobile ? 'env(safe-area-inset-bottom, 0px)' : 0),
     }}>
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -1882,7 +1883,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
         {/* COLUMNS AREA */}
         {!isMobile ? (
-          <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '12px 14px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
+          <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '4px 14px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
             {orderedVisibleItems.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--bv-dim)' }}>
                 <div style={{ fontSize: 36, opacity: 0.2 }}>&#9776;</div>
