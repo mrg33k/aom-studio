@@ -299,9 +299,12 @@ export default function Onboarding() {
   const worldInputRef = useRef(null)
 
   // On mount: check if user already has a world. If so, skip onboarding entirely.
+  // Exception: QA mode forces onboarding even for existing users -- don't auto-redirect.
   useEffect(() => {
     async function checkExistingWorld() {
       if (!supabase) return
+      // In QA mode, we want to show onboarding regardless of existing world
+      if (sessionStorage.getItem('corner-qa-active') === 'true') return
       try {
         const { data: { user } } = await supabase.auth.getUser()
         const meta = user?.user_metadata || {}
