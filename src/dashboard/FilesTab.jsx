@@ -200,16 +200,28 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   const loadFiles = useCallback(async () => {
     setFilesLoading(true)
     try {
-      const prefix = `${agentSlug}/${clientId || 'default'}/`
-      const res = await fetch(`${FILES_API}?type=images&prefix=${encodeURIComponent(prefix)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      setFiles((data.files || []).map(item => ({
-        ...item,
-        source: 'supabase',
-        agent: agentSlug,
-        clientId: clientId || 'default',
-      })))
+      const prefixes = [
+        `${agentSlug}/${clientId || 'default'}/`,
+        `${agentSlug}/chat/`,
+        `${agentSlug}/`,
+      ]
+      const seenUrls = new Set()
+      const allFiles = []
+      await Promise.all(prefixes.map(async (prefix) => {
+        try {
+          const res = await fetch(`${FILES_API}?type=images&prefix=${encodeURIComponent(prefix)}`)
+          if (!res.ok) return
+          const data = await res.json()
+          for (const item of (data.files || [])) {
+            if (!seenUrls.has(item.url)) {
+              seenUrls.add(item.url)
+              allFiles.push({ ...item, source: 'supabase', agent: agentSlug, clientId: clientId || 'default' })
+            }
+          }
+        } catch {}
+      }))
+      allFiles.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      setFiles(allFiles)
     } catch (err) {
       console.warn('[FilesTab] Failed to load files:', err.message)
       setFiles([])
