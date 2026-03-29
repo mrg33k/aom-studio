@@ -1707,7 +1707,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       ...vars, display: 'flex', flexDirection: 'column',
       height: '100%', width: '100%', background: 'var(--bv-bg)',
       overflow: 'hidden', transition: 'background 0.4s',
-      paddingTop: isMobile ? `calc(${hudHeight + (hasRightNow ? 34 : 0)}px + env(safe-area-inset-top, 0px))` : hudHeight + (hasRightNow ? 34 : 0),
+      paddingTop: isMobile ? `calc(${hudHeight}px + env(safe-area-inset-top, 0px))` : hudHeight,
     }}>
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

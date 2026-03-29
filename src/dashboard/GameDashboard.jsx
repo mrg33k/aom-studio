@@ -10219,7 +10219,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           onTouchStart={isMobile ? () => onInputFocus?.() : undefined}
           style={{
           padding: '16px 20px',
-          paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
+          paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : (16 + ((rightNowTasks?.length > 0) ? 40 : 0)),
           borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
           background: isNightMode
             ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
@@ -13303,9 +13303,9 @@ export default function GameDashboard() {
             // keyboard actually opens. Snapping here first causes it to save 'full'
             // as the restore point, so the drawer never returns to half on keyboard close.
           }}
-          // Raise input above the GameHUD bar (flush at bottom in both snaps).
+          // Raise input above the GameHUD bar + Now Bar when active.
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
-          bottomOffset={hudBarHeight}
+          bottomOffset={hudBarHeight + (rightNowTasks.length > 0 ? 40 : 0)}
         />
       )}
       </>}
