@@ -12804,7 +12804,7 @@ export default function GameDashboard() {
       {rightNowTasks.length > 0 && (
         <div style={{
           flexShrink: 0,
-          height: isMobile ? 'calc(40px + env(safe-area-inset-bottom, 0px))' : 40,
+          height: isMobile ? 'calc(70px + env(safe-area-inset-bottom, 0px))' : 70,
           display: 'flex', alignItems: 'center', gap: 8,
           padding: isMobile ? '0 12px env(safe-area-inset-bottom, 0px) 12px' : '0 20px',
           zIndex: 34,
