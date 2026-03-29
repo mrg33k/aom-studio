@@ -450,14 +450,23 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   // Check if any message is currently streaming
   const isStreaming = chat.messages.some(m => m.streaming)
 
+  // Rendered message count (streaming placeholders excluded -- they're filtered at render time)
+  const renderedCount = chat.messages.filter(m => !m.streaming).length
+
   // Smart scroll: auto-scroll unless user scrolled up
   const scrollToBottom = useCallback(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
   }, [])
 
+  // Scroll on rendered message count change (not total, to avoid jump when streaming placeholder is added/removed)
   useEffect(() => {
     if (!isUserScrolledUp.current) scrollToBottom()
-  }, [chat.messages.length, scrollToBottom])
+  }, [renderedCount, scrollToBottom])
+
+  // Also scroll during streaming so text stays in view
+  useEffect(() => {
+    if (isStreaming && !isUserScrolledUp.current) scrollToBottom()
+  }, [isStreaming, chat.bridge?.streamText, scrollToBottom])
 
   const handleScroll = useCallback(() => {
     if (!ref.current) return
