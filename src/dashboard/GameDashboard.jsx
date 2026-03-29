@@ -3104,10 +3104,11 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 29,
       minHeight: 48,
-      background: 'rgba(15,25,50,0.98)',
-      backdropFilter: 'blur(16px)',
-      borderTop: '1px solid rgba(59,130,246,0.10)',
-      display: 'flex', alignItems: 'center',
+      background: 'linear-gradient(180deg, rgba(10,16,32,0.98) 0%, rgba(6,10,18,0.99) 100%)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderTop: '1px solid rgba(255,255,255,0.05)',
+      display: 'flex', alignItems: 'stretch',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       {modeList.map(mode => {
@@ -3119,16 +3120,23 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
             onClick={() => onModeSwitch(mode.id)}
             style={{
               flex: 1, height: 48,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: active ? '#3B9EFF' : '#6B7280',
-              minWidth: 48, minHeight: 48, // Touch target 44px+ met
+              borderBottom: active ? '2px solid #E85D26' : '2px solid transparent',
+              transition: 'color 0.15s cubic-bezier(0.4,0,0.2,1), border-color 0.2s cubic-bezier(0.4,0,0.2,1)',
+              color: active ? '#F0F4FF' : '#506480',
+              minWidth: 48, minHeight: 48,
             }}
           >
-            <Icon size={22} />
-            {active && (
-              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#3B9EFF' }} />
-            )}
+            <Icon size={18} />
+            <span style={{
+              fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
+              fontSize: 8, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: active ? '#E85D26' : '#506480',
+            }}>
+              {mode.label}
+            </span>
           </button>
         )
       })}
@@ -4480,9 +4488,6 @@ function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, cur
 function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId, onReturnToMyWorld }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
-  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done' | 'error'
-  const [unstuckReport, setUnstuckReport] = useState(null)
-  const unstuckLockRef = useRef(false) // synchronous mutex -- prevents concurrent runs on rapid tap
   const [teamName, setTeamName] = useState('Team')
   const [editingName, setEditingName] = useState(false)
   const teamRef = useRef(null)
@@ -4547,20 +4552,20 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
       touchAction: 'auto',
       paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
-      background: isNightMode ? '#060A12' : 'rgba(14,42,82,0.95)',
+      background: isNightMode ? '#060A12' : '#0F3254',
     }}>
-      {/* Top bar -- V5 style */}
+      {/* Top bar -- V5 production style (Steffen option-v5-production.html) */}
       <div style={{
         height: isMobile ? 48 : 52,
-        transition: 'background 400ms ease, border-color 300ms ease',
+        transition: 'background 0.4s cubic-bezier(0.4,0,0.2,1), border-color 0.3s cubic-bezier(0.4,0,0.2,1)',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(14,22,40,0.98) 0%, rgba(10,16,32,0.96) 100%)'
-          : 'linear-gradient(180deg, rgba(14,42,82,0.96) 0%, rgba(16,46,90,0.92) 100%)',
+          : 'linear-gradient(180deg, rgba(20,60,100,0.95) 0%, rgba(15,50,85,0.93) 100%)',
         backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderBottom: isNightMode
           ? '1px solid rgba(255,255,255,0.05)'
-          : '1px solid rgba(59,130,246,0.2)',
-        boxShadow: '0 1px 0 rgba(0,0,0,0.3)',
+          : '1px solid rgba(255,255,255,0.10)',
         display: 'flex', alignItems: 'center',
         padding: isMobile ? '0 12px' : '0 20px',
         gap: isMobile ? 8 : 12,
@@ -4569,6 +4574,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
+        position: 'relative',
+        zIndex: 1,
       }} className="topbar-scroll">
         {/* Corner. wordmark -- V5: Inter Tight, 17px, 0.08em tracking */}
         <div style={{
@@ -5450,139 +5457,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           </button>
         )}
 
-        {/* Unstuck button -- full system recovery: push commits, verify deploy, reconcile PIDs, clean ghosts, refill queue. Shown in all views except checklist. */}
-        {viewMode !== 'checklist' && (
-          <button
-            title="Unstuck: push commits · verify deploy · reconcile PIDs · clean ghosts · refill queue"
-            onClick={async () => {
-              // Mutex: ref check is synchronous (no render-cycle gap like state check)
-              if (unstuckLockRef.current || unstuckToast !== null) return
-              unstuckLockRef.current = true
-              setUnstuckToast('loading')
-              setUnstuckReport(null)
-              try {
-                const results = await onUnstuck?.()
-                // Build human-readable summary from results
-                const lines = []
-                const r = results?.local?.report
-                if (r) {
-                  if (r.push?.pushed) lines.push(`${r.push.count} commit${r.push.count !== 1 ? 's' : ''} pushed`)
-                  else if (r.push?.count === 0) lines.push('nothing to push')
-                  if (r.deploy?.ok) lines.push('deploy live')
-                  else if (r.deploy) lines.push('deploy unreachable')
-                  if (r.pidReconcile?.ran) lines.push('PIDs reconciled')
-                  if (r.queueRefill?.status === 'promoted') lines.push('task promoted')
-                  else if (r.queueRefill?.status === 'full') lines.push('queue full')
-                  else if (r.queueRefill?.status === 'empty') lines.push('queue empty')
-                  else if (r.queueRefill?.ran) lines.push('queue checked')
-                  if (r.launchQueue?.staleCleared > 0) lines.push(`${r.launchQueue.staleCleared} stale launch${r.launchQueue.staleCleared !== 1 ? 'es' : ''} cleared`)
-                  if (r.launchQueue?.dupeCleared > 0) lines.push(`${r.launchQueue.dupeCleared} dupe${r.launchQueue.dupeCleared !== 1 ? 's' : ''} removed`)
-                  if (r.launchQueue?.depth > 0) lines.push(`${r.launchQueue.depth} launch${r.launchQueue.depth !== 1 ? 'es' : ''} queued`)
-                  if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
-                  if (r.relayReset?.listenerRestarted) lines.push('listener restarted')
-                  if (r.relayReset?.tmux === 'restarted') lines.push('relay restarted')
-                  else if (typeof r.relayReset?.tmux === 'string' && r.relayReset.tmux.startsWith('failed')) lines.push('relay restart failed')
-                  // Local Supabase cleanup (localhost only -- cloud endpoint handles this on production)
-                  const sc = r.supabaseCleanup
-                  if (sc?.cleared > 0) lines.push(`${sc.cleared} task${sc.cleared !== 1 ? 's' : ''} cleared`)
-                  if (sc?.reset > 0) lines.push(`${sc.reset} agent${sc.reset !== 1 ? 's' : ''} reset`)
-                }
-                // Production cloud Supabase cleanup results
-                const cloud = results?.cloud
-                if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
-                if (cloud?.reset > 0) lines.push(`${cloud.reset} agent${cloud.reset !== 1 ? 's' : ''} reset`)
-                if (cloud?.queueDepth > 0) lines.push(`${cloud.queueDepth} queued`)
-                const summary = lines.length > 0 ? lines.join(' · ') : 'System clean'
-                setUnstuckReport(summary)
-                setUnstuckToast('done')
-                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null); unstuckLockRef.current = false }, 3500)
-              } catch {
-                setUnstuckReport('Failed to reach unstuck endpoint')
-                setUnstuckToast('error')
-                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null); unstuckLockRef.current = false }, 2500)
-              }
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 5, flexShrink: 0,
-              background: isNightMode
-                ? 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(202,138,4,0.12) 100%)'
-                : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(202,138,4,0.10) 100%)',
-              border: isNightMode ? '1.5px solid rgba(234,179,8,0.58)' : '1.5px solid rgba(234,179,8,0.52)',
-              borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
-              cursor: (unstuckToast === 'loading' || unstuckToast === 'done' || unstuckToast === 'error') ? 'default' : 'pointer',
-              transition: 'all 150ms ease',
-              position: 'relative',
-              opacity: (unstuckToast === 'loading' || unstuckToast === 'done' || unstuckToast === 'error') ? 0.7 : 1,
-              boxShadow: '0 2px 8px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
-            }}
-            onMouseEnter={e => {
-              if (unstuckToast === 'loading' || unstuckToast === 'done' || unstuckToast === 'error') return
-              e.currentTarget.style.background = isNightMode
-                ? 'linear-gradient(135deg, rgba(234,179,8,0.28) 0%, rgba(202,138,4,0.20) 100%)'
-                : 'linear-gradient(135deg, rgba(234,179,8,0.24) 0%, rgba(202,138,4,0.16) 100%)'
-              e.currentTarget.style.borderColor = 'rgba(234,179,8,0.75)'
-              e.currentTarget.style.boxShadow = '0 2px 12px rgba(234,179,8,0.35), inset 0 1px 0 rgba(255,255,255,0.12)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = isNightMode
-                ? 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(202,138,4,0.12) 100%)'
-                : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(202,138,4,0.10) 100%)'
-              e.currentTarget.style.borderColor = isNightMode ? 'rgba(234,179,8,0.58)' : 'rgba(234,179,8,0.52)'
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.08)'
-            }}
-          >
-            <Zap size={13} color={isNightMode ? '#EAB308' : '#CA8A04'} />
-            {!isMobile && (
-              <span style={{
-                fontSize: 12, fontWeight: 700,
-                color: isNightMode ? '#EAB308' : '#CA8A04',
-                fontFamily: "'Inter', sans-serif",
-              }}>
-                {unstuckToast === 'loading' ? '...' : unstuckToast === 'done' ? 'Done' : unstuckToast === 'error' ? 'Err' : 'Unstuck'}
-              </span>
-            )}
-            {/* Toast confirmation */}
-            <AnimatePresence>
-              {(unstuckToast === 'done' || unstuckToast === 'error') && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.9 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: unstuckToast === 'error'
-                      ? (isNightMode ? 'linear-gradient(135deg, rgba(32,4,4,0.98) 0%, rgba(20,4,4,0.98) 100%)' : 'linear-gradient(135deg, rgba(255,240,240,0.99) 0%, rgba(255,220,220,0.98) 100%)')
-                      : (isNightMode
-                        ? 'linear-gradient(135deg, rgba(32,20,4,0.98) 0%, rgba(20,14,4,0.98) 100%)'
-                        : 'linear-gradient(135deg, rgba(255,248,220,0.99) 0%, rgba(255,240,180,0.98) 100%)'),
-                    border: unstuckToast === 'error'
-                      ? (isNightMode ? '1.5px solid rgba(239,68,68,0.55)' : '1.5px solid rgba(185,28,28,0.50)')
-                      : (isNightMode ? '1.5px solid rgba(234,179,8,0.55)' : '1.5px solid rgba(202,138,4,0.50)'),
-                    borderRadius: 6, padding: '6px 12px',
-                    zIndex: 200,
-                    fontSize: 11, fontWeight: 600,
-                    color: unstuckToast === 'error'
-                      ? (isNightMode ? '#F87171' : '#B91C1C')
-                      : (isNightMode ? '#EAB308' : '#92400E'),
-                    fontFamily: "'Inter', sans-serif",
-                    boxShadow: unstuckToast === 'error'
-                      ? (isNightMode ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(239,68,68,0.15)' : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(239,68,68,0.12)')
-                      : (isNightMode ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(234,179,8,0.15)' : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(234,179,8,0.12)'),
-                    pointerEvents: 'none',
-                    maxWidth: 360,
-                    whiteSpace: 'normal',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {unstuckReport || (unstuckToast === 'error' ? 'Unstuck failed' : 'System unstuck')}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </button>
-        )}
+        {/* Unstuck button removed */}
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
@@ -5592,16 +5467,6 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
           }}>
-            {!isMobile && (
-              <span style={{
-                fontSize: 12, fontWeight: 500,
-                color: isNightMode ? '#475569' : '#6B8AB0',
-                fontFamily: "'Inter', sans-serif",
-                maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {currentUser.email}
-              </span>
-            )}
             <button
               title="Sign out"
               onClick={onSignOut}
