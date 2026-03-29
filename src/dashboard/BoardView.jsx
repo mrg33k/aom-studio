@@ -36,30 +36,31 @@ function getAgentName(slug) {
 
 function cssVars(isNight) {
   if (isNight) return {
-    '--bv-bg': '#0B1A3E',
-    '--bv-rail': 'rgba(8,16,40,0.7)',
-    '--bv-bar': 'rgba(10,20,50,0.6)',
-    '--bv-bar2': 'rgba(10,20,50,0.3)',
-    '--bv-col': 'rgba(15,35,90,0.35)',
-    '--bv-col-exp': 'rgba(20,45,110,0.4)',
-    '--bv-col-border': 'rgba(60,120,255,0.15)',
-    '--bv-col-border-exp': 'rgba(80,150,255,0.35)',
-    '--bv-card': 'rgba(15,45,140,0.2)',
-    '--bv-card-border': 'rgba(60,120,255,0.12)',
-    '--bv-card-hover': 'rgba(20,55,160,0.3)',
-    '--bv-divider': 'rgba(60,120,255,0.08)',
-    '--bv-input-bg': 'rgba(15,35,80,0.5)',
-    '--bv-input-border': 'rgba(60,120,255,0.15)',
-    '--bv-chat-agent': 'rgba(15,45,140,0.25)',
-    '--bv-chat-user': 'rgba(59,130,246,0.2)',
-    '--bv-text': '#E8ECF4',
-    '--bv-text2': '#C8D4E0',
-    '--bv-muted': '#6B7280',
-    '--bv-dim': '#4A6585',
-    '--bv-accent': 'rgba(59,130,246,0.2)',
-    '--bv-accent-border': 'rgba(59,130,246,0.5)',
+    // V5 depth system -- Steffen 2026-03-28
+    '--bv-bg': '#060A12',
+    '--bv-rail': '#0A1020',
+    '--bv-bar': 'rgba(14,22,40,0.98)',
+    '--bv-bar2': 'rgba(10,16,32,0.3)',
+    '--bv-col': '#0E1628',
+    '--bv-col-exp': '#121E34',
+    '--bv-col-border': 'rgba(96,165,250,0.15)',
+    '--bv-col-border-exp': 'rgba(96,165,250,0.35)',
+    '--bv-card': '#121E34',
+    '--bv-card-border': 'rgba(255,255,255,0.05)',
+    '--bv-card-hover': '#162844',
+    '--bv-divider': 'rgba(255,255,255,0.03)',
+    '--bv-input-bg': '#0E1628',
+    '--bv-input-border': 'rgba(255,255,255,0.06)',
+    '--bv-chat-agent': '#121E34',
+    '--bv-chat-user': 'rgba(59,130,246,0.15)',
+    '--bv-text': '#F0F4FF',
+    '--bv-text2': '#94A8C8',
+    '--bv-muted': '#506480',
+    '--bv-dim': '#2E4260',
+    '--bv-accent': 'rgba(59,130,246,0.10)',
+    '--bv-accent-border': 'rgba(96,165,250,0.35)',
     '--bv-accent-text': '#60A5FA',
-    '--bv-badge': 'rgba(60,120,255,0.1)',
+    '--bv-badge': 'rgba(59,130,246,0.10)',
   }
   return {
     '--bv-bg': '#1A3A7A',
@@ -1146,9 +1147,10 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: 320, maxWidth: 380, flex: '0 0 auto', borderRadius: 14,
-          border: `1.5px solid ${isDragTarget ? 'var(--bv-accent-border)' : `${color}35`}`,
-          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 6%, var(--bv-col))`,
-          backdropFilter: 'blur(8px)',
+          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : 'rgba(255,255,255,0.04)'}`,
+          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 5%, var(--bv-col))`,
+          backdropFilter: 'blur(12px)',
+          boxShadow: `0 4px 24px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         }),
         transition: 'all 0.25s', overflow: 'hidden',
         animation: 'bvSlideIn 0.25s ease',
@@ -1158,32 +1160,39 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <div
         onContextMenu={handleHeaderCtx}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-          borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px',
+          borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0, position: 'relative',
           cursor: isMobile ? 'default' : 'grab',
+          background: 'rgba(0,0,0,0.15)',
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 10px ${color}50` }} />
+        {/* V5: 36px rounded-square avatar */}
         <div style={{
-          width: 30, height: 30, borderRadius: '50%',
-          background: `${color}22`, border: `1.5px solid ${color}60`, color,
+          width: 36, height: 36, borderRadius: 10,
+          background: `${color}18`, border: `1.5px solid ${color}45`, color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 14, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+          flexShrink: 0,
         }}>
           {agent.name?.charAt(0) || agent.slug?.charAt(0)?.toUpperCase()}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bv-text)' }}>{agent.name || agent.slug}</div>
-          <div style={{ fontSize: 10, color: 'var(--bv-muted)' }}>{agent.role || ''}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* V5: name in Inter Tight */}
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--bv-text)', fontFamily: "'Inter Tight', 'Inter', sans-serif", letterSpacing: '0.01em', lineHeight: 1.2 }}>{agent.name || agent.slug}</div>
+          {/* V5: role in JetBrains Mono */}
+          {agent.role && <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: 2 }}>{agent.role}</div>}
         </div>
+        {/* V5: status pill */}
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 3,
-          padding: '2px 7px', borderRadius: 20,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          padding: '4px 10px', borderRadius: 20,
           background: statusCfg.bg, border: `1px solid ${statusCfg.border}`,
-          fontSize: 8, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-          textTransform: 'uppercase', letterSpacing: '0.1em', color: statusCfg.color,
+          fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          textTransform: 'uppercase', letterSpacing: '0.06em', color: statusCfg.color,
+          flexShrink: 0,
         }}>
-          <span style={{ width: 4, height: 4, borderRadius: '50%', background: statusCfg.color, boxShadow: statusCfg.glow ? `0 0 5px ${statusCfg.color}` : 'none' }} />
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusCfg.color, boxShadow: statusCfg.glow ? `0 0 6px ${statusCfg.color}` : 'none', flexShrink: 0 }} />
           {status}
         </div>
         {!isMobile && (
@@ -1239,9 +1248,10 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: 320, maxWidth: 380, flex: '0 0 auto', borderRadius: 14,
-          border: `1.5px solid ${isDragTarget ? 'var(--bv-accent-border)' : `${color}35`}`,
-          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 6%, var(--bv-col))`,
-          backdropFilter: 'blur(8px)',
+          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : 'rgba(255,255,255,0.04)'}`,
+          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 5%, var(--bv-col))`,
+          backdropFilter: 'blur(12px)',
+          boxShadow: `0 4px 24px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         }),
         transition: 'all 0.25s', overflow: 'hidden',
         animation: 'bvSlideIn 0.25s ease',
@@ -1251,23 +1261,25 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
       <div
         onContextMenu={handleHeaderCtx}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-          borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px',
+          borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0, position: 'relative',
           cursor: isMobile ? 'default' : 'grab',
+          background: 'rgba(0,0,0,0.15)',
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 10px ${color}50` }} />
         <div style={{
-          width: 30, height: 30, borderRadius: 10,
-          background: `${color}22`, border: `1.5px solid ${color}60`, color,
+          width: 36, height: 36, borderRadius: 10,
+          background: `${color}18`, border: `1.5px solid ${color}45`, color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 14, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+          flexShrink: 0,
         }}>
           {project.name?.charAt(0) || 'P'}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bv-text)' }}>{project.name}</div>
-          <div style={{ fontSize: 10, color: 'var(--bv-muted)' }}>Project</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--bv-text)', fontFamily: "'Inter Tight', 'Inter', sans-serif", letterSpacing: '0.01em', lineHeight: 1.2 }}>{project.name}</div>
+          <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: 2 }}>Project</div>
         </div>
         <span style={{
           fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
