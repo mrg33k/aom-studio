@@ -457,6 +457,59 @@ function ReadReceipt({ status }) {
   )
 }
 
+// ── MESSAGE CONTENT RENDERER ─────────────────────────────────────────────────
+// Renders plain text, [file](url) links, and inline images from agents/users
+
+const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg|bmp|heic|heif)(\?.*)?$/i
+
+function renderMessageContent(content) {
+  if (!content) return null
+  // Split on [file](url) or ![alt](url) patterns, render images inline
+  const parts = []
+  const pattern = /(!?\[([^\]]*)\]\((https?:\/\/[^)]+)\))/g
+  let last = 0
+  let match
+  while ((match = pattern.exec(content)) !== null) {
+    // Text before this match
+    if (match.index > last) {
+      const txt = content.slice(last, match.index).trim()
+      if (txt) parts.push(<span key={`t-${last}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{txt}</span>)
+    }
+    const isImage = match[1].startsWith('!') || IMAGE_EXTS.test(match[3])
+    if (isImage) {
+      parts.push(
+        <img key={`img-${match.index}`} src={match[3]} alt={match[2] || 'image'}
+          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
+          onClick={() => window.open(match[3], '_blank')}
+          onError={e => { e.target.style.display = 'none' }}
+        />
+      )
+    } else {
+      parts.push(<a key={`a-${match.index}`} href={match[3]} target="_blank" rel="noopener noreferrer"
+        style={{ color: '#60A5FA', textDecoration: 'underline' }}>{match[2] || match[3]}</a>)
+    }
+    last = match.index + match[0].length
+  }
+  // Remaining text — also scan for bare image URLs
+  const tail = content.slice(last)
+  if (tail) {
+    const urlPattern = /(https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?\S*)?)/gi
+    const tailParts = tail.split(urlPattern)
+    tailParts.forEach((seg, i) => {
+      if (IMAGE_EXTS.test(seg) && seg.startsWith('http')) {
+        parts.push(<img key={`bi-${i}`} src={seg} alt="image"
+          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
+          onClick={() => window.open(seg, '_blank')}
+          onError={e => { e.target.style.display = 'none' }}
+        />)
+      } else if (seg.trim()) {
+        parts.push(<span key={`ts-${i}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{seg}</span>)
+      }
+    })
+  }
+  return parts.length > 0 ? parts : <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{content}</span>
+}
+
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
 function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent }) {
@@ -502,7 +555,8 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         try {
           const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
           const ext = file.name.split('.').pop()
-          const storagePath = `${agentSlug}/chat/${id}.${ext}`
+          // Use same path as FilesTab so uploads appear in Files tab immediately
+          const storagePath = `${agentSlug}/${getClientId()}/chat-${id}.${ext}`
           const signRes = await fetch('/api/dashboard/files', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -590,7 +644,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                     compact={true}
                   />
                 ) : (
-                  <div>{m.content}</div>
+                  <div>{renderMessageContent(m.content)}</div>
                 )}
                 {/* WhatsApp-style read receipts on user messages */}
                 {m.role === 'user' && m.status && (
