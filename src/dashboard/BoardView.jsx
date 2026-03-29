@@ -646,6 +646,22 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
             }
           }
         }}
+        onTouchStart={e => {
+          const bubble = e.target.closest('[data-msg-idx]')
+          if (bubble) {
+            const touch = e.touches[0]
+            const cx = touch?.clientX || 0, cy = touch?.clientY || 0
+            ref.current._msgLp = setTimeout(() => {
+              const idx = parseInt(bubble.dataset.msgIdx, 10)
+              const m = chat.messages[idx]
+              if (m && !m.streaming) {
+                setMsgCtx({ x: cx, y: cy, content: m.content, role: m.role })
+              }
+            }, 500)
+          }
+        }}
+        onTouchEnd={() => clearTimeout(ref.current?._msgLp)}
+        onTouchMove={() => clearTimeout(ref.current?._msgLp)}
         style={{
         flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '12px 14px',
         display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0,
@@ -969,6 +985,15 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
         <div
           key={t.taskId || t.id || t.text || i}
           onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
+          onTouchStart={e => {
+            const touch = e.touches[0]
+            const cx = touch?.clientX || 0, cy = touch?.clientY || 0
+            e.currentTarget._lp = setTimeout(() => {
+              onContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, t)
+            }, 500)
+          }}
+          onTouchEnd={e => clearTimeout(e.currentTarget._lp)}
+          onTouchMove={e => clearTimeout(e.currentTarget._lp)}
           style={{
             padding: '10px 12px', borderRadius: 10, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
             marginBottom: 5, cursor: 'context-menu', transition: 'all 0.2s',
