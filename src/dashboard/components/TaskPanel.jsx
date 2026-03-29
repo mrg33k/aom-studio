@@ -229,9 +229,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     }
   }, [DRAG_ORDER_KEY, project?.section])
 
-  // Toggle checkbox: write to punch-list.md via API
+  // Toggle checkbox: write to punch-list.md (local) or Supabase task-action (production)
   const toggleTask = useCallback(async (task, origIdx) => {
-    if (!IS_LOCAL || !task.raw) return
     const currentDone = getTaskDone(task, origIdx)
     const newDone = !currentDone
 
@@ -239,27 +238,37 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     setLocalToggles(prev => ({ ...prev, [origIdx]: newDone }))
     setSaving(origIdx)
 
+    const revert = () => setLocalToggles(prev => { const next = { ...prev }; delete next[origIdx]; return next })
+
     try {
-      const res = await fetch('/api/local/punch-toggle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lineText: task.raw, markDone: newDone }),
-      })
-      if (!res.ok) {
-        // Revert on failure
-        setLocalToggles(prev => {
-          const next = { ...prev }
-          delete next[origIdx]
-          return next
+      if (IS_LOCAL && task.raw) {
+        // LOCAL: edit punch-list.md directly
+        const res = await fetch('/api/local/punch-toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lineText: task.raw, markDone: newDone }),
         })
+        if (!res.ok) revert()
+      } else if (task.id || task.text) {
+        // PRODUCTION: persist via Supabase task-action API
+        const clientId = getClientId()
+        const res = await fetch('/api/dashboard/task-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'toggle',
+            taskId: task.id || undefined,
+            taskText: task.text || '',
+            clientId,
+            payload: newDone,
+          }),
+        })
+        if (!res.ok) revert()
+      } else {
+        revert()
       }
     } catch {
-      // Revert on error
-      setLocalToggles(prev => {
-        const next = { ...prev }
-        delete next[origIdx]
-        return next
-      })
+      revert()
     } finally {
       setSaving(null)
     }
