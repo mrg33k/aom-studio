@@ -990,7 +990,7 @@ export default function GameHUD({
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 gap: 6,
-                padding: isMobile ? '4px 0 2px' : '6px 0 2px',
+                padding: isMobile ? '34px 0 2px' : '36px 0 2px',
                 minHeight: isMobile ? 36 : 42,
                 position: 'relative',
                 zIndex: 2,
