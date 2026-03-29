@@ -243,10 +243,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* Sourcing: Global */}
           <Route path="/sourcing" element={<SourcingLanding />} />
           <Route path="/sourcing/admin" element={<SourcingAdmin />} />
-          <Route path="/sourcing/new" element={<SourcingCreate />} />
+          <Route path="/sourcing/admin/new" element={<SourcingAdmin />} />
+          <Route path="/sourcing/admin/settings/:tenantSlug" element={<SourcingAdmin />} />
           {/* Sourcing: Tenant-scoped routes */}
           <Route path="/sourcing/:tenantSlug" element={<SourcingDirectory />} />
-          <Route path="/sourcing/:tenantSlug/settings" element={<SourcingSettings />} />
           <Route path="/sourcing/:tenantSlug/signup" element={<SourcingSignup />} />
           <Route path="/sourcing/:tenantSlug/jobs" element={<SourcingJobs />} />
           <Route path="/sourcing/:tenantSlug/jobs/post" element={<SourcingJobsPost />} />

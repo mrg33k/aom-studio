@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+const SourcingCreate = lazy(() => import('./SourcingCreate.jsx'));
+const SourcingSettings = lazy(() => import('./SourcingSettings.jsx'));
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
@@ -407,6 +409,13 @@ function ListingRow({ listing, company, onToggle, V }) {
 function SourcingAdminInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
+
+  // Detect admin sub-routes
+  const isNew = location.pathname === '/sourcing/admin/new';
+  const isSettings = location.pathname.startsWith('/sourcing/admin/settings/');
 
   const [authed, setAuthed] = useState(false);
   const [pwInput, setPwInput] = useState('');
@@ -691,6 +700,23 @@ function SourcingAdminInner() {
     );
   }
 
+  // ─── Admin Sub-routes (behind the gate) ──────────────────────────────────
+  if (isNew) {
+    return (
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: V.bg }} />}>
+        <SourcingCreate />
+      </Suspense>
+    );
+  }
+
+  if (isSettings) {
+    return (
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: V.bg }} />}>
+        <SourcingSettings />
+      </Suspense>
+    );
+  }
+
   // ─── Admin Dashboard ──────────────────────────────────────────────────────
   const TABS = [
     { key: 'stats',      label: 'Stats' },
@@ -739,6 +765,28 @@ function SourcingAdminInner() {
             ))}
           </select>
         )}
+        {selectedTenant && (
+          <button
+            onClick={() => navigate(`/sourcing/admin/settings/${selectedTenant.slug}`)}
+            style={{
+              background: V.accentDim, border: `1px solid ${V.accentBrd}`,
+              color: V.accent, borderRadius: 6, padding: '5px 12px',
+              fontSize: 12, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            Edit Settings
+          </button>
+        )}
+        <button
+          onClick={() => navigate('/sourcing/admin/new')}
+          style={{
+            background: V.accent, border: 'none',
+            color: '#fff', borderRadius: 6, padding: '5px 12px',
+            fontSize: 12, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          + New Directory
+        </button>
         <button
           onClick={() => setAuthed(false)}
           style={{

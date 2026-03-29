@@ -48,7 +48,7 @@ export function SourcingNav({ active, tenantSlug, tenantName, features, brandCol
     { key: 'directory',   label: 'Directory',    href: base,                   show: true },
     { key: 'marketplace', label: 'Marketplace',  href: `${base}/marketplace`,  show: f.marketplace !== false },
     { key: 'jobs',        label: 'Jobs',         href: `${base}/jobs`,         show: f.jobs !== false },
-    { key: 'settings',    label: 'Settings',     href: `${base}/settings`,     show: !!tenantSlug },
+    { key: 'settings',    label: 'Settings',     href: `${base}/settings`,     show: false },
     { key: 'events',      label: 'Events',       href: `${base}/events`,       show: f.events !== false },
     { key: 'articles',    label: 'Articles',     href: `${base}/articles`,     show: f.articles !== false },
   ];
