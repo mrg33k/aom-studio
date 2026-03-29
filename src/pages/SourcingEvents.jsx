@@ -326,12 +326,16 @@ function SourcingEventsInner() {
   const [vertical, setVertical] = useState('all');
   const [eventType, setEventType] = useState('all');
   const [upcomingOnly, setUpcomingOnly] = useState(true);
+  const [virtualFilter, setVirtualFilter] = useState('all'); // 'all' | 'virtual' | 'inperson'
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [viewMode, setViewMode] = useState('list');
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const fetchListings = useCallback(async (q, v, et, upcoming) => {
+  const fetchListings = useCallback(async (q, v, et, upcoming, virtFilt, dFrom, dTo) => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
     try {
@@ -345,7 +349,11 @@ function SourcingEventsInner() {
       if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (et && et !== 'all') qb = qb.eq('event_type', et);
-      if (upcoming) qb = qb.gte('event_date', new Date().toISOString());
+      if (upcoming && !dFrom) qb = qb.gte('event_date', new Date().toISOString());
+      if (dFrom) qb = qb.gte('event_date', new Date(dFrom).toISOString());
+      if (dTo) qb = qb.lte('event_date', new Date(dTo + 'T23:59:59').toISOString());
+      if (virtFilt === 'virtual') qb = qb.not('virtual_url', 'is', null);
+      if (virtFilt === 'inperson') qb = qb.not('event_location', 'is', null);
       if (q && q.trim()) qb = qb.or(`title.ilike.%${q}%,description.ilike.%${q}%,event_location.ilike.%${q}%,organizer.ilike.%${q}%`);
 
       const { data, error } = await qb.limit(100);
@@ -370,10 +378,25 @@ function SourcingEventsInner() {
 
   useEffect(() => {
     if (tenantSlug && tenantLoading) return;
-    fetchListings(query, vertical, eventType, upcomingOnly);
-  }, [query, vertical, eventType, upcomingOnly, fetchListings]);
+    fetchListings(query, vertical, eventType, upcomingOnly, virtualFilter, dateFrom, dateTo);
+  }, [query, vertical, eventType, upcomingOnly, virtualFilter, dateFrom, dateTo, fetchListings]);
 
   const handleSearch = () => setQuery(searchInput.trim());
+
+  const activeFilterCount = [
+    vertical !== 'all',
+    eventType !== 'all',
+    !upcomingOnly,
+    virtualFilter !== 'all',
+    dateFrom !== '',
+    dateTo !== '',
+  ].filter(Boolean).length;
+
+  const inputStyle = {
+    background: V.card2, border: `1px solid ${V.border}`,
+    color: V.text, borderRadius: 6, padding: '7px 10px',
+    fontSize: 12, fontFamily: V.space, outline: 'none',
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
@@ -384,6 +407,8 @@ function SourcingEventsInner() {
         a { color: inherit; }
         input::placeholder { color: ${V.dim}; }
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+        @media (min-width: 640px) { .events-filters-panel { display: flex !important; } .events-filters-toggle { display: none !important; } }
       `}</style>
 
       <SourcingNav active="events" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
@@ -410,7 +435,8 @@ function SourcingEventsInner() {
           </Link>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {/* Search row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
               type="text"
@@ -450,42 +476,145 @@ function SourcingEventsInner() {
               </button>
             ))}
           </div>
+          {/* Mobile filters toggle */}
+          <button
+            className="events-filters-toggle"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{
+              background: activeFilterCount > 0 ? V.accentDim : V.card2,
+              border: `1px solid ${activeFilterCount > 0 ? V.accentBrd : V.border}`,
+              color: activeFilterCount > 0 ? V.accent : V.muted,
+              borderRadius: 8, padding: '0 14px', fontSize: 13,
+              fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+            }}
+          >
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            <span style={{ fontSize: 10 }}>{filtersOpen ? '▲' : '▼'}</span>
+          </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {VERTICALS.map(v => (
-            <button key={v.key} onClick={() => setVertical(v.key)} style={{
-              background: vertical === v.key ? `${v.color}20` : 'transparent',
-              border: `1px solid ${vertical === v.key ? v.color : V.border}`,
-              color: vertical === v.key ? v.color : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-            }}>
-              {v.label}
-            </button>
-          ))}
-          <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
-          {EVENT_TYPES.map(et => (
-            <button key={et.key} onClick={() => setEventType(et.key)} style={{
-              background: eventType === et.key ? V.accentDim : 'transparent',
-              border: `1px solid ${eventType === et.key ? V.accentBrd : V.border}`,
-              color: eventType === et.key ? V.accent : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-            }}>
-              {et.label}
-            </button>
-          ))}
-          <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
-          <button onClick={() => setUpcomingOnly(u => !u)} style={{
-            background: upcomingOnly ? V.accentDim : 'transparent',
-            border: `1px solid ${upcomingOnly ? V.accentBrd : V.border}`,
-            color: upcomingOnly ? V.accent : V.muted,
-            borderRadius: 6, padding: '6px 12px', fontSize: 12,
-            fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-          }}>
-            Upcoming Only
-          </button>
+        {/* Filter panel */}
+        <div
+          className="events-filters-panel"
+          style={{
+            display: filtersOpen ? 'flex' : 'none',
+            flexDirection: 'column', gap: 12,
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, padding: '16px 18px', marginBottom: 16,
+          }}
+        >
+          {/* Row 1: Vertical */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Industry</span>
+            {VERTICALS.map(v => (
+              <button key={v.key} onClick={() => setVertical(v.key)} style={{
+                background: vertical === v.key ? `${v.color}20` : 'transparent',
+                border: `1px solid ${vertical === v.key ? v.color : V.border}`,
+                color: vertical === v.key ? v.color : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: V.border }} />
+
+          {/* Row 2: Event type */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Type</span>
+            {EVENT_TYPES.map(et => (
+              <button key={et.key} onClick={() => setEventType(et.key)} style={{
+                background: eventType === et.key ? V.accentDim : 'transparent',
+                border: `1px solid ${eventType === et.key ? V.accentBrd : V.border}`,
+                color: eventType === et.key ? V.accent : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}>
+                {et.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: V.border }} />
+
+          {/* Row 3: Timing + Format + Date range */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            {/* Upcoming toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Timing</span>
+              <button onClick={() => setUpcomingOnly(u => !u)} style={{
+                background: upcomingOnly ? V.accentDim : 'transparent',
+                border: `1px solid ${upcomingOnly ? V.accentBrd : V.border}`,
+                color: upcomingOnly ? V.accent : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}>
+                Upcoming Only
+              </button>
+            </div>
+
+            {/* Virtual filter */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Format</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[{ key: 'all', label: 'All' }, { key: 'inperson', label: 'In-person' }, { key: 'virtual', label: 'Virtual' }].map(opt => (
+                  <button key={opt.key} onClick={() => setVirtualFilter(opt.key)} style={{
+                    background: virtualFilter === opt.key ? 'rgba(59,130,246,0.12)' : 'transparent',
+                    border: `1px solid ${virtualFilter === opt.key ? 'rgba(59,130,246,0.5)' : V.border}`,
+                    color: virtualFilter === opt.key ? '#93C5FD' : V.muted,
+                    borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                    fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                  }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date range */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Date Range</span>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={e => setDateFrom(e.target.value)}
+                  style={{ ...inputStyle, width: 140 }}
+                />
+                <span style={{ color: V.dim, fontSize: 12, fontFamily: V.mono, flexShrink: 0 }}>–</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={e => setDateTo(e.target.value)}
+                  style={{ ...inputStyle, width: 140 }}
+                />
+                {(dateFrom || dateTo) && (
+                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} style={{
+                    background: 'transparent', border: `1px solid ${V.border}`,
+                    color: V.muted, borderRadius: 6, padding: '5px 8px', fontSize: 11,
+                    fontFamily: V.mono, cursor: 'pointer', flexShrink: 0,
+                  }}>×</button>
+                )}
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {activeFilterCount > 0 && (
+              <button onClick={() => {
+                setVertical('all'); setEventType('all'); setUpcomingOnly(true);
+                setVirtualFilter('all'); setDateFrom(''); setDateTo('');
+              }} style={{
+                background: 'transparent', border: `1px solid ${V.border}`,
+                color: V.muted, borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}>
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

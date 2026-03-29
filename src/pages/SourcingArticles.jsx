@@ -240,6 +240,12 @@ function ArticleView({ listing, company, onClose, V }) {
   );
 }
 
+const SORT_OPTIONS = [
+  { key: 'newest',    label: 'Newest' },
+  { key: 'oldest',    label: 'Oldest' },
+  { key: 'read_time', label: 'Read Time' },
+];
+
 // ─── Inner Component ──────────────────────────────────────────────────────────
 function SourcingArticlesInner() {
   const { dark } = useSourcingTheme();
@@ -247,14 +253,18 @@ function SourcingArticlesInner() {
   const { tenant, tenantSlug, loading: tenantLoading } = useTenant();
 
   const [listings, setListings] = useState([]);
+  const [allTags, setAllTags] = useState([]);
   const [companies, setCompanies] = useState({});
   const [loading, setLoading] = useState(true);
   const [vertical, setVertical] = useState('all');
+  const [activeTag, setActiveTag] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const fetchListings = useCallback(async (q, v) => {
+  const fetchListings = useCallback(async (q, v, sort) => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
     try {
@@ -262,19 +272,35 @@ function SourcingArticlesInner() {
         .from('directory_listings')
         .select('*')
         .eq('category', 'article')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
+
+      // Sort
+      if (sort === 'oldest') {
+        qb = qb.order('created_at', { ascending: true });
+      } else if (sort === 'read_time') {
+        qb = qb.order('read_time_min', { ascending: true, nullsFirst: false });
+      } else {
+        qb = qb.order('created_at', { ascending: false });
+      }
 
       if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
-      if (q && q.trim()) qb = qb.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
+      if (q && q.trim()) qb = qb.or(`title.ilike.%${q}%,description.ilike.%${q}%,excerpt.ilike.%${q}%`);
 
       const { data, error } = await qb.limit(50);
       if (error) throw error;
-      setListings(data || []);
+      const rows = data || [];
+      setListings(rows);
 
-      if (data && data.length > 0) {
-        const companyIds = [...new Set(data.map(l => l.company_id))];
+      // Collect all unique tags for the tag filter
+      const tagSet = new Set();
+      rows.forEach(l => {
+        if (Array.isArray(l.tags)) l.tags.forEach(t => tagSet.add(t));
+      });
+      setAllTags([...tagSet].sort());
+
+      if (rows.length > 0) {
+        const companyIds = [...new Set(rows.map(l => l.company_id))];
         const { data: compData } = await supabase
           .from('directory_companies').select('*').in('id', companyIds);
         const map = {};
@@ -292,10 +318,21 @@ function SourcingArticlesInner() {
 
   useEffect(() => {
     if (tenantSlug && tenantLoading) return;
-    fetchListings(query, vertical);
-  }, [query, vertical, fetchListings, tenantLoading, tenantSlug]);
+    fetchListings(query, vertical, sortBy);
+  }, [query, vertical, sortBy, fetchListings, tenantLoading, tenantSlug]);
 
   const handleSearch = () => setQuery(searchInput.trim());
+
+  // Client-side tag filter (tags are an array column -- easier to filter locally)
+  const visibleListings = activeTag
+    ? listings.filter(l => Array.isArray(l.tags) && l.tags.includes(activeTag))
+    : listings;
+
+  const activeFilterCount = [
+    vertical !== 'all',
+    activeTag !== '',
+    sortBy !== 'newest',
+  ].filter(Boolean).length;
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
@@ -306,6 +343,7 @@ function SourcingArticlesInner() {
         a { color: inherit; }
         input::placeholder { color: ${V.dim}; }
         input:focus { border-color: ${V.accentBrd} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
+        @media (min-width: 640px) { .articles-filters-panel { display: flex !important; } .articles-filters-toggle { display: none !important; } }
       `}</style>
 
       <SourcingNav active="articles" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
@@ -337,7 +375,7 @@ function SourcingArticlesInner() {
         </div>
 
         {/* Search */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
               type="text"
@@ -366,26 +404,113 @@ function SourcingArticlesInner() {
           }}>
             Search
           </button>
+          {/* Mobile filters toggle */}
+          <button
+            className="articles-filters-toggle"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{
+              background: activeFilterCount > 0 ? V.accentDim : V.card2,
+              border: `1px solid ${activeFilterCount > 0 ? V.accentBrd : V.border}`,
+              color: activeFilterCount > 0 ? V.accent : V.muted,
+              borderRadius: 8, padding: '0 14px', fontSize: 13,
+              fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+            }}
+          >
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            <span style={{ fontSize: 10 }}>{filtersOpen ? '▲' : '▼'}</span>
+          </button>
         </div>
 
-        {/* Vertical filters */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {VERTICALS.map(vf => {
-            const col = vf.key === 'all' ? V.accent : (vf.color || V.accent);
-            const isActive = vertical === vf.key;
-            return (
-              <button key={vf.key} onClick={() => setVertical(vf.key)} style={{
-                background: isActive ? `${col}20` : 'transparent',
-                border: `1px solid ${isActive ? col : V.border}`,
-                color: isActive ? col : V.muted,
-                borderRadius: 6, padding: '6px 12px', fontSize: 12,
-                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
+        {/* Filter panel */}
+        <div
+          className="articles-filters-panel"
+          style={{
+            display: filtersOpen ? 'flex' : 'none',
+            flexDirection: 'column', gap: 12,
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, padding: '16px 18px', marginBottom: 16,
+          }}
+        >
+          {/* Row 1: Vertical */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Industry</span>
+            {VERTICALS.map(vf => {
+              const col = vf.key === 'all' ? V.accent : (vf.color || V.accent);
+              const isActive = vertical === vf.key;
+              return (
+                <button key={vf.key} onClick={() => setVertical(vf.key)} style={{
+                  background: isActive ? `${col}20` : 'transparent',
+                  border: `1px solid ${isActive ? col : V.border}`,
+                  color: isActive ? col : V.muted,
+                  borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                  fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}>
+                  {vf.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {allTags.length > 0 && (
+            <>
+              <div style={{ height: 1, background: V.border }} />
+              {/* Row 2: Tags */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Tag</span>
+                <button onClick={() => setActiveTag('')} style={{
+                  background: activeTag === '' ? V.accentDim : 'transparent',
+                  border: `1px solid ${activeTag === '' ? V.accentBrd : V.border}`,
+                  color: activeTag === '' ? V.accent : V.muted,
+                  borderRadius: 6, padding: '4px 10px', fontSize: 11,
+                  fontWeight: 600, fontFamily: V.mono, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                }}>All</button>
+                {allTags.map(tag => (
+                  <button key={tag} onClick={() => setActiveTag(activeTag === tag ? '' : tag)} style={{
+                    background: activeTag === tag ? V.accentDim : 'transparent',
+                    border: `1px solid ${activeTag === tag ? V.accentBrd : V.border}`,
+                    color: activeTag === tag ? V.accent : V.muted,
+                    borderRadius: 6, padding: '4px 10px', fontSize: 11,
+                    fontWeight: 600, fontFamily: V.mono, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                  }}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div style={{ height: 1, background: V.border }} />
+
+          {/* Row 3: Sort */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Sort</span>
+            {SORT_OPTIONS.map(s => (
+              <button key={s.key} onClick={() => setSortBy(s.key)} style={{
+                background: sortBy === s.key ? V.accentDim : 'transparent',
+                border: `1px solid ${sortBy === s.key ? V.accentBrd : V.border}`,
+                color: sortBy === s.key ? V.accent : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
               }}>
-                {vf.label}
+                {s.label}
               </button>
-            );
-          })}
+            ))}
+
+            {/* Clear filters */}
+            {activeFilterCount > 0 && (
+              <button onClick={() => {
+                setVertical('all'); setActiveTag(''); setSortBy('newest');
+              }} style={{
+                background: 'transparent', border: `1px solid ${V.border}`,
+                color: V.muted, borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: 'auto',
+              }}>
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -394,9 +519,10 @@ function SourcingArticlesInner() {
         <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space, marginBottom: 16 }}>
           {loading ? 'Loading...' : (
             <>
-              <span style={{ color: V.text, fontWeight: 600 }}>{listings.length}</span>
-              {' '}article{listings.length !== 1 ? 's' : ''}
+              <span style={{ color: V.text, fontWeight: 600 }}>{visibleListings.length}</span>
+              {' '}article{visibleListings.length !== 1 ? 's' : ''}
               {query && <> for <span style={{ color: V.accent }}>"{query}"</span></>}
+              {activeTag && <> tagged <span style={{ color: V.accent }}>"{activeTag}"</span></>}
             </>
           )}
         </div>
@@ -416,9 +542,9 @@ function SourcingArticlesInner() {
           </div>
         )}
 
-        {!loading && listings.length > 0 && (
+        {!loading && visibleListings.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {listings.map(listing => (
+            {visibleListings.map(listing => (
               <ArticleCard
                 key={listing.id}
                 listing={listing}
@@ -429,14 +555,14 @@ function SourcingArticlesInner() {
           </div>
         )}
 
-        {!loading && supabase && listings.length === 0 && (
+        {!loading && supabase && visibleListings.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>📄</div>
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 8 }}>
               No articles found
             </div>
             <div style={{ fontSize: 14, color: V.muted, fontFamily: V.space, marginBottom: 24 }}>
-              {query ? `No results for "${query}". Try different keywords.` : 'No articles published yet.'}
+              {query ? `No results for "${query}". Try different keywords.` : activeTag ? `No articles tagged "${activeTag}".` : 'No articles published yet.'}
             </div>
             <Link
               to={`${tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing'}/articles/post`}

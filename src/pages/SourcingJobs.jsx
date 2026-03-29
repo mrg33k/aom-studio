@@ -269,12 +269,17 @@ function SourcingJobsInner() {
   const [loading, setLoading] = useState(true);
   const [vertical, setVertical] = useState('all');
   const [jobType, setJobType] = useState('all');
-  const [remoteOnly, setRemoteOnly] = useState(false);
+  const [remoteFilter, setRemoteFilter] = useState('all'); // 'all' | 'remote' | 'onsite'
+  const [locationInput, setLocationInput] = useState('');
+  const [location, setLocation] = useState('');
+  const [salaryMin, setSalaryMin] = useState('');
+  const [salaryMax, setSalaryMax] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const fetchListings = useCallback(async (q, v, jt, remote) => {
+  const fetchListings = useCallback(async (q, v, jt, remFilt, loc, sMin, sMax) => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
     try {
@@ -288,7 +293,11 @@ function SourcingJobsInner() {
       if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (jt && jt !== 'all') qb = qb.eq('job_type', jt);
-      if (remote) qb = qb.eq('remote', true);
+      if (remFilt === 'remote') qb = qb.eq('remote', true);
+      if (remFilt === 'onsite') qb = qb.eq('remote', false);
+      if (loc && loc.trim()) qb = qb.ilike('location', `%${loc.trim()}%`);
+      if (sMin && !isNaN(Number(sMin))) qb = qb.gte('salary_max', Number(sMin));
+      if (sMax && !isNaN(Number(sMax))) qb = qb.lte('salary_min', Number(sMax));
       if (q && q.trim()) qb = qb.or(`title.ilike.%${q}%,description.ilike.%${q}%,location.ilike.%${q}%`);
 
       const { data, error } = await qb.limit(100);
@@ -313,10 +322,26 @@ function SourcingJobsInner() {
 
   useEffect(() => {
     if (tenantSlug && tenantLoading) return;
-    fetchListings(query, vertical, jobType, remoteOnly);
-  }, [query, vertical, jobType, remoteOnly, fetchListings, tenantLoading, tenantSlug]);
+    fetchListings(query, vertical, jobType, remoteFilter, location, salaryMin, salaryMax);
+  }, [query, vertical, jobType, remoteFilter, location, salaryMin, salaryMax, fetchListings, tenantLoading, tenantSlug]);
 
   const handleSearch = () => setQuery(searchInput.trim());
+  const handleLocationSearch = () => setLocation(locationInput.trim());
+
+  const activeFilterCount = [
+    vertical !== 'all',
+    jobType !== 'all',
+    remoteFilter !== 'all',
+    location.trim() !== '',
+    salaryMin !== '',
+    salaryMax !== '',
+  ].filter(Boolean).length;
+
+  const inputStyle = {
+    background: V.card2, border: `1px solid ${V.border}`,
+    color: V.text, borderRadius: 6, padding: '7px 10px',
+    fontSize: 12, fontFamily: V.space, outline: 'none', width: '100%',
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
@@ -327,6 +352,9 @@ function SourcingJobsInner() {
         a { color: inherit; }
         input::placeholder { color: ${V.dim}; }
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
+        select { appearance: none; -webkit-appearance: none; }
+        select:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; outline: none; }
+        @media (min-width: 640px) { .jobs-filters-panel { display: flex !important; } .jobs-filters-toggle { display: none !important; } }
       `}</style>
 
       <SourcingNav active="jobs" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
@@ -353,7 +381,8 @@ function SourcingJobsInner() {
           </Link>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {/* Search row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
               type="text"
@@ -382,42 +411,148 @@ function SourcingJobsInner() {
           }}>
             Search
           </button>
+          {/* Mobile filters toggle */}
+          <button
+            className="jobs-filters-toggle"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{
+              background: activeFilterCount > 0 ? V.accentDim : V.card2,
+              border: `1px solid ${activeFilterCount > 0 ? V.accentBrd : V.border}`,
+              color: activeFilterCount > 0 ? V.accent : V.muted,
+              borderRadius: 8, padding: '0 14px', fontSize: 13,
+              fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+            }}
+          >
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            <span style={{ fontSize: 10 }}>{filtersOpen ? '▲' : '▼'}</span>
+          </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {VERTICALS.map(v => (
-            <button key={v.key} onClick={() => setVertical(v.key)} style={{
-              background: vertical === v.key ? `${v.color}20` : 'transparent',
-              border: `1px solid ${vertical === v.key ? v.color : V.border}`,
-              color: vertical === v.key ? v.color : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-            }}>
-              {v.label}
-            </button>
-          ))}
-          <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
-          {JOB_TYPES.map(jt => (
-            <button key={jt.key} onClick={() => setJobType(jt.key)} style={{
-              background: jobType === jt.key ? V.accentDim : 'transparent',
-              border: `1px solid ${jobType === jt.key ? V.accentBrd : V.border}`,
-              color: jobType === jt.key ? V.accent : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-            }}>
-              {jt.label}
-            </button>
-          ))}
-          <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
-          <button onClick={() => setRemoteOnly(r => !r)} style={{
-            background: remoteOnly ? 'rgba(59,130,246,0.12)' : 'transparent',
-            border: `1px solid ${remoteOnly ? 'rgba(59,130,246,0.5)' : V.border}`,
-            color: remoteOnly ? '#93C5FD' : V.muted,
-            borderRadius: 6, padding: '6px 12px', fontSize: 12,
-            fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
-          }}>
-            Remote OK
-          </button>
+        {/* Filter panel */}
+        <div
+          className="jobs-filters-panel"
+          style={{
+            display: filtersOpen ? 'flex' : 'none',
+            flexDirection: 'column', gap: 12,
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, padding: '16px 18px', marginBottom: 16,
+          }}
+        >
+          {/* Row 1: Vertical + Job type */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Industry</span>
+            {VERTICALS.map(v => (
+              <button key={v.key} onClick={() => setVertical(v.key)} style={{
+                background: vertical === v.key ? `${v.color}20` : 'transparent',
+                border: `1px solid ${vertical === v.key ? v.color : V.border}`,
+                color: vertical === v.key ? v.color : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: V.border }} />
+
+          {/* Row 2: Job type */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Type</span>
+            {JOB_TYPES.map(jt => (
+              <button key={jt.key} onClick={() => setJobType(jt.key)} style={{
+                background: jobType === jt.key ? V.accentDim : 'transparent',
+                border: `1px solid ${jobType === jt.key ? V.accentBrd : V.border}`,
+                color: jobType === jt.key ? V.accent : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}>
+                {jt.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: V.border }} />
+
+          {/* Row 3: Remote + Location + Salary */}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            {/* Remote toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Remote</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[{ key: 'all', label: 'All' }, { key: 'remote', label: 'Remote' }, { key: 'onsite', label: 'On-site' }].map(opt => (
+                  <button key={opt.key} onClick={() => setRemoteFilter(opt.key)} style={{
+                    background: remoteFilter === opt.key ? 'rgba(59,130,246,0.12)' : 'transparent',
+                    border: `1px solid ${remoteFilter === opt.key ? 'rgba(59,130,246,0.5)' : V.border}`,
+                    color: remoteFilter === opt.key ? '#93C5FD' : V.muted,
+                    borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                    fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                  }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 160 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Location</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input
+                  type="text"
+                  value={locationInput}
+                  onChange={e => setLocationInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleLocationSearch()}
+                  placeholder="City or state..."
+                  style={{ ...inputStyle, minWidth: 120 }}
+                />
+                <button onClick={handleLocationSearch} style={{
+                  background: location ? V.accentDim : 'transparent',
+                  border: `1px solid ${location ? V.accentBrd : V.border}`,
+                  color: location ? V.accent : V.muted,
+                  borderRadius: 6, padding: '5px 10px', fontSize: 11,
+                  fontWeight: 700, fontFamily: V.mono, cursor: 'pointer', flexShrink: 0,
+                }}>Go</button>
+              </div>
+            </div>
+
+            {/* Salary range */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Salary Range</span>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input
+                  type="number"
+                  value={salaryMin}
+                  onChange={e => setSalaryMin(e.target.value)}
+                  placeholder="Min"
+                  style={{ ...inputStyle, width: 90 }}
+                />
+                <span style={{ color: V.dim, fontSize: 12, fontFamily: V.mono, flexShrink: 0 }}>–</span>
+                <input
+                  type="number"
+                  value={salaryMax}
+                  onChange={e => setSalaryMax(e.target.value)}
+                  placeholder="Max"
+                  style={{ ...inputStyle, width: 90 }}
+                />
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {activeFilterCount > 0 && (
+              <button onClick={() => {
+                setVertical('all'); setJobType('all'); setRemoteFilter('all');
+                setLocationInput(''); setLocation(''); setSalaryMin(''); setSalaryMax('');
+              }} style={{
+                background: 'transparent', border: `1px solid ${V.border}`,
+                color: V.muted, borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}>
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

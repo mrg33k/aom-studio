@@ -3,6 +3,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingThemeProvider, useSourcingTheme, getTokens, ThemeToggle, useTenant } from './SourcingTheme.jsx';
 
+// ─── Auth state hook for nav ─────────────────────────────────────────────────
+function useAuthUser() {
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+    return () => subscription?.unsubscribe();
+  }, []);
+  return user;
+}
+
 // ─── Vertical / filter config ─────────────────────────────────────────────────
 const VERTICALS = [
   { key: 'all',           label: 'All Industries',   color: '#9ca3af' },
@@ -360,11 +376,16 @@ function SourcingMarketplaceInner() {
   const [vertical, setVertical] = useState('all');
   const [condition, setCondition] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [categoryInput, setCategoryInput] = useState('');
+  const [category, setCategory] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const fetchListings = useCallback(async (q, v, cond, price) => {
+  const fetchListings = useCallback(async (q, v, cond, price, pMin, pMax, cat) => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
     try {
@@ -378,11 +399,19 @@ function SourcingMarketplaceInner() {
       if (tenant?.id) qb = qb.eq('tenant_id', tenant.id);
       if (v && v !== 'all') qb = qb.eq('vertical', v);
       if (cond && cond !== 'all') qb = qb.eq('condition', cond);
+      if (cat && cat.trim()) qb = qb.ilike('item_category', `%${cat.trim()}%`);
 
-      const pr = PRICE_RANGES.find(r => r.key === price);
-      if (pr) {
-        if (pr.min !== null) qb = qb.gte('price', pr.min);
-        if (pr.max !== null) qb = qb.lte('price', pr.max);
+      // Custom min/max overrides preset buttons when set
+      const useCustomPrice = pMin !== '' || pMax !== '';
+      if (useCustomPrice) {
+        if (pMin !== '' && !isNaN(Number(pMin))) qb = qb.gte('price', Number(pMin));
+        if (pMax !== '' && !isNaN(Number(pMax))) qb = qb.lte('price', Number(pMax));
+      } else {
+        const pr = PRICE_RANGES.find(r => r.key === price);
+        if (pr) {
+          if (pr.min !== null) qb = qb.gte('price', pr.min);
+          if (pr.max !== null) qb = qb.lte('price', pr.max);
+        }
       }
 
       if (q && q.trim()) {
@@ -414,10 +443,24 @@ function SourcingMarketplaceInner() {
 
   useEffect(() => {
     if (tenantSlug && tenantLoading) return;
-    fetchListings(query, vertical, condition, priceRange);
-  }, [query, vertical, condition, priceRange, fetchListings, tenantLoading, tenantSlug]);
+    fetchListings(query, vertical, condition, priceRange, priceMin, priceMax, category);
+  }, [query, vertical, condition, priceRange, priceMin, priceMax, category, fetchListings, tenantLoading, tenantSlug]);
 
   const handleSearch = () => setQuery(searchInput.trim());
+  const handleCategorySearch = () => setCategory(categoryInput.trim());
+
+  const activeFilterCount = [
+    vertical !== 'all',
+    condition !== 'all',
+    priceRange !== 'all' || priceMin !== '' || priceMax !== '',
+    category !== '',
+  ].filter(Boolean).length;
+
+  const inputStyle = {
+    background: V.card2, border: `1px solid ${V.border}`,
+    color: V.text, borderRadius: 6, padding: '7px 10px',
+    fontSize: 12, fontFamily: V.space, outline: 'none', width: '100%',
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
@@ -428,6 +471,9 @@ function SourcingMarketplaceInner() {
         a { color: inherit; }
         input::placeholder { color: ${V.dim}; }
         input:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; }
+        select { appearance: none; -webkit-appearance: none; }
+        select:focus { border-color: ${V.accent} !important; box-shadow: 0 0 0 2px ${V.accentDim}; outline: none; }
+        @media (min-width: 640px) { .mkt-filters-panel { display: flex !important; } .mkt-filters-toggle { display: none !important; } }
       `}</style>
 
       <SourcingNav active="marketplace" tenantSlug={tenantSlug} tenantName={tenant?.nav_label || tenant?.name} features={tenant?.features} brandColor={tenant?.brand_color} />
@@ -462,8 +508,8 @@ function SourcingMarketplaceInner() {
           </Link>
         </div>
 
-        {/* Search + filters */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {/* Search row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 220, position: 'relative' }}>
             <input
               type="text"
@@ -492,18 +538,43 @@ function SourcingMarketplaceInner() {
           }}>
             Search
           </button>
+          {/* Mobile filters toggle */}
+          <button
+            className="mkt-filters-toggle"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{
+              background: activeFilterCount > 0 ? V.accentDim : V.card2,
+              border: `1px solid ${activeFilterCount > 0 ? V.accentBrd : V.border}`,
+              color: activeFilterCount > 0 ? V.accent : V.muted,
+              borderRadius: 8, padding: '0 14px', fontSize: 13,
+              fontWeight: 600, fontFamily: V.space, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+            }}
+          >
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            <span style={{ fontSize: 10 }}>{filtersOpen ? '▲' : '▼'}</span>
+          </button>
         </div>
 
-        {/* Filter row */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {/* Vertical */}
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {/* Filter panel */}
+        <div
+          className="mkt-filters-panel"
+          style={{
+            display: filtersOpen ? 'flex' : 'none',
+            flexDirection: 'column', gap: 12,
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, padding: '16px 18px', marginBottom: 16,
+          }}
+        >
+          {/* Row 1: Vertical */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Industry</span>
             {VERTICALS.map(v => (
               <button key={v.key} onClick={() => setVertical(v.key)} style={{
                 background: vertical === v.key ? `${v.color}20` : 'transparent',
                 border: `1px solid ${vertical === v.key ? v.color : V.border}`,
                 color: vertical === v.key ? v.color : V.muted,
-                borderRadius: 6, padding: '6px 12px', fontSize: 12,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
                 fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
                 transition: 'all 0.15s',
               }}>
@@ -512,37 +583,113 @@ function SourcingMarketplaceInner() {
             ))}
           </div>
 
-          <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
+          <div style={{ height: 1, background: V.border }} />
 
-          {/* Condition */}
-          {CONDITIONS.map(c => (
-            <button key={c.key} onClick={() => setCondition(c.key)} style={{
-              background: condition === c.key ? V.accentDim : 'transparent',
-              border: `1px solid ${condition === c.key ? V.accentBrd : V.border}`,
-              color: condition === c.key ? V.accent : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
-            }}>
-              {c.label}
-            </button>
-          ))}
+          {/* Row 2: Condition */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>Condition</span>
+            {CONDITIONS.map(c => (
+              <button key={c.key} onClick={() => setCondition(c.key)} style={{
+                background: condition === c.key ? V.accentDim : 'transparent',
+                border: `1px solid ${condition === c.key ? V.accentBrd : V.border}`,
+                color: condition === c.key ? V.accent : V.muted,
+                borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}>
+                {c.label}
+              </button>
+            ))}
+          </div>
 
-          <div style={{ width: 1, background: V.border, margin: '4px 0' }} />
+          <div style={{ height: 1, background: V.border }} />
 
-          {/* Price */}
-          {PRICE_RANGES.map(r => (
-            <button key={r.key} onClick={() => setPriceRange(r.key)} style={{
-              background: priceRange === r.key ? V.accentDim : 'transparent',
-              border: `1px solid ${priceRange === r.key ? V.accentBrd : V.border}`,
-              color: priceRange === r.key ? V.accent : V.muted,
-              borderRadius: 6, padding: '6px 12px', fontSize: 12,
-              fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
-              transition: 'all 0.15s',
-            }}>
-              {r.label}
-            </button>
-          ))}
+          {/* Row 3: Price + Category */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            {/* Price preset buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Price</span>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {PRICE_RANGES.map(r => (
+                  <button key={r.key} onClick={() => { setPriceRange(r.key); setPriceMin(''); setPriceMax(''); }} style={{
+                    background: priceRange === r.key && priceMin === '' && priceMax === '' ? V.accentDim : 'transparent',
+                    border: `1px solid ${priceRange === r.key && priceMin === '' && priceMax === '' ? V.accentBrd : V.border}`,
+                    color: priceRange === r.key && priceMin === '' && priceMax === '' ? V.accent : V.muted,
+                    borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                    fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+                    transition: 'all 0.15s',
+                  }}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom price min/max */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Custom Range ($)</span>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input
+                  type="number"
+                  value={priceMin}
+                  onChange={e => { setPriceMin(e.target.value); setPriceRange('all'); }}
+                  placeholder="Min"
+                  style={{ ...inputStyle, width: 90 }}
+                />
+                <span style={{ color: V.dim, fontSize: 12, fontFamily: V.mono, flexShrink: 0 }}>–</span>
+                <input
+                  type="number"
+                  value={priceMax}
+                  onChange={e => { setPriceMax(e.target.value); setPriceRange('all'); }}
+                  placeholder="Max"
+                  style={{ ...inputStyle, width: 90 }}
+                />
+              </div>
+            </div>
+
+            {/* Category/type search */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 160 }}>
+              <span style={{ fontSize: 11, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Category</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input
+                  type="text"
+                  value={categoryInput}
+                  onChange={e => setCategoryInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleCategorySearch()}
+                  placeholder="e.g. semiconductor, pump..."
+                  style={{ ...inputStyle, minWidth: 160 }}
+                />
+                <button onClick={handleCategorySearch} style={{
+                  background: category ? V.accentDim : 'transparent',
+                  border: `1px solid ${category ? V.accentBrd : V.border}`,
+                  color: category ? V.accent : V.muted,
+                  borderRadius: 6, padding: '5px 10px', fontSize: 11,
+                  fontWeight: 700, fontFamily: V.mono, cursor: 'pointer', flexShrink: 0,
+                }}>Go</button>
+                {category && (
+                  <button onClick={() => { setCategoryInput(''); setCategory(''); }} style={{
+                    background: 'transparent', border: `1px solid ${V.border}`,
+                    color: V.muted, borderRadius: 6, padding: '5px 8px', fontSize: 11,
+                    fontFamily: V.mono, cursor: 'pointer', flexShrink: 0,
+                  }}>×</button>
+                )}
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {activeFilterCount > 0 && (
+              <button onClick={() => {
+                setVertical('all'); setCondition('all'); setPriceRange('all');
+                setPriceMin(''); setPriceMax(''); setCategoryInput(''); setCategory('');
+              }} style={{
+                background: 'transparent', border: `1px solid ${V.border}`,
+                color: V.muted, borderRadius: 6, padding: '5px 11px', fontSize: 12,
+                fontWeight: 600, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+              }}>
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
