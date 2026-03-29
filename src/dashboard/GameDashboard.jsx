@@ -3369,9 +3369,13 @@ function MobileFixedInput({
             isUserTypingRef.current = true
             onChatInputChange?.(e.target.value)
             if (powerupOpen) onPowerupToggle?.(false)
-            // Auto-expand: reset then set to scrollHeight, cap at 4 lines
-            e.target.style.height = 'auto'
-            e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
+            // Auto-expand at 20+ chars, collapse back when short
+            if (e.target.value.length >= 20) {
+              e.target.style.height = 'auto'
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+            } else {
+              e.target.style.height = '42px'
+            }
           }}
           onKeyDown={e => {
             if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
@@ -10447,44 +10451,56 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           {/* Pending image preview above input */}
           {pendingImage?.url && (
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 12px',
-              background: isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
-              borderRadius: '10px 10px 0 0',
-              border: `1px solid ${isNightMode ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.12)'}`,
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 14px',
+              background: isNightMode ? 'rgba(14,22,40,0.95)' : 'rgba(240,245,255,0.95)',
+              borderRadius: '12px 12px 0 0',
+              border: `1px solid ${isNightMode ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.2)'}`,
               borderBottom: 'none',
               marginBottom: -1,
+              boxShadow: '0 -2px 12px rgba(0,0,0,0.12)',
             }}>
-              <img src={pendingImage.url} alt={pendingImage.name}
-                style={{
-                  width: 48, height: 48, objectFit: 'cover', borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                }}
-              />
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <img src={pendingImage.url} alt={pendingImage.name}
+                  style={{
+                    width: 72, height: 72, objectFit: 'cover', borderRadius: 10,
+                    border: `1px solid ${isNightMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                    display: 'block',
+                  }}
+                />
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
+                  fontSize: 12, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  color: isNightMode ? 'rgba(59,130,246,0.8)' : '#3B82F6',
+                  marginBottom: 3,
+                }}>
+                  Image attached
+                </div>
+                <div style={{
                   fontSize: 13, fontWeight: 600,
-                  color: isNightMode ? '#CBD5E1' : '#94A3B8',
+                  color: isNightMode ? '#E2E8F0' : '#1E293B',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {pendingImage.name}
-                </div>
-                <div style={{ fontSize: 11, color: isNightMode ? '#64748B' : '#475569' }}>
-                  Image attached
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => onClearPendingImage?.()}
                 style={{
-                  width: 28, height: 28, borderRadius: 7,
-                  background: 'rgba(239,68,68,0.15)',
-                  border: '1px solid rgba(239,68,68,0.25)',
+                  width: 30, height: 30, borderRadius: 8,
+                  background: 'rgba(239,68,68,0.12)',
+                  border: '1px solid rgba(239,68,68,0.2)',
                   color: '#F87171',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
+                  transition: 'background 150ms',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.25)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.12)'}
               >
                 <X size={14} />
               </button>
