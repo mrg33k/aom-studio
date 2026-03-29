@@ -4543,26 +4543,21 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
       touchAction: 'auto',
       paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
-      background: isNightMode
-        ? 'rgba(15,27,45,0.95)'
-        : 'rgba(14,42,82,0.95)',
+      background: isNightMode ? '#060A12' : 'rgba(14,42,82,0.95)',
     }}>
-      {/* Top bar */}
+      {/* Top bar -- V5 style */}
       <div style={{
         height: isMobile ? 48 : 52,
-        transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
+        transition: 'background 400ms ease, border-color 300ms ease',
         background: isNightMode
-          ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
+          ? 'linear-gradient(180deg, rgba(14,22,40,0.98) 0%, rgba(10,16,32,0.96) 100%)'
           : 'linear-gradient(180deg, rgba(14,42,82,0.96) 0%, rgba(16,46,90,0.92) 100%)',
-        backdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(20px)',
         borderBottom: isNightMode
-          ? '1px solid rgba(59,130,246,0.15)'
-          : '2px solid rgba(59, 130, 246, 0.35)',
-        boxShadow: isNightMode
-          ? '0 2px 12px rgba(0, 0, 0, 0.4)'
-          : '0 2px 12px rgba(0,0,0,0.3), 0 1px 0 rgba(59,130,246,0.15)',
+          ? '1px solid rgba(255,255,255,0.05)'
+          : '1px solid rgba(59,130,246,0.2)',
+        boxShadow: '0 1px 0 rgba(0,0,0,0.3)',
         display: 'flex', alignItems: 'center',
-        // Switcher removed -- normal padding
         padding: isMobile ? '0 12px' : '0 20px',
         gap: isMobile ? 8 : 12,
         overflowX: isMobile ? 'auto' : 'hidden',
@@ -4571,14 +4566,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
       }} className="topbar-scroll">
-        {/* Corner. logo */}
+        {/* Corner. wordmark -- V5: Inter Tight, 17px, 0.08em tracking */}
         <div style={{
-          fontSize: 22, fontWeight: 900,
-          color: isNightMode ? '#F1F5F9' : '#60A5FA',
-          fontFamily: "'Inter', system-ui, sans-serif",
-          letterSpacing: '0.01em', flexShrink: 0,
+          fontSize: 17, fontWeight: 800,
+          color: isNightMode ? '#F0F4FF' : '#60A5FA',
+          fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif",
+          letterSpacing: '0.08em', flexShrink: 0, userSelect: 'none',
         }}>
-          Corner<span style={{ color: isNightMode ? '#3B82F6' : '#E85D26' }}>.</span>
+          Corner<span style={{ color: '#E85D26' }}>.</span>
         </div>
 
         {/* LOCAL badge -- subtle dot on mobile, text on desktop */}
@@ -12885,27 +12880,30 @@ export default function GameDashboard() {
   return results
 }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
 
-      {/* Right Now Bar -- active task pills, sits under nav bar */}
+      {/* Right Now Bar -- V5 style: 40px, deep bg, ghost border */}
       {rightNowTasks.length > 0 && (
         <div style={{
           position: 'fixed',
           top: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52,
           left: 0, right: 0, zIndex: 34,
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '6px 16px',
+          height: 40, display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0 20px',
           background: isNightMode
-            ? 'linear-gradient(180deg, rgba(10,15,30,0.95) 0%, rgba(10,15,30,0.85) 100%)'
+            ? 'rgba(6,10,18,0.92)'
             : 'linear-gradient(180deg, rgba(14,38,74,0.95) 0%, rgba(14,38,74,0.85) 100%)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: isNightMode ? '1px solid rgba(255,107,61,0.15)' : '1px solid rgba(255,107,61,0.2)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: isNightMode ? '1px solid rgba(255,255,255,0.025)' : '1px solid rgba(255,107,61,0.15)',
           overflowX: 'auto', overflowY: 'hidden',
           scrollbarWidth: 'none',
         }}>
           <span style={{
-            fontSize: 10, fontWeight: 800, color: '#FF6B3D',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            flexShrink: 0, opacity: 0.8,
+            fontSize: 9, fontWeight: 700, color: '#FF6B3D',
+            textTransform: 'uppercase', letterSpacing: '0.14em',
+            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+            fontFamily: "'JetBrains Mono', monospace",
+            marginRight: 4,
           }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B3D', boxShadow: '0 0 8px #FF6B3D, 0 0 16px rgba(255,107,61,0.25)', animation: 'bvPulse 2s infinite', display: 'inline-block' }} />
             NOW
           </span>
           {rightNowTasks.filter(t => t.isLive).filter((t, i, arr) => arr.findIndex(x => x.agent === t.agent) === i).map((task, i) => {
