@@ -1748,9 +1748,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       height: '100%', width: '100%', background: 'var(--bv-bg)',
       overflow: 'hidden', transition: 'background 0.4s',
       paddingTop: isMobile ? `calc(${hudHeight}px + env(safe-area-inset-top, 0px))` : hudHeight,
-      // Now Bar is a flex child -- it owns the SAI-bottom gap when present.
-      // Only apply SAI clearance here when there's no Now Bar (home indicator coverage).
-      paddingBottom: (isMobile && !hasRightNow) ? 'env(safe-area-inset-bottom, 0px)' : 0,
+      // Bottom: always offset by hudHeight so chat input and collapse button clear the fixed GameHUD bar.
+      // Mobile adds SAI on top of hudHeight to cover the home indicator.
+      paddingBottom: isMobile ? `calc(${hudHeight}px + env(safe-area-inset-bottom, 0px))` : hudHeight,
     }}>
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
