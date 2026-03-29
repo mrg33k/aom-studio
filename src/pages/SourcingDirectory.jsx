@@ -164,7 +164,9 @@ function CompanyCard({ company, certs, V, tenantSlug }) {
             <div style={{
               fontSize: 16, fontWeight: 700, fontFamily: V.syne,
               color: V.text, lineHeight: 1.2,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              overflowWrap: 'break-word', wordBreak: 'break-word',
+              display: '-webkit-box', WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }}>
               {company.name}
             </div>
@@ -655,7 +657,7 @@ function SourcingDirectoryInner() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden', maxWidth: '100vw' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
         input::placeholder { color: ${V.dim}; }
@@ -866,9 +868,24 @@ function SourcingDirectoryInner() {
             {[1,2,3,4,5,6].map(i => (
               <div key={i} style={{
                 background: V.card, border: `1px solid ${V.border}`,
-                borderRadius: 10, padding: '18px 20px', height: 160,
+                borderRadius: 10, padding: '18px 20px',
+                display: 'flex', flexDirection: 'column', gap: 12,
                 animation: 'pulse 1.5s ease-in-out infinite',
-              }} />
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 8, background: V.card2, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ height: 14, borderRadius: 4, background: V.card2, width: '65%' }} />
+                    <div style={{ height: 10, borderRadius: 4, background: V.card2, width: '45%' }} />
+                  </div>
+                </div>
+                <div style={{ height: 11, borderRadius: 4, background: V.card2, width: '100%' }} />
+                <div style={{ height: 11, borderRadius: 4, background: V.card2, width: '85%' }} />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ height: 20, borderRadius: 4, background: V.card2, width: 70 }} />
+                  <div style={{ height: 20, borderRadius: 4, background: V.card2, width: 50 }} />
+                </div>
+              </div>
             ))}
           </div>
         )}

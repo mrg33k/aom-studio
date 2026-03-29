@@ -183,7 +183,7 @@ function SourcingLandingInner() {
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
         * { box-sizing: border-box; }
         a { color: inherit; }
         .sourcing-landing-nav::-webkit-scrollbar { display: none; }
@@ -254,9 +254,21 @@ function SourcingLandingInner() {
             {[1, 2, 3, 4].map(i => (
               <div key={i} style={{
                 background: V.card, border: `1px solid ${V.border}`,
-                borderRadius: 12, height: 200,
+                borderRadius: 12, padding: '24px 22px',
+                display: 'flex', flexDirection: 'column', gap: 14, minHeight: 180,
                 animation: 'pulse 1.5s ease-in-out infinite',
-              }} />
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 10, background: V.card2, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ height: 16, borderRadius: 4, background: V.card2, width: '70%' }} />
+                    <div style={{ height: 10, borderRadius: 4, background: V.card2, width: '40%' }} />
+                  </div>
+                </div>
+                <div style={{ height: 12, borderRadius: 4, background: V.card2, width: '100%' }} />
+                <div style={{ height: 12, borderRadius: 4, background: V.card2, width: '80%' }} />
+                <div style={{ marginTop: 'auto', height: 12, borderRadius: 4, background: V.card2, width: '35%' }} />
+              </div>
             ))}
           </div>
         ) : tenants.length > 0 ? (

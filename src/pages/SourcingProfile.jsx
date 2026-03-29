@@ -429,9 +429,58 @@ function SourcingProfileInner() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${V.dim}`, borderTop: `2px solid ${V.accent}`, animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
+        <style>{`@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } } * { box-sizing: border-box; }`}</style>
+        {/* Skeleton Nav */}
+        <div style={{ borderBottom: `1px solid ${V.border}`, padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16, height: 60, background: V.navBg }}>
+          <div style={{ height: 13, width: 36, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: 13, width: 8, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: 13, width: 60, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: 13, width: 8, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: 13, width: 120, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        </div>
+        <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px' }}>
+          {/* Skeleton Hero */}
+          <div style={{ padding: '36px 0 28px', borderBottom: `1px solid ${V.border}`, marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+              <div style={{ width: 80, height: 80, borderRadius: 14, background: V.card2, flexShrink: 0, animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ height: 28, borderRadius: 6, background: V.card2, width: '55%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ height: 14, borderRadius: 4, background: V.card2, width: '40%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ height: 22, width: 90, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  <div style={{ height: 22, width: 80, borderRadius: 4, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                <div style={{ height: 36, width: 120, borderRadius: 8, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ height: 36, width: 120, borderRadius: 8, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ height: 13, borderRadius: 4, background: V.card2, width: '100%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ height: 13, borderRadius: 4, background: V.card2, width: '90%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ height: 13, borderRadius: 4, background: V.card2, width: '75%', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            </div>
+          </div>
+          {/* Skeleton Certifications section */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ height: 11, borderRadius: 4, background: V.card2, width: 130, marginBottom: 16, animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {[90, 110, 80, 130, 95].map((w, i) => (
+                <div key={i} style={{ height: 34, width: w, borderRadius: 6, background: V.card2, animation: 'pulse 1.5s ease-in-out infinite' }} />
+              ))}
+            </div>
+          </div>
+          {/* Skeleton content block */}
+          <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, padding: '20px', marginBottom: 32, animation: 'pulse 1.5s ease-in-out infinite' }}>
+            <div style={{ height: 11, borderRadius: 4, background: V.card2, width: 80, marginBottom: 14 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ height: 13, borderRadius: 4, background: V.card2, width: '100%' }} />
+              <div style={{ height: 13, borderRadius: 4, background: V.card2, width: '80%' }} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
