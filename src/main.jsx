@@ -66,6 +66,8 @@ const SourcingCheckout = lazy(() => import('./pages/SourcingCheckout.jsx'))
 const SourcingAdmin = lazy(() => import('./pages/SourcingAdmin.jsx'))
 const SourcingCreate = lazy(() => import('./pages/SourcingCreate.jsx'))
 const SourcingSettings = lazy(() => import('./pages/SourcingSettings.jsx'))
+const SourcingLogin = lazy(() => import('./pages/SourcingLogin.jsx'))
+const SourcingPortal = lazy(() => import('./pages/SourcingPortal.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
@@ -247,6 +249,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/sourcing/admin/settings/:tenantSlug" element={<SourcingAdmin />} />
           {/* Sourcing: Tenant-scoped routes */}
           <Route path="/sourcing/:tenantSlug" element={<SourcingDirectory />} />
+          <Route path="/sourcing/:tenantSlug/login" element={<SourcingLogin />} />
+          <Route path="/sourcing/:tenantSlug/portal" element={<SourcingPortal />} />
           <Route path="/sourcing/:tenantSlug/signup" element={<SourcingSignup />} />
           <Route path="/sourcing/:tenantSlug/jobs" element={<SourcingJobs />} />
           <Route path="/sourcing/:tenantSlug/jobs/post" element={<SourcingJobsPost />} />

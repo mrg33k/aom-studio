@@ -56,6 +56,7 @@ export function SourcingNav({ active, tenantSlug, tenantName, features, brandCol
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
   const accent = brandColor || V.accent;
+  const authUser = useAuthUser();
 
   const base = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
   const f = features || { jobs: true, marketplace: true, events: true, articles: true, signup: true };
@@ -67,6 +68,7 @@ export function SourcingNav({ active, tenantSlug, tenantName, features, brandCol
     { key: 'settings',    label: 'Settings',     href: `${base}/settings`,     show: false },
     { key: 'events',      label: 'Events',       href: `${base}/events`,       show: f.events !== false },
     { key: 'articles',    label: 'Articles',     href: `${base}/articles`,     show: f.articles !== false },
+    { key: 'portal',      label: 'My Portal',    href: `${base}/portal`,       show: !!authUser },
   ];
   const tabs = allTabs.filter(t => t.show);
 
@@ -104,6 +106,18 @@ export function SourcingNav({ active, tenantSlug, tenantName, features, brandCol
         )}
         <div style={{ flex: 1 }} />
         <ThemeToggle />
+        {!authUser && tenantSlug && (
+          <Link
+            to={`${base}/login`}
+            style={{
+              background: 'transparent', color: V.muted, textDecoration: 'none',
+              border: `1px solid ${V.border}`, borderRadius: 6, padding: '6px 14px',
+              fontSize: 12, fontWeight: 600, fontFamily: V.space,
+            }}
+          >
+            Login
+          </Link>
+        )}
         {f.signup !== false && (
           <Link
             to={`${base}/signup`}

@@ -96,6 +96,7 @@ function SourcingSettingsInner() {
   const [brandColor, setBrandColor] = useState('#1B5E20');
   const [website, setWebsite] = useState('');
   const [features, setFeatures] = useState({ jobs: true, marketplace: true, events: true, articles: true, signup: true });
+  const [selfService, setSelfService] = useState(true);
 
   const accent = brandColor || V.accent;
 
@@ -142,6 +143,7 @@ function SourcingSettingsInner() {
     setBrandColor(t.brand_color || '#1B5E20');
     setWebsite(t.website || '');
     setFeatures(t.features || { jobs: true, marketplace: true, events: true, articles: true, signup: true });
+    setSelfService(t.self_service !== false);
   };
 
   const toggleFeature = (key) => {
@@ -163,6 +165,7 @@ function SourcingSettingsInner() {
       brand_color: brandColor,
       website: website.trim() || null,
       features,
+      self_service: selfService,
     };
 
     try {
@@ -453,6 +456,23 @@ function SourcingSettingsInner() {
                 <ToggleSwitch on={features[key]} onToggle={() => toggleFeature(key)} V={V} accent={accent} />
               </div>
             ))}
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderTop: `1px solid ${V.border}`,
+              }}
+            >
+              <div>
+                <span style={{ fontSize: 15, fontFamily: V.space, color: V.text, display: 'block' }}>
+                  Self-Service Signups
+                </span>
+                <span style={{ fontSize: 12, fontFamily: V.space, color: V.dim }}>
+                  Allow companies to sign up and create accounts
+                </span>
+              </div>
+              <ToggleSwitch on={selfService} onToggle={() => setSelfService(s => !s)} V={V} accent={accent} />
+            </div>
           </div>
         </div>
 

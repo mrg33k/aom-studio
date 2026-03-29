@@ -436,6 +436,8 @@ function SourcingAdminInner() {
   const [refreshing, setRefreshing] = useState({});
   const [exportStatus, setExportStatus] = useState('');
   const [listingFilter, setListingFilter] = useState('all');
+  const [pendingMembers, setPendingMembers] = useState([]);
+  const [memberCompanyMap, setMemberCompanyMap] = useState({});
 
   // Analytics + Messages state
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -498,18 +500,35 @@ function SourcingAdminInner() {
         orgsQ = orgsQ.eq('tenant_id', selectedTenantId);
         listQ = listQ.eq('tenant_id', selectedTenantId);
       }
-      const [compRes, orgsRes, listingsRes] = await Promise.all([compQ, orgsQ, listQ]);
+      // Fetch pending members too
+      let membersQ = adminSupabase.from('directory_members').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+      if (selectedTenantId) {
+        membersQ = membersQ.eq('tenant_id', selectedTenantId);
+      }
+
+      const [compRes, orgsRes, listingsRes, membersRes] = await Promise.all([compQ, orgsQ, listQ, membersQ]);
 
       const allCompanies = compRes.data || [];
       const allListings = listingsRes.data || [];
+      const allPendingMembers = membersRes.data || [];
 
       setCompanies(allCompanies);
       setOrgs(orgsRes.data || []);
       setListings(allListings);
+      setPendingMembers(allPendingMembers);
 
       const map = {};
       allCompanies.forEach(c => { map[c.id] = c; });
       setCompanyMap(map);
+
+      // Build member -> company map
+      const mcMap = {};
+      allPendingMembers.forEach(m => {
+        if (m.company_id && map[m.company_id]) {
+          mcMap[m.id] = map[m.company_id];
+        }
+      });
+      setMemberCompanyMap(mcMap);
 
       const byVertical = {};
       allCompanies.forEach(c => {
@@ -661,6 +680,26 @@ function SourcingAdminInner() {
     const status = action === 'activate' ? 'active' : 'expired';
     await adminSupabase.from('directory_listings').update({ status }).eq('id', id);
     await fetchData();
+  };
+
+  const handleMemberAction = async (memberId, action) => {
+    if (!adminSupabase) return;
+    try {
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      await adminSupabase.from('directory_members').update({ status: newStatus }).eq('id', memberId);
+
+      // If approving, also activate their company
+      if (action === 'approve') {
+        const member = pendingMembers.find(m => m.id === memberId);
+        if (member?.company_id) {
+          await adminSupabase.from('directory_companies').update({ status: 'active' }).eq('id', member.company_id);
+        }
+      }
+
+      await fetchData();
+    } catch (err) {
+      console.error('Member action error:', err);
+    }
   };
 
   const handleExportCSV = async () => {
@@ -958,6 +997,7 @@ function SourcingAdminInner() {
   const TABS = [
     { key: 'stats',      label: 'Stats' },
     { key: 'companies',  label: `Companies${pendingCompanies.length > 0 ? ` (${pendingCompanies.length} pending)` : ''}` },
+    { key: 'members',    label: `Pending Reviews${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ''}` },
     { key: 'add',        label: '+ Add Company' },
     { key: 'orgs',       label: 'Organizations' },
     { key: 'listings',   label: 'Listings' },
@@ -1042,7 +1082,7 @@ function SourcingAdminInner() {
       <div style={{ padding: '0 24px', borderBottom: `1px solid ${V.border}`, background: V.navBg, display: 'flex', gap: 0 }}>
         {TABS.map(tab => {
           const isActive = tab.key === activeTab;
-          const isPending = tab.key === 'companies' && pendingCompanies.length > 0;
+          const isPending = (tab.key === 'companies' && pendingCompanies.length > 0) || (tab.key === 'members' && pendingMembers.length > 0);
           return (
             <button
               key={tab.key}
@@ -1251,6 +1291,92 @@ function SourcingAdminInner() {
                 <div style={{ padding: '24px 16px', color: V.dim, fontSize: 13, fontFamily: V.space }}>No companies yet.</div>
               )}
             </div>
+          </AdminSection>
+        )}
+
+        {/* Pending Member Reviews */}
+        {!loading && activeTab === 'members' && (
+          <AdminSection title={`Pending Reviews (${pendingMembers.length})`} V={V}>
+            {pendingMembers.length === 0 ? (
+              <div style={{
+                background: V.card, border: `1px solid ${V.border}`,
+                borderRadius: 10, padding: '40px 24px', textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 6 }}>
+                  No pending reviews
+                </div>
+                <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
+                  All member signups have been reviewed.
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: V.card, border: `1px solid ${V.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 140px', gap: 12, padding: '8px 16px', background: V.card2 }}>
+                  {['Member', 'Company', 'Status', 'Actions'].map(h => (
+                    <div key={h} style={{ fontSize: 10, fontWeight: 700, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{h}</div>
+                  ))}
+                </div>
+                {pendingMembers.map(member => {
+                  const memberCompany = memberCompanyMap[member.id];
+                  return (
+                    <div key={member.id} style={{
+                      display: 'grid', gridTemplateColumns: '1fr 1fr 80px 140px',
+                      gap: 12, padding: '12px 16px', alignItems: 'center',
+                      borderBottom: `1px solid ${V.border}`,
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {member.full_name || 'No name'}
+                        </div>
+                        <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                          {member.email}
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        {memberCompany ? (
+                          <>
+                            <div style={{ fontSize: 13, fontWeight: 600, fontFamily: V.space, color: V.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {memberCompany.name}
+                            </div>
+                            <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                              {memberCompany.vertical} {memberCompany.city ? `\u00b7 ${memberCompany.city}` : ''}
+                            </div>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: 12, color: V.dim, fontFamily: V.space }}>No company</span>
+                        )}
+                      </div>
+                      <div>
+                        <span style={{
+                          background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.4)', color: '#FDE68A',
+                          fontSize: 10, fontWeight: 700, fontFamily: V.mono,
+                          padding: '2px 7px', borderRadius: 3,
+                          textTransform: 'uppercase', letterSpacing: '0.08em',
+                        }}>
+                          pending
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => handleMemberAction(member.id, 'approve')} style={{
+                          background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
+                          color: '#86EFAC', borderRadius: 5, padding: '4px 10px', fontSize: 11,
+                          fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                        }}>
+                          Approve
+                        </button>
+                        <button onClick={() => handleMemberAction(member.id, 'reject')} style={{
+                          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                          color: '#FCA5A5', borderRadius: 5, padding: '4px 10px', fontSize: 11,
+                          fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                        }}>
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </AdminSection>
         )}
 

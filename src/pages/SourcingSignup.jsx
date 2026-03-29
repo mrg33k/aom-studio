@@ -141,6 +141,10 @@ function SourcingSignupInner() {
     year_founded: '',
     description: '',
     selectedCerts: [],
+    // Auth fields
+    auth_email: '',
+    auth_password: '',
+    full_name: '',
   });
 
   useEffect(() => {
@@ -169,6 +173,9 @@ function SourcingSignupInner() {
     if (step === 1) {
       if (!form.name.trim()) return 'Company name is required.';
       if (!form.description.trim()) return 'Description is required.';
+      if (!form.full_name.trim()) return 'Your name is required.';
+      if (!form.auth_email.trim()) return 'Login email is required.';
+      if (!form.auth_password || form.auth_password.length < 6) return 'Password must be at least 6 characters.';
     }
     return '';
   };
@@ -188,37 +195,67 @@ function SourcingSignupInner() {
     setLoading(true);
     setError('');
     try {
+      // 1. Create Supabase auth user
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: form.auth_email.trim(),
+        password: form.auth_password,
+      });
+      if (authErr) throw authErr;
+
       const slug = slugify(form.name);
+
+      // 2. Insert company (status: pending)
+      const companyPayload = {
+        name: form.name.trim(),
+        slug,
+        description: form.description.trim(),
+        website: form.website.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        vertical: form.vertical,
+        city: form.city.trim() || null,
+        state: form.state || 'AZ',
+        employee_count: form.employee_count || null,
+        year_founded: form.year_founded ? parseInt(form.year_founded) : null,
+        organization_id: form.org_id || null,
+        membership_tier: 'free',
+        status: 'pending',
+      };
+
+      // Add tenant_id if we have a tenant
+      if (tenant?.id) companyPayload.tenant_id = tenant.id;
 
       const { data: company, error: companyErr } = await supabase
         .from('directory_companies')
-        .insert({
-          name: form.name.trim(),
-          slug,
-          description: form.description.trim(),
-          website: form.website.trim() || null,
-          phone: form.phone.trim() || null,
-          email: form.email.trim() || null,
-          vertical: form.vertical,
-          city: form.city.trim() || null,
-          state: form.state || 'AZ',
-          employee_count: form.employee_count || null,
-          year_founded: form.year_founded ? parseInt(form.year_founded) : null,
-          organization_id: form.org_id || null,
-          membership_tier: 'free',
-          status: 'pending',
-        })
+        .insert(companyPayload)
         .select()
         .single();
 
       if (companyErr) throw companyErr;
 
+      // 3. Insert directory_members record
+      if (tenant?.id) {
+        const { error: memberErr } = await supabase
+          .from('directory_members')
+          .insert({
+            tenant_id: tenant.id,
+            company_id: company.id,
+            email: form.auth_email.trim(),
+            full_name: form.full_name.trim(),
+            status: 'pending',
+            auth_user_id: authData.user?.id || null,
+          });
+        if (memberErr) console.error('Member insert error:', memberErr);
+      }
+
+      // 4. Insert certifications
       if (form.selectedCerts.length > 0) {
         const certRows = form.selectedCerts.map(cert => ({
           company_id: company.id,
           cert_name: cert,
           cert_value: 'true',
           vertical: form.vertical,
+          ...(tenant?.id ? { tenant_id: tenant.id } : {}),
         }));
         await supabase.from('directory_certifications').insert(certRows);
       }
@@ -227,7 +264,9 @@ function SourcingSignupInner() {
     } catch (err) {
       console.error('Signup error:', err);
       if (err.message?.includes('duplicate key') || err.message?.includes('unique')) {
-        setError('A company with this name already exists. Try adding your city/state to the name.');
+        setError('A company with this name already exists, or that email is already registered. Try a different name or email.');
+      } else if (err.message?.includes('already registered')) {
+        setError('That email is already registered. Try signing in instead.');
       } else {
         setError(err.message || 'Something went wrong. Please try again.');
       }
@@ -238,6 +277,37 @@ function SourcingSignupInner() {
 
   const availableCerts = VERTICAL_CERTS[form.vertical] || [];
   const vConfig = VERTICALS.find(v => v.key === form.vertical);
+
+  // If tenant has self_service disabled, show message
+  if (tenant && tenant.self_service === false) {
+    return (
+      <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden' }}>
+        <div style={{
+          borderBottom: `1px solid ${V.border}`,
+          padding: '0 24px',
+          display: 'flex', alignItems: 'center', gap: 16, height: 60,
+          background: V.navBg,
+        }}>
+          <Link to="/" style={{ textDecoration: 'none' }}>
+            <span style={{ fontSize: 13, fontWeight: 800, fontFamily: V.syne, color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase' }}>AOM</span>
+          </Link>
+          <span style={{ color: V.dim, fontSize: 13 }}>/</span>
+          <Link to={basePath} style={{ textDecoration: 'none', fontSize: 13, color: V.muted, fontFamily: V.space }}>Sourcing Directory</Link>
+        </div>
+        <div style={{ maxWidth: 480, margin: '0 auto', padding: '100px 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, fontFamily: V.syne, color: V.heading, marginBottom: 12 }}>
+            Signup Not Available
+          </div>
+          <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, lineHeight: 1.6, marginBottom: 24 }}>
+            Signup is not available for this directory. Contact the directory administrator.
+          </p>
+          <Link to={basePath} style={{ color: V.accent, fontFamily: V.space, fontSize: 14, textDecoration: 'none', fontWeight: 600 }}>
+            Back to Directory
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text, overflowX: 'hidden', maxWidth: '100vw' }}>
@@ -365,6 +435,18 @@ function SourcingSignupInner() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <SelectField label="Employees" options={EMP_RANGES} value={form.employee_count} onChange={v => set('employee_count', v)} V={V} />
                 <InputField label="Year Founded" placeholder="2010" type="number" min="1900" max={new Date().getFullYear()} value={form.year_founded} onChange={e => set('year_founded', e.target.value)} V={V} />
+              </div>
+
+              {/* Account section */}
+              <div style={{ borderTop: `1px solid ${V.border}`, paddingTop: 16, marginTop: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.accent, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+                  Your Account
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <InputField label="Your Full Name" required placeholder="Jane Smith" value={form.full_name} onChange={e => set('full_name', e.target.value)} V={V} />
+                  <InputField label="Login Email" required placeholder="you@company.com" type="email" value={form.auth_email} onChange={e => set('auth_email', e.target.value)} V={V} />
+                  <InputField label="Password" required placeholder="Minimum 6 characters" type="password" value={form.auth_password} onChange={e => set('auth_password', e.target.value)} V={V} />
+                </div>
               </div>
             </div>
 
@@ -568,7 +650,7 @@ function SourcingSignupInner() {
               You're on the list.
             </h2>
             <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, maxWidth: 380, margin: '0 auto 28px', lineHeight: 1.6 }}>
-              Your listing is under review and will go live within 24 hours.
+              Your listing has been submitted for review. You'll receive an email when approved.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 280, margin: '0 auto' }}>
               <Link
@@ -582,14 +664,14 @@ function SourcingSignupInner() {
                 Browse the Directory
               </Link>
               <Link
-                to="/"
+                to={`${basePath}/login`}
                 style={{
                   background: 'transparent', color: V.muted, textDecoration: 'none',
                   border: `1px solid ${V.border}`, borderRadius: 8, padding: '11px 0',
                   fontSize: 14, fontWeight: 600, fontFamily: V.space, display: 'block', textAlign: 'center',
                 }}
               >
-                Back to AOM
+                Sign In
               </Link>
             </div>
           </div>
