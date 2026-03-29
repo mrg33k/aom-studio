@@ -116,7 +116,7 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
             <nav className="flex-1 flex flex-col items-center justify-center gap-8" aria-label="Mobile navigation">
               <a
                 href="/"
-                className="text-3xl font-headline font-extrabold uppercase tracking-tight text-[#F0ECE6] hover:text-[#E85D26] transition-colors"
+                className="text-3xl font-headline font-extrabold uppercase tracking-tight text-[#F0ECE6] hover:text-[#E85D26] transition-colors min-h-[44px] flex items-center"
               >
                 Home
               </a>
@@ -124,7 +124,7 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-3xl font-headline font-extrabold uppercase tracking-tight text-[#F0ECE6] hover:text-[#E85D26] transition-colors"
+                  className="text-3xl font-headline font-extrabold uppercase tracking-tight text-[#F0ECE6] hover:text-[#E85D26] transition-colors min-h-[44px] flex items-center"
                 >
                   {link.label}
                 </a>

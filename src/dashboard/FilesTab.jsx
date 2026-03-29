@@ -13,6 +13,10 @@ import briefsIndex from '../data/briefs-index.json'
 
 const FILES_API = '/api/dashboard/files'
 
+// Docs sub-tab uses /api/local/file which is local-only (Vite middleware, no Vercel equivalent)
+const IS_LOCAL = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
 // ---- Agent deliverable docs ----
 
 const AGENT_FOLDERS = {
@@ -196,16 +200,28 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   const loadFiles = useCallback(async () => {
     setFilesLoading(true)
     try {
-      const prefix = `${agentSlug}/${clientId || 'default'}/`
-      const res = await fetch(`${FILES_API}?type=images&prefix=${encodeURIComponent(prefix)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      setFiles((data.files || []).map(item => ({
-        ...item,
-        source: 'supabase',
-        agent: agentSlug,
-        clientId: clientId || 'default',
-      })))
+      const prefixes = [
+        `${agentSlug}/${clientId || 'default'}/`,
+        `${agentSlug}/chat/`,
+        `${agentSlug}/`,
+      ]
+      const seenUrls = new Set()
+      const allFiles = []
+      await Promise.all(prefixes.map(async (prefix) => {
+        try {
+          const res = await fetch(`${FILES_API}?type=images&prefix=${encodeURIComponent(prefix)}`)
+          if (!res.ok) return
+          const data = await res.json()
+          for (const item of (data.files || [])) {
+            if (!seenUrls.has(item.url)) {
+              seenUrls.add(item.url)
+              allFiles.push({ ...item, source: 'supabase', agent: agentSlug, clientId: clientId || 'default' })
+            }
+          }
+        } catch {}
+      }))
+      allFiles.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      setFiles(allFiles)
     } catch (err) {
       console.warn('[FilesTab] Failed to load files:', err.message)
       setFiles([])
@@ -395,7 +411,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
       background: panelBg,
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
-      {/* Sub-tab toggle: Text / Images */}
+      {/* Sub-tab toggle: Images / Text / Docs (Docs = local only) */}
       <div style={{
         display: 'flex',
         borderBottom: `1px solid ${borderColor}`,
@@ -404,7 +420,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         {[
           { id: 'images', label: 'Images', icon: Image },
           { id: 'text', label: 'Text', icon: FileText },
-          { id: 'docs', label: 'Docs', icon: BookOpen },
+          ...(IS_LOCAL ? [{ id: 'docs', label: 'Docs', icon: BookOpen }] : []),
         ].map(tab => {
           const active = subTab === tab.id
           const Icon = tab.icon

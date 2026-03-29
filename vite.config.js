@@ -1812,6 +1812,121 @@ function localDashboardPlugin() {
           }
         })()
       })
+
+      // ---- LOCAL FINANCE PROXY ----
+      // GET/POST /api/dashboard/finance
+      // On localhost, vite has no serverless function runner, so this proxy
+      // talks to Supabase directly using creds from ~/.config/supabase/corner.env.
+      // Mirrors the production finance.js handler logic exactly.
+      server.middlewares.use('/api/dashboard/finance', async (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.setHeader('Cache-Control', 'no-store, no-cache')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') { res.statusCode = 200; res.end(); return }
+
+        // Load Supabase creds from local env file
+        function loadFinanceCreds() {
+          const envPath = resolve(os.homedir(), '.config', 'supabase', 'corner.env')
+          if (!fs.existsSync(envPath)) return {}
+          const creds = {}
+          for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+            const m = line.match(/^([A-Z_]+)=(.+)$/)
+            if (m) creds[m[1]] = m[2].trim()
+          }
+          return creds
+        }
+        const creds = loadFinanceCreds()
+        const SB_URL = creds.SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+        const SB_KEY = creds.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+        if (!SB_URL || !SB_KEY) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: 'Supabase not configured for local dev. Add creds to ~/.config/supabase/corner.env' }))
+          return
+        }
+
+        const sbHeaders = {
+          'apikey': SB_KEY,
+          'Authorization': `Bearer ${SB_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation',
+        }
+        const TABLE = 'finance_transactions'
+
+        try {
+          if (req.method === 'GET') {
+            const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?select=*&order=date.desc`, { headers: sbHeaders })
+            if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
+            const transactions = await sbRes.json()
+            res.end(JSON.stringify({ transactions }))
+            return
+          }
+
+          if (req.method === 'POST') {
+            // Parse body
+            let body = ''
+            await new Promise(r => { req.on('data', d => { body += d }); req.on('end', r) })
+            const parsed = JSON.parse(body || '{}')
+            const { action } = parsed
+
+            if (action === 'upsert') {
+              const { transactions } = parsed
+              if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
+                res.statusCode = 400; res.end(JSON.stringify({ error: 'transactions array required' })); return
+              }
+              const seen = new Set()
+              const rows = []
+              for (const t of transactions) {
+                const key = `${t.date}|${t.description}|${t.amount}`
+                if (seen.has(key)) continue
+                seen.add(key)
+                rows.push({ date: t.date, description: t.description, amount: t.amount, category: t.category || '', owner: t.owner || 'Review', notes: t.notes || '' })
+              }
+              const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?on_conflict=date,description,amount`, {
+                method: 'POST',
+                headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+                body: JSON.stringify(rows),
+              })
+              if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
+              const inserted = await sbRes.json()
+              res.end(JSON.stringify({ ok: true, inserted: inserted.length, total: transactions.length }))
+              return
+            }
+
+            if (action === 'update-owner') {
+              const { id, owner } = parsed
+              if (!id || !owner) { res.statusCode = 400; res.end(JSON.stringify({ error: 'id and owner required' })); return }
+              const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}`, {
+                method: 'PATCH', headers: sbHeaders, body: JSON.stringify({ owner }),
+              })
+              if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
+              const updated = await sbRes.json()
+              res.end(JSON.stringify({ ok: true, transaction: updated[0] || null }))
+              return
+            }
+
+            if (action === 'delete-all') {
+              const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?created_at=gte.1970-01-01`, { method: 'DELETE', headers: sbHeaders })
+              if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
+              res.end(JSON.stringify({ ok: true, message: 'All transactions deleted' }))
+              return
+            }
+
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: `Unknown action: ${action}` }))
+            return
+          }
+
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'Method not allowed' }))
+        } catch (err) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: err.message }))
+        }
+      })
     },
   }
 }

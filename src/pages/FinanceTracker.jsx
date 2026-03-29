@@ -195,9 +195,9 @@ function StatCard({ label, value, color, sub }) {
         e.currentTarget.style.borderColor = V4.border;
       }}
     >
-      <div style={{ color: V4.textSecondary, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6, fontFamily: V4.space }}>{label}</div>
+      <div style={{ color: V4.textSecondary, fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6, fontFamily: V4.space }}>{label}</div>
       <div style={{ color: color, fontSize: 22, fontWeight: 700, fontFamily: V4.syne, letterSpacing: '-0.01em' }}>{value}</div>
-      {sub && <div style={{ color: V4.textSecondary, fontSize: 11, marginTop: 4, fontFamily: V4.space }}>{sub}</div>}
+      {sub && <div style={{ color: V4.textSecondary, fontSize: 12, marginTop: 4, fontFamily: V4.space }}>{sub}</div>}
     </div>
   );
 }
@@ -505,13 +505,13 @@ export default function FinanceTracker() {
   );
 
   const thStyle = {
-    padding: '10px 12px', textAlign: 'left', fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+    padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
     letterSpacing: '0.15em', color: V4.textSecondary, borderBottom: `1px solid ${V4.border}`, cursor: 'pointer',
     userSelect: 'none', whiteSpace: 'nowrap', fontFamily: V4.space
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: V4.bg, color: V4.textPrimary, fontFamily: V4.space }}>
+    <div style={{ minHeight: '100vh', background: V4.bg, color: V4.textPrimary, fontFamily: V4.space, overflowX: 'hidden', maxWidth: '100vw', boxSizing: 'border-box', width: '100%' }}>
       {/* Header with diagonal pattern */}
       <div style={{
         padding: '32px 24px 24px', maxWidth: 1400, margin: '0 auto', position: 'relative',
@@ -531,7 +531,7 @@ export default function FinanceTracker() {
             <button onClick={() => fileRef.current?.click()} style={{
               background: V4.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px',
               fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: V4.syne, textTransform: 'uppercase', letterSpacing: '0.1em',
-              transition: 'background 0.2s'
+              transition: 'background 0.2s', minHeight: 44
             }}
               onMouseEnter={e => e.currentTarget.style.background = V4.accentHover}
               onMouseLeave={e => e.currentTarget.style.background = V4.accent}
@@ -541,7 +541,7 @@ export default function FinanceTracker() {
             <button onClick={exportCSV} style={{
               background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 20px',
               fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em',
-              transition: 'border-color 0.2s'
+              transition: 'border-color 0.2s', minHeight: 44
             }}
               onMouseEnter={e => e.currentTarget.style.borderColor = V4.accent + '55'}
               onMouseLeave={e => e.currentTarget.style.borderColor = V4.border}
@@ -550,13 +550,13 @@ export default function FinanceTracker() {
             </button>
             <button onClick={handleRefresh} style={{
               background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 20px',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em'
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em', minHeight: 44
             }}>
               Refresh
             </button>
             <button onClick={clearData} style={{
               background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 16px',
-              fontSize: 11, cursor: 'pointer', fontFamily: V4.space, opacity: 0.5
+              fontSize: 12, cursor: 'pointer', fontFamily: V4.space, opacity: 0.5, minHeight: 44
             }}>
               Reset
             </button>
@@ -621,8 +621,8 @@ export default function FinanceTracker() {
       </div>
 
       {/* Filters */}
-      <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto 12px' }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto 12px', boxSizing: 'border-box', width: '100%' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
           {['All', ...OWNER_OPTIONS].map(o => {
             const isActive = filterOwner === o;
             const badgeColor = o === 'All' ? V4.accent : (OWNER_COLORS[o]?.badge || V4.accent);
@@ -634,7 +634,7 @@ export default function FinanceTracker() {
                   background: isActive ? badgeColor : V4.card,
                   color: isActive ? '#fff' : V4.textSecondary,
                   border: `1px solid ${isActive ? 'transparent' : V4.border}`,
-                  borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  borderRadius: 8, padding: '10px 14px', minHeight: 44, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                   fontFamily: V4.space, textTransform: 'uppercase', letterSpacing: '0.1em',
                   transition: 'all 0.15s'
                 }}
@@ -666,7 +666,7 @@ export default function FinanceTracker() {
                 fontFamily: V4.space, colorScheme: 'dark'
               }}
             />
-            <span style={{ color: V4.textSecondary, fontSize: 11 }}>to</span>
+            <span style={{ color: V4.textSecondary, fontSize: 12 }}>to</span>
             <input
               type="date"
               value={dateTo}
@@ -682,7 +682,7 @@ export default function FinanceTracker() {
                 onClick={() => { setDateFrom(''); setDateTo(''); }}
                 style={{
                   background: 'transparent', border: 'none', color: V4.accent,
-                  fontSize: 11, cursor: 'pointer', fontFamily: V4.space, fontWeight: 600,
+                  fontSize: 12, cursor: 'pointer', fontFamily: V4.space, fontWeight: 600,
                   padding: '4px 8px'
                 }}
               >
@@ -690,7 +690,7 @@ export default function FinanceTracker() {
               </button>
             )}
           </div>
-          <span style={{ color: V4.textSecondary, fontSize: 11, fontFamily: V4.space, letterSpacing: '0.1em' }}>{filtered.length} RESULTS</span>
+          <span style={{ color: V4.textSecondary, fontSize: 12, fontFamily: V4.space, letterSpacing: '0.1em' }}>{filtered.length} RESULTS</span>
         </div>
       </div>
 
@@ -735,7 +735,7 @@ export default function FinanceTracker() {
                         onChange={(e) => handleOwnerChange(t, e.target.value)}
                         style={{
                           background: `${oc.badge}18`, color: oc.text, border: `1px solid ${oc.badge}33`,
-                          borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          borderRadius: 6, padding: '4px 8px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                           outline: 'none', fontFamily: V4.space, appearance: 'auto', letterSpacing: '0.05em'
                         }}
                       >

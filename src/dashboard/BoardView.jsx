@@ -36,30 +36,31 @@ function getAgentName(slug) {
 
 function cssVars(isNight) {
   if (isNight) return {
-    '--bv-bg': '#0B1A3E',
-    '--bv-rail': 'rgba(8,16,40,0.7)',
-    '--bv-bar': 'rgba(10,20,50,0.6)',
-    '--bv-bar2': 'rgba(10,20,50,0.3)',
-    '--bv-col': 'rgba(15,35,90,0.35)',
-    '--bv-col-exp': 'rgba(20,45,110,0.4)',
-    '--bv-col-border': 'rgba(60,120,255,0.15)',
-    '--bv-col-border-exp': 'rgba(80,150,255,0.35)',
-    '--bv-card': 'rgba(15,45,140,0.2)',
-    '--bv-card-border': 'rgba(60,120,255,0.12)',
-    '--bv-card-hover': 'rgba(20,55,160,0.3)',
-    '--bv-divider': 'rgba(60,120,255,0.08)',
-    '--bv-input-bg': 'rgba(15,35,80,0.5)',
-    '--bv-input-border': 'rgba(60,120,255,0.15)',
-    '--bv-chat-agent': 'rgba(15,45,140,0.25)',
-    '--bv-chat-user': 'rgba(59,130,246,0.2)',
-    '--bv-text': '#E8ECF4',
-    '--bv-text2': '#C8D4E0',
-    '--bv-muted': '#6B7280',
-    '--bv-dim': '#4A6585',
-    '--bv-accent': 'rgba(59,130,246,0.2)',
-    '--bv-accent-border': 'rgba(59,130,246,0.5)',
+    // V5 depth system -- Steffen 2026-03-28
+    '--bv-bg': '#060A12',
+    '--bv-rail': '#0A1020',
+    '--bv-bar': 'rgba(14,22,40,0.98)',
+    '--bv-bar2': 'rgba(10,16,32,0.3)',
+    '--bv-col': '#0E1628',
+    '--bv-col-exp': '#121E34',
+    '--bv-col-border': 'rgba(96,165,250,0.15)',
+    '--bv-col-border-exp': 'rgba(96,165,250,0.35)',
+    '--bv-card': '#121E34',
+    '--bv-card-border': 'rgba(255,255,255,0.05)',
+    '--bv-card-hover': '#162844',
+    '--bv-divider': 'rgba(255,255,255,0.03)',
+    '--bv-input-bg': '#0E1628',
+    '--bv-input-border': 'rgba(255,255,255,0.06)',
+    '--bv-chat-agent': '#121E34',
+    '--bv-chat-user': 'rgba(59,130,246,0.15)',
+    '--bv-text': '#F0F4FF',
+    '--bv-text2': '#94A8C8',
+    '--bv-muted': '#506480',
+    '--bv-dim': '#2E4260',
+    '--bv-accent': 'rgba(59,130,246,0.10)',
+    '--bv-accent-border': 'rgba(96,165,250,0.35)',
     '--bv-accent-text': '#60A5FA',
-    '--bv-badge': 'rgba(60,120,255,0.1)',
+    '--bv-badge': 'rgba(59,130,246,0.10)',
   }
   return {
     '--bv-bg': '#1A3A7A',
@@ -103,20 +104,6 @@ function useColumnChat(agentSlug, isActive) {
   const isBridgeSlug = isBridgeAgent(agentSlug)
   const bridge = useBridge(agentSlug, { enabled: isBridgeSlug && isActive })
   const useBridgeForAgent = isBridgeSlug // true for bridge agents regardless of connection state
-
-  // Bridge: map check states to message read receipts (single -> double -> blue)
-  useEffect(() => {
-    if (!bridge.check) return
-    const statusMap = { single: 'sent', double: 'delivered', blue: 'read' }
-    const newStatus = statusMap[bridge.check]
-    if (!newStatus) return
-    setMessages(prev => {
-      const last = [...prev].reverse().find(m => m.role === 'user')
-      if (!last) return prev
-      if (last.status === newStatus) return prev
-      return prev.map(m => m === last ? { ...m, status: newStatus } : m)
-    })
-  }, [bridge.check])
 
   // Bridge: stream text into streaming placeholder (deltas only)
   useEffect(() => {
@@ -171,6 +158,14 @@ function useColumnChat(agentSlug, isActive) {
     setSending(false)
   }, [bridge.lastResponse])
 
+  // Bridge: reset sending state on disconnect (catches pre-stream disconnects)
+  useEffect(() => {
+    if (!useBridgeForAgent) return
+    if (bridge.status === 'disconnected') {
+      setSending(false)
+    }
+  }, [useBridgeForAgent, bridge.status])
+
   useEffect(() => {
     if (!agentSlug || !isActive || loadedRef.current) return
     loadedRef.current = true
@@ -192,6 +187,8 @@ function useColumnChat(agentSlug, isActive) {
             if (src.startsWith('agent-')) return false
             if (src === 'corner-dashboard-task') return false
             if (src === 'task-creation') return false
+            if (src === 'completion-hook') return false
+            if (src === 'agent-status') return false
             if (m.is_task) return false
             const txt = (m.text || '')
             if (txt.startsWith('[SESSION LOG]')) return false
@@ -201,7 +198,10 @@ function useColumnChat(agentSlug, isActive) {
             if (txt.startsWith('MANDATORY FIRST STEP:')) return false
             if (txt.startsWith('PRIORITY:') || txt.startsWith('CRITICAL:') || txt.startsWith('NEW MANDATORY')) return false
             if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return false
+            if (/^Task auto-confirmed:/i.test(txt)) return false
+            if (/\bsession (ended|started)\b/i.test(txt)) return false
             if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed|Shipped|shipped)/i.test(txt)) return false
+            if (/^(confirmed|task complete|done|completed)\s*[.!]?\s*$/i.test(txt)) return false
             // Filter spawn-agent task prompts (system routing, not conversation)
             if (txt.includes('Working directory:') && txt.includes('Read your context')) return false
             if (txt.includes('Task ID:') && txt.includes('YOUR TASK:')) return false
@@ -245,6 +245,8 @@ function useColumnChat(agentSlug, isActive) {
             if (src.startsWith('agent-')) return false
             if (src === 'corner-dashboard-task') return false
             if (src === 'task-creation') return false
+            if (src === 'completion-hook') return false
+            if (src === 'agent-status') return false
             if (m.is_task) return false
             const txt = (m.text || '')
             if (txt.startsWith('[SESSION LOG]')) return false
@@ -254,14 +256,16 @@ function useColumnChat(agentSlug, isActive) {
             if (txt.startsWith('MANDATORY FIRST STEP:')) return false
             if (txt.startsWith('PRIORITY:') || txt.startsWith('CRITICAL:') || txt.startsWith('NEW MANDATORY')) return false
             if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return false
+            if (/^Task auto-confirmed:/i.test(txt)) return false
+            if (/\bsession (ended|started)\b/i.test(txt)) return false
             if (/^\[?(BOBBY|ELON|GARY|STEVE|CLEO|STEFFEN)\]?\s*(session started|sub-agent completed|Shipped|shipped)/i.test(txt)) return false
+            if (/^(confirmed|task complete|done|completed)\s*[.!]?\s*$/i.test(txt)) return false
             if (txt.includes('Working directory:') && txt.includes('Read your context')) return false
             if (txt.includes('Task ID:') && txt.includes('YOUR TASK:')) return false
             if (txt.includes('REMINDER: Write your result summary')) return false
             if (txt.includes('Read the output file to retrieve the result:')) return false
             if (txt.startsWith('export CORNER_AGENT=')) return false
             if (/^Fix Terminal Bridge/.test(txt) && txt.includes('server.js')) return false
-            if (/^(confirmed|task complete|done|completed)\s*[.!]?\s*$/i.test(txt)) return false
             return true
           })
         if (newMsgs.length > 0) {
@@ -292,6 +296,10 @@ function useColumnChat(agentSlug, isActive) {
     const sentTime = new Date().toISOString()
     const msgId = `usr-${Date.now()}`
     setInput('')
+    // Reset stale check state BEFORE adding the new message so the bridge.check
+    // useEffect cannot fire with a leftover 'blue' value and instantly mark the
+    // new message as read.
+    if (useBridgeForAgent) bridge.resetCheck()
     // Step 1: single gray check (sent)
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
@@ -303,6 +311,15 @@ function useColumnChat(agentSlug, isActive) {
 
     // Terminal Bridge: direct WebSocket for super agents
     if (useBridgeForAgent) {
+      // Persist user message to Supabase immediately (belt and suspenders -- bridge server is the backup)
+      const clientId = getClientId()
+      const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
+      fetch(sendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, text: text.trim(), message: text.trim(), source: 'corner-dashboard', client_id: clientId, role: 'user' }),
+      }).catch(() => {}) // fire and forget
+
       const sent = bridge.send(text.trim())
       if (sent) {
         // Add streaming placeholder for bridge response
@@ -399,18 +416,20 @@ function ColTabBar({ tabs, active, onChange }) {
   return (
     <div style={{
       display: 'flex', borderBottom: '1px solid var(--bv-divider)', flexShrink: 0,
+      padding: '5px 10px',
     }}>
       {tabs.map(t => (
         <div
           key={t}
           onClick={() => onChange(t)}
           style={{
-            flex: 1, padding: '7px 0', textAlign: 'center',
+            flex: 1, padding: '6px 0', textAlign: 'center',
             fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-            textTransform: 'uppercase', letterSpacing: '0.1em',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
             color: active === t ? 'var(--bv-accent-text)' : 'var(--bv-dim)',
-            borderBottom: `2px solid ${active === t ? 'var(--bv-accent-text)' : 'transparent'}`,
-            cursor: 'pointer', transition: 'all 0.15s',
+            borderRadius: 7, margin: '0 2px',
+            background: active === t ? 'var(--bv-accent)' : 'transparent',
+            cursor: 'pointer', transition: 'all 0.18s',
           }}
         >
           {t}
@@ -438,35 +457,82 @@ function ReadReceipt({ status }) {
   )
 }
 
+// ── MESSAGE CONTENT RENDERER ─────────────────────────────────────────────────
+// Renders plain text, [file](url) links, and inline images from agents/users
+
+const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg|bmp|heic|heif)(\?.*)?$/i
+
+function renderMessageContent(content) {
+  if (!content) return null
+  // Split on [file](url) or ![alt](url) patterns, render images inline
+  const parts = []
+  const pattern = /(!?\[([^\]]*)\]\((https?:\/\/[^)]+)\))/g
+  let last = 0
+  let match
+  while ((match = pattern.exec(content)) !== null) {
+    // Text before this match
+    if (match.index > last) {
+      const txt = content.slice(last, match.index).trim()
+      if (txt) parts.push(<span key={`t-${last}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{txt}</span>)
+    }
+    const isImage = match[1].startsWith('!') || IMAGE_EXTS.test(match[3])
+    if (isImage) {
+      parts.push(
+        <img key={`img-${match.index}`} src={match[3]} alt={match[2] || 'image'}
+          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
+          onClick={() => window.open(match[3], '_blank')}
+          onError={e => { e.target.style.display = 'none' }}
+        />
+      )
+    } else {
+      parts.push(<a key={`a-${match.index}`} href={match[3]} target="_blank" rel="noopener noreferrer"
+        style={{ color: '#60A5FA', textDecoration: 'underline' }}>{match[2] || match[3]}</a>)
+    }
+    last = match.index + match[0].length
+  }
+  // Remaining text — also scan for bare image URLs
+  const tail = content.slice(last)
+  if (tail) {
+    const urlPattern = /(https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?\S*)?)/gi
+    const tailParts = tail.split(urlPattern)
+    tailParts.forEach((seg, i) => {
+      if (IMAGE_EXTS.test(seg) && seg.startsWith('http')) {
+        parts.push(<img key={`bi-${i}`} src={seg} alt="image"
+          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
+          onClick={() => window.open(seg, '_blank')}
+          onError={e => { e.target.style.display = 'none' }}
+        />)
+      } else if (seg.trim()) {
+        parts.push(<span key={`ts-${i}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{seg}</span>)
+      }
+    })
+  }
+  return parts.length > 0 ? parts : <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{content}</span>
+}
+
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
 function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
   const isUserScrolledUp = useRef(false)
   const color = agentColor || getAgentColor(agentSlug)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role }
+  const [pendingFiles, setPendingFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
 
   // Check if any message is currently streaming
   const isStreaming = chat.messages.some(m => m.streaming)
-
-  // Rendered message count (streaming placeholders excluded -- they're filtered at render time)
-  const renderedCount = chat.messages.filter(m => !m.streaming).length
 
   // Smart scroll: auto-scroll unless user scrolled up
   const scrollToBottom = useCallback(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
   }, [])
 
-  // Scroll on rendered message count change (not total, to avoid jump when streaming placeholder is added/removed)
   useEffect(() => {
     if (!isUserScrolledUp.current) scrollToBottom()
-  }, [renderedCount, scrollToBottom])
-
-  // Also scroll during streaming so text stays in view
-  useEffect(() => {
-    if (isStreaming && !isUserScrolledUp.current) scrollToBottom()
-  }, [isStreaming, chat.bridge?.streamText, scrollToBottom])
+  }, [chat.messages.length, scrollToBottom])
 
   const handleScroll = useCallback(() => {
     if (!ref.current) return
@@ -474,9 +540,51 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 80
   }, [])
 
-  const doSend = () => {
-    if (chat.input.trim()) {
-      chat.sendMessage(chat.input)
+  const doSend = async () => {
+    const hasText = chat.input.trim()
+    const hasFiles = pendingFiles.length > 0
+    if (!hasText && !hasFiles) return
+
+    let messageText = chat.input.trim()
+
+    // Upload files if any
+    if (hasFiles) {
+      setUploading(true)
+      const urls = []
+      for (const file of pendingFiles) {
+        try {
+          const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          const ext = file.name.split('.').pop()
+          // Use same path as FilesTab so uploads appear in Files tab immediately
+          const storagePath = `${agentSlug}/${getClientId()}/chat-${id}.${ext}`
+          const signRes = await fetch('/api/dashboard/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sign-upload', path: storagePath, contentType: file.type }),
+          })
+          if (signRes.ok) {
+            const { uploadUrl } = await signRes.json()
+            const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file })
+            if (putRes.ok) {
+              const supaUrl = import.meta.env.VITE_SUPABASE_URL || ''
+              urls.push(`${supaUrl}/storage/v1/object/public/corner-files/${storagePath}`)
+            }
+          }
+        } catch (err) {
+          console.warn('[ChatPanel] Upload failed:', file.name, err)
+        }
+      }
+      setPendingFiles([])
+      setUploading(false)
+      if (urls.length > 0) {
+        const fileBlock = urls.map(u => `[file](${u})`).join('\n')
+        messageText = messageText ? `${messageText}\n\n${fileBlock}` : fileBlock
+      }
+    }
+
+    if (messageText) {
+      chat.sendMessage(messageText)
+      chat.setInput('')
       isUserScrolledUp.current = false
       setTimeout(scrollToBottom, 50)
     }
@@ -486,7 +594,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, position: 'relative' }}
       onClick={e => e.stopPropagation()}
     >
-      <div ref={ref} onScroll={handleScroll}
+      <div ref={ref} onScroll={handleScroll} className="bv-col-scroll"
         onContextMenu={e => {
           // Delegate: find closest message bubble and show context menu
           const bubble = e.target.closest('[data-msg-idx]')
@@ -504,7 +612,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0,
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
-        {chat.messages.filter(m => !m.streaming).map((m, i) => (
+        {chat.messages.map((m, i) => (
             <div key={i} style={{
               display: 'flex',
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
@@ -525,7 +633,19 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
                   {m.role === 'user' ? 'You' : agentName}
                 </div>
-                <div>{m.content}</div>
+                {/* Streaming placeholder: show TypingIndicatorV2 if no content yet, else show live text */}
+                {m.streaming && !m.content ? (
+                  <TypingIndicatorV2
+                    streaming={true}
+                    agentSlug={agentSlug}
+                    agentColor={color}
+                    agentName={agentName}
+                    onPoke={(text) => chat.sendMessage(text)}
+                    compact={true}
+                  />
+                ) : (
+                  <div>{renderMessageContent(m.content)}</div>
+                )}
                 {/* WhatsApp-style read receipts on user messages */}
                 {m.role === 'user' && m.status && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
@@ -535,6 +655,28 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               </div>
             </div>
         ))}
+        {/* Bridge typing indicator: shown when bridge is streaming but no streaming message exists yet */}
+        {chat.bridge?.streaming && !chat.messages.some(m => m.streaming) && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{
+              padding: '10px 14px', borderRadius: 12,
+              maxWidth: '88%',
+              background: 'var(--bv-chat-agent)',
+              border: '1px solid var(--bv-card-border)',
+              borderBottomLeftRadius: 4,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>{agentName}</div>
+              <TypingIndicatorV2
+                streaming={true}
+                agentSlug={agentSlug}
+                agentColor={color}
+                agentName={agentName}
+                onPoke={(text) => chat.sendMessage(text)}
+                compact={true}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Message context menu: portal to body to escape transform containers */}
@@ -633,10 +775,71 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         </div>
       )}
 
+      {/* File preview strip */}
+      {pendingFiles.length > 0 && (
+        <div style={{
+          display: 'flex', gap: 6, padding: '6px 12px', borderTop: '1px solid var(--bv-divider)',
+          background: 'var(--bv-bar)', overflowX: 'auto', flexShrink: 0,
+        }}>
+          {pendingFiles.map((file, i) => {
+            const isImage = file.type.startsWith('image/')
+            return (
+              <div key={i} style={{
+                position: 'relative', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 8px', borderRadius: 8, background: 'var(--bv-card)',
+                border: '1px solid var(--bv-card-border)', fontSize: 11, color: 'var(--bv-text2)',
+                maxWidth: 160, flexShrink: 0,
+              }}>
+                {isImage ? (
+                  <img src={URL.createObjectURL(file)} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.5 }}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                )}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                <button type="button" onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))} style={{
+                  position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%',
+                  background: '#EF4444', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                }}>x</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <div style={{
-        display: 'flex', gap: 6, padding: '8px 12px',
+        display: 'flex', gap: 6, padding: '8px 12px', alignItems: 'center',
         borderTop: '1px solid var(--bv-divider)', flexShrink: 0, background: 'var(--bv-bar)',
       }}>
+        {/* + button: attach images/files */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.md"
+          style={{ display: 'none' }}
+          onChange={e => {
+            if (e.target.files?.length) {
+              setPendingFiles(prev => [...prev, ...Array.from(e.target.files)])
+              e.target.value = ''
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+          style={{
+            width: 32, height: 32, borderRadius: 8, border: '1.5px solid var(--bv-input-border)',
+            background: 'var(--bv-input-bg)', color: 'var(--bv-muted)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            transition: 'color 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--bv-text)'; e.currentTarget.style.borderColor = 'var(--bv-accent)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--bv-muted)'; e.currentTarget.style.borderColor = 'var(--bv-input-border)' }}
+          title="Attach images or files"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <input
           ref={inputRef}
           value={chat.input}
@@ -653,13 +856,22 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         <button
           type="button"
           onClick={e => { e.stopPropagation(); doSend() }}
+          disabled={uploading}
           style={{
             width: 36, height: 36, borderRadius: 10, border: 'none',
-            background: 'var(--bv-accent)', color: 'var(--bv-accent-text)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            background: chat.input?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+            color: '#fff',
+            cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            opacity: uploading ? 0.5 : 1,
+            boxShadow: chat.input?.trim() ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
+            transition: 'all 0.15s',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          {uploading ? (
+            <div className="animate-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          )}
         </button>
       </div>
     </div>
@@ -718,13 +930,13 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
           key={t.taskId || t.id || t.text || i}
           onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
           style={{
-            padding: '7px 10px', borderRadius: 8, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
-            marginBottom: 4, cursor: 'context-menu', transition: 'background 0.15s',
-            display: 'flex', gap: 8, alignItems: 'flex-start',
+            padding: '10px 12px', borderRadius: 10, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
+            marginBottom: 5, cursor: 'context-menu', transition: 'all 0.2s',
+            display: 'flex', gap: 10, alignItems: 'flex-start',
             opacity: t.done || t.status === 'completed' ? 0.5 : 1,
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-card-hover)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--bv-card)'}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-card-hover)'; e.currentTarget.style.transform = 'translateX(2px)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.transform = 'translateX(0)' }}
         >
           <div style={{
             width: 14, height: 14, borderRadius: 3, marginTop: 1, flexShrink: 0,
@@ -738,7 +950,7 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              fontSize: 12, color: 'var(--bv-text2)', lineHeight: 1.4,
+              fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
               textDecoration: t.done || t.status === 'completed' ? 'line-through' : 'none',
             }}>{t.text || 'Task'}</div>
             {showAgent && t.agent && (
@@ -994,9 +1206,10 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: 320, maxWidth: 380, flex: '0 0 auto', borderRadius: 14,
-          border: `1.5px solid ${isDragTarget ? 'var(--bv-accent-border)' : `${color}35`}`,
-          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 6%, var(--bv-col))`,
-          backdropFilter: 'blur(8px)',
+          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : 'rgba(255,255,255,0.04)'}`,
+          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 5%, var(--bv-col))`,
+          backdropFilter: 'blur(12px)',
+          boxShadow: `0 4px 24px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         }),
         transition: 'all 0.25s', overflow: 'hidden',
         animation: 'bvSlideIn 0.25s ease',
@@ -1006,32 +1219,39 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <div
         onContextMenu={handleHeaderCtx}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-          borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px',
+          borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0, position: 'relative',
           cursor: isMobile ? 'default' : 'grab',
+          background: 'rgba(0,0,0,0.15)',
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 10px ${color}50` }} />
+        {/* V5: 36px rounded-square avatar */}
         <div style={{
-          width: 30, height: 30, borderRadius: '50%',
-          background: `${color}22`, border: `1.5px solid ${color}60`, color,
+          width: 36, height: 36, borderRadius: 10,
+          background: `${color}18`, border: `1.5px solid ${color}45`, color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 14, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+          flexShrink: 0,
         }}>
           {agent.name?.charAt(0) || agent.slug?.charAt(0)?.toUpperCase()}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bv-text)' }}>{agent.name || agent.slug}</div>
-          <div style={{ fontSize: 10, color: 'var(--bv-muted)' }}>{agent.role || ''}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* V5: name in Inter Tight */}
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--bv-text)', fontFamily: "'Inter Tight', 'Inter', sans-serif", letterSpacing: '0.01em', lineHeight: 1.2 }}>{agent.name || agent.slug}</div>
+          {/* V5: role in JetBrains Mono */}
+          {agent.role && <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: 2 }}>{agent.role}</div>}
         </div>
+        {/* V5: status pill */}
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 3,
-          padding: '2px 7px', borderRadius: 20,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          padding: '4px 10px', borderRadius: 20,
           background: statusCfg.bg, border: `1px solid ${statusCfg.border}`,
-          fontSize: 8, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-          textTransform: 'uppercase', letterSpacing: '0.1em', color: statusCfg.color,
+          fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          textTransform: 'uppercase', letterSpacing: '0.06em', color: statusCfg.color,
+          flexShrink: 0,
         }}>
-          <span style={{ width: 4, height: 4, borderRadius: '50%', background: statusCfg.color, boxShadow: statusCfg.glow ? `0 0 5px ${statusCfg.color}` : 'none' }} />
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusCfg.color, boxShadow: statusCfg.glow ? `0 0 6px ${statusCfg.color}` : 'none', flexShrink: 0 }} />
           {status}
         </div>
         {!isMobile && (
@@ -1087,9 +1307,10 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: 320, maxWidth: 380, flex: '0 0 auto', borderRadius: 14,
-          border: `1.5px solid ${isDragTarget ? 'var(--bv-accent-border)' : `${color}35`}`,
-          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 6%, var(--bv-col))`,
-          backdropFilter: 'blur(8px)',
+          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : 'rgba(255,255,255,0.04)'}`,
+          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 5%, var(--bv-col))`,
+          backdropFilter: 'blur(12px)',
+          boxShadow: `0 4px 24px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         }),
         transition: 'all 0.25s', overflow: 'hidden',
         animation: 'bvSlideIn 0.25s ease',
@@ -1099,23 +1320,25 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
       <div
         onContextMenu={handleHeaderCtx}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-          borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
+          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px',
+          borderBottom: '1px solid rgba(255,255,255,0.04)', flexShrink: 0, position: 'relative',
           cursor: isMobile ? 'default' : 'grab',
+          background: 'rgba(0,0,0,0.15)',
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 10px ${color}50` }} />
         <div style={{
-          width: 30, height: 30, borderRadius: 10,
-          background: `${color}22`, border: `1.5px solid ${color}60`, color,
+          width: 36, height: 36, borderRadius: 10,
+          background: `${color}18`, border: `1.5px solid ${color}45`, color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 14, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+          flexShrink: 0,
         }}>
           {project.name?.charAt(0) || 'P'}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--bv-text)' }}>{project.name}</div>
-          <div style={{ fontSize: 10, color: 'var(--bv-muted)' }}>Project</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--bv-text)', fontFamily: "'Inter Tight', 'Inter', sans-serif", letterSpacing: '0.01em', lineHeight: 1.2 }}>{project.name}</div>
+          <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: 2 }}>Project</div>
         </div>
         <span style={{
           fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
@@ -1191,7 +1414,7 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
       <div style={{
         width: expanded ? 36 : (isActive ? 36 : 32),
         height: expanded ? 36 : (isActive ? 36 : 32),
-        borderRadius: isAgent ? '50%' : 10,
+        borderRadius: 10,
         background: `${color}${isActive ? '22' : '10'}`,
         border: `1.5px solid ${color}${isActive ? '60' : '30'}`,
         color, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1490,136 +1713,175 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes bvSlideIn { from { opacity: 0; transform: translateX(20px) scale(0.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
         .bv-rail-scroll::-webkit-scrollbar { display: none; }
+        .bv-col-scroll::-webkit-scrollbar { width: 4px; }
+        .bv-col-scroll::-webkit-scrollbar-track { background: transparent; }
+        .bv-col-scroll::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.15); border-radius: 3px; }
+        .bv-col-scroll::-webkit-scrollbar-thumb:hover { background: rgba(96,165,250,0.25); }
+        .bv-columns-area::-webkit-scrollbar { height: 4px; }
+        .bv-columns-area::-webkit-scrollbar-track { background: transparent; }
+        .bv-columns-area::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.12); border-radius: 3px; }
       `}</style>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* V5 board background: radial gradients over void */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden',
+        background: 'radial-gradient(ellipse at 15% 50%, rgba(59,130,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(168,85,247,0.02) 0%, transparent 50%)',
+      }}>
 
-        {/* LEFT RAIL -- collapsible */}
-        {/* LEFT RAIL: collapsed = 20px strip, expanded = 220px */}
+        {/* LEFT RAIL -- collapsible. V5: 56px collapsed, 280px expanded */}
         <div style={{
-          width: railOpen ? 220 : 20, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: railOpen ? 280 : 56, flexShrink: 0, display: 'flex', flexDirection: 'column',
           background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
-          transition: 'width 0.2s ease', overflow: 'hidden', position: 'relative',
+          transition: 'width 0.28s cubic-bezier(0.34,1.56,0.64,1)', overflow: 'hidden', position: 'relative',
         }}>
-          {/* Collapsed: pull tab + colored dots */}
+
+          {/* V5: Top collapse/expand toggle button */}
+          <div style={{
+            padding: '8px', borderBottom: '1px solid var(--bv-divider)',
+            flexShrink: 0, display: 'flex',
+          }}>
+            <button
+              onClick={() => setRailOpen(!railOpen)}
+              title={railOpen ? 'Collapse rail' : 'Expand rail'}
+              style={{
+                width: '100%', height: 30, borderRadius: 7,
+                border: '1px solid var(--bv-col-border)',
+                background: 'var(--bv-card)', color: 'var(--bv-muted)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-col-exp)'; e.currentTarget.style.color = 'var(--bv-text2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-muted)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: railOpen ? 'none' : 'rotate(180deg)', transition: 'transform 0.3s' }}>
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              {railOpen && <span>Collapse</span>}
+            </button>
+          </div>
+
+          {/* Collapsed: V5 avatar initials with status dots */}
           {!railOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 0 6px' }}>
-              {/* Pull-to-expand tab */}
-              <button
-                onClick={() => setRailOpen(true)}
-                style={{
-                  width: 16, height: 28, borderRadius: 4,
-                  border: '1px solid var(--bv-col-border)',
-                  background: 'var(--bv-card)', color: 'var(--bv-dim)',
-                  fontSize: 11, cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, marginBottom: 6,
-                }}
-                title="Expand rail"
-              >
-                {'\u203A'}
-              </button>
-              {allItems.filter(it => visibleSlugs.has(it.slug)).map(it => (
-                <div key={it.slug} style={{
-                  width: 8, height: 8, borderRadius: it.isAgent ? '50%' : 2,
-                  background: it.color || '#60A5FA', opacity: 0.7,
-                  boxShadow: it.status === 'WORKING' ? `0 0 4px ${it.color}` : 'none',
-                }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 0 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none' }}>
+              {allItems.map(it => (
+                <div key={it.slug}
+                  onClick={() => { toggleSlug(it.slug); if (isMobile) setMobileIdx(0) }}
+                  title={it.name || it.slug}
+                  style={{
+                    width: 36, height: 36, borderRadius: it.isAgent ? 10 : 8,
+                    background: visibleSlugs.has(it.slug) ? `${it.color}20` : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${visibleSlugs.has(it.slug) ? `${it.color}50` : 'rgba(255,255,255,0.06)'}`,
+                    color: visibleSlugs.has(it.slug) ? it.color : 'var(--bv-dim)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+                    cursor: 'pointer', position: 'relative', flexShrink: 0,
+                    transition: 'all 0.15s',
+                    boxShadow: it.status === 'WORKING' && visibleSlugs.has(it.slug) ? `0 0 8px ${it.color}40` : 'none',
+                  }}
+                >
+                  {(it.name || it.slug)?.charAt(0)?.toUpperCase()}
+                  {/* Status dot */}
+                  <div style={{
+                    position: 'absolute', bottom: -1, right: -1,
+                    width: 9, height: 9, borderRadius: '50%',
+                    border: '2px solid var(--bv-rail)',
+                    background: it.status === 'WORKING' ? '#22C55E' : it.status === 'DONE' ? '#3B82F6' : '#4B5563',
+                    boxShadow: it.status === 'WORKING' ? '0 0 5px #22C55E' : 'none',
+                  }} />
+                  {/* Unread badge */}
+                  {!visibleSlugs.has(it.slug) && (unreadMap[it.slug] || 0) > 0 && (
+                    <div style={{
+                      position: 'absolute', top: -4, right: -4,
+                      minWidth: 14, height: 14, borderRadius: 7,
+                      background: '#E85D26', color: '#fff',
+                      fontSize: 8, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+                    }}>{unreadMap[it.slug]}</div>
+                  )}
+                </div>
               ))}
-              {/* Show notification pulse if any hidden agent has unread */}
-              {allItems.some(it => !visibleSlugs.has(it.slug) && (unreadMap[it.slug] || 0) > 0) && (
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: '#F97316', marginTop: 4,
-                  animation: 'bvPulse 1.5s infinite',
-                }} />
-              )}
             </div>
           )}
 
           {/* Expanded content */}
           {railOpen && (
             <div style={{
-              display: 'flex', flexDirection: 'column', height: '100%',
-            }}>
-              {/* Scrollable list */}
-              <div style={{
-                flex: 1, overflowY: 'auto', overflowX: 'hidden',
-                scrollbarWidth: 'none', msOverflowStyle: 'none',
-                padding: '6px 0',
-              }} className="bv-rail-scroll">
-                {/* Search */}
-                <div style={{ padding: '4px 8px 8px' }}>
+              display: 'flex', flexDirection: 'column', flex: 1,
+              overflowY: 'auto', overflowX: 'hidden',
+              scrollbarWidth: 'none', msOverflowStyle: 'none',
+              padding: '6px 0',
+            }} className="bv-rail-scroll">
+              {/* Search */}
+              <div style={{ padding: '4px 8px 8px' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 7, height: 34,
+                  background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
+                  borderRadius: 9, padding: '0 10px', transition: 'border-color 0.15s',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ color: 'var(--bv-muted)', flexShrink: 0 }}>
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
                   <input
                     value={railSearch} onChange={e => setRailSearch(e.target.value)}
                     placeholder="Search..."
                     style={{
-                      width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
-                      borderRadius: 8, padding: '6px 10px', color: 'var(--bv-text)', fontSize: 12,
-                      fontFamily: "'Inter', sans-serif", outline: 'none',
+                      flex: 1, background: 'transparent', border: 'none',
+                      color: 'var(--bv-text)', fontSize: 12,
+                      fontFamily: "'Inter', sans-serif", outline: 'none', minWidth: 0,
                     }}
                   />
+                  {railSearch && (
+                    <button onClick={() => setRailSearch('')} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--bv-muted)', fontSize: 11, padding: 0, lineHeight: 1,
+                    }}>×</button>
+                  )}
                 </div>
-
-                {/* Agents section */}
-                <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Team</div>
-                {railAgents
-                  .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
-                  .map(a => (
-                  <RailAvatar
-                    key={a.slug} slug={a.slug} name={a.name} color={a.color}
-                    status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
-                    unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
-                    taskCount={a.tasks?.length || 0}
-                    role={a.role}
-                    onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
-                    expanded
-                  />
-                ))}
-
-                {/* Divider */}
-                <div style={{ height: 1, background: 'var(--bv-divider)', margin: '8px 12px' }} />
-
-                {/* Projects section */}
-                <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Projects</div>
-                {railProjects
-                  .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
-                  .map(p => (
-                  <RailAvatar
-                    key={p.slug} slug={p.slug} name={p.name} color={p.color}
-                    status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
-                    unreadCount={0} taskCount={p.tasks?.length || 0} role="Project"
-                    onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
-                    expanded
-                  />
-                ))}
               </div>
 
-              {/* Full-width COLLAPSE button pinned to bottom */}
-              <button
-                onClick={() => setRailOpen(false)}
-                style={{
-                  width: '100%', height: 34, flexShrink: 0,
-                  border: 'none', borderTop: '1px solid var(--bv-divider)',
-                  background: 'var(--bv-card)', color: 'var(--bv-dim)',
-                  fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.1em', textTransform: 'uppercase',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                  transition: 'background 0.15s, color 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-accent)'; e.currentTarget.style.color = 'var(--bv-accent-text)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.color = 'var(--bv-dim)' }}
-                title="Collapse rail"
-              >
-                {'\u2039'} Collapse
-              </button>
+              {/* Agents section */}
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Team</div>
+              {railAgents
+                .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
+                .map(a => (
+                <RailAvatar
+                  key={a.slug} slug={a.slug} name={a.name} color={a.color}
+                  status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
+                  unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
+                  taskCount={a.tasks?.length || 0}
+                  role={a.role}
+                  onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
+                  expanded
+                />
+              ))}
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'var(--bv-divider)', margin: '8px 12px' }} />
+
+              {/* Projects section */}
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Projects</div>
+              {railProjects
+                .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
+                .map(p => (
+                <RailAvatar
+                  key={p.slug} slug={p.slug} name={p.name} color={p.color}
+                  status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
+                  unreadCount={0} taskCount={p.tasks?.length || 0} role="Project"
+                  onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
+                  expanded
+                />
+              ))}
             </div>
           )}
+
         </div>
 
         {/* COLUMNS AREA */}
         {!isMobile ? (
-          <div style={{ flex: 1, display: 'flex', gap: 10, padding: '12px 16px', overflowX: 'auto', overflowY: 'hidden' }}>
+          <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '12px 14px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
             {orderedVisibleItems.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--bv-dim)' }}>
                 <div style={{ fontSize: 36, opacity: 0.2 }}>&#9776;</div>

@@ -36,7 +36,9 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
+  const disconnectGraceTimer = useRef(null)
   const streamBuffer = useRef('')
+  const wasStreamingOnClose = useRef(false)
 
   // Connect to bridge
   const connect = useCallback(() => {
@@ -53,7 +55,19 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
       wsRef.current = ws
 
       ws.onopen = () => {
+        // Reconnected before grace period expired -- cancel the disconnect
+        if (disconnectGraceTimer.current) {
+          clearTimeout(disconnectGraceTimer.current)
+          disconnectGraceTimer.current = null
+          wasStreamingOnClose.current = false
+        }
         // Don't set connected yet, wait for ACK
+        // Keepalive ping every 30s to prevent idle timeout
+        ws._pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }))
+          }
+        }, 30000)
       }
 
       ws.onmessage = (event) => {
@@ -66,6 +80,12 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
         switch (msg.type) {
           case 'connected':
+            // Successfully reconnected -- cancel any pending grace timer
+            if (disconnectGraceTimer.current) {
+              clearTimeout(disconnectGraceTimer.current)
+              disconnectGraceTimer.current = null
+              wasStreamingOnClose.current = false
+            }
             setStatus('connected')
             break
 
@@ -98,9 +118,8 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
             break
 
           case 'done':
-            // Response complete
+            // Response complete -- keep check state (blue) so last user message stays read
             setStreaming(false)
-            setCheck(null)
             const finalText = msg.text || streamBuffer.current
             setStreamText('')
             streamBuffer.current = ''
@@ -129,10 +148,32 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
       }
 
       ws.onclose = () => {
-        setStatus('disconnected')
+        if (ws._pingInterval) clearInterval(ws._pingInterval)
         wsRef.current = null
-        // Auto-reconnect after 3s
-        reconnectTimer.current = setTimeout(connect, 3000)
+
+        // Track if we were streaming when connection dropped
+        setStreaming(prev => { wasStreamingOnClose.current = prev; return prev })
+
+        // Grace period: try to reconnect before showing disconnected state.
+        // Momentary blips (< 5s) stay invisible to the user.
+        reconnectTimer.current = setTimeout(connect, 1000)
+
+        disconnectGraceTimer.current = setTimeout(() => {
+          disconnectGraceTimer.current = null
+          // Still disconnected after grace period -- now surface it
+          setStatus('disconnected')
+          if (wasStreamingOnClose.current) {
+            setStreaming(false)
+            setStreamText('')
+            streamBuffer.current = ''
+            setLastResponse({
+              text: 'Connection lost. Message may still be processing.',
+              time: new Date().toISOString(),
+              error: true,
+            })
+            wasStreamingOnClose.current = false
+          }
+        }, 5000)
       }
 
       ws.onerror = () => {
@@ -153,6 +194,7 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
 
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
+      if (disconnectGraceTimer.current) clearTimeout(disconnectGraceTimer.current)
       if (wsRef.current) {
         wsRef.current.onclose = null // prevent reconnect on intentional close
         wsRef.current.close()
@@ -160,6 +202,11 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
       }
     }
   }, [connect, enabled])
+
+  // Reset check state -- call before sending a new message to clear stale receipt
+  const resetCheck = useCallback(() => {
+    setCheck(null)
+  }, [])
 
   // Send a message
   const send = useCallback((text) => {
@@ -183,6 +230,7 @@ export function useBridge(agentSlug, { enabled = true } = {}) {
     streamText,  // accumulated streaming text (real-time)
     lastResponse, // { text, time, error? } -- latest complete response
     send,        // (text) => boolean
+    resetCheck,  // () => void -- reset check to null before sending a new message
     connected: status === 'connected',
   }
 }

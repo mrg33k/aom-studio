@@ -237,6 +237,7 @@ export function deriveStateFromEvents(events) {
   }
 
   const STALL_MS = 20 * 60 * 1000 // 20 minutes
+  const STALE_MS = 10 * 60 * 1000 // 10 minutes -- tasks older than this are hidden from RNB
   const now = Date.now()
 
   // Walk events newest-first.
@@ -270,10 +271,13 @@ export function deriveStateFromEvents(events) {
     }
   }
 
-  // Right Now: tasks whose latest event is task_started
+  // Right Now: tasks whose latest event is task_started AND are not stale (< 10 min old)
   const rightNowTasks = []
   for (const [, info] of taskLatest) {
     if (info.event_type !== 'task_started') continue
+    // Hide tasks with no timestamp or older than STALE_MS -- these are ghost pills
+    const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : Infinity
+    if (ageMs >= STALE_MS) continue
     const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
     rightNowTasks.push({
       agent:     info.agent,
