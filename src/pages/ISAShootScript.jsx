@@ -8,19 +8,19 @@ const ACTS = [
   {
     number: 1,
     title: 'The Problem',
-    duration: '~30-40 sec',
+    duration: '~60-75 sec',
     color: '#C84B1E',
   },
   {
     number: 2,
     title: 'The Breakthrough',
-    duration: '~60-90 sec',
+    duration: '~150-180 sec',
     color: '#E85D26',
   },
   {
     number: 3,
     title: 'The Future',
-    duration: '~30-40 sec',
+    duration: '~60-75 sec',
     color: '#B8461B',
   },
 ];
@@ -36,7 +36,7 @@ const BEATS = [
     narration: '"Everything runs on electricity. Every light, every screen, every system keeping someone alive right now. And almost nobody thinks about where it comes from."',
     subject: 'Hunter',
     question: 'When did you first realize how fragile the thing we all depend on actually is?',
-    timing: '8-12 sec',
+    timing: '15-20 sec',
   },
   {
     act: 1,
@@ -48,7 +48,7 @@ const BEATS = [
     narration: '"The grid that powers it all was built more than a century ago. Centralized generation. Massive infrastructure. Long-distance transmission with energy lost at every step."',
     subject: 'Skylar',
     question: 'When you talk to potential customers and partners, what do they say about the current state of energy infrastructure?',
-    timing: '10-14 sec',
+    timing: '18-25 sec',
   },
   {
     act: 1,
@@ -60,7 +60,7 @@ const BEATS = [
     narration: '"Renewables are part of the answer. But the sun goes down. The wind stops. And the places that need power most are often the farthest from any grid."',
     subject: null,
     question: null,
-    timing: '8-10 sec',
+    timing: '15-20 sec',
   },
   {
     act: 2,
@@ -72,7 +72,7 @@ const BEATS = [
     narration: '"Nearly a decade ago, a team in Sedona started asking a different question: what if you didn\'t need the grid at all?"',
     subject: 'Hunter',
     question: 'Take me back to the beginning. What was the original insight that made you believe this was possible?',
-    timing: '15-20 sec',
+    timing: '25-35 sec',
   },
   {
     act: 2,
@@ -84,7 +84,7 @@ const BEATS = [
     narration: '"ISA\'s technology captures ambient energy -- energy that already exists in the environment -- and converts it into usable power. Directly at the point of consumption. No grid connection. No fuel source."',
     subject: 'Harrison',
     question: 'In the simplest terms you can, explain what this system actually does and why it\'s different from anything else out there.',
-    timing: '20-25 sec',
+    timing: '35-45 sec',
   },
   {
     act: 2,
@@ -96,7 +96,7 @@ const BEATS = [
     narration: '"And they proved it. Independent validation confirmed net energy gain. Not on paper. In the lab. Measured, documented, and repeatable."',
     subject: 'Harrison',
     question: 'What did the validation study actually show? Walk me through the moment you saw the results.',
-    timing: '15-20 sec',
+    timing: '25-35 sec',
   },
   {
     act: 2,
@@ -108,7 +108,7 @@ const BEATS = [
     narration: '"The timing matters. Global energy demand is accelerating faster than infrastructure can grow. AI. Electric vehicles. Entire economies going digital. The grid was never built for this."',
     subject: 'Skylar',
     question: "Why does this technology matter right now, specifically? What's changed in the market that makes ISA's timing so critical?",
-    timing: '15-20 sec',
+    timing: '25-35 sec',
   },
   {
     act: 3,
@@ -120,7 +120,7 @@ const BEATS = [
     narration: '"Imagine a home that powers itself. A business that never worries about the grid going down. A community that was never connected to the grid in the first place -- finally with reliable power."',
     subject: 'Hunter',
     question: 'When this technology is fully deployed, what does the world look like? What changes for ordinary people?',
-    timing: '15-20 sec',
+    timing: '25-35 sec',
   },
   {
     act: 3,
@@ -132,7 +132,7 @@ const BEATS = [
     narration: '"The future of energy is not bigger plants and longer power lines. It\'s smaller, closer, and already here."',
     subject: 'Hunter',
     question: 'What drives you to keep going? What is this really about for you?',
-    timing: '10-15 sec',
+    timing: '20-30 sec',
   },
 ];
 
@@ -357,8 +357,8 @@ export default function ISAShootScript() {
                 {...fadeUp(0.18)}
               >
                 {[
-                  { label: 'Runtime', value: '2-3 min' },
-                  { label: 'Style', value: 'Cinematic narrative' },
+                  { label: 'Runtime', value: '~5 minutes' },
+                  { label: 'Style', value: 'Theater format' },
                   { label: 'Location', value: 'Sedona, AZ' },
                   { label: 'Agent', value: 'Gary' },
                 ].map(item => (
@@ -497,6 +497,46 @@ export default function ISAShootScript() {
         </section>
       ))}
 
+      {/* Lab Team Footage */}
+      <section className="mt-24 px-6 md:px-12">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-10"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#8A847C] mb-3">Act 2 Callout</p>
+            <div className="w-12 h-[2px] bg-[#E85D26] mb-4" />
+            <h2 className="font-headline text-2xl md:text-3xl font-bold text-[#F5F0EB]">Lab Team Footage</h2>
+            <p className="font-body text-sm text-[#8A847C] mt-2">Captured between interviews. No extra cost.</p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { shot: 'Harrison calibrating transformer coil', note: 'Key technical visual' },
+              { shot: 'Close-up hands: soldering, adjusting oscilloscope probes, lab notebooks', note: 'Detail texture' },
+              { shot: 'Whiteboard sketching / debates', note: 'Team thinking on film' },
+              { shot: 'Equipment rack power-up sequence', note: 'Drama beat' },
+              { shot: 'Team watching test results come in', note: 'Emotional payoff' },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.06 }}
+                className="bg-white/[0.03] border border-white/[0.05] p-4"
+              >
+                <p className="font-body text-sm text-[#C8C3BB] leading-relaxed mb-1">{item.shot}</p>
+                <p className="font-mono text-[10px] text-[#8A847C]/60">{item.note}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Interview subjects */}
       <section className="mt-24 px-6 md:px-12">
         <div className="max-w-6xl mx-auto">
@@ -605,6 +645,143 @@ export default function ISAShootScript() {
               The Sedona landscape shots for Beat 3.2 will be significantly more cinematic in that light.
             </p>
           </motion.div>
+        </div>
+      </section>
+
+      {/* B-Roll Location Guide */}
+      <section className="mt-24 px-6 md:px-12">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-10"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#8A847C] mb-3">B-Roll</p>
+            <div className="w-12 h-[2px] bg-[#E85D26] mb-4" />
+            <h2 className="font-headline text-2xl md:text-3xl font-bold text-[#F5F0EB]">Location Guide</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Shoot Day */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-[3px] h-6 bg-[#C84B1E]" />
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8A847C]">Shoot Day</p>
+                  <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 3 -- Sedona</p>
+                </div>
+                <span className="font-mono text-[10px] text-[#7C9A72] ml-auto">Free</span>
+              </div>
+              <div className="space-y-2">
+                {[
+                  'Lab exterior and entrance',
+                  'Lab interior -- equipment, benches, whiteboards',
+                  'Sedona landscape -- drone + ground',
+                  'Golden hour Sedona scenics',
+                  'Team candids on property',
+                ].map((loc, i) => (
+                  <div key={i} className="flex items-start gap-3 py-2 border-b border-white/[0.04]">
+                    <span className="font-mono text-[10px] text-[#E85D26] mt-0.5">--</span>
+                    <span className="font-body text-sm text-[#C8C3BB]">{loc}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Pickup Day */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-[3px] h-6 bg-[#E85D26]" />
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8A847C]">Pickup Day</p>
+                  <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 7-8 -- Phoenix</p>
+                </div>
+                <span className="font-mono text-[10px] text-[#8A847C] ml-auto">Low cost public</span>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { location: 'Tempe Town Lake', detail: 'City skyline at dusk' },
+                  { location: 'US-60 / Loop 202', detail: 'Transmission lines, solar farms' },
+                  { location: 'APS Substations', detail: 'Telephoto from road' },
+                  { location: 'EV Charging Stations', detail: 'Electrify America / Tesla' },
+                  { location: 'Downtown Phoenix', detail: 'Construction cranes' },
+                  { location: 'Arcadia / Scottsdale', detail: 'Modern homes at night' },
+                ].map((loc, i) => (
+                  <div key={i} className="flex items-start gap-3 py-2 border-b border-white/[0.04]">
+                    <span className="font-mono text-[10px] text-[#E85D26] mt-0.5">--</span>
+                    <div>
+                      <span className="font-body text-sm text-[#C8C3BB]">{loc.location}</span>
+                      <span className="font-mono text-[10px] text-[#8A847C] ml-2">{loc.detail}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-6 flex items-start gap-3 bg-white/[0.02] border border-white/[0.06] p-4 max-w-2xl"
+          >
+            <span className="font-mono text-[10px] text-[#8A847C] mt-0.5">Stock</span>
+            <p className="font-body text-sm text-[#8A847C] leading-relaxed">
+              Backup stock footage via <strong className="text-[#C8C3BB]">Artgrid / Storyblocks</strong> -- ~$15-30/mo if location pickups fall through.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Theater Format Notes */}
+      <section className="mt-24 px-6 md:px-12">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-10"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#8A847C] mb-3">Production</p>
+            <div className="w-12 h-[2px] bg-[#E85D26] mb-4" />
+            <h2 className="font-headline text-2xl md:text-3xl font-bold text-[#F5F0EB]">Theater Format Notes</h2>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Resolution', value: '4K minimum', note: 'Big screen ready' },
+              { label: 'Camera', value: 'Slow movement', note: 'Deliberate, not handheld chaos' },
+              { label: 'Sound', value: 'Design emphasis', note: 'Sound carries the room' },
+              { label: 'Color', value: 'Sedona warmth', note: 'The anchor. Everything grades to it.' },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.07 }}
+                className="bg-white/[0.03] border border-white/[0.05] p-5"
+              >
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8A847C] mb-2">{item.label}</p>
+                <p className="font-body text-base font-semibold text-[#F5F0EB] mb-1">{item.value}</p>
+                <p className="font-mono text-[10px] text-[#8A847C]/70">{item.note}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
