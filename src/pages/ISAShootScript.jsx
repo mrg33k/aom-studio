@@ -672,7 +672,7 @@ export default function ISAShootScript() {
     <div style={{ background: '#0A0A08' }} className="min-h-screen">
 
       {/* ── HERO COVER ──────────────────────────────────────────────────────── */}
-      <section className="relative h-[70vh] min-h-[500px] max-h-[720px] overflow-hidden">
+      <section className="relative h-[70vh] min-h-[500px] max-h-[720px] overflow-hidden" style={{ marginTop: 0, paddingTop: 0 }}>
         {/* Background: stacked beat images */}
         <div className="absolute inset-0">
           <img
