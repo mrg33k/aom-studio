@@ -43,6 +43,7 @@ export default async function handler(req, res) {
     const target = req.query.target
     const type = req.query.type || 'agent'
     const limit = parseInt(req.query.limit || '50', 10)
+    const since = req.query.since || null
 
     if (!target) {
       return res.status(400).json({ error: 'Missing target parameter' })
@@ -62,6 +63,7 @@ export default async function handler(req, res) {
     const recent = lines.slice(-limit)
     const messages = []
     const seenIds = new Set()
+    const sinceDate = since ? new Date(since) : null
 
     for (const line of recent) {
       try {
@@ -69,6 +71,8 @@ export default async function handler(req, res) {
         // Dedup by message ID
         if (msg.id && seenIds.has(msg.id)) continue
         if (msg.id) seenIds.add(msg.id)
+        // Filter by since (use Date comparison to handle Z vs +00:00)
+        if (sinceDate && msg.timestamp && new Date(msg.timestamp) <= sinceDate) continue
         messages.push(msg)
       } catch {
         // Skip malformed lines

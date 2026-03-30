@@ -406,6 +406,7 @@ function localDashboardPlugin() {
         const url = new URL(req.url, 'http://localhost')
         const slug = url.searchParams.get('agent') || url.searchParams.get('target')
         const since = url.searchParams.get('since')
+        if (since) console.log(`[ConvPoll] Request: slug=${slug} since=${since}`)
         const limit = parseInt(url.searchParams.get('limit') || '100', 10)
         const all = url.searchParams.get('all') === 'true' || url.searchParams.get('all') === '1'
 
@@ -480,6 +481,7 @@ function localDashboardPlugin() {
           }
         } catch {}
 
+        if (since && messages.length > 0) console.log(`[ConvPoll] ${slug}: ${messages.length} new msgs since ${since}`)
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ messages, agent: slug, timestamp: new Date().toISOString() }))
       })
