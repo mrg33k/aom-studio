@@ -232,6 +232,20 @@ export const GRID_SPEC = {
       ],
       personality: 'Ops hub. Warm and organized. Two monitors, ops board, filing cabinet. Gets things done.',
     },
+    {
+      id: 'rex', name: "Rex's Office", agent: 'Rex', role: 'Executive Assistant',
+      position: { col: 2, row: 3 }, size: { cols: 2, rows: 1 },
+      walls: { north: 'interior', west: 'interior', south: 'exterior-window', east: 'interior' },
+      floor: 'wood-oak', floorColor: '#A07850',
+      lighting: 'warm-desk-lamp', lightColor: '#FFD87A',
+      agentColor: '#FF4F00',
+      statusColors: { active: '#FF4F00', idle: '#993000', offline: '#4D1800' },
+      furniture: ['executive-desk', 'monitor-dual', 'leather-chair', 'whiteboard', 'coffee-mug', 'standing-lamp'],
+      ambientAnimations: [
+        { id: 'monitor-flicker', target: 'monitor-dual', frameCount: 4, frameDuration: 800, loop: true },
+      ],
+      personality: 'Corner office energy. Clean desk, dual monitors, whiteboard with the plan. The room where things get decided.',
+    },
   ],
   colorPalette: {
     background: '#0A0F1E',
@@ -340,7 +354,7 @@ export const PROJECTS = [
   { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
   { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
   // ── Special rooms ──────────────────────────────────────────────────────────
-  { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'gary', 'pixel'] },
+  { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'rex', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'gary', 'pixel'] },
 ]
 
 // ---- GROUPED HEX GRID LAYOUT ORDER ----
@@ -361,6 +375,7 @@ const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
 
 export const ALL_ROOMS = [
   // Row 0 -- Core team
+  _AGENT_MAP['rex'],
   _AGENT_MAP['elon'],
   _AGENT_MAP['gary'],
   _AGENT_MAP['bobby'],
