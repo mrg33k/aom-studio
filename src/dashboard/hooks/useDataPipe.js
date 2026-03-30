@@ -237,7 +237,7 @@ export function deriveStateFromEvents(events) {
   }
 
   const STALL_MS = 20 * 60 * 1000 // 20 minutes
-  const STALE_MS = 10 * 60 * 1000 // 10 minutes -- tasks older than this are hidden from RNB
+  const STALE_MS = 30 * 60 * 1000 // 30 minutes -- FIX (Issue 4): align with API fetch window so long-running tasks stay visible
   const now = Date.now()
 
   // Walk events newest-first.
@@ -569,14 +569,12 @@ export function useDataPipe(parsePunchList) {
               })
             }
           } else if (!activeAgentsData || !activeAgentsData.tableExists) {
-            // active_processes table not yet migrated -- fall back to tasks table
-            // (old behavior, same as contender B). Remove once table is live.
+            // active_processes table not yet migrated.
+            // FIX (Issue 1): Tasks table fallback for active/working RNB pills removed.
+            // It drifts from the events table and is the root cause of ghost pills.
+            // Events table (below) is the source of truth for Right Now.
+            // Queued tasks still shown -- no events emitted for queued state.
             if (data.tasks) {
-              const workingEntries = data.tasks
-                .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, isQueued: false, taskId: t.id }))
-              active.push(...workingEntries)
-
               const queuedEntries = data.tasks
                 .filter(t => t.status === 'queued')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
