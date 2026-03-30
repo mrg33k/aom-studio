@@ -223,31 +223,31 @@ const BROLL_SHOOT = [
   { shot: 'Device close-ups', location: 'ISA Sedona lab', beat: '2.2', notes: 'Transformer coil, oscilloscope, signal generator. Macro lens.' },
   { shot: 'Whiteboard / notebook details', location: 'ISA Sedona lab', beat: '2.1, 2.2', notes: 'Real equations and diagrams, not staged.' },
   { shot: 'Lab exterior — slow push in', location: 'ISA Sedona lab entrance', beat: '2.1', notes: 'Establishes the "where." Golden light if afternoon.' },
-  { shot: 'Sedona landscape wide', location: 'Red rocks — Cathedral Rock / Airport Mesa', beat: '3.2', notes: 'Golden hour. Free.' },
+  { shot: 'Sedona landscape wide', location: 'Red rocks — Cathedral Rock / Airport Mesa', beat: '3.2', notes: 'Golden hour.' },
   { shot: 'Sedona dusk wide', location: 'Same viewpoints', beat: '3.2', notes: 'Final closing shot. Plan for 5:30–6:30 PM.' },
   { shot: 'Team walking together', location: 'Lab parking lot or nearby trail', beat: '3.2', notes: 'Casual, natural. End-of-day energy.' },
 ];
 
 const BROLL_PICKUP = [
-  { shot: 'City skyline at dusk', location: 'Tempe Town Lake / South Mountain lookout', beat: '1.1', cost: 'Free. Tripod + timelapse. 30 min at sunset.' },
-  { shot: 'Hospital / medical facility exterior', location: 'Banner Health Phoenix', beat: '1.1', cost: 'Public sidewalk only. No permits needed.' },
-  { shot: 'Data center exterior', location: 'CyrusOne or QTS, Price Rd', beat: '1.1', cost: 'Shoot from parking lot/street. Scale tells the story.' },
-  { shot: 'Transmission lines in desert', location: 'US-60 or Loop 202 shoulder', beat: '1.2', cost: 'Free. Wide lens. 10 minutes.' },
-  { shot: 'Electrical substation', location: 'APS substations along major roads', beat: '1.2', cost: 'Telephoto from public road. Do not enter.' },
-  { shot: 'Solar panels', location: 'Tempe / Mesa farms visible from Loop 202', beat: '1.3', cost: 'Shoot from road or overpass.' },
-  { shot: 'Wind turbines', location: 'Stock OR Painted Rock Dam area (I-8 west)', beat: '1.3', cost: 'If too far — Artgrid/Storyblocks ~$15–30/mo.' },
-  { shot: 'EV charging station', location: 'Electrify America or Tesla Supercharger (Tempe)', beat: '2.4', cost: 'Free. Walk up and shoot chargers + cars. 10 min.' },
-  { shot: 'Construction cranes / growth', location: 'Downtown Phoenix or Rio Salado (Tempe)', beat: '2.4', cost: 'Shoot from sidewalk.' },
-  { shot: 'Modern home at night', location: 'Arcadia neighborhood, Scottsdale', beat: '3.1', cost: 'Drive-by exterior. Shoot from street. Evening.' },
-  { shot: 'Remote / rural house', location: 'Highway 87 toward Payson', beat: '3.1', cost: 'Single structure in landscape. Telephoto from road.' },
+  { shot: 'City skyline at dusk', location: 'Tempe Town Lake / South Mountain lookout', beat: '1.1', notes: 'Tripod + timelapse. 30 min at sunset.' },
+  { shot: 'Hospital / medical facility exterior', location: 'Banner Health Phoenix', beat: '1.1', notes: 'Public sidewalk only. No permits needed.' },
+  { shot: 'Data center exterior', location: 'CyrusOne or QTS, Price Rd', beat: '1.1', notes: 'Shoot from parking lot/street. Scale tells the story.' },
+  { shot: 'Transmission lines in desert', location: 'US-60 or Loop 202 shoulder', beat: '1.2', notes: 'Wide lens. 10 minutes.' },
+  { shot: 'Electrical substation', location: 'APS substations along major roads', beat: '1.2', notes: 'Telephoto from public road. Do not enter.' },
+  { shot: 'Solar panels', location: 'Tempe / Mesa farms visible from Loop 202', beat: '1.3', notes: 'Shoot from road or overpass.' },
+  { shot: 'Wind turbines', location: 'Stock OR Painted Rock Dam area (I-8 west)', beat: '1.3', notes: 'If too far — stock footage library.' },
+  { shot: 'EV charging station', location: 'Electrify America or Tesla Supercharger (Tempe)', beat: '2.4', notes: 'Walk up and shoot chargers + cars. 10 min.' },
+  { shot: 'Construction cranes / growth', location: 'Downtown Phoenix or Rio Salado (Tempe)', beat: '2.4', notes: 'Shoot from sidewalk.' },
+  { shot: 'Modern home at night', location: 'Arcadia neighborhood, Scottsdale', beat: '3.1', notes: 'Drive-by exterior. Shoot from street. Evening.' },
+  { shot: 'Remote / rural house', location: 'Highway 87 toward Payson', beat: '3.1', notes: 'Single structure in landscape. Telephoto from road.' },
 ];
 
 const BROLL_STOCK = [
-  { shot: 'Cooling towers / power plant', beat: '1.2', source: 'Artgrid or Storyblocks', cost: 'Subscription' },
-  { shot: 'Wind turbines at sunset', beat: '1.3', source: 'Artgrid or Storyblocks', cost: 'Subscription' },
-  { shot: 'Server farm interior', beat: '1.1, 2.4', source: 'Artgrid (interiors rarely allow filming)', cost: 'Subscription' },
-  { shot: 'Dense city at night (global scale)', beat: '2.4', source: 'Artgrid', cost: 'Subscription' },
-  { shot: 'Remote village with lights on', beat: '3.1', source: 'Artgrid or Pexels (free)', cost: 'Free–$15/mo' },
+  { shot: 'Cooling towers / power plant', beat: '1.2', source: 'Stock footage library' },
+  { shot: 'Wind turbines at sunset', beat: '1.3', source: 'Stock footage library' },
+  { shot: 'Server farm interior', beat: '1.1, 2.4', source: 'Stock footage library (interiors rarely allow filming)' },
+  { shot: 'Dense city at night (global scale)', beat: '2.4', source: 'Stock footage library' },
+  { shot: 'Remote village with lights on', beat: '3.1', source: 'Stock footage library' },
 ];
 
 const EQUIPMENT = [
@@ -880,7 +880,7 @@ export default function ISAShootScript() {
               <div className="w-[3px] h-6" style={{ background: '#C84B1E' }} />
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A847C]">Shoot Day</p>
-                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 3 — Sedona &nbsp;<span className="font-mono text-[10px] text-[#7C9A72]">Free</span></p>
+                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 3 — Sedona</p>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -920,14 +920,14 @@ export default function ISAShootScript() {
               <div className="w-[3px] h-6" style={{ background: '#E85D26' }} />
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A847C]">Pickup Day</p>
-                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 7–8 — Phoenix Metro &nbsp;<span className="font-mono text-[10px] text-[#8A847C]">Low cost public locations</span></p>
+                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 7–8 — Phoenix Metro &nbsp;<span className="font-mono text-[10px] text-[#8A847C]">Public locations</span></p>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] border-collapse">
                 <thead>
                   <tr style={{ background: '#0D0D0C' }} className="border-b border-white/[0.06]">
-                    {['Shot', 'Location', 'Beat', 'Low-Cost Plan'].map(h => (
+                    {['Shot', 'Location', 'Beat', 'Approach'].map(h => (
                       <th key={h} className="py-2 px-4 text-left font-mono text-[9px] uppercase tracking-[0.2em] text-[#6A6460]">{h}</th>
                     ))}
                   </tr>
@@ -946,7 +946,7 @@ export default function ISAShootScript() {
                       <td className="py-3 px-4 font-body text-sm text-[#C8C3BB]">{row.shot}</td>
                       <td className="py-3 px-4 font-mono text-[10px] text-[#8A847C]">{row.location}</td>
                       <td className="py-3 px-4 font-mono text-[10px]" style={{ color: '#E85D26' }}>{row.beat}</td>
-                      <td className="py-3 px-4 font-mono text-[10px] text-[#6A6460]">{row.cost}</td>
+                      <td className="py-3 px-4 font-mono text-[10px] text-[#6A6460]">{row.notes}</td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -960,14 +960,14 @@ export default function ISAShootScript() {
               <div className="w-[3px] h-6" style={{ background: '#4A4A46' }} />
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A847C]">Stock Footage</p>
-                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Backup &amp; Fill &nbsp;<span className="font-mono text-[10px] text-[#8A847C]">Artgrid / Storyblocks ~$15–30/mo</span></p>
+                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Backup &amp; Fill &nbsp;<span className="font-mono text-[10px] text-[#8A847C]">Stock Footage Library</span></p>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[500px] border-collapse">
                 <thead>
                   <tr style={{ background: '#0D0D0C' }} className="border-b border-white/[0.06]">
-                    {['Shot', 'Beat', 'Source', 'Cost'].map(h => (
+                    {['Shot', 'Beat', 'Source'].map(h => (
                       <th key={h} className="py-2 px-4 text-left font-mono text-[9px] uppercase tracking-[0.2em] text-[#6A6460]">{h}</th>
                     ))}
                   </tr>
@@ -982,15 +982,11 @@ export default function ISAShootScript() {
                       <td className="py-3 px-4 font-body text-sm text-[#C8C3BB]">{row.shot}</td>
                       <td className="py-3 px-4 font-mono text-[10px]" style={{ color: '#E85D26' }}>{row.beat}</td>
                       <td className="py-3 px-4 font-mono text-[10px] text-[#8A847C]">{row.source}</td>
-                      <td className="py-3 px-4 font-mono text-[10px] text-[#6A6460]">{row.cost}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p className="font-mono text-[10px] text-[#4A4A46] mt-3">
-              Total estimated b-roll budget: $0–30/mo for a stock subscription. Everything else is public location shooting with gear you already have.
-            </p>
           </div>
         </div>
       </section>
