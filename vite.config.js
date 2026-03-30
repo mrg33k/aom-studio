@@ -404,7 +404,7 @@ function localDashboardPlugin() {
       // ?all=true: aggregate from ALL agent JSONL files (for AOM Team Room)
       server.middlewares.use('/api/local/conversations', (req, res) => {
         const url = new URL(req.url, 'http://localhost')
-        const slug = url.searchParams.get('agent')
+        const slug = url.searchParams.get('agent') || url.searchParams.get('target')
         const since = url.searchParams.get('since')
         const limit = parseInt(url.searchParams.get('limit') || '100', 10)
         const all = url.searchParams.get('all') === 'true' || url.searchParams.get('all') === '1'
