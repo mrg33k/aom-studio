@@ -327,10 +327,11 @@ function StatusPill({ status }) {
 }
 
 // ─── AGENT CARD (isometric room) ─────────────────────────────────────────────
-function AgentCard({ agent, statusData, onClick, isActive, hasUnread }) {
+function AgentCard({ agent, statusData, onClick, isActive, unreadCount = 0 }) {
   const status = statusData?.status || 'IDLE'
   const task = statusData?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+  const hasUnread = unreadCount > 0
 
   return (
     <motion.button
@@ -348,13 +349,21 @@ function AgentCard({ agent, statusData, onClick, isActive, hasUnread }) {
       }`}
       style={{ border: `1px solid ${isActive ? 'rgba(232,93,38,0.4)' : hasUnread ? 'rgba(232,93,38,0.25)' : '#292524'}` }}
     >
-      {/* Unread pulse indicator */}
+      {/* Unread notification badge */}
       {hasUnread && !isActive && (
-        <div className="absolute top-2 left-2 z-10">
-          <span className="flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E85D26] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#E85D26]" />
-          </span>
+        <div style={{
+          position: 'absolute', top: 8, right: 8, zIndex: 10,
+          minWidth: 22, height: 22, borderRadius: 11,
+          background: '#EF4444',
+          color: '#fff', fontSize: 11, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          border: '2px solid #141412',
+          boxShadow: '0 0 10px rgba(239,68,68,0.5)',
+          padding: '0 5px',
+          animation: 'unreadPulse 2s ease-in-out infinite',
+        }}>
+          {unreadCount > 9 ? '9+' : unreadCount}
         </div>
       )}
       {/* Room image */}
@@ -2315,7 +2324,7 @@ export default function ChatDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [activeAgent, setActiveAgent] = useState(null)
   const [clock, setClock] = useState(azTime())
-  const [unreadAgents, setUnreadAgents] = useState(new Set())
+  const [unreadAgents, setUnreadAgents] = useState({}) // { agentSlug: count }
   const { data, error, loading } = useDashboardData(30000)
   const isMobile = useIsMobile()
 
@@ -2395,7 +2404,7 @@ export default function ChatDashboard() {
   useEffect(() => {
     const markUnread = (slug) => {
       if (!slug || activeAgentRef.current?.slug === slug) return
-      setUnreadAgents(prev => new Set([...prev, slug]))
+      setUnreadAgents(prev => ({ ...prev, [slug]: (prev[slug] || 0) + 1 }))
       // Auto-open if no panel is currently active
       if (!activeAgentRef.current) {
         const agentObj = AGENTS.find(a => a.slug === slug)
@@ -2466,8 +2475,9 @@ export default function ChatDashboard() {
     setActiveAgent(agent)
     // Clear unread when user opens the panel
     setUnreadAgents(prev => {
-      const next = new Set(prev)
-      next.delete(agent.slug)
+      if (!prev[agent.slug]) return prev
+      const next = { ...prev }
+      delete next[agent.slug]
       return next
     })
   }
@@ -2546,7 +2556,7 @@ export default function ChatDashboard() {
                     statusData={agentStatus[agent.slug]}
                     onClick={() => openChat(agent)}
                     isActive={activeAgent?.slug === agent.slug}
-                    hasUnread={unreadAgents.has(agent.slug)}
+                    unreadCount={unreadAgents[agent.slug] || 0}
                   />
                 </motion.div>
               ))}
@@ -2609,6 +2619,10 @@ export default function ChatDashboard() {
 
       {/* Chat styles */}
       <style>{`
+        @keyframes unreadPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+          50% { transform: scale(1.15); box-shadow: 0 0 16px rgba(239,68,68,0.7); }
+        }
         @keyframes chatBounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-6px); opacity: 1; }
