@@ -884,7 +884,7 @@ export function useDataPipe(parsePunchList) {
   //
   // WORLD ISOLATION: Non-AOM worlds use ONLY their Supabase agent_status rows.
   // AOM falls back to hardcoded list for backwards compatibility.
-  const AOM_AGENT_SLUGS = ['elon', 'bobby', 'gary', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
+  const AOM_AGENT_SLUGS = ['rex', 'elon', 'bobby', 'gary', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
   const clientId = getClientId()
   const activeAgentSlugs = new Set(rightNow.filter(t => t.isLive).map(t => t.agent))
   const eventsStatuses = eventsAgentStatusRef.current
