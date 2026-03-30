@@ -11346,11 +11346,30 @@ export default function GameDashboard() {
   }, [panelVisible])
   */
 
-  // Background unread poller: production only, polls all visible agents every 5s
+  // Background unread poller: production only, polls all visible agents every 30s (fallback)
   // Detects new assistant messages for agents that are NOT currently selected
   // and increments their unread count to trigger the room hex notification dot.
   const selectedRoomRef = useRef(selectedRoom)
   useEffect(() => { selectedRoomRef.current = selectedRoom }, [selectedRoom])
+
+  // Realtime unread: instant notification via Supabase channel on assistant message INSERT
+  useEffect(() => {
+    if (!supabase) return
+    const channel = supabase
+      .channel('game-unread-realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: 'role=eq.assistant',
+      }, (payload) => {
+        const slug = payload.new?.agent
+        if (!slug || slug === selectedRoomRef.current) return
+        setUnreadAgents(prev => ({ ...prev, [slug]: (prev[slug] || 0) + 1 }))
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (IS_LOCAL) return // Local uses file poll which already populates agentChats
