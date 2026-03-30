@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Clock, User, Camera, Film, MapPin,
+  Clock, User, Camera, Film, MapPin,
   Package, Zap, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import SiteNav from '../components/SiteNav';
-import SiteFooter from '../components/SiteFooter';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA
@@ -672,7 +670,6 @@ export default function ISAShootScript() {
 
   return (
     <div style={{ background: '#0A0A08' }} className="min-h-screen">
-      <SiteNav />
 
       {/* ── HERO COVER ──────────────────────────────────────────────────────── */}
       <section className="relative h-[70vh] min-h-[500px] max-h-[720px] overflow-hidden">
@@ -696,16 +693,6 @@ export default function ISAShootScript() {
 
         {/* Content */}
         <div className="relative h-full max-w-6xl mx-auto px-6 md:px-12 flex flex-col justify-end pb-16">
-          <motion.div {...{ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.8 } }}>
-            <a
-              href="/briefs"
-              className="inline-flex items-center gap-2 font-mono text-xs text-[#8A847C] hover:text-[#F5F0EB] transition-colors mb-10"
-            >
-              <ArrowLeft size={12} />
-              All Briefs
-            </a>
-          </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1087,21 +1074,23 @@ export default function ISAShootScript() {
         </div>
       </section>
 
-      {/* ── FOOTER NAV ───────────────────────────────────────────────────────── */}
-      <section className="mt-24 mb-16 px-6 md:px-12">
-        <div className="max-w-6xl mx-auto border-t border-white/[0.06] pt-8">
+      {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
+      <footer className="mt-24 mb-16 px-6 md:px-12">
+        <div className="max-w-6xl mx-auto border-t border-white/[0.06] pt-10 flex justify-center">
           <a
-            href="/briefs"
-            className="inline-flex items-center gap-2 font-mono text-sm hover:text-[#F5F0EB] transition-colors"
-            style={{ color: '#E85D26' }}
+            href="https://aheadofmarket.com"
+            aria-label="Ahead of Market"
+            style={{ color: '#F5F0EB', textDecoration: 'none' }}
           >
-            <ArrowLeft size={14} />
-            Back to All Briefs
+            <span
+              className="font-headline font-bold tracking-[-0.04em]"
+              style={{ fontSize: '1.25rem', letterSpacing: '-0.04em', color: '#F5F0EB', opacity: 0.6 }}
+            >
+              AOM
+            </span>
           </a>
         </div>
-      </section>
-
-      <SiteFooter />
+      </footer>
     </div>
   );
 }
