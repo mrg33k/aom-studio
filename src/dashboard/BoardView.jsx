@@ -12,6 +12,7 @@ import TaskContextMenu, { handleTaskContextAction } from './components/TaskConte
 import { getAgentKnowledge } from './agentKnowledge.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
+import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -450,6 +451,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   const [pendingFiles, setPendingFiles] = useState([])
   const [uploading, setUploading] = useState(false)
 
+  // Skill autocomplete
+  const skillAC = useSkillAutocomplete(chat.input || '', chat.setInput)
+
   // Check if any message is currently streaming
   const isStreaming = chat.messages.some(m => m.streaming)
 
@@ -721,8 +725,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       <div style={{
         display: 'flex', gap: 6, padding: '10px 12px', alignItems: 'center',
         borderTop: '1px solid rgba(59,130,246,0.15)', flexShrink: 0, background: 'var(--bv-bar)',
-        minHeight: 52,
+        minHeight: 52, position: 'relative',
       }}>
+        {skillAC.dropdown}
         {/* + button: attach images/files */}
         <input
           ref={fileInputRef}
@@ -756,7 +761,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
           ref={inputRef}
           value={chat.input}
           onChange={e => chat.setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
+          onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
           placeholder={`Message ${agentName}...`}
           onClick={e => e.stopPropagation()}
           style={{

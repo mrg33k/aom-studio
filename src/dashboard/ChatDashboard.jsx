@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
+import { useSkillAutocomplete } from './components/SkillAutocomplete'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -404,6 +405,9 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+
+  // Skill autocomplete
+  const skillAC = useSkillAutocomplete(input, setInput)
   const [streamStartTime, setStreamStartTime] = useState(null)
   const [isSending, setIsSending] = useState(false)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role, id }
@@ -1352,7 +1356,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       </AnimatePresence>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="shrink-0 px-4 py-2 border-t border-[#292524]/50 bg-[#0F0F0D]">
+      <form onSubmit={sendMessage} className="shrink-0 px-4 py-2 border-t border-[#292524]/50 bg-[#0F0F0D]" style={{ position: 'relative' }}>
+        {skillAC.dropdown}
         <div className="flex items-center gap-3 bg-[#1A1A17] border border-[#292524] rounded-full px-4 py-1 focus-within:border-[#3B82F6]/40 focus-within:shadow-[0_0_0_2px_rgba(59,130,246,0.1)] transition-all" style={{ touchAction: 'auto' }}>
           <button
             type="button"
@@ -1374,6 +1379,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                 isUserTypingRef.current = false
               }, 2000) // Clear typing state after 2s of inactivity
             }}
+            onKeyDown={e => { if (skillAC.onKeyDown(e)) return }}
             onFocus={() => { isUserTypingRef.current = true }}
             onBlur={() => {
               // Delay clearing so send doesn't race with blur
@@ -1592,6 +1598,9 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const [councilDoneCount, setCouncilDoneCount] = useState(0)
   const [msgCtx, setMsgCtx] = useState(null)
+
+  // Skill autocomplete
+  const skillAC = useSkillAutocomplete(input, setInput)
 
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -2248,7 +2257,8 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
       </AnimatePresence>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="shrink-0 px-4 py-2 border-t border-[#292524]/50 bg-[#0F0F0D]">
+      <form onSubmit={sendMessage} className="shrink-0 px-4 py-2 border-t border-[#292524]/50 bg-[#0F0F0D]" style={{ position: 'relative' }}>
+        {skillAC.dropdown}
         <div
           className="flex items-center gap-3 bg-[#1A1A17] border border-[#292524] rounded-full px-4 py-1 focus-within:border-[#22C55E]/40 focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.1)] transition-all"
           style={{ touchAction: 'auto' }}
@@ -2258,6 +2268,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (skillAC.onKeyDown(e)) return }}
             placeholder={streaming ? (councilDoneCount > 0 ? `Council: ${councilDoneCount}/${COUNCIL_AGENTS.length} agents responding...` : 'Team is working...') : 'Message the team... (@bobby, @all for council)'}
             className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
             style={{ touchAction: 'manipulation', WebkitUserSelect: 'text' }}
