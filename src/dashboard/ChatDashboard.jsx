@@ -838,7 +838,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         const sinceParam = lastConvTimestampRef.current
           ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}`
           : ''
-        const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50${sinceParam}`)
+        const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50${sinceParam}&_=${Date.now()}`)
         if (!convRes.ok) return
         const convData = await convRes.json()
         const newMsgs = convData.messages || []
