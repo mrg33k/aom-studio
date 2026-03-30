@@ -1432,7 +1432,7 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
 
 // ── MAIN BOARD VIEW ──────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, hasRightNow = false, onTaskTap, onViewDetail, onAgentSelect }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, hasRightNow = false, unreadAgents = {}, onTaskTap, onViewDetail, onAgentSelect }) {
   const rightNow = pipeData?.rightNow || []
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
@@ -1559,14 +1559,18 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     return [...ordered, ...missing]
   }, [allItems, visibleSlugs, colOrder])
 
-  // Unread counts per agent
+  // Unread counts per agent (merge poll-based inboxItems + Realtime unreadAgents)
   const unreadMap = useMemo(() => {
     const m = {}
     for (const item of inboxItems) {
       if (item.agent) m[item.agent] = (m[item.agent] || 0) + 1
     }
+    // Merge Realtime counts (take max of either source)
+    for (const [slug, count] of Object.entries(unreadAgents)) {
+      m[slug] = Math.max(m[slug] || 0, count)
+    }
     return m
-  }, [inboxItems])
+  }, [inboxItems, unreadAgents])
 
   // Rail search
   const [railSearch, setRailSearch] = useState('')
@@ -1887,7 +1891,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               borderBottom: '1px solid var(--bv-divider)', background: 'var(--bv-bar2)',
               WebkitOverflowScrolling: 'touch',
             }}>
-              {mobileItems.map((item, idx) => (
+              {mobileItems.map((item, idx) => {
+                const unread = idx !== mobileIdx ? (unreadMap[item.slug] || 0) : 0
+                return (
                 <div
                   key={item.slug}
                   onClick={() => { setMobileIdx(idx); if (item.isAgent) onAgentSelect?.(item.slug) }}
@@ -1896,6 +1902,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                     padding: '3px 8px', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
                     border: `1.5px solid ${idx === mobileIdx ? 'var(--bv-accent-border)' : 'transparent'}`,
                     background: idx === mobileIdx ? 'var(--bv-accent)' : 'transparent',
+                    position: 'relative',
                   }}
                 >
                   <div style={{
@@ -1906,9 +1913,25 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                   }}>
                     {item.name?.charAt(0) || '?'}
                   </div>
+                  {unread > 0 && (
+                    <div style={{
+                      position: 'absolute', top: 0, right: 2, zIndex: 2,
+                      minWidth: 16, height: 16, borderRadius: 8,
+                      background: '#EF4444', color: '#fff',
+                      fontSize: 9, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      border: '1.5px solid var(--bv-bar2)',
+                      boxShadow: '0 0 8px rgba(239,68,68,0.5)',
+                      padding: '0 3px',
+                    }}>
+                      {unread > 9 ? '9+' : unread}
+                    </div>
+                  )}
                   <span style={{ fontSize: 8, fontWeight: 700, color: idx === mobileIdx ? 'var(--bv-accent-text)' : 'var(--bv-muted)' }}>{item.name}</span>
                 </div>
-              ))}
+                )
+              })}
               {/* Mobile + button */}
               <div
                 onClick={() => setRailOpen(true)}

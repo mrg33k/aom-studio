@@ -12774,6 +12774,7 @@ export default function GameDashboard() {
             isNightMode={isNightMode}
             hudHeight={hudBarHeight}
             hasRightNow={rightNowTasks.length > 0}
+            unreadAgents={unreadAgents}
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
             onViewDetail={(task) => {
               setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
@@ -12782,6 +12783,7 @@ export default function GameDashboard() {
             onAgentSelect={(slug) => {
               setSelectedRoom(slug)
               setChatAgent(slug)
+              clearUnreadForRoom(slug)
             }}
           />
         </BoardErrorBoundary>
