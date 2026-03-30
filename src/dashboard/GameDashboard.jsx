@@ -2508,6 +2508,11 @@ function MarkdownMessage({ text, agentColor, streaming }) {
   let html
   try {
     html = marked.parse(normalized)
+    // Auto-link bare URLs not already wrapped in <a> tags
+    html = html.replace(
+      /(?<!href=["'])(?<!["'>])(https?:\/\/[^\s<>"')\]]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:' + (agentColor || '#7CB9FF') + ';text-decoration:underline;text-underline-offset:2px;word-break:break-all">$1</a>'
+    )
   } catch {
     html = normalized
   }
@@ -8347,6 +8352,99 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   )
 }
 
+// ---- AGENT OPTIONS MENU (three-dot menu with restart, super agents only) ----
+function AgentOptionsMenu({ slug, isNightMode }) {
+  const [open, setOpen] = useState(false)
+  const [restartState, setRestartState] = useState('idle') // idle | confirming | restarting
+  const menuRef = useRef(null)
+  const timerRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleRestart = async (e) => {
+    e.stopPropagation()
+    if (restartState === 'idle') {
+      setRestartState('confirming')
+      timerRef.current = setTimeout(() => setRestartState('idle'), 3000)
+      return
+    }
+    if (restartState === 'confirming') {
+      clearTimeout(timerRef.current)
+      setRestartState('restarting')
+      try {
+        await fetch('/api/local/restart-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug }),
+        })
+      } catch {}
+      timerRef.current = setTimeout(() => { setRestartState('idle'); setOpen(false) }, 5000)
+    }
+  }
+
+  const dotColor = isNightMode ? '#4A6080' : '#6B8AB0'
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Three-dot trigger */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); setRestartState('idle') }}
+        title="Agent options"
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 4, color: open ? '#60A5FA' : dotColor, flexShrink: 0,
+          transition: 'color 150ms, background 150ms',
+          fontSize: 16, fontWeight: 900, letterSpacing: '1px', lineHeight: 1,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.08)' }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.color = dotColor; e.currentTarget.style.background = 'none' } }}
+      >
+        {'\u22EE'}
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 300,
+          background: isNightMode
+            ? 'linear-gradient(135deg, rgba(8,18,44,0.98) 0%, rgba(6,14,36,0.98) 100%)'
+            : 'linear-gradient(135deg, rgba(15,25,50,0.95) 0%, rgba(10,18,40,0.97) 100%)',
+          border: isNightMode ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(59,130,246,0.3)',
+          borderRadius: 6, minWidth: 150, overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3), 0 0 12px rgba(59,130,246,0.08)',
+        }}>
+          <button
+            onClick={handleRestart}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
+              color: restartState === 'confirming' ? '#F59E0B' : restartState === 'restarting' ? '#10B981' : '#CBD5E1',
+              fontSize: 12, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif",
+              transition: 'background 120ms, color 120ms',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+          >
+            <RotateCcw size={13} style={{ animation: restartState === 'restarting' ? 'spin 1s linear infinite' : 'none' }} />
+            {restartState === 'idle' && 'Restart Agent'}
+            {restartState === 'confirming' && 'Click again to confirm'}
+            {restartState === 'restarting' && 'Restarting...'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- SIDEBAR PUNCH-LIST PARSER (lightweight, for useDataPipe in sidebar) ----
 // Bobby2: The sidebar needs a real parser so useDataPipe can compute yourTodos, projectProgress,
 // and finishThese from the same punch-list.md data that GameHUD uses. This ensures one source of truth.
@@ -9079,6 +9177,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }}>
                   {agent?.name || room?.agent}
                 </div>
+                {/* Agent options menu (restart) -- super agents only */}
+                {['elon','bobby','gary','rex'].includes(agentSlug) && (
+                  <AgentOptionsMenu slug={agentSlug} isNightMode={isNightMode} />
+                )}
               </div>
               {/* Current task subtitle */}
               {(() => {
