@@ -141,9 +141,11 @@ const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supa
 
 const AGENTS = [
   { slug: 'bobby',   name: 'Bobby',   role: 'Web Dev',           img: '/corner/bobby-room.png' },
+  { slug: 'gary',    name: 'Gary',    role: 'AOM Ops',           img: null },
   { slug: 'steffen', name: 'Steffen', role: 'Creative Director', img: '/corner/steffen-room.png' },
   { slug: 'cleo',    name: 'Cleo',    role: 'Content Creator',   img: '/corner/cleo-room.png' },
   { slug: 'elon',    name: 'Elon',    role: 'Systems Engineer',  img: '/corner/elon-room.png' },
+  { slug: 'rex',     name: 'Rex',     role: 'Executive Assistant', img: null },
   { slug: 'steve',   name: 'Steve',   role: 'AI Advisory Lead',  img: '/corner/steve-room.png' },
   { slug: 'alex',    name: 'Alex',    role: 'Strategist',        img: '/corner/alex-room.png' },
   { slug: 'mom',     name: 'Mom',     role: 'Orchestrator',      img: '/corner/mom-room.png' },
