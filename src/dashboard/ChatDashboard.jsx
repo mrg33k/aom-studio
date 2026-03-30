@@ -139,7 +139,9 @@ const CONV_API_BASE = IS_LOCAL ? '/api/local/conversations' : '/api/conversation
 // Relay send: local Vite middleware on localhost, Vercel serverless on production
 const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
 
-const AGENTS = [
+// REGISTRY_MIGRATED: AGENTS, AGENT_COLORS, COUNCIL_AGENTS now derived from Supabase agent_status.
+// These constants are fallbacks used until Supabase resolves (or if it fails).
+const _AGENTS_FALLBACK = [
   { slug: 'bobby',   name: 'Bobby',   role: 'Web Dev',           img: '/corner/bobby-room.png' },
   { slug: 'gary',    name: 'Gary',    role: 'AOM Ops',           img: null },
   { slug: 'steffen', name: 'Steffen', role: 'Creative Director', img: '/corner/steffen-room.png' },
@@ -158,14 +160,15 @@ const AGENTS = [
 ]
 
 // Fallback slug list derived from static AGENTS -- used before Supabase resolves
-const KNOWN_SLUGS_FALLBACK = AGENTS.map(a => a.slug)
+const KNOWN_SLUGS_FALLBACK = _AGENTS_FALLBACK.map(a => a.slug)
 
-// Agents that participate in @all council deliberations (core team, skipping Colton/Pixel/Elmo)
-const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Elon', 'Steve', 'Tony', 'Paige']
+// REGISTRY_MIGRATED: was hardcoded list of 10 names
+const _COUNCIL_AGENTS_FALLBACK = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Elon', 'Steve', 'Tony', 'Paige']
 
 // ─── AGENT COLORS ─────────────────────────────────────────────────────────────
 // Each agent has a distinct accent color used in team room avatars + message labels.
-const AGENT_COLORS = {
+// REGISTRY_MIGRATED: was hardcoded object, now derived from Supabase color field
+const _AGENT_COLORS_FALLBACK = {
   elon:    '#22C55E',
   bobby:   '#F97316',
   steffen: '#8B5CF6',
@@ -398,7 +401,7 @@ function AgentCard({ agent, statusData, onClick, isActive, hasUnread }) {
 // ─── RELAY CHAT PANEL ────────────────────────────────────────────────────────
 // Production: Supabase Realtime (primary) + Supabase REST poll (fallback).
 // Local dev: conversation JSONL polling via Vite middleware.
-function ChatPanel({ agent, statusData, onClose, isMobile }) {
+function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_COLORS_FALLBACK, agents = _AGENTS_FALLBACK }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -1327,7 +1330,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 // ─── COUNCIL CARD ─────────────────────────────────────────────────────────────
 // Rendered in TeamRoomPanel when a council (@all) message completes.
 // Shows synthesis up front, individual agent responses collapsed.
-function CouncilCard({ msg, timeStr }) {
+function CouncilCard({ msg, timeStr, agentColors = _AGENT_COLORS_FALLBACK, agents = _AGENTS_FALLBACK }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -1346,7 +1349,7 @@ function CouncilCard({ msg, timeStr }) {
       <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#9333EA]/10">
         {(msg.responses || []).map(r => {
           const slug = r.agent.toLowerCase()
-          const color = AGENT_COLORS[slug] || '#78716C'
+          const color = agentColors[slug] || '#78716C'
           return (
             <div
               key={r.agent}
@@ -1398,8 +1401,8 @@ function CouncilCard({ msg, timeStr }) {
             <div className="border-t border-[#9333EA]/10 divide-y divide-[#292524]/50">
               {(msg.responses || []).map(r => {
                 const slug = r.agent.toLowerCase()
-                const color = AGENT_COLORS[slug] || '#78716C'
-                const agentObj = AGENTS.find(a => a.slug === slug)
+                const color = agentColors[slug] || '#78716C'
+                const agentObj = agents.find(a => a.slug === slug)
                 return (
                   <div key={r.agent} className="px-4 py-3">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -1433,12 +1436,12 @@ function CouncilCard({ msg, timeStr }) {
 
 // ─── TEAM ROOM CARD ───────────────────────────────────────────────────────────
 // Featured card at the top of the roster. Shows overlapping agent avatars.
-function TeamRoomCard({ onOpen, isActive, agentStatus }) {
-  const activeCount = AGENTS.filter(a => {
+function TeamRoomCard({ onOpen, isActive, agentStatus, agents = _AGENTS_FALLBACK, agentColors = _AGENT_COLORS_FALLBACK }) {
+  const activeCount = agents.filter(a => {
     const s = agentStatus[a.slug]?.status
     return s === 'WORKING' || s === 'ACTIVE'
   }).length
-  const avatarSlice = AGENTS.slice(0, 6)
+  const avatarSlice = agents.slice(0, 6)
 
   return (
     <motion.button
@@ -1456,7 +1459,7 @@ function TeamRoomCard({ onOpen, isActive, agentStatus }) {
         {/* Overlapping agent avatar cluster */}
         <div className="flex items-center -space-x-2 shrink-0">
           {avatarSlice.map((a, idx) => {
-            const color = AGENT_COLORS[a.slug] || '#78716C'
+            const color = agentColors[a.slug] || '#78716C'
             return (
               <div
                 key={a.slug}
@@ -1471,7 +1474,7 @@ function TeamRoomCard({ onOpen, isActive, agentStatus }) {
             className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border-2 bg-[#292524] text-[#78716C]"
             style={{ borderColor: '#141412', zIndex: 0, position: 'relative' }}
           >
-            +{AGENTS.length - 6}
+            +{agents.length - 6}
           </div>
         </div>
 
@@ -1504,7 +1507,7 @@ function TeamRoomCard({ onOpen, isActive, agentStatus }) {
 // ─── TEAM ROOM PANEL ──────────────────────────────────────────────────────────
 // Multi-agent group chat. Reads from conversations/projects/aom-internal.jsonl.
 // Shows per-agent colored avatars + name labels. Sends to main relay (Elon).
-function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
+function TeamRoomPanel({ agentStatus, onClose, isMobile, agents = _AGENTS_FALLBACK, agentColors = _AGENT_COLORS_FALLBACK, councilAgents = _COUNCIL_AGENTS_FALLBACK }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -1696,7 +1699,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
     // Fire all agent calls in parallel
     let done = 0
     const responses = await Promise.all(
-      COUNCIL_AGENTS.map(agentName =>
+      councilAgents.map(agentName =>
         fetch(CHAT_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1782,7 +1785,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
     const atMatch = text.match(/^@(\S+)\s*(.*)$/)
     if (atMatch) {
       const atTarget = atMatch[1].toLowerCase()
-      const found = AGENTS.find(a => a.slug === atTarget || a.name.toLowerCase() === atTarget)
+      const found = agents.find(a => a.slug === atTarget || a.name.toLowerCase() === atTarget)
       if (found) {
         targetAgent = found.slug
         messageText = atMatch[2]?.trim() || text
@@ -1868,8 +1871,8 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Overlapping avatar cluster in header */}
           <div className="flex items-center -space-x-1.5 shrink-0">
-            {AGENTS.slice(0, 5).map((a) => {
-              const color = AGENT_COLORS[a.slug] || '#78716C'
+            {agents.slice(0, 5).map((a) => {
+              const color = agentColors[a.slug] || '#78716C'
               const isActive = agentStatus[a.slug]?.status === 'WORKING' || agentStatus[a.slug]?.status === 'ACTIVE'
               return (
                 <div
@@ -1940,8 +1943,8 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
         {messages.length === 0 && !searchQuery && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="flex -space-x-2 mb-4 justify-center">
-              {AGENTS.slice(0, 5).map(a => {
-                const color = AGENT_COLORS[a.slug] || '#78716C'
+              {agents.slice(0, 5).map(a => {
+                const color = agentColors[a.slug] || '#78716C'
                 return (
                   <div
                     key={a.slug}
@@ -1980,9 +1983,9 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
           .map((msg, i) => {
             const isUser = msg.role === 'user'
             const agentSlug = msg.agent
-            const agentColor = agentSlug ? (AGENT_COLORS[agentSlug] || '#78716C') : '#C026D3'
+            const agentColor = agentSlug ? (agentColors[agentSlug] || '#78716C') : '#C026D3'
             const agentInitialChar = agentSlug ? agentSlug.charAt(0).toUpperCase() : '?'
-            const agentObj = agentSlug ? AGENTS.find(a => a.slug === agentSlug) : null
+            const agentObj = agentSlug ? agents.find(a => a.slug === agentSlug) : null
             const agentName = agentObj?.name || (agentSlug ? agentSlug.charAt(0).toUpperCase() + agentSlug.slice(1) : 'Agent')
             const timeStr = msg.time && !msg.streaming ? formatTime(msg.time) : null
 
@@ -1997,9 +2000,9 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
                   </div>
                   <div className="px-4 py-3 flex items-center gap-3">
                     <div className="flex items-center gap-1.5 flex-1">
-                      {COUNCIL_AGENTS.map((name, j) => {
+                      {councilAgents.map((name, j) => {
                         const slug = name.toLowerCase()
-                        const color = AGENT_COLORS[slug] || '#78716C'
+                        const color = agentColors[slug] || '#78716C'
                         const responded = j < councilDoneCount
                         return (
                           <div
@@ -2018,8 +2021,8 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
                       })}
                     </div>
                     <span className="text-[#78716C] text-xs font-mono shrink-0">
-                      {councilDoneCount < COUNCIL_AGENTS.length
-                        ? `${councilDoneCount}/${COUNCIL_AGENTS.length} agents`
+                      {councilDoneCount < councilAgents.length
+                        ? `${councilDoneCount}/${councilAgents.length} agents`
                         : 'Synthesizing...'}
                     </span>
                   </div>
@@ -2029,7 +2032,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
 
             // Council result card
             if (msg.type === 'council') {
-              return <CouncilCard key={msg.id || `council-${i}`} msg={msg} timeStr={formatTime(msg.time)} />
+              return <CouncilCard key={msg.id || `council-${i}`} msg={msg} timeStr={formatTime(msg.time)} agentColors={agentColors} agents={agents} />
             }
 
             // Typing indicator
@@ -2187,7 +2190,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (skillAC.onKeyDown(e)) return }}
-            placeholder={streaming ? (councilDoneCount > 0 ? `Council: ${councilDoneCount}/${COUNCIL_AGENTS.length} agents responding...` : 'Team is working...') : 'Message the team... (@bobby, @all for council)'}
+            placeholder={streaming ? (councilDoneCount > 0 ? `Council: ${councilDoneCount}/${councilAgents.length} agents responding...` : 'Team is working...') : 'Message the team... (@bobby, @all for council)'}
             className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
             style={{ touchAction: 'manipulation', WebkitUserSelect: 'text' }}
           />
@@ -2306,6 +2309,50 @@ export default function ChatDashboard() {
   const [unreadAgents, setUnreadAgents] = useState(new Set())
   const { data, error, loading } = useDashboardData(30000)
   const isMobile = useIsMobile()
+
+  // REGISTRY_MIGRATED: Fetch full agent data from Supabase agent_status on mount
+  const [registryAgents, setRegistryAgents] = useState(null) // null = not loaded yet
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('agent_status')
+      .select('slug, name, role, color, is_super, active, hidden')
+      .then(({ data: rows, error: err }) => {
+        if (err || !rows?.length) return
+        setRegistryAgents(rows.filter(r => !r.hidden))
+      })
+  }, [])
+
+  // Derive AGENTS, AGENT_COLORS, COUNCIL_AGENTS from registry (with fallbacks)
+  const AGENTS = useMemo(() => {
+    if (!registryAgents || registryAgents.length === 0) return _AGENTS_FALLBACK
+    return registryAgents
+      .filter(a => a.active !== false)
+      .map(a => ({
+        slug: a.slug,
+        name: a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1),
+        role: a.role || '',
+        img: `/corner/${a.slug}-room.png`, // convention: slug-room.png
+      }))
+  }, [registryAgents])
+
+  const AGENT_COLORS = useMemo(() => {
+    if (!registryAgents || registryAgents.length === 0) return _AGENT_COLORS_FALLBACK
+    const colors = { ..._AGENT_COLORS_FALLBACK } // start with fallbacks for any missing
+    for (const a of registryAgents) {
+      if (a.color) colors[a.slug] = a.color
+    }
+    return colors
+  }, [registryAgents])
+
+  const COUNCIL_AGENTS = useMemo(() => {
+    if (!registryAgents || registryAgents.length === 0) return _COUNCIL_AGENTS_FALLBACK
+    // Council = active, non-super agents (the deliberation team, not orchestrators)
+    // Include super agents too since they participate in @all
+    return registryAgents
+      .filter(a => a.active !== false && !a.hidden)
+      .map(a => a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1))
+  }, [registryAgents])
 
   // Keep a ref so subscription callbacks can read activeAgent without stale closure
   const activeAgentRef = useRef(null)
@@ -2472,6 +2519,8 @@ export default function ChatDashboard() {
                 onOpen={() => setActiveAgent(TEAM_ROOM)}
                 isActive={activeAgent?.slug === 'aom-internal'}
                 agentStatus={agentStatus}
+                agents={AGENTS}
+                agentColors={AGENT_COLORS}
               />
             </div>
 
@@ -2513,6 +2562,9 @@ export default function ChatDashboard() {
                   agentStatus={agentStatus}
                   onClose={closeChat}
                   isMobile={isMobile}
+                  agents={AGENTS}
+                  agentColors={AGENT_COLORS}
+                  councilAgents={COUNCIL_AGENTS}
                 />
               ) : (
                 <ChatPanel
@@ -2521,6 +2573,8 @@ export default function ChatDashboard() {
                   statusData={agentStatus[activeAgent.slug]}
                   onClose={closeChat}
                   isMobile={isMobile}
+                  agentColors={AGENT_COLORS}
+                  agents={AGENTS}
                 />
               )}
             </div>

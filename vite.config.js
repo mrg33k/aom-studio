@@ -28,7 +28,12 @@ const REPO_OUTBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
 
 // Per-agent inbox routing: super agents get their own inbox file.
 // relay-hook.sh reads relay-inbox-{agent}.jsonl when CORNER_AGENT is set.
-const SUPER_AGENTS = new Set(['elon', 'bobby', 'gary'])
+// REGISTRY_MIGRATED: was new Set(['elon', 'bobby', 'gary'])
+let SUPER_AGENTS = new Set(['elon', 'bobby', 'gary']) // fallback
+try {
+  const _regCache = JSON.parse(fs.readFileSync(resolve(os.homedir(), 'Library/Application Support/aom-ea/data/context/agent-registry-cache.json'), 'utf8'))
+  SUPER_AGENTS = new Set(_regCache.filter(a => a.is_super).map(a => a.slug))
+} catch {}
 function getAgentInboxPath(agentSlug) {
   if (agentSlug && SUPER_AGENTS.has(agentSlug)) {
     const appDataPath = resolve(APPDATA_ROOT, `context/relay-inbox-${agentSlug}.jsonl`)
@@ -104,7 +109,8 @@ const AGENT_FOLDERS = {
   patrik: 'corner', elmo: 'corner',
 }
 
-const AGENTS_LIST = [
+// REGISTRY_MIGRATED: was hardcoded 13-agent array
+const _AGENTS_LIST_FALLBACK = [
   { slug: 'bobby', name: 'Bobby', role: 'Web Dev' },
   { slug: 'colton', name: 'Colton', role: 'Backup Builder' },
   { slug: 'elmo', name: 'Elmo', role: 'QA Gate' },
@@ -119,6 +125,13 @@ const AGENTS_LIST = [
   { slug: 'pixel', name: 'Pixel', role: 'Extension' },
   { slug: 'mom', name: 'Mom', role: 'Orchestrator' },
 ]
+let AGENTS_LIST = _AGENTS_LIST_FALLBACK
+try {
+  const _regCacheAgents = JSON.parse(fs.readFileSync(resolve(os.homedir(), 'Library/Application Support/aom-ea/data/context/agent-registry-cache.json'), 'utf8'))
+  if (_regCacheAgents.length > 0) {
+    AGENTS_LIST = _regCacheAgents.map(a => ({ slug: a.slug, name: a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1), role: a.role || '' }))
+  }
+} catch {}
 
 function readLocalFile(relativePath) {
   const fullPath = resolve(AOM_EA_ROOT, relativePath)
@@ -1711,11 +1724,17 @@ function localDashboardPlugin() {
             }
 
             // 6.5 RESTART SUPER AGENT TMUX SESSIONS
-            // Kill and respawn bobby, elon, gary tmux sessions via spawn-agent.sh
+            // Kill and respawn super agent tmux sessions via spawn-agent.sh
             // Each agent reads last messages from their relay inbox on startup
-            const SUPER_AGENTS = ['bobby', 'elon', 'gary']
+            // REGISTRY_MIGRATED: was ['bobby', 'elon', 'gary']
+            let SUPER_AGENTS_RESTART = ['bobby', 'elon', 'gary'] // fallback
+            try {
+              const _rc = JSON.parse(fs.readFileSync(resolve(os.homedir(), 'Library/Application Support/aom-ea/data/context/agent-registry-cache.json'), 'utf8'))
+              const _supers = _rc.filter(a => a.is_super).map(a => a.slug)
+              if (_supers.length > 0) SUPER_AGENTS_RESTART = _supers
+            } catch {}
             const agentRestarts = []
-            for (const agent of SUPER_AGENTS) {
+            for (const agent of SUPER_AGENTS_RESTART) {
               const sessionName = `${agent}-relay`
               try {
                 // Check if session exists
