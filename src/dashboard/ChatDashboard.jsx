@@ -676,7 +676,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         }
       })
 
-    // REST poll fallback (safety net when Realtime drops)
+    // REST poll fallback every 5s (safe: direct Supabase query, not GitHub API)
+    // Ensures dashboard catches responses within 5s even when Realtime drops
     const poll = setInterval(async () => {
       if (document.hidden) return // Skip when tab not visible
       try {
@@ -695,7 +696,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, 30000)
+    }, 5000)
 
     return () => {
       if (reconnectTimer) clearTimeout(reconnectTimer)
