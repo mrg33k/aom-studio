@@ -432,7 +432,7 @@ function localDashboardPlugin() {
                 for (const line of lines) {
                   try {
                     const msg = JSON.parse(line)
-                    if (since && msg.timestamp && msg.timestamp <= since) continue
+                    if (since && msg.timestamp && new Date(msg.timestamp) <= new Date(since)) continue
                     // Ensure agent field is set; add project_path from static map
                     allMessages.push({
                       ...msg,
@@ -473,7 +473,7 @@ function localDashboardPlugin() {
             for (let i = startIdx; i < lines.length; i++) {
               try {
                 const msg = JSON.parse(lines[i])
-                if (since && msg.timestamp && msg.timestamp <= since) continue
+                if (since && msg.timestamp && new Date(msg.timestamp) <= new Date(since)) continue
                 messages.push(msg)
               } catch {}
             }
