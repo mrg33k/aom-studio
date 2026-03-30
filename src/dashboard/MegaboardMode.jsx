@@ -15,7 +15,7 @@ import { AGENTS } from './gridSpec.js'
 import { supabase } from './lib/supabase.js'
 
 // Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
-const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
+const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel','gary','rex'])
 
 // Generate 2-letter initials from agent name.
 // Multi-word: first letter of first + first letter of last word ("John Smith" -> "JS").

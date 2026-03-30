@@ -29,7 +29,7 @@ const REPO_OUTBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
 // Per-agent inbox routing: super agents get their own inbox file.
 // relay-hook.sh reads relay-inbox-{agent}.jsonl when CORNER_AGENT is set.
 // REGISTRY_MIGRATED: was new Set(['elon', 'bobby', 'gary'])
-let SUPER_AGENTS = new Set(['elon', 'bobby', 'gary']) // fallback
+let SUPER_AGENTS = new Set(['elon', 'bobby', 'gary', 'rex']) // fallback
 try {
   const _regCache = JSON.parse(fs.readFileSync(resolve(os.homedir(), 'Library/Application Support/aom-ea/data/context/agent-registry-cache.json'), 'utf8'))
   SUPER_AGENTS = new Set(_regCache.filter(a => a.is_super).map(a => a.slug))
