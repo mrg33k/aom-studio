@@ -519,6 +519,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
         } else if (supabase) {
           // Production + Supabase available: load history from Supabase messages table
           try {
+            console.log(`[CHAT-DEBUG] Loading history for ${agent.slug} from Supabase...`)
             const { data: rows, error: sbErr } = await supabase
               .from('messages')
               .select('*')
@@ -526,11 +527,16 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
               .order('timestamp', { ascending: false })
               .limit(100)
 
+            console.log(`[CHAT-DEBUG] ${agent.slug}: Supabase returned ${rows?.length || 0} rows, error=${sbErr?.message || 'none'}`)
             if (sbErr) throw sbErr
 
             if (rows && rows.length > 0) {
               // Reverse to chronological order (query fetched newest first)
               rows.reverse()
+              const roleCounts = {}
+              for (const r of rows) { roleCounts[r.role] = (roleCounts[r.role] || 0) + 1 }
+              console.log(`[CHAT-DEBUG] ${agent.slug}: Role breakdown:`, roleCounts)
+
               const all = []
               for (const row of rows) {
                 const mapped = mapSupabaseMsg(row)
@@ -538,11 +544,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
                 if (!cleaned) continue
                 all.push({ ...mapped, content: cleaned })
               }
+              console.log(`[CHAT-DEBUG] ${agent.slug}: After sanitize: ${all.length} messages (${all.filter(m=>m.role==='assistant').length} assistant, ${all.filter(m=>m.role==='user').length} user)`)
               const deduped = deduplicateMessages(all)
+              console.log(`[CHAT-DEBUG] ${agent.slug}: After dedup: ${deduped.length} messages`)
               const recent = deduped.slice(-100)
               if (recent.length > 0) {
                 setMessages(recent)
                 lastConvTimestampRef.current = recent[recent.length - 1].time
+                console.log(`[CHAT-DEBUG] ${agent.slug}: Set ${recent.length} messages, lastTs=${recent[recent.length-1].time}`)
               }
             }
             setRelayConnected(true)
