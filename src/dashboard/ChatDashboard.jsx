@@ -86,10 +86,17 @@ function sanitizeRelayMessage(text) {
 // The relay hook then echoes it back to terminal as source "terminal" with watchdog preamble.
 // This creates duplicate messages. We detect these by comparing cleaned content.
 function deduplicateMessages(messages) {
+  const seenIds = new Set()
   const seen = new Map() // cleaned content -> first message
   const result = []
 
   for (const msg of messages) {
+    // Deduplicate by ID first (strongest signal)
+    if (msg.id) {
+      if (seenIds.has(msg.id)) continue
+      seenIds.add(msg.id)
+    }
+
     if (!msg.content) { result.push(msg); continue }
 
     // Normalize content for comparison (lowercase, strip whitespace/punctuation)
@@ -99,10 +106,10 @@ function deduplicateMessages(messages) {
     const existing = seen.get(normalized)
     if (existing) {
       // Keep the earlier message (original), skip the echo
-      // If timestamps are within 2 seconds, it's a duplicate (prefer corner-dashboard source)
+      // Same content within 30 seconds = duplicate (covers Realtime + poll overlap)
       const existingTime = new Date(existing.time).getTime()
       const thisTime = new Date(msg.time).getTime()
-      if (Math.abs(existingTime - thisTime) < 2000) {
+      if (Math.abs(existingTime - thisTime) < 30000) {
         continue // skip duplicate
       }
     }
