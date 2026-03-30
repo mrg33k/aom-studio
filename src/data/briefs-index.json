@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-27T19:23:45.302Z",
+  "generated": "2026-03-30T06:46:20.408Z",
   "categories": [
     {
       "name": "Strategy",
@@ -1963,6 +1963,16 @@
     {
       "name": "Content",
       "items": [
+        {
+          "title": "ISA Energy -- Brand Video Shoot Script",
+          "slug": "isa-energy-shoot-script",
+          "agent": "Gary",
+          "date": "2026-03-29",
+          "dateFormatted": "Mar 29",
+          "summary": "Full shoot script for ISA Energy brand video. 3 acts, 9 beats, 4 interview subjects. Sedona Apr 3.",
+          "path": "/briefs/isa-energy-shoot-script",
+          "hasPage": true
+        },
         {
           "title": "Ambition: 15-20 Branded Social Animations",
           "slug": "ambition-branded-posts",
