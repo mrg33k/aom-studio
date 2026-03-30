@@ -55,6 +55,10 @@ const PAGE_META = {
     title: 'Included Health Brand Reference',
     description: 'Brand reference for Included Health. Colors, typography, and visual identity guidelines.',
   },
+  '/brands/s3c': {
+    title: 'S3C Brand Exploration',
+    description: 'Logo concepts for the Semiconductor Services & Supply Coalition',
+  },
   '/case-study': {
     title: 'Case Study | AOM in Action',
     description: 'See how AOM delivers results. Real projects, real numbers, real impact.',
