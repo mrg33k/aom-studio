@@ -1446,7 +1446,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     catch {}
     // No saved prefs: show all agents from pipeData (scoped by client_id)
     if (agents.length > 0) return new Set(agents.map(a => a.slug))
-    return new Set(['bobby', 'gary', 'elon']) // AOM fallback
+    return new Set(['rex', 'bobby', 'gary', 'elon']) // AOM fallback
   })
 
   // Column order: array of slugs. Persisted to Supabase + localStorage fallback.
