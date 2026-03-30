@@ -520,12 +520,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               .from('messages')
               .select('*')
               .eq('agent', agent.slug)
-              .order('timestamp', { ascending: true })
+              .order('timestamp', { ascending: false })
               .limit(100)
 
             if (sbErr) throw sbErr
 
             if (rows && rows.length > 0) {
+              // Reverse to chronological order (query fetched newest first)
+              rows.reverse()
               const all = []
               for (const row of rows) {
                 const mapped = mapSupabaseMsg(row)
