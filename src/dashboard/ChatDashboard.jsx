@@ -2316,7 +2316,7 @@ export default function ChatDashboard() {
     if (!supabase) return
     supabase
       .from('agent_status')
-      .select('slug, name, role, color, is_super, active, hidden')
+      .select('slug, name, role, color, is_super, hidden')
       .then(({ data: rows, error: err }) => {
         if (err || !rows?.length) return
         setRegistryAgents(rows.filter(r => !r.hidden))
@@ -2327,7 +2327,6 @@ export default function ChatDashboard() {
   const AGENTS = useMemo(() => {
     if (!registryAgents || registryAgents.length === 0) return _AGENTS_FALLBACK
     return registryAgents
-      .filter(a => a.active !== false)
       .map(a => ({
         slug: a.slug,
         name: a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1),
@@ -2350,7 +2349,7 @@ export default function ChatDashboard() {
     // Council = active, non-super agents (the deliberation team, not orchestrators)
     // Include super agents too since they participate in @all
     return registryAgents
-      .filter(a => a.active !== false && !a.hidden)
+      .filter(a => !a.hidden)
       .map(a => a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1))
   }, [registryAgents])
 
