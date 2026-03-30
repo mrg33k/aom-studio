@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
-import { useBridge, isBridgeAgent, BRIDGE_AGENTS } from './hooks/useBridge'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -402,53 +401,12 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [streaming, setStreaming] = useState(false)
   const [relayConnected, setRelayConnected] = useState(false)
 
-  // Terminal Bridge: direct WebSocket for super agents (elon, bobby, gary)
-  const bridge = useBridge(agent.slug, { enabled: isBridgeAgent(agent.slug) })
-  const useBridgeForAgent = isBridgeAgent(agent.slug) && bridge.connected
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [streamStartTime, setStreamStartTime] = useState(null)
   const [isSending, setIsSending] = useState(false)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role, id }
-
-  // ── BRIDGE: Handle streaming text from WebSocket ──
-  useEffect(() => {
-    if (!isBridgeAgent(agent.slug)) return
-    if (bridge.streaming && bridge.streamText) {
-      // Update the streaming placeholder with real-time text
-      setMessages(prev => {
-        const idx = prev.findIndex(m => m.streaming)
-        if (idx === -1) return prev
-        const updated = [...prev]
-        updated[idx] = { ...updated[idx], content: bridge.streamText }
-        return updated
-      })
-    }
-  }, [bridge.streaming, bridge.streamText, agent.slug])
-
-  // ── BRIDGE: Handle completed responses ──
-  useEffect(() => {
-    if (!bridge.lastResponse) return
-    const resp = bridge.lastResponse
-
-    setMessages(prev => {
-      const filtered = prev.filter(m => !m.streaming)
-      filtered.push({
-        role: 'assistant',
-        content: resp.text,
-        time: resp.time,
-        source: 'bridge',
-        error: resp.error,
-      })
-      filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
-      return filtered.slice(-100)
-    })
-
-    setStreaming(false)
-    setStreamStartTime(null)
-    setIsSending(false)
-  }, [bridge.lastResponse])
 
   const knownSlugsRef = useRef(KNOWN_SLUGS_FALLBACK)
   const messagesEndRef = useRef(null)
@@ -1074,15 +1032,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     startChatTimeout()
 
     try {
-      // Terminal Bridge: direct WebSocket for super agents
-      if (useBridgeForAgent) {
-        const sent = bridge.send(text)
-        if (!sent) throw new Error('Bridge not connected')
-        // Bridge handles streaming + response via useBridge hook effects above
-        setIsSending(false)
-        return
-      }
-
       if (IS_LOCAL) {
         // Local: write directly to relay-inbox.jsonl via the Vite dev server API
         const res = await fetch('/api/local/relay-send', {
@@ -1187,18 +1136,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         </button>
         {/* Connection indicator */}
         <div className="flex items-center gap-1.5 shrink-0" title={
-          useBridgeForAgent ? `Terminal Bridge (${bridge.status})` :
           IS_LOCAL ? 'Local relay (direct file I/O)' :
           supabase ? 'Supabase Realtime (live)' : 'Remote relay (GitHub API)'
         }>
           <Radio className={`w-3 h-3 ${
-            useBridgeForAgent ? 'text-[#3B82F6]' :
             relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'
           }`} />
-          <span className={`text-[11px] font-mono uppercase tracking-wider ${
-            useBridgeForAgent ? 'text-[#3B82F6]' : 'text-[#78716C]'
-          }`}>
-            {useBridgeForAgent ? 'BRIDGE' : IS_LOCAL ? 'LOCAL' : supabase ? 'LIVE' : 'RELAY'}
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#78716C]">
+            {IS_LOCAL ? 'LOCAL' : supabase ? 'LIVE' : 'RELAY'}
           </span>
         </div>
       </div>
@@ -1277,25 +1222,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
           // Typing indicator (streaming placeholder with no content yet)
           if (msg.streaming && !msg.content) {
-            // Bridge agents: show check state instead of generic typing indicator
-            if (useBridgeForAgent && bridge.check) {
-              return (
-                <div key={msg.id || `typing-indicator-${i}`} className="flex flex-col gap-1 flex-start">
-                  <div className="flex items-end gap-2.5 flex-row">
-                    <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 border-[#3B82F6]/50 bg-[#3B82F6]/10 text-[#3B82F6]">
-                      {agentInitial}
-                    </div>
-                    <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
-                      <div className="flex items-center gap-2 text-sm text-[#78716C]">
-                        <span className={bridge.check === 'blue' ? 'text-[#3B82F6]' : ''}>
-                          {bridge.check === 'single' ? 'Received...' : bridge.check === 'double' ? 'Queued...' : 'Processing...'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
             return (
               <div key={msg.id || `typing-indicator-${i}`} className="flex flex-col gap-1 flex-start">
                 <div className="flex items-end gap-2.5 flex-row">
@@ -1367,12 +1293,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   {sourceLabel && (
                     <span className="text-[9px] font-mono text-[#78716C]/25">
                       {sourceLabel.text}
-                    </span>
-                  )}
-                  {/* Read receipt checks for bridge agents (last user message only) */}
-                  {isUser && useBridgeForAgent && bridge.check && !messages.slice(i + 1).some(m => m.role === 'user') && (
-                    <span className={`text-[10px] ${bridge.check === 'blue' ? 'text-[#3B82F6]' : 'text-[#78716C]/60'}`}>
-                      {bridge.check === 'single' ? '\u2713' : '\u2713\u2713'}
                     </span>
                   )}
                 </div>
@@ -2487,7 +2407,7 @@ export default function ChatDashboard() {
 
   // Global new-message detection: marks unread dot + auto-opens panel when idle
   // Production: Supabase Realtime INSERT on messages table
-  // Local: poll bridge agents every 5s (lightweight)
+  // Local: poll agents every 5s (lightweight)
   useEffect(() => {
     const markUnread = (slug) => {
       if (!slug || activeAgentRef.current?.slug === slug) return
@@ -2512,10 +2432,10 @@ export default function ChatDashboard() {
         .subscribe()
       return () => supabase.removeChannel(channel)
     } else {
-      // Local: poll bridge agents every 5s for new assistant messages
+      // Local: poll agents every 5s for new assistant messages
       const lastSeen = {}
       const check = async () => {
-        for (const a of AGENTS.filter(ag => BRIDGE_AGENTS.includes(ag.slug))) {
+        for (const a of AGENTS) {
           const since = lastSeen[a.slug] || new Date(Date.now() - 8000).toISOString()
           try {
             const res = await fetch(`/api/local/conversations?target=${a.slug}&type=agent&limit=3&since=${encodeURIComponent(since)}`)

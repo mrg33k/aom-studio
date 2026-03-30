@@ -12,7 +12,6 @@ import TaskContextMenu, { handleTaskContextAction } from './components/TaskConte
 import { getAgentKnowledge } from './agentKnowledge.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
-import { useBridge, isBridgeAgent } from './hooks/useBridge.js'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -112,79 +111,6 @@ function useColumnChat(agentSlug, isActive) {
   const pollRef = useRef(null)
   const loadedRef = useRef(false)
 
-  // Terminal Bridge for super agents -- bridge is the ONLY path for these agents
-  const isBridgeSlug = isBridgeAgent(agentSlug)
-  const bridge = useBridge(agentSlug, { enabled: isBridgeSlug && isActive })
-  const useBridgeForAgent = isBridgeSlug // true for bridge agents regardless of connection state
-
-  // Bridge: stream text into streaming placeholder (deltas only)
-  useEffect(() => {
-    if (!useBridgeForAgent || !bridge.streaming || !bridge.streamText) return
-    setMessages(prev => {
-      const idx = prev.findIndex(m => m.streaming)
-      if (idx === -1) return prev
-      // Only update if content actually changed
-      if (prev[idx].content === bridge.streamText) return prev
-      const updated = [...prev]
-      updated[idx] = { ...updated[idx], content: bridge.streamText }
-      return updated
-    })
-  }, [useBridgeForAgent, bridge.streaming, bridge.streamText])
-
-  // Bridge: map check events to per-message status (single/double/blue)
-  useEffect(() => {
-    if (!useBridgeForAgent || !bridge.check) return
-    const statusMap = { single: 'sent', double: 'delivered', blue: 'read' }
-    const newStatus = statusMap[bridge.check]
-    if (!newStatus) return
-    setMessages(prev => {
-      // Find last user message, update its status
-      for (let i = prev.length - 1; i >= 0; i--) {
-        if (prev[i].role === 'user') {
-          if (newStatus === 'read') persistReadReceipt(prev[i].id)
-          const updated = [...prev]
-          updated[i] = { ...updated[i], status: newStatus }
-          return updated
-        }
-      }
-      return prev
-    })
-  }, [useBridgeForAgent, bridge.check])
-
-  // Bridge: handle completed responses
-  useEffect(() => {
-    if (!bridge.lastResponse) return
-    const resp = bridge.lastResponse
-    setMessages(prev => {
-      // Remove streaming placeholder
-      const filtered = prev.filter(m => !m.streaming)
-      // Check if this response is already in the list (dedup)
-      const respNorm = (resp.text || '').trim().slice(0, 100)
-      if (respNorm && filtered.some(m => m.role === 'assistant' && m.source === 'bridge' && (m.content || '').trim().slice(0, 100) === respNorm)) {
-        return filtered
-      }
-      // Mark all user messages as read
-      const updated = filtered.map(m => {
-        if (m.role === 'user' && m.status !== 'read') {
-          persistReadReceipt(m.id)
-          return { ...m, status: 'read' }
-        }
-        return m
-      })
-      updated.push({ role: 'assistant', content: resp.text, time: resp.time, source: 'bridge' })
-      return updated.slice(-100)
-    })
-    setSending(false)
-  }, [bridge.lastResponse])
-
-  // Bridge: reset sending state on disconnect (catches pre-stream disconnects)
-  useEffect(() => {
-    if (!useBridgeForAgent) return
-    if (bridge.status === 'disconnected') {
-      setSending(false)
-    }
-  }, [useBridgeForAgent, bridge.status])
-
   useEffect(() => {
     if (!agentSlug || !isActive || loadedRef.current) return
     loadedRef.current = true
@@ -249,11 +175,10 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, isActive])
 
   // Continuous background poll: fetch new messages every 3s for live updates
-  // SKIP when bridge is connected -- bridge handles responses via WebSocket
   const bgPollRef = useRef(null)
   const lastBgTsRef = useRef(new Date().toISOString())
   useEffect(() => {
-    if (!agentSlug || !isActive || useBridgeForAgent) return
+    if (!agentSlug || !isActive) return
     bgPollRef.current = setInterval(async () => {
       if (document.hidden) return
       try {
@@ -331,10 +256,6 @@ function useColumnChat(agentSlug, isActive) {
     const sentTime = new Date().toISOString()
     const msgId = `usr-${Date.now()}`
     setInput('')
-    // Reset stale check state BEFORE adding the new message so the bridge.check
-    // useEffect cannot fire with a leftover 'blue' value and instantly mark the
-    // new message as read.
-    if (useBridgeForAgent) bridge.resetCheck()
     // Step 1: single gray check (sent)
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
@@ -343,39 +264,6 @@ function useColumnChat(agentSlug, isActive) {
       ]
     })
     setSending(true)
-
-    // Terminal Bridge: direct WebSocket for super agents
-    if (useBridgeForAgent) {
-      // Persist user message to Supabase immediately (belt and suspenders -- bridge server is the backup)
-      const clientId = getClientId()
-      const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
-      fetch(sendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentSlug, text: text.trim(), message: text.trim(), source: 'corner-dashboard', client_id: clientId, role: 'user' }),
-      }).catch(() => {}) // fire and forget
-
-      const sent = bridge.send(text.trim())
-      if (sent) {
-        // Add streaming placeholder for bridge response
-        setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
-        // Checks come through bridge.check -> handled by useBridge hook
-        return
-      }
-      // Bridge send failed -- queue and retry when reconnected (no relay fallback)
-      const retryInterval = setInterval(() => {
-        if (bridge.send(text.trim())) {
-          clearInterval(retryInterval)
-          setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: new Date().toISOString() }])
-        }
-      }, 1000)
-      // Give up after 30s
-      setTimeout(() => {
-        clearInterval(retryInterval)
-        if (sending) setSending(false)
-      }, 30000)
-      return
-    }
 
     try {
       const clientId = getClientId()
@@ -447,8 +335,7 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, sending])
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
-  // Expose bridge for all bridge-eligible agents (show indicator even when disconnected)
-  return { messages, input, setInput, loading, sending, sendMessage, bridge: isBridgeAgent(agentSlug) ? bridge : null }
+  return { messages, input, setInput, loading, sending, sendMessage }
 }
 
 // ── COLUMN TAB BAR ───────────────────────────────────────────────────────────
@@ -712,28 +599,6 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               </div>
             </div>
         ))}
-        {/* Bridge typing indicator: shown when bridge is streaming but no streaming message exists yet */}
-        {chat.bridge?.streaming && !chat.messages.some(m => m.streaming) && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{
-              padding: '10px 14px', borderRadius: 12,
-              maxWidth: '88%',
-              background: 'var(--bv-chat-agent)',
-              border: '1px solid var(--bv-card-border)',
-              borderBottomLeftRadius: 4,
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>{agentName}</div>
-              <TypingIndicatorV2
-                streaming={true}
-                agentSlug={agentSlug}
-                agentColor={color}
-                agentName={agentName}
-                onPoke={(text) => chat.sendMessage(text)}
-                compact={true}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Message context menu: portal to body to escape transform containers */}
@@ -820,17 +685,6 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         </button>
       )}
 
-      {/* Bridge indicator: always visible for bridge agents, grey when disconnected, blue when connected */}
-      {chat.bridge && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          padding: '3px 0', borderTop: '1px solid var(--bv-divider)',
-          background: chat.bridge.connected ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.02)', flexShrink: 0,
-        }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: chat.bridge.connected ? '#3B82F6' : '#4B5563' }} />
-          <span style={{ fontSize: 9, fontWeight: 700, color: chat.bridge.connected ? '#3B82F6' : '#4B5563', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }}>BRIDGE</span>
-        </div>
-      )}
 
       {/* File preview strip */}
       {pendingFiles.length > 0 && (
@@ -903,7 +757,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
           value={chat.input}
           onChange={e => chat.setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
-          placeholder={chat.bridge ? `${agentName} (bridge)...` : `Message ${agentName}...`}
+          placeholder={`Message ${agentName}...`}
           onClick={e => e.stopPropagation()}
           style={{
             flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
