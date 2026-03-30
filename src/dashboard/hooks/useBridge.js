@@ -17,7 +17,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 // Bridge agents (super agents with direct terminal connections)
-export const BRIDGE_AGENTS = ['elon', 'gary', 'bobby']
+export const BRIDGE_AGENTS = []
 
 // Bridge server URL -- Cloudflare tunnel provides wss:// with real cert
 // Bridge URL from env, or fallback to Cloudflare tunnel. Update VITE_BRIDGE_URL in .env.production when tunnel URL changes.
