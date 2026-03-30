@@ -40,6 +40,7 @@ import AmbitionPerformance from './pages/AmbitionPerformance.jsx'
 import AmbitionPerformanceV2 from './pages/AmbitionPerformanceV2.jsx'
 import Corner from './pages/Corner.jsx'
 import BriefPage from './pages/BriefPage.jsx'
+import ISAShootScript from './pages/ISAShootScript.jsx'
 import Skills from './pages/Skills.jsx'
 import Settings from './pages/Settings.jsx'
 import Onboarding from './pages/Onboarding.jsx'
@@ -227,6 +228,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/ambition-sections" element={<BriefAmbitionSections />} />
           <Route path="/briefs/ambition-linkedin" element={<BriefAmbitionLinkedIn />} />
           <Route path="/briefs/ambition-market-strategy" element={<BriefAmbitionStrategy />} />
+          <Route path="/briefs/isa-energy-shoot-script" element={<ISAShootScript />} />
           <Route path="/briefs/:slug" element={<BriefPage />} />
           <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/ideas" element={<IdeasTracker />} />

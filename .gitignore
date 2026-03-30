@@ -12,3 +12,4 @@ dist
 .next/
 test-screenshots/
 *.png
+!public/images/**/*.png
