@@ -83,6 +83,11 @@ const PAGE_META = {
     title: 'Memorial Tower | Ambition Production Guide',
     description: 'Production guide for Memorial Tower content. Titles, branding, and delivery specs.',
   },
+  '/briefs/isa-energy-shoot-script': {
+    title: 'ISA Energy | Brand Video Bible',
+    description: '3 acts, 9 beats, 4 interview subjects. Sedona Apr 2, 2026.',
+    image: 'https://www.aheadofmarket.com/og-isa-energy.png',
+  },
 };
 
 function buildHtml(meta, fullUrl, schemaJson) {

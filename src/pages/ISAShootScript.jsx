@@ -274,17 +274,19 @@ const SCHED_SPAN  = SCHED_END - SCHED_START;
 
 function useSEO() {
   useEffect(() => {
-    document.title = 'ISA Energy — Brand Video Production Bible | AOM';
+    document.title = 'ISA Energy | Brand Video Bible | AOM';
     const set = (name, content, prop = false) => {
       const attr = prop ? 'property' : 'name';
       let el = document.querySelector(`meta[${attr}="${name}"]`);
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    set('description', 'Full production bible for ISA Energy brand video. Shot-by-shot timeline, interview guide, b-roll locations, shoot day schedule. Sedona Apr 2, 2026.');
-    set('og:title', 'ISA Energy — Brand Video Production Bible', true);
-    set('og:description', '5-Minute Theater Format | Sedona Apr 2, 2026', true);
+    set('description', 'Full brand video bible for ISA Energy. Shot-by-shot timeline, interview guide, b-roll locations, shoot day schedule. Sedona Apr 2, 2026.');
+    set('og:title', 'ISA Energy | Brand Video Bible', true);
+    set('og:description', '3 acts, 9 beats, 4 interview subjects. Sedona Apr 2, 2026.', true);
     set('og:type', 'article', true);
+    set('og:url', 'https://aheadofmarket.com/briefs/isa-energy-shoot-script', true);
+    set('og:image', 'https://www.aheadofmarket.com/og-isa-energy.png', true);
   }, []);
 }
 
