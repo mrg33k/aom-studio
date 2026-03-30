@@ -19,6 +19,28 @@ marked.setOptions({
   gfm: true,
 })
 
+// Linkify plain text: convert bare URLs to clickable links (used for user messages)
+function linkifyText(text) {
+  if (!text) return []
+  const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g
+  const parts = []
+  let lastIndex = 0
+  let match
+  while ((match = urlRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+    parts.push(
+      <a key={match.index} href={match[0]} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 break-all">{match[0]}</a>
+    )
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+  return parts.length > 0 ? parts : [text]
+}
+
 // Render markdown to sanitized HTML (strips script tags)
 function renderMarkdown(text) {
   if (!text) return ''
@@ -26,6 +48,11 @@ function renderMarkdown(text) {
     let html = marked.parse(text)
     // Strip script tags for safety
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Auto-link bare URLs not already wrapped in <a> tags
+    html = html.replace(
+      /(?<!href=["'])(?<!["'>])(https?:\/\/[^\s<>"')\]]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline hover:text-blue-300">$1</a>'
+    )
     return html
   } catch {
     return text
@@ -492,7 +519,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
           // Primary: unified conversation JSONL (has ALL messages from all sources)
           let loaded = false
           try {
-            const convRes = await fetch(`/api/local/conversations?agent=${agent.slug}&limit=100`)
+            const convRes = await fetch(`${CONV_API_BASE}?agent=${agent.slug}&limit=100`)
             if (convRes.ok) {
               const convData = await convRes.json()
               const convMsgs = (convData.messages || [])
@@ -1224,7 +1251,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
                       dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                     />
                   ) : (
-                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                    <div className="whitespace-pre-wrap break-words">{linkifyText(msg.content)}</div>
                   )}
                 </div>
 
@@ -1583,9 +1610,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile, agents = _AGENTS_FALLBA
     historyLoadedRef.current = true
     const load = async () => {
       try {
-        const endpoint = IS_LOCAL
-          ? '/api/local/conversations?target=aom-internal&type=project&limit=150'
-          : `${CONV_API_BASE}?target=aom-internal&type=project&limit=100`
+        const endpoint = `${CONV_API_BASE}?target=aom-internal&type=project&limit=${IS_LOCAL ? 150 : 100}`
         const res = await fetch(endpoint)
         if (res.ok) {
           const data = await res.json()
@@ -1613,9 +1638,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile, agents = _AGENTS_FALLBA
       if (document.hidden) return
       try {
         const sinceParam = lastConvTimestampRef.current ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}` : ''
-        const endpoint = IS_LOCAL
-          ? `/api/local/conversations?target=aom-internal&type=project&limit=50${sinceParam}`
-          : `${CONV_API_BASE}?target=aom-internal&type=project&limit=50${sinceParam}`
+        const endpoint = `${CONV_API_BASE}?target=aom-internal&type=project&limit=50${sinceParam}`
         const res = await fetch(endpoint)
         if (!res.ok) return
         const data = await res.json()
@@ -2132,7 +2155,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile, agents = _AGENTS_FALLBA
                     {msg.role === 'assistant' && msg.content && !msg.streaming ? (
                       <div className="chat-md break-words" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                     ) : (
-                      <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                      <div className="whitespace-pre-wrap break-words">{linkifyText(msg.content)}</div>
                     )}
                   </div>
 
@@ -2431,7 +2454,7 @@ export default function ChatDashboard() {
         for (const a of AGENTS) {
           const since = lastSeen[a.slug] || new Date(Date.now() - 8000).toISOString()
           try {
-            const res = await fetch(`/api/local/conversations?target=${a.slug}&type=agent&limit=3&since=${encodeURIComponent(since)}`)
+            const res = await fetch(`${CONV_API_BASE}?target=${a.slug}&type=agent&limit=3&since=${encodeURIComponent(since)}`)
             if (!res.ok) continue
             const d = await res.json()
             const newAsst = (d.messages || []).filter(m => m.role === 'assistant')
