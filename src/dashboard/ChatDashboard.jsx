@@ -723,7 +723,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       }
     }
 
-    // Realtime subscription
+    // Realtime subscription with reconnection logic
+    let reconnectTimer = null
     const channel = supabase
       .channel(`chat-${agent.slug}`)
       .on('postgres_changes', {
@@ -736,9 +737,23 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         if (row.agent !== agent.slug) return
         addResponse(row)
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[Realtime] Subscribed to chat-${agent.slug}`)
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          console.warn(`[Realtime] Channel ${status} for chat-${agent.slug}, reconnecting in 5s...`)
+          if (reconnectTimer) clearTimeout(reconnectTimer)
+          reconnectTimer = setTimeout(() => {
+            try {
+              channel.subscribe()
+            } catch (e) {
+              console.error('[Realtime] Reconnect failed:', e)
+            }
+          }, 5000)
+        }
+      })
 
-    // REST poll fallback
+    // REST poll fallback (safety net when Realtime drops)
     const poll = setInterval(async () => {
       if (document.hidden) return // Skip when tab not visible
       try {
@@ -757,6 +772,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     }, 30000)
 
     return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer)
       supabase.removeChannel(channel)
       clearInterval(poll)
     }
@@ -832,8 +848,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   useEffect(() => { streamingRef.current = streaming }, [streaming])
 
   // PRIMARY POLL: Conversation JSONL endpoint (unified source of truth)
-  // Local: 2.5s. Production without Supabase: 5s (GitHub API rate limit friendly).
-  // When Supabase Realtime is active (production), skip this poll entirely.
+  // Local: 2.5s. Production: 30s (GitHub API rate limit friendly).
+  // When Supabase Realtime is active (production), this is a safety net only.
   // Picks up ALL messages from all sources (terminal, telegram, dashboard, auto-responder).
   useEffect(() => {
     // NOTE: Supabase Realtime is broken on Safari/iOS with sb_publishable_ keys.
@@ -893,7 +909,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, 5000)
+    }, 30000)
 
     // FAST-PATH OUTBOX POLL: 30s poll of relay-outbox (local only)
     if (IS_LOCAL) {

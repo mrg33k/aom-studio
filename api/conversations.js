@@ -1,25 +1,60 @@
 // AOM Dashboard -- Conversation history API (production)
 // Reads agent/project conversation JSONL files from GitHub
+// Uses ETag + in-memory caching to avoid hammering GitHub API
 
 const GITHUB_TOKEN = process.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'
 const BRANCH = 'master'
 
+// In-memory cache: { [path]: { content, sha, etag, timestamp } }
+const cache = {}
+const CACHE_TTL_MS = 15000 // 15 seconds
+
 async function fetchGitHubFile(path) {
-  const url = `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}&_=${Date.now()}`
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `token ${GITHUB_TOKEN}`,
-      Accept: 'application/vnd.github.v3+json',
-      'If-None-Match': '',
-    },
-  })
+  const now = Date.now()
+  const cached = cache[path]
+
+  // If cached and still fresh, return cached data immediately (no GitHub call)
+  if (cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+    return { content: cached.content, sha: cached.sha }
+  }
+
+  // Build request headers with ETag for conditional fetch
+  const headers = {
+    Authorization: `token ${GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github.v3+json',
+  }
+  if (cached?.etag) {
+    headers['If-None-Match'] = cached.etag
+  }
+
+  const url = `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`
+  const res = await fetch(url, { headers })
+
+  // 304 Not Modified: content unchanged, refresh cache timestamp
+  if (res.status === 304 && cached) {
+    cached.timestamp = now
+    return { content: cached.content, sha: cached.sha }
+  }
+
   if (!res.ok) {
     if (res.status === 404) return { content: '', sha: null }
     return null
   }
+
   const data = await res.json()
-  return { content: Buffer.from(data.content, 'base64').toString('utf-8'), sha: data.sha }
+  const content = Buffer.from(data.content, 'base64').toString('utf-8')
+  const etag = res.headers.get('etag') || null
+
+  // Update cache
+  cache[path] = {
+    content,
+    sha: data.sha,
+    etag,
+    timestamp: now,
+  }
+
+  return { content, sha: data.sha }
 }
 
 export default async function handler(req, res) {
