@@ -394,8 +394,8 @@ function AgentCard({ agent, statusData, onClick, isActive, hasUnread }) {
 }
 
 // ─── RELAY CHAT PANEL ────────────────────────────────────────────────────────
-// Connects to the REAL relay pipeline. Messages go to relay-inbox.jsonl,
-// responses come from relay-outbox.jsonl. Same system as Telegram.
+// Production: Supabase Realtime (primary) + Supabase REST poll (fallback).
+// Local dev: conversation JSONL polling via Vite middleware.
 function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -417,8 +417,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
   const searchInputRef = useRef(null)
-  const relayPollRef = useRef(null)
-  const lastOutboxCheckRef = useRef(null)
+  const relayPollRef = useRef(null) // kept for timeout cleanup compatibility
   const lastConvTimestampRef = useRef(null)
   const chatTimeoutRef = useRef(null)
   const historyLoadedRef = useRef(false)
@@ -468,8 +467,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   // Get agent initial for avatar
   const agentInitial = agent.name.charAt(0).toUpperCase()
 
-  // Load conversation history on mount from unified JSONL endpoint (primary)
-  // Falls back to relay-inbox + relay-outbox if conversations endpoint fails
+  // Load conversation history on mount from unified JSONL endpoint (local) or Supabase (production)
   useEffect(() => {
     if (historyLoadedRef.current) return
     historyLoadedRef.current = true
@@ -510,47 +508,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             }
           } catch (convErr) {
             console.warn('Conversations endpoint failed, falling back to relay:', convErr)
-          }
-
-          // Fallback: relay-inbox + relay-outbox (if conversations endpoint had no data)
-          if (!loaded) {
-            const [inboxRes, outboxRes] = await Promise.all([
-              fetch('/api/local/relay-inbox'),
-              fetch('/api/local/relay-outbox'),
-            ])
-            const inbox = inboxRes.ok ? await inboxRes.json() : { messages: [] }
-            const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
-
-            const all = []
-            for (const msg of inbox.messages) {
-              if (msg.status === 'watchdog-responded') continue
-              const cleaned = sanitizeRelayMessage(msg.message)
-              if (!cleaned) continue
-              all.push({ role: 'user', content: cleaned, time: msg.timestamp, source: msg.source || 'unknown', id: msg.id })
-            }
-            for (const msg of outbox.messages) {
-              if (!msg.message?.trim()) continue
-              const isDashboardOrigin = msg.source === 'corner-dashboard' || msg.source === 'corner-websocket'
-              if (isDashboardOrigin) {
-                if (!all.some(m => m.id === msg.id)) {
-                  const cleaned = sanitizeRelayMessage(msg.message)
-                  if (!cleaned) continue
-                  all.push({ role: 'user', content: cleaned, time: msg.timestamp, source: 'dashboard', id: msg.id })
-                }
-                continue
-              }
-              const cleaned = sanitizeRelayMessage(msg.message)
-              if (!cleaned) continue
-              all.push({ role: 'assistant', content: cleaned, time: msg.timestamp, source: extractAgentSource(msg, knownSlugsRef.current) || 'system', id: msg.id })
-            }
-            all.sort((a, b) => new Date(a.time) - new Date(b.time))
-            const deduped = deduplicateMessages(all)
-            const recent = deduped.slice(-50)
-            if (recent.length > 0) {
-              setMessages(recent)
-              const lastOutbox = outbox.messages[outbox.messages.length - 1]
-              if (lastOutbox?.timestamp) lastOutboxCheckRef.current = lastOutbox.timestamp
-            }
           }
 
           setRelayConnected(true)
@@ -656,17 +613,21 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
   // ── SUPABASE REALTIME + REST POLL FALLBACK (production only) ──
   // Realtime gives instant responses when WebSocket works.
-  // REST poll every 3s catches responses when WebSocket is down.
+  // REST poll every 30s catches assistant responses when WebSocket is down.
   useEffect(() => {
     if (!supabase) return // Local dev: skip, polling handles it
 
-    let lastSeenTs = new Date().toISOString()
+    // Use last loaded message timestamp so we don't miss messages
+    // that arrived between initial load and subscription setup
+    let lastSeenTs = lastConvTimestampRef.current || new Date().toISOString()
+    const realtimeIds = new Set()
 
-    const addResponse = (row) => {
+    const addResponse = (row, fromRealtime = false) => {
       const mapped = mapSupabaseMsg(row)
       const cleaned = sanitizeRelayMessage(mapped.content)
       if (!cleaned) return
       lastSeenTs = row.timestamp || new Date().toISOString()
+      if (fromRealtime) realtimeIds.add(mapped.id)
 
       setMessages(prev => {
         if (prev.some(m => m.id === mapped.id)) return prev
@@ -697,7 +658,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       }, (payload) => {
         const row = payload.new
         if (row.agent !== agent.slug) return
-        addResponse(row)
+        addResponse(row, true)
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
@@ -728,7 +689,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           .order('timestamp', { ascending: true })
           .limit(10)
         if (data?.length) {
-          for (const row of data) addResponse(row)
+          for (const row of data) {
+            if (realtimeIds.has(row.id)) continue
+            addResponse(row)
+          }
         }
       } catch {}
     }, 30000)
@@ -791,13 +755,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   }, [])
 
   // Clean up on unmount
-  const bgPollRef = useRef(null)
   const convPollRef = useRef(null)
   useEffect(() => {
     return () => {
       if (relayPollRef.current) clearInterval(relayPollRef.current)
       if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
-      if (bgPollRef.current) clearInterval(bgPollRef.current)
       if (convPollRef.current) clearInterval(convPollRef.current)
       if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
     }
@@ -809,28 +771,76 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const streamingRef = useRef(false)
   useEffect(() => { streamingRef.current = streaming }, [streaming])
 
-  // PRIMARY POLL: Conversation JSONL endpoint (unified source of truth)
-  // Local: 2.5s. Production: 30s (GitHub API rate limit friendly).
-  // When Supabase Realtime is active (production), this is a safety net only.
-  // Picks up ALL messages from all sources (terminal, telegram, dashboard, auto-responder).
+  // PRIMARY POLL: REST fallback (safety net when Realtime drops)
+  // Local: polls conversation JSONL via Vite middleware every 30s.
+  // Production: polls Supabase REST directly (no GitHub API dependency) every 30s.
+  // Only fetches messages newer than last known timestamp to minimize data transfer.
   useEffect(() => {
-    // NOTE: Supabase Realtime is broken on Safari/iOS with sb_publishable_ keys.
-    // Always poll via Vercel proxy regardless. Poll is the reliable path.
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
     convPollRef.current = setInterval(async () => {
       if (document.hidden) return // Skip when tab not visible
       try {
-        const sinceParam = lastConvTimestampRef.current
-          ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}`
-          : ''
-        const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50${sinceParam}&_=${Date.now()}`)
-        if (!convRes.ok) return
-        const convData = await convRes.json()
-        const newMsgs = convData.messages || []
+        let newMsgs = []
+
+        if (IS_LOCAL) {
+          // Local dev: use Vite middleware (conversation JSONL)
+          const sinceParam = lastConvTimestampRef.current
+            ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}`
+            : ''
+          const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50${sinceParam}&_=${Date.now()}`)
+          if (!convRes.ok) return
+          const convData = await convRes.json()
+          newMsgs = (convData.messages || []).map(msg => ({
+            id: msg.id,
+            role: msg.role || 'assistant',
+            content: msg.text || msg.message || '',
+            time: msg.timestamp,
+            source: msg.source || 'unknown',
+          }))
+        } else if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+          // Production: query Supabase REST directly (no GitHub API)
+          const sinceFilter = lastConvTimestampRef.current
+            ? `&timestamp=gt.${encodeURIComponent(lastConvTimestampRef.current)}`
+            : ''
+          const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent.slug)}${sinceFilter}&order=timestamp.asc&limit=50`
+          const res = await fetch(url, {
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          })
+          if (!res.ok) return
+          const rows = await res.json()
+          newMsgs = (rows || []).map(row => ({
+            id: row.id,
+            role: row.role || 'assistant',
+            content: row.text || '',
+            time: row.timestamp,
+            source: row.source || 'supabase',
+          }))
+        } else {
+          // Production without Supabase: fall back to Vercel conversations API
+          const sinceParam = lastConvTimestampRef.current
+            ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}`
+            : ''
+          const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50${sinceParam}&_=${Date.now()}`)
+          if (!convRes.ok) return
+          const convData = await convRes.json()
+          newMsgs = (convData.messages || []).map(msg => ({
+            id: msg.id,
+            role: msg.role || 'assistant',
+            content: msg.text || msg.message || '',
+            time: msg.timestamp,
+            source: msg.source || 'unknown',
+          }))
+        }
+
         if (newMsgs.length === 0) return
 
         // Update the last seen timestamp
-        const latestTs = newMsgs[newMsgs.length - 1].timestamp
+        const latestTs = newMsgs[newMsgs.length - 1].time
         if (latestTs) lastConvTimestampRef.current = latestTs
 
         setMessages(prev => {
@@ -840,12 +850,12 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
           for (const msg of newMsgs) {
             if (existingIds.has(msg.id)) continue
-            const cleaned = sanitizeRelayMessage(msg.text || msg.message)
+            const cleaned = sanitizeRelayMessage(msg.content)
             if (!cleaned) continue
             updated.push({
               role: msg.role || 'assistant',
               content: cleaned,
-              time: msg.timestamp,
+              time: msg.time,
               source: msg.source || 'unknown',
               id: msg.id,
             })
@@ -873,106 +883,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       } catch {}
     }, 30000)
 
-    // FAST-PATH OUTBOX POLL: 30s poll of relay-outbox (local only)
-    if (IS_LOCAL) {
-    bgPollRef.current = setInterval(async () => {
-      if (relayPollRef.current || document.hidden) return
-
-      try {
-        const outRes = await fetch('/api/local/relay-outbox')
-        if (!outRes.ok) return
-        const data = await outRes.json()
-        const outMsgs = (data.messages || []).filter(m =>
-          m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
-        )
-        if (outMsgs.length === 0) return
-
-        setMessages(prev => {
-          const existingIds = new Set(prev.map(m => m.id).filter(Boolean))
-          let added = 0
-          const updated = [...prev]
-
-          for (const msg of outMsgs) {
-            if (existingIds.has(msg.id)) continue
-            const cleaned = sanitizeRelayMessage(msg.message)
-            if (!cleaned) continue
-            updated.push({
-              role: 'assistant',
-              content: cleaned,
-              time: msg.timestamp || new Date().toISOString(),
-              source: extractAgentSource(msg, knownSlugsRef.current) || 'system',
-              id: msg.id,
-            })
-            added++
-          }
-
-          if (added === 0) return prev
-          updated.sort((a, b) => new Date(a.time) - new Date(b.time))
-          return deduplicateMessages(updated)
-        })
-      } catch {}
-    }, 30000)
-    } // end IS_LOCAL block for fast-path outbox poll
-
     return () => {
       if (convPollRef.current) clearInterval(convPollRef.current)
-      if (bgPollRef.current) clearInterval(bgPollRef.current)
     }
   }, [agent.slug])
-
-  // Poll relay-outbox for new responses after sending a message
-  const startRelayPoll = (sentTimestamp) => {
-    if (relayPollRef.current) clearInterval(relayPollRef.current)
-    lastOutboxCheckRef.current = sentTimestamp
-
-    relayPollRef.current = setInterval(async () => {
-      try {
-        const since = encodeURIComponent(lastOutboxCheckRef.current)
-        const endpoint = IS_LOCAL
-          ? `/api/local/relay-outbox?since=${since}`
-          : `/api/relay?since=${since}`
-        const res = await fetch(endpoint)
-        if (!res.ok) return
-        const data = await res.json()
-        const msgList = data.messages || []
-
-        if (msgList.length > 0) {
-          // Filter to actual responses (not our own sends)
-          const responses = msgList.filter(m =>
-            m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
-          )
-          if (responses.length > 0) {
-            const latest = responses[responses.length - 1]
-            const cleaned = sanitizeRelayMessage(latest.message) || latest.message
-            setMessages(prev => {
-              // ONE WRITER RULE: skip if already added by Supabase Realtime (same UUID in outbox + Supabase)
-              if (latest.id && prev.some(m => m.id === latest.id)) return prev
-              // Remove streaming placeholders, add real response, re-sort
-              const filtered = prev.filter(m => !m.streaming)
-              filtered.push({
-                role: 'assistant',
-                content: cleaned,
-                streaming: false,
-                time: latest.timestamp || new Date().toISOString(),
-                source: extractAgentSource(latest) || 'system',
-                id: latest.id,
-              })
-              filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
-              return filtered
-            })
-            setStreaming(false)
-            setStreamStartTime(null)
-            clearChatTimeout()
-            lastOutboxCheckRef.current = latest.timestamp
-            if (relayPollRef.current) {
-              clearInterval(relayPollRef.current)
-              relayPollRef.current = null
-            }
-          }
-        }
-      } catch {}
-    }, 500) // 500ms for real-time relay feel
-  }
 
   // 60-second timeout: if no response arrives, show offline message
   const startChatTimeout = () => {
@@ -1048,7 +962,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }),
         })
         if (!res.ok) throw new Error('Failed to write to relay')
-        startRelayPoll(sentTime)
+        // Response picked up by convPoll interval (no outbox polling)
       } else if (supabase) {
         // Production + Supabase: write directly to messages table
         // The Mac listener picks this up and routes to the agent.
@@ -1070,8 +984,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           body: JSON.stringify({ message: `@${agent.slug} ${text}`, agent: agent.slug }),
         })
         if (!res.ok) throw new Error('Failed to send via relay API')
-        // Production: the conversation JSONL poll will pick up responses (no fast-path outbox)
-        // The convPoll runs every 5s, so response appears within ~15-20s after terminal processes it
+        // Production: Supabase REST poll (30s) picks up responses as fallback to convPoll
       }
     } catch (err) {
       setMessages(prev => {
@@ -1141,7 +1054,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         {/* Connection indicator */}
         <div className="flex items-center gap-1.5 shrink-0" title={
           IS_LOCAL ? 'Local relay (direct file I/O)' :
-          supabase ? 'Supabase Realtime (live)' : 'Remote relay (GitHub API)'
+          supabase ? 'Supabase Realtime (live)' : 'Remote relay (REST poll)'
         }>
           <Radio className={`w-3 h-3 ${
             relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'
