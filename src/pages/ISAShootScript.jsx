@@ -281,9 +281,9 @@ function useSEO() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    set('description', 'Full production bible for ISA Energy brand video. Shot-by-shot timeline, interview guide, b-roll locations, shoot day schedule. Sedona Apr 3, 2026.');
+    set('description', 'Full production bible for ISA Energy brand video. Shot-by-shot timeline, interview guide, b-roll locations, shoot day schedule. Sedona Apr 2, 2026.');
     set('og:title', 'ISA Energy — Brand Video Production Bible', true);
-    set('og:description', '5-Minute Theater Format | Sedona Apr 3, 2026', true);
+    set('og:description', '5-Minute Theater Format | Sedona Apr 2, 2026', true);
     set('og:type', 'article', true);
   }, []);
 }
@@ -707,7 +707,7 @@ export default function ISAShootScript() {
               <span className="text-[#8A847C]">Production Bible</span>
             </h1>
             <p className="font-mono text-sm text-[#8A847C] mt-4 tracking-[0.05em]">
-              5-Minute Theater Format &nbsp;|&nbsp; Sedona Apr 3, 2026
+              5-Minute Theater Format &nbsp;|&nbsp; Sedona Apr 2, 2026
             </p>
           </motion.div>
 
@@ -720,7 +720,7 @@ export default function ISAShootScript() {
             {[
               { label: 'Runtime', value: '~5 minutes' },
               { label: 'Format', value: 'Theater' },
-              { label: 'Shoot Date', value: 'Apr 3, 2026' },
+              { label: 'Shoot Date', value: 'Apr 2, 2026' },
               { label: 'Delivery', value: 'Apr 17, 2026' },
               { label: 'Subjects', value: '4 interviews' },
               { label: 'Beats', value: '9 beats' },
@@ -831,7 +831,7 @@ export default function ISAShootScript() {
       {/* ── SHOOT DAY SCHEDULE ───────────────────────────────────────────────── */}
       <section id="schedule" className="mt-20 px-6 md:px-12">
         <div className="max-w-6xl mx-auto">
-          <SectionHeader label="Apr 3, 2026" title="Shoot Day Schedule" />
+          <SectionHeader label="Apr 2, 2026" title="Shoot Day Schedule" />
           <ScheduleVisual />
         </div>
       </section>
@@ -880,7 +880,7 @@ export default function ISAShootScript() {
               <div className="w-[3px] h-6" style={{ background: '#C84B1E' }} />
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A847C]">Shoot Day</p>
-                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 3 — Sedona</p>
+                <p className="font-body text-sm font-semibold text-[#F5F0EB]">Apr 2 — Sedona</p>
               </div>
             </div>
             <div className="overflow-x-auto">
