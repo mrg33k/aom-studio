@@ -527,9 +527,10 @@ export function useDataPipe(parsePunchList) {
         const clientId = getClientId()
 
         // cage-match A: fetch active_processes (PID-verified truth) in parallel with main status
+        // Both requests pass client (world slug) so RNB is scoped to the active world.
         const [res, activeAgentsRes] = await Promise.all([
           fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`),
-          fetch('/api/dashboard/active-agents').catch(() => null),
+          fetch(`/api/dashboard/active-agents?client=${encodeURIComponent(clientId)}`).catch(() => null),
         ])
         if (!res.ok) return
         const data = await res.json()

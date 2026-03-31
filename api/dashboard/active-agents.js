@@ -1,4 +1,4 @@
-// GET /api/dashboard/active-agents
+// GET /api/dashboard/active-agents?client=aom
 //
 // cage-match contender A: PID-based active agents via Supabase sync table.
 //
@@ -9,6 +9,9 @@
 //
 // Safety net: any row with heartbeat older than 90s is treated as stale and
 // excluded, in case queue-runner stops running.
+//
+// World scoping: ?client=<world_slug> filters to that world's processes.
+// Defaults to 'aom'. Non-AOM worlds only see their own active agents.
 //
 // Returns:
 // {
@@ -25,6 +28,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Rows with heartbeat older than this are excluded (queue-runner must have died)
 const HEARTBEAT_TTL_SECONDS = 90;
+const DEFAULT_CLIENT_ID = 'aom';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,13 +42,22 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
+  // Resolve client_id for world scoping -- matches supabase-status.js pattern.
+  const clientId = (req.query.client && req.query.client.trim())
+    ? req.query.client.trim().toLowerCase()
+    : DEFAULT_CLIENT_ID;
+
   // Compute stale cutoff -- any row with heartbeat older than TTL is excluded
   const staleCutoff = new Date(Date.now() - HEARTBEAT_TTL_SECONDS * 1000).toISOString();
+
+  // World-scope the query: only return active processes for the requested world.
+  const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   try {
     const resp = await fetch(
       `${SUPABASE_URL}/rest/v1/active_processes` +
       `?heartbeat=gt.${encodeURIComponent(staleCutoff)}` +
+      clientFilter +
       `&order=agent.asc`,
       {
         headers: {
