@@ -48,11 +48,15 @@ function renderMarkdown(text) {
     let html = marked.parse(text)
     // Strip script tags for safety
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // Auto-link bare URLs not already wrapped in <a> tags
+    // Auto-link bare URLs not already wrapped in <a> tags.
+    // Protect existing <a> tags, linkify remaining URLs, restore.
+    const _links = []
+    html = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, m => { _links.push(m); return `__LINK_${_links.length - 1}__` })
     html = html.replace(
-      /(?<!href=["'])(?<!["'>])(https?:\/\/[^\s<>"')\]]+)/g,
+      /(https?:\/\/[^\s<>"')\]]+)/g,
       '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline hover:text-blue-300">$1</a>'
     )
+    html = html.replace(/__LINK_(\d+)__/g, (_, i) => _links[i])
     return html
   } catch {
     return text

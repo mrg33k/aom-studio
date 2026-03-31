@@ -2508,11 +2508,16 @@ function MarkdownMessage({ text, agentColor, streaming }) {
   let html
   try {
     html = marked.parse(normalized)
-    // Auto-link bare URLs not already wrapped in <a> tags
+    // Auto-link bare URLs not already wrapped in <a> tags.
+    // Strategy: protect existing <a> tags, linkify remaining URLs, restore.
+    const _links = []
+    html = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, m => { _links.push(m); return `__LINK_${_links.length - 1}__` })
+    const _linkColor = agentColor || '#7CB9FF'
     html = html.replace(
-      /(?<!href=["'])(?<!["'>])(https?:\/\/[^\s<>"')\]]+)/g,
-      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:' + (agentColor || '#7CB9FF') + ';text-decoration:underline;text-underline-offset:2px;word-break:break-all">$1</a>'
+      /(https?:\/\/[^\s<>"')\]]+)/g,
+      `<a href="$1" target="_blank" rel="noopener noreferrer" style="color:${_linkColor};text-decoration:underline;text-underline-offset:2px;word-break:break-all">$1</a>`
     )
+    html = html.replace(/__LINK_(\d+)__/g, (_, i) => _links[i])
   } catch {
     html = normalized
   }
@@ -6386,6 +6391,23 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
   const [collapsedParents, setCollapsedParents] = useState({}) // Track collapsed sub-task groups
 
+  // ---- AGENT QUEUES (List Tab Round 1) ----
+  // Fetch all agents' incoming-tasks.md queues for the collapsible pills view
+  const [agentQueues, setAgentQueues] = useState({})
+  const [agentQueuesCollapsed, setAgentQueuesCollapsed] = useState({})
+  useEffect(() => {
+    if (!IS_LOCAL) return
+    const fetchQueues = () => {
+      fetch('/api/local/agent-queues')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.queues) setAgentQueues(data.queues) })
+        .catch(() => {})
+    }
+    fetchQueues()
+    const interval = setInterval(fetchQueues, 15000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Auto-expand task when focusTaskId is set (e.g., from HUD "View Task" or Trello "View Detail")
   useEffect(() => {
     if (!focusTaskId) return
@@ -7285,6 +7307,113 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           })}
         </div>
       )}
+
+      {/* ---- AGENT QUEUES (List Tab Round 1) ---- */}
+      {/* Collapsible pills per agent showing queued task counts from incoming-tasks.md */}
+      {IS_LOCAL && (activeFilter === 'all') && Object.keys(agentQueues).length > 0 && (() => {
+        // Sort: super agents first, then by open count desc, then alphabetical
+        const superOrder = ['elon', 'bobby', 'gary', 'rex']
+        const sortedSlugs = Object.keys(agentQueues).sort((a, b) => {
+          const aSuper = superOrder.indexOf(a)
+          const bSuper = superOrder.indexOf(b)
+          if (aSuper !== -1 && bSuper === -1) return -1
+          if (aSuper === -1 && bSuper !== -1) return 1
+          if (aSuper !== -1 && bSuper !== -1) return aSuper - bSuper
+          const diff = (agentQueues[b]?.open || 0) - (agentQueues[a]?.open || 0)
+          return diff !== 0 ? diff : a.localeCompare(b)
+        })
+
+        return (
+          <div style={{ marginBottom: 12 }}>
+            {renderSectionHeader('AGENT QUEUES', sortedSlugs.reduce((s, k) => s + (agentQueues[k]?.open || 0), 0), '#3B82F6', 'agentqueues', false)}
+            {!collapsedSections.agentqueues && sortedSlugs.map(slug => {
+              const q = agentQueues[slug]
+              if (!q || q.total === 0) return null
+              const agentInfo = AGENTS.find(a => a.slug === slug)
+              if (!agentInfo) return null
+              const isExpanded = agentQueuesCollapsed[slug] === true
+              const color = agentInfo.color || '#6B7280'
+              const isCurrentAgent = slug === agentSlug
+
+              return (
+                <div key={slug} style={{ marginBottom: 4 }}>
+                  {/* Agent pill header */}
+                  <div
+                    onClick={() => setAgentQueuesCollapsed(prev => ({ ...prev, [slug]: !prev[slug] }))}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 12px',
+                      background: isCurrentAgent
+                        ? (isDaytime ? `${color}18` : `${color}12`)
+                        : (isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)'),
+                      border: isCurrentAgent
+                        ? `1.5px solid ${color}35`
+                        : `1px solid ${isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.04)'}`,
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      transition: 'background 120ms, border 120ms',
+                    }}
+                  >
+                    <SpriteAvatar agentSlug={slug} size={24} borderColor={color} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 800,
+                        fontFamily: "'Inter', sans-serif",
+                        color: isDaytime ? '#E2E8F0' : '#CBD5E1',
+                        textTransform: 'uppercase', letterSpacing: '0.04em',
+                      }}>
+                        {agentInfo.name}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+                      background: `${color}18`, color,
+                      fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {q.open} queued
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      style={{
+                        color: isDaytime ? '#6B8AB0' : '#475569',
+                        transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform 150ms ease',
+                      }}
+                    />
+                  </div>
+
+                  {/* Expanded task list */}
+                  {isExpanded && q.tasks.length > 0 && (
+                    <div style={{
+                      marginLeft: 20, marginTop: 4,
+                      paddingLeft: 12,
+                      borderLeft: `2px solid ${color}30`,
+                    }}>
+                      {q.tasks.filter(t => !t.done).map((t, i) => (
+                        <div key={i} style={{
+                          padding: '6px 10px', marginBottom: 3,
+                          fontSize: 12, fontWeight: 500, lineHeight: 1.4,
+                          color: isDaytime ? '#CBD5E1' : '#94A3B8',
+                          fontFamily: "'Inter', sans-serif",
+                          background: isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.015)',
+                          borderRadius: 6,
+                          display: 'flex', alignItems: 'flex-start', gap: 6,
+                        }}>
+                          <div style={{
+                            width: 5, height: 5, borderRadius: '50%',
+                            background: `${color}60`, flexShrink: 0, marginTop: 5,
+                          }} />
+                          <span>{t.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* Project sections from punch-list */}
       {(activeFilter === 'all' ? relevantSections : (filteredProjectSection ? [filteredProjectSection] : [])).map(section => {
