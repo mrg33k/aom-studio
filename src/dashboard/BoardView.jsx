@@ -402,7 +402,25 @@ function renderMessageContent(content) {
     // Text before this match
     if (match.index > last) {
       const txt = content.slice(last, match.index).trim()
-      if (txt) parts.push(<span key={`t-${last}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{txt}</span>)
+      if (txt) {
+        // Linkify bare URLs in pre-match text too
+        const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
+        const tParts = txt.split(urlRe)
+        if (tParts.length > 1) {
+          tParts.forEach((p, j) => {
+            if (urlRe.test(p)) {
+              urlRe.lastIndex = 0
+              parts.push(<a key={`tu-${last}-${j}`} href={p} target="_blank" rel="noopener noreferrer"
+                style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
+                onClick={e => e.stopPropagation()}>{p}</a>)
+            } else if (p) {
+              parts.push(<span key={`t-${last}-${j}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span>)
+            }
+          })
+        } else {
+          parts.push(<span key={`t-${last}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{txt}</span>)
+        }
+      }
     }
     const isImage = match[1].startsWith('!') || IMAGE_EXTS.test(match[3])
     if (isImage) {
@@ -432,9 +450,37 @@ function renderMessageContent(content) {
           onError={e => { e.target.style.display = 'none' }}
         />)
       } else if (seg.trim()) {
-        parts.push(<span key={`ts-${i}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{seg}</span>)
+        // Linkify bare URLs in remaining text
+        const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
+        const urlParts = seg.split(urlRe)
+        urlParts.forEach((p, j) => {
+          if (urlRe.test(p)) {
+            urlRe.lastIndex = 0
+            parts.push(<a key={`u-${i}-${j}`} href={p} target="_blank" rel="noopener noreferrer"
+              style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
+              onClick={e => e.stopPropagation()}>{p}</a>)
+          } else if (p) {
+            parts.push(<span key={`ts-${i}-${j}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span>)
+          }
+        })
       }
     })
+  }
+  // Also linkify bare URLs in the fallback path
+  if (parts.length === 0) {
+    const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
+    const fallbackParts = content.split(urlRe)
+    if (fallbackParts.length > 1) {
+      return fallbackParts.map((p, i) => {
+        if (urlRe.test(p)) {
+          urlRe.lastIndex = 0
+          return <a key={`fu-${i}`} href={p} target="_blank" rel="noopener noreferrer"
+            style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
+            onClick={e => e.stopPropagation()}>{p}</a>
+        }
+        return p ? <span key={`ft-${i}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span> : null
+      })
+    }
   }
   return parts.length > 0 ? parts : <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{content}</span>
 }
