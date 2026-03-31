@@ -11,8 +11,9 @@ import {
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
   CornerDownLeft, Copy, RotateCcw, Reply, Building2, Building, FileText, BarChart3, User,
-  Pin, PinOff,
+  Pin, PinOff, Info,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
   ROOM_TARGETS as IMAGE_ROOM_TARGETS,
@@ -7540,12 +7541,24 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                       paddingLeft: 12,
                       borderLeft: `2px solid ${color}30`,
                     }}>
-                      {q.tasks.filter(t => !t.done).map((t) => {
+                      {q.tasks.slice().sort((a, b) => {
+                        // Sort order: running > queued > blocked > completed
+                        const order = { running: 0, queued: 1, blocked: 2, completed: 3 }
+                        const getStatus = (t) => {
+                          if (t.done) return 'completed'
+                          const lc = t.text.toLowerCase()
+                          if (lc.includes('[blocked]') || lc.startsWith('blocked:')) return 'blocked'
+                          const isRun = (rightNowTasks || []).some(rn => rn.agent === slug && !rn.isDoneAwaitingApproval && (rn.text || rn.task || '').toLowerCase().includes(t.text.slice(0,20).toLowerCase()))
+                          return isRun ? 'running' : 'queued'
+                        }
+                        return (order[getStatus(a)] ?? 1) - (order[getStatus(b)] ?? 1)
+                      }).map((t) => {
                         const taskObj = { ...t, agent: slug }
                         const isRunning = (rightNowTasks || []).some(rn => rn.agent === slug && !rn.isDoneAwaitingApproval && (rn.text || rn.task || '').toLowerCase().includes(t.text.slice(0,20).toLowerCase()))
-                        const status = isRunning ? 'running' : 'queued'
-                        const statusColors = { running: '#F59E0B', queued: `${color}AA` }
-                        const statusLabels = { running: 'running', queued: 'queued' }
+                        const isBlocked = !t.done && !isRunning && (t.text.toLowerCase().includes('[blocked]') || t.text.toLowerCase().startsWith('blocked:'))
+                        const status = t.done ? 'completed' : isRunning ? 'running' : isBlocked ? 'blocked' : 'queued'
+                        const statusColors = { running: '#F59E0B', queued: '#3B82F6', completed: '#6B7280', blocked: '#EF4444' }
+                        const statusLabels = { running: 'running', queued: 'queued', completed: 'done', blocked: 'blocked' }
                         const isDetailExpanded = aqExpandedTask?.id === t.id && aqExpandedTask?.agent === slug
                         // Relative time display
                         const relTime = t.addedAt ? (() => {
@@ -7586,7 +7599,11 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                                 boxShadow: isRunning ? `0 0 5px ${statusColors.running}` : 'none',
                               }} />
                               {/* Task name */}
-                              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{
+                                flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                opacity: status === 'completed' ? 0.45 : 1,
+                                textDecoration: status === 'completed' ? 'line-through' : 'none',
+                              }}>
                                 {t.text}
                               </span>
                               {/* Status badge */}
@@ -9198,6 +9215,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Confirmation box carousel index -- resets when agent changes or task count drops
   const [confirmIndex, setConfirmIndex] = useState(0)
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
+  const navigate = useNavigate()
   useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Confirmation box minimize toggle -- collapses to slim bar, resets on agent switch or task count drops
   // Mobile default: start EXPANDED (false) so Approve/Deny buttons are immediately tappable.
@@ -9462,6 +9480,23 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {agent?.name || room?.agent || agentSlug}
             </span>
+            {agentSlug && (
+              <button
+                onClick={e => { e.stopPropagation(); navigate(`/dashboard/agent/${agentSlug}/info`) }}
+                title="Agent Info"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: isNightMode ? '#4A6080' : '#6B8AB0',
+                  opacity: 0.5,
+                  transition: 'opacity 120ms, color 120ms',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = agentColor }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0' }}
+              >
+                <Info size={13} />
+              </button>
+            )}
             {confirmDoneCount > 0 && activeTab !== 'chat' && (
               <div style={{
                 width: 7, height: 7, borderRadius: '50%', flexShrink: 0,

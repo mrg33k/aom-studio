@@ -5,6 +5,8 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
+import { Info } from 'lucide-react'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
@@ -1156,6 +1158,7 @@ function AddColumnButton({ allItems, visibleSlugs, onToggle }) {
 
 function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent }) {
   const chat = useColumnChat(agent.slug, true)
+  const navigate = useNavigate()
   const color = agent.color || getAgentColor(agent.slug)
   const status = agent.status || 'IDLE'
   const statusCfg = status === 'WORKING' ? { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', color: '#22C55E', glow: true }
@@ -1228,7 +1231,22 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* V5: name in Inter Tight */}
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--bv-text)', fontFamily: "'Inter Tight', 'Inter', sans-serif", letterSpacing: '0.01em', lineHeight: 1.2 }}>{agent.name || agent.slug}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--bv-text)', fontFamily: "'Inter Tight', 'Inter', sans-serif", letterSpacing: '0.01em', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: 5 }}>
+            {agent.name || agent.slug}
+            <button
+              onClick={e => { e.stopPropagation(); navigate(`/dashboard/agent/${agent.slug}/info`) }}
+              title="Agent Info"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--bv-dim)', opacity: 0.5, transition: 'opacity 120ms, color 120ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = color }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'var(--bv-dim)' }}
+            >
+              <Info size={13} />
+            </button>
+          </div>
           {/* V5: role in JetBrains Mono */}
           {agent.role && <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--bv-muted)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: 2 }}>{agent.role}</div>}
         </div>
