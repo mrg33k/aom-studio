@@ -2556,6 +2556,13 @@ function MarkdownMessage({ text, agentColor, streaming }) {
     }
   }, [html, linkColor])
 
+  // Force all <a> tags to have inline styles directly in the HTML string
+  // This ensures links are visually distinct even if CSS doesn't load or useEffect hasn't fired
+  html = html.replace(
+    /<a\b([^>]*)>/gi,
+    `<a$1 style="color:${linkColor};text-decoration:underline;text-underline-offset:2px;word-break:break-all;cursor:pointer;-webkit-tap-highlight-color:rgba(59,130,246,0.3)">`
+  )
+
   return (
     <div
       ref={ref}
