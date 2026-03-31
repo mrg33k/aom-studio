@@ -515,15 +515,26 @@ function SourcingAdminInner() {
     e.preventDefault();
     setForgotLoading(true);
     setForgotStatus('');
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: window.location.origin + '/sourcing/admin',
-    });
-    setForgotLoading(false);
-    if (error) {
-      setForgotStatus('error:' + (error.message || 'Failed to send reset email.'));
-    } else {
-      setForgotStatus('sent');
+    try {
+      const resp = await fetch('/api/sourcing/reset-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail,
+          org_name: selectedTenant?.name || 'AOM Sourcing Directory',
+          redirect_to: window.location.origin + '/sourcing/admin',
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setForgotStatus('error:' + (data.error || 'Failed to send reset email.'));
+      } else {
+        setForgotStatus('sent');
+      }
+    } catch (err) {
+      setForgotStatus('error:' + (err.message || 'Failed to send reset email.'));
     }
+    setForgotLoading(false);
   };
 
   const handleSetNewPassword = async (e) => {
