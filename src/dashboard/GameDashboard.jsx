@@ -7601,14 +7601,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                         const statusColors = { running: '#F59E0B', queued: '#3B82F6', completed: '#6B7280', blocked: '#EF4444' }
                         const statusLabels = { running: 'running', queued: 'queued', completed: 'done', blocked: 'blocked' }
                         const isDetailExpanded = aqExpandedTask?.id === t.id && aqExpandedTask?.agent === slug
-                        // Relative time display
-                        const relTime = t.addedAt ? (() => {
-                          const diff = (Date.now() - new Date(t.addedAt).getTime()) / 1000
-                          if (diff < 60) return 'just now'
-                          if (diff < 3600) return `${Math.floor(diff/60)}m ago`
-                          if (diff < 86400) return `${Math.floor(diff/3600)}h ago`
-                          return `${Math.floor(diff/86400)}d ago`
-                        })() : null
+                        // Relative time display -- uses shared timeAgo() for 'yesterday' support
+                        const relTime = t.addedAt ? timeAgo(t.addedAt) : null
                         return (
                           <div key={t.id || t.text}>
                             {/* Task row */}
@@ -7659,7 +7653,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                               {/* Timestamp */}
                               {relTime && (
                                 <span style={{
-                                  fontSize: 10, color: isDaytime ? '#475569' : '#334155',
+                                  fontSize: 10, color: isDaytime ? '#64748B' : '#64748B',
                                   fontFamily: "'Inter', sans-serif", flexShrink: 0,
                                 }}>
                                   {relTime}
