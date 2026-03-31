@@ -39,7 +39,7 @@ import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
 import FilesTab from './FilesTab.jsx'
-import { getClientId, setClientIdFromUser, setWorldOverride, getUserWorld } from './lib/clientConfig.js'
+import { getClientId, setClientIdFromUser, setWorldOverride, getUserWorld, isAdminOverride, isSuperAdmin, SUPER_ADMIN_USER_ID } from './lib/clientConfig.js'
 import { marked } from 'marked'
 import OnboardingGuide from './OnboardingGuide.jsx'
 import SystemToastContainer, { useSystemToast } from './SystemToast.jsx'
@@ -2527,6 +2527,15 @@ function MarkdownMessage({ text, agentColor, streaming }) {
       data-agent-color={agentColor}
       style={{ '--agent-color': agentColor || '#7CB9FF' }}
       dangerouslySetInnerHTML={{ __html: html }}
+      onClick={(e) => {
+        // Let <a> tag clicks through to open links (don't let parent handlers swallow them)
+        const link = e.target.closest('a')
+        if (link && link.href) {
+          e.stopPropagation()
+          window.open(link.href, '_blank', 'noopener,noreferrer')
+          e.preventDefault()
+        }
+      }}
     />
   )
 }
@@ -4415,6 +4424,94 @@ function CreateWorldModal({ isOpen, onClose, isNightMode, onTestAsNewUser, onEnt
   )
 }
 
+// WorldSelectorList -- inline list of worlds rendered inside the AOM dropdown.
+// Uses worlds data from the parent (fetched from /api/worlds?user_id=...).
+// Each world shows a color dot sourced from worlds.config.color.
+function WorldSelectorList({ worlds, worldsLoading, currentWorldId, onEnterWorld, onOpenWorldsModal }) {
+  const DEFAULT_COLOR = '#3B9EFF'
+
+  function hexToRgba(hex, alpha) {
+    try {
+      const h = (hex || DEFAULT_COLOR).replace('#', '')
+      const r = parseInt(h.substring(0, 2), 16)
+      const g = parseInt(h.substring(2, 4), 16)
+      const b = parseInt(h.substring(4, 6), 16)
+      return `rgba(${r},${g},${b},${alpha})`
+    } catch { return `rgba(59,158,255,${alpha})` }
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px 6px' }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+          Worlds {worldsLoading ? '…' : worlds.length > 0 ? `(${worlds.length})` : ''}
+        </span>
+      </div>
+
+      {worldsLoading && (
+        <div style={{ padding: '8px 14px 12px', fontSize: 13, color: '#475569', fontFamily: "'Inter', sans-serif" }}>Loading…</div>
+      )}
+
+      {!worldsLoading && worlds.length === 0 && (
+        <div style={{ padding: '8px 14px 12px', fontSize: 13, color: '#475569', fontFamily: "'Inter', sans-serif" }}>No worlds found</div>
+      )}
+
+      {!worldsLoading && worlds.length > 0 && worlds.length <= 30 && (
+        <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+          {worlds.map(w => {
+            const isCurrent = w.world === currentWorldId
+            const wColor = w.color || DEFAULT_COLOR
+            return (
+              <button
+                key={w.id}
+                data-aom-item
+                onClick={() => onEnterWorld?.(w)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 44, padding: '0 14px', background: isCurrent ? hexToRgba(wColor, 0.1) : 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left', boxSizing: 'border-box' }}
+                onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = isCurrent ? hexToRgba(wColor, 0.1) : 'transparent' }}
+              >
+                {/* Color dot avatar */}
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: isCurrent ? hexToRgba(wColor, 0.2) : 'rgba(255,255,255,0.06)', border: `1.5px solid ${isCurrent ? hexToRgba(wColor, 0.4) : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: isCurrent ? wColor : '#64748B', fontFamily: "'Inter', sans-serif" }}>
+                    {(w.name || w.world)[0]?.toUpperCase() || 'W'}
+                  </span>
+                  {isCurrent && (
+                    <span style={{ position: 'absolute', bottom: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: wColor, boxShadow: `0 0 5px ${hexToRgba(wColor, 0.8)}`, border: '1.5px solid rgba(6,14,36,0.99)' }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: isCurrent ? wColor : '#F1F5F9', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {w.name || w.world}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#475569', fontFamily: "'Inter', sans-serif" }}>{w.world}</div>
+                </div>
+                {isCurrent && (
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={wColor} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {!worldsLoading && worlds.length > 30 && (
+        <button
+          data-aom-item
+          onClick={() => onOpenWorldsModal?.()}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minHeight: 44, padding: '0 14px', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', boxSizing: 'border-box' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#60A5FA', fontFamily: "'Inter', sans-serif" }}>View all {worlds.length} worlds</span>
+          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      )}
+    </div>
+  )
+}
+
 function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, currentWorldId, isNightMode }) {
   const [query, setQuery] = useState('')
   if (!isOpen) return null
@@ -4645,6 +4742,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         )}
 
         {/* AOM badge -- world switcher + admin menu */}
+        {(() => {
+          // Resolve active world color from worlds table data (falls back to AOM orange)
+          const _activeW = worlds.find(w => w.world === currentWorldId)
+          const _wColor = _activeW?.color || '#E85D26'
+          const _wLabel = _activeW?.name || (currentWorldId === 'q' ? 'QA' : (currentWorldId || 'AOM').toUpperCase())
+          const _hexRgba = (hex, a) => { try { const h=(hex||'#E85D26').replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); return `rgba(${r},${g},${b},${a})` } catch { return `rgba(232,93,38,${a})` } }
+          return (
         <div ref={aomMenuRef} style={{ position: 'relative', flexShrink: 0 }}>
           <button
             ref={aomBtnRef}
@@ -4665,20 +4769,22 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: aomOpen ? 'rgba(232,93,38,0.15)' : 'rgba(232,93,38,0.08)',
-              border: aomOpen ? '1.5px solid rgba(232,93,38,0.55)' : '1.5px solid rgba(232,93,38,0.28)',
+              background: aomOpen ? _hexRgba(_wColor, 0.15) : _hexRgba(_wColor, 0.08),
+              border: aomOpen ? `1.5px solid ${_hexRgba(_wColor, 0.55)}` : `1.5px solid ${_hexRgba(_wColor, 0.28)}`,
               borderRadius: 8, padding: isMobile ? '4px 8px' : '5px 11px',
               cursor: 'pointer', transition: 'all 150ms ease',
             }}
-            onMouseEnter={e => { if (!aomOpen) { e.currentTarget.style.background = 'rgba(232,93,38,0.12)'; e.currentTarget.style.borderColor = 'rgba(232,93,38,0.4)' } }}
-            onMouseLeave={e => { if (!aomOpen) { e.currentTarget.style.background = 'rgba(232,93,38,0.08)'; e.currentTarget.style.borderColor = 'rgba(232,93,38,0.28)' } }}
+            onMouseEnter={e => { if (!aomOpen) { e.currentTarget.style.background = _hexRgba(_wColor, 0.12); e.currentTarget.style.borderColor = _hexRgba(_wColor, 0.4) } }}
+            onMouseLeave={e => { if (!aomOpen) { e.currentTarget.style.background = _hexRgba(_wColor, 0.08); e.currentTarget.style.borderColor = _hexRgba(_wColor, 0.28) } }}
           >
-            <span style={{ fontSize: isMobile ? 12 : 13, fontWeight: 800, color: '#E85D26', fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em' }}>
-              {currentWorldId === 'q' ? 'QA' : (currentWorldId || 'AOM').toUpperCase()}
+            {/* Color dot */}
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: _wColor, boxShadow: `0 0 5px ${_hexRgba(_wColor, 0.6)}`, flexShrink: 0 }} />
+            <span style={{ fontSize: isMobile ? 12 : 13, fontWeight: 800, color: _wColor, fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em' }}>
+              {_wLabel}
             </span>
             <svg width={10} height={10} viewBox="0 0 24 24" fill="none"
-              stroke="#E85D26" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-              style={{ transform: aomOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease', flexShrink: 0 }}
+              stroke={_wColor} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: aomOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease', flexShrink: 0, opacity: 0.8 }}
             >
               <polyline points="6 9 12 15 18 9"/>
             </svg>
@@ -4786,72 +4892,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   <span style={{ fontSize: 16, fontWeight: 600, color: '#E2E8F0', fontFamily: "'Inter', sans-serif" }}>Create World</span>
                 </button>
 
-                {/* Worlds section */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px' }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
-                      Worlds {worldsLoading ? '…' : worlds.length > 0 ? `(${worlds.length})` : ''}
-                    </span>
-                  </div>
-
-                  {worldsLoading && (
-                    <div style={{ padding: '8px 14px 12px', fontSize: 14, color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>Loading…</div>
-                  )}
-
-                  {!worldsLoading && worlds.length === 0 && (
-                    <div style={{ padding: '8px 14px 12px', fontSize: 14, color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No worlds found</div>
-                  )}
-
-                  {!worldsLoading && worlds.length > 0 && worlds.length <= 30 && (
-                    // Inline list (≤30)
-                    <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-                      {worlds.map(w => {
-                        const isCurrent = w.world === currentWorldId
-                        return (
-                          <button
-                            key={w.id}
-                            data-aom-item
-                            onClick={() => { onEnterWorld?.(w); setAomOpen(false) }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 44, padding: '0 14px', background: isCurrent ? 'rgba(59,130,246,0.08)' : 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left', boxSizing: 'border-box' }}
-                            onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                            onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = isCurrent ? 'rgba(59,130,246,0.08)' : 'transparent' }}
-                          >
-                            <div style={{ width: 28, height: 28, borderRadius: 7, background: isCurrent ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: isCurrent ? '#60A5FA' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>
-                                {(w.name || w.world)[0]?.toUpperCase() || 'W'}
-                              </span>
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 16, fontWeight: 600, color: isCurrent ? '#60A5FA' : '#F1F5F9', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {w.name || w.world}
-                              </div>
-                              <div style={{ fontSize: 13, color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>{w.world}</div>
-                            </div>
-                            {isCurrent && (
-                              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                <polyline points="20 6 9 17 4 12"/>
-                              </svg>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {!worldsLoading && worlds.length > 30 && (
-                    // View All button (>30)
-                    <button
-                      data-aom-item
-                      onClick={() => { onOpenWorldsModal?.(); setAomOpen(false) }}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', minHeight: 44, padding: '0 14px', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', boxSizing: 'border-box' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <span style={{ fontSize: 16, fontWeight: 600, color: '#60A5FA', fontFamily: "'Inter', sans-serif" }}>View all {worlds.length} worlds</span>
-                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                  )}
-                </div>
+                {/* Worlds section -- WorldSelectorList renders color-coded worlds from worlds table */}
+                <WorldSelectorList
+                  worlds={worlds}
+                  worldsLoading={worldsLoading}
+                  currentWorldId={currentWorldId}
+                  onEnterWorld={(w) => { onEnterWorld?.(w); setAomOpen(false) }}
+                  onOpenWorldsModal={() => { onOpenWorldsModal?.(); setAomOpen(false) }}
+                />
 
                 {/* Invite Someone */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -4895,6 +4943,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             document.body
           )}
         </div>
+          )
+        })()}
 
         {/* Team pill -- hidden (Patrik: not needed next to AOM) */}
         <div ref={teamRef} style={{ position: 'relative', flexShrink: 0, display: 'none' }}>
@@ -9633,6 +9683,43 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               display: 'flex', flexDirection: 'column', gap: isMobile ? 10 : 14,
               position: 'relative',
             }}>
+              {/* Admin world override banner: shown when super-admin is in a client world */}
+              {isAdminOverride() && (() => {
+                const overrideWorld = getClientId()
+                return (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'rgba(249,115,22,0.08)',
+                    border: '1px solid rgba(249,115,22,0.25)',
+                    borderRadius: 8,
+                    padding: '7px 12px',
+                    marginBottom: 4,
+                    flexShrink: 0,
+                  }}>
+                    <div style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: '#F97316',
+                      boxShadow: '0 0 5px #F97316',
+                      flexShrink: 0,
+                    }} />
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: '#F97316',
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}>
+                      Admin view
+                    </span>
+                    <span style={{
+                      fontSize: 11, color: isDaytime ? '#64748B' : '#94A3B8',
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                    }}>
+                      &mdash; viewing as {overrideWorld.toUpperCase()} world
+                    </span>
+                  </div>
+                )
+              })()}
               {chatLoading && (
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -9873,6 +9960,23 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           }}>
                             {isUser ? 'Patrik' : (isAomRoom && msgAgentName ? msgAgentName : (agent?.name || agentSlug))}
                           </span>
+                          {/* Admin badge: shows when super-admin is in a client world */}
+                          {isUser && msg.sender_role === 'admin' && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700,
+                              color: '#F97316',
+                              background: 'rgba(249,115,22,0.12)',
+                              border: '1px solid rgba(249,115,22,0.3)',
+                              borderRadius: 4,
+                              padding: '1px 5px',
+                              fontFamily: "'JetBrains Mono', monospace",
+                              letterSpacing: '0.06em',
+                              textTransform: 'uppercase',
+                              flexShrink: 0,
+                            }}>
+                              admin
+                            </span>
+                          )}
                           {msg.time && (
                             <span style={{
                               fontSize: 11, color: '#4A6080',
@@ -11134,14 +11238,31 @@ export default function GameDashboard() {
     if (worldsLoading) return
     setWorldsLoading(true)
     try {
-      const r = await fetch('/api/dashboard/worlds')
+      // Prefer the worlds table (Step 3: World Selector) -- falls back to auth users API
+      const userId = currentUser?.id
+      const url = userId
+        ? `/api/worlds?user_id=${encodeURIComponent(userId)}`
+        : '/api/dashboard/worlds'
+      const r = await fetch(url)
       if (r.ok) {
         const d = await r.json()
-        setWorlds(d.worlds || [])
+        const raw = d.worlds || []
+        // Normalize to shape expected by handleEnterWorld: { id, world (slug), name, email, color }
+        const normalized = userId
+          ? raw.map(w => ({
+              id: w.id,
+              world: w.slug || w.world || 'aom',
+              name: w.name || (w.slug || '').toUpperCase() || 'World',
+              email: '',
+              color: w.config?.color || '#3B9EFF',
+              role: w.role || 'member',
+            }))
+          : raw // auth users API already returns correct shape
+        setWorlds(normalized)
       }
     } catch {}
     setWorldsLoading(false)
-  }, [worldsLoading])
+  }, [worldsLoading, currentUser?.id])
 
   // Enter a world by setting a sessionStorage override -- no URL change, no re-login.
   // The override takes priority over auth in getClientId(), so the switch is instant on reload.
@@ -12522,6 +12643,13 @@ export default function GameDashboard() {
     }
     const sentTime = new Date().toISOString()
     const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    // Admin context: detect if super-admin is in a client world override
+    const activeClientId = getClientId()
+    const adminOverrideActive = isAdminOverride()
+    const currentUserIsSuperAdmin = currentUser && isSuperAdmin(currentUser.id)
+    const adminTag = (currentUserIsSuperAdmin && adminOverrideActive)
+      ? { sender_role: 'admin', world_id: activeClientId }
+      : {}
     // Use startTransition to keep the UI responsive during the heavy chat re-render
     startTransition(() => {
       setAgentChats(prev => {
@@ -12531,6 +12659,7 @@ export default function GameDashboard() {
         const msgs = [...cleaned, {
           role: 'user', content: text, time: sentTime,
           source: 'via dashboard', id: localId,
+          ...adminTag,
           ...(replyToId ? { reply_to: replyToId } : {}),
           ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}),
         }, {
@@ -12547,7 +12676,7 @@ export default function GameDashboard() {
     }
     // Send message via relay (local Vite middleware or Vercel serverless)
     if (IS_LOCAL) {
-      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}), ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}) }
+      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard', ...adminTag, ...(replyToId ? { reply_to: replyToId } : {}), ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}) }
       if (atPrefixMatch) {
         const matchedOpt = atOptions.find(opt =>
           opt.slug === atPrefixMatch[1].toLowerCase() ||
@@ -12570,7 +12699,7 @@ export default function GameDashboard() {
         const res = await fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: getClientId(), ...(replyToId ? { reply_to: replyToId } : {}), ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}) }),
+          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: activeClientId, ...adminTag, ...(replyToId ? { reply_to: replyToId } : {}), ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}) }),
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
         // Replace local dash-* ID with the server UUID so the poll recognises the message
@@ -12611,7 +12740,7 @@ export default function GameDashboard() {
       // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
-  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups])
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups, currentUser])
 
   // Poke handler: send a follow-up message directly (bypasses input state)
   const handlePokePanelMessage = useCallback((text) => {
