@@ -55,6 +55,10 @@ const PAGE_META = {
     title: 'Included Health Brand Reference',
     description: 'Brand reference for Included Health. Colors, typography, and visual identity guidelines.',
   },
+  '/brands': {
+    title: 'Brand Portfolio | AOM',
+    description: 'Brand identity work by Ahead of Market. Full visual systems for S3C, Ambition Mechanical, Valor to Victory, and more.',
+  },
   '/brands/s3c': {
     title: 'S3C Brand Exploration',
     description: 'Logo concepts for the Semiconductor Services & Supply Coalition',

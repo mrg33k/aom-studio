@@ -8,6 +8,7 @@ import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
 import BrandGuidelines from './pages/BrandGuidelines.jsx'
 import BrandsHub from './pages/BrandsHub.jsx'
+import Brands from './pages/Brands.jsx'
 import S3CBrand from './pages/S3CBrand.jsx'
 import AmbitionBrandGuidelines from './pages/AmbitionBrandGuidelines.jsx'
 import AmbitionBrandGuidelinesV2 from './pages/AmbitionBrandGuidelinesV2.jsx'
@@ -205,7 +206,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />
           <Route path="/brand/v4" element={<BrandGuidelinesV4 />} />
-          <Route path="/brands" element={<BrandsHub />} />
+          <Route path="/brands" element={<Brands />} />
           <Route path="/brands/ambition" element={<AmbitionBrandGuidelinesV2 />} />
           <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
           <Route path="/brands/ambition/performance" element={<AmbitionPerformance />} />
