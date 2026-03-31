@@ -985,59 +985,144 @@ function InfoPanel({ slug, isAgent }) {
 // ── TASK LIST (reused in both agent Tasks tab and project columns) ───────────
 
 function TaskList({ tasks, onContextMenu, showAgent = false }) {
+  const [expanded, setExpanded] = useState({ rightNow: true, completed: false, projects: {} })
+
+  const TaskItem = ({ t }) => (
+    <div
+      key={t.taskId || t.id || t.text}
+      onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
+      onTouchStart={e => {
+        const touch = e.touches[0]
+        const cx = touch?.clientX || 0, cy = touch?.clientY || 0
+        e.currentTarget._lp = setTimeout(() => {
+          onContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, t)
+        }, 500)
+      }}
+      onTouchEnd={e => clearTimeout(e.currentTarget._lp)}
+      onTouchMove={e => clearTimeout(e.currentTarget._lp)}
+      style={{
+        padding: '10px 12px', borderRadius: 10, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
+        marginBottom: 5, cursor: 'context-menu', transition: 'all 0.2s',
+        display: 'flex', gap: 10, alignItems: 'flex-start',
+        opacity: t.done || t.status === 'completed' ? 0.5 : 1,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-card-hover)'; e.currentTarget.style.transform = 'translateX(2px)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.transform = 'translateX(0)' }}
+    >
+      <div style={{
+        width: 14, height: 14, borderRadius: 3, marginTop: 1, flexShrink: 0,
+        border: `1.5px solid ${t.done || t.status === 'completed' ? '#22C55E' : 'var(--bv-col-border)'}`,
+        background: t.done || t.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {(t.done || t.status === 'completed') && (
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
+          textDecoration: t.done || t.status === 'completed' ? 'line-through' : 'none',
+        }}>{t.text || 'Task'}</div>
+        {showAgent && t.agent && (
+          <div style={{ marginTop: 2 }}>
+            <span style={{
+              fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+              padding: '1px 5px', borderRadius: 3, textTransform: 'uppercase',
+              background: `${getAgentColor(t.agent)}18`, color: getAgentColor(t.agent),
+            }}>{getAgentName(t.agent)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  const AccordionSection = ({ title, isOpen, onToggle, tasks: sectionTasks, alwaysExpanded = false }) => (
+    <div style={{ marginBottom: 8 }}>
+      <div
+        onClick={() => !alwaysExpanded && onToggle()}
+        style={{
+          padding: '10px 12px', borderRadius: 8, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
+          cursor: alwaysExpanded ? 'default' : 'pointer', transition: 'all 0.2s',
+          display: 'flex', alignItems: 'center', gap: 8, userSelect: 'none',
+        }}
+        onMouseEnter={e => { if (!alwaysExpanded) e.currentTarget.style.background = 'var(--bv-card-hover)' }}
+        onMouseLeave={e => { if (!alwaysExpanded) e.currentTarget.style.background = 'var(--bv-card)' }}
+      >
+        {!alwaysExpanded && (
+          <span style={{ fontSize: 12, color: 'var(--bv-text2)', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+        )}
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bv-text2)', flex: 1 }}>{title}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bv-muted)', background: 'var(--bv-badge)', padding: '2px 6px', borderRadius: 4 }}>{sectionTasks.length}</span>
+      </div>
+      {(isOpen || alwaysExpanded) && (
+        <div style={{ paddingTop: 6 }}>
+          {sectionTasks.length === 0 ? (
+            <div style={{ padding: '12px 12px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 11, fontStyle: 'italic' }}>No tasks</div>
+          ) : (
+            sectionTasks.map(t => <TaskItem t={t} key={t.taskId || t.id || t.text} />)
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  const isLive = t => t.isLive === true || t.status === 'running'
+  const isDone = t => t.done === true || t.status === 'completed'
+
+  const rightNowTasks = tasks.filter(t => isLive(t))
+  const completedTasks = tasks.filter(t => !isLive(t) && isDone(t))
+  const otherTasks = tasks.filter(t => !isLive(t) && !isDone(t))
+
+  const projectMap = {}
+  otherTasks.forEach(t => {
+    const proj = t.project || t.projectSection || 'General'
+    if (!projectMap[proj]) projectMap[proj] = []
+    projectMap[proj].push(t)
+  })
+
+  const projectNames = Object.keys(projectMap).sort((a, b) => {
+    const aTime = Math.max(...(projectMap[a]?.map(t => new Date(t.addedAt).getTime()) || [0]))
+    const bTime = Math.max(...(projectMap[b]?.map(t => new Date(t.addedAt).getTime()) || [0]))
+    return bTime - aTime
+  })
+
+  if (tasks.length === 0) {
+    return (
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ padding: '16px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>No tasks</div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '6px 12px' }}>
-      {tasks.length === 0 && (
-        <div style={{ padding: '16px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>No tasks</div>
+      <AccordionSection
+        title="Right Now"
+        isOpen={expanded.rightNow}
+        onToggle={() => setExpanded(prev => ({ ...prev, rightNow: !prev.rightNow }))}
+        tasks={rightNowTasks}
+        alwaysExpanded={true}
+      />
+      {completedTasks.length > 0 && (
+        <AccordionSection
+          title="Completed"
+          isOpen={expanded.completed}
+          onToggle={() => setExpanded(prev => ({ ...prev, completed: !prev.completed }))}
+          tasks={completedTasks}
+        />
       )}
-      {tasks.map((t, i) => (
-        <div
-          key={t.taskId || t.id || t.text || i}
-          onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
-          onTouchStart={e => {
-            const touch = e.touches[0]
-            const cx = touch?.clientX || 0, cy = touch?.clientY || 0
-            e.currentTarget._lp = setTimeout(() => {
-              onContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, t)
-            }, 500)
-          }}
-          onTouchEnd={e => clearTimeout(e.currentTarget._lp)}
-          onTouchMove={e => clearTimeout(e.currentTarget._lp)}
-          style={{
-            padding: '10px 12px', borderRadius: 10, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
-            marginBottom: 5, cursor: 'context-menu', transition: 'all 0.2s',
-            display: 'flex', gap: 10, alignItems: 'flex-start',
-            opacity: t.done || t.status === 'completed' ? 0.5 : 1,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-card-hover)'; e.currentTarget.style.transform = 'translateX(2px)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.transform = 'translateX(0)' }}
-        >
-          <div style={{
-            width: 14, height: 14, borderRadius: 3, marginTop: 1, flexShrink: 0,
-            border: `1.5px solid ${t.done || t.status === 'completed' ? '#22C55E' : 'var(--bv-col-border)'}`,
-            background: t.done || t.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {(t.done || t.status === 'completed') && (
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            )}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
-              textDecoration: t.done || t.status === 'completed' ? 'line-through' : 'none',
-            }}>{t.text || 'Task'}</div>
-            {showAgent && t.agent && (
-              <div style={{ marginTop: 2 }}>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                  padding: '1px 5px', borderRadius: 3, textTransform: 'uppercase',
-                  background: `${getAgentColor(t.agent)}18`, color: getAgentColor(t.agent),
-                }}>{getAgentName(t.agent)}</span>
-              </div>
-            )}
-          </div>
-        </div>
+      {projectNames.map(proj => (
+        <AccordionSection
+          key={proj}
+          title={proj}
+          isOpen={expanded.projects[proj] || false}
+          onToggle={() => setExpanded(prev => ({
+            ...prev,
+            projects: { ...prev.projects, [proj]: !prev.projects[proj] }
+          }))}
+          tasks={projectMap[proj]}
+        />
       ))}
     </div>
   )
