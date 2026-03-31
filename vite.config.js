@@ -1306,17 +1306,28 @@ function localDashboardPlugin() {
       })
 
       // ---- AGENT QUEUES (List Tab) --------
-      // Returns all agents with their queued tasks parsed from incoming-tasks.md
+      // Returns all agents with their queued tasks parsed from incoming-tasks.md.
+      // Each task gets: text, done, id (slug-index), addedAt (parsed from "From agent (date)" headers or file mtime)
       server.middlewares.use('/api/local/agent-queues', (req, res) => {
         const agentSlugs = ['elon','bobby','gary','rex','steffen','steve','alex','jacob','cleo','tony','colton','elmo','mom','pixel','paige','mark']
         const queues = {}
         for (const slug of agentSlugs) {
+          const filePath = resolve(AOM_EA_ROOT, `projects/${slug}/incoming-tasks.md`)
+          let fileMtime = null
+          try { fileMtime = fs.statSync(filePath).mtime.toISOString() } catch {}
           const content = readLocalFile(`projects/${slug}/incoming-tasks.md`)
           const tasks = []
           if (content) {
             const lines = content.split('\n')
+            let lastTimestamp = fileMtime // fallback to file mtime
             for (const line of lines) {
               const trimmed = line.trim()
+              // Parse "From agent (YYYY-MM-DD HH:MM UTC):" headers to track timestamp context
+              const tsMatch = trimmed.match(/\*\*From \w+\*\*\s*\((\d{4}-\d{2}-\d{2}\s+[\d:]+\s*UTC)\)/)
+              if (tsMatch) {
+                try { lastTimestamp = new Date(tsMatch[1].replace(' UTC','Z').replace(' ','T')).toISOString() } catch {}
+                continue
+              }
               // Match markdown task items: - [ ] task or - [x] task or - task or * task
               const checkMatch = trimmed.match(/^[-*]\s*\[([ xX])\]\s*(.+)/)
               const bulletMatch = !checkMatch && trimmed.match(/^[-*]\s+(.+)/)
@@ -1324,12 +1335,12 @@ function localDashboardPlugin() {
                 const done = checkMatch[1].toLowerCase() === 'x'
                 const text = checkMatch[2].trim()
                 if (text && !text.startsWith('#') && !text.startsWith('<!--')) {
-                  tasks.push({ text, done })
+                  tasks.push({ id: `${slug}-${tasks.length}`, text, done, addedAt: lastTimestamp })
                 }
               } else if (bulletMatch) {
                 const text = bulletMatch[1].trim()
                 if (text && !text.startsWith('#') && !text.startsWith('<!--') && text.length > 3) {
-                  tasks.push({ text, done: false })
+                  tasks.push({ id: `${slug}-${tasks.length}`, text, done: false, addedAt: lastTimestamp })
                 }
               }
             }
@@ -1338,6 +1349,125 @@ function localDashboardPlugin() {
         }
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ queues, timestamp: new Date().toISOString() }))
+      })
+
+      // ---- AGENT QUEUE ACTION (List Tab Round 3) --------
+      // Handles task mutations on incoming-tasks.md: reassign, markDone, delete, priority
+      server.middlewares.use('/api/local/agent-queue-action', (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: 'POST only' })); return }
+        let body = ''
+        req.on('data', c => { body += c })
+        req.on('end', () => {
+          try {
+            const { action, taskText, sourceAgent, targetAgent, priority } = JSON.parse(body)
+            if (!taskText || !sourceAgent) { res.statusCode = 400; res.end(JSON.stringify({ error: 'Missing taskText or sourceAgent' })); return }
+
+            const sourcePath = resolve(AOM_EA_ROOT, `projects/${sourceAgent}/incoming-tasks.md`)
+            const readSrc = () => { try { return fs.readFileSync(sourcePath, 'utf-8') } catch { return '' } }
+
+            if (action === 'reassign') {
+              // Remove from source BEFORE writing to target (atomic order per spec)
+              const srcContent = readSrc()
+              const filtered = srcContent.split('\n').filter(l => {
+                const t = l.trim()
+                return !(t.includes(taskText.slice(0, 40)))
+              }).join('\n')
+              fs.writeFileSync(sourcePath, filtered, 'utf-8')
+              // Append to target
+              if (targetAgent) {
+                const targetPath = resolve(AOM_EA_ROOT, `projects/${targetAgent}/incoming-tasks.md`)
+                const ts = new Date().toISOString().replace('T',' ').slice(0,16) + ' UTC'
+                const entry = `\n**From dashboard** (${ts}):\n- ${taskText}\n`
+                fs.appendFileSync(targetPath, entry, 'utf-8')
+              }
+              res.end(JSON.stringify({ ok: true }))
+            } else if (action === 'markDone') {
+              const srcContent = readSrc()
+              const updated = srcContent.split('\n').map(l => {
+                const t = l.trim()
+                if (t.includes(taskText.slice(0, 40))) {
+                  // Convert bullet to checked or prefix with ~~
+                  if (t.match(/^[-*]\s*\[[ ]\]/)) return l.replace(/\[ \]/, '[x]')
+                  if (t.match(/^[-*]\s+/)) return l.replace(/^(\s*[-*]\s+)/, '$1[x] ')
+                }
+                return l
+              }).join('\n')
+              fs.writeFileSync(sourcePath, updated, 'utf-8')
+              res.end(JSON.stringify({ ok: true }))
+            } else if (action === 'delete') {
+              const srcContent = readSrc()
+              const filtered = srcContent.split('\n').filter(l => !l.trim().includes(taskText.slice(0, 40))).join('\n')
+              fs.writeFileSync(sourcePath, filtered, 'utf-8')
+              res.end(JSON.stringify({ ok: true }))
+            } else if (action === 'priority') {
+              const srcContent = readSrc()
+              const prefixMap = { high: '[HIGH] ', med: '[MED] ', low: '[LOW] ' }
+              const prefix = prefixMap[priority] || ''
+              const updated = srcContent.split('\n').map(l => {
+                const t = l.trim()
+                if (t.includes(taskText.slice(0, 40))) {
+                  // Strip any existing priority prefix then add new one
+                  return l.replace(/\[(HIGH|MED|LOW)\] /g, '').replace(/([-*]\s*(?:\[[ xX]\]\s*)?)/, `$1${prefix}`)
+                }
+                return l
+              }).join('\n')
+              fs.writeFileSync(sourcePath, updated, 'utf-8')
+              res.end(JSON.stringify({ ok: true }))
+            } else {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: `Unknown action: ${action}` }))
+            }
+          } catch (e) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: e.message }))
+          }
+        })
+      })
+
+      // ---- AGENT LATEST RESULT (List Tab Round 4) --------
+      // Returns latest-result.md for a given agent (for click-through detail panel)
+      server.middlewares.use('/api/local/agent-latest-result', (req, res) => {
+        const url = new URL(req.url, 'http://localhost')
+        const slug = url.searchParams.get('agent')
+        if (!slug) { res.statusCode = 400; res.end(JSON.stringify({ error: 'Missing agent param' })); return }
+        const content = readLocalFile(`projects/${slug}/latest-result.md`)
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ content: content || '', agent: slug }))
+      })
+
+      // ---- AGENT QUEUE ADD (List Tab Round 5) --------
+      // Adds a task to an agent's incoming-tasks.md + notifies super agents via agent-message.py
+      server.middlewares.use('/api/local/agent-queue-add', (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: 'POST only' })); return }
+        let body = ''
+        req.on('data', c => { body += c })
+        req.on('end', () => {
+          try {
+            const { taskText, targetAgent } = JSON.parse(body)
+            if (!taskText || !targetAgent) { res.statusCode = 400; res.end(JSON.stringify({ error: 'Missing taskText or targetAgent' })); return }
+            const targetPath = resolve(AOM_EA_ROOT, `projects/${targetAgent}/incoming-tasks.md`)
+            const ts = new Date().toISOString().replace('T',' ').slice(0,16) + ' UTC'
+            const entry = `\n**From dashboard** (${ts}):\n- ${taskText}\n`
+            fs.appendFileSync(targetPath, entry, 'utf-8')
+
+            // Notify super agents via agent-message.py (fire and forget)
+            const superAgents = new Set(['elon','bobby','gary','rex'])
+            if (superAgents.has(targetAgent)) {
+              const scriptPath = resolve(AOM_EA_ROOT, 'scripts', 'agent-message.py')
+              const { spawn: _spawn } = require('child_process')
+              const child = _spawn('python3', [scriptPath, '--from', 'dashboard', '--to', targetAgent, taskText], {
+                cwd: AOM_EA_ROOT, detached: true, stdio: 'ignore',
+              })
+              child.unref()
+            }
+
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ ok: true, agent: targetAgent, task: taskText }))
+          } catch (e) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: e.message }))
+          }
+        })
       })
 
       // ---- TASK ASSIGN (Right Now routing) --------

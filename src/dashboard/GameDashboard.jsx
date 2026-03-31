@@ -6482,22 +6482,82 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
   const [collapsedParents, setCollapsedParents] = useState({}) // Track collapsed sub-task groups
 
-  // ---- AGENT QUEUES (List Tab Round 1) ----
-  // Fetch all agents' incoming-tasks.md queues for the collapsible pills view
+  // ---- AGENT QUEUES (List Tab Rounds 1-5) ----
   const [agentQueues, setAgentQueues] = useState({})
   const [agentQueuesCollapsed, setAgentQueuesCollapsed] = useState({})
+  // Round 3: right-click context menu for queue task items
+  const [aqCtxMenu, setAqCtxMenu] = useState(null) // { position:{x,y}, task:{id,text,agent,...} }
+  // Round 4: click-through detail panel (expand in place)
+  const [aqExpandedTask, setAqExpandedTask] = useState(null) // { id, text, agent }
+  const [aqDetailContent, setAqDetailContent] = useState('')
+  const [aqDetailLoading, setAqDetailLoading] = useState(false)
+  // Round 5: add task input
+  const [aqAddAgent, setAqAddAgent] = useState('')
+  const [aqAddText, setAqAddText] = useState('')
+  const [aqAddLoading, setAqAddLoading] = useState(false)
+
+  const refreshAgentQueues = useCallback(() => {
+    if (!IS_LOCAL) return
+    fetch('/api/local/agent-queues')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.queues) setAgentQueues(data.queues) })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (!IS_LOCAL) return
-    const fetchQueues = () => {
-      fetch('/api/local/agent-queues')
-        .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data?.queues) setAgentQueues(data.queues) })
-        .catch(() => {})
-    }
-    fetchQueues()
-    const interval = setInterval(fetchQueues, 15000)
+    refreshAgentQueues()
+    const interval = setInterval(refreshAgentQueues, 15000)
     return () => clearInterval(interval)
-  }, [])
+  }, [refreshAgentQueues])
+
+  // Round 4: load agent latest-result.md when a task is expanded
+  useEffect(() => {
+    if (!aqExpandedTask) return
+    setAqDetailLoading(true)
+    setAqDetailContent('')
+    fetch(`/api/local/agent-latest-result?agent=${encodeURIComponent(aqExpandedTask.agent)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { setAqDetailContent(data?.content || ''); setAqDetailLoading(false) })
+      .catch(() => setAqDetailLoading(false))
+  }, [aqExpandedTask])
+
+  // Round 3: action handler for context menu on agent queue tasks
+  const handleAqAction = useCallback((action, task, payload) => {
+    if (!IS_LOCAL) return
+    const body = { action, taskText: task.text, sourceAgent: task.agent }
+    if (action === 'reassign') body.targetAgent = payload
+    if (action === 'priority') body.priority = payload
+    fetch('/api/local/agent-queue-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(() => {
+      // Optimistic update
+      setAgentQueues(prev => {
+        const next = { ...prev }
+        const q = next[task.agent]
+        if (!q) return next
+        if (action === 'delete') {
+          const tasks = q.tasks.filter(t => t.id !== task.id)
+          next[task.agent] = { ...q, tasks, total: tasks.length, open: tasks.filter(t => !t.done).length }
+        } else if (action === 'markDone') {
+          const tasks = q.tasks.map(t => t.id === task.id ? { ...t, done: true } : t)
+          next[task.agent] = { ...q, tasks, open: tasks.filter(t => !t.done).length }
+        } else if (action === 'reassign' && payload) {
+          const tasks = q.tasks.filter(t => t.id !== task.id)
+          next[task.agent] = { ...q, tasks, total: tasks.length, open: tasks.filter(t => !t.done).length }
+          const tq = next[payload] || { tasks: [], total: 0, open: 0 }
+          const added = { ...task, id: `${payload}-${Date.now()}`, agent: payload }
+          const tTasks = [...tq.tasks, added]
+          next[payload] = { ...tq, tasks: tTasks, total: tTasks.length, open: tTasks.filter(t => !t.done).length }
+        }
+        return next
+      })
+      setTimeout(refreshAgentQueues, 2000)
+    }).catch(() => {})
+    setAqCtxMenu(null)
+  }, [refreshAgentQueues])
 
   // Auto-expand task when focusTaskId is set (e.g., from HUD "View Task" or Trello "View Detail")
   useEffect(() => {
@@ -7473,38 +7533,193 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                     />
                   </div>
 
-                  {/* Expanded task list */}
+                  {/* Expanded task list -- Round 2: name + status badge + timestamp. Round 3: right-click. Round 4: expand-in-place */}
                   {isExpanded && q.tasks.length > 0 && (
                     <div style={{
                       marginLeft: 20, marginTop: 4,
                       paddingLeft: 12,
                       borderLeft: `2px solid ${color}30`,
                     }}>
-                      {q.tasks.filter(t => !t.done).map((t, i) => (
-                        <div key={i} style={{
-                          padding: '6px 10px', marginBottom: 3,
-                          fontSize: 12, fontWeight: 500, lineHeight: 1.4,
-                          color: isDaytime ? '#CBD5E1' : '#94A3B8',
-                          fontFamily: "'Inter', sans-serif",
-                          background: isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.015)',
-                          borderRadius: 6,
-                          display: 'flex', alignItems: 'flex-start', gap: 6,
-                        }}>
-                          <div style={{
-                            width: 5, height: 5, borderRadius: '50%',
-                            background: `${color}60`, flexShrink: 0, marginTop: 5,
-                          }} />
-                          <span>{t.text}</span>
-                        </div>
-                      ))}
+                      {q.tasks.filter(t => !t.done).map((t) => {
+                        const taskObj = { ...t, agent: slug }
+                        const isRunning = (rightNowTasks || []).some(rn => rn.agent === slug && !rn.isDoneAwaitingApproval && (rn.text || rn.task || '').toLowerCase().includes(t.text.slice(0,20).toLowerCase()))
+                        const status = isRunning ? 'running' : 'queued'
+                        const statusColors = { running: '#F59E0B', queued: `${color}AA` }
+                        const statusLabels = { running: 'running', queued: 'queued' }
+                        const isDetailExpanded = aqExpandedTask?.id === t.id && aqExpandedTask?.agent === slug
+                        // Relative time display
+                        const relTime = t.addedAt ? (() => {
+                          const diff = (Date.now() - new Date(t.addedAt).getTime()) / 1000
+                          if (diff < 60) return 'just now'
+                          if (diff < 3600) return `${Math.floor(diff/60)}m ago`
+                          if (diff < 86400) return `${Math.floor(diff/3600)}h ago`
+                          return `${Math.floor(diff/86400)}d ago`
+                        })() : null
+                        return (
+                          <div key={t.id || t.text}>
+                            {/* Task row */}
+                            <div
+                              onClick={() => setAqExpandedTask(isDetailExpanded ? null : taskObj)}
+                              onContextMenu={(e) => {
+                                e.preventDefault()
+                                setAqCtxMenu({ position: { x: e.clientX, y: e.clientY }, task: taskObj })
+                              }}
+                              style={{
+                                padding: '7px 10px', marginBottom: 2,
+                                fontSize: 12, fontWeight: 500, lineHeight: 1.4,
+                                color: isDaytime ? '#CBD5E1' : '#94A3B8',
+                                fontFamily: "'Inter', sans-serif",
+                                background: isDetailExpanded
+                                  ? (isDaytime ? `${color}12` : `${color}0D`)
+                                  : (isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.015)'),
+                                borderRadius: isDetailExpanded ? '6px 6px 0 0' : 6,
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                cursor: 'pointer',
+                                transition: 'background 100ms',
+                              }}
+                            >
+                              {/* Status dot */}
+                              <div style={{
+                                width: 6, height: 6, borderRadius: '50%',
+                                background: statusColors[status],
+                                flexShrink: 0,
+                                boxShadow: isRunning ? `0 0 5px ${statusColors.running}` : 'none',
+                              }} />
+                              {/* Task name */}
+                              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {t.text}
+                              </span>
+                              {/* Status badge */}
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 8,
+                                background: `${statusColors[status]}22`, color: statusColors[status],
+                                fontFamily: "'Inter', sans-serif", flexShrink: 0,
+                                textTransform: 'uppercase', letterSpacing: '0.04em',
+                              }}>
+                                {statusLabels[status]}
+                              </span>
+                              {/* Timestamp */}
+                              {relTime && (
+                                <span style={{
+                                  fontSize: 10, color: isDaytime ? '#475569' : '#334155',
+                                  fontFamily: "'Inter', sans-serif", flexShrink: 0,
+                                }}>
+                                  {relTime}
+                                </span>
+                              )}
+                            </div>
+                            {/* Round 4: expand-in-place detail panel */}
+                            {isDetailExpanded && (
+                              <div style={{
+                                marginBottom: 6, padding: '10px 12px',
+                                background: isDaytime ? `${color}08` : `${color}06`,
+                                borderRadius: '0 0 6px 6px',
+                                borderLeft: `2px solid ${color}40`,
+                                borderBottom: `1px solid ${color}20`,
+                                borderRight: `1px solid ${color}20`,
+                              }}>
+                                <div style={{
+                                  fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                                  letterSpacing: '0.05em', color: color, marginBottom: 8,
+                                  fontFamily: "'Inter', sans-serif",
+                                }}>
+                                  Latest Result
+                                </div>
+                                {aqDetailLoading ? (
+                                  <div style={{ fontSize: 11, color: isDaytime ? '#475569' : '#334155', fontFamily: "'Inter', sans-serif" }}>
+                                    Loading...
+                                  </div>
+                                ) : aqDetailContent ? (
+                                  <div style={{
+                                    fontSize: 11, lineHeight: 1.6,
+                                    color: isDaytime ? '#94A3B8' : '#64748B',
+                                    fontFamily: "'Inter', sans-serif",
+                                    maxHeight: 120, overflowY: 'auto',
+                                    whiteSpace: 'pre-wrap',
+                                  }}>
+                                    {aqDetailContent.slice(0, 600)}{aqDetailContent.length > 600 ? '...' : ''}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: 11, color: isDaytime ? '#475569' : '#334155', fontFamily: "'Inter', sans-serif" }}>
+                                    No result yet.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
               )
             })}
+          {/* Round 5: Add task input */}
+          {!collapsedSections.agentqueues && (
+            <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <select
+                value={aqAddAgent}
+                onChange={e => setAqAddAgent(e.target.value)}
+                style={{
+                  fontSize: 11, padding: '5px 8px', borderRadius: 6, flexShrink: 0,
+                  background: isDaytime ? 'rgba(30,50,90,0.7)' : 'rgba(15,22,40,0.8)',
+                  border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.08)'}`,
+                  color: isDaytime ? '#CBD5E1' : '#94A3B8',
+                  fontFamily: "'Inter', sans-serif", cursor: 'pointer', outline: 'none',
+                }}
+              >
+                <option value="">Agent...</option>
+                {Object.keys(agentQueues).sort().map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <input
+                value={aqAddText}
+                onChange={e => setAqAddText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && aqAddText.trim() && aqAddAgent && !aqAddLoading) {
+                    setAqAddLoading(true)
+                    fetch('/api/local/agent-queue-add', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ taskText: aqAddText.trim(), targetAgent: aqAddAgent }),
+                    }).then(() => {
+                      setAqAddText('')
+                      setAqAddLoading(false)
+                      refreshAgentQueues()
+                    }).catch(() => setAqAddLoading(false))
+                  }
+                }}
+                placeholder="Add task... (Enter to send)"
+                style={{
+                  flex: 1, fontSize: 11, padding: '5px 10px', borderRadius: 6,
+                  background: isDaytime ? 'rgba(30,50,90,0.5)' : 'rgba(15,22,40,0.6)',
+                  border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                  color: isDaytime ? '#E2E8F0' : '#CBD5E1',
+                  fontFamily: "'Inter', sans-serif", outline: 'none',
+                  opacity: aqAddLoading ? 0.5 : 1,
+                }}
+              />
+            </div>
+          )}
           </div>
         )
       })()}
+
+      {/* Round 3: right-click context menu for agent queue task items */}
+      <AnimatePresence>
+        {aqCtxMenu && (
+          <TaskContextMenuShared
+            key={`aq-ctx-${aqCtxMenu.position.x}-${aqCtxMenu.position.y}`}
+            position={aqCtxMenu.position}
+            task={aqCtxMenu.task}
+            onClose={() => setAqCtxMenu(null)}
+            onAction={(action, task, payload) => handleAqAction(action, task, payload)}
+            isNightMode={isNightMode}
+            projects={[]}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Project sections from punch-list */}
       {(activeFilter === 'all' ? relevantSections : (filteredProjectSection ? [filteredProjectSection] : [])).map(section => {
