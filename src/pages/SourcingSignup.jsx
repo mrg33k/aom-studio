@@ -261,6 +261,22 @@ function SourcingSignupInner() {
       }
 
       setStep(3);
+
+      // Fire-and-forget welcome email -- don't block on success/failure
+      const emailTo = form.auth_email.trim() || form.email.trim();
+      if (emailTo) {
+        fetch('/api/sourcing/welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailTo,
+            company_name: form.name.trim(),
+            org_name: tenant?.name || 'AOM Sourcing Directory',
+            company_slug: slug,
+            base_url: window.location.origin,
+          }),
+        }).catch(() => {}); // intentional no-op on failure
+      }
     } catch (err) {
       console.error('Signup error:', err);
       if (err.message?.includes('duplicate key') || err.message?.includes('unique')) {
