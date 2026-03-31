@@ -12788,7 +12788,10 @@ export default function GameDashboard() {
   // When pipeData.agents loads for a non-AOM world, if selectedRoom is still the
   // AOM default (elon) and is not in this world's agents, switch to the first agent.
   // This ensures new users see the Architect chat panel open immediately.
+  // Welcome message is injected here directly (after 650ms) to avoid timing issues
+  // with a separate useEffect that depends on batched state updates propagating.
   const autoOpenDoneRef = useRef(false)
+  const architectWelcomedRef = useRef(false)
   useEffect(() => {
     if (autoOpenDoneRef.current) return
     const clientId = getClientId()
@@ -12805,44 +12808,34 @@ export default function GameDashboard() {
       setCameraTarget(firstAgent.slug)
       setPanelVisible(true)
       setPanelActiveTab('chat')
+      // Inject welcome message directly here so it's tied to the same trigger,
+      // not a separate effect that may miss the state propagation window.
+      if (!architectWelcomedRef.current) {
+        architectWelcomedRef.current = true
+        const timer = setTimeout(() => {
+          setAgentChats(prev => {
+            const current = prev[firstAgent.slug] || { _all: [] }
+            if ((current._all || []).length > 0) return prev
+            return {
+              ...prev,
+              [firstAgent.slug]: {
+                _all: [{
+                  role: 'assistant',
+                  content: "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?",
+                  time: new Date().toISOString(),
+                  id: `architect-welcome-${Date.now()}`,
+                  source: 'architect-welcome',
+                }],
+              },
+            }
+          })
+        }, 650)
+        return () => clearTimeout(timer)
+      }
     } else {
       autoOpenDoneRef.current = true
     }
   }, [pipeData?.agents]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Architect welcome message: fires once per session for non-AOM worlds.
-  // Injects a local assistant message after chat auto-opens so new users aren't
-  // staring at an empty panel. NOT sent through relay -- pure local state.
-  useEffect(() => {
-    const clientId = getClientId()
-    if (clientId === 'aom') return
-    if (!panelVisible) return
-    if (panelActiveTab !== 'chat') return
-    if (!selectedRoom) return
-    const flagKey = `architect-welcomed-${clientId}`
-    try {
-      if (sessionStorage.getItem(flagKey)) return
-    } catch { /* ignore */ }
-    // Mark immediately so concurrent renders don't double-fire
-    try { sessionStorage.setItem(flagKey, '1') } catch { /* ignore */ }
-    const timer = setTimeout(() => {
-      const welcomeId = `architect-welcome-${Date.now()}`
-      setAgentChats(prev => {
-        const current = prev[selectedRoom] || { _all: [] }
-        // Don't inject if there are already messages (e.g. returning user with history)
-        if ((current._all || []).length > 0) return prev
-        const welcomeMsg = {
-          role: 'assistant',
-          content: "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?",
-          time: new Date().toISOString(),
-          id: welcomeId,
-          source: 'architect-welcome',
-        }
-        return { ...prev, [selectedRoom]: { _all: [welcomeMsg] } }
-      })
-    }, 650)
-    return () => clearTimeout(timer)
-  }, [panelVisible, panelActiveTab, selectedRoom]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRoomClick = (roomId) => {
     // Use ROOM_LOOKUP which includes both agent rooms and project rooms.
