@@ -74,6 +74,7 @@ const SourcingSettings = lazy(() => import('./pages/SourcingSettings.jsx'))
 const SourcingLogin = lazy(() => import('./pages/SourcingLogin.jsx'))
 const SourcingPortal = lazy(() => import('./pages/SourcingPortal.jsx'))
 const SourcingAbout = lazy(() => import('./pages/SourcingAbout.jsx'))
+const SourcingGrants = lazy(() => import('./pages/SourcingGrants.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
@@ -271,6 +272,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/sourcing/:tenantSlug/events/post" element={<SourcingEventsPost />} />
           <Route path="/sourcing/:tenantSlug/articles" element={<SourcingArticles />} />
           <Route path="/sourcing/:tenantSlug/articles/post" element={<SourcingArticlesPost />} />
+          <Route path="/sourcing/:tenantSlug/grants" element={<SourcingGrants />} />
           <Route path="/sourcing/:tenantSlug/org/:slug" element={<SourcingOrg />} />
           <Route path="/sourcing/:tenantSlug/checkout" element={<SourcingCheckout />} />
           <Route path="/sourcing/:tenantSlug/:slug" element={<SourcingProfile />} />
