@@ -12784,19 +12784,30 @@ export default function GameDashboard() {
   // This ensures new users see the Architect chat panel open immediately.
   // Welcome message is injected here directly (after 650ms) to avoid timing issues
   // with a separate useEffect that depends on batched state updates propagating.
-  const autoOpenDoneRef = useRef(false)
-  const architectWelcomedRef = useRef(false)
+  // Track which clientId the auto-open/welcome has already fired for.
+  // Using a ref that stores the clientId (not just a boolean) lets us reset
+  // cleanly when the user switches worlds without remounting the component.
+  const autoOpenClientRef = useRef(null)
+  const architectWelcomedRef = useRef(null) // stores clientId, not boolean
   useEffect(() => {
-    if (autoOpenDoneRef.current) return
     const clientId = getClientId()
     if (clientId === 'aom') return
     const worldAgents = pipeData?.agents || []
     if (worldAgents.length === 0) return
+
+    // Reset refs when world changes so the welcome fires for the new world.
+    if (autoOpenClientRef.current !== clientId) {
+      autoOpenClientRef.current = null
+      architectWelcomedRef.current = null
+    }
+
+    if (autoOpenClientRef.current) return
+
     // Check if current selectedRoom is in this world's agents
     const inWorld = worldAgents.some(a => a.slug === selectedRoom)
     if (!inWorld) {
       const firstAgent = worldAgents[0]
-      autoOpenDoneRef.current = true
+      autoOpenClientRef.current = clientId
       setSelectedRoom(firstAgent.slug)
       setChatAgent(firstAgent.slug)
       setCameraTarget(firstAgent.slug)
@@ -12804,8 +12815,8 @@ export default function GameDashboard() {
       setPanelActiveTab('chat')
       // Inject welcome message directly here so it's tied to the same trigger,
       // not a separate effect that may miss the state propagation window.
-      if (!architectWelcomedRef.current) {
-        architectWelcomedRef.current = true
+      if (architectWelcomedRef.current !== clientId) {
+        architectWelcomedRef.current = clientId
         const timer = setTimeout(() => {
           setAgentChats(prev => {
             const current = prev[firstAgent.slug] || { _all: [] }
@@ -12827,7 +12838,7 @@ export default function GameDashboard() {
         return () => clearTimeout(timer)
       }
     } else {
-      autoOpenDoneRef.current = true
+      autoOpenClientRef.current = clientId
     }
   }, [pipeData?.agents]) // eslint-disable-line react-hooks/exhaustive-deps
 
