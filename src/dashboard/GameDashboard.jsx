@@ -9888,10 +9888,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       marginTop: 0,
                     }}
                     onContextMenu={(e) => {
+                      if (e.target.closest('a')) return // let links have normal right-click
                       e.preventDefault()
                       onMessageContextMenu?.(e, msg)
                     }}
                     onTouchStart={(e) => {
+                      // Skip long-press timer if user tapped a link -- let the browser handle it
+                      if (e.target.closest('a')) return
                       clearTimeout(msgLongPressRef.current)
                       const touch = e.touches[0]
                       const cx = touch ? touch.clientX : window.innerWidth / 2
