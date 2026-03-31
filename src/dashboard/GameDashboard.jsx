@@ -47,6 +47,7 @@ import SystemToastContainer, { useSystemToast } from './SystemToast.jsx'
 import AgentInfoTab from './components/AgentInfoTab.jsx'
 import { getTypingPhrases } from './agentTypingPhrases.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
+import SupportChat from './SupportChat.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -4628,7 +4629,7 @@ function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, cur
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId, onReturnToMyWorld }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId, onReturnToMyWorld, onOpenSupport }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [teamName, setTeamName] = useState('Team')
@@ -5563,6 +5564,46 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
           }}>
+            {/* Support button */}
+            <button
+              title="Get help with Corner"
+              onClick={onOpenSupport}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'transparent',
+                border: isNightMode ? '1.5px solid rgba(96,165,250,0.2)' : '1.5px solid rgba(96,165,250,0.3)',
+                borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+                cursor: 'pointer', transition: 'all 150ms ease', flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(96,165,250,0.1)'
+                e.currentTarget.style.borderColor = 'rgba(96,165,250,0.5)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.borderColor = isNightMode ? 'rgba(96,165,250,0.2)' : 'rgba(96,165,250,0.3)'
+              }}
+            >
+              {/* Question mark circle icon */}
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+                stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              {!isMobile && (
+                <span style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: '#60A5FA',
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  Help
+                </span>
+              )}
+            </button>
+
+            {/* Sign out */}
             <button
               title="Sign out"
               onClick={onSignOut}
@@ -11361,6 +11402,7 @@ export default function GameDashboard() {
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
   const [showPrefsModal, setShowPrefsModal] = useState(false)
+  const [showSupportChat, setShowSupportChat] = useState(false)
   const [showCreateWorldModal, setShowCreateWorldModal] = useState(false)
   const [showWorldsModal, setShowWorldsModal] = useState(false)
   const [worlds, setWorlds] = useState([])
@@ -13662,7 +13704,7 @@ export default function GameDashboard() {
   results.cloud = cloudResult
   pipeData?.refetch?.()
   return results
-}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
+}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} onOpenSupport={() => setShowSupportChat(true)} />
 
       {/* Board view: THE main view (game view killed Mar 27) */}
       {/* flex: 1 + minHeight: 0 makes BoardView fill remaining space.
@@ -14817,6 +14859,14 @@ export default function GameDashboard() {
           setShowOnboarding(false)
         }} />
       )}
+
+      {/* Corner Support Chat panel */}
+      <SupportChat
+        isOpen={showSupportChat}
+        onClose={() => setShowSupportChat(false)}
+        clientId={getClientId()}
+        isNightMode={isNightMode}
+      />
 
       {/* AOM Modals */}
       <AnimatePresence>
