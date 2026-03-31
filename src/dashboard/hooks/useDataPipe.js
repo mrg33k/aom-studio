@@ -221,6 +221,40 @@ function buildAutoCheckKeywords(notifContent) {
 
 // ---- DERIVE RIGHT NOW + AGENT STATUS from events table -----------------------
 // Events are newest-first from the API. We find the latest event per task_id
+// Clean raw event descriptions into readable task pill names.
+// The event description is often the user's raw message ("can you have cleo add titles...")
+// which makes terrible pill names. This extracts the intent or falls back to agent status.
+function cleanTaskName(raw, agent) {
+  if (!raw || raw === 'Working...') return `${agent} is working`
+  const s = raw.trim()
+  // Obvious garbage
+  if (/^(session start|please reply|task$|working)/i.test(s)) return `${agent} is working`
+  // Very short responses that aren't real tasks
+  if (s.length < 8) return `${agent} is working`
+  // Extract action from the message: look for key verbs
+  const verbMatch = s.match(/\b(fix|build|add|create|update|deploy|push|ship|write|make|remove|delete|change|set up|refactor|check|test|review|clean|wire|implement|design|generate|send|move|merge|launch|configure|migrate|integrate|optimize|debug|resolve|upgrade|install|connect|enable|disable)\b(.{5,50})/i)
+  if (verbMatch) {
+    let task = verbMatch[0].charAt(0).toUpperCase() + verbMatch[0].slice(1)
+    if (task.length > 50) task = task.slice(0, 47).replace(/\s+\S*$/, '') + '...'
+    return task
+  }
+  // If it reads like a conversational message (starts lowercase, has "I", "we", "you", "can you")
+  // just show what the agent is doing
+  if (/^(i |we |you |can |hey |ok |yeah|no |its |the |this |that |it |so |just |also |let)/i.test(s)) {
+    // Try to grab the noun phrase after common patterns
+    const aboutMatch = s.match(/(?:need to|working on|looking at|fixing|building|adding|making)\s+(.{5,40})/i)
+    if (aboutMatch) {
+      let topic = aboutMatch[1].charAt(0).toUpperCase() + aboutMatch[1].slice(1)
+      if (topic.length > 45) topic = topic.slice(0, 42).replace(/\s+\S*$/, '') + '...'
+      return topic
+    }
+    return `${agent} is working`
+  }
+  // Anything else: truncate cleanly
+  if (s.length > 50) return s.slice(0, 47).replace(/\s+\S*$/, '') + '...'
+  return s
+}
+
 // and per agent to determine what's active and what each agent's status is.
 //
 // Active task = latest event for a task_id is task_started (no subsequent
@@ -279,14 +313,12 @@ export function deriveStateFromEvents(events) {
     const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : Infinity
     if (ageMs >= STALE_MS) continue
     let description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
-    // Clean garbage RNB names: session starts, raw prompts, system noise
-    const GARBAGE_RE = /^(session start|please reply|task$|working\.\.\.$)/i
-    if (GARBAGE_RE.test(description.trim())) description = `${info.agent} is working`
-    // Truncate overly long raw prompts to something readable
-    if (description.length > 80) description = description.slice(0, 55).replace(/\s+\S*$/, '') + '...'
+    // Smart RNB name: the event description is often a raw user message.
+    // Extract the actual task intent or fall back to a clean agent status.
+    description = cleanTaskName(description, info.agent)
     rightNowTasks.push({
       agent:     info.agent,
-      text:      description.length > 55 ? description.slice(0, 52) + '...' : description,
+      text:      description,
       isLive:    true,
       isQueued:  false,
       fromEvents: true,
