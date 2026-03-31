@@ -125,6 +125,20 @@ const CSS = `
   .sr-ibody strong { display: block; font-size: 13px; font-weight: 600; margin-bottom: 3px; }
   .sr-ibody p { font-size: 12px; color: var(--gray); margin: 0; }
 
+  /* NAV */
+  .sr-nav {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    padding: 24px 40px; display: flex; align-items: center;
+  }
+  .sr-nav img { height: 36px; width: auto; display: block; }
+
+  /* LOGO CARDS */
+  .sr-logo-card {
+    border-radius: 8px; padding: 36px 40px; flex: 1; minWidth: 220px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .sr-logo-card img { max-width: 220px; width: 100%; height: auto; display: block; }
+
   /* CTA */
   .sr-cta { background: var(--surface2); padding: 64px 0; }
   .sr-cta-inner {
@@ -239,6 +253,9 @@ export default function SpaceRisingBrand() {
       <div className="sr-hero">
         <img src="/images/space-rising/hero-astronaut-arizona.jpg" alt="Space Rising Hero" />
         <div className="sr-hero-ov" />
+        <div className="sr-nav">
+          <img src="/images/space-rising/logo-white.png" alt="Space Rising" />
+        </div>
         <div className="sr-hero-inner">
           <div className="sr-hero-eye">Brand Guidelines 2026</div>
           <h1 className="sr-hero-title">Space<br />Rising</h1>
@@ -252,23 +269,16 @@ export default function SpaceRisingBrand() {
           <div className="sr-label">01 — Logo</div>
           <div className="sr-h2">Brand Marks</div>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '28px 32px', flex: 1, minWidth: 220, textAlign: 'center' }}>
-              <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 26, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                Space <span style={{ color: 'var(--orange)' }}>&#9679;</span> Rising
-              </div>
-              <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 12, letterSpacing: '.16em', color: 'var(--gray-l)', marginTop: 4, textTransform: 'uppercase' }}>
-                Arizona Space Congress
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--gray)', margin: '12px 0 0' }}>
-                Primary lockup. Condensed caps + orbit mark. Dark backgrounds only.
+            <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '36px 40px', flex: 1, minWidth: 220, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <img src="/images/space-rising/logo-white.png" alt="Space Rising white logo" style={{ maxWidth: 220, width: '100%', height: 'auto', display: 'block' }} />
+              <p style={{ fontSize: 12, color: 'var(--gray)', margin: 0 }}>
+                Primary lockup. White version. Dark backgrounds only.
               </p>
             </div>
-            <div style={{ background: '#1a0a06', border: '1px solid #2a1205', borderRadius: 8, padding: '28px 32px', flex: 1, minWidth: 220, textAlign: 'center' }}>
-              <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 26, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--orange)' }}>
-                Space Rising
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--gray)', margin: '12px 0 0' }}>
-                Orange variant. Near-black surfaces only. Min 4.5:1 contrast ratio.
+            <div style={{ background: '#F4F4F0', border: '1px solid #ddd', borderRadius: 8, padding: '36px 40px', flex: 1, minWidth: 220, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <img src="/images/space-rising/logo-dark.png" alt="Space Rising dark logo" style={{ maxWidth: 220, width: '100%', height: 'auto', display: 'block' }} />
+              <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
+                Dark version. Light backgrounds only. Min 4.5:1 contrast ratio.
               </p>
             </div>
           </div>
