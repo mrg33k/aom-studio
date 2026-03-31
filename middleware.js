@@ -67,6 +67,10 @@ const PAGE_META = {
     title: 'Valor to Victory Brand Identity',
     description: 'Brand identity concepts for Valor to Victory — veteran nonprofit focused on homeownership and financial empowerment through VA loans.',
   },
+  '/brands/space-rising': {
+    title: 'Space Rising Brand Guidelines',
+    description: 'Brand identity guidelines for Space Rising and Arizona Space Congress',
+  },
   '/case-study': {
     title: 'Case Study | AOM in Action',
     description: 'See how AOM delivers results. Real projects, real numbers, real impact.',

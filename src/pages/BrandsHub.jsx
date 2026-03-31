@@ -48,6 +48,14 @@ const brands = [
     fontClass: 'font-headline',
   },
   {
+    name: 'Space Rising',
+    full: 'Arizona Space Congress',
+    description: "Arizona's space economy is launching. Visual identity for Space Rising and the Arizona Space Congress — dark, cosmic, and grounded in desert reality.",
+    accentColor: '#E5451F',
+    link: '/brands/space-rising',
+    fontClass: 'font-headline',
+  },
+  {
     name: 'Valor to Victory',
     full: 'Empowering veterans through homeownership',
     description: 'Nonprofit empowering veterans through homeownership, real estate investment, VA loan education, and financial guidance.',
