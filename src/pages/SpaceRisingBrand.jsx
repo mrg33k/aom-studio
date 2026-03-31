@@ -117,6 +117,27 @@ const CSS = `
   }
   .sr-cspec p { font-size: 13px; margin: 0; color: var(--gray); }
 
+  /* SOCIAL MEDIA SECTION */
+  .sr-social-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+  .sr-social-scroll::-webkit-scrollbar { height: 4px; }
+  .sr-social-scroll::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 2px; }
+  .sr-social-scroll::-webkit-scrollbar-thumb { background: var(--orange); border-radius: 2px; opacity: 0.5; }
+  .sr-vcard { background: var(--surface); border: 1px solid #1E1E1E; border-radius: 8px; overflow: hidden; flex: 0 0 180px; transition: transform .2s, border-color .2s; }
+  .sr-vcard:hover { transform: translateY(-4px); border-color: rgba(229,69,31,.35); }
+  .sr-vcard img { width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block; }
+  .sr-vcard-meta { padding: 12px 14px; }
+  .sr-vcard-num { font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--orange); margin-bottom: 3px; }
+  .sr-vcard-title { font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--white); }
+  .sr-vcard-note { font-size: 11px; color: var(--gray); margin-top: 3px; line-height: 1.4; }
+  .sr-banner-list { display: flex; flex-direction: column; gap: 20px; margin-top: 32px; }
+  .sr-bcard { background: var(--surface); border: 1px solid #1E1E1E; border-radius: 8px; overflow: hidden; transition: transform .2s, border-color .2s; }
+  .sr-bcard:hover { transform: translateY(-3px); border-color: rgba(229,69,31,.35); }
+  .sr-bcard img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+  .sr-bcard-meta { padding: 14px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .sr-bcard-num { font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--orange); margin-bottom: 3px; }
+  .sr-bcard-title { font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .sr-bcard-note { font-size: 12px; color: var(--gray); max-width: 340px; line-height: 1.5; text-align: right; }
+
   /* IMAGE GRID */
   .sr-imgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .sr-icard { border-radius: 8px; overflow: hidden; border: 1px solid #1E1E1E; }
@@ -471,6 +492,55 @@ export default function SpaceRisingBrand() {
           <p style={{ marginTop: 18, fontSize: 13, color: 'var(--gray-l)' }}>
             <strong>Direction:</strong> High contrast. Rich depth. Cosmic scale against geographic anchor. Night/twilight preferred. No clean studio shots — always atmosphere, texture, drama.
           </p>
+        </div>
+      </div>
+
+      {/* SOCIAL MEDIA TEMPLATES */}
+      <div className="sr-section">
+        <div className="sr-wrap">
+          <div className="sr-label">07 — Social Media Templates</div>
+          <div className="sr-h2">Campaign Assets</div>
+          <p className="sr-p">Campaign-ready graphics for Arizona Space Congress. Vertical posts for Instagram, TikTok, and Stories. Banners and lower thirds for livestream and stage.</p>
+
+          <div className="sr-label" style={{ marginTop: 0, marginBottom: 14 }}>Vertical Posts — 9:16</div>
+          <div className="sr-social-scroll">
+            {[
+              { file: 'v1-event-announcement', num: '01', title: 'Event Announcement', note: 'Arizona Space Congress · Apr 29 reveal' },
+              { file: 'v2-speaker-spotlight', num: '02', title: 'Speaker Spotlight', note: 'Repeatable template per speaker' },
+              { file: 'v3-countdown', num: '03', title: 'Countdown Post', note: 'X days until Congress — daily series' },
+              { file: 'v4-quote-card', num: '04', title: 'Quote Card', note: 'Inspirational space / Arizona quote' },
+              { file: 'v5-registration-cta', num: '05', title: 'Registration CTA', note: 'Register Now — direct response post' },
+            ].map(({ file, num, title, note }) => (
+              <div key={file} className="sr-vcard">
+                <img src={`/images/space-rising/social/${file}.png`} alt={title} loading="lazy" />
+                <div className="sr-vcard-meta">
+                  <div className="sr-vcard-num">{num}</div>
+                  <div className="sr-vcard-title">{title}</div>
+                  <div className="sr-vcard-note">{note}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="sr-banner-list">
+            <div className="sr-label" style={{ marginBottom: 4 }}>Banners &amp; Lower Thirds — 16:9</div>
+            {[
+              { file: 'b1-speaker-lower-third', num: 'B1', title: 'Speaker Name Lower Third', note: 'Livestream and recorded video overlay. Name + title + org. Swap per speaker.' },
+              { file: 'b2-event-title-card', num: 'B2', title: 'Event Title Card', note: 'Intro card for livestream segments. Arizona Space Congress 2025 branding with date and location.' },
+              { file: 'b3-panel-banner', num: 'B3', title: 'Panel Topic Banner', note: 'Panel discussion title overlay. Swap topic text per session. Orange accent bar on left edge.' },
+            ].map(({ file, num, title, note }) => (
+              <div key={file} className="sr-bcard">
+                <img src={`/images/space-rising/social/${file}.png`} alt={title} loading="lazy" />
+                <div className="sr-bcard-meta">
+                  <div>
+                    <div className="sr-bcard-num">{num}</div>
+                    <div className="sr-bcard-title">{title}</div>
+                  </div>
+                  <div className="sr-bcard-note">{note}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
