@@ -37,6 +37,18 @@ const brands = [
     tag: 'Commercial / Industrial',
   },
   {
+    id: 'included-health',
+    name: 'Included Health',
+    full: 'Healthcare Navigation & Advocacy',
+    description: 'Brand reference for Included Health. Colors, typography, and visual identity guidelines.',
+    accentColor: '#00B5A3',
+    link: '/brands/included-health',
+    logo: null,
+    logoText: 'IH',
+    status: 'live',
+    tag: 'Healthcare / Technology',
+  },
+  {
     id: 'v2v',
     name: 'Valor to Victory',
     full: 'Veteran Homeownership & Investment',
@@ -44,6 +56,7 @@ const brands = [
     accentColor: '#C9A84C',
     link: '/brands/v2v',
     logo: null,
+    logoText: 'V2V',
     status: 'coming-soon',
     tag: 'Nonprofit / Veterans',
   },
@@ -159,7 +172,7 @@ function BrandCard({ brand }) {
             color: brand.accentColor, fontSize: 11, fontWeight: 700,
             letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.6,
           }}>
-            V2V
+            {brand.logoText || brand.id.toUpperCase()}
           </div>
         )}
       </div>
