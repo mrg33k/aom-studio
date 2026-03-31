@@ -6271,9 +6271,9 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                         style={{ marginRight: 8, marginBottom: 18, flexShrink: 0, opacity: msg.streaming ? 1 : 0.85, transition: 'opacity 300ms' }}
                       />
                     )}
-                    <div style={{ maxWidth: '75%' }}>
+                    <div style={{ maxWidth: isMobile || isTablet ? '80%' : '75%' }}>
                       <div style={{
-                        padding: '10px 14px', fontSize: fullscreen ? 14 : 13,
+                        padding: isMobile ? '7px 10px' : isTablet ? '8px 12px' : '10px 14px', fontSize: fullscreen ? 14 : 13,
                         fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.55,
                         ...(isUser
                           ? { background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.20)', borderRadius: '14px 4px 14px 14px', color: PALETTE.signText }
@@ -9980,7 +9980,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     )}
 
                     {/* Message content */}
-                    <div style={{ maxWidth: isMobile ? '85%' : '80%', minWidth: 0, overflow: 'visible' }}>
+                    <div style={{ maxWidth: isMobile ? '85%' : isTablet ? '78%' : '80%', minWidth: 0, overflow: 'visible' }}>
                       {/* Name + timestamp + project chip -- on every message in AOM Team Room */}
                       {!msg.streaming && (
                         <div style={{
@@ -10090,9 +10090,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       <div
                         className="msg-bubble"
                         style={{
-                          padding: '10px 14px',
-                          borderRadius: 12,
-                          fontSize: 14, fontWeight: 500, lineHeight: 1.5,
+                          padding: isMobile ? '7px 10px' : isTablet ? '8px 12px' : '10px 14px',
+                          borderRadius: isMobile ? 10 : 12,
+                          fontSize: isMobile ? 13 : isTablet ? 13 : 14, fontWeight: 500, lineHeight: isMobile || isTablet ? 1.4 : 1.5,
                           fontFamily: "'Inter', system-ui, sans-serif",
                           wordBreak: 'break-word', overflowWrap: 'break-word',
                           ...(isUser
