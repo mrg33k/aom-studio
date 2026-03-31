@@ -12,6 +12,7 @@ import {
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
 import { useSkillAutocomplete } from './components/SkillAutocomplete'
+import { getClientId, isAdminOverride, isSuperAdmin } from './lib/clientConfig.js'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -986,12 +987,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
     setIsSending(true)
     const sentTime = new Date().toISOString()
     if (!textOverride) setInput('')
+    // Admin context: detect world override before sending
+    const activeClientId = getClientId()
+    const adminOverrideActive = isAdminOverride()
+    const adminTag = adminOverrideActive
+      ? { sender_role: 'admin', world_id: activeClientId }
+      : {}
     // Clear typing state (no auto-scroll -- user controls scroll position)
     isUserTypingRef.current = false
     if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
     // Add user message + streaming placeholder (only if not already streaming)
     setMessages(prev => {
-      const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard' }]
+      const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard', ...adminTag }]
       sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
       // Only add a streaming placeholder if one doesn't already exist
       const hasStreamingMsg = sorted.some(m => m.streaming)
@@ -1016,6 +1023,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
             agent: agent.slug,
             message: text,
             source: 'corner-dashboard',
+            ...adminTag,
           }),
         })
         if (!res.ok) throw new Error('Failed to write to relay')
@@ -1030,6 +1038,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
           role: 'user',
           text: text,
           source: 'corner-dashboard',
+          client_id: activeClientId,
+          ...adminTag,
         })
         if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
         // No need to start relay poll: Realtime subscription handles incoming responses
@@ -1038,7 +1048,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
         const res = await fetch(RELAY_SEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: `@${agent.slug} ${text}`, agent: agent.slug }),
+          body: JSON.stringify({ message: `@${agent.slug} ${text}`, agent: agent.slug, ...adminTag }),
         })
         if (!res.ok) throw new Error('Failed to send via relay API')
         // Production: Supabase REST poll (30s) picks up responses as fallback to convPoll
@@ -1154,6 +1164,23 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
 
       {/* Messages */}
       <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 space-y-4 scroll-smooth chat-messages-area relative">
+        {/* Admin world override banner */}
+        {isAdminOverride() && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(249,115,22,0.08)',
+            border: '1px solid rgba(249,115,22,0.22)',
+            borderRadius: 6, padding: '5px 10px', marginBottom: 2,
+          }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#F97316', boxShadow: '0 0 4px #F97316', flexShrink: 0 }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#F97316', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Admin view
+            </span>
+            <span style={{ fontSize: 10, color: '#78716C', fontFamily: 'monospace' }}>
+              — {getClientId().toUpperCase()} world
+            </span>
+          </div>
+        )}
         {messages.length === 0 && !searchQuery && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-[#1A1A17] border-2 border-[#C026D3]/40 flex items-center justify-center mb-4">
@@ -1259,7 +1286,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
                   )}
                 </div>
 
-                {/* Timestamp + source + read receipts */}
+                {/* Timestamp + source + admin badge */}
                 <div className={`flex items-center gap-1.5 mt-1 px-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                   {timeStr && (
                     <span className="text-[10px] font-mono text-[#78716C]/40">{timeStr}</span>
@@ -1267,6 +1294,21 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
                   {sourceLabel && (
                     <span className="text-[9px] font-mono text-[#78716C]/25">
                       {sourceLabel.text}
+                    </span>
+                  )}
+                  {isUser && msg.sender_role === 'admin' && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700,
+                      color: '#F97316',
+                      background: 'rgba(249,115,22,0.10)',
+                      border: '1px solid rgba(249,115,22,0.25)',
+                      borderRadius: 3,
+                      padding: '1px 4px',
+                      fontFamily: 'monospace',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                    }}>
+                      admin
                     </span>
                   )}
                 </div>

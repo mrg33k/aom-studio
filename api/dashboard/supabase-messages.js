@@ -86,7 +86,7 @@ export default async function handler(req, res) {
 
   // ---- POST: write a new message (user send from dashboard) ---------------
   if (req.method === 'POST') {
-    const { agent, text, role = 'user', source = 'corner-dashboard', client_id } = req.body || {}
+    const { agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id } = req.body || {}
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
     // Resolve client_id: prefer body field, else default to 'aom'
@@ -101,6 +101,10 @@ export default async function handler(req, res) {
       text: text.trim(),
       source,
       client_id: resolvedClientId,  // always include -- multi-tenant isolation
+      // Admin context: sender_role ('admin') + world_id when super-admin is in a client world.
+      // These fields are optional -- only present when admin is overriding world context.
+      ...(sender_role ? { sender_role } : {}),
+      ...(world_id ? { world_id } : {}),
     }
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
