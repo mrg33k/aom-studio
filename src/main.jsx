@@ -206,7 +206,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />
           <Route path="/brand/v4" element={<BrandGuidelinesV4 />} />
-          <Route path="/brands" element={<Brands />} />
+          <Route path="/brands" element={<BrandsHub />} />
           <Route path="/brands/ambition" element={<AmbitionBrandGuidelinesV2 />} />
           <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
           <Route path="/brands/ambition/performance" element={<AmbitionPerformance />} />

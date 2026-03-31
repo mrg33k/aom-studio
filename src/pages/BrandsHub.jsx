@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
 
 /* Load Barlow Condensed for Ambition card -- injected in effect to avoid module-scope crash */
 function useBarlowFont() {
@@ -30,6 +30,31 @@ const brands = [
     accentColor: '#1a237e',
     link: '/brands/ambition',
     fontOverride: "'Barlow Condensed', sans-serif",
+  },
+  {
+    name: 'S3C',
+    full: 'Semiconductor Services & Supply Coalition',
+    description: 'Logo system and brand identity for a semiconductor industry coalition. Three concepts: seal, monogram, badge.',
+    accentColor: '#0E9FFF',
+    link: '/brands/s3c',
+    fontClass: 'font-headline',
+  },
+  {
+    name: 'Included Health',
+    full: 'Brand reference for Included Health',
+    description: 'Digital health company connecting people to quality care. Electric blue identity built for trust and clarity.',
+    accentColor: '#0012E7',
+    link: '/brands/included-health',
+    fontClass: 'font-headline',
+  },
+  {
+    name: 'Valor to Victory',
+    full: 'Empowering veterans through homeownership',
+    description: 'Nonprofit empowering veterans through homeownership, real estate investment, VA loan education, and financial guidance.',
+    accentColor: '#C9A84C',
+    link: null,
+    comingSoon: true,
+    fontClass: 'font-headline',
   },
 ]
 
@@ -69,38 +94,67 @@ export default function BrandsHub() {
         <div className="border-t border-[#D9D3CB] pt-16">
           <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-[#7A7267] mb-8">Active Brands</p>
           <div className="grid md:grid-cols-2 gap-6">
-            {brands.map(brand => (
-              <Link
-                key={brand.name}
-                to={brand.link}
-                className="group p-8 md:p-10 border border-[#D9D3CB] bg-white shadow-sm hover:border-opacity-60 transition-all duration-300"
-                style={{ '--accent': brand.accentColor }}
-              >
-                <div
-                  className="w-12 h-[2px] mb-6 transition-all duration-300 group-hover:w-20"
-                  style={{ backgroundColor: brand.accentColor }}
-                />
-                <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-[#7A7267] mb-3">
-                  {brand.full}
-                </p>
-                <h2
-                  className={`${brand.fontClass || ''} text-2xl md:text-4xl font-extrabold uppercase tracking-tight text-[#0A0A0A] mb-4`}
-                  style={brand.fontOverride ? { fontFamily: brand.fontOverride } : undefined}
+            {brands.map(brand => {
+              const cardInner = (
+                <>
+                  <div
+                    className="w-12 h-[2px] mb-6 transition-all duration-300 group-hover:w-20"
+                    style={{ backgroundColor: brand.accentColor }}
+                  />
+                  <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-[#7A7267] mb-3">
+                    {brand.full}
+                  </p>
+                  <h2
+                    className={`${brand.fontClass || ''} text-2xl md:text-4xl font-extrabold uppercase tracking-tight text-[#0A0A0A] mb-4`}
+                    style={brand.fontOverride ? { fontFamily: brand.fontOverride } : undefined}
+                  >
+                    {brand.name}
+                  </h2>
+                  <p className="text-[#7A7267] text-sm leading-relaxed mb-6 font-body">
+                    {brand.description}
+                  </p>
+                  {brand.comingSoon ? (
+                    <span
+                      className="inline-flex items-center gap-2 text-sm font-bold font-body opacity-50"
+                      style={{ color: brand.accentColor }}
+                    >
+                      <Clock size={13} />
+                      Coming Soon
+                    </span>
+                  ) : (
+                    <span
+                      className="inline-flex items-center gap-2 text-sm font-bold font-body transition-colors duration-300"
+                      style={{ color: brand.accentColor }}
+                    >
+                      View Guidelines
+                      <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                  )}
+                </>
+              )
+
+              if (brand.comingSoon) {
+                return (
+                  <div
+                    key={brand.name}
+                    className="group p-8 md:p-10 border border-[#D9D3CB] bg-white shadow-sm opacity-60 cursor-default"
+                  >
+                    {cardInner}
+                  </div>
+                )
+              }
+
+              return (
+                <Link
+                  key={brand.name}
+                  to={brand.link}
+                  className="group p-8 md:p-10 border border-[#D9D3CB] bg-white shadow-sm hover:border-opacity-60 transition-all duration-300"
+                  style={{ '--accent': brand.accentColor }}
                 >
-                  {brand.name}
-                </h2>
-                <p className="text-[#7A7267] text-sm leading-relaxed mb-6 font-body">
-                  {brand.description}
-                </p>
-                <span
-                  className="inline-flex items-center gap-2 text-sm font-bold font-body transition-colors duration-300"
-                  style={{ color: brand.accentColor }}
-                >
-                  View Guidelines
-                  <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-              </Link>
-            ))}
+                  {cardInner}
+                </Link>
+              )
+            })}
           </div>
         </div>
 
