@@ -433,51 +433,13 @@ export function useDataPipe(parsePunchList) {
         const missionsContent = missionsRes?.content || ''
         const taskStatusContent = taskStatusRes?.content || ''
 
-        // Parse task-status.jsonl: each line is JSON with status: STARTED, WORKING, QUEUED, FINISHED
-        let taskStatusTasks = []
-        if (taskStatusContent) {
-          const lines = taskStatusContent.trim().split('\n').filter(line => line && !line.startsWith('#'))
-          for (const line of lines) {
-            try {
-              const task = JSON.parse(line)
-              if (task.status === 'STARTED' || task.status === 'WORKING') {
-                taskStatusTasks.push({
-                  text: task.description || task.task || task.text || 'Running...',
-                  agent: task.agent || 'system',
-                  done: false,
-                  isLive: true,
-                  isQueued: false,
-                  taskId: task.id,
-                })
-              } else if (task.status === 'QUEUED') {
-                taskStatusTasks.push({
-                  text: task.description || task.task || task.text || 'Queued...',
-                  agent: task.agent || 'system',
-                  done: false,
-                  isLive: true,
-                  isQueued: true,
-                  taskId: task.id,
-                })
-              }
-            } catch {
-              // Skip malformed lines
-            }
-          }
-        }
+        // FIX (Issue 1): Events table is the SOLE source of truth for Right Now.
+        // task-status.jsonl and notifications are NO LONGER used for Right Now derivation.
+        // This kills the parallel system drift that caused ghost pills.
+        const mergedTasks = []
+        let eventsLoaded = false
 
-        // Merge task-status tasks with notifications-based tasks (task-status takes priority)
-        const notifTasks = parseRightNow(missionsContent, notifContent)
-        const mergedTasks = [...taskStatusTasks]
-        for (const task of notifTasks) {
-          if (!mergedTasks.some(t => t.agent === task.agent)) {
-            mergedTasks.push(task)
-          }
-        }
-
-        // Hybrid: also read Supabase for done/todo tasks + events (not tracked in local files)
-        // done tasks -> Right Now with isDoneAwaitingApproval (yellow)
-        // todo tasks -> To Do pill via setTodoItems
-        // events -> Right Now active tasks + agent status overrides
+        // PRIMARY: Supabase events table + tasks table
         try {
           const clientId = getClientId()
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
@@ -502,19 +464,47 @@ export function useDataPipe(parsePunchList) {
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
               setPersonalTodos(patrikEntries)
             }
-            // Events table: derive Right Now tasks and agent statuses
+            // Events table: THE source of truth for Right Now
             if (sbData.events && sbData.events.length > 0) {
               const { rightNowTasks, agentStatuses } = deriveStateFromEvents(sbData.events)
               eventsAgentStatusRef.current = agentStatuses
-              // Merge events-derived tasks: events take priority for agents that have event data
-              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
-              const filteredMerged = mergedTasks.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
-              mergedTasks.length = 0
-              mergedTasks.push(...rightNowTasks, ...filteredMerged)
+              mergedTasks.push(...rightNowTasks)
+              eventsLoaded = true
             }
           }
         } catch {
-          // Supabase unavailable in local dev -- skip done/todo tasks
+          // Supabase unavailable in local dev
+        }
+
+        // FALLBACK: task-status.jsonl ONLY when events are completely unavailable
+        if (!eventsLoaded && taskStatusContent) {
+          const lines = taskStatusContent.trim().split('\n').filter(line => line && !line.startsWith('#'))
+          for (const line of lines) {
+            try {
+              const task = JSON.parse(line)
+              if (task.status === 'STARTED' || task.status === 'WORKING') {
+                mergedTasks.push({
+                  text: task.description || task.task || task.text || 'Running...',
+                  agent: task.agent || 'system',
+                  done: false,
+                  isLive: true,
+                  isQueued: false,
+                  taskId: task.id,
+                })
+              } else if (task.status === 'QUEUED') {
+                mergedTasks.push({
+                  text: task.description || task.task || task.text || 'Queued...',
+                  agent: task.agent || 'system',
+                  done: false,
+                  isLive: true,
+                  isQueued: true,
+                  taskId: task.id,
+                })
+              }
+            } catch {
+              // Skip malformed lines
+            }
+          }
         }
 
         setRightNow(mergedTasks)

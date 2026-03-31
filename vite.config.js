@@ -1161,6 +1161,81 @@ function localDashboardPlugin() {
         })
       })
 
+      // ---- RESTART AGENT --------
+      // Dashboard restart button: kills and relaunches a super agent's tmux session.
+      // Gives the agent a fresh sandbox, fresh permissions, clean context.
+      server.middlewares.use('/api/local/restart-agent', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'POST only' }))
+          return
+        }
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body)
+            const slug = (data.slug || '').toLowerCase().trim()
+            if (!slug || !SUPER_AGENTS.has(slug)) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: `Not a super agent: ${slug}. Valid: ${[...SUPER_AGENTS].join(', ')}` }))
+              return
+            }
+            const launchScript = resolve(AOM_EA_ROOT, 'scripts', 'launch-super-agent.sh')
+            // Strip TMUX env var to avoid socket conflict when Vite runs inside tmux
+            const cleanEnv = { ...process.env }
+            delete cleanEnv.TMUX
+            const child = spawn('bash', [launchScript, slug], {
+              cwd: AOM_EA_ROOT,
+              detached: true,
+              stdio: 'ignore',
+              env: cleanEnv,
+            })
+            child.unref()
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ ok: true, slug, restarted_at: new Date().toISOString() }))
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        })
+      })
+
+      // ---- AGENT QUEUES (List Tab) --------
+      // Returns all agents with their queued tasks parsed from incoming-tasks.md
+      server.middlewares.use('/api/local/agent-queues', (req, res) => {
+        const agentSlugs = ['elon','bobby','gary','rex','steffen','steve','alex','jacob','cleo','tony','colton','elmo','mom','pixel','paige','mark']
+        const queues = {}
+        for (const slug of agentSlugs) {
+          const content = readLocalFile(`projects/${slug}/incoming-tasks.md`)
+          const tasks = []
+          if (content) {
+            const lines = content.split('\n')
+            for (const line of lines) {
+              const trimmed = line.trim()
+              // Match markdown task items: - [ ] task or - [x] task or - task or * task
+              const checkMatch = trimmed.match(/^[-*]\s*\[([ xX])\]\s*(.+)/)
+              const bulletMatch = !checkMatch && trimmed.match(/^[-*]\s+(.+)/)
+              if (checkMatch) {
+                const done = checkMatch[1].toLowerCase() === 'x'
+                const text = checkMatch[2].trim()
+                if (text && !text.startsWith('#') && !text.startsWith('<!--')) {
+                  tasks.push({ text, done })
+                }
+              } else if (bulletMatch) {
+                const text = bulletMatch[1].trim()
+                if (text && !text.startsWith('#') && !text.startsWith('<!--') && text.length > 3) {
+                  tasks.push({ text, done: false })
+                }
+              }
+            }
+          }
+          queues[slug] = { tasks, total: tasks.length, open: tasks.filter(t => !t.done).length }
+        }
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ queues, timestamp: new Date().toISOString() }))
+      })
+
       // ---- TASK ASSIGN (Right Now routing) --------
       // When a task moves to Right Now, auto-assign to an agent and notify them.
       // This makes Right Now ACTIONABLE, not just a display list.
@@ -1847,6 +1922,83 @@ function localDashboardPlugin() {
             res.end(JSON.stringify({ ok: false, error: err.message, report }))
           }
         })()
+      })
+
+      // ---- LOCAL BASE CHAT PROXY ----
+      // POST /api/dashboard/base-chat (local dev: runs route-message.py as subprocess)
+      server.middlewares.use('/api/dashboard/base-chat', (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') { res.statusCode = 200; res.end(); return }
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: 'POST only' })); return }
+
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', () => {
+          try {
+            const { workspace, message, history = [] } = JSON.parse(body)
+            if (!workspace || !message) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'workspace and message required' }))
+              return
+            }
+
+            // Write history to a temp file for route-message.py
+            const os = require('os')
+            const historyPath = resolve(os.tmpdir(), `base-chat-history-${Date.now()}.json`)
+            fs.writeFileSync(historyPath, JSON.stringify(history), 'utf-8')
+
+            const workspacePath = workspace.startsWith('/') ? workspace : resolve(AOM_EA_ROOT, workspace)
+            const scriptPath = resolve(AOM_EA_ROOT, 'scripts', 'route-message.py')
+
+            const child = spawn('python3', [
+              scriptPath,
+              '--workspace', workspacePath,
+              '--message', message,
+              '--history', historyPath,
+            ], { cwd: AOM_EA_ROOT })
+
+            let stdout = ''
+            let stderr = ''
+            child.stdout.on('data', d => { stdout += d.toString() })
+            child.stderr.on('data', d => { stderr += d.toString() })
+            child.on('close', code => {
+              try { fs.unlinkSync(historyPath) } catch {}
+              if (code !== 0) {
+                res.statusCode = 500
+                res.end(JSON.stringify({ error: 'Router error', stderr: stderr.slice(0, 200) }))
+                return
+              }
+              try {
+                const result = JSON.parse(stdout.trim())
+                // Normalize to expected shape
+                if (result.clarification) {
+                  res.end(JSON.stringify({ clarification: result.clarification, routing: result.routing }))
+                } else if (result.responses) {
+                  res.end(JSON.stringify({ responses: result.responses, routing: result.routing }))
+                } else {
+                  res.end(JSON.stringify({
+                    response: result.response,
+                    via: result.via,
+                    routing: result.routing,
+                  }))
+                }
+              } catch {
+                res.end(JSON.stringify({ response: stdout.trim(), via: 'Router', routing: {} }))
+              }
+            })
+            child.on('error', err => {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: err.message }))
+            })
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        })
       })
 
       // ---- LOCAL FINANCE PROXY ----
