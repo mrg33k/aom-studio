@@ -80,6 +80,7 @@ import './index.css'
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
 const ChatDashboard = lazy(() => import('./dashboard/ChatDashboard.jsx'))
 const GameDashboard = lazy(() => import('./dashboard/GameDashboard.jsx'))
+const AgentInfoPage = lazy(() => import('./dashboard/AgentInfoPage.jsx'))
 
 function ConstructionRedirect() {
   const navigate = useNavigate()
@@ -282,6 +283,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/agent/:slug/info" element={<AuthGuard><AgentInfoPage /></AuthGuard>} />
           <Route path="/dashboard/checklist" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/checklist/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/megaboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
