@@ -1601,6 +1601,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
   const inboxItems = pipeData?.inboxItems || []
+  const personalTodos = pipeData?.personalTodos || []
+  const completedFeed = pipeData?.completedFeed || []
   const vars = cssVars(isNightMode)
 
   // Visible columns: set of slugs. Persisted to Supabase + localStorage fallback.
@@ -1703,7 +1705,13 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     const agentItems = agents.map(a => ({
       slug: a.slug, name: a.name || getAgentName(a.slug), color: a.color || getAgentColor(a.slug),
       status: a.status || 'IDLE', role: a.role || '', isAgent: true,
-      tasks: rightNow.filter(t => t.agent === a.slug),
+      tasks: a.slug === 'patrik'
+        ? [
+            ...rightNow.filter(t => t.agent === 'patrik'),
+            ...personalTodos,
+            ...completedFeed.filter(t => t.agent === 'patrik').map(t => ({ ...t, done: true })),
+          ]
+        : rightNow.filter(t => t.agent === a.slug),
     }))
     const projectItems = (punchData?.projects || []).map(p => ({
       slug: p.section, name: p.name, color: p.color || getAgentColor(p.section),
@@ -1711,7 +1719,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       tasks: (p.tasks || []).map(t => ({ ...t, project: p.section })),
     }))
     return [...agentItems, ...projectItems]
-  }, [agents, rightNow, punchData])
+  }, [agents, rightNow, punchData, personalTodos, completedFeed])
 
   // Apply saved column order
   const orderedVisibleItems = useMemo(() => {
