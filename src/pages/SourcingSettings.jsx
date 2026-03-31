@@ -2,47 +2,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../dashboard/lib/supabase.js';
 import { SourcingNav } from './SourcingMarketplace.jsx';
-import { SourcingThemeProvider, useSourcingTheme, getTokens } from './SourcingTheme.jsx';
+import { SourcingThemeProvider, useSourcingTheme, getTokens, useTenant } from './SourcingTheme.jsx';
 
-// ─── Vertical options ────────────────────────────────────────────────────────
-const VERTICALS = [
-  { key: 'semiconductor', label: 'Semiconductor' },
-  { key: 'space',         label: 'Space & Aerospace' },
-  { key: 'biotech',       label: 'Biotech & Life Sciences' },
-  { key: 'defense',       label: 'Defense & Security' },
+// ─── Notification preference definitions ─────────────────────────────────────
+const PREF_KEYS = [
+  'companies_new',
+  'articles_semiconductor',
+  'articles_space',
+  'articles_biotech',
+  'articles_defense',
+  'jobs_new',
+  'events_new',
 ];
 
-// ─── Shared input styles ─────────────────────────────────────────────────────
-function inputStyle(V) {
-  return {
-    width: '100%',
-    background: V.card,
-    border: `1px solid ${V.border}`,
-    borderRadius: 8,
-    padding: '14px 16px',
-    fontSize: 15,
-    fontFamily: V.space,
-    color: V.text,
-    outline: 'none',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-  };
-}
+const DEFAULT_PREFS = Object.fromEntries(PREF_KEYS.map(k => [k, true]));
 
-function labelStyle(V) {
-  return {
-    fontSize: 12,
-    fontWeight: 700,
-    fontFamily: V.mono,
-    color: V.muted,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    marginBottom: 10,
-    display: 'block',
-  };
-}
-
-// ─── Toggle switch ───────────────────────────────────────────────────────────
-function ToggleSwitch({ on, onToggle, V, accent }) {
+// ─── Toggle switch ─────────────────────────────────────────────────────────
+function ToggleSwitch({ on, onToggle, accent, V }) {
   return (
     <button
       type="button"
@@ -72,152 +48,153 @@ function ToggleSwitch({ on, onToggle, V, accent }) {
   );
 }
 
-// ─── Inner component ─────────────────────────────────────────────────────────
+// ─── Section label ─────────────────────────────────────────────────────────
+function SectionLabel({ label, V }) {
+  return (
+    <div style={{
+      fontSize: 11, fontWeight: 700, fontFamily: V.mono,
+      color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase',
+      marginBottom: 16,
+    }}>
+      {label}
+    </div>
+  );
+}
+
+// ─── Pref row ──────────────────────────────────────────────────────────────
+function PrefRow({ label, sublabel, enabled, onToggle, accent, V, saving }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '16px 20px',
+      gap: 16,
+      opacity: saving ? 0.6 : 1,
+      transition: 'opacity 0.15s',
+    }}>
+      <div>
+        <div style={{ fontSize: 15, fontFamily: V.space, color: V.text }}>{label}</div>
+        {sublabel && (
+          <div style={{ fontSize: 12, fontFamily: V.space, color: V.dim, marginTop: 2 }}>{sublabel}</div>
+        )}
+      </div>
+      <ToggleSwitch on={enabled} onToggle={onToggle} accent={accent} V={V} />
+    </div>
+  );
+}
+
+// ─── Inner component ──────────────────────────────────────────────────────
 function SourcingSettingsInner() {
   const { dark } = useSourcingTheme();
   const V = getTokens(dark);
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
+  const { tenant, loading: tenantLoading } = useTenant();
 
-  const [tenant, setTenant] = useState(null);
+  const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState(null);
-  const [archiving, setArchiving] = useState(false);
-  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [prefs, setPrefs] = useState(DEFAULT_PREFS);
+  const [frequency, setFrequency] = useState('real-time');
+  const [savingKey, setSavingKey] = useState(null);
+  const [savedKey, setSavedKey] = useState(null);
+  const [error, setError] = useState('');
 
-  // Editable fields
-  const [name, setName] = useState('');
-  const [navLabel, setNavLabel] = useState('');
-  const [description, setDescription] = useState('');
-  const [heroText, setHeroText] = useState('');
-  const [vertical, setVertical] = useState('');
-  const [brandColor, setBrandColor] = useState('#1B5E20');
-  const [website, setWebsite] = useState('');
-  const [features, setFeatures] = useState({ jobs: true, marketplace: true, events: true, articles: true, signup: true });
-  const [selfService, setSelfService] = useState(true);
+  const basePath = tenantSlug ? `/sourcing/${tenantSlug}` : '/sourcing';
+  const accent = tenant?.brand_color || V.accent;
 
-  const accent = brandColor || V.accent;
-
-  // Load tenant
+  // Check auth on mount -- redirect to login if no session
   useEffect(() => {
-    if (!tenantSlug) { setLoading(false); return; }
-    async function loadTenant() {
-      try {
-        // Try API
-        try {
-          const res = await fetch(`/api/sourcing/tenants?slug=${tenantSlug}`);
-          if (res.ok) {
-            const data = await res.json();
-            populateForm(data);
-            setTenant(data);
-            setLoading(false);
-            return;
-          }
-        } catch { /* fall through */ }
-        // Direct Supabase
-        if (supabase) {
-          const { data } = await supabase.from('directory_tenants').select('*').eq('slug', tenantSlug).single();
-          if (data) {
-            populateForm(data);
-            setTenant(data);
+    if (!supabase) { setLoading(false); return; }
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate(`${basePath}/login`, { replace: true });
+        return;
+      }
+      setAuthUser(session.user);
+    };
+    checkAuth();
+  }, [navigate, basePath]);
+
+  // Load existing preferences from Supabase
+  const loadPrefs = useCallback(async () => {
+    if (!supabase || !authUser || !tenant) return;
+    setLoading(true);
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from('user_notification_preferences')
+        .select('preference_key, enabled, frequency')
+        .eq('user_id', authUser.id)
+        .eq('tenant_id', tenant.id);
+
+      if (fetchErr) throw fetchErr;
+
+      if (data && data.length > 0) {
+        const loaded = { ...DEFAULT_PREFS };
+        let freq = 'real-time';
+        for (const row of data) {
+          if (row.preference_key === 'digest_frequency') {
+            freq = row.frequency || 'real-time';
+          } else {
+            loaded[row.preference_key] = row.enabled;
           }
         }
-      } catch (err) {
-        console.error('Failed to load tenant:', err);
-        setError('Could not load directory settings.');
-      } finally {
-        setLoading(false);
+        setPrefs(loaded);
+        setFrequency(freq);
       }
-    }
-    loadTenant();
-  }, [tenantSlug]);
-
-  const populateForm = (t) => {
-    setName(t.name || '');
-    setNavLabel(t.nav_label || '');
-    setDescription(t.description || '');
-    setHeroText(t.hero_text || '');
-    setVertical(t.vertical || '');
-    setBrandColor(t.brand_color || '#1B5E20');
-    setWebsite(t.website || '');
-    setFeatures(t.features || { jobs: true, marketplace: true, events: true, articles: true, signup: true });
-    setSelfService(t.self_service !== false);
-  };
-
-  const toggleFeature = (key) => {
-    setFeatures(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleSave = async () => {
-    if (saving || !tenant) return;
-    setSaving(true);
-    setError(null);
-    setSaved(false);
-
-    const payload = {
-      name: name.trim(),
-      nav_label: navLabel.trim() || null,
-      description: description.trim() || null,
-      hero_text: heroText.trim() || null,
-      vertical: vertical.trim(),
-      brand_color: brandColor,
-      website: website.trim() || null,
-      features,
-      self_service: selfService,
-    };
-
-    try {
-      if (supabase) {
-        const { error: updateErr } = await supabase
-          .from('directory_tenants')
-          .update(payload)
-          .eq('id', tenant.id);
-        if (updateErr) throw new Error(updateErr.message);
-      } else {
-        throw new Error('Supabase not configured');
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setError(err.message);
+      console.error('Failed to load notification prefs:', err);
+      setError('Could not load preferences.');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  };
+  }, [authUser, tenant]);
 
-  const handleArchive = async () => {
-    if (archiving || !tenant) return;
-    setArchiving(true);
-    setError(null);
+  useEffect(() => {
+    if (authUser && tenant) loadPrefs();
+  }, [authUser, tenant, loadPrefs]);
 
+  // Upsert a single preference row
+  const savePref = async (key, enabled, freq) => {
+    if (!supabase || !authUser || !tenant) return;
+    setSavingKey(key);
+    setError('');
     try {
-      if (supabase) {
-        const { error: archiveErr } = await supabase
-          .from('directory_tenants')
-          .update({ status: 'archived' })
-          .eq('id', tenant.id);
-        if (archiveErr) throw new Error(archiveErr.message);
-      } else {
-        throw new Error('Supabase not configured');
-      }
-      navigate('/sourcing');
+      const payload = {
+        user_id: authUser.id,
+        tenant_id: tenant.id,
+        preference_key: key,
+        enabled: enabled,
+        frequency: freq,
+        updated_at: new Date().toISOString(),
+      };
+      const { error: upsertErr } = await supabase
+        .from('user_notification_preferences')
+        .upsert(payload, { onConflict: 'user_id,tenant_id,preference_key' });
+
+      if (upsertErr) throw upsertErr;
+
+      setSavedKey(key);
+      setTimeout(() => setSavedKey(null), 1500);
     } catch (err) {
-      setError(err.message);
-      setArchiving(false);
+      console.error('Failed to save pref:', err);
+      setError('Failed to save. Try again.');
+    } finally {
+      setSavingKey(null);
     }
   };
 
-  const featureLabels = {
-    jobs: 'Job Board',
-    marketplace: 'Marketplace',
-    events: 'Events Calendar',
-    articles: 'Articles & News',
-    signup: 'Company Signup',
+  const togglePref = async (key) => {
+    const newVal = !prefs[key];
+    setPrefs(prev => ({ ...prev, [key]: newVal }));
+    await savePref(key, newVal, frequency);
   };
 
-  if (loading) {
+  const setFreq = async (val) => {
+    setFrequency(val);
+    await savePref('digest_frequency', true, val);
+  };
+
+  if (tenantLoading || (loading && !authUser)) {
     return (
       <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{
@@ -230,415 +207,202 @@ function SourcingSettingsInner() {
     );
   }
 
-  if (!tenant) {
-    return (
-      <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
-        <SourcingNav active="settings" tenantSlug={tenantSlug} />
-        <div style={{ padding: '80px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 8 }}>
-            Directory not found
-          </div>
-          <Link to="/sourcing" style={{ color: V.accent, fontFamily: V.space, fontSize: 14 }}>
-            Back to directories
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
         a { color: inherit; }
-        input:focus, textarea:focus { border-color: ${accent} !important; box-shadow: 0 0 0 2px rgba(16,185,129,0.12); }
-        input::placeholder, textarea::placeholder { color: ${V.dim}; }
-        input[type="color"] { -webkit-appearance: none; }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
       `}</style>
 
       <SourcingNav
         active="settings"
         tenantSlug={tenantSlug}
-        tenantName={tenant.nav_label || tenant.name}
-        features={tenant.features}
-        brandColor={tenant.brand_color}
+        tenantName={tenant?.nav_label || tenant?.name}
+        features={tenant?.features}
+        brandColor={tenant?.brand_color}
       />
 
-      {/* Page content */}
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
-        <h1 style={{
-          fontSize: 28, fontWeight: 800, fontFamily: V.syne,
-          color: V.heading, margin: '0 0 8px',
-        }}>
-          Directory Settings
-        </h1>
-        <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: '0 0 40px' }}>
-          Configure {tenant.name}
-        </p>
-
-        {/* ── General section ───────────────────────────────────────────── */}
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '48px 24px 80px' }}>
+        {/* Header */}
         <div style={{ marginBottom: 40 }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, fontFamily: V.mono,
-            color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: 20,
+          <h1 style={{
+            fontSize: 28, fontWeight: 800, fontFamily: V.syne,
+            color: V.heading, margin: '0 0 8px',
           }}>
-            General
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div>
-              <label style={labelStyle(V)}>Directory Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                style={inputStyle(V)}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle(V)}>Nav Label (optional override)</label>
-              <input
-                type="text"
-                value={navLabel}
-                onChange={e => setNavLabel(e.target.value)}
-                placeholder="Shorter name for navigation"
-                style={inputStyle(V)}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle(V)}>Vertical</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {VERTICALS.map(v => {
-                  const selected = vertical === v.key;
-                  return (
-                    <button
-                      key={v.key}
-                      type="button"
-                      onClick={() => setVertical(v.key)}
-                      style={{
-                        background: selected ? `${accent}18` : V.card,
-                        border: `1px solid ${selected ? accent : V.border}`,
-                        borderRadius: 8,
-                        padding: '8px 16px',
-                        fontSize: 13,
-                        fontFamily: V.space,
-                        fontWeight: selected ? 700 : 500,
-                        color: selected ? accent : V.muted,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {v.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* If vertical doesn't match any preset, show custom input */}
-              {vertical && !VERTICALS.find(v => v.key === vertical) && (
-                <input
-                  type="text"
-                  value={vertical}
-                  onChange={e => setVertical(e.target.value)}
-                  placeholder="Custom vertical"
-                  style={{ ...inputStyle(V), marginTop: 10 }}
-                />
-              )}
-            </div>
-
-            <div>
-              <label style={labelStyle(V)}>Description</label>
-              <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                rows={3}
-                style={{ ...inputStyle(V), resize: 'vertical', minHeight: 80, lineHeight: 1.5 }}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle(V)}>Hero Text</label>
-              <textarea
-                value={heroText}
-                onChange={e => setHeroText(e.target.value)}
-                placeholder="Custom tagline shown on the directory landing"
-                rows={2}
-                style={{ ...inputStyle(V), resize: 'vertical', minHeight: 60, lineHeight: 1.5 }}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle(V)}>Website</label>
-              <input
-                type="url"
-                value={website}
-                onChange={e => setWebsite(e.target.value)}
-                placeholder="https://example.com"
-                style={inputStyle(V)}
-              />
-            </div>
-          </div>
+            Notification Preferences
+          </h1>
+          <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, margin: 0 }}>
+            Control which emails you receive from{' '}
+            {tenant?.name || 'this directory'}.
+          </p>
         </div>
 
-        {/* ── Branding section ──────────────────────────────────────────── */}
-        <div style={{ marginBottom: 40 }}>
+        {error && (
           <div style={{
-            fontSize: 11, fontWeight: 700, fontFamily: V.mono,
-            color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: 20,
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: 8, padding: '12px 16px', marginBottom: 24,
+            fontSize: 13, fontFamily: V.space, color: '#f87171',
           }}>
-            Branding
+            {error}
           </div>
+        )}
 
-          <div>
-            <label style={labelStyle(V)}>Brand Color</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <input
-                type="color"
-                value={brandColor}
-                onChange={e => setBrandColor(e.target.value)}
-                style={{
-                  width: 48, height: 48,
-                  border: `2px solid ${V.border}`,
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  background: 'transparent',
-                  padding: 2,
-                }}
-              />
-              <input
-                type="text"
-                value={brandColor}
-                onChange={e => setBrandColor(e.target.value)}
-                style={{ ...inputStyle(V), width: 140, fontFamily: V.mono }}
-              />
-              <div style={{
-                width: 80, height: 48, borderRadius: 8,
-                background: brandColor,
-                border: `1px solid ${V.border}`,
-                transition: 'background 0.2s',
-              }} />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Features section ──────────────────────────────────────────── */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, fontFamily: V.mono,
-            color: V.accent, letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: 20,
-          }}>
-            Features
-          </div>
-
+        {/* ── Companies section ──────────────────────────────────────── */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionLabel label="Companies" V={V} />
           <div style={{
             background: V.card, border: `1px solid ${V.border}`,
             borderRadius: 10, overflow: 'hidden',
           }}>
-            {Object.keys(featureLabels).map((key, i) => (
-              <div
-                key={key}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '16px 20px',
-                  borderTop: i > 0 ? `1px solid ${V.border}` : 'none',
-                }}
-              >
-                <span style={{ fontSize: 15, fontFamily: V.space, color: V.text }}>
-                  {featureLabels[key]}
-                </span>
-                <ToggleSwitch on={features[key]} onToggle={() => toggleFeature(key)} V={V} accent={accent} />
+            <PrefRow
+              label="New companies in your vertical"
+              sublabel="Get notified when new companies join the directory"
+              enabled={prefs.companies_new}
+              onToggle={() => togglePref('companies_new')}
+              accent={accent}
+              V={V}
+              saving={savingKey === 'companies_new'}
+            />
+          </div>
+        </div>
+
+        {/* ── Articles section ───────────────────────────────────────── */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionLabel label="Articles & Reports" V={V} />
+          <div style={{
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, overflow: 'hidden',
+          }}>
+            {[
+              { key: 'articles_semiconductor', label: 'Semiconductor', sublabel: 'New semiconductor industry articles' },
+              { key: 'articles_space',         label: 'Space & Aerospace', sublabel: 'New space and aerospace articles' },
+              { key: 'articles_biotech',       label: 'Biotech & Life Sciences', sublabel: 'New biotech and life science articles' },
+              { key: 'articles_defense',       label: 'Defense & Security', sublabel: 'New defense and security articles' },
+            ].map((item, i) => (
+              <div key={item.key} style={{ borderTop: i > 0 ? `1px solid ${V.border}` : 'none' }}>
+                <PrefRow
+                  label={item.label}
+                  sublabel={item.sublabel}
+                  enabled={prefs[item.key]}
+                  onToggle={() => togglePref(item.key)}
+                  accent={accent}
+                  V={V}
+                  saving={savingKey === item.key}
+                />
               </div>
             ))}
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '16px 20px',
-                borderTop: `1px solid ${V.border}`,
-              }}
-            >
-              <div>
-                <span style={{ fontSize: 15, fontFamily: V.space, color: V.text, display: 'block' }}>
-                  Self-Service Signups
-                </span>
-                <span style={{ fontSize: 12, fontFamily: V.space, color: V.dim }}>
-                  Allow companies to sign up and create accounts
-                </span>
-              </div>
-              <ToggleSwitch on={selfService} onToggle={() => setSelfService(s => !s)} V={V} accent={accent} />
+          </div>
+        </div>
+
+        {/* ── Listings section ───────────────────────────────────────── */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionLabel label="Listings" V={V} />
+          <div style={{
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, overflow: 'hidden',
+          }}>
+            <PrefRow
+              label="New job postings"
+              sublabel="Get notified when new jobs are posted"
+              enabled={prefs.jobs_new}
+              onToggle={() => togglePref('jobs_new')}
+              accent={accent}
+              V={V}
+              saving={savingKey === 'jobs_new'}
+            />
+            <div style={{ borderTop: `1px solid ${V.border}` }}>
+              <PrefRow
+                label="New events"
+                sublabel="Get notified about upcoming events"
+                enabled={prefs.events_new}
+                onToggle={() => togglePref('events_new')}
+                accent={accent}
+                V={V}
+                saving={savingKey === 'events_new'}
+              />
             </div>
           </div>
         </div>
 
-        {/* ── Save button ───────────────────────────────────────────────── */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 16,
-          marginBottom: 60,
-        }}>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || !name.trim()}
+        {/* ── Frequency section ──────────────────────────────────────── */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionLabel label="Email Frequency" V={V} />
+          <div style={{
+            background: V.card, border: `1px solid ${V.border}`,
+            borderRadius: 10, overflow: 'hidden',
+          }}>
+            {[
+              { val: 'real-time', label: 'Real-time', sublabel: 'Receive emails as events happen' },
+              { val: 'weekly',    label: 'Weekly digest', sublabel: 'One summary email per week' },
+            ].map((opt, i) => {
+              const selected = frequency === opt.val;
+              return (
+                <div
+                  key={opt.val}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '16px 20px',
+                    borderTop: i > 0 ? `1px solid ${V.border}` : 'none',
+                    cursor: 'pointer',
+                    background: selected ? `${accent}08` : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
+                  onClick={() => setFreq(opt.val)}
+                >
+                  <div>
+                    <div style={{ fontSize: 15, fontFamily: V.space, color: V.text }}>{opt.label}</div>
+                    <div style={{ fontSize: 12, fontFamily: V.space, color: V.dim, marginTop: 2 }}>{opt.sublabel}</div>
+                  </div>
+                  <div style={{
+                    width: 20, height: 20,
+                    borderRadius: '50%',
+                    border: `2px solid ${selected ? accent : V.border}`,
+                    background: selected ? accent : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s',
+                    flexShrink: 0,
+                  }}>
+                    {selected && (
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Save feedback / status */}
+        {savedKey && (
+          <div style={{
+            fontSize: 13, fontFamily: V.space, color: V.green,
+            padding: '8px 16px', background: `${V.green}12`,
+            border: `1px solid ${V.green}30`, borderRadius: 8,
+            display: 'inline-block',
+          }}>
+            Saved
+          </div>
+        )}
+
+        {/* Back to portal */}
+        <div style={{ marginTop: 48, paddingTop: 24, borderTop: `1px solid ${V.border}` }}>
+          <Link
+            to={`${basePath}/portal`}
             style={{
-              background: saving ? V.border : accent,
-              border: 'none',
-              borderRadius: 8,
-              padding: '12px 28px',
-              fontSize: 14,
-              fontFamily: V.space,
-              fontWeight: 700,
-              color: '#fff',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s',
-              display: 'flex', alignItems: 'center', gap: 8,
+              fontSize: 13, fontFamily: V.space, color: V.muted,
+              textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6,
             }}
           >
-            {saving ? (
-              <>
-                <div style={{
-                  width: 16, height: 16, borderRadius: '50%',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTop: '2px solid #fff',
-                  animation: 'spin 0.8s linear infinite',
-                }} />
-                Saving...
-              </>
-            ) : 'Save Changes'}
-          </button>
-
-          {saved && (
-            <span style={{
-              fontSize: 13, fontFamily: V.space, color: V.green, fontWeight: 600,
-              animation: 'fadeIn 0.2s ease',
-            }}>
-              Saved
-            </span>
-          )}
-
-          {error && (
-            <span style={{
-              fontSize: 13, fontFamily: V.space, color: '#f87171',
-            }}>
-              {error}
-            </span>
-          )}
-        </div>
-
-        {/* ── Danger Zone ───────────────────────────────────────────────── */}
-        <div style={{
-          borderTop: '1px solid rgba(239,68,68,0.2)',
-          paddingTop: 32,
-        }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, fontFamily: V.mono,
-            color: '#EF4444', letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: 16,
-          }}>
-            Danger Zone
-          </div>
-
-          <div style={{
-            background: 'rgba(239,68,68,0.05)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            borderRadius: 10,
-            padding: '20px 24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 16, flexWrap: 'wrap',
-          }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.space, color: V.text, marginBottom: 4 }}>
-                Archive this directory
-              </div>
-              <div style={{ fontSize: 13, fontFamily: V.space, color: V.muted }}>
-                Hides the directory from public view. Companies and data are preserved.
-              </div>
-            </div>
-
-            {!confirmArchive ? (
-              <button
-                type="button"
-                onClick={() => setConfirmArchive(true)}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(239,68,68,0.4)',
-                  borderRadius: 8,
-                  padding: '10px 18px',
-                  fontSize: 13,
-                  fontFamily: V.space,
-                  fontWeight: 700,
-                  color: '#EF4444',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                Archive Directory
-              </button>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => setConfirmArchive(false)}
-                  style={{
-                    background: 'transparent',
-                    border: `1px solid ${V.border}`,
-                    borderRadius: 8,
-                    padding: '10px 14px',
-                    fontSize: 13,
-                    fontFamily: V.space,
-                    fontWeight: 600,
-                    color: V.muted,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleArchive}
-                  disabled={archiving}
-                  style={{
-                    background: '#EF4444',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '10px 18px',
-                    fontSize: 13,
-                    fontFamily: V.space,
-                    fontWeight: 700,
-                    color: '#fff',
-                    cursor: archiving ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}
-                >
-                  {archiving ? (
-                    <>
-                      <div style={{
-                        width: 14, height: 14, borderRadius: '50%',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTop: '2px solid #fff',
-                        animation: 'spin 0.8s linear infinite',
-                      }} />
-                      Archiving...
-                    </>
-                  ) : 'Confirm Archive'}
-                </button>
-              </div>
-            )}
-          </div>
+            Back to My Portal
+          </Link>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Main export ─────────────────────────────────────────────────────────────
+// ─── Main export ──────────────────────────────────────────────────────────────
 export default function SourcingSettings() {
   return (
     <SourcingThemeProvider>

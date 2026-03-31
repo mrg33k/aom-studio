@@ -275,6 +275,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/sourcing/:tenantSlug/grants" element={<SourcingGrants />} />
           <Route path="/sourcing/:tenantSlug/org/:slug" element={<SourcingOrg />} />
           <Route path="/sourcing/:tenantSlug/checkout" element={<SourcingCheckout />} />
+          <Route path="/sourcing/:tenantSlug/settings" element={<SourcingSettings />} />
           <Route path="/sourcing/:tenantSlug/:slug" element={<SourcingProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
