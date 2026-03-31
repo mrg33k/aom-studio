@@ -7,9 +7,9 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.6; color: #000; background: #fff; padding: 40px; max-width: 800px; margin: 0 auto; }
-    h1 { font-size: 20px; text-align: center; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+    h1 { font-size: 20px; text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
     .notice { border: 1px solid #000; padding: 30px; margin-bottom: 40px; page-break-after: always; }
-    .date { text-align: right; margin-bottom: 20px; font-weight: bold; }
+    .date { text-align: right; margin-bottom: 20px; }
     .greeting { margin-bottom: 15px; }
     .vehicle-info { margin: 20px 0; padding: 15px; border: 1px solid #ccc; background: #fafafa; }
     .vehicle-info p { margin: 4px 0; }
@@ -17,135 +17,205 @@
     .terms p { margin: 8px 0; }
     .terms strong { font-weight: bold; }
     .signature-block { margin-top: 40px; }
-    .signature-line { border-bottom: 1px solid #000; width: 300px; display: inline-block; margin: 0 10px; height: 20px; vertical-align: bottom; }
     .sig-row { margin: 15px 0; }
-    .blank-line { border-bottom: 1px solid #000; display: inline-block; height: 20px; vertical-align: bottom; }
+
+    /* Editable fields */
+    .field {
+      border: none; border-bottom: 1px solid #000;
+      font-family: 'Times New Roman', Times, serif; font-size: 14px;
+      padding: 2px 4px; background: transparent; color: #000;
+      outline: none; min-width: 150px;
+    }
+    .field:focus { background: #fffde7; }
+    .field-wide { width: 300px; }
+    .field-med { width: 200px; }
+    .field-short { width: 120px; }
+
+    /* Logo */
+    .logo-area {
+      text-align: center; margin-bottom: 15px; position: relative;
+      min-height: 60px; display: flex; align-items: center; justify-content: center;
+    }
+    .logo-area img { max-height: 80px; max-width: 300px; }
+    .logo-upload { display: none; }
+    .logo-placeholder {
+      border: 2px dashed #ccc; padding: 15px 30px; cursor: pointer;
+      color: #999; font-size: 13px; border-radius: 4px;
+    }
+    .logo-placeholder:hover { border-color: #666; color: #666; }
+
     @media print {
       body { padding: 20px; }
-      .no-print { display: none; }
+      .no-print { display: none !important; }
       .notice { border: none; padding: 0; }
+      .field { border-bottom: 1px solid #000; }
+      .logo-placeholder { display: none; }
     }
-    .print-btn { display: block; margin: 20px auto; padding: 12px 30px; font-size: 16px; background: #333; color: #fff; border: none; cursor: pointer; border-radius: 4px; }
-    .print-btn:hover { background: #555; }
+    .toolbar {
+      position: fixed; top: 0; left: 0; right: 0; background: #333; color: #fff;
+      padding: 10px 20px; display: flex; gap: 10px; align-items: center; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .toolbar button {
+      padding: 8px 20px; font-size: 14px; background: #fff; color: #333;
+      border: none; cursor: pointer; border-radius: 4px; font-weight: bold;
+    }
+    .toolbar button:hover { background: #eee; }
+    .toolbar span { font-size: 13px; opacity: 0.7; }
+    body { padding-top: 70px; }
   </style>
 </head>
 <body>
 
-  <button class="print-btn no-print" onclick="window.print()">Print / Save as PDF</button>
-
-  <!-- NOTICE 1: Jesus Cano Mora - 2008 Ford F-450 -->
-  <div class="notice">
-    <h1>Storage Fee Notice</h1>
-
-    <div class="date">2 / 23 / 2026</div>
-
-    <div class="greeting">
-      <p>Hi Jesus Cano Mora,</p>
-    </div>
-
-    <p>I'm reaching out to you due to the prolonged time your vehicle is being stored here. When will you bring the parts to install?</p>
-
-    <p style="margin-top: 15px;">You have extended on the time allowed and we can no longer keep waiting.</p>
-
-    <div class="vehicle-info">
-      <p><strong>Vehicle:</strong> 2008 Ford F-450 XL SUPER DUTY 6.8L TRITON V10</p>
-      <p><strong>VIN:</strong> 1FDXF46Y88EC59766</p>
-      <p><strong>Color:</strong> White</p>
-      <p><strong>Storage Fee Begins:</strong> 03 / 31 / 2026</p>
-    </div>
-
-    <div class="terms">
-      <p><strong>Storage Fee:</strong> $150 per day (minimum 1 day). Storage fees day ends at 12:00 PM of each day.</p>
-
-      <p>Storage fee, labor fee &amp; parts (depending on each case) must be paid in full to pick up vehicle. Fees continue to accrue daily, including weekends and holidays.</p>
-
-      <p><strong>Abandoned Vehicle:</strong> Vehicles left unpaid or unclaimed may be considered abandoned and subject to lien sale procedures pursuant to Arizona statutes.</p>
-
-      <p><strong>Payment Terms:</strong> Payment is due in full upon completion unless prior written arrangements are made. Vehicles will not be released until payment is received.</p>
-    </div>
-
-    <div class="signature-block">
-      <div class="sig-row">Customer Signature: <span class="signature-line"></span></div>
-      <div class="sig-row">Printed Name: <span class="signature-line"></span></div>
-      <div class="sig-row">Date: <span class="signature-line" style="width: 200px;"></span></div>
-    </div>
+  <div class="toolbar no-print">
+    <button onclick="window.print()">Print / Save as PDF</button>
+    <button onclick="addNotice()">+ Add Notice</button>
+    <span>Click any field to edit. Click logo area to upload.</span>
   </div>
 
-  <!-- NOTICE 2: Jose De Jesus G Cano - 2012 Nissan Titan -->
-  <div class="notice">
-    <h1>Storage Fee Notice</h1>
+  <div id="notices">
 
-    <div class="date">2 / 23 / 2026</div>
+    <!-- NOTICE 1: Jesus Cano Mora - 2008 Ford F-450 -->
+    <div class="notice">
+      <div class="logo-area">
+        <img id="logo1" src="" style="display:none" />
+        <label class="logo-placeholder" onclick="document.getElementById('logoUpload').click()">Click to add logo</label>
+        <input type="file" id="logoUpload" class="logo-upload" accept="image/*" onchange="handleLogo(this)">
+      </div>
 
-    <div class="greeting">
-      <p>Hi Jose De Jes&uacute;s G Cano,</p>
+      <h1>Storage Fee Notice</h1>
+
+      <div class="date">Date: <input class="field field-short" value="2 / 23 / 2026"></div>
+
+      <div class="greeting">
+        <p>Hi <input class="field field-wide" value="Jesus Cano Mora">,</p>
+      </div>
+
+      <p>I'm reaching out to you due to the prolonged time your vehicle is being stored here. When will you bring the parts to install?</p>
+
+      <p style="margin-top: 15px;">You have extended on the time allowed and we can no longer keep waiting.</p>
+
+      <div class="vehicle-info">
+        <p><strong>Vehicle:</strong> <input class="field field-wide" value="2008 Ford F-450 XL SUPER DUTY 6.8L TRITON V10"></p>
+        <p><strong>VIN:</strong> <input class="field field-med" value="1FDXF46Y88EC59766"></p>
+        <p><strong>Color:</strong> <input class="field field-short" value="White"></p>
+        <p><strong>Storage Fee Begins:</strong> <input class="field field-short" value="03 / 31 / 2026"></p>
+      </div>
+
+      <div class="terms">
+        <p><strong>Storage Fee:</strong> $<input class="field" style="width:40px" value="150"> per day (minimum 1 day). Storage fees day ends at 12:00 PM of each day.</p>
+
+        <p>Storage fee, labor fee &amp; parts (depending on each case) must be paid in full to pick up vehicle. Fees continue to accrue daily, including weekends and holidays.</p>
+
+        <p><strong>Abandoned Vehicle:</strong> Vehicles left unpaid or unclaimed may be considered abandoned and subject to lien sale procedures pursuant to Arizona statutes.</p>
+
+        <p><strong>Payment Terms:</strong> Payment is due in full upon completion unless prior written arrangements are made. Vehicles will not be released until payment is received.</p>
+      </div>
+
+      <div class="signature-block">
+        <div class="sig-row">Customer Signature: <input class="field field-wide"></div>
+        <div class="sig-row">Printed Name: <input class="field field-wide"></div>
+        <div class="sig-row">Date: <input class="field field-med"></div>
+      </div>
     </div>
 
-    <p>I'm reaching out to you due to the prolonged time your vehicle is being stored here. When will you bring the parts to install?</p>
+    <!-- NOTICE 2: Jose De Jesus G Cano - 2012 Nissan Titan -->
+    <div class="notice">
+      <div class="logo-area">
+        <img class="logo-copy" src="" style="display:none" />
+        <label class="logo-placeholder" onclick="document.getElementById('logoUpload').click()">Click to add logo</label>
+      </div>
 
-    <p style="margin-top: 15px;">You have extended on the time allowed and we can no longer keep waiting.</p>
+      <h1>Storage Fee Notice</h1>
 
-    <div class="vehicle-info">
-      <p><strong>Vehicle:</strong> 2012 Nissan Titan Flex Fuel</p>
-      <p><strong>VIN:</strong> <span class="blank-line" style="width: 250px;"></span></p>
-      <p><strong>Color:</strong> <span class="blank-line" style="width: 150px;"></span></p>
-      <p><strong>Storage Fee Begins:</strong> 03 / 31 / 2026</p>
+      <div class="date">Date: <input class="field field-short" value="2 / 23 / 2026"></div>
+
+      <div class="greeting">
+        <p>Hi <input class="field field-wide" value="Jose De Jes&#250;s G Cano">,</p>
+      </div>
+
+      <p>I'm reaching out to you due to the prolonged time your vehicle is being stored here. When will you bring the parts to install?</p>
+
+      <p style="margin-top: 15px;">You have extended on the time allowed and we can no longer keep waiting.</p>
+
+      <div class="vehicle-info">
+        <p><strong>Vehicle:</strong> <input class="field field-wide" value="2012 Nissan Titan Flex Fuel"></p>
+        <p><strong>VIN:</strong> <input class="field field-med" value=""></p>
+        <p><strong>Color:</strong> <input class="field field-short" value=""></p>
+        <p><strong>Storage Fee Begins:</strong> <input class="field field-short" value="03 / 31 / 2026"></p>
+      </div>
+
+      <div class="terms">
+        <p><strong>Storage Fee:</strong> $<input class="field" style="width:40px" value="150"> per day (minimum 1 day). Storage fees day ends at 12:00 PM of each day.</p>
+
+        <p>Storage fee, labor fee &amp; parts (depending on each case) must be paid in full to pick up vehicle. Fees continue to accrue daily, including weekends and holidays.</p>
+
+        <p><strong>Abandoned Vehicle:</strong> Vehicles left unpaid or unclaimed may be considered abandoned and subject to lien sale procedures pursuant to Arizona statutes.</p>
+
+        <p><strong>Payment Terms:</strong> Payment is due in full upon completion unless prior written arrangements are made. Vehicles will not be released until payment is received.</p>
+      </div>
+
+      <div class="signature-block">
+        <div class="sig-row">Customer Signature: <input class="field field-wide"></div>
+        <div class="sig-row">Printed Name: <input class="field field-wide"></div>
+        <div class="sig-row">Date: <input class="field field-med"></div>
+      </div>
     </div>
 
-    <div class="terms">
-      <p><strong>Storage Fee:</strong> $150 per day (minimum 1 day). Storage fees day ends at 12:00 PM of each day.</p>
-
-      <p>Storage fee, labor fee &amp; parts (depending on each case) must be paid in full to pick up vehicle. Fees continue to accrue daily, including weekends and holidays.</p>
-
-      <p><strong>Abandoned Vehicle:</strong> Vehicles left unpaid or unclaimed may be considered abandoned and subject to lien sale procedures pursuant to Arizona statutes.</p>
-
-      <p><strong>Payment Terms:</strong> Payment is due in full upon completion unless prior written arrangements are made. Vehicles will not be released until payment is received.</p>
-    </div>
-
-    <div class="signature-block">
-      <div class="sig-row">Customer Signature: <span class="signature-line"></span></div>
-      <div class="sig-row">Printed Name: <span class="signature-line"></span></div>
-      <div class="sig-row">Date: <span class="signature-line" style="width: 200px;"></span></div>
-    </div>
   </div>
 
-  <!-- BLANK TEMPLATE -->
-  <div class="notice">
-    <h1>Storage Fee Notice</h1>
+  <script>
+    let logoDataUrl = null;
 
-    <div class="date"><span class="blank-line" style="width: 150px;"></span></div>
+    function handleLogo(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        logoDataUrl = e.target.result;
+        // Apply to all logo areas
+        document.querySelectorAll('.logo-area').forEach(area => {
+          const img = area.querySelector('img');
+          const placeholder = area.querySelector('.logo-placeholder');
+          if (img) { img.src = logoDataUrl; img.style.display = 'block'; }
+          if (placeholder) placeholder.style.display = 'none';
+        });
+      };
+      reader.readAsDataURL(file);
+    }
 
-    <div class="greeting">
-      <p>Hi <span class="blank-line" style="width: 250px;"></span>,</p>
-    </div>
-
-    <p>I'm reaching out to you due to the prolonged time your vehicle is being stored here. When will you bring the parts to install?</p>
-
-    <p style="margin-top: 15px;">You have extended on the time allowed and we can no longer keep waiting.</p>
-
-    <div class="vehicle-info">
-      <p><strong>Vehicle:</strong> <span class="blank-line" style="width: 350px;"></span></p>
-      <p><strong>VIN:</strong> <span class="blank-line" style="width: 250px;"></span></p>
-      <p><strong>Color:</strong> <span class="blank-line" style="width: 150px;"></span></p>
-      <p><strong>Storage Fee Begins:</strong> <span class="blank-line" style="width: 150px;"></span></p>
-    </div>
-
-    <div class="terms">
-      <p><strong>Storage Fee:</strong> $150 per day (minimum 1 day). Storage fees day ends at 12:00 PM of each day.</p>
-
-      <p>Storage fee, labor fee &amp; parts (depending on each case) must be paid in full to pick up vehicle. Fees continue to accrue daily, including weekends and holidays.</p>
-
-      <p><strong>Abandoned Vehicle:</strong> Vehicles left unpaid or unclaimed may be considered abandoned and subject to lien sale procedures pursuant to Arizona statutes.</p>
-
-      <p><strong>Payment Terms:</strong> Payment is due in full upon completion unless prior written arrangements are made. Vehicles will not be released until payment is received.</p>
-    </div>
-
-    <div class="signature-block">
-      <div class="sig-row">Customer Signature: <span class="signature-line"></span></div>
-      <div class="sig-row">Printed Name: <span class="signature-line"></span></div>
-      <div class="sig-row">Date: <span class="signature-line" style="width: 200px;"></span></div>
-    </div>
-  </div>
+    function addNotice() {
+      const template = `
+      <div class="notice">
+        <div class="logo-area">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" style="display:block" />` : '<label class="logo-placeholder" onclick="document.getElementById(\'logoUpload\').click()">Click to add logo</label>'}
+        </div>
+        <h1>Storage Fee Notice</h1>
+        <div class="date">Date: <input class="field field-short" value=""></div>
+        <div class="greeting"><p>Hi <input class="field field-wide" value="">,</p></div>
+        <p>I'm reaching out to you due to the prolonged time your vehicle is being stored here. When will you bring the parts to install?</p>
+        <p style="margin-top:15px">You have extended on the time allowed and we can no longer keep waiting.</p>
+        <div class="vehicle-info">
+          <p><strong>Vehicle:</strong> <input class="field field-wide" value=""></p>
+          <p><strong>VIN:</strong> <input class="field field-med" value=""></p>
+          <p><strong>Color:</strong> <input class="field field-short" value=""></p>
+          <p><strong>Storage Fee Begins:</strong> <input class="field field-short" value=""></p>
+        </div>
+        <div class="terms">
+          <p><strong>Storage Fee:</strong> $<input class="field" style="width:40px" value="150"> per day (minimum 1 day). Storage fees day ends at 12:00 PM of each day.</p>
+          <p>Storage fee, labor fee & parts (depending on each case) must be paid in full to pick up vehicle. Fees continue to accrue daily, including weekends and holidays.</p>
+          <p><strong>Abandoned Vehicle:</strong> Vehicles left unpaid or unclaimed may be considered abandoned and subject to lien sale procedures pursuant to Arizona statutes.</p>
+          <p><strong>Payment Terms:</strong> Payment is due in full upon completion unless prior written arrangements are made. Vehicles will not be released until payment is received.</p>
+        </div>
+        <div class="signature-block">
+          <div class="sig-row">Customer Signature: <input class="field field-wide"></div>
+          <div class="sig-row">Printed Name: <input class="field field-wide"></div>
+          <div class="sig-row">Date: <input class="field field-med"></div>
+        </div>
+      </div>`;
+      document.getElementById('notices').insertAdjacentHTML('beforeend', template);
+    }
+  </script>
 
 </body>
 </html>
