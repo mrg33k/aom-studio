@@ -11595,6 +11595,8 @@ export default function GameDashboard() {
   }, [selectedRoom])
   const [panelStreaming, setPanelStreaming] = useState(false)
   const [panelChatLoading, setPanelChatLoading] = useState(false)
+  // Pending Architect plan: set when Architect produces a JSON plan, cleared after agents are created
+  const [pendingAgentPlan, setPendingAgentPlan] = useState(null)
 
   // NO localStorage for chats. Server conversation files are the only source of truth.
   // Messages sent from dashboard write to server via relay-send.
@@ -12838,6 +12840,60 @@ export default function GameDashboard() {
       // Workspace path convention: workspaces/{clientId}
       const agent = selectedRoom
       const workspacePath = `workspaces/${activeClientId}`
+
+      // ── Agent creation: detect user confirmation of a pending plan ──────
+      // Short-circuit BEFORE calling base-chat so we don't confuse the Architect.
+      const CONFIRM_PHRASES = ['yes', 'yeah', 'yep', 'yup', 'go', 'do it', "let's go", "let's do it",
+        'build it', 'build them', 'sounds good', 'looks good', "that's perfect", 'perfect', 'approved',
+        'approve', 'create them', 'create it', 'setup', 'set it up', 'make it happen']
+      const msgLowerTrim = text.toLowerCase().trim().replace(/[.!]/g, '')
+      const isConfirm = pendingAgentPlan && CONFIRM_PHRASES.some(p => msgLowerTrim === p || msgLowerTrim.startsWith(p + ' ') || msgLowerTrim.endsWith(' ' + p))
+
+      if (isConfirm && pendingAgentPlan) {
+        const planToCreate = pendingAgentPlan
+        setPendingAgentPlan(null)
+        try {
+          const createRes = await fetch('/api/dashboard/create-agents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId: activeClientId, plan: planToCreate }),
+          })
+          const createData = await createRes.json()
+          const agentNames = (createData.agents || []).map(a => a.name).join(', ')
+          const creationMsg = createData.ok
+            ? `Done. Your team is live: **${agentNames}**. Click any of their rooms to start working with them.`
+            : `There was an issue creating your agents: ${(createData.errors || []).join('; ')}. Try again or contact support.`
+
+          startTransition(() => {
+            setAgentChats(prev => {
+              const current = prev[agent]?._all || []
+              const updated = current.map(m =>
+                m.streaming && !m.content
+                  ? { ...m, content: creationMsg, streaming: false, via: 'Architect', time: new Date().toISOString() }
+                  : m
+              )
+              return { ...prev, [agent]: { _all: updated } }
+            })
+            setPanelStreaming(false)
+          })
+          return
+        } catch (createErr) {
+          startTransition(() => {
+            setAgentChats(prev => {
+              const current = prev[agent]?._all || []
+              const updated = current.map(m =>
+                m.streaming && !m.content
+                  ? { ...m, content: `Failed to create agents: ${createErr.message}. Please try again.`, streaming: false, via: 'Architect', time: new Date().toISOString() }
+                  : m
+              )
+              return { ...prev, [agent]: { _all: updated } }
+            })
+            setPanelStreaming(false)
+          })
+          return
+        }
+      }
+
       // Build history for context (last 20 messages from current chat)
       const currentChatAll = agentChats[agent]?._all || []
       const chatHistory = currentChatAll
@@ -12852,6 +12908,7 @@ export default function GameDashboard() {
         })
         if (!res.ok) throw new Error(`base-chat error: ${res.status}`)
         const responseData = await res.json()
+
         // Extract response text (single, multi, or clarification)
         let responseText = ''
         let responseVia = 'Architect'
@@ -12868,6 +12925,12 @@ export default function GameDashboard() {
         } else {
           throw new Error('No response from base-chat')
         }
+
+        // ── Store pending plan if Architect produced one ───────────────────
+        if (responseData.planReady && responseData.planJson) {
+          setPendingAgentPlan(responseData.planJson)
+        }
+
         startTransition(() => {
           setAgentChats(prev => {
             const current = prev[agent]?._all || []
@@ -12942,7 +13005,7 @@ export default function GameDashboard() {
       // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
-  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups, currentUser, agentChats]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups, currentUser, agentChats, pendingAgentPlan]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poke handler: send a follow-up message directly (bypasses input state)
   const handlePokePanelMessage = useCallback((text) => {
