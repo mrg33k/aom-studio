@@ -2508,35 +2508,68 @@ function MarkdownMessage({ text, agentColor, streaming }) {
   let html
   try {
     html = marked.parse(normalized)
-    // Auto-link bare URLs not already wrapped in <a> tags.
-    // Strategy: protect existing <a> tags, linkify remaining URLs, restore.
-    const _links = []
-    html = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, m => { _links.push(m); return `__LINK_${_links.length - 1}__` })
-    const _linkColor = agentColor || '#7CB9FF'
-    html = html.replace(
-      /(https?:\/\/[^\s<>"')\]]+)/g,
-      `<a href="$1" target="_blank" rel="noopener noreferrer" style="color:${_linkColor};text-decoration:underline;text-underline-offset:2px;word-break:break-all">$1</a>`
-    )
-    html = html.replace(/__LINK_(\d+)__/g, (_, i) => _links[i])
   } catch {
     html = normalized
   }
+
+  // Post-process: convert HTML string to React elements with real clickable links.
+  // dangerouslySetInnerHTML <a> tags don't work reliably on mobile Safari due to
+  // parent touch event handlers swallowing taps. This approach renders links as
+  // React <a> elements with explicit onClick handlers that bypass the issue.
+  const linkColor = agentColor || '#7CB9FF'
+
+  // Split HTML on URLs (both in <a> tags and bare) and rebuild as React elements
+  const URL_RE = /(https?:\/\/[^\s<>"')\]]+)/g
+  // Strip any existing <a> wrapping from marked output (we'll re-add as React elements)
+  const cleanHtml = html.replace(/<a\b[^>]*>(https?:\/\/[^\s<>"')\]]+)<\/a>/gi, '$1')
+  const parts = cleanHtml.split(URL_RE)
+
+  if (parts.length <= 1) {
+    // No URLs found -- render as plain HTML
+    return (
+      <div
+        className="md-msg"
+        data-agent-color={agentColor}
+        style={{ '--agent-color': linkColor }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    )
+  }
+
+  // Has URLs -- render as mixed React elements
   return (
     <div
       className="md-msg"
       data-agent-color={agentColor}
-      style={{ '--agent-color': agentColor || '#7CB9FF' }}
-      dangerouslySetInnerHTML={{ __html: html }}
-      onClick={(e) => {
-        // Let <a> tag clicks through to open links (don't let parent handlers swallow them)
-        const link = e.target.closest('a')
-        if (link && link.href) {
-          e.stopPropagation()
-          window.open(link.href, '_blank', 'noopener,noreferrer')
-          e.preventDefault()
+      style={{ '--agent-color': linkColor }}
+    >
+      {parts.map((part, i) => {
+        if (URL_RE.test(part)) {
+          URL_RE.lastIndex = 0
+          return (
+            <a
+              key={i}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => { e.stopPropagation(); window.open(part, '_blank', 'noopener,noreferrer'); e.preventDefault() }}
+              style={{
+                color: linkColor,
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+                wordBreak: 'break-all',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'rgba(59,130,246,0.3)',
+              }}
+            >
+              {part}
+            </a>
+          )
         }
-      }}
-    />
+        // Non-URL HTML segment -- render as inline HTML
+        return <span key={i} dangerouslySetInnerHTML={{ __html: part }} />
+      })}
+    </div>
   )
 }
 
