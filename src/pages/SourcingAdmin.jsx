@@ -236,8 +236,7 @@ function ScoutPanel({ V, tenantId }) {
   );
 }
 
-// Same password pattern as the AOM dashboard
-const ADMIN_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'admin';
+// Auth is handled via Supabase Auth (email + password)
 
 // Admin client — uses service role key if available (bypasses RLS), falls back to anon
 // VITE_SOURCING_ADMIN_KEY should be set to service role key in Vercel env vars
@@ -418,6 +417,8 @@ function SourcingAdminInner() {
   const isSettings = location.pathname.startsWith('/sourcing/admin/settings/');
 
   const [authed, setAuthed] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [emailInput, setEmailInput] = useState('');
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState('');
   const [activeTab, setActiveTab] = useState('stats');
@@ -466,13 +467,34 @@ function SourcingAdminInner() {
   const [importStatus, setImportStatus] = useState('');
   const importFileRef = useRef(null);
 
-  const handleLogin = (e) => {
+  // Check existing Supabase session on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setAuthed(true);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthed(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (pwInput === ADMIN_PASSWORD) {
-      setAuthed(true);
+    setPwError('');
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: emailInput, password: pwInput });
+    setAuthLoading(false);
+    if (error) {
+      setPwError(error.message || 'Login failed.');
     } else {
-      setPwError('Incorrect password.');
+      setAuthed(true);
     }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setAuthed(false);
   };
 
   // Fetch tenants list
@@ -927,6 +949,9 @@ function SourcingAdminInner() {
 
   // ─── Login gate ───────────────────────────────────────────────────────────
   if (!authed) {
+    if (authLoading) {
+      return <div style={{ minHeight: '100vh', background: V.bg }} />;
+    }
     return (
       <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <style>{`* { box-sizing: border-box; } input::placeholder { color: ${V.dim}; } input:focus { border-color: ${V.accentBrd} !important; outline: none; }`}</style>
@@ -942,13 +967,29 @@ function SourcingAdminInner() {
           </div>
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Email</label>
+              <input
+                type="email"
+                value={emailInput}
+                onChange={e => setEmailInput(e.target.value)}
+                placeholder="admin@example.com"
+                autoFocus
+                required
+                style={{
+                  background: V.card2, border: `1px solid ${V.border}`,
+                  color: V.text, borderRadius: 7, padding: '10px 12px',
+                  fontSize: 14, fontFamily: V.mono, width: '100%',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Password</label>
               <input
                 type="password"
                 value={pwInput}
                 onChange={e => setPwInput(e.target.value)}
-                placeholder="Admin password"
-                autoFocus
+                placeholder="Password"
+                required
                 style={{
                   background: V.card2, border: `1px solid ${V.border}`,
                   color: V.text, borderRadius: 7, padding: '10px 12px',
@@ -957,12 +998,13 @@ function SourcingAdminInner() {
               />
             </div>
             {pwError && <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>{pwError}</div>}
-            <button type="submit" style={{
+            <button type="submit" disabled={authLoading} style={{
               background: V.accent, border: 'none', color: '#fff',
               borderRadius: 8, padding: '12px 0', fontSize: 14,
-              fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+              fontWeight: 700, fontFamily: V.space, cursor: authLoading ? 'not-allowed' : 'pointer',
+              opacity: authLoading ? 0.7 : 1,
             }}>
-              Enter Admin
+              {authLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
           <div style={{ textAlign: 'center', marginTop: 16 }}>
@@ -1067,7 +1109,7 @@ function SourcingAdminInner() {
           + New Directory
         </button>
         <button
-          onClick={() => setAuthed(false)}
+          onClick={handleLogout}
           style={{
             background: 'transparent', border: `1px solid ${V.border}`,
             color: V.muted, borderRadius: 6, padding: '5px 12px',
