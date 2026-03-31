@@ -289,15 +289,15 @@ export default function SpaceRisingBrand() {
         <div className="sr-wrap">
           <div className="sr-label">01 — Logo</div>
           <div className="sr-h2">Brand Marks</div>
-          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '36px 40px', flex: 1, minWidth: 220, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <img src="/images/space-rising/logo-white.png" alt="Space Rising white logo" style={{ maxWidth: 220, width: '100%', height: 80, objectFit: 'contain', display: 'block' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '36px 40px', height: 280, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+              <img src="/images/space-rising/logo-white.png" alt="Space Rising white logo" style={{ maxHeight: 80, maxWidth: '80%', width: 'auto', objectFit: 'contain', display: 'block' }} />
               <p style={{ fontSize: 12, color: 'var(--gray)', margin: 0 }}>
                 Primary lockup. White version. Dark backgrounds only.
               </p>
             </div>
-            <div style={{ background: '#F4F4F0', border: '1px solid #ddd', borderRadius: 8, padding: '36px 40px', flex: 1, minWidth: 220, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <img src="/images/space-rising/logo-dark.png" alt="Space Rising dark logo" style={{ maxWidth: 220, width: '100%', height: 80, objectFit: 'contain', display: 'block' }} />
+            <div style={{ background: '#F4F4F0', border: '1px solid #ddd', borderRadius: 8, padding: '36px 40px', height: 280, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+              <img src="/images/space-rising/logo-dark.png" alt="Space Rising dark logo" style={{ maxHeight: 80, maxWidth: '80%', width: 'auto', objectFit: 'contain', display: 'block' }} />
               <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
                 Dark version. Light backgrounds only. Min 4.5:1 contrast ratio.
               </p>
