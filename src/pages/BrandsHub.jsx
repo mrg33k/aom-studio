@@ -52,8 +52,7 @@ const brands = [
     full: 'Empowering veterans through homeownership',
     description: 'Nonprofit empowering veterans through homeownership, real estate investment, VA loan education, and financial guidance.',
     accentColor: '#C9A84C',
-    link: null,
-    comingSoon: true,
+    link: '/brands/v2v',
     fontClass: 'font-headline',
   },
 ]

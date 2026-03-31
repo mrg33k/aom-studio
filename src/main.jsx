@@ -10,6 +10,7 @@ import BrandGuidelines from './pages/BrandGuidelines.jsx'
 import BrandsHub from './pages/BrandsHub.jsx'
 import Brands from './pages/Brands.jsx'
 import S3CBrand from './pages/S3CBrand.jsx'
+import V2VBrand from './pages/V2VBrand.jsx'
 import AmbitionBrandGuidelines from './pages/AmbitionBrandGuidelines.jsx'
 import AmbitionBrandGuidelinesV2 from './pages/AmbitionBrandGuidelinesV2.jsx'
 import Social from './pages/Social.jsx'
@@ -213,6 +214,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/ambition/performance/v2" element={<AmbitionPerformanceV2 />} />
           <Route path="/brands/included-health" element={<IncludedHealthBrand />} />
           <Route path="/brands/s3c" element={<S3CBrand />} />
+          <Route path="/brands/v2v" element={<V2VBrand />} />
           <Route path="/social" element={<Social />} />
           <Route path="/research/hvac-ads-arizona" element={<ResearchHVAC />} />
           <Route path="/briefs" element={<BriefsHub />} />

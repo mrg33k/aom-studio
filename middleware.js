@@ -63,6 +63,10 @@ const PAGE_META = {
     title: 'S3C Brand Exploration',
     description: 'Logo concepts for the Semiconductor Services & Supply Coalition',
   },
+  '/brands/v2v': {
+    title: 'Valor to Victory Brand Identity',
+    description: 'Brand identity concepts for Valor to Victory — veteran nonprofit focused on homeownership and financial empowerment through VA loans.',
+  },
   '/case-study': {
     title: 'Case Study | AOM in Action',
     description: 'See how AOM delivers results. Real projects, real numbers, real impact.',
