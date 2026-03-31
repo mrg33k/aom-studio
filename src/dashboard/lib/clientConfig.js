@@ -95,6 +95,34 @@ export function setClientId(_id) {
 }
 
 /**
+ * SUPER_ADMIN_USER_ID -- Patrik's Supabase user ID.
+ * Super admins can switch into any world without re-login.
+ */
+export const SUPER_ADMIN_USER_ID = 'aom-patrik'
+
+/**
+ * isSuperAdmin(userId) -- returns true if the given user ID is the super admin.
+ */
+export function isSuperAdmin(userId) {
+  if (!userId) return false
+  return userId === SUPER_ADMIN_USER_ID
+}
+
+/**
+ * isAdminOverride() -- returns true if an admin world override is currently active.
+ * Uses the same sessionStorage key as setWorldOverride().
+ */
+export function isAdminOverride() {
+  if (typeof window === 'undefined') return false
+  try {
+    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
+    return !!(override && override.trim())
+  } catch {
+    return false
+  }
+}
+
+/**
  * CLIENT_CONFIG -- branding and display metadata for the active client.
  * Extend this as the multi-tenant platform grows.
  * Bobby should NOT hardcode client names anywhere in components -- read from here.
