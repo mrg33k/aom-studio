@@ -78,8 +78,6 @@ const SourcingAbout = lazy(() => import('./pages/SourcingAbout.jsx'))
 const SourcingGrants = lazy(() => import('./pages/SourcingGrants.jsx'))
 import './index.css'
 
-const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
-const ChatDashboard = lazy(() => import('./dashboard/ChatDashboard.jsx'))
 const GameDashboard = lazy(() => import('./dashboard/GameDashboard.jsx'))
 const AgentInfoPage = lazy(() => import('./dashboard/AgentInfoPage.jsx'))
 
@@ -290,9 +288,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/checklist/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/megaboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/megaboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
-          <Route path="/dashboard/chat" element={<AuthGuard><ChatDashboard /></AuthGuard>} />
-          <Route path="/dashboard/chat/agent/:slug" element={<AuthGuard><ChatDashboard /></AuthGuard>} />
-          <Route path="/dashboard/v1" element={<AuthGuard><DashboardV2 /></AuthGuard>} />
         </Routes>
       </Suspense>
     </BrowserRouter>
