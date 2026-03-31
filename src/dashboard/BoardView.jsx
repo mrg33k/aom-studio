@@ -1067,12 +1067,9 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
     </div>
   )
 
-  const isLive = t => t.isLive === true || t.status === 'running'
-  const isDone = t => t.done === true || t.status === 'completed'
-
-  const rightNowTasks = tasks.filter(t => isLive(t))
-  const completedTasks = tasks.filter(t => !isLive(t) && isDone(t))
-  const otherTasks = tasks.filter(t => !isLive(t) && !isDone(t))
+  const rightNowTasks = tasks.filter(t => t._source === 'rightNow')
+  const completedTasks = tasks.filter(t => t._source === 'completed')
+  const otherTasks = tasks.filter(t => t._source === 'todo')
 
   const projectMap = {}
   otherTasks.forEach(t => {
@@ -1792,11 +1789,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       status: a.status || 'IDLE', role: a.role || '', isAgent: true,
       tasks: a.slug === 'patrik'
         ? [
-            ...rightNow.filter(t => t.agent === 'patrik'),
-            ...personalTodos,
-            ...completedFeed.filter(t => t.agent === 'patrik').map(t => ({ ...t, done: true })),
+            ...rightNow.filter(t => t.agent === 'patrik').map(t => ({ ...t, _source: 'rightNow' })),
+            ...personalTodos.map(t => ({ ...t, _source: 'todo' })),
+            ...completedFeed.filter(t => t.agent === 'patrik').map(t => ({ ...t, done: true, _source: 'completed' })),
           ]
-        : rightNow.filter(t => t.agent === a.slug),
+        : rightNow.filter(t => t.agent === a.slug).map(t => ({ ...t, _source: 'rightNow' })),
     }))
     const projectItems = (punchData?.projects || []).map(p => ({
       slug: p.section, name: p.name, color: p.color || getAgentColor(p.section),
