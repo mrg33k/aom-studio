@@ -9141,7 +9141,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       style={{
         ...(isMobile
           ? { flex: 1, width: '100%', minWidth: 0, maxWidth: '100%', minHeight: 0 }
-          : { flex: isExtended ? '0 0 65%' : '0 0 30%', width: isExtended ? '65%' : '30%', minWidth: 300, maxWidth: isExtended ? '65%' : '40%', height: '100%' }
+          : isTablet
+            ? { flex: isExtended ? '0 0 55%' : '0 0 28%', width: isExtended ? '55%' : '28%', minWidth: 260, maxWidth: isExtended ? '55%' : '35%', height: '100%' }
+            : { flex: isExtended ? '0 0 65%' : '0 0 30%', width: isExtended ? '65%' : '30%', minWidth: 300, maxWidth: isExtended ? '65%' : '40%', height: '100%' }
         ),
         flexShrink: 0,
         background: isNightMode
