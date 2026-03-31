@@ -144,7 +144,7 @@ function SourcingArticlesPostInner() {
         tags: tags.length > 0 ? tags : null,
         vertical: form.vertical,
         category: 'article',
-        status: 'active',
+        status: 'pending',
       };
 
       const { error: insertErr } = await supabase
@@ -175,10 +175,10 @@ function SourcingArticlesPostInner() {
             ✓
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: V.syne, color: V.heading, margin: '0 0 12px' }}>
-            Article Published
+            Article Submitted for Review
           </h2>
           <p style={{ fontSize: 14, color: V.muted, fontFamily: V.space, maxWidth: 360, margin: '0 auto 28px', lineHeight: 1.6 }}>
-            Your article is now live and visible to the sourcing.directory community.
+            Your article has been submitted for review. It will appear on the articles page once approved by an admin.
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             <Link

@@ -439,6 +439,8 @@ function SourcingAdminInner() {
   const [listingFilter, setListingFilter] = useState('all');
   const [pendingMembers, setPendingMembers] = useState([]);
   const [memberCompanyMap, setMemberCompanyMap] = useState({});
+  const [pendingArticles, setPendingArticles] = useState([]);
+  const [articleCompanyMap, setArticleCompanyMap] = useState({});
 
   // Analytics + Messages state
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -528,16 +530,24 @@ function SourcingAdminInner() {
         membersQ = membersQ.eq('tenant_id', selectedTenantId);
       }
 
-      const [compRes, orgsRes, listingsRes, membersRes] = await Promise.all([compQ, orgsQ, listQ, membersQ]);
+      // Fetch pending articles
+      let articlesQ = adminSupabase.from('directory_listings').select('*').eq('category', 'article').eq('status', 'pending').order('created_at', { ascending: false });
+      if (selectedTenantId) {
+        articlesQ = articlesQ.eq('tenant_id', selectedTenantId);
+      }
+
+      const [compRes, orgsRes, listingsRes, membersRes, articlesRes] = await Promise.all([compQ, orgsQ, listQ, membersQ, articlesQ]);
 
       const allCompanies = compRes.data || [];
       const allListings = listingsRes.data || [];
       const allPendingMembers = membersRes.data || [];
+      const allPendingArticles = articlesRes.data || [];
 
       setCompanies(allCompanies);
       setOrgs(orgsRes.data || []);
       setListings(allListings);
       setPendingMembers(allPendingMembers);
+      setPendingArticles(allPendingArticles);
 
       const map = {};
       allCompanies.forEach(c => { map[c.id] = c; });
@@ -551,6 +561,15 @@ function SourcingAdminInner() {
         }
       });
       setMemberCompanyMap(mcMap);
+
+      // Build article -> company map
+      const acMap = {};
+      allPendingArticles.forEach(a => {
+        if (a.company_id && map[a.company_id]) {
+          acMap[a.id] = map[a.company_id];
+        }
+      });
+      setArticleCompanyMap(acMap);
 
       const byVertical = {};
       allCompanies.forEach(c => {
@@ -721,6 +740,17 @@ function SourcingAdminInner() {
       await fetchData();
     } catch (err) {
       console.error('Member action error:', err);
+    }
+  };
+
+  const handleArticleAction = async (articleId, action) => {
+    if (!adminSupabase) return;
+    try {
+      const newStatus = action === 'approve' ? 'active' : 'rejected';
+      await adminSupabase.from('directory_listings').update({ status: newStatus }).eq('id', articleId);
+      await fetchData();
+    } catch (err) {
+      console.error('Article action error:', err);
     }
   };
 
@@ -1040,6 +1070,7 @@ function SourcingAdminInner() {
     { key: 'stats',      label: 'Stats' },
     { key: 'companies',  label: `Companies${pendingCompanies.length > 0 ? ` (${pendingCompanies.length} pending)` : ''}` },
     { key: 'members',    label: `Pending Reviews${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ''}` },
+    { key: 'articles',   label: `Pending Articles${pendingArticles.length > 0 ? ` (${pendingArticles.length})` : ''}` },
     { key: 'add',        label: '+ Add Company' },
     { key: 'orgs',       label: 'Organizations' },
     { key: 'listings',   label: 'Listings' },
@@ -1124,7 +1155,7 @@ function SourcingAdminInner() {
       <div style={{ padding: '0 24px', borderBottom: `1px solid ${V.border}`, background: V.navBg, display: 'flex', gap: 0 }}>
         {TABS.map(tab => {
           const isActive = tab.key === activeTab;
-          const isPending = (tab.key === 'companies' && pendingCompanies.length > 0) || (tab.key === 'members' && pendingMembers.length > 0);
+          const isPending = (tab.key === 'companies' && pendingCompanies.length > 0) || (tab.key === 'members' && pendingMembers.length > 0) || (tab.key === 'articles' && pendingArticles.length > 0);
           return (
             <button
               key={tab.key}
@@ -1413,6 +1444,82 @@ function SourcingAdminInner() {
                         }}>
                           Reject
                         </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </AdminSection>
+        )}
+
+        {/* Pending Articles */}
+        {!loading && activeTab === 'articles' && (
+          <AdminSection title={`Pending Articles (${pendingArticles.length})`} V={V}>
+            {pendingArticles.length === 0 ? (
+              <div style={{
+                background: V.card, border: `1px solid ${V.border}`,
+                borderRadius: 10, padding: '40px 24px', textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.text, marginBottom: 6 }}>
+                  No pending articles
+                </div>
+                <div style={{ fontSize: 13, color: V.muted, fontFamily: V.space }}>
+                  All submitted articles have been reviewed.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {pendingArticles.map(article => {
+                  const company = articleCompanyMap[article.id];
+                  const postedDate = new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  return (
+                    <div key={article.id} style={{
+                      background: V.card, border: `1px solid rgba(234,179,8,0.2)`,
+                      borderRadius: 10, padding: '16px 20px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 4 }}>
+                            {article.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, marginBottom: 6 }}>
+                            {company?.name || 'Unknown Company'} · {article.vertical} · {postedDate}
+                            {article.read_time_min && ` · ${article.read_time_min} min read`}
+                          </div>
+                          {article.excerpt && (
+                            <div style={{
+                              fontSize: 13, color: V.muted, fontFamily: V.space, lineHeight: 1.5,
+                              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                            }}>
+                              {article.excerpt}
+                            </div>
+                          )}
+                          {!article.excerpt && article.body && (
+                            <div style={{
+                              fontSize: 13, color: V.muted, fontFamily: V.space, lineHeight: 1.5,
+                              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                            }}>
+                              {article.body}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                          <button onClick={() => handleArticleAction(article.id, 'approve')} style={{
+                            background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
+                            color: '#86EFAC', borderRadius: 6, padding: '6px 14px', fontSize: 12,
+                            fontWeight: 700, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}>
+                            Approve
+                          </button>
+                          <button onClick={() => handleArticleAction(article.id, 'reject')} style={{
+                            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                            color: '#FCA5A5', borderRadius: 6, padding: '6px 14px', fontSize: 12,
+                            fontWeight: 700, fontFamily: V.space, cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}>
+                            Reject
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
