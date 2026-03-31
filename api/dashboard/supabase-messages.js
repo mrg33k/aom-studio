@@ -25,7 +25,7 @@ function supabaseHeaders() {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
@@ -121,6 +121,27 @@ export default async function handler(req, res) {
 
     const inserted = await sbRes.json()
     return res.status(200).json({ ok: true, message: inserted[0] || payload })
+  }
+
+  // ---- DELETE: clear all messages for a client_id (world switch fresh-start) ------
+  if (req.method === 'DELETE') {
+    const clientId = (req.query.client && req.query.client.trim())
+      ? req.query.client.trim().toLowerCase()
+      : null
+    if (!clientId || clientId === 'aom') {
+      // Safety guard: never allow bulk-delete for aom world
+      return res.status(400).json({ error: 'client required and must not be aom' })
+    }
+    const url = `${SUPABASE_URL}/rest/v1/messages?client_id=eq.${encodeURIComponent(clientId)}`
+    const sbRes = await fetch(url, {
+      method: 'DELETE',
+      headers: supabaseHeaders(),
+    })
+    if (!sbRes.ok) {
+      const err = await sbRes.text()
+      return res.status(sbRes.status).json({ error: err })
+    }
+    return res.status(200).json({ ok: true })
   }
 
   return res.status(405).json({ error: 'Method not allowed' })

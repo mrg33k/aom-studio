@@ -11608,6 +11608,14 @@ export default function GameDashboard() {
     } else {
       setWorldOverride(world.world)
       sessionStorage.removeItem('corner-qa-active'); sessionStorage.removeItem('corner-qa-completed')
+      // Mark this world as fresh so the welcome message fires on reload
+      // even if Supabase has prior messages for this client_id.
+      sessionStorage.setItem('corner-fresh-world', world.world)
+      console.log('[Corner] handleEnterWorld: world switch to', world.world, '-- clearing messages and flagging fresh')
+      // Clear existing Supabase messages for this world (fire-and-forget before reload)
+      fetch(`/api/dashboard/supabase-messages?client=${encodeURIComponent(world.world)}`, {
+        method: 'DELETE',
+      }).catch(() => {})
       window.location.reload()
     }
   }, [])
@@ -12308,9 +12316,19 @@ export default function GameDashboard() {
       // PRODUCTION: load chat history via Vercel proxy (bypasses Supabase JS client issues)
       // AOM Team Room: fetch ALL messages across all agents (aggregate view)
       const isAomTeamRoom = room === 'aom' || room === 'aom-team'
+      const clientId = getClientId()
+      // Fresh world switch: skip loading old messages so the welcome message isn't overwritten.
+      // The corner-fresh-world flag is set by handleEnterWorld and cleared by the welcome effect.
+      const isFreshWorldLoad = sessionStorage.getItem('corner-fresh-world') === clientId
+      if (isFreshWorldLoad && !isAomTeamRoom) {
+        console.log('[Corner] Proxy: skipping message load for fresh world switch', clientId, room)
+        setAgentChats(prev => ({ ...prev, [room]: { _all: [] } }))
+        setPanelChatLoading(false)
+        return
+      }
       const fetchUrl = isAomTeamRoom
-        ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=200&client=${encodeURIComponent(getClientId())}`
-        : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(getClientId())}`
+        ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=200&client=${encodeURIComponent(clientId)}`
+        : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(clientId)}`
       fetch(fetchUrl)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -12812,28 +12830,38 @@ export default function GameDashboard() {
         : [worldAgents[0]]
       const firstAgent = welcomeAgents[0] || worldAgents[0]
       autoOpenClientRef.current = clientId
+      console.log('[Corner] auto-open: switching to', firstAgent.slug, 'for world', clientId)
       setSelectedRoom(firstAgent.slug)
       setChatAgent(firstAgent.slug)
       setCameraTarget(firstAgent.slug)
       setPanelVisible(true)
       setPanelActiveTab('chat')
-      // Inject welcome messages from each visible agent
+      // Inject welcome messages from each visible agent.
+      // Force-inject if corner-fresh-world flag is set (world switch just happened)
+      // so that any previously loaded Supabase messages don't block the welcome.
       if (architectWelcomedRef.current !== clientId) {
         architectWelcomedRef.current = clientId
+        const isFreshWorldSwitch = sessionStorage.getItem('corner-fresh-world') === clientId
         const WELCOME_MSGS = {
           elon: "Hey. I'm Elon, the system mastermind. I keep everything running, route work to the right agents, and make sure nothing falls through the cracks. What do you need?",
           gary: "What's good? I'm Gary, AOM's ops lead. I handle internal operations, client work, and keep the team moving. Ask me anything about what we're working on.",
         }
+        console.log('[Corner] auto-open: scheduling welcome for', clientId, 'fresh?', isFreshWorldSwitch)
         const timer = setTimeout(() => {
+          // Clear fresh flag so it only fires once per world switch
+          if (isFreshWorldSwitch) sessionStorage.removeItem('corner-fresh-world')
           setAgentChats(prev => {
             const next = { ...prev }
             for (const agent of welcomeAgents) {
               const current = prev[agent.slug] || { _all: [] }
-              if ((current._all || []).length > 0) continue
+              // Skip only if agent already has messages AND this is NOT a fresh world switch.
+              // On fresh switch (just entered this world), always show the welcome.
+              if (!isFreshWorldSwitch && (current._all || []).length > 0) continue
               const msg = WELCOME_MSGS[agent.slug]
                 || (clientId === 'aom'
                   ? `What's up? I'm ${agent.name || agent.slug}. Ready when you are.`
                   : "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?")
+              console.log('[Corner] auto-open: injecting welcome for', agent.slug)
               next[agent.slug] = {
                 _all: [{
                   role: 'assistant',
