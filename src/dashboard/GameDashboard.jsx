@@ -12516,6 +12516,40 @@ export default function GameDashboard() {
     }
   }, [pipeData?.agents]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Architect welcome message: fires once per session for non-AOM worlds.
+  // Injects a local assistant message after chat auto-opens so new users aren't
+  // staring at an empty panel. NOT sent through relay -- pure local state.
+  useEffect(() => {
+    const clientId = getClientId()
+    if (clientId === 'aom') return
+    if (!panelVisible) return
+    if (panelActiveTab !== 'chat') return
+    if (!selectedRoom) return
+    const flagKey = `architect-welcomed-${clientId}`
+    try {
+      if (sessionStorage.getItem(flagKey)) return
+    } catch { /* ignore */ }
+    // Mark immediately so concurrent renders don't double-fire
+    try { sessionStorage.setItem(flagKey, '1') } catch { /* ignore */ }
+    const timer = setTimeout(() => {
+      const welcomeId = `architect-welcome-${Date.now()}`
+      setAgentChats(prev => {
+        const current = prev[selectedRoom] || { _all: [] }
+        // Don't inject if there are already messages (e.g. returning user with history)
+        if ((current._all || []).length > 0) return prev
+        const welcomeMsg = {
+          role: 'assistant',
+          content: "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?",
+          time: new Date().toISOString(),
+          id: welcomeId,
+          source: 'architect-welcome',
+        }
+        return { ...prev, [selectedRoom]: { _all: [welcomeMsg] } }
+      })
+    }, 650)
+    return () => clearTimeout(timer)
+  }, [panelVisible, panelActiveTab, selectedRoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleRoomClick = (roomId) => {
     // Use ROOM_LOOKUP which includes both agent rooms and project rooms.
     // For Supabase-sourced rooms not in gridSpec, create a dynamic entry so
