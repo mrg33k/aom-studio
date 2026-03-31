@@ -12,6 +12,7 @@ import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
 import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import { getAgentKnowledge } from './agentKnowledge.js'
+import agentProfiles from '../data/agent-profiles.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
@@ -845,10 +846,92 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
 
 // ── INFO PANEL ───────────────────────────────────────────────────────────────
 
+const AGENT_TAGLINES = {
+  bobby: "Ship it or it didn't happen",
+  gary: "If it's not tracked, it didn't happen",
+  elon: 'The machine runs because I run the machine',
+  steffen: 'Every pixel is a decision',
+  steve: 'Turn what we built into what they buy',
+  cleo: 'Raw footage in, scroll-stoppers out',
+  jacob: 'No means not yet',
+  tony: "If it exists but isn't posted, it doesn't exist",
+  alex: "Design the deal, don't just close it",
+  elmo: "Ship nothing I haven't seen",
+  pixel: 'Every frame, searchable',
+  rex: 'I run the room',
+}
+
+const RECIPE_EMOJIS = ['⚡', '🔧', '🎯', '📦', '🚀', '🔍', '📊', '✂️']
+
 function InfoPanel({ slug, isAgent }) {
   const knowledge = isAgent ? getAgentKnowledge(slug) : null
+  const profile = isAgent ? agentProfiles.find(p => p.slug === slug) : null
+  const tagline = AGENT_TAGLINES[slug] || null
+  const agentColor = profile?.color || getAgentColor(slug)
+
+  // Merge skills: union of profile + knowledge, deduped
+  const profileSkills = profile?.skills || []
+  const knowledgeSkills = knowledge?.skills || []
+  const allSkills = [...new Set([...profileSkills, ...knowledgeSkills])]
+
+  const recipes = profile?.recipes || []
+  const personality = profile?.personality || null
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '12px 14px' }}>
+
+      {/* Tagline */}
+      {tagline && (
+        <div style={{ marginBottom: 14, textAlign: 'center', padding: '10px 12px', borderRadius: 8, background: `${agentColor}10`, border: `1px solid ${agentColor}30` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: agentColor, letterSpacing: '0.03em', fontStyle: 'italic' }}>
+            "{tagline}"
+          </div>
+        </div>
+      )}
+
+      {/* Personality speech bubble */}
+      {personality && (
+        <div style={{ marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)', borderLeft: `3px solid ${agentColor}`, fontSize: 12, color: 'var(--bv-text2)', lineHeight: 1.5 }}>
+          {personality}
+        </div>
+      )}
+
+      {/* Skills */}
+      {allSkills.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 6 }}>Skills</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {allSkills.map(s => (
+              <span
+                key={s}
+                style={{ fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", padding: '3px 8px', borderRadius: 12, background: 'var(--bv-badge)', border: `1px solid ${agentColor}40`, color: 'var(--bv-accent-text)', cursor: 'default', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = agentColor + '22'; e.currentTarget.style.boxShadow = `0 0 8px ${agentColor}50` }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-badge)'; e.currentTarget.style.boxShadow = 'none' }}
+              >/{s}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recipes */}
+      {recipes.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 6 }}>Recipes</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {recipes.map((r, i) => (
+              <div key={i} style={{ padding: '8px 10px', borderRadius: 8, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)', cursor: 'default', transition: 'border-color 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = agentColor + '60' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--bv-card-border)' }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--bv-text)', marginBottom: 3 }}>{RECIPE_EMOJIS[i % RECIPE_EMOJIS.length]} {r.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--bv-text2)', lineHeight: 1.4 }}>{r.description}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Superpower */}
       {knowledge?.superpower && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 5 }}>Superpower</div>
@@ -857,23 +940,40 @@ function InfoPanel({ slug, isAgent }) {
           </div>
         </div>
       )}
-      {knowledge?.skills?.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 5 }}>Skills</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {knowledge.skills.map(s => (
-              <span key={s} style={{ fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", padding: '2px 8px', borderRadius: 12, background: 'var(--bv-badge)', border: '1px solid var(--bv-col-border)', color: 'var(--bv-accent-text)' }}>/{s}</span>
-            ))}
-          </div>
-        </div>
-      )}
+
+      {/* Owns */}
       {knowledge?.owns && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 5 }}>Owns</div>
           <div style={{ fontSize: 12, color: 'var(--bv-text2)' }}>{knowledge.owns}</div>
         </div>
       )}
-      {!knowledge && (
+
+      {/* Strengths */}
+      {knowledge?.strengths?.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 5 }}>Strengths</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {knowledge.strengths.map((s, i) => (
+              <div key={i} style={{ fontSize: 11, color: 'var(--bv-text2)', lineHeight: 1.4, paddingLeft: 8, borderLeft: '2px solid var(--bv-col-border)' }}>{s}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gaps */}
+      {knowledge?.gaps?.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--bv-muted)', marginBottom: 5 }}>Watch Out For</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {knowledge.gaps.map((g, i) => (
+              <div key={i} style={{ fontSize: 11, color: 'var(--bv-text2)', lineHeight: 1.4, paddingLeft: 8, borderLeft: '2px solid var(--bv-col-border)' }}>{g}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!knowledge && !profile && (
         <div style={{ color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>
           {isAgent ? 'Knowledge base coming soon.' : 'Project details coming soon.'}
         </div>
