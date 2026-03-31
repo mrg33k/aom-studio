@@ -1238,7 +1238,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile, agentColors = _AGENT_
           }
 
           return (
-            <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+            <div key={msg.id || i} className={`chat-msg-in flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
               onContextMenu={(e) => {
                 if (msg.streaming) return
                 e.preventDefault()
@@ -2144,7 +2144,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile, agents = _AGENTS_FALLBA
             }
 
             return (
-              <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+              <div key={msg.id || i} className={`chat-msg-in flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
                 onContextMenu={(e) => {
                   if (msg.streaming) return
                   e.preventDefault()

@@ -282,6 +282,21 @@ html, body {
   margin: 1.5rem 0;
 }
 
+/* Chat message enter animation */
+@keyframes chatMsgIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.chat-msg-in {
+  animation: chatMsgIn 250ms ease-out both;
+}
+
 /* Mobile adjustments for brief content */
 @media (max-width: 640px) {
   .brief-content h1 { font-size: 26px; }

@@ -9922,6 +9922,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       flexDirection: isUser ? 'row-reverse' : 'row',
                       position: 'relative',
                       marginTop: 0,
+                      animation: 'chatMsgIn 250ms ease-out both',
                     }}
                     onContextMenu={(e) => {
                       if (e.target.closest('a')) return // let links have normal right-click
