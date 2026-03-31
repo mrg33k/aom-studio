@@ -13,9 +13,16 @@
 
 const DEFAULT_CLIENT_ID = 'aom'
 
+// Super-admin user ID: Patrik. Has full access to all worlds.
+export const SUPER_ADMIN_USER_ID = '833f6828-1dae-409c-a24b-1438f46544d0'
+
 // sessionStorage key for admin world override.
 // Takes priority over auth so admins can context-switch without re-login.
 const WORLD_OVERRIDE_KEY = 'corner-world-override'
+
+// localStorage key for world override persistence across page refreshes.
+// sessionStorage would be cleared on new tab/window -- localStorage persists.
+const WORLD_OVERRIDE_LS_KEY = 'corner-world-override-persist'
 
 // In-memory cache: populated by setClientIdFromUser() after auth loads.
 // Synchronous reads from getClientId() see this immediately.
@@ -41,11 +48,23 @@ export function setClientIdFromUser(user) {
 export function getClientId() {
   if (typeof window === 'undefined') return DEFAULT_CLIENT_ID
 
-  // 1. Admin world override (sessionStorage): persists across reload without re-login.
+  // 1. Admin world override (sessionStorage first, then localStorage for cross-refresh persist).
   //    Admins set this via the world switcher to context-switch into any client.
   try {
     const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
     if (override && override.trim()) return override.trim().toLowerCase()
+  } catch {
+    // ignore
+  }
+  // 1b. localStorage fallback: persists across page refreshes and new tabs.
+  //     Re-hydrate sessionStorage so subsequent reads are fast.
+  try {
+    const lsOverride = localStorage.getItem(WORLD_OVERRIDE_LS_KEY)
+    if (lsOverride && lsOverride.trim()) {
+      const val = lsOverride.trim().toLowerCase()
+      try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, val) } catch { /* ignore */ }
+      return val
+    }
   } catch {
     // ignore
   }
@@ -69,12 +88,16 @@ export function getClientId() {
 /**
  * setWorldOverride(worldId) -- store or clear the admin world override.
  * Call with null/undefined to clear (return to own world).
+ * Writes to both sessionStorage (current tab) and localStorage (persist across refresh).
  */
 export function setWorldOverride(worldId) {
   if (!worldId) {
     try { sessionStorage.removeItem(WORLD_OVERRIDE_KEY) } catch { /* ignore */ }
+    try { localStorage.removeItem(WORLD_OVERRIDE_LS_KEY) } catch { /* ignore */ }
   } else {
-    try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, worldId.trim().toLowerCase()) } catch { /* ignore */ }
+    const val = worldId.trim().toLowerCase()
+    try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, val) } catch { /* ignore */ }
+    try { localStorage.setItem(WORLD_OVERRIDE_LS_KEY, val) } catch { /* ignore */ }
   }
 }
 
@@ -87,39 +110,28 @@ export function getUserWorld() {
 }
 
 /**
- * setClientId(id) -- no-op until offline features are built.
- * Previously persisted to localStorage; removed pending Supabase-only approach.
- */
-export function setClientId(_id) {
-  // No-op: localStorage removed. Client identity resolves from Supabase auth only.
-}
-
-/**
- * SUPER_ADMIN_USER_ID -- Patrik's Supabase user ID.
- * Super admins can switch into any world without re-login.
- */
-export const SUPER_ADMIN_USER_ID = 'aom-patrik'
-
-/**
- * isSuperAdmin(userId) -- returns true if the given user ID is the super admin.
- */
-export function isSuperAdmin(userId) {
-  if (!userId) return false
-  return userId === SUPER_ADMIN_USER_ID
-}
-
-/**
- * isAdminOverride() -- returns true if an admin world override is currently active.
- * Uses the same sessionStorage key as setWorldOverride().
+ * isAdminOverride() -- returns true if a world override is currently active
+ * (i.e., the user is viewing a different world than their own).
  */
 export function isAdminOverride() {
   if (typeof window === 'undefined') return false
   try {
-    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
-    return !!(override && override.trim())
+    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY) ||
+      localStorage.getItem(WORLD_OVERRIDE_LS_KEY)
+    if (!override || !override.trim()) return false
+    const myWorld = getUserWorld()
+    return override.trim().toLowerCase() !== myWorld
   } catch {
     return false
   }
+}
+
+/**
+ * isSuperAdmin(userId) -- check if a given user ID is the super-admin.
+ * Pass the Supabase user.id.
+ */
+export function isSuperAdmin(userId) {
+  return userId === SUPER_ADMIN_USER_ID
 }
 
 /**
