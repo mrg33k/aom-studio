@@ -1067,27 +1067,38 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
     </div>
   )
 
-  const rightNowTasks = tasks.filter(t => t._source === 'rightNow')
-  const completedTasks = tasks.filter(t => t._source === 'completed')
-  const otherTasks = tasks.filter(t => t._source === 'todo')
+  // Right Now: live tasks + last 5 completed inline
+  const liveTasks = tasks.filter(t => t._source === 'rightNow')
+  const allCompleted = tasks.filter(t => t._source === 'completed')
+  // Dedupe completed (recentCompleted items are duplicated in the full list)
+  const seenIds = new Set()
+  const uniqueCompleted = allCompleted.filter(t => {
+    const key = t.id || t.text
+    if (seenIds.has(key)) return false
+    seenIds.add(key)
+    return true
+  })
+  const recentCompleted = uniqueCompleted.slice(0, 5)
+  const rightNowSection = [...liveTasks, ...recentCompleted]
 
+  // Projects: todo tasks grouped by project name
+  const todoTasks = tasks.filter(t => t._source === 'todo')
   const projectMap = {}
-  otherTasks.forEach(t => {
+  todoTasks.forEach(t => {
     const proj = t.project || t.projectSection || 'General'
     if (!projectMap[proj]) projectMap[proj] = []
     projectMap[proj].push(t)
   })
-
   const projectNames = Object.keys(projectMap).sort((a, b) => {
-    const aTime = Math.max(...(projectMap[a]?.map(t => new Date(t.addedAt).getTime()) || [0]))
-    const bTime = Math.max(...(projectMap[b]?.map(t => new Date(t.addedAt).getTime()) || [0]))
-    return bTime - aTime
+    const aLen = projectMap[a]?.length || 0
+    const bLen = projectMap[b]?.length || 0
+    return bLen - aLen
   })
 
   if (tasks.length === 0) {
     return (
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ padding: '16px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>No tasks</div>
+        <div style={{ padding: '16px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>No tasks yet</div>
       </div>
     )
   }
@@ -1098,15 +1109,15 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
         title="Right Now"
         isOpen={expanded.rightNow}
         onToggle={() => setExpanded(prev => ({ ...prev, rightNow: !prev.rightNow }))}
-        tasks={rightNowTasks}
+        tasks={rightNowSection}
         alwaysExpanded={true}
       />
-      {completedTasks.length > 0 && (
+      {uniqueCompleted.length > 0 && (
         <AccordionSection
           title="Completed"
           isOpen={expanded.completed}
           onToggle={() => setExpanded(prev => ({ ...prev, completed: !prev.completed }))}
-          tasks={completedTasks}
+          tasks={uniqueCompleted}
         />
       )}
       {projectNames.map(proj => (
@@ -1685,6 +1696,31 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const inboxItems = pipeData?.inboxItems || []
   const personalTodos = pipeData?.personalTodos || []
   const completedFeed = pipeData?.completedFeed || []
+
+  // Build per-agent task index from punchData (Supabase tasks table)
+  const agentTasks = useMemo(() => {
+    const map = {}
+    if (!punchData?.projects) return map
+    for (const proj of punchData.projects) {
+      for (const t of (proj.tasks || [])) {
+        if (!t.agent) continue
+        if (!map[t.agent]) map[t.agent] = { completed: [], todo: [], projects: {} }
+        if (t.done || t.status === 'completed') {
+          map[t.agent].completed.push({ ...t, _source: 'completed', project: proj.name })
+        } else {
+          map[t.agent].todo.push({ ...t, _source: 'todo', project: proj.name })
+          const pName = proj.name || proj.section || 'General'
+          if (!map[t.agent].projects[pName]) map[t.agent].projects[pName] = []
+          map[t.agent].projects[pName].push({ ...t, _source: 'todo', project: pName })
+        }
+      }
+    }
+    // Sort completed by most recent
+    for (const slug of Object.keys(map)) {
+      map[slug].completed.sort((a, b) => new Date(b.addedAt || 0) - new Date(a.addedAt || 0))
+    }
+    return map
+  }, [punchData])
   const vars = cssVars(isNightMode)
 
   // Visible columns: set of slugs. Persisted to Supabase + localStorage fallback.
@@ -1787,13 +1823,24 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     const agentItems = agents.map(a => ({
       slug: a.slug, name: a.name || getAgentName(a.slug), color: a.color || getAgentColor(a.slug),
       status: a.status || 'IDLE', role: a.role || '', isAgent: true,
-      tasks: a.slug === 'patrik'
-        ? [
-            ...rightNow.filter(t => t.agent === 'patrik').map(t => ({ ...t, _source: 'rightNow' })),
+      tasks: (() => {
+        const at = agentTasks[a.slug] || { completed: [], todo: [], projects: {} }
+        const live = rightNow.filter(t => t.agent === a.slug).map(t => ({ ...t, _source: 'rightNow' }))
+        // Last 5 completed inline with Right Now
+        const recentCompleted = at.completed.slice(0, 5).map(t => ({ ...t, _source: 'completed', done: true }))
+        // All completed for the Completed section
+        const allCompleted = at.completed.map(t => ({ ...t, _source: 'completed', done: true }))
+        // Todo tasks tagged by project
+        const todoTasks = at.todo.map(t => ({ ...t, _source: 'todo' }))
+        if (a.slug === 'patrik') {
+          return [
+            ...live,
             ...personalTodos.map(t => ({ ...t, _source: 'todo' })),
-            ...completedFeed.filter(t => t.agent === 'patrik').map(t => ({ ...t, done: true, _source: 'completed' })),
+            ...allCompleted,
           ]
-        : rightNow.filter(t => t.agent === a.slug).map(t => ({ ...t, _source: 'rightNow' })),
+        }
+        return [...live, ...recentCompleted, ...allCompleted, ...todoTasks]
+      })(),
     }))
     const projectItems = (punchData?.projects || []).map(p => ({
       slug: p.section, name: p.name, color: p.color || getAgentColor(p.section),
@@ -1801,7 +1848,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       tasks: (p.tasks || []).map(t => ({ ...t, project: p.section })),
     }))
     return [...agentItems, ...projectItems]
-  }, [agents, rightNow, punchData, personalTodos, completedFeed])
+  }, [agents, rightNow, punchData, personalTodos, completedFeed, agentTasks])
 
   // Apply saved column order
   const orderedVisibleItems = useMemo(() => {
