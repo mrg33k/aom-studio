@@ -421,6 +421,14 @@ function SourcingAdminInner() {
   const [emailInput, setEmailInput] = useState('');
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState('');
+  const [showForgotPw, setShowForgotPw] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotStatus, setForgotStatus] = useState(''); // '' | 'sent' | 'error:msg'
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [newPwInput, setNewPwInput] = useState('');
+  const [newPwError, setNewPwError] = useState('');
+  const [newPwLoading, setNewPwLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('stats');
 
   // Tenant switcher state
@@ -476,7 +484,11 @@ function SourcingAdminInner() {
       setAuthLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthed(!!session);
+      if (_event === 'PASSWORD_RECOVERY') {
+        setShowNewPw(true);
+      } else {
+        setAuthed(!!session);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -497,6 +509,36 @@ function SourcingAdminInner() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setAuthed(false);
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotStatus('');
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: window.location.origin + '/sourcing/admin',
+    });
+    setForgotLoading(false);
+    if (error) {
+      setForgotStatus('error:' + (error.message || 'Failed to send reset email.'));
+    } else {
+      setForgotStatus('sent');
+    }
+  };
+
+  const handleSetNewPassword = async (e) => {
+    e.preventDefault();
+    setNewPwError('');
+    if (!newPwInput) { setNewPwError('Please enter a new password.'); return; }
+    setNewPwLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPwInput });
+    setNewPwLoading(false);
+    if (error) {
+      setNewPwError(error.message || 'Failed to update password.');
+    } else {
+      setShowNewPw(false);
+      setNewPwInput('');
+    }
   };
 
   // Fetch tenants list
@@ -977,6 +1019,53 @@ function SourcingAdminInner() {
 
   const pendingCompanies = companies.filter(c => c.status === 'pending');
 
+  // ─── Password reset callback (user landed from reset email) ─────────────
+  if (showNewPw) {
+    return (
+      <div style={{ minHeight: '100vh', background: V.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <style>{`* { box-sizing: border-box; } input::placeholder { color: ${V.dim}; } input:focus { border-color: ${V.accentBrd} !important; outline: none; }`}</style>
+        <div style={{
+          background: V.card, border: `1px solid ${V.border}`,
+          borderRadius: 12, padding: '36px 32px', width: '100%', maxWidth: 380,
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 11, color: V.accent, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
+              sourcing.directory
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: V.syne, color: V.heading }}>Set New Password</div>
+          </div>
+          <form onSubmit={handleSetNewPassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>New Password</label>
+              <input
+                type="password"
+                value={newPwInput}
+                onChange={e => setNewPwInput(e.target.value)}
+                placeholder="Enter new password"
+                autoFocus
+                required
+                style={{
+                  background: V.card2, border: `1px solid ${V.border}`,
+                  color: V.text, borderRadius: 7, padding: '10px 12px',
+                  fontSize: 14, fontFamily: V.mono, width: '100%',
+                }}
+              />
+            </div>
+            {newPwError && <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>{newPwError}</div>}
+            <button type="submit" disabled={newPwLoading} style={{
+              background: V.accent, border: 'none', color: '#fff',
+              borderRadius: 8, padding: '12px 0', fontSize: 14,
+              fontWeight: 700, fontFamily: V.space, cursor: newPwLoading ? 'not-allowed' : 'pointer',
+              opacity: newPwLoading ? 0.7 : 1,
+            }}>
+              {newPwLoading ? 'Saving...' : 'Save Password'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Login gate ───────────────────────────────────────────────────────────
   if (!authed) {
     if (authLoading) {
@@ -993,55 +1082,127 @@ function SourcingAdminInner() {
             <div style={{ fontSize: 11, color: V.accent, fontFamily: V.mono, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>
               sourcing.directory
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: V.syne, color: V.heading }}>Admin Panel</div>
-          </div>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Email</label>
-              <input
-                type="email"
-                value={emailInput}
-                onChange={e => setEmailInput(e.target.value)}
-                placeholder="admin@example.com"
-                autoFocus
-                required
-                style={{
-                  background: V.card2, border: `1px solid ${V.border}`,
-                  color: V.text, borderRadius: 7, padding: '10px 12px',
-                  fontSize: 14, fontFamily: V.mono, width: '100%',
-                }}
-              />
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: V.syne, color: V.heading }}>
+              {showForgotPw ? 'Reset Password' : 'Admin Panel'}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Password</label>
-              <input
-                type="password"
-                value={pwInput}
-                onChange={e => setPwInput(e.target.value)}
-                placeholder="Password"
-                required
-                style={{
-                  background: V.card2, border: `1px solid ${V.border}`,
-                  color: V.text, borderRadius: 7, padding: '10px 12px',
-                  fontSize: 14, fontFamily: V.mono, width: '100%',
-                }}
-              />
-            </div>
-            {pwError && <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>{pwError}</div>}
-            <button type="submit" disabled={authLoading} style={{
-              background: V.accent, border: 'none', color: '#fff',
-              borderRadius: 8, padding: '12px 0', fontSize: 14,
-              fontWeight: 700, fontFamily: V.space, cursor: authLoading ? 'not-allowed' : 'pointer',
-              opacity: authLoading ? 0.7 : 1,
-            }}>
-              {authLoading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <Link to="/sourcing" style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none' }}>
-              ← Back to Directory
-            </Link>
           </div>
+
+          {showForgotPw ? (
+            forgotStatus === 'sent' ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 15, color: V.text, fontFamily: V.space, marginBottom: 20 }}>
+                  Check your email for a reset link.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotPw(false); setForgotStatus(''); setForgotEmail(''); }}
+                  style={{ background: 'none', border: 'none', color: V.accent, fontFamily: V.space, fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Back to sign in
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Email</label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    autoFocus
+                    required
+                    style={{
+                      background: V.card2, border: `1px solid ${V.border}`,
+                      color: V.text, borderRadius: 7, padding: '10px 12px',
+                      fontSize: 14, fontFamily: V.mono, width: '100%',
+                    }}
+                  />
+                </div>
+                {forgotStatus.startsWith('error:') && (
+                  <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>
+                    {forgotStatus.slice(6)}
+                  </div>
+                )}
+                <button type="submit" disabled={forgotLoading} style={{
+                  background: V.accent, border: 'none', color: '#fff',
+                  borderRadius: 8, padding: '12px 0', fontSize: 14,
+                  fontWeight: 700, fontFamily: V.space, cursor: forgotLoading ? 'not-allowed' : 'pointer',
+                  opacity: forgotLoading ? 0.7 : 1,
+                }}>
+                  {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+                <div style={{ textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowForgotPw(false); setForgotStatus(''); }}
+                    style={{ background: 'none', border: 'none', color: V.muted, fontFamily: V.space, fontSize: 13, cursor: 'pointer' }}
+                  >
+                    Back to sign in
+                  </button>
+                </div>
+              </form>
+            )
+          ) : (
+            <>
+              <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Email</label>
+                  <input
+                    type="email"
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    placeholder="admin@example.com"
+                    autoFocus
+                    required
+                    style={{
+                      background: V.card2, border: `1px solid ${V.border}`,
+                      color: V.text, borderRadius: 7, padding: '10px 12px',
+                      fontSize: 14, fontFamily: V.mono, width: '100%',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: 12, color: V.muted, fontFamily: V.space, fontWeight: 600 }}>Password</label>
+                    <button
+                      type="button"
+                      onClick={() => { setShowForgotPw(true); setPwError(''); }}
+                      style={{ background: 'none', border: 'none', color: V.accent, fontFamily: V.space, fontSize: 12, cursor: 'pointer', padding: 0 }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <input
+                    type="password"
+                    value={pwInput}
+                    onChange={e => setPwInput(e.target.value)}
+                    placeholder="Password"
+                    required
+                    style={{
+                      background: V.card2, border: `1px solid ${V.border}`,
+                      color: V.text, borderRadius: 7, padding: '10px 12px',
+                      fontSize: 14, fontFamily: V.mono, width: '100%',
+                    }}
+                  />
+                </div>
+                {pwError && <div style={{ color: '#EF4444', fontSize: 13, fontFamily: V.space }}>{pwError}</div>}
+                <button type="submit" disabled={authLoading} style={{
+                  background: V.accent, border: 'none', color: '#fff',
+                  borderRadius: 8, padding: '12px 0', fontSize: 14,
+                  fontWeight: 700, fontFamily: V.space, cursor: authLoading ? 'not-allowed' : 'pointer',
+                  opacity: authLoading ? 0.7 : 1,
+                }}>
+                  {authLoading ? 'Signing in...' : 'Sign In'}
+                </button>
+              </form>
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <Link to="/sourcing" style={{ fontSize: 13, color: V.muted, fontFamily: V.space, textDecoration: 'none' }}>
+                  ← Back to Directory
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
