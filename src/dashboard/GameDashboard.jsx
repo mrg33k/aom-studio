@@ -12731,6 +12731,42 @@ export default function GameDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sendBody),
       }).catch(() => {})
+      // ---- FAST PATH: Scout-style Supabase polling for Rex (test) ----
+      if (selectedRoom === 'rex') {
+        fetch('/api/local/corner-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: 'rex', message: text, client_id: 'aom' }),
+        }).then(r => r.json()).then(data => {
+          if (!data?.id) return
+          // Poll for response every 1s, up to 30s
+          let polls = 0
+          const fastPoll = setInterval(async () => {
+            polls++
+            if (polls > 30) { clearInterval(fastPoll); return }
+            try {
+              const res = await fetch(`/api/local/corner-chat?id=${data.id}`)
+              const msg = await res.json()
+              if (msg?.status === 'complete' && msg?.response) {
+                clearInterval(fastPoll)
+                // Inject the response into chat (replace the "thinking" placeholder)
+                startTransition(() => {
+                  setAgentChats(prev => {
+                    const current = prev.rex || { _all: [] }
+                    const msgs = (current._all || []).map(m =>
+                      m.streaming && !m.content ? { ...m, content: msg.response, streaming: false } : m
+                    )
+                    return { ...prev, rex: { _all: msgs } }
+                  })
+                  setPanelStreaming(false)
+                })
+              } else if (msg?.status === 'failed') {
+                clearInterval(fastPoll)
+              }
+            } catch {}
+          }, 1000)
+        }).catch(() => {})
+      }
     } else {
       // Production: send via Vercel proxy (writes to Supabase with service key server-side)
       const agent = selectedRoom

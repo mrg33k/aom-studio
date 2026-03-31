@@ -1201,6 +1201,110 @@ function localDashboardPlugin() {
         })
       })
 
+      // ---- CORNER FAST CHAT (Scout-style) --------
+      // POST: Write message to corner_chat_messages (Supabase) for fast processing
+      // GET: Poll for response by message ID
+      server.middlewares.use('/api/local/corner-chat', async (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
+
+        // Load Supabase creds
+        let sbUrl = '', sbKey = ''
+        try {
+          const envPath = resolve(os.homedir(), '.config/supabase/corner.env')
+          const envContent = fs.readFileSync(envPath, 'utf-8')
+          for (const line of envContent.split('\n')) {
+            if (line.includes('=') && !line.startsWith('#')) {
+              const [k, ...v] = line.split('=')
+              if (k.trim() === 'SUPABASE_URL') sbUrl = v.join('=').trim()
+              if (k.trim() === 'SUPABASE_SERVICE_ROLE_KEY') sbKey = v.join('=').trim()
+            }
+          }
+        } catch {}
+        if (!sbUrl || !sbKey) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: 'No Supabase credentials' }))
+          return
+        }
+
+        const sbHeaders = {
+          'apikey': sbKey,
+          'Authorization': `Bearer ${sbKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation',
+        }
+
+        if (req.method === 'POST') {
+          // Write new message to corner_chat_messages
+          let body = ''
+          req.on('data', chunk => { body += chunk })
+          req.on('end', async () => {
+            try {
+              const data = JSON.parse(body)
+              const { agent, message, client_id } = data
+              if (!agent || !message) {
+                res.statusCode = 400
+                res.end(JSON.stringify({ error: 'Missing agent or message' }))
+                return
+              }
+              const sbRes = await fetch(`${sbUrl}/rest/v1/corner_chat_messages`, {
+                method: 'POST',
+                headers: sbHeaders,
+                body: JSON.stringify({
+                  agent,
+                  message,
+                  client_id: client_id || 'aom',
+                  status: 'pending',
+                  source: 'corner-dashboard',
+                }),
+              })
+              if (sbRes.ok) {
+                const rows = await sbRes.json()
+                res.setHeader('Content-Type', 'application/json')
+                res.end(JSON.stringify({ ok: true, id: rows[0]?.id }))
+              } else {
+                res.statusCode = 500
+                res.end(JSON.stringify({ error: `Supabase error: ${sbRes.status}` }))
+              }
+            } catch (err) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: err.message }))
+            }
+          })
+        } else if (req.method === 'GET') {
+          // Poll for response by message ID
+          const url = new URL(req.url, 'http://localhost')
+          const msgId = url.searchParams.get('id')
+          if (!msgId) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: 'Missing id parameter' }))
+            return
+          }
+          try {
+            const sbRes = await fetch(
+              `${sbUrl}/rest/v1/corner_chat_messages?id=eq.${msgId}&select=id,status,response,completed_at`,
+              { headers: sbHeaders }
+            )
+            if (sbRes.ok) {
+              const rows = await sbRes.json()
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify(rows[0] || { status: 'not_found' }))
+            } else {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: `Supabase error: ${sbRes.status}` }))
+            }
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        } else {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'GET or POST only' }))
+        }
+      })
+
       // ---- AGENT QUEUES (List Tab) --------
       // Returns all agents with their queued tasks parsed from incoming-tasks.md
       server.middlewares.use('/api/local/agent-queues', (req, res) => {
