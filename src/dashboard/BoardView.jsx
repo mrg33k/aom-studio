@@ -1716,7 +1716,7 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
 
 // ── MAIN BOARD VIEW ──────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, hasRightNow = false, unreadAgents = {}, onTaskTap, onViewDetail, onAgentSelect }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, hasRightNow = false, unreadAgents = {}, onTaskTap, onViewDetail, onAgentSelect, currentUser }) {
   const rightNow = pipeData?.rightNow || []
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
@@ -1755,6 +1755,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const [visibleSlugs, setVisibleSlugs] = useState(() => {
     try { const s = localStorage.getItem('corner-board-visible'); if (s) return new Set(JSON.parse(s)) }
     catch {}
+    // Check user metadata for default_visible (set during account creation)
+    const userDefaults = currentUser?.user_metadata?.default_visible
+    if (userDefaults && Array.isArray(userDefaults) && userDefaults.length > 0) return new Set(userDefaults)
     // No saved prefs: show all agents from pipeData (scoped by client_id)
     if (agents.length > 0) return new Set(agents.map(a => a.slug))
     return new Set(['rex', 'bobby', 'gary', 'elon']) // AOM fallback

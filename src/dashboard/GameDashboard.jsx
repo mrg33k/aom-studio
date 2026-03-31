@@ -12805,35 +12805,46 @@ export default function GameDashboard() {
     // Check if current selectedRoom is in this world's agents
     const inWorld = worldAgents.some(a => a.slug === selectedRoom)
     if (!inWorld) {
-      const firstAgent = worldAgents[0]
+      // Determine which agents to greet from: user's default_visible or first agent
+      const userDefaults = currentUser?.user_metadata?.default_visible
+      const welcomeAgents = (userDefaults && Array.isArray(userDefaults) && userDefaults.length > 0)
+        ? worldAgents.filter(a => userDefaults.includes(a.slug))
+        : [worldAgents[0]]
+      const firstAgent = welcomeAgents[0] || worldAgents[0]
       autoOpenClientRef.current = clientId
       setSelectedRoom(firstAgent.slug)
       setChatAgent(firstAgent.slug)
       setCameraTarget(firstAgent.slug)
       setPanelVisible(true)
       setPanelActiveTab('chat')
-      // Inject welcome message directly here so it's tied to the same trigger,
-      // not a separate effect that may miss the state propagation window.
+      // Inject welcome messages from each visible agent
       if (architectWelcomedRef.current !== clientId) {
         architectWelcomedRef.current = clientId
+        const WELCOME_MSGS = {
+          elon: "Hey. I'm Elon, the system mastermind. I keep everything running, route work to the right agents, and make sure nothing falls through the cracks. What do you need?",
+          gary: "What's good? I'm Gary, AOM's ops lead. I handle internal operations, client work, and keep the team moving. Ask me anything about what we're working on.",
+        }
         const timer = setTimeout(() => {
           setAgentChats(prev => {
-            const current = prev[firstAgent.slug] || { _all: [] }
-            if ((current._all || []).length > 0) return prev
-            return {
-              ...prev,
-              [firstAgent.slug]: {
+            const next = { ...prev }
+            for (const agent of welcomeAgents) {
+              const current = prev[agent.slug] || { _all: [] }
+              if ((current._all || []).length > 0) continue
+              const msg = WELCOME_MSGS[agent.slug]
+                || (clientId === 'aom'
+                  ? `What's up? I'm ${agent.name || agent.slug}. Ready when you are.`
+                  : "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?")
+              next[agent.slug] = {
                 _all: [{
                   role: 'assistant',
-                  content: clientId === 'aom'
-                    ? `What's up? I'm ${firstAgent.name || firstAgent.slug}. Ready when you are.`
-                    : "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?",
+                  content: msg,
                   time: new Date().toISOString(),
-                  id: `architect-welcome-${Date.now()}`,
-                  source: 'architect-welcome',
+                  id: `welcome-${agent.slug}-${Date.now()}`,
+                  source: 'agent-welcome',
                 }],
-              },
+              }
             }
+            return next
           })
         }, 650)
         return () => clearTimeout(timer)
@@ -12841,7 +12852,7 @@ export default function GameDashboard() {
     } else {
       autoOpenClientRef.current = clientId
     }
-  }, [pipeData?.agents]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pipeData?.agents, currentUser]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRoomClick = (roomId) => {
     // Use ROOM_LOOKUP which includes both agent rooms and project rooms.
@@ -13717,6 +13728,7 @@ export default function GameDashboard() {
             hudHeight={hudBarHeight}
             hasRightNow={rightNowTasks.length > 0}
             unreadAgents={unreadAgents}
+            currentUser={currentUser}
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
             onViewDetail={(task) => {
               setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
