@@ -6199,10 +6199,17 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                         ),
                       }}>
                         {msg.content && (
-                          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                            {msg.content}
-                            {msg.streaming && msg.content && <StreamingCursor />}
-                          </div>
+                          isUser ? (
+                            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                              {renderPlainContent(msg.content, '#E85D26')}
+                              {msg.streaming && msg.content && <StreamingCursor />}
+                            </div>
+                          ) : (
+                            <div style={{ wordBreak: 'break-word' }}>
+                              <MarkdownMessage text={msg.content} agentColor={agentColor} streaming={msg.streaming} />
+                              {msg.streaming && msg.content && <StreamingCursor />}
+                            </div>
+                          )
                         )}
                         {isLastStreaming && (
                           <TypingIndicatorV2
