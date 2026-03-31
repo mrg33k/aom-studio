@@ -12490,14 +12490,44 @@ export default function GameDashboard() {
     }
   }, [isOverview])
 
+  // Issue 2: Auto-open Architect chat for non-AOM worlds on first load.
+  // When pipeData.agents loads for a non-AOM world, if selectedRoom is still the
+  // AOM default (elon) and is not in this world's agents, switch to the first agent.
+  // This ensures new users see the Architect chat panel open immediately.
+  const autoOpenDoneRef = useRef(false)
+  useEffect(() => {
+    if (autoOpenDoneRef.current) return
+    const clientId = getClientId()
+    if (clientId === 'aom') return
+    const worldAgents = pipeData?.agents || []
+    if (worldAgents.length === 0) return
+    // Check if current selectedRoom is in this world's agents
+    const inWorld = worldAgents.some(a => a.slug === selectedRoom)
+    if (!inWorld) {
+      const firstAgent = worldAgents[0]
+      autoOpenDoneRef.current = true
+      setSelectedRoom(firstAgent.slug)
+      setChatAgent(firstAgent.slug)
+      setCameraTarget(firstAgent.slug)
+      setPanelVisible(true)
+      setPanelActiveTab('chat')
+    } else {
+      autoOpenDoneRef.current = true
+    }
+  }, [pipeData?.agents]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleRoomClick = (roomId) => {
     // Use ROOM_LOOKUP which includes both agent rooms and project rooms.
     // For Supabase-sourced rooms not in gridSpec, create a dynamic entry so
     // chat routing works for any world's agents (e.g. Q's Jarvis).
+    // Issue 3: check pipeData.agents (Supabase world-scoped) in addition to data.agents
+    // (which is AOM demo data in production) so any world's agents are clickable.
     let room = ROOM_LOOKUP[roomId]
     if (!room) {
       // Dynamic room from Supabase (not in gridSpec). Build a minimal entry.
-      const agentData = data?.agents?.find(a => a.slug === roomId)
+      // Check pipeData.agents first (world-scoped, live) then data.agents (demo fallback)
+      const agentData = pipeData?.agents?.find(a => a.slug === roomId)
+        || data?.agents?.find(a => a.slug === roomId)
       if (agentData) {
         room = {
           id: roomId,
@@ -12768,6 +12798,68 @@ export default function GameDashboard() {
           }, 1000)
         }).catch(() => {})
       }
+    } else if (activeClientId !== 'aom') {
+      // Issue 4: Non-AOM worlds don't have relay running. Route through base-chat API,
+      // which dispatches to Claude with the agent's system prompt and returns immediately.
+      // Workspace path convention: workspaces/{clientId}
+      const agent = selectedRoom
+      const workspacePath = `workspaces/${activeClientId}`
+      // Build history for context (last 20 messages from current chat)
+      const currentChatAll = agentChats[agent]?._all || []
+      const chatHistory = currentChatAll
+        .filter(m => !m.streaming && m.content && (m.role === 'user' || m.role === 'assistant'))
+        .slice(-20)
+        .map(m => ({ role: m.role, content: m.content, via: m.via || null, routed_to: m.via ? m.via.toLowerCase() : null }))
+      try {
+        const res = await fetch('/api/dashboard/base-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace: workspacePath, message: text, history: chatHistory, clientId: activeClientId }),
+        })
+        if (!res.ok) throw new Error(`base-chat error: ${res.status}`)
+        const responseData = await res.json()
+        // Extract response text (single, multi, or clarification)
+        let responseText = ''
+        let responseVia = 'Architect'
+        if (responseData.clarification) {
+          responseText = responseData.clarification
+          responseVia = 'Architect'
+        } else if (responseData.responses && Array.isArray(responseData.responses)) {
+          // Multi-agent: join responses
+          responseText = responseData.responses.map(r => `**${r.agent}:** ${r.response}`).join('\n\n')
+          responseVia = responseData.responses.map(r => r.agent).join(', ')
+        } else if (responseData.response) {
+          responseText = responseData.response
+          responseVia = responseData.via || 'Architect'
+        } else {
+          throw new Error('No response from base-chat')
+        }
+        startTransition(() => {
+          setAgentChats(prev => {
+            const current = prev[agent]?._all || []
+            // Replace the thinking placeholder with the real response
+            const updated = current.map(m =>
+              m.streaming && !m.content
+                ? { ...m, content: responseText, streaming: false, via: responseVia, time: new Date().toISOString() }
+                : m
+            )
+            return { ...prev, [agent]: { _all: updated } }
+          })
+          setPanelStreaming(false)
+        })
+      } catch (err) {
+        startTransition(() => {
+          setAgentChats(prev => {
+            const current = prev[agent]?._all || []
+            const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
+            if (thinkingIdx === -1) return prev
+            const updated = [...current]
+            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: `Error: ${err.message}`, time: new Date().toISOString() }
+            return { ...prev, [agent]: { _all: updated } }
+          })
+          setPanelStreaming(false)
+        })
+      }
     } else {
       // Production: send via Vercel proxy (writes to Supabase with service key server-side)
       const agent = selectedRoom
@@ -12816,7 +12908,7 @@ export default function GameDashboard() {
       // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
-  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups, currentUser])
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups, currentUser, agentChats]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poke handler: send a follow-up message directly (bypasses input state)
   const handlePokePanelMessage = useCallback((text) => {
