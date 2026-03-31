@@ -278,7 +278,12 @@ export function deriveStateFromEvents(events) {
     // Hide tasks with no timestamp or older than STALE_MS -- these are ghost pills
     const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : Infinity
     if (ageMs >= STALE_MS) continue
-    const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
+    let description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
+    // Clean garbage RNB names: session starts, raw prompts, system noise
+    const GARBAGE_RE = /^(session start|please reply|task$|working\.\.\.$)/i
+    if (GARBAGE_RE.test(description.trim())) description = `${info.agent} is working`
+    // Truncate overly long raw prompts to something readable
+    if (description.length > 80) description = description.slice(0, 55).replace(/\s+\S*$/, '') + '...'
     rightNowTasks.push({
       agent:     info.agent,
       text:      description.length > 55 ? description.slice(0, 52) + '...' : description,

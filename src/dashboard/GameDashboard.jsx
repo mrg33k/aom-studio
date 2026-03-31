@@ -12791,7 +12791,6 @@ export default function GameDashboard() {
   const architectWelcomedRef = useRef(null) // stores clientId, not boolean
   useEffect(() => {
     const clientId = getClientId()
-    if (clientId === 'aom') return
     const worldAgents = pipeData?.agents || []
     if (worldAgents.length === 0) return
 
@@ -12826,7 +12825,9 @@ export default function GameDashboard() {
               [firstAgent.slug]: {
                 _all: [{
                   role: 'assistant',
-                  content: "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?",
+                  content: clientId === 'aom'
+                    ? `What's up? I'm ${firstAgent.name || firstAgent.slug}. Ready when you are.`
+                    : "Hey! I'm your System Architect. I'm here to help you build your team. Tell me about your business -- what takes up most of your time?",
                   time: new Date().toISOString(),
                   id: `architect-welcome-${Date.now()}`,
                   source: 'architect-welcome',

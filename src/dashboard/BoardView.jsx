@@ -986,56 +986,83 @@ function InfoPanel({ slug, isAgent }) {
 
 function TaskList({ tasks, onContextMenu, showAgent = false }) {
   const [expanded, setExpanded] = useState({ rightNow: true, completed: false, projects: {} })
+  const [detailId, setDetailId] = useState(null)
 
-  const TaskItem = ({ t }) => (
-    <div
-      key={t.taskId || t.id || t.text}
-      onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
-      onTouchStart={e => {
-        const touch = e.touches[0]
-        const cx = touch?.clientX || 0, cy = touch?.clientY || 0
-        e.currentTarget._lp = setTimeout(() => {
-          onContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, t)
-        }, 500)
-      }}
-      onTouchEnd={e => clearTimeout(e.currentTarget._lp)}
-      onTouchMove={e => clearTimeout(e.currentTarget._lp)}
-      style={{
-        padding: '10px 12px', borderRadius: 10, background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
-        marginBottom: 5, cursor: 'context-menu', transition: 'all 0.2s',
-        display: 'flex', gap: 10, alignItems: 'flex-start',
-        opacity: t.done || t.status === 'completed' ? 0.5 : 1,
-      }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bv-card-hover)'; e.currentTarget.style.transform = 'translateX(2px)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.transform = 'translateX(0)' }}
-    >
-      <div style={{
-        width: 14, height: 14, borderRadius: 3, marginTop: 1, flexShrink: 0,
-        border: `1.5px solid ${t.done || t.status === 'completed' ? '#22C55E' : 'var(--bv-col-border)'}`,
-        background: t.done || t.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'transparent',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {(t.done || t.status === 'completed') && (
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        )}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
-          textDecoration: t.done || t.status === 'completed' ? 'line-through' : 'none',
-        }}>{t.text || 'Task'}</div>
-        {showAgent && t.agent && (
-          <div style={{ marginTop: 2 }}>
-            <span style={{
-              fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-              padding: '1px 5px', borderRadius: 3, textTransform: 'uppercase',
-              background: `${getAgentColor(t.agent)}18`, color: getAgentColor(t.agent),
-            }}>{getAgentName(t.agent)}</span>
+  const TaskItem = ({ t }) => {
+    const key = t.taskId || t.id || t.text
+    const isDone = t.done || t.status === 'completed'
+    const isOpen = detailId === key
+    return (
+      <div
+        key={key}
+        onClick={() => setDetailId(isOpen ? null : key)}
+        onContextMenu={e => { e.preventDefault(); onContextMenu?.(e, t) }}
+        onTouchStart={e => {
+          const touch = e.touches[0]
+          const cx = touch?.clientX || 0, cy = touch?.clientY || 0
+          e.currentTarget._lp = setTimeout(() => {
+            onContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, t)
+          }, 500)
+        }}
+        onTouchEnd={e => clearTimeout(e.currentTarget._lp)}
+        onTouchMove={e => clearTimeout(e.currentTarget._lp)}
+        style={{
+          padding: '10px 12px', borderRadius: 10, background: isOpen ? 'var(--bv-card-hover)' : 'var(--bv-card)', border: `1px solid ${isOpen ? 'var(--bv-col-border)' : 'var(--bv-card-border)'}`,
+          marginBottom: 5, cursor: 'pointer', transition: 'all 0.2s',
+          opacity: isDone ? 0.6 : 1,
+        }}
+        onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = 'var(--bv-card-hover)'; e.currentTarget.style.transform = 'translateX(2px)' }}
+        onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = 'var(--bv-card)'; e.currentTarget.style.transform = 'translateX(0)' }}
+      >
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div style={{
+            width: 14, height: 14, borderRadius: 3, marginTop: 1, flexShrink: 0,
+            border: `1.5px solid ${isDone ? '#22C55E' : 'var(--bv-col-border)'}`,
+            background: isDone ? 'rgba(34,197,94,0.15)' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {isDone && (
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            )}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
+              textDecoration: isDone ? 'line-through' : 'none',
+            }}>{t.text || 'Task'}</div>
+          </div>
+          <span style={{ fontSize: 10, color: 'var(--bv-muted)', flexShrink: 0, marginTop: 2 }}>{isOpen ? '▾' : '▸'}</span>
+        </div>
+        {isOpen && (
+          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--bv-card-border)', fontSize: 12, color: 'var(--bv-text2)', lineHeight: 1.5 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+              {t.agent && (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                  padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase',
+                  background: `${getAgentColor(t.agent)}18`, color: getAgentColor(t.agent),
+                }}>{getAgentName(t.agent)}</span>
+              )}
+              {(t.project || t.projectSource) && (
+                <span style={{
+                  fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
+                  background: `${t.projectColor || '#888'}18`, color: t.projectColor || '#888',
+                }}>{t.project || t.projectSource}</span>
+              )}
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
+                background: isDone ? 'rgba(34,197,94,0.12)' : t.isLive ? 'rgba(255,107,61,0.12)' : 'rgba(255,255,255,0.06)',
+                color: isDone ? '#22C55E' : t.isLive ? '#FF6B3D' : 'var(--bv-muted)',
+              }}>{isDone ? 'Completed' : t.isLive ? 'Live' : 'To Do'}</span>
+            </div>
+            {t.text && t.text.length > 52 && (
+              <div style={{ color: 'var(--bv-dim)', fontSize: 11, marginTop: 4 }}>{t.text}</div>
+            )}
           </div>
         )}
       </div>
-    </div>
-  )
+    )
+  }
 
   const AccordionSection = ({ title, isOpen, onToggle, tasks: sectionTasks, alwaysExpanded = false }) => (
     <div style={{ marginBottom: 8 }}>
