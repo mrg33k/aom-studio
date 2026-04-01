@@ -1915,6 +1915,59 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     try { localStorage.setItem('corner-board-rail', railOpen ? 'open' : 'closed') } catch {}
   }, [railOpen])
 
+  // Reset agents
+  const [resetting, setResetting] = useState(false)
+  const [resetResult, setResetResult] = useState(null)
+  const handleResetAgents = async () => {
+    if (resetting) return
+    setResetting(true)
+    setResetResult(null)
+    try {
+      const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+      await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: 'system',
+          text: 'restart_agents agents: ["elon", "bobby", "gary", "rex"]',
+          role: 'user',
+          source: 'restart_agents',
+          client_id: clientId,
+        }),
+      })
+      setResetResult('sent')
+      setTimeout(() => setResetResult(null), 4000)
+    } catch (e) {
+      setResetResult('error')
+      setTimeout(() => setResetResult(null), 4000)
+    } finally {
+      setTimeout(() => setResetting(false), 3000)
+    }
+  }
+
+  // Sleep/Wake agents
+  const [agentsSleeping, setAgentsSleeping] = useState(false)
+  const handleSleepWake = async () => {
+    const newState = !agentsSleeping
+    try {
+      const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+      await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: 'system',
+          text: newState ? 'sleep_agents' : 'wake_agents',
+          role: 'user',
+          source: newState ? 'sleep_agents' : 'wake_agents',
+          client_id: clientId,
+        }),
+      })
+      setAgentsSleeping(newState)
+    } catch (e) {
+      console.error('Sleep/wake failed:', e)
+    }
+  }
+
   // Toggle column visibility
   const toggleSlug = (slug) => {
     setVisibleSlugs(prev => {
@@ -2145,17 +2198,77 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             </div>
           )}
 
-          {/* V5: Bottom collapse/expand toggle button -- absolute so overflow:hidden never clips it */}
+          {/* V5: Bottom rail controls -- collapse + reset */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
             padding: '8px', borderTop: '1px solid var(--bv-divider)',
-            background: 'var(--bv-rail)', display: 'flex',
+            background: 'var(--bv-rail)', display: 'flex', flexDirection: 'column', gap: 4,
           }}>
+            {/* Reset Agents button */}
+            <button
+              onClick={handleResetAgents}
+              disabled={resetting}
+              title="Restart all agents"
+              style={{
+                width: '100%', height: railOpen ? 30 : 30, borderRadius: 8,
+                border: '1px solid rgba(239,68,68,0.25)',
+                background: resetting ? 'rgba(239,68,68,0.15)' : resetResult === 'sent' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.08)',
+                color: resetting ? '#F87171' : resetResult === 'sent' ? '#22C55E' : '#EF4444',
+                cursor: resetting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.2s',
+                opacity: resetting ? 0.7 : 1,
+              }}
+              onMouseEnter={e => { if (!resetting) { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)' }}}
+              onMouseLeave={e => { if (!resetting) { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' }}}
+            >
+              {resetting ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'bvPulse 1s infinite' }}>
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                  <path d="M21 3v9h-9"/>
+                </svg>
+              )}
+              {railOpen && <span>{resetting ? 'Resetting...' : resetResult === 'sent' ? 'Sent' : 'Reset Agents'}</span>}
+            </button>
+            {/* Sleep/Wake toggle */}
+            <button
+              onClick={handleSleepWake}
+              title={agentsSleeping ? 'Wake agents' : 'Put agents to sleep'}
+              style={{
+                width: '100%', height: 30, borderRadius: 8,
+                border: `1px solid ${agentsSleeping ? 'rgba(234,179,8,0.3)' : 'rgba(34,197,94,0.25)'}`,
+                background: agentsSleeping ? 'rgba(234,179,8,0.1)' : 'rgba(34,197,94,0.08)',
+                color: agentsSleeping ? '#EAB308' : '#22C55E',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+            >
+              {agentsSleeping ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              )}
+              {railOpen && <span>{agentsSleeping ? 'Wake' : 'Sleep'}</span>}
+            </button>
+            {/* Collapse/expand toggle */}
             <button
               onClick={() => setRailOpen(!railOpen)}
               title={railOpen ? 'Collapse rail' : 'Expand rail'}
               style={{
-                width: '100%', height: 66, borderRadius: 8,
+                width: '100%', height: 30, borderRadius: 8,
                 border: railOpen ? '1px solid var(--bv-col-border)' : '1px solid rgba(59,130,246,0.3)',
                 background: railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)',
                 color: railOpen ? 'var(--bv-muted)' : '#60A5FA',
