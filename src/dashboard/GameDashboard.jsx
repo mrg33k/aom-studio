@@ -32,6 +32,7 @@ import HexGrid from './HexGrid.jsx'
 import AvatarTiles from './AvatarTiles.jsx'
 
 import { useDataPipe } from './hooks/useDataPipe.js'
+import { useTasks } from './hooks/useTasks'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import FloatingActionButton from './components/FloatingActionButton.jsx'
 import BoardView from './BoardView.jsx'
@@ -11630,6 +11631,8 @@ export default function GameDashboard() {
   // Right Now tasks: wire to useDataPipe (real-time from events table -- sole source of truth)
   // Live data from server -- no localStorage
   const pipeData = useDataPipe(parsePunchListSidebar)
+  // v2 task system
+  const { rightNow: v2RightNow } = useTasks()
   const rightNowTasks = pipeData?.rightNow || []
 
   // NOTE: inline confirm card injection removed. Task completion is handled exclusively
@@ -13742,7 +13745,7 @@ export default function GameDashboard() {
   results.cloud = cloudResult
   pipeData?.refetch?.()
   return results
-}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} onOpenSupport={() => setShowSupportChat(true)} />
+}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={v2RightNow.length > 0 ? v2RightNow : rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} onOpenSupport={() => setShowSupportChat(true)} />
 
       {/* Board view: THE main view (game view killed Mar 27) */}
       {/* flex: 1 + minHeight: 0 makes BoardView fill remaining space.
@@ -13754,7 +13757,7 @@ export default function GameDashboard() {
             isMobile={isMobile}
             isNightMode={isNightMode}
             hudHeight={hudBarHeight}
-            hasRightNow={rightNowTasks.length > 0}
+            hasRightNow={(v2RightNow.length > 0 ? v2RightNow : rightNowTasks).length > 0}
             unreadAgents={unreadAgents}
             currentUser={currentUser}
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
@@ -13772,7 +13775,7 @@ export default function GameDashboard() {
       </div>
 
       {/* Right Now Bar -- flex child at bottom, pushes BoardView up naturally */}
-      {rightNowTasks.length > 0 && (
+      {(v2RightNow.length > 0 ? v2RightNow : rightNowTasks).length > 0 && (
         <div style={{
           flexShrink: 0,
           height: isMobile ? 'calc(70px + env(safe-area-inset-bottom, 0px))' : 70,
@@ -13797,7 +13800,7 @@ export default function GameDashboard() {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B3D', boxShadow: '0 0 8px #FF6B3D, 0 0 16px rgba(255,107,61,0.25)', animation: 'bvPulse 2s infinite', display: 'inline-block' }} />
             NOW
           </span>
-          {rightNowTasks.filter(t => t.isLive).filter((t, i, arr) => arr.findIndex(x => x.agent === t.agent) === i).map((task, i) => {
+          {(v2RightNow.length > 0 ? v2RightNow : rightNowTasks).filter(t => t.isLive).filter((t, i, arr) => arr.findIndex(x => x.agent === t.agent) === i).map((task, i) => {
             const agentColor = AGENTS.find(a => a.slug === task.agent)?.color || '#FF6B3D'
             return (
               <div key={task.agent + i}
@@ -13937,7 +13940,7 @@ export default function GameDashboard() {
               onActiveTabChange={setPanelActiveTab}
               isNightMode={isNightMode}
               onAddToRightNow={addToRightNow}
-              rightNowTasks={rightNowTasks}
+              rightNowTasks={v2RightNow.length > 0 ? v2RightNow : rightNowTasks}
               onSendMessage={handlePanelSendMessage}
               onPoke={handlePokePanelMessage}
               powerupOpen={powerupOpen}
@@ -14214,7 +14217,7 @@ export default function GameDashboard() {
           data={data}
           isNightMode={isNightMode}
           onAddToRightNow={addToRightNow}
-          rightNowTasks={rightNowTasks}
+          rightNowTasks={v2RightNow.length > 0 ? v2RightNow : rightNowTasks}
           atMenuOpen={atMenuOpen}
           filteredAtOptions={filteredAtOptions}
           atMenuIndex={atMenuIndex}
@@ -14297,7 +14300,7 @@ export default function GameDashboard() {
           }}
           // Raise input above the GameHUD bar + Now Bar when active.
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
-          bottomOffset={hudBarHeight + (rightNowTasks.length > 0 ? 40 : 0)}
+          bottomOffset={hudBarHeight + ((v2RightNow.length > 0 ? v2RightNow : rightNowTasks).length > 0 ? 40 : 0)}
         />
       )}
       </>}

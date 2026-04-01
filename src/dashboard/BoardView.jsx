@@ -16,6 +16,7 @@ import agentProfiles from '../data/agent-profiles.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
+import { useTasks } from './hooks/useTasks'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -257,6 +258,7 @@ function useColumnChat(agentSlug, isActive) {
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim()) return
+    const trimmed = text.trim()
     const sentTime = new Date().toISOString()
     const msgId = `usr-${Date.now()}`
     setInput('')
@@ -264,19 +266,100 @@ function useColumnChat(agentSlug, isActive) {
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
       return [...cleaned,
-        { role: 'user', content: text.trim(), time: sentTime, id: msgId, status: 'sent' },
+        { role: 'user', content: trimmed, time: sentTime, id: msgId, status: 'sent' },
       ]
     })
     setSending(true)
 
+    const clientId = getClientId()
+    const geminiHistory = messages
+      .filter(m => m.content)
+      .slice(-20)
+      .map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }))
+
+    let geminiReply = null
+    const geminiStart = Date.now()
     try {
-      const clientId = getClientId()
+      const geminiRes = await fetch('/api/dashboard/v2-gemini-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed,
+          agent: agentSlug,
+          history: geminiHistory,
+          client_id: clientId || 'aom',
+        }),
+      })
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text().catch(() => '')
+        throw new Error(`Gemini ${geminiRes.status}: ${errText}`)
+      }
+      const data = await geminiRes.json()
+      geminiReply = typeof data?.reply === 'string' ? data.reply : ''
+    } catch (err) {
+      console.error('[v2-gemini-chat] Error:', err)
+    }
+
+    if (geminiReply !== null) {
+      const replyText = geminiReply
+      const elapsed = Date.now() - geminiStart
+      const delay = Math.max(0, 800 - elapsed)
+
+      // Step 2: double gray check (delivered) -- min 800ms after send so the single check is visible
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'delivered' } : m))
+      }, delay)
+
+      // Step 3a: double blue check (read) -- show before response appears
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => {
+          if (m.role === 'user' && m.status !== 'read') {
+            persistReadReceipt(m.id)
+            return { ...m, status: 'read' }
+          }
+          return m
+        }))
+      }, delay)
+
+      // Step 3b: after 600ms, show the actual response
+      setTimeout(() => {
+        setMessages(prev => {
+          let u = prev.filter(m => !m.streaming)
+          u.push({ role: 'assistant', content: replyText, time: new Date().toISOString(), source: 'gemini' })
+          return u
+        })
+        setSending(false)
+      }, delay + 600)
+
+      // Persist user + Gemini reply to Supabase (fire and forget)
+      fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, text: trimmed, role: 'user', source: 'corner-dashboard', client_id: clientId }),
+      }).catch(() => {})
+      fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, text: replyText, role: 'assistant', source: 'corner-dashboard', client_id: clientId }),
+      }).catch(() => {})
+
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+      return
+    }
+
+    try {
       const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
       const sendStart = Date.now()
       await fetch(sendUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentSlug, text: text.trim(), message: text.trim(), source: 'corner-dashboard', client_id: clientId }),
+        body: JSON.stringify({ agent: agentSlug, text: trimmed, message: trimmed, source: 'corner-dashboard', client_id: clientId }),
       })
       // Step 2: double gray check (delivered) -- min 800ms after send so the single check is visible
       const elapsed = Date.now() - sendStart
@@ -336,7 +419,7 @@ function useColumnChat(agentSlug, isActive) {
       })
       setSending(false)
     }
-  }, [agentSlug, sending])
+  }, [agentSlug, messages, sending])
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
   return { messages, input, setInput, loading, sending, sendMessage }
@@ -1717,7 +1800,12 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
 // ── MAIN BOARD VIEW ──────────────────────────────────────────────────────────
 
 export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, hasRightNow = false, unreadAgents = {}, onTaskTap, onViewDetail, onAgentSelect, currentUser }) {
-  const rightNow = pipeData?.rightNow || []
+  const { rightNow: v2RightNow, queued: v2Queued, done: v2Done } = useTasks()
+  const rightNow = (v2RightNow.length > 0 ? v2RightNow : (pipeData?.rightNow || [])).map(t => ({
+    ...t,
+    agent: t.agent || t.agentIdentity || t.agent_identity || null,
+    text: t.text || t.title || t.description || '',
+  }))
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
   const inboxItems = pipeData?.inboxItems || []

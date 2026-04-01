@@ -45,6 +45,7 @@ import {
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
+import { useTasks } from './hooks/useTasks'
 import { useLongPress } from './hooks/useLongPress.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction, supabasePatchTaskStatus } from './components/TaskContextMenu.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
@@ -1766,10 +1767,12 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     punchData,
     punchLoading: loading,
   } = useDataPipe(parseFn)
+  // v2 task system -- real-time Supabase subscription replaces pipe rightNow
+  const { rightNow: v2RightNow, queued: v2Queued, done: v2Done, loading: v2Loading } = useTasks()
   const weights = useRecencyWeights()
 
   // Right Now: ONLY running agents (local: from active-missions.md, prod: demo data)
-  const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
+  const rightNowTasks = v2RightNow.length > 0 ? v2RightNow : (IS_LOCAL ? liveRightNowTasks : generateDemoRightNow())
 
   // Apply user's stored drag order to Right Now tasks
   const orderedRightNowTasks = useMemo(() => {

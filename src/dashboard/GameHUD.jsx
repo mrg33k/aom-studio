@@ -59,6 +59,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Zap, X, Loader2, CheckCircle2, Search, ChevronDown } from 'lucide-react'
 import { useDataPipe } from './hooks/useDataPipe.js'
+import { useTasks } from './hooks/useTasks.js'
 import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase'
 import {
@@ -410,6 +411,7 @@ export default function GameHUD({
     punchData,
     punchLoading: loading,
   } = useDataPipe(parseFn)
+  const { rightNow: v2RightNow } = useTasks()
 
   // Unified Right Now source: prefer the prop (from GameDashboard's pipeData -- same source as
   // BoardView/Trello) so both views always show the same tasks. Fall back to internal poll only
@@ -551,12 +553,13 @@ export default function GameHUD({
     })
     // Always show add prompt at the end
     rightNowTasks.push({ text: '+ Add task...', done: false, agent: null, raw: '', isLive: false, isAddPrompt: true })
+    const effectiveRightNow = v2RightNow.length > 0 ? v2RightNow : rightNowTasks
     merged.push({
       name: 'Right Now',
       section: 'rightnow',
       color: '#FF6B3D',
       icon: 'zap',
-      tasks: rightNowTasks,
+      tasks: effectiveRightNow,
     })
 
     // INBOX pill = unread messages only. Done tasks confirmed via pinned TASK COMPLETE box.
@@ -714,7 +717,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, weights, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, personalTodos, checkingInTasks, manualTasks, inboxItems])
+  }, [punchData, weights, liveRightNowTasks, v2RightNow, completedFeed, isAutoChecked, patrikTodos, personalTodos, checkingInTasks, manualTasks, inboxItems])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects

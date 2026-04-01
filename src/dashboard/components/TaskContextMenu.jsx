@@ -949,6 +949,12 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
     // Mark task as fully completed (status='completed'). Direct Supabase PATCH + API fallback.
     supabasePatchTaskStatus(task, 'completed')
     supabaseTaskAction('markDone', task)
+    try {
+      fetch('/api/dashboard/v2-task-update', {
+        method: 'PATCH',
+        body: JSON.stringify({ taskId: task.id, status: 'done' }),
+      }).catch(() => {})
+    } catch {}
     // Log task_completed to events table (RNB source of truth)
     if (supabase) {
       supabase.from('events').insert({
@@ -985,6 +991,13 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
     }
     // API fallback: handles tasks not yet in Supabase (text-only, creates them)
     supabaseTaskAction('addToRightNow', task)
+    try {
+      fetch('/api/dashboard/v2-task-update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: task.id, status: 'building' }),
+      }).catch(() => {})
+    } catch {}
     // Log task_started to events table (RNB source of truth)
     if (supabase) {
       supabase.from('events').insert({
