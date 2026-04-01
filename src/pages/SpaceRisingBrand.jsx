@@ -27,7 +27,7 @@ const CSS = `
   }
 
   .sr-wrap { max-width: 900px; margin: 0 auto; padding: 0 32px; }
-  .sr-section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .sr-section { padding: 48px 0; border-bottom: 1px solid var(--border); }
   .sr-section:last-child { border-bottom: none; }
   .sr-label {
     font-size: 11px; font-weight: 600; letter-spacing: .18em;
@@ -35,14 +35,14 @@ const CSS = `
   }
   .sr-h2 {
     font-family: 'Oswald', sans-serif; font-size: 36px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 36px;
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 24px;
   }
   .sr-p { color: var(--gray-l); margin-bottom: 16px; }
   .sr-small { color: var(--gray); font-size: 12px; }
 
   /* HERO */
   .sr-hero {
-    position: relative; min-height: 520px; display: flex;
+    position: relative; min-height: 100vh; display: flex;
     align-items: flex-end; overflow: hidden;
     border-bottom: 1px solid var(--border);
   }
@@ -52,18 +52,18 @@ const CSS = `
   }
   .sr-hero-ov {
     position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(8,8,8,.92) 0%, rgba(8,8,8,.45) 55%, rgba(8,8,8,.15) 100%);
+    background: linear-gradient(to top, rgba(8,8,8,.95) 0%, rgba(8,8,8,.4) 50%, rgba(8,8,8,.08) 100%);
   }
-  .sr-hero-inner { position: relative; z-index: 2; padding: 56px; }
+  .sr-hero-inner { position: relative; z-index: 2; padding: 48px 56px 64px; }
   .sr-hero-eye {
     font-size: 11px; font-weight: 600; letter-spacing: .22em;
     text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
   }
   .sr-hero-title {
-    font-family: 'Oswald', sans-serif; font-size: 72px; font-weight: 700;
-    text-transform: uppercase; line-height: .95; letter-spacing: .02em;
+    font-family: 'Oswald', sans-serif; font-size: 84px; font-weight: 700;
+    text-transform: uppercase; line-height: .92; letter-spacing: .02em;
   }
-  .sr-hero-tag { font-size: 17px; color: var(--gray-l); margin-top: 18px; max-width: 440px; line-height: 1.5; }
+  .sr-hero-tag { font-size: 18px; color: var(--gray-l); margin-top: 20px; max-width: 480px; line-height: 1.5; }
 
   /* NAV */
   .sr-nav {
@@ -109,7 +109,7 @@ const CSS = `
 
   /* ── TYPOGRAPHY ── */
   .sr-font-families {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 36px;
   }
   .sr-font-card {
     background: var(--surface3); border-radius: 8px;
@@ -156,11 +156,11 @@ const CSS = `
   /* ── BG RULES ── */
   .sr-bg-section {
     background: var(--space-blue);
-    padding: 64px 0;
+    padding: 48px 0;
     border-bottom: 1px solid var(--border);
   }
   .sr-divider {
-    height: 64px;
+    height: 48px;
     background: linear-gradient(to bottom, var(--black), var(--space-blue));
   }
   .sr-divider.rev {
@@ -306,7 +306,7 @@ const CSS = `
   .sr-spec-val { font-size: 14px; color: var(--white); }
 
   /* CTA */
-  .sr-cta { background: var(--surface2); padding: 64px 0; }
+  .sr-cta { background: var(--surface2); padding: 48px 0; }
   .sr-cta-inner {
     max-width: 900px; margin: 0 auto; padding: 0 32px;
     display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center;
@@ -435,14 +435,14 @@ export default function SpaceRisingBrand() {
           <div className="sr-label">01 — Logo</div>
           <div className="sr-h2">Brand Marks</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '36px 40px', height: 280, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <img src="/images/space-rising/logo-white.png" alt="Space Rising white logo" style={{ maxHeight: 80, maxWidth: '80%', width: 'auto', objectFit: 'contain', display: 'block' }} />
+            <div style={{ background: 'var(--surface)', border: '1px solid #222', borderRadius: 8, padding: '24px 32px', height: 200, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <img src="/images/space-rising/logo-white.png" alt="Space Rising white logo" style={{ maxHeight: 72, maxWidth: '80%', width: 'auto', objectFit: 'contain', display: 'block' }} />
               <p style={{ fontSize: 12, color: 'var(--gray)', margin: 0 }}>
                 Primary lockup. White version. Dark backgrounds only.
               </p>
             </div>
-            <div style={{ background: '#F4F4F0', border: '1px solid #ddd', borderRadius: 8, padding: '36px 40px', height: 280, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <img src="/images/space-rising/logo-dark.png" alt="Space Rising dark logo" style={{ maxHeight: 80, maxWidth: '80%', width: 'auto', objectFit: 'contain', display: 'block' }} />
+            <div style={{ background: '#F4F4F0', border: '1px solid #ddd', borderRadius: 8, padding: '24px 32px', height: 200, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <img src="/images/space-rising/logo-dark.png" alt="Space Rising dark logo" style={{ maxHeight: 72, maxWidth: '80%', width: 'auto', objectFit: 'contain', display: 'block' }} />
               <p style={{ fontSize: 12, color: '#555', margin: 0 }}>
                 Dark version. Light backgrounds only. Min 4.5:1 contrast ratio.
               </p>
