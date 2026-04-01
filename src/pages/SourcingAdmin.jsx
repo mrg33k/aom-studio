@@ -800,7 +800,13 @@ function SourcingAdminInner() {
     if (!adminSupabase) return;
     try {
       const newStatus = action === 'approve' ? 'active' : 'rejected';
-      await adminSupabase.from('directory_listings').update({ status: newStatus }).eq('id', articleId);
+      const { data: { user } } = await adminSupabase.auth.getUser();
+      const moderatedBy = user?.email || 'admin';
+      await adminSupabase.from('directory_listings').update({
+        status: newStatus,
+        moderated_at: new Date().toISOString(),
+        moderated_by: moderatedBy,
+      }).eq('id', articleId);
       await fetchData();
     } catch (err) {
       console.error('Article action error:', err);
@@ -1655,9 +1661,25 @@ function SourcingAdminInner() {
                           <div style={{ fontSize: 15, fontWeight: 700, fontFamily: V.syne, color: V.heading, marginBottom: 4 }}>
                             {article.title}
                           </div>
-                          <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono, marginBottom: 6 }}>
-                            {company?.name || 'Unknown Company'} · {article.vertical} · {postedDate}
-                            {article.read_time_min && ` · ${article.read_time_min} min read`}
+                          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 6 }}>
+                            <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                              <span style={{ color: V.muted, fontWeight: 600 }}>Author</span>{' '}
+                              {company?.name || 'Unknown Company'}
+                            </span>
+                            <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                              <span style={{ color: V.muted, fontWeight: 600 }}>Submitted</span>{' '}
+                              {postedDate}
+                            </span>
+                            {article.vertical && (
+                              <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                                {article.vertical}
+                              </span>
+                            )}
+                            {article.read_time_min && (
+                              <span style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                                {article.read_time_min} min read
+                              </span>
+                            )}
                           </div>
                           {article.excerpt && (
                             <div style={{

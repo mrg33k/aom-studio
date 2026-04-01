@@ -501,6 +501,47 @@ function SourcingDirectoryInner() {
   // Reviews map: company slug -> { avg, count }
   const [reviewStats, setReviewStats] = useState({});
 
+  // ─── Tenant brand tokens (Space Rising + SC3) ──────────────────────────────
+  const tenantBrand = useMemo(() => {
+    if (!tenant) return null;
+    if (tenant.slug === 'space-rising') return {
+      headingFont: "'Oswald', sans-serif",
+      bodyFont: "'Inter', sans-serif",
+      accent: '#E5451F',
+      bg: '#080808',
+      surface: '#121212',
+      surface2: '#1A1A1A',
+      fontImport: 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap',
+    };
+    if (tenant.slug === 'sc3-semiconductor') return {
+      headingFont: "'Barlow Condensed', sans-serif",
+      bodyFont: "'Inter', sans-serif",
+      accent: '#A0522D',
+      bg: '#0D1B2E',
+      surface: '#1E2D42',
+      surface2: '#2C3442',
+      fontImport: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Inter:wght@400;500;600&display=swap',
+    };
+    return null;
+  }, [tenant]);
+
+  // Inject tenant font when brand requires a custom typeface
+  useEffect(() => {
+    if (!tenantBrand?.fontImport) return;
+    const id = 'tenant-brand-font';
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = tenantBrand.fontImport;
+      document.head.appendChild(link);
+    }
+    return () => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    };
+  }, [tenantBrand]);
+
   // Fetch tenant info
   useEffect(() => {
     if (!tenantSlug) { setTenantLoading(false); return; }
@@ -807,14 +848,20 @@ function SourcingDirectoryInner() {
               {tenant.nav_label || tenant.name}
             </div>
             <h1 style={{
-              fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, fontFamily: V.syne,
+              fontSize: 'clamp(28px, 5vw, 48px)',
+              fontWeight: tenant.slug === 'space-rising' ? 700 : 800,
+              fontFamily: tenantBrand?.headingFont || V.syne,
+              textTransform: tenantBrand ? 'uppercase' : undefined,
+              letterSpacing: tenantBrand ? '0.04em' : undefined,
               color: '#fff', lineHeight: 1.15, margin: '0 0 10px',
               textShadow: '0 2px 8px rgba(0,0,0,0.4)',
             }}>
               {tenant.name}
             </h1>
             <p style={{
-              fontSize: 16, color: 'rgba(255,255,255,0.8)', fontFamily: V.space,
+              fontSize: 16,
+              color: 'rgba(255,255,255,0.8)',
+              fontFamily: tenantBrand?.bodyFont || V.space,
               maxWidth: 580, margin: '0 auto 28px', lineHeight: 1.6,
               textShadow: '0 1px 4px rgba(0,0,0,0.3)',
             }}>

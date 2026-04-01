@@ -171,7 +171,11 @@ function SourcingLandingInner() {
           const res = await fetch('/api/sourcing/tenants');
           if (res.ok) {
             const data = await res.json();
-            setTenants(data);
+            // Sort by sort_order (Space Rising + SC3 above Biotech + Defense)
+            const sorted = [...data].sort((a, b) =>
+              (a.sort_order ?? 99) - (b.sort_order ?? 99) || (a.name || '').localeCompare(b.name || '')
+            );
+            setTenants(sorted);
             setLoading(false);
             return;
           }
@@ -183,7 +187,7 @@ function SourcingLandingInner() {
             .from('directory_tenants')
             .select('*')
             .eq('status', 'active')
-            .order('name');
+            .order('sort_order', { ascending: true, nullsFirst: false });
 
           const results = [];
           for (const t of (tenantRows || [])) {
