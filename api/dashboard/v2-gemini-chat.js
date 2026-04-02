@@ -28,6 +28,7 @@ YOUR TOOLS:
 - get_status: check a specific task by ID
 - delete_messages: clean up chat messages
 - run_query: read data from Supabase (messages, tasks, agents, events, projects)
+- search_history: search past conversations for specific topics, decisions, or events
 
 WHEN CREATING TASKS:
 Your description IS the spec. Include enough detail that a developer could build it cold:
@@ -35,7 +36,16 @@ Your description IS the spec. Include enough detail that a developer could build
 - Which repo (aom-studio for dashboard, AOM-EA for agent system)
 - Key files if you know them
 - Acceptance criteria (how to verify it's done)
-- For multi-layer tasks: break into separate subtasks, queue each one
+
+CRITICAL: DECOMPOSE MULTI-STEP TASKS.
+When Patrik gives you a task with multiple steps, layers, or features:
+- Create SEPARATE tasks for each distinct piece of work
+- Call create_task multiple times, once per subtask
+- Order them by dependency (what needs to happen first)
+- Set higher priority on earlier steps
+- Example: "Build onboarding with 3 screens + Supabase setup" = 4 separate tasks, not 1 blob
+- Each subtask should be buildable independently
+- NEVER bundle multiple features into one task
 
 THE TEAM (AI agents, not humans):
 - Elon: system architect, orchestrates, never codes
@@ -67,6 +77,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'get_status', description: 'Fetch a task by id.', parameters: { type: 'object', properties: { task_id: { type: 'string' } }, required: ['task_id'] } },
   { name: 'delete_messages', description: 'Delete recent messages for this agent. Use when asked to clean up, clear, or delete messages.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of recent messages to delete (default 10)' } } } },
   { name: 'run_query', description: 'Run a read-only query against Supabase. Use for looking up data, checking status, counting records, etc.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (messages, tasks, agents, events)' }, filters: { type: 'string', description: 'PostgREST filter string e.g. status=eq.done&limit=5' }, select: { type: 'string', description: 'Columns to select e.g. id,title,status' } }, required: ['table'] } },
+  { name: 'search_history', description: 'Search conversation history for past discussions, decisions, or events. Use when asked about what happened before.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for in conversation history' }, agent: { type: 'string', description: 'Optional: limit search to specific agent' } }, required: ['query'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -251,6 +262,15 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
         else if (name === 'delete_messages') result = await deleteMessages(agentSlug, clientId, args.count || 10);
         else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select);
+        else if (name === 'search_history') {
+          const searchAgent = args.agent || agentSlug;
+          const searchQuery = (args.query || '').trim();
+          // Search messages table using Supabase full-text or ILIKE
+          const searchFilter = searchAgent
+            ? `agent=eq.${encodeURIComponent(searchAgent)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+            : `text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
+          result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
+        }
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
         // Gemini requires functionResponse.response to be an object, not an array
