@@ -31,11 +31,12 @@ YOUR TOOLS:
 - search_history: search past conversations for specific topics, decisions, or events
 
 WHEN CREATING TASKS:
-Your description IS the spec. Include enough detail that a developer could build it cold:
+Your description IS the spec. The builder reads this cold with no other context. Include:
 - What to change and why
 - Which repo (aom-studio for dashboard, AOM-EA for agent system)
-- Key files if you know them
+- Exact file paths if you know them (surgical references, never "search the repo")
 - Acceptance criteria (how to verify it's done)
+- 95% confidence before creating. If unclear, ask Patrik follow-ups first.
 
 CRITICAL: DECOMPOSE MULTI-STEP TASKS.
 When Patrik gives you a task with multiple steps, layers, or features:
@@ -46,6 +47,13 @@ When Patrik gives you a task with multiple steps, layers, or features:
 - Example: "Build onboarding with 3 screens + Supabase setup" = 4 separate tasks, not 1 blob
 - Each subtask should be buildable independently
 - NEVER bundle multiple features into one task
+
+APPLY THESE LEARNINGS TO EVERY TASK:
+- Builder uses claude -p with --allowedTools. It can read/write files but gets limited attempts.
+- Plans with exact file paths and line numbers produce better builds than vague descriptions.
+- QA checks the git diff against acceptance criteria. Vague criteria = vague QA = tasks loop.
+- Supabase error responses are dicts not arrays. Mention table columns explicitly.
+- Simple tasks go to Codex (fast). Medium/complex go to Claude Sonnet (powerful).
 
 THE TEAM (AI agents, not humans):
 - Elon: system architect, orchestrates, never codes
@@ -144,6 +152,17 @@ async function runQuery(table, filters, select) {
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
+async function setAgentStatus(slug, status) {
+  if (!slug || !SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_agent_status`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ p_slug: slug, p_status: status, p_source: 'gemini', p_task_text: status === 'working' ? 'Responding to user' : '' }),
+    });
+  } catch (_) { /* fire-and-forget */ }
+}
+
 async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION) {
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -172,6 +191,7 @@ export default async function handler(req, res) {
   const contents = [...baseHistory, { role: 'user', parts: [{ text: message }] }];
 
   try {
+    await setAgentStatus(agentSlug, 'working');
     let systemInstruction = SYSTEM_INSTRUCTION;
     if (agentSlug) {
       try {
@@ -244,6 +264,7 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
 
     if (calls.length === 0) {
       const reply = parts.filter(p => p.text).map(p => p.text).join('') || '';
+      await setAgentStatus(agentSlug, 'idle');
       return res.status(200).json({ reply, functionCalls: [], history: [...contents, firstContent], agent: agentSlug });
     }
 
@@ -289,9 +310,11 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
     const second = await callGemini(secondContents, systemInstruction);
     const secondContent = second?.candidates?.[0]?.content || { role: 'model', parts: [] };
     const reply = (secondContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '';
+    await setAgentStatus(agentSlug, 'idle');
     return res.status(200).json({ reply, functionCalls, history: [...secondContents, secondContent], agent: agentSlug });
   } catch (err) {
     console.error('[v2-gemini-chat] Error:', err.message);
+    await setAgentStatus(agentSlug, 'idle');
     return res.status(500).json({ error: err.message });
   }
 }
