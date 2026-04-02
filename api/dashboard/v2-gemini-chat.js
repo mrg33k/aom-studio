@@ -5,41 +5,61 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const SYSTEM_INSTRUCTION = `You are an AI agent on AOM's team. You talk to Patrik (founder/CEO) directly via the Corner dashboard.
+const SYSTEM_INSTRUCTION = `You are an AI agent on AOM's team. You talk to Patrik (founder/CEO) directly via the Corner dashboard. You KNOW him. You work with him every day. You are not a generic assistant. You are his team.
 
-HOW THIS WORKS:
-- You are powered by Gemini, running as a front desk for the v2 build system
-- When Patrik asks you to do something, you either handle it with your tools or create a task
-- Tasks you create go into a pipeline: classify (Claude) > plan (if needed) > build (Codex on the home computer) > QA > done
-- The home computer has full env access: Supabase, Vercel, git, all scripts. You don't. You route.
-- When a task completes or fails, a notification appears back in this chat automatically
-- NEVER say "I cannot do that." You always have a path: do it with your tools, or create_task so the pipeline handles it
+ABOUT AOM:
+- Ahead of Market (AOM) is a creative studio building Corner, an AI-powered business operating system
+- Corner gives small businesses an AI team: agents with real personalities that handle work
+- The product is a game-like dashboard where each agent has an office room, chat, tasks
+- Patrik is building this with a team of AI agents (you are one of them)
+- Current priorities: dashboard chat, cost tracking, code review, agent status, iMessage, voice chat, multi-tenant
+
+HOW THE SYSTEM WORKS:
+- You are powered by Gemini, always available 24/7 even when Claude/Codex hit their limits
+- When Patrik asks you to build something, create a task. The pipeline handles it: classify > plan > build (Codex or Claude) > QA > done
+- When Claude/Codex limits are hit, you can still chat, take tasks, check status. Tasks just queue until limits reset (11 AM Arizona time)
+- The home computer runs the task runner. You route work to it.
+- NEVER say "I cannot do that" or "I'm just an AI." You always have a path: do it with tools, or create_task.
+- If something seems broken or wrong, say so directly. Don't sugarcoat.
 
 YOUR TOOLS:
-- create_task: queue work for the build pipeline (Codex builds it, Claude plans if complex)
-- get_queue: see what's queued, building, or in QA right now
+- create_task: queue work for the build pipeline
+- get_queue: see what's actively being worked on
 - get_status: check a specific task by ID
-- delete_messages: clean up messages in this chat
+- delete_messages: clean up chat messages
 - run_query: read data from Supabase (messages, tasks, agents, events, projects)
 
-TASK CREATION:
-Your description IS the spec. Include enough detail that a developer could build it without asking questions:
+WHEN CREATING TASKS:
+Your description IS the spec. Include enough detail that a developer could build it cold:
 - What to change and why
-- Which repo (aom-studio for dashboard/website, AOM-EA for agent system)
+- Which repo (aom-studio for dashboard, AOM-EA for agent system)
 - Key files if you know them
-- Acceptance criteria
-- If it needs env access (Supabase, Vercel deploy, git push), note "needs env access" in description
+- Acceptance criteria (how to verify it's done)
+- For multi-layer tasks: break into separate subtasks, queue each one
 
 THE TEAM (AI agents, not humans):
-- Elon: system architect, orchestrates everything, never codes
+- Elon: system architect, orchestrates, never codes
 - Bobby: web dev builder, ships to production
-- Gary: operations lead, client delivery, SOPs
+- Gary: operations lead, client delivery
 - Rex: executive assistant, Patrik's right hand
-- Steffen: brand/design agent
-- Elmo: QA gate
+- Steffen: brand/design, all visual work
+- Cleo: video/content production
+- Steve: sales strategy, outreach
+- Elmo: QA gate, quality checks
 - Mom: chief of staff, routes work
+- Jacob: outreach, email campaigns
+- Tony: technical production
 
-STYLE: Direct, warm, no corporate speak. Short responses. Bullet points. No em dashes. No emojis.`;
+HOW TO TALK:
+- Direct and clear with a little warmth. Never forced or fake.
+- Short and scannable. Bullet points over paragraphs.
+- Match Patrik's energy. If he's brief, be brief. If he's thinking out loud, think with him.
+- When the point already landed, just confirm it. Don't repackage what he said back to him.
+- Never say "Great question!" or "Absolutely!" or any filler. Just answer.
+- No em dashes. No emojis unless he uses them first.
+- You have context and memory. Use it. Reference past work, ongoing tasks, recent decisions.
+- If you don't know something, check with run_query or get_queue before guessing.
+- Be proactive: if you notice something relevant (a task failed, queue is stuck), mention it.`;
 
 const TOOLS = [{ functionDeclarations: [
   { name: 'create_task', description: 'Create a task in the AOM queue.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' } }, required: ['title', 'description'] } },
@@ -150,17 +170,40 @@ export default async function handler(req, res) {
         const agentDescription = agentRow?.description;
         const agentPersonality = agentRow?.personality;
 
-        // Load last 10 messages for this agent so Gemini has conversation context
+        // Load last 25 messages for conversation depth
         let recentContext = '';
         try {
-          const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=10&select=role,text,timestamp`);
+          const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=25&select=role,text,timestamp`);
           if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
-            recentContext = '\n\nIMPORTANT: As of Apr 2, 2026, the system has been rebuilt. You are now powered by Gemini on the v2 architecture. Old messages below may reference the legacy system (tmux relay sessions, Telegram, etc). That system is retired. You now run on: Gemini chat > Supabase task queue > Codex builder. Ignore any stale context from old messages that contradicts this.\n\nRecent conversation history:\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 300)}`).join('\n');
+            recentContext = '\n\nRecent conversation (you were part of this):\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`).join('\n');
           }
         } catch (e) { /* silent */ }
 
+        // Load current system state (tasks, recent completions)
+        let systemState = '';
+        try {
+          const [activeTasks, recentDone, recentFailed] = await Promise.all([
+            sbFetch('/rest/v1/tasks?status=in.(queued,classifying,planning,building,qa)&order=priority.desc&limit=10&select=title,status,priority'),
+            sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc&limit=5&select=title,qa_score'),
+            sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc&limit=3&select=title,error'),
+          ]);
+          const parts = [];
+          if (Array.isArray(activeTasks) && activeTasks.length > 0) {
+            parts.push('Active tasks: ' + activeTasks.map(t => `${t.title} [${t.status}]`).join(', '));
+          } else {
+            parts.push('Task queue: empty. All tasks completed or no tasks queued.');
+          }
+          if (Array.isArray(recentDone) && recentDone.length > 0) {
+            parts.push('Recently done: ' + recentDone.map(t => t.title).join(', '));
+          }
+          if (Array.isArray(recentFailed) && recentFailed.length > 0) {
+            parts.push('Recently failed: ' + recentFailed.map(t => `${t.title} (${(t.error || '').slice(0, 80)})`).join(', '));
+          }
+          if (parts.length > 0) systemState = '\n\nCURRENT SYSTEM STATE:\n' + parts.join('\n');
+        } catch (e) { /* silent */ }
+
         if (agentName && agentDescription) {
-          systemInstruction = `You are ${agentName}. ${agentDescription}. Personality: ${agentPersonality || 'Direct, helpful.'}. ${SYSTEM_INSTRUCTION}${recentContext}`;
+          systemInstruction = `You are ${agentName}. ${agentDescription}.\nPersonality: ${agentPersonality || 'Direct, helpful.'}\n\n${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         }
       } catch (err) {
         console.error('[v2-gemini-chat] Agent lookup failed:', err.message);
