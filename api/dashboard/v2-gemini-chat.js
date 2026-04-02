@@ -5,12 +5,14 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const SYSTEM_INSTRUCTION = 'You are the AOM front desk assistant. You handle casual conversation naturally. When the user describes work they want done (build, fix, create, update, deploy, etc), extract it as a task. Call create_task with a clear title and description. For status questions, call get_queue or get_status.';
+const SYSTEM_INSTRUCTION = 'You are the AOM front desk assistant. You handle casual conversation naturally. When the user describes work they want done (build, fix, create, update, deploy, clean up, delete, change, etc), either handle it directly with your tools OR create a task for the build pipeline. NEVER say "I cannot do that." If you can\'t do it with your tools (delete_messages, run_query, create_task, get_queue, get_status), then create_task with a clear title and description so the pipeline handles it. You always have a path forward: either do it or queue it. For status questions, call get_queue or get_status. For data questions, call run_query. For cleanup requests, call delete_messages. Short responses, bullet points, no em dashes, no emojis.';
 
 const TOOLS = [{ functionDeclarations: [
   { name: 'create_task', description: 'Create a task in the AOM queue.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' } }, required: ['title', 'description'] } },
   { name: 'get_queue', description: 'List queued/active tasks.', parameters: { type: 'object', properties: {} } },
   { name: 'get_status', description: 'Fetch a task by id.', parameters: { type: 'object', properties: { task_id: { type: 'string' } }, required: ['task_id'] } },
+  { name: 'delete_messages', description: 'Delete recent messages for this agent. Use when asked to clean up, clear, or delete messages.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of recent messages to delete (default 10)' } } } },
+  { name: 'run_query', description: 'Run a read-only query against Supabase. Use for looking up data, checking status, counting records, etc.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (messages, tasks, agents, events)' }, filters: { type: 'string', description: 'PostgREST filter string e.g. status=eq.done&limit=5' }, select: { type: 'string', description: 'Columns to select e.g. id,title,status' } }, required: ['table'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -53,6 +55,28 @@ async function getStatus(taskId, clientId) {
   const params = [`id=eq.${encodeURIComponent(taskId)}`];
   if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
   return sbFetch(`/rest/v1/tasks?${params.join('&')}`);
+}
+
+async function deleteMessages(agentSlug, clientId, count = 10) {
+  if (!agentSlug) throw new Error('agent required');
+  const params = [`agent=eq.${encodeURIComponent(agentSlug)}`, `order=timestamp.desc`, `limit=${Math.min(count, 50)}`];
+  if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
+  // Fetch IDs first, then delete
+  const msgs = await sbFetch(`/rest/v1/messages?${params.join('&')}&select=id`);
+  if (!Array.isArray(msgs) || msgs.length === 0) return { deleted: 0 };
+  const ids = msgs.map(m => m.id);
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/messages?id=in.(${ids.join(',')})`, {
+    method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+  });
+  if (!resp.ok) throw new Error(`Delete failed: ${resp.status}`);
+  return { deleted: ids.length };
+}
+
+async function runQuery(table, filters, select) {
+  const allowed = ['messages', 'tasks', 'agents', 'events', 'projects', 'agent_statuses'];
+  if (!allowed.includes(table)) throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
+  const qs = [filters || 'limit=10', `select=${select || '*'}`].join('&');
+  return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
 async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION) {
@@ -132,6 +156,8 @@ export default async function handler(req, res) {
         }
         else if (name === 'get_queue') result = await getQueue(clientId);
         else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
+        else if (name === 'delete_messages') result = await deleteMessages(agentSlug, clientId, args.count || 10);
+        else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select);
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
         functionResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: result } }] });
