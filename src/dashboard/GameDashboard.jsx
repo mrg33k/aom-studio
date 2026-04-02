@@ -38,6 +38,7 @@ import FloatingActionButton from './components/FloatingActionButton.jsx'
 import BoardView from './BoardView.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 import briefsIndex from '../data/briefs-index.json'
+import { useTheme } from '../context/ThemeContext.jsx'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
 import FilesTab from './FilesTab.jsx'
@@ -49,6 +50,8 @@ import AgentInfoTab from './components/AgentInfoTab.jsx'
 import { getTypingPhrases } from './agentTypingPhrases.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import SupportChat from './SupportChat.jsx'
+import VoiceChat from './components/VoiceChat.jsx'
+import VoiceToggle from './components/VoiceToggle.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -5831,6 +5834,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   const [messages, setMessages] = useState({}) // per-agent message history
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
+  const [voiceMode, setVoiceMode] = useState('chat') // 'chat' | 'voice'
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
@@ -5887,6 +5891,30 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   const updateMessages = (slug, updater) => {
     setMessages(prev => ({ ...prev, [slug]: updater(prev[slug] || []) }))
   }
+
+  // Voice transcript handler -- inserts voice messages into chat history
+  const handleVoiceTranscript = useCallback((text, role) => {
+    if (!text?.trim()) return
+    const time = new Date().toISOString()
+    updateMessages(agentSlug, prev => [
+      ...prev,
+      { role: role === 'model' ? 'assistant' : 'user', content: text, time, source: 'voice' },
+    ])
+    if (!IS_LOCAL) {
+      const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+      fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, text, role: role === 'model' ? 'assistant' : 'user', source: 'voice', client_id: clientId }),
+      }).catch(() => {})
+    }
+  }, [agentSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Voice status change -- drives the agent room sprite animation
+  const handleVoiceStatus = useCallback((vs) => {
+    const active = vs === 'listening' || vs === 'speaking'
+    onSpeaking?.(agentSlug, active)
+  }, [agentSlug, onSpeaking])
 
   // Format timestamp for display
   const formatTime = (dateStr) => {
@@ -6046,11 +6074,16 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
         body: JSON.stringify({ agent: agentSlug, text, source: 'corner-dashboard', client_id: clientId }),
       }).catch(() => {}) // fire-and-forget, Gemini call is what matters
 
-      // 2. Call Gemini for response (v2-gemini-chat handles agent identity + function calling)
+      // 2. Call Gemini with client-side history (skips server DB fetch for conversation)
+      const currentMsgs = messages[agentSlug] || []
+      const geminiHistory = currentMsgs
+        .filter(m => m.content && !m.streaming)
+        .slice(-20)
+        .map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }))
       const geminiRes = await fetch('/api/dashboard/v2-gemini-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, agent: agentSlug, client_id: clientId }),
+        body: JSON.stringify({ message: text, agent: agentSlug, client_id: clientId, history: geminiHistory }),
       })
 
       if (geminiRes.ok) {
@@ -6287,6 +6320,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <VoiceToggle mode={voiceMode} onChange={setVoiceMode} />
                 {!fullscreen && (
                   <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                     onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
@@ -6306,6 +6340,19 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               </div>
             </div>
 
+            {/* Voice mode panel */}
+            {voiceMode === 'voice' && (
+              <VoiceChat
+                agentSlug={agentSlug}
+                agentColor={agentColor}
+                clientId={typeof getClientId === 'function' ? getClientId() : 'aom'}
+                onTranscript={handleVoiceTranscript}
+                onStatusChange={handleVoiceStatus}
+              />
+            )}
+
+            {/* Messages area (hidden in voice mode) */}
+            {voiceMode !== 'voice' && <>
             {/* Messages area */}
             <div ref={messagesContainerRef} style={{
               flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px',
@@ -6445,6 +6492,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} style={{ marginLeft: 1 }} />}
               </button>
             </form>
+            </>}
           </motion.div>
         )}
       </AnimatePresence>
@@ -11452,6 +11500,8 @@ export default function GameDashboard() {
   const [agentAssets, setAgentAssets] = useState(AGENT_ASSETS_DEFAULT)
   const [roomsWithRenders, setRoomsWithRenders] = useState(ROOMS_WITH_RENDERS_FALLBACK)
 
+  const { theme } = useTheme()
+
   // Responsive breakpoints -- must be declared before any hooks that reference them
   const isMobile = useIsMobile()
   const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
@@ -12775,18 +12825,21 @@ export default function GameDashboard() {
     }
   }, [chatAgent, currentMode])
 
-  // Agent status lookup
+  // Agent status lookup.
+  // Priority: pipeData.agents (Supabase realtime, source of truth) overlays data.agents
+  // (local /api/local/status, also Supabase-sourced now). pipeData wins for all fields.
   const agentStatus = useMemo(() => {
     const map = {}
-    // Primary: useDashboardData agents (local dev)
+    // Base: data.agents from /api/local/status (Supabase-backed, latestResult enriched)
     if (data?.agents) {
       for (const a of data.agents) map[a.slug] = a
     }
-    // Overlay: pipeData agents have real-time status from Supabase (world-scoped)
+    // Override: pipeData.agents from Supabase realtime subscription (fresher, world-scoped)
     const pipeAgents = pipeData?.agents || []
     for (const a of pipeAgents) {
       if (!map[a.slug]) map[a.slug] = a
-      else map[a.slug] = { ...map[a.slug], status: a.status || map[a.slug].status, updatedAt: a.updatedAt || map[a.slug].updatedAt }
+      // pipeData wins on status, currentTask, and updatedAt (it's the realtime source)
+      else map[a.slug] = { ...map[a.slug], ...a, latestResult: map[a.slug].latestResult }
     }
     return map
   }, [data, pipeData?.agents])
@@ -13754,7 +13807,7 @@ export default function GameDashboard() {
       // Explicit height = visualViewport.height shrinks the container with the keyboard,
       // pushing the chat input above it instead of hiding behind it.
       height: boardKbHeight || undefined,
-      background: currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#141E30'),
+      background: theme === 'light' ? '#E8F0FA' : (currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#141E30')),
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',

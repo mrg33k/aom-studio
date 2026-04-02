@@ -152,6 +152,51 @@ async function runQuery(table, filters, select) {
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
+// Server-side cache: agent identity + system state. Refreshes every 60s.
+const _cache = { agents: {}, systemState: null, systemStateAt: 0 };
+const CACHE_TTL = 60000; // 60 seconds
+
+async function getCachedAgent(slug) {
+  if (_cache.agents[slug] && Date.now() - _cache.agents[slug]._at < CACHE_TTL) {
+    return _cache.agents[slug];
+  }
+  try {
+    const rows = await sbFetch(`/rest/v1/agents?slug=eq.${encodeURIComponent(slug)}&limit=1&select=display_name,description,personality,voice_style`);
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (row) { row._at = Date.now(); _cache.agents[slug] = row; }
+    return row;
+  } catch { return null; }
+}
+
+async function getCachedSystemState() {
+  if (_cache.systemState && Date.now() - _cache.systemStateAt < CACHE_TTL) {
+    return _cache.systemState;
+  }
+  try {
+    const [activeTasks, recentDone, recentFailed] = await Promise.all([
+      sbFetch('/rest/v1/tasks?status=in.(queued,classifying,planning,building,qa)&order=priority.desc&limit=10&select=title,status,priority'),
+      sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc&limit=5&select=title,qa_score'),
+      sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc&limit=3&select=title,error'),
+    ]);
+    const parts = [];
+    if (Array.isArray(activeTasks) && activeTasks.length > 0) {
+      parts.push('Active tasks: ' + activeTasks.map(t => `${t.title} [${t.status}]`).join(', '));
+    } else {
+      parts.push('Task queue: empty.');
+    }
+    if (Array.isArray(recentDone) && recentDone.length > 0) {
+      parts.push('Recently done: ' + recentDone.map(t => t.title).join(', '));
+    }
+    if (Array.isArray(recentFailed) && recentFailed.length > 0) {
+      parts.push('Recently failed: ' + recentFailed.map(t => `${t.title} (${(t.error || '').slice(0, 80)})`).join(', '));
+    }
+    const result = parts.length > 0 ? '\n\nCURRENT SYSTEM STATE:\n' + parts.join('\n') : '';
+    _cache.systemState = result;
+    _cache.systemStateAt = Date.now();
+    return result;
+  } catch { return ''; }
+}
+
 async function setAgentStatus(slug, status) {
   if (!slug || !SUPABASE_URL || !SUPABASE_KEY) return;
   try {
@@ -195,43 +240,29 @@ export default async function handler(req, res) {
     let systemInstruction = SYSTEM_INSTRUCTION;
     if (agentSlug) {
       try {
-        const agentRows = await sbFetch(`/rest/v1/agents?slug=eq.${encodeURIComponent(agentSlug)}&limit=1&select=display_name,description,personality,voice_style`);
-        const agentRow = Array.isArray(agentRows) ? agentRows[0] : null;
+        // Cached agent identity (refreshes every 60s)
+        const agentRow = await getCachedAgent(agentSlug);
         const agentName = agentRow?.display_name;
         const agentDescription = agentRow?.description;
         const agentPersonality = agentRow?.personality;
 
-        // Load last 25 messages for conversation depth
+        // Use client-side history if provided (saves a Supabase round trip)
+        // Only fetch from DB if client didn't send history
         let recentContext = '';
-        try {
-          const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=25&select=role,text,timestamp`);
-          if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
-            recentContext = '\n\nRecent conversation (you were part of this):\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`).join('\n');
-          }
-        } catch (e) { /* silent */ }
+        if (baseHistory.length >= 4) {
+          // Client already has conversation context in the history array -- skip DB fetch
+          recentContext = '';
+        } else {
+          try {
+            const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp`);
+            if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
+              recentContext = '\n\nRecent conversation (you were part of this):\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`).join('\n');
+            }
+          } catch (e) { /* silent */ }
+        }
 
-        // Load current system state (tasks, recent completions)
-        let systemState = '';
-        try {
-          const [activeTasks, recentDone, recentFailed] = await Promise.all([
-            sbFetch('/rest/v1/tasks?status=in.(queued,classifying,planning,building,qa)&order=priority.desc&limit=10&select=title,status,priority'),
-            sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc&limit=5&select=title,qa_score'),
-            sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc&limit=3&select=title,error'),
-          ]);
-          const parts = [];
-          if (Array.isArray(activeTasks) && activeTasks.length > 0) {
-            parts.push('Active tasks: ' + activeTasks.map(t => `${t.title} [${t.status}]`).join(', '));
-          } else {
-            parts.push('Task queue: empty. All tasks completed or no tasks queued.');
-          }
-          if (Array.isArray(recentDone) && recentDone.length > 0) {
-            parts.push('Recently done: ' + recentDone.map(t => t.title).join(', '));
-          }
-          if (Array.isArray(recentFailed) && recentFailed.length > 0) {
-            parts.push('Recently failed: ' + recentFailed.map(t => `${t.title} (${(t.error || '').slice(0, 80)})`).join(', '));
-          }
-          if (parts.length > 0) systemState = '\n\nCURRENT SYSTEM STATE:\n' + parts.join('\n');
-        } catch (e) { /* silent */ }
+        // Cached system state (refreshes every 60s)
+        const systemState = await getCachedSystemState();
 
         if (agentName && agentDescription) {
           const voiceStyle = agentRow?.voice_style || '';
