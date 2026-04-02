@@ -72,7 +72,7 @@ HOW TO TALK:
 - Be proactive: if you notice something relevant (a task failed, queue is stuck), mention it.`;
 
 const TOOLS = [{ functionDeclarations: [
-  { name: 'create_task', description: 'Create a task in the AOM queue.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' } }, required: ['title', 'description'] } },
+  { name: 'create_task', description: 'Create a task in the AOM queue. Always set agent to route the task to the right builder.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' }, agent: { type: 'string', description: 'Agent to assign: bobby (frontend/web), gary (ops/SOPs), steffen (design/brand), cleo (video/content), jacob (outreach/email), elmo (QA/testing), rex (admin/EA tasks)' } }, required: ['title', 'description', 'agent'] } },
   { name: 'get_queue', description: 'List queued/active tasks.', parameters: { type: 'object', properties: {} } },
   { name: 'get_status', description: 'Fetch a task by id.', parameters: { type: 'object', properties: { task_id: { type: 'string' } }, required: ['task_id'] } },
   { name: 'delete_messages', description: 'Delete recent messages for this agent. Use when asked to clean up, clear, or delete messages.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of recent messages to delete (default 10)' } } } },
@@ -255,7 +255,9 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
       try {
         let result;
         if (name === 'create_task') {
-          const argsWithAgent = agentSlug ? { ...args, agent_identity: agentSlug } : args;
+          // Use Gemini's routed agent, fall back to chat agent
+          const taskAgent = args.agent || agentSlug || null;
+          const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
           result = await createTask(argsWithAgent, clientId);
         }
         else if (name === 'get_queue') result = await getQueue(clientId);
