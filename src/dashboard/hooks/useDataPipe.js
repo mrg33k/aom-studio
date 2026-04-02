@@ -305,20 +305,32 @@ export function deriveStateFromEvents(events) {
     }
   }
 
-  // Right Now: tasks whose latest event is task_started AND are not stale (< 10 min old)
+  // Right Now: tasks actively being worked by the task runner.
+  // Shows classifying, planning, building, and QA stages.
+  const ACTIVE_EVENTS = new Set([
+    'task_started',      // building
+    'task_classifying',  // classifying
+    'task_planning',     // planning
+    'qa_started',        // qa review
+  ])
   const rightNowTasks = []
   for (const [, info] of taskLatest) {
-    if (info.event_type !== 'task_started') continue
+    if (!ACTIVE_EVENTS.has(info.event_type)) continue
     // Hide tasks with no timestamp or older than STALE_MS -- these are ghost pills
     const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : Infinity
     if (ageMs >= STALE_MS) continue
-    let description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
-    // Smart RNB name: the event description is often a raw user message.
-    // Extract the actual task intent or fall back to a clean agent status.
+    // Show pipeline stage in the pill
+    const stageLabel = {
+      'task_classifying': 'Classifying',
+      'task_planning': 'Planning',
+      'task_started': 'Building',
+      'qa_started': 'QA Review',
+    }[info.event_type] || 'Working'
+    let description = info.payload.title || info.payload.description || info.payload.task || info.payload.text || 'Working...'
     description = cleanTaskName(description, info.agent)
     rightNowTasks.push({
       agent:     info.agent,
-      text:      description,
+      text:      `[${stageLabel}] ${description}`,
       isLive:    true,
       isQueued:  false,
       fromEvents: true,
@@ -326,11 +338,12 @@ export function deriveStateFromEvents(events) {
   }
 
   // Agent statuses derived from latest event
+  const WORKING_EVENTS = new Set(['task_started', 'task_classifying', 'task_planning', 'qa_started'])
   const agentStatuses = {}
   for (const [agent, info] of agentLatest) {
     const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : 0
     let status = 'IDLE'
-    if (info.event_type === 'task_started') {
+    if (WORKING_EVENTS.has(info.event_type)) {
       status = ageMs >= STALL_MS ? 'STALLED' : 'WORKING'
     } else if (info.event_type === 'task_completed' || info.event_type === 'qa_passed' || info.event_type === 'build_pushed') {
       status = 'IDLE'
