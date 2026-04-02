@@ -91,8 +91,18 @@ export default async function handler(req, res) {
         const agentName = agentRow?.display_name;
         const agentDescription = agentRow?.description;
         const agentPersonality = agentRow?.personality;
+
+        // Load last 10 messages for this agent so Gemini has conversation context
+        let recentContext = '';
+        try {
+          const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=10&select=role,text,timestamp`);
+          if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
+            recentContext = '\n\nRecent conversation history:\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 300)}`).join('\n');
+          }
+        } catch (e) { /* silent */ }
+
         if (agentName && agentDescription) {
-          systemInstruction = `You are ${agentName}. ${agentDescription}. Personality: ${agentPersonality || 'Direct, helpful.'}. ${SYSTEM_INSTRUCTION}`;
+          systemInstruction = `You are ${agentName}. ${agentDescription}. Personality: ${agentPersonality || 'Direct, helpful.'}. ${SYSTEM_INSTRUCTION}${recentContext}`;
         }
       } catch (err) {
         console.error('[v2-gemini-chat] Agent lookup failed:', err.message);
