@@ -1,4 +1,4 @@
-// Realtime subscriptions: agent_status, messages, events, tasks -- unique channel IDs per instance
+// Realtime subscriptions: agent_status, messages, tasks -- unique channel IDs per instance
 // useDataPipe -- ONE hook, ONE poll, ONE truth.
 // Bobby2: Replaces useRightNowLiveTasks, useCompletedFeed, useAutoCheckFromNotifications,
 // usePatrikTodos, useCheckingInTasks, and usePunchListData across GameHUD + ChecklistMode.
@@ -271,30 +271,44 @@ export function useDataPipe(parsePunchList) {
         const notifContent = notifRes?.content || ''
         const punchContent = punchRes?.content || ''
 
-        // Right Now: agent_status table is the source of truth (via active-agents API).
-        // No file-based parsing. No event derivation.
+        // Right Now: tasks table is the source of truth. Same logic for both paths.
         const mergedTasks = []
+        const STAGE_LABELS = {
+          'queued': 'Queued',
+          'classifying': 'Classifying',
+          'planning': 'Planning',
+          'building': 'Building',
+          'qa': 'QA Review',
+        }
 
-        // Supabase tasks table: done/todo/patrik tasks
         try {
           const clientId = getClientId()
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
             if (sbData.tasks) {
-              // Done tasks awaiting approval
+              // Pipeline tasks -> Right Now
+              const pipelineTasks = sbData.tasks.filter(t => STAGE_LABELS[t.status])
+              for (const t of pipelineTasks) {
+                mergedTasks.push({
+                  agent: t.agent || t.agent_identity || 'system',
+                  text: `[${STAGE_LABELS[t.status]}] ${t.title || t.text || 'Task'}`,
+                  isLive: t.status !== 'queued',
+                  isQueued: t.status === 'queued',
+                  taskId: t.id,
+                })
+              }
+
               const doneEntries = sbData.tasks
                 .filter(t => t.status === 'done' && t.agent !== 'patrik')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
               mergedTasks.push(...doneEntries)
 
-              // Todo tasks for To Do pill
               const todoEntries = sbData.tasks
                 .filter(t => t.status === 'todo' && t.agent !== 'patrik')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
               setTodoItems(todoEntries)
 
-              // Patrik's personal tasks
               const patrikEntries = sbData.tasks
                 .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
@@ -334,20 +348,33 @@ export function useDataPipe(parsePunchList) {
         const data = await res.json()
         const activeAgentsData = activeAgentsRes?.ok ? await activeAgentsRes.json() : null
 
-        // Right Now: events table is the SOLE source of truth.
-        // No active_processes, no agent_status fallback. Just events.
+        // Right Now: tasks table is the source of truth. Period.
+        // Any task that is queued, classifying, planning, building, or in QA shows up.
+        // No events derivation. No agent_status. Just read the tasks table.
         {
           const active = []
-
-          // Events -> Right Now tasks (building, classifying, planning, QA)
-          if (data.events && data.events.length > 0) {
-            const { rightNowTasks, agentStatuses } = deriveStateFromEvents(data.events)
-            eventsAgentStatusRef.current = agentStatuses
-            active.push(...rightNowTasks)
+          const STAGE_LABELS = {
+            'queued': 'Queued',
+            'classifying': 'Classifying',
+            'planning': 'Planning',
+            'building': 'Building',
+            'qa': 'QA Review',
           }
 
-          // Done tasks awaiting approval
           if (data.tasks) {
+            // Active pipeline tasks -> Right Now
+            const pipelineTasks = data.tasks.filter(t => STAGE_LABELS[t.status])
+            for (const t of pipelineTasks) {
+              active.push({
+                agent: t.agent || t.agent_identity || 'system',
+                text: `[${STAGE_LABELS[t.status]}] ${t.title || t.text || 'Task'}`,
+                isLive: t.status !== 'queued',
+                isQueued: t.status === 'queued',
+                taskId: t.id,
+              })
+            }
+
+            // Done tasks awaiting approval
             const doneEntries = data.tasks
               .filter(t => t.status === 'done' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
