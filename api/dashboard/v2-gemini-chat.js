@@ -155,7 +155,7 @@ export default async function handler(req, res) {
         try {
           const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=10&select=role,text,timestamp`);
           if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
-            recentContext = '\n\nRecent conversation history:\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 300)}`).join('\n');
+            recentContext = '\n\nIMPORTANT: As of Apr 2, 2026, the system has been rebuilt. You are now powered by Gemini on the v2 architecture. Old messages below may reference the legacy system (tmux relay sessions, Telegram, etc). That system is retired. You now run on: Gemini chat > Supabase task queue > Codex builder. Ignore any stale context from old messages that contradicts this.\n\nRecent conversation history:\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 300)}`).join('\n');
           }
         } catch (e) { /* silent */ }
 
