@@ -319,11 +319,27 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         else if (name === 'search_history') {
           const searchAgent = args.agent || agentSlug;
           const searchQuery = (args.query || '').trim();
-          // Search messages table using Supabase full-text or ILIKE
-          const searchFilter = searchAgent
-            ? `agent=eq.${encodeURIComponent(searchAgent)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
-            : `text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
-          result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
+          // Call RAG server on home machine (searches JSONL + ChromaDB)
+          const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+          try {
+            const ragRes = await fetch(`${RAG_URL}/search-messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: searchQuery, agent: searchAgent, top_k: 10 }),
+              signal: AbortSignal.timeout(10000),
+            });
+            if (ragRes.ok) {
+              result = await ragRes.json();
+            } else {
+              throw new Error('RAG server unavailable');
+            }
+          } catch {
+            // Fallback: ILIKE on Supabase messages table
+            const searchFilter = searchAgent
+              ? `agent=eq.${encodeURIComponent(searchAgent)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+              : `text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
+            result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
+          }
         }
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
