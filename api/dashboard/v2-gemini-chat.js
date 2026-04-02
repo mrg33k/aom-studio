@@ -194,7 +194,9 @@ export default async function handler(req, res) {
         else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select);
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
-        functionResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: result } }] });
+        // Gemini requires functionResponse.response to be an object, not an array
+        const wrappedResult = Array.isArray(result) ? { items: result } : (result && typeof result === 'object' ? result : { value: result });
+        functionResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: wrappedResult } }] });
       } catch (err) {
         const errorResult = { error: err.message };
         functionCalls.push({ name, args, result: errorResult });
