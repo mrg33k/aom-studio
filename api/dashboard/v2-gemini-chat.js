@@ -36,7 +36,8 @@ async function createTask(args = {}, clientId) {
   if (typeof priority === 'string' && priority.trim() !== '') priority = Number(priority);
   if (!Number.isFinite(priority)) priority = 0;
   const crypto = await import('crypto');
-  const newTask = { id: crypto.randomUUID(), title: args.title.trim(), description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
+  const titleText = args.title.trim();
+  const newTask = { id: crypto.randomUUID(), title: titleText, text: titleText, description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
   if (args.agent_identity !== undefined) newTask.agent_identity = args.agent_identity;
   const created = await sbFetch('/rest/v1/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(newTask) });
   return Array.isArray(created) ? created[0] : created;
