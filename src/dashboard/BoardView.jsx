@@ -300,6 +300,24 @@ function useColumnChat(agentSlug, isActive) {
       const data = await geminiRes.json()
       const reply = typeof data?.reply === 'string' ? data.reply : ''
       geminiReply = reply || null
+      // If a delete_messages function was called, reset local messages from Supabase
+      const hadDelete = (data.functionCalls || []).some(c => c.name === 'delete_messages')
+      if (hadDelete) {
+        try {
+          const cid = getClientId()
+          const refetchUrl = IS_LOCAL
+            ? `/api/local/conversations?agent=${encodeURIComponent(agentSlug)}&limit=50`
+            : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=50&client=${encodeURIComponent(cid)}`
+          const refetchRes = await fetch(refetchUrl)
+          if (refetchRes.ok) {
+            const refetchData = await refetchRes.json()
+            const freshMsgs = (refetchData.messages || []).map(m => ({
+              id: m.id, role: m.role || 'assistant', content: m.text, time: m.timestamp, source: m.source,
+            }))
+            setMessages(freshMsgs)
+          }
+        } catch (e) { /* silent */ }
+      }
     } catch (err) {
       console.error('[v2-gemini-chat] Error:', err)
     }
