@@ -257,7 +257,7 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, isActive])
 
   const sendMessage = useCallback(async (text) => {
-    if (!text.trim()) return
+    if (!text.trim() || sending) return
     const trimmed = text.trim()
     const sentTime = new Date().toISOString()
     const msgId = `usr-${Date.now()}`
@@ -298,15 +298,20 @@ function useColumnChat(agentSlug, isActive) {
         throw new Error(`Gemini ${geminiRes.status}: ${errText}`)
       }
       const data = await geminiRes.json()
-      geminiReply = typeof data?.reply === 'string' ? data.reply : ''
+      const reply = typeof data?.reply === 'string' ? data.reply : ''
+      geminiReply = reply || null
     } catch (err) {
       console.error('[v2-gemini-chat] Error:', err)
     }
 
-    if (geminiReply !== null) {
+    if (geminiReply) {
       const replyText = geminiReply
+      const replyTime = new Date().toISOString()
       const elapsed = Date.now() - geminiStart
       const delay = Math.max(0, 800 - elapsed)
+
+      // Pause background poll while showing Gemini response to prevent duplicates
+      if (bgPollRef.current) { clearInterval(bgPollRef.current); bgPollRef.current = null }
 
       // Step 2: double gray check (delivered) -- min 800ms after send so the single check is visible
       setTimeout(() => {
@@ -328,10 +333,45 @@ function useColumnChat(agentSlug, isActive) {
       setTimeout(() => {
         setMessages(prev => {
           let u = prev.filter(m => !m.streaming)
-          u.push({ role: 'assistant', content: replyText, time: new Date().toISOString(), source: 'gemini' })
+          u.push({ role: 'assistant', content: replyText, time: replyTime, source: 'gemini' })
           return u
         })
         setSending(false)
+        // Update background poll timestamp so it doesn't re-fetch this message
+        lastBgTsRef.current = replyTime
+        // Resume background poll after a short delay for Supabase write to settle
+        setTimeout(() => {
+          if (!bgPollRef.current) {
+            bgPollRef.current = setInterval(async () => {
+              if (document.hidden) return
+              try {
+                const cid = getClientId()
+                const url = IS_LOCAL
+                  ? `/api/local/conversations?agent=${encodeURIComponent(agentSlug)}&limit=10`
+                  : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=10&client=${encodeURIComponent(cid)}`
+                const res = await fetch(url)
+                if (!res.ok) return
+                const data = await res.json()
+                const newMsgs = (data.messages || [])
+                  .filter(m => m.timestamp > lastBgTsRef.current && m.text)
+                  .filter(m => m.agent === agentSlug)
+                  .filter(m => !['terminal','corner-dashboard-task','task-creation','completion-hook','agent-status','poke_agent'].includes((m.source||'').toLowerCase()) && !(m.source||'').toLowerCase().startsWith('agent-'))
+                if (newMsgs.length > 0) {
+                  lastBgTsRef.current = newMsgs[newMsgs.length - 1].timestamp
+                  setMessages(prev => {
+                    let updated = [...prev]
+                    for (const row of newMsgs) {
+                      const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
+                      if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
+                      updated.push(msg)
+                    }
+                    return updated
+                  })
+                }
+              } catch {}
+            }, 3000)
+          }
+        }, 5000)
       }, delay + 600)
 
       // Persist user + Gemini reply to Supabase (fire and forget)
@@ -343,7 +383,7 @@ function useColumnChat(agentSlug, isActive) {
       fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentSlug, text: replyText, role: 'assistant', source: 'corner-dashboard', client_id: clientId }),
+        body: JSON.stringify({ agent: agentSlug, text: replyText, role: 'assistant', source: 'gemini', client_id: clientId }),
       }).catch(() => {})
 
       if (pollRef.current) {
@@ -406,10 +446,11 @@ function useColumnChat(agentSlug, isActive) {
         if (pollRef.current) {
           clearInterval(pollRef.current)
           pollRef.current = null
-          // Keep delivered checks -- agent will process when back online
           setSending(false)
+          // Show timeout message so user isn't left hanging
+          setMessages(prev => [...prev, { role: 'assistant', content: 'Agent is offline. Message saved and will be delivered when they reconnect.', time: new Date().toISOString(), source: 'system' }])
         }
-      }, 60000)
+      }, 30000)
     } catch {
       setMessages(prev => {
         const u = [...prev]

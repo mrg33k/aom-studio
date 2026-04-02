@@ -43,7 +43,7 @@ async function createTask(args = {}, clientId) {
 }
 
 async function getQueue(clientId) {
-  const params = ['status=in.(queued,building,qa)', 'order=priority.desc'];
+  const params = ['status=in.(queued,classifying,planning,building,qa)', 'order=priority.desc'];
   if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
   return sbFetch(`/rest/v1/tasks?${params.join('&')}`);
 }
@@ -85,12 +85,13 @@ export default async function handler(req, res) {
     let systemInstruction = SYSTEM_INSTRUCTION;
     if (agentSlug) {
       try {
-        const agentRows = await sbFetch(`/rest/v1/agents?slug=eq.${encodeURIComponent(agentSlug)}&limit=1`);
+        const agentRows = await sbFetch(`/rest/v1/agents?slug=eq.${encodeURIComponent(agentSlug)}&limit=1&select=display_name,description,personality,voice_style`);
         const agentRow = Array.isArray(agentRows) ? agentRows[0] : null;
-        const agentName = agentRow?.agent_name || agentRow?.name;
-        const agentDescription = agentRow?.agent_description || agentRow?.description;
+        const agentName = agentRow?.display_name;
+        const agentDescription = agentRow?.description;
+        const agentPersonality = agentRow?.personality;
         if (agentName && agentDescription) {
-          systemInstruction = `You are ${agentName}. ${agentDescription}. ${SYSTEM_INSTRUCTION}`;
+          systemInstruction = `You are ${agentName}. ${agentDescription}. Personality: ${agentPersonality || 'Direct, helpful.'}. ${SYSTEM_INSTRUCTION}`;
         }
       } catch (err) {
         console.error('[v2-gemini-chat] Agent lookup failed:', err.message);
