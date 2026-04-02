@@ -6036,43 +6036,89 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
       return
     }
 
-    // Production mode: write to Supabase, poll for relay response
+    // Production mode: write user message to Supabase, call Gemini, write response back
     try {
       const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
-      await fetch('/api/dashboard/supabase-messages', {
+      // 1. Persist user message to Supabase
+      fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: agentSlug, text, source: 'corner-dashboard', client_id: clientId }),
+      }).catch(() => {}) // fire-and-forget, Gemini call is what matters
+
+      // 2. Call Gemini for response (v2-gemini-chat handles agent identity + function calling)
+      const geminiRes = await fetch('/api/dashboard/v2-gemini-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, agent: agentSlug, client_id: clientId }),
       })
-      // Poll Supabase for assistant response
-      if (relayPollRef.current) clearInterval(relayPollRef.current)
-      relayPollRef.current = setInterval(async () => {
-        try {
-          const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
-          const pollRes = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(clientId)}`)
-          if (!pollRes.ok) return
-          const pollData = await pollRes.json()
-          const msgs = pollData.messages || []
-          // Find assistant messages after our sent time
-          const newResponses = msgs.filter(m => m.role === 'assistant' && m.timestamp > sentTime)
-          if (newResponses.length > 0) {
-            const latest = newResponses[newResponses.length - 1]
-            updateMessages(agentSlug, prev => {
-              const updated = [...prev]
-              const lastMsg = updated[updated.length - 1]
-              if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
-                updated[updated.length - 1] = { ...lastMsg, content: latest.text, streaming: false, time: latest.timestamp }
-              } else {
-                updated.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
-              }
-              return updated
-            })
-            setSpeaking(false)
-            clearChatTimeout()
-            if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
-          }
-        } catch {}
-      }, 1500)
+
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json()
+        const reply = geminiData.reply || ''
+
+        if (reply) {
+          // 3. Show response in UI immediately
+          const responseTime = new Date().toISOString()
+          updateMessages(agentSlug, prev => {
+            const updated = [...prev]
+            const lastMsg = updated[updated.length - 1]
+            if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+              updated[updated.length - 1] = { ...lastMsg, content: reply, streaming: false, time: responseTime }
+            } else {
+              updated.push({ role: 'assistant', content: reply, streaming: false, time: responseTime })
+            }
+            return updated
+          })
+          setSpeaking(false)
+          clearChatTimeout()
+
+          // 4. Persist assistant response to Supabase (fire-and-forget)
+          fetch('/api/dashboard/supabase-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent: agentSlug, text: reply, role: 'assistant', source: 'gemini', client_id: clientId }),
+          }).catch(() => {})
+        } else {
+          // Gemini returned empty response
+          updateMessages(agentSlug, prev => {
+            const updated = [...prev]
+            const last = updated[updated.length - 1]
+            if (last?.streaming) updated[updated.length - 1] = { ...last, content: 'No response from agent. Try again.', streaming: false }
+            return updated
+          })
+          setSpeaking(false)
+          clearChatTimeout()
+        }
+      } else {
+        // Gemini endpoint failed, fall back to poll (legacy relay or other responder)
+        if (relayPollRef.current) clearInterval(relayPollRef.current)
+        relayPollRef.current = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(clientId)}`)
+            if (!pollRes.ok) return
+            const pollData = await pollRes.json()
+            const msgs = pollData.messages || []
+            const newResponses = msgs.filter(m => m.role === 'assistant' && m.timestamp > sentTime)
+            if (newResponses.length > 0) {
+              const latest = newResponses[newResponses.length - 1]
+              updateMessages(agentSlug, prev => {
+                const updated = [...prev]
+                const lastMsg = updated[updated.length - 1]
+                if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                  updated[updated.length - 1] = { ...lastMsg, content: latest.text, streaming: false, time: latest.timestamp }
+                } else {
+                  updated.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
+                }
+                return updated
+              })
+              setSpeaking(false)
+              clearChatTimeout()
+              if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
+            }
+          } catch {}
+        }, 1500)
+      }
     } catch (err) {
       updateMessages(agentSlug, prev => {
         const updated = [...prev]
