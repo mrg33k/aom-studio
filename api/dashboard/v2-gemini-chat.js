@@ -152,9 +152,47 @@ async function runQuery(table, filters, select) {
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
-// Server-side cache: agent identity + system state. Refreshes every 60s.
-const _cache = { agents: {}, systemState: null, systemStateAt: 0 };
+// Server-side cache: agent identity + system state + tapes + RAG. Refreshes per TTL.
+const _cache = { agents: {}, systemState: null, systemStateAt: 0, tapes: {}, rag: {} };
 const CACHE_TTL = 60000; // 60 seconds
+const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+
+async function getCachedTape(slug) {
+  if (_cache.tapes[slug] && Date.now() - _cache.tapes[slug]._at < CACHE_TTL) {
+    return _cache.tapes[slug].tape;
+  }
+  try {
+    const res = await fetch(`${RAG_URL}/agent-tape?slug=${encodeURIComponent(slug)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const tape = data?.tape || '';
+    _cache.tapes[slug] = { tape, _at: Date.now() };
+    return tape;
+  } catch { return ''; }
+}
+
+async function getRAGContext(query, agentSlug) {
+  const cacheKey = `${agentSlug}:${query}`;
+  if (_cache.rag[cacheKey] && Date.now() - _cache.rag[cacheKey]._at < 120000) {
+    return _cache.rag[cacheKey].results;
+  }
+  try {
+    const res = await fetch(`${RAG_URL}/search-messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, agent: agentSlug, top_k: 5 }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const items = Array.isArray(data?.results) ? data.results : [];
+    const results = items.map(r => `[${r.timestamp || ''}] ${r.agent || ''}: ${(r.text || '').slice(0, 300)}`).join('\n');
+    _cache.rag[cacheKey] = { results, _at: Date.now() };
+    return results;
+  } catch { return ''; }
+}
 
 async function getCachedAgent(slug) {
   if (_cache.agents[slug] && Date.now() - _cache.agents[slug]._at < CACHE_TTL) {
@@ -266,6 +304,20 @@ export default async function handler(req, res) {
 
         if (agentName && agentDescription) {
           const voiceStyle = agentRow?.voice_style || '';
+
+          // Load tape + RAG context in parallel (both timeout after 5s, return empty on failure)
+          const [tape, ragResults] = await Promise.all([
+            getCachedTape(agentSlug),
+            getRAGContext(message, agentSlug),
+          ]);
+
+          const tapeSection = tape
+            ? `\n\nYOUR TAPE (recent work log -- what you've been doing, key decisions, what's in flight):\n${tape}`
+            : '';
+          const ragSection = ragResults
+            ? `\n\nRELEVANT HISTORY (from conversation archive, matched to this message):\n${ragResults}`
+            : '';
+
           systemInstruction = `Your name is ${agentName}. You are a real member of the AOM team, not a chatbot. You have a personality, opinions, and a way of talking that's yours.
 
 WHO YOU ARE: ${agentDescription}
@@ -280,6 +332,7 @@ CRITICAL VOICE RULES:
 - Never describe yourself in third person. Never say "As ${agentName}, I..."
 - Reference specific work you've been doing (check the conversation history and system state).
 - Keep it short. One or two sentences for casual chat. More detail only when the work demands it.
+${tapeSection}${ragSection}
 
 ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         }
