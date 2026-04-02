@@ -146,7 +146,7 @@ async function deleteMessages(agentSlug, clientId, count = 10) {
 }
 
 async function runQuery(table, filters, select) {
-  const allowed = ['messages', 'tasks', 'agents', 'events', 'projects', 'agent_statuses'];
+  const allowed = ['messages', 'tasks', 'agents', 'events', 'projects', 'agent_status'];
   if (!allowed.includes(table)) throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
   const qs = [filters || 'limit=10', `select=${select || '*'}`].join('&');
   return sbFetch(`/rest/v1/${table}?${qs}`);
@@ -334,10 +334,10 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
               throw new Error('RAG server unavailable');
             }
           } catch {
-            // Fallback: ILIKE on Supabase messages table
+            // Fallback: ILIKE on Supabase messages table (with client_id isolation)
             const searchFilter = searchAgent
-              ? `agent=eq.${encodeURIComponent(searchAgent)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
-              : `text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
+              ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+              : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
             result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
           }
         }
