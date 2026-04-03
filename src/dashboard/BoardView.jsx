@@ -20,6 +20,7 @@ import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
 import TaskQueueFAB from './components/TaskQueueFAB.jsx'
+import ChatMessageRenderer from './components/ChatMessageRenderer.jsx'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -547,103 +548,8 @@ function ReadReceipt({ status }) {
 }
 
 // ── MESSAGE CONTENT RENDERER ─────────────────────────────────────────────────
-// Renders plain text, [file](url) links, and inline images from agents/users
-
-const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg|bmp|heic|heif)(\?.*)?$/i
-
-function renderMessageContent(content) {
-  if (!content) return null
-  // Split on [file](url) or ![alt](url) patterns, render images inline
-  const parts = []
-  const pattern = /(!?\[([^\]]*)\]\((https?:\/\/[^)]+)\))/g
-  let last = 0
-  let match
-  while ((match = pattern.exec(content)) !== null) {
-    // Text before this match
-    if (match.index > last) {
-      const txt = content.slice(last, match.index).trim()
-      if (txt) {
-        // Linkify bare URLs in pre-match text too
-        const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
-        const tParts = txt.split(urlRe)
-        if (tParts.length > 1) {
-          tParts.forEach((p, j) => {
-            if (urlRe.test(p)) {
-              urlRe.lastIndex = 0
-              parts.push(<a key={`tu-${last}-${j}`} href={p} target="_blank" rel="noopener noreferrer"
-                style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
-                onClick={e => e.stopPropagation()}>{p}</a>)
-            } else if (p) {
-              parts.push(<span key={`t-${last}-${j}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span>)
-            }
-          })
-        } else {
-          parts.push(<span key={`t-${last}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{txt}</span>)
-        }
-      }
-    }
-    const isImage = match[1].startsWith('!') || IMAGE_EXTS.test(match[3])
-    if (isImage) {
-      parts.push(
-        <img key={`img-${match.index}`} src={match[3]} alt={match[2] || 'image'}
-          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
-          onClick={() => window.open(match[3], '_blank')}
-          onError={e => { e.target.style.display = 'none' }}
-        />
-      )
-    } else {
-      parts.push(<a key={`a-${match.index}`} href={match[3]} target="_blank" rel="noopener noreferrer"
-        style={{ color: '#60A5FA', textDecoration: 'underline' }}>{match[2] || match[3]}</a>)
-    }
-    last = match.index + match[0].length
-  }
-  // Remaining text — also scan for bare image URLs
-  const tail = content.slice(last)
-  if (tail) {
-    const urlPattern = /(https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?\S*)?)/gi
-    const tailParts = tail.split(urlPattern)
-    tailParts.forEach((seg, i) => {
-      if (IMAGE_EXTS.test(seg) && seg.startsWith('http')) {
-        parts.push(<img key={`bi-${i}`} src={seg} alt="image"
-          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
-          onClick={() => window.open(seg, '_blank')}
-          onError={e => { e.target.style.display = 'none' }}
-        />)
-      } else if (seg.trim()) {
-        // Linkify bare URLs in remaining text
-        const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
-        const urlParts = seg.split(urlRe)
-        urlParts.forEach((p, j) => {
-          if (urlRe.test(p)) {
-            urlRe.lastIndex = 0
-            parts.push(<a key={`u-${i}-${j}`} href={p} target="_blank" rel="noopener noreferrer"
-              style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
-              onClick={e => e.stopPropagation()}>{p}</a>)
-          } else if (p) {
-            parts.push(<span key={`ts-${i}-${j}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span>)
-          }
-        })
-      }
-    })
-  }
-  // Also linkify bare URLs in the fallback path
-  if (parts.length === 0) {
-    const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
-    const fallbackParts = content.split(urlRe)
-    if (fallbackParts.length > 1) {
-      return fallbackParts.map((p, i) => {
-        if (urlRe.test(p)) {
-          urlRe.lastIndex = 0
-          return <a key={`fu-${i}`} href={p} target="_blank" rel="noopener noreferrer"
-            style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
-            onClick={e => e.stopPropagation()}>{p}</a>
-        }
-        return p ? <span key={`ft-${i}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span> : null
-      })
-    }
-  }
-  return parts.length > 0 ? parts : <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{content}</span>
-}
+// Delegated to ChatMessageRenderer (marked + preprocessBareUrls handles markdown,
+// links, and inline image detection for bare image URLs)
 
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
@@ -794,7 +700,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                     {isFail ? 'Task Failed' : 'Task Complete'}
                   </span>
                 </div>
-                <div>{renderMessageContent(m.content)}</div>
+                <ChatMessageRenderer content={m.content} />
               </div>
               ); })()}
             </div>
@@ -830,7 +736,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                     compact={true}
                   />
                 ) : (
-                  <div>{renderMessageContent(m.content)}</div>
+                  <ChatMessageRenderer content={m.content} />
                 )}
                 {/* WhatsApp-style read receipts on user messages */}
                 {m.role === 'user' && m.status && (
