@@ -754,6 +754,38 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
         {chat.messages.map((m, i) => (
+          m.source === 'task-runner' ? (
+            /* Task notification card -- centered, distinct from chat bubbles */
+            <div key={i} style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
+              {(() => { const isFail = m.content?.toLowerCase().includes('fail'); const c = isFail ? '239,68,68' : '34,197,94'; return (
+              <div
+                data-msg-idx={i}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, fontSize: 13, lineHeight: 1.5,
+                  maxWidth: '92%', width: '100%',
+                  wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+                  background: `rgba(${c},0.06)`,
+                  border: `1px solid rgba(${c},0.15)`,
+                  borderLeft: `3px solid rgba(${c},0.5)`,
+                  color: 'var(--bv-text2)',
+                  cursor: 'context-menu',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isFail ? '#EF4444' : '#22C55E'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    {isFail
+                      ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
+                      : <polyline points="20 6 9 17 4 12"/>}
+                  </svg>
+                  <span style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', color: isFail ? '#EF4444' : '#22C55E' }}>
+                    {isFail ? 'Task Failed' : 'Task Complete'}
+                  </span>
+                </div>
+                <div>{renderMessageContent(m.content)}</div>
+              </div>
+              ); })()}
+            </div>
+          ) : (
             <div key={i} style={{
               display: 'flex',
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
@@ -795,6 +827,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 )}
               </div>
             </div>
+          )
         ))}
       </div>
 

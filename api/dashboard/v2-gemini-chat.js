@@ -26,6 +26,7 @@ YOUR TOOLS:
 - create_task: queue work for the build pipeline
 - get_queue: see what's actively being worked on
 - get_status: check a specific task by ID
+- start_runner: kick off the task runner to process queued tasks. Use when Patrik says "run the queue", "start building", "get those tasks going", etc.
 - delete_messages: clean up chat messages
 - run_query: read data from Supabase (messages, tasks, agents, events, projects)
 - search_history: search past conversations for specific topics, decisions, or events
@@ -86,6 +87,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'delete_messages', description: 'Delete recent messages for this agent. Use when asked to clean up, clear, or delete messages.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of recent messages to delete (default 10)' } } } },
   { name: 'run_query', description: 'Run a read-only query against Supabase. Use for looking up data, checking status, counting records, etc.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (messages, tasks, agents, events)' }, filters: { type: 'string', description: 'PostgREST filter string e.g. status=eq.done&limit=5' }, select: { type: 'string', description: 'Columns to select e.g. id,title,status' } }, required: ['table'] } },
   { name: 'search_history', description: 'Search conversation history for past discussions, decisions, or events. Use when asked about what happened before.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for in conversation history' }, agent: { type: 'string', description: 'Optional: limit search to specific agent' } }, required: ['query'] } },
+  { name: 'start_runner', description: 'Start the task runner to process queued tasks. Use when asked to run the queue, start building, get tasks going, or kick off work. The runner picks up queued tasks and builds them.', parameters: { type: 'object', properties: {} } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -152,6 +154,14 @@ async function runQuery(table, filters, select) {
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
+async function startRunner() {
+  const runnerUrl = (process.env.RAG_SERVER_URL || 'http://aom-home:8787') + '/start-runner';
+  const resp = await fetch(runnerUrl, { method: 'POST', signal: AbortSignal.timeout(10000) });
+  if (!resp.ok) throw new Error(`Runner start failed: ${resp.status}`);
+  const data = await resp.json().catch(() => ({}));
+  return { started: true, ...data };
+}
+
 // Server-side cache: agent identity + system state + tapes + RAG. Refreshes per TTL.
 const _cache = { agents: {}, systemState: null, systemStateAt: 0, tapes: {}, rag: {} };
 const CACHE_TTL = 60000; // 60 seconds
@@ -212,21 +222,21 @@ async function getCachedSystemState() {
   }
   try {
     const [activeTasks, recentDone, recentFailed] = await Promise.all([
-      sbFetch('/rest/v1/tasks?status=in.(queued,classifying,planning,building,qa)&order=priority.desc&limit=10&select=title,status,priority'),
-      sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc&limit=5&select=title,qa_score'),
-      sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc&limit=3&select=title,error'),
+      sbFetch('/rest/v1/tasks?status=in.(queued,classifying,planning,building,qa)&order=priority.desc&limit=10&select=id,title,status,priority,agent_identity'),
+      sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc&limit=5&select=id,title,qa_score,completed_at,agent_identity'),
+      sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc&limit=3&select=id,title,error,completed_at,agent_identity'),
     ]);
     const parts = [];
     if (Array.isArray(activeTasks) && activeTasks.length > 0) {
-      parts.push('Active tasks: ' + activeTasks.map(t => `${t.title} [${t.status}]`).join(', '));
+      parts.push('Active tasks: ' + activeTasks.map(t => `${t.title} [${t.status}${t.agent_identity ? ', ' + t.agent_identity : ''}]`).join(', '));
     } else {
       parts.push('Task queue: empty.');
     }
     if (Array.isArray(recentDone) && recentDone.length > 0) {
-      parts.push('Recently done: ' + recentDone.map(t => t.title).join(', '));
+      parts.push('Recently completed: ' + recentDone.map(t => `${t.title} (QA: ${t.qa_score || '?'}/10${t.agent_identity ? ', ' + t.agent_identity : ''}${t.completed_at ? ', ' + t.completed_at.slice(0, 16) : ''})`).join(', '));
     }
     if (Array.isArray(recentFailed) && recentFailed.length > 0) {
-      parts.push('Recently failed: ' + recentFailed.map(t => `${t.title} (${(t.error || '').slice(0, 80)})`).join(', '));
+      parts.push('Recently failed: ' + recentFailed.map(t => `${t.title} (${(t.error || '').slice(0, 80)}${t.agent_identity ? ', ' + t.agent_identity : ''})`).join(', '));
     }
     const result = parts.length > 0 ? '\n\nCURRENT SYSTEM STATE:\n' + parts.join('\n') : '';
     _cache.systemState = result;
@@ -394,6 +404,7 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
             result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
           }
         }
+        else if (name === 'start_runner') result = await startRunner();
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
         // Gemini requires functionResponse.response to be an object, not an array
