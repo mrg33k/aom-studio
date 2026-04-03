@@ -245,10 +245,12 @@ function useColumnChat(agentSlug, isActive) {
             }
             for (const row of newMsgs) {
               const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
+              if (updated.some(m => m.id && m.id === msg.id)) continue
               if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
               if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
               updated.push(msg)
             }
+            updated.sort((a, b) => new Date(a.time) - new Date(b.time))
             return updated
           })
           if (newMsgs.some(m => m.role === 'assistant')) setSending(false)
@@ -382,9 +384,11 @@ function useColumnChat(agentSlug, isActive) {
                     let updated = [...prev]
                     for (const row of newMsgs) {
                       const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
+                      if (updated.some(m => m.id && m.id === msg.id)) continue
                       if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
                       updated.push(msg)
                     }
+                    updated.sort((a, b) => new Date(a.time) - new Date(b.time))
                     return updated
                   })
                 }
@@ -756,7 +760,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         {chat.messages.map((m, i) => (
           m.source === 'task-runner' ? (
             /* Task notification card -- centered, distinct from chat bubbles */
-            <div key={i} style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
+            <div key={m.id || i} style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
               {(() => { const isFail = m.content?.toLowerCase().includes('fail'); const c = isFail ? '239,68,68' : '34,197,94'; return (
               <div
                 data-msg-idx={i}
@@ -786,7 +790,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               ); })()}
             </div>
           ) : (
-            <div key={i} style={{
+            <div key={m.id || i} style={{
               display: 'flex',
               justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
             }}>
