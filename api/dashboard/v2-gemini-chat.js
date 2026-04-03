@@ -155,11 +155,17 @@ async function runQuery(table, filters, select) {
 }
 
 async function startRunner() {
-  const runnerUrl = (process.env.RAG_SERVER_URL || 'http://aom-home:8787') + '/start-runner';
-  const resp = await fetch(runnerUrl, { method: 'POST', signal: AbortSignal.timeout(10000) });
-  if (!resp.ok) throw new Error(`Runner start failed: ${resp.status}`);
-  const data = await resp.json().catch(() => ({}));
-  return { started: true, ...data };
+  // Write signal to Supabase events table -- home machine watcher picks it up
+  const result = await sbFetch('/rest/v1/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({
+      agent: 'system',
+      event_type: 'runner_start_requested',
+      payload: { source: 'gemini-chat', requested_at: new Date().toISOString() },
+    }),
+  });
+  return { signaled: true, message: 'Start signal sent. Runner will pick up tasks within seconds.' };
 }
 
 // Server-side cache: agent identity + system state + tapes + RAG. Refreshes per TTL.
