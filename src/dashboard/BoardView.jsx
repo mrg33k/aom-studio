@@ -11,6 +11,8 @@ import { AGENTS, PROJECTS } from './gridSpec.js'
 import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
 import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import VoiceToggle from './components/VoiceToggle.jsx'
+import VoiceChat from './components/VoiceChat.jsx'
 import { getAgentKnowledge } from './agentKnowledge.js'
 import agentProfiles from '../data/agent-profiles.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
@@ -1982,6 +1984,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     } catch {}
   }, [])
 
+  // Voice chat panel visibility
+  const [isVoiceChatActive, setIsVoiceChatActive] = useState(false)
+  const handleVoiceChatToggle = () => setIsVoiceChatActive(prev => !prev)
+
   // Context menu (tasks)
   const [ctxMenu, setCtxMenu] = useState(null)
 
@@ -2410,6 +2416,19 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               )}
               {railOpen && <span>{agentsSleeping ? 'Wake' : 'Sleep'}</span>}
             </button>
+            {/* Voice chat toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '2px 0' }}>
+              <VoiceToggle isActive={isVoiceChatActive} onToggle={handleVoiceChatToggle} />
+              {railOpen && (
+                <span style={{
+                  color: isVoiceChatActive ? '#60A5FA' : 'var(--bv-muted)',
+                  fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                }}>
+                  {isVoiceChatActive ? 'Voice On' : 'Voice'}
+                </span>
+              )}
+            </div>
             {/* Collapse/expand toggle */}
             <button
               onClick={() => setRailOpen(!railOpen)}
@@ -2576,6 +2595,65 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           onClose={() => setHeaderCtx(null)}
           onAction={handleHeaderContextAction}
         />
+      )}
+
+      {/* Voice Chat Panel */}
+      {isVoiceChatActive && (
+        <div style={{
+          position: 'fixed',
+          bottom: 80,
+          right: 20,
+          width: 320,
+          maxHeight: 400,
+          background: 'rgba(10,16,32,0.97)',
+          border: '1px solid rgba(59,130,246,0.35)',
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
+          zIndex: 9999,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Panel header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(59,130,246,0.12)',
+            background: 'rgba(14,22,40,0.8)',
+          }}>
+            <span style={{
+              color: '#60A5FA',
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>
+              Voice Chat
+            </span>
+            <button
+              onClick={() => setIsVoiceChatActive(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(148,168,200,0.6)',
+                cursor: 'pointer',
+                fontSize: 16,
+                lineHeight: 1,
+                padding: '0 2px',
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <VoiceChat
+            agentSlug={orderedVisibleItems.find(it => it.isAgent)?.slug || 'elon'}
+            agentColor={orderedVisibleItems.find(it => it.isAgent)?.color || '#3B82F6'}
+            clientId={getClientId()}
+          />
+        </div>
       )}
     </div>
   )
