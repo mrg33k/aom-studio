@@ -11,7 +11,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Send, Loader2, HelpCircle, ChevronDown } from 'lucide-react'
-import ChatMessageRenderer from './components/ChatMessageRenderer'
 
 const SUPPORT_URL = '/api/dashboard/support-chat'
 
@@ -87,10 +86,7 @@ function SupportMessage({ msg }) {
           borderRadius: '16px 16px 16px 4px', padding: '10px 14px',
           fontSize: 13, color: '#E5E0D8', lineHeight: 1.55,
         }}>
-          <ChatMessageRenderer
-            content={msg.content}
-            style={{ fontSize: 13, color: '#E5E0D8', lineHeight: 1.55 }}
-          />
+          <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
         </div>
         <div style={{ fontSize: 10, marginTop: 3, marginLeft: 4, color: 'rgba(96,165,250,0.5)' }}>
           Corner Support
