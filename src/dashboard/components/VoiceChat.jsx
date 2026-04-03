@@ -405,12 +405,30 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   const isActive = status !== 'idle' && status !== 'error'
   const accent = agentColor
 
+  // Per-status color overrides for lively energy
+  const statusColor = {
+    idle:       '#4B5563',
+    connecting: '#F59E0B',
+    listening:  '#60A5FA',
+    speaking:   '#34D399',
+    error:      '#F87171',
+  }[status] || accent
+
+  const statusLabel = {
+    idle:       'Tap to speak',
+    connecting: 'Connecting',
+    listening:  'Listening',
+    speaking:   'Responding',
+    error:      'Error',
+  }[status] || status
+
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
       overflow: 'hidden',
+      background: 'linear-gradient(180deg, rgba(6,15,40,0.0) 0%, rgba(6,15,40,0.0) 100%)',
     }}>
       {/* Main voice control area */}
       <div style={{
@@ -419,86 +437,193 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 20,
-        padding: '24px 20px',
+        gap: 24,
+        padding: '28px 20px',
+        position: 'relative',
       }}>
+        {/* Ambient glow backdrop behind mic */}
+        {isActive && (
+          <div style={{
+            position: 'absolute',
+            width: 200,
+            height: 200,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${statusColor}18 0%, transparent 70%)`,
+            animation: 'voiceAmbient 3s ease-in-out infinite',
+            pointerEvents: 'none',
+          }} />
+        )}
+
         {/* Mic button */}
         <button
           onClick={toggleSession}
           style={{
-            width: 80,
-            height: 80,
+            width: 88,
+            height: 88,
             borderRadius: '50%',
-            border: `2px solid ${isActive ? accent : 'rgba(255,255,255,0.15)'}`,
-            background: isActive ? `${accent}22` : 'rgba(255,255,255,0.05)',
+            border: `2px solid ${isActive ? statusColor + 'AA' : 'rgba(100,130,180,0.2)'}`,
+            background: isActive
+              ? `radial-gradient(circle at 40% 35%, ${statusColor}30 0%, ${statusColor}10 60%, transparent 100%)`
+              : 'radial-gradient(circle at 40% 35%, rgba(100,140,220,0.12) 0%, rgba(60,90,160,0.06) 100%)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 200ms ease',
+            transition: 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)',
             outline: 'none',
             position: 'relative',
+            boxShadow: isActive
+              ? `0 0 0 1px ${statusColor}33, 0 8px 32px ${statusColor}25, inset 0 1px 0 rgba(255,255,255,0.08)`
+              : '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
         >
-          {/* Pulse ring when listening */}
-          {status === 'listening' && (
+          {/* Outermost ambient ring (listening + speaking) */}
+          {(status === 'listening' || status === 'speaking') && (
+            <div style={{
+              position: 'absolute',
+              inset: -22,
+              borderRadius: '50%',
+              border: `1px solid ${statusColor}`,
+              opacity: 0.12,
+              animation: 'voiceRingOuter 2.4s ease-in-out infinite 0.4s',
+            }} />
+          )}
+          {/* Middle ring (listening + speaking) */}
+          {(status === 'listening' || status === 'speaking') && (
+            <div style={{
+              position: 'absolute',
+              inset: -13,
+              borderRadius: '50%',
+              border: `1.5px solid ${statusColor}`,
+              opacity: 0.25,
+              animation: 'voiceRingMid 2s ease-in-out infinite 0.15s',
+            }} />
+          )}
+          {/* Inner ring (all active states) */}
+          {isActive && (
+            <div style={{
+              position: 'absolute',
+              inset: -6,
+              borderRadius: '50%',
+              border: `2px solid ${statusColor}`,
+              opacity: status === 'speaking' ? 0.55 : 0.35,
+              animation: status === 'speaking'
+                ? 'voiceRingInnerFast 0.7s ease-in-out infinite'
+                : 'voiceRingInner 1.8s ease-in-out infinite',
+            }} />
+          )}
+          {/* Connecting spinner ring */}
+          {status === 'connecting' && (
             <div style={{
               position: 'absolute',
               inset: -8,
               borderRadius: '50%',
-              border: `2px solid ${accent}`,
-              opacity: 0.4,
-              animation: 'voicePulse 1.5s ease-in-out infinite',
+              border: `2px solid transparent`,
+              borderTopColor: statusColor,
+              animation: 'voiceSpin 0.8s linear infinite',
             }} />
           )}
-          {/* Waveform rings when speaking */}
-          {status === 'speaking' && (
-            <>
-              <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `2px solid ${accent}`, opacity: 0.5, animation: 'voiceWave 0.8s ease-in-out infinite' }} />
-              <div style={{ position: 'absolute', inset: -16, borderRadius: '50%', border: `2px solid ${accent}`, opacity: 0.25, animation: 'voiceWave 0.8s ease-in-out 0.2s infinite' }} />
-            </>
-          )}
           <MicIcon
-            size={32}
-            color={isActive ? accent : '#6B7280'}
+            size={34}
+            color={isActive ? statusColor : '#4B6080'}
             muted={status === 'idle' || status === 'error'}
           />
         </button>
 
-        {/* Status label */}
+        {/* Waveform bars (speaking state) */}
+        {status === 'speaking' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 3,
+            height: 24,
+          }}>
+            {[0, 0.1, 0.2, 0.05, 0.15, 0.3, 0.08].map((delay, i) => (
+              <div key={i} style={{
+                width: 3,
+                borderRadius: 2,
+                background: statusColor,
+                opacity: 0.7,
+                animation: `voiceBar 0.9s ease-in-out ${delay}s infinite`,
+              }} />
+            ))}
+          </div>
+        )}
+
+        {/* Equalizer dots (listening state) */}
+        {status === 'listening' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}>
+            {[0, 0.2, 0.4].map((delay, i) => (
+              <div key={i} style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: statusColor,
+                opacity: 0.6,
+                animation: `voiceDot 1.4s ease-in-out ${delay}s infinite`,
+              }} />
+            ))}
+          </div>
+        )}
+
+        {/* Status badge */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 4,
+          gap: 5,
         }}>
-          <span style={{
-            color: status === 'error' ? '#F87171' : isActive ? accent : '#6B7280',
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: isActive ? `${statusColor}14` : 'transparent',
+            border: isActive ? `1px solid ${statusColor}30` : '1px solid transparent',
+            borderRadius: 12,
+            padding: isActive ? '3px 10px' : '0',
           }}>
-            {status === 'idle' && 'Tap to speak'}
-            {status === 'connecting' && 'Connecting...'}
-            {status === 'listening' && 'Listening'}
-            {status === 'speaking' && 'Responding'}
-            {status === 'error' && 'Error'}
-          </span>
+            {isActive && status !== 'connecting' && (
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%',
+                background: statusColor,
+                boxShadow: `0 0 6px ${statusColor}`,
+                animation: 'voiceLiveDot 1.5s ease-in-out infinite',
+              }} />
+            )}
+            <span style={{
+              color: statusColor,
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+            }}>
+              {statusLabel}
+            </span>
+          </div>
           {isActive && (
-            <span style={{ color: '#4B5563', fontSize: 11, fontFamily: "'Inter', system-ui, sans-serif" }}>
+            <span style={{
+              color: 'rgba(100,140,200,0.6)',
+              fontSize: 10,
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.05em',
+            }}>
               {formatSecs(sessionSecs)} / 5:00
             </span>
           )}
           {status === 'error' && errorMsg && (
             <span style={{
-              color: '#9CA3AF',
+              color: 'rgba(248,113,113,0.8)',
               fontSize: 11,
               fontFamily: "'Inter', system-ui, sans-serif",
               textAlign: 'center',
               maxWidth: 240,
-              lineHeight: 1.4,
+              lineHeight: 1.5,
+              marginTop: 2,
             }}>
               {errorMsg}
             </span>
@@ -509,13 +634,13 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       {/* Transcript area */}
       {transcript.length > 0 && (
         <div style={{
-          borderTop: '1px solid rgba(59,130,246,0.08)',
-          padding: '12px 16px',
-          maxHeight: 120,
+          borderTop: '1px solid rgba(59,130,246,0.12)',
+          padding: '10px 16px 14px',
+          maxHeight: 130,
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: 6,
+          gap: 7,
         }}>
           {transcript.slice(-8).map(entry => (
             <div
@@ -527,23 +652,23 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
               }}
             >
               <span style={{
-                color: entry.role === 'model' ? accent : '#6B7280',
-                fontSize: 10,
-                fontWeight: 700,
-                fontFamily: "'Inter', system-ui, sans-serif",
-                letterSpacing: '0.06em',
+                color: entry.role === 'model' ? accent : 'rgba(100,130,180,0.7)',
+                fontSize: 9,
+                fontWeight: 800,
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 flexShrink: 0,
-                paddingTop: 1,
-                minWidth: 28,
+                paddingTop: 2,
+                minWidth: 26,
               }}>
                 {entry.role === 'model' ? 'AI' : 'You'}
               </span>
               <span style={{
-                color: entry.role === 'model' ? '#D1D5DB' : '#9CA3AF',
+                color: entry.role === 'model' ? 'rgba(210,225,255,0.9)' : 'rgba(150,175,220,0.7)',
                 fontSize: 12,
                 fontFamily: "'Inter', system-ui, sans-serif",
-                lineHeight: 1.4,
+                lineHeight: 1.45,
               }}>
                 {entry.text}
               </span>
@@ -554,13 +679,41 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
       {/* CSS animations */}
       <style>{`
-        @keyframes voicePulse {
-          0%, 100% { transform: scale(1); opacity: 0.4; }
-          50% { transform: scale(1.15); opacity: 0.15; }
+        @keyframes voiceRingInner {
+          0%, 100% { transform: scale(1); opacity: 0.35; }
+          50% { transform: scale(1.12); opacity: 0.12; }
         }
-        @keyframes voiceWave {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 0.1; }
+        @keyframes voiceRingInnerFast {
+          0%, 100% { transform: scale(1); opacity: 0.55; }
+          50% { transform: scale(1.18); opacity: 0.2; }
+        }
+        @keyframes voiceRingMid {
+          0%, 100% { transform: scale(1); opacity: 0.25; }
+          50% { transform: scale(1.1); opacity: 0.08; }
+        }
+        @keyframes voiceRingOuter {
+          0%, 100% { transform: scale(1); opacity: 0.12; }
+          50% { transform: scale(1.06); opacity: 0.04; }
+        }
+        @keyframes voiceSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes voiceAmbient {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.15); opacity: 0.6; }
+        }
+        @keyframes voiceBar {
+          0%, 100% { height: 4px; opacity: 0.4; }
+          50% { height: 20px; opacity: 0.9; }
+        }
+        @keyframes voiceDot {
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.5); opacity: 0.8; }
+        }
+        @keyframes voiceLiveDot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
       `}</style>
     </div>

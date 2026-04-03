@@ -73,6 +73,8 @@ import { ChildPillsDrawer } from './components/ChildPillsDrawer.jsx'
 import { ProjectCard, ParentPill } from './components/ProjectCard.jsx'
 import { hudCtxBtn } from './components/CompactStats.jsx'
 import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import VoiceChat from './components/VoiceChat.jsx'
+import VoiceToggle from './components/VoiceToggle.jsx'
 
 // ---- INBOX PANEL ------------------------------------------------------------
 // Shown when the Inbox pill is expanded. Shows unread messages only.
@@ -379,6 +381,8 @@ export default function GameHUD({
   const hudAccent = isDaytime ? '#2563EB' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
   const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState('idle')
   const overflowBtnRef = useRef(null)
   const overflowPanelRef = useRef(null)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
@@ -923,6 +927,73 @@ export default function GameHUD({
         ) : null}
       </AnimatePresence>
 
+      {/* Voice Chat floating panel -- appears above HUD when voice is active */}
+      <AnimatePresence>
+        {voiceOpen && (
+          <motion.div
+            key="voice-panel"
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+            style={{
+              background: isDaytime
+                ? 'rgba(10,25,70,0.97)'
+                : 'rgba(6,12,30,0.97)',
+              backdropFilter: 'blur(28px)',
+              borderRadius: '16px 16px 0 0',
+              border: `1.5px solid ${voiceStatus === 'speaking' ? 'rgba(52,211,153,0.35)' : voiceStatus === 'listening' ? 'rgba(96,165,250,0.4)' : voiceStatus === 'connecting' ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.22)'}`,
+              borderBottom: 'none',
+              boxShadow: '0 -12px 48px rgba(0,0,0,0.5), 0 -2px 0 rgba(59,130,246,0.15)',
+              margin: isMobile ? 0 : '0 12px',
+              overflow: 'hidden',
+              minHeight: 240,
+              position: 'relative',
+            }}
+          >
+            {/* Header bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px 0',
+            }}>
+              <span style={{
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'rgba(96,165,250,0.7)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+              }}>
+                Voice Chat{chatAgent ? ` -- ${chatAgent}` : ''}
+              </span>
+              <button
+                onClick={() => setVoiceOpen(false)}
+                style={{
+                  width: 24, height: 24, borderRadius: 8,
+                  background: 'rgba(100,140,220,0.08)',
+                  border: '1px solid rgba(100,140,220,0.15)',
+                  color: 'rgba(100,140,200,0.6)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'all 150ms ease',
+                }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+            <VoiceChat
+              agentSlug={chatAgent || 'elon'}
+              agentColor="#3B9EFF"
+              clientId={getClientId()}
+              onStatusChange={setVoiceStatus}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* The HUD panel - BLUE GLASS game panel (daytime = brighter blue glass) */}
       <div
         className="hud-panel-shimmer"
@@ -1408,6 +1479,13 @@ export default function GameHUD({
             )}
           </div>
           </div>
+
+          {/* Voice toggle -- right end of pill row */}
+          <VoiceToggle
+            isActive={voiceOpen}
+            status={voiceStatus}
+            onToggle={() => setVoiceOpen(v => !v)}
+          />
         </div>
       </div>
 
