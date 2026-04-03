@@ -29,13 +29,35 @@ DASHBOARD ARCHITECTURE (critical for task descriptions):
 - If something seems broken or wrong, say so directly. Don't sugarcoat.
 
 YOUR TOOLS:
-- create_task: queue work for the build pipeline
+- create_task: queue work for the build pipeline (code changes, UI features, bug fixes)
 - get_queue: see what's actively being worked on
 - get_status: check a specific task by ID
 - start_runner: kick off the task runner to process queued tasks. Use when Patrik says "run the queue", "start building", "get those tasks going", etc.
 - delete_messages: clean up chat messages
 - run_query: read data from Supabase (messages, tasks, agents, events, projects)
 - search_history: search past conversations for specific topics, decisions, or events
+- register_project: add or update a project in the registry. THIS IS NOT create_task.
+
+CRITICAL: PROJECTS ARE DATA, NOT CODE
+The system already has a project registry in Supabase. When Patrik talks about projects, THINK FIRST:
+
+1. Does this project already exist? Use run_query on the projects table to check BEFORE doing anything.
+2. Is he talking about the project as data (registering, updating, organizing) or as code (build me a feature)?
+
+REGISTER_PROJECT (data operations -- no code needed):
+- "new project called Life" = register it. Ask for repo path if he doesn't say.
+- "add the sourcing repo" = register or update it
+- "all X work goes in this repo" = update hard_rules on existing project
+- "move ambition to a new path" = update repo_path
+- "we're not using autoresearch anymore" = could deactivate it
+- Any mention of a project name you don't recognize = check if it exists first, then register if new
+
+CREATE_TASK (code changes -- builder needs to write code):
+- "build a create project button on the dashboard" = UI feature, create_task
+- "fix the chat in BoardView" = bug fix, create_task
+- "add a new API endpoint for X" = code work, create_task
+
+THE DEFAULT: If Patrik mentions a project by name and it's not about building/fixing code, it's almost certainly a registry operation. When in doubt, check the projects table first with run_query, then ask if needed.
 
 WHEN CREATING TASKS:
 Your description IS the spec. The builder reads this cold with no other context. Include:
@@ -94,6 +116,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'run_query', description: 'Run a read-only query against Supabase. Use for looking up data, checking status, counting records, etc.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (messages, tasks, agents, events)' }, filters: { type: 'string', description: 'PostgREST filter string e.g. status=eq.done&limit=5' }, select: { type: 'string', description: 'Columns to select e.g. id,title,status' } }, required: ['table'] } },
   { name: 'search_history', description: 'Search conversation history for past discussions, decisions, or events. Use when asked about what happened before.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for in conversation history' }, agent: { type: 'string', description: 'Optional: limit search to specific agent' } }, required: ['query'] } },
   { name: 'start_runner', description: 'Start the task runner to process queued tasks. Use when asked to run the queue, start building, get tasks going, or kick off work. The runner picks up queued tasks and builds them.', parameters: { type: 'object', properties: {} } },
+  { name: 'register_project', description: 'Add or update a project in the registry. Use proactively when conversation implies a project change: new repo mentioned, project moved, rules changed, work should go to a specific repo. Fuzzy-matches existing projects so you don\'t need the exact slug. If unsure which project, it will return candidates to clarify with Patrik.', parameters: { type: 'object', properties: { slug: { type: 'string', description: 'Best guess at project slug (lowercase, hyphenated). Fuzzy-matched against all existing projects.' }, name: { type: 'string', description: 'Display name' }, repo_path: { type: 'string', description: 'Absolute filesystem path to the repo' }, repo_description: { type: 'string', description: 'What this repo is, one line' }, scan_dirs: { type: 'string', description: 'Comma-separated directories to scan for the phonebook (e.g. "src,api,tests")' }, hard_rules: { type: 'string', description: 'Comma-separated rules agents must follow for this project' } }, required: ['slug'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -158,6 +181,55 @@ async function runQuery(table, filters, select) {
   if (!allowed.includes(table)) throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
   const qs = [filters || 'limit=10', `select=${select || '*'}`].join('&');
   return sbFetch(`/rest/v1/${table}?${qs}`);
+}
+
+async function registerProject(args = {}) {
+  if (!args.slug) throw new Error('slug required');
+  const inputSlug = args.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  const allProjects = await sbFetch('/rest/v1/projects?select=id,slug,name,repo_path,repo_description&is_active=eq.true&order=name');
+  const projects = Array.isArray(allProjects) ? allProjects : [];
+  const input = inputSlug.toLowerCase();
+  const inputWords = input.split('-').filter(Boolean);
+  const inputName = (args.name || '').toLowerCase();
+  function scoreMatch(proj) {
+    const slug = (proj.slug || '').toLowerCase();
+    const name = (proj.name || '').toLowerCase();
+    const desc = (proj.repo_description || '').toLowerCase();
+    const path = (proj.repo_path || '').toLowerCase();
+    let score = 0;
+    if (slug === input) return 100;
+    if (slug.includes(input) || input.includes(slug)) score += 60;
+    if (name.includes(input) || input.includes(name.replace(/[^a-z0-9]/g, ''))) score += 50;
+    if (inputName && (name.includes(inputName) || inputName.includes(name.toLowerCase()))) score += 50;
+    const projWords = [...slug.split('-'), ...name.split(/[\s-]+/)].map(w => w.toLowerCase()).filter(Boolean);
+    for (const w of inputWords) { if (projWords.some(pw => pw.includes(w) || w.includes(pw))) score += 20; }
+    if (path.includes(input)) score += 30;
+    for (const w of inputWords) { if (w.length > 2 && desc.includes(w)) score += 10; }
+    return score;
+  }
+  const scored = projects.map(p => ({ ...p, _score: scoreMatch(p) })).filter(p => p._score > 0).sort((a, b) => b._score - a._score);
+  const patch = {};
+  if (args.name) patch.name = args.name;
+  if (args.repo_path) patch.repo_path = args.repo_path;
+  if (args.repo_description) patch.repo_description = args.repo_description;
+  if (args.scan_dirs) patch.scan_dirs = args.scan_dirs.split(',').map(s => s.trim()).filter(Boolean);
+  if (args.hard_rules) patch.hard_rules = args.hard_rules.split(',').map(s => s.trim()).filter(Boolean);
+  if (scored.length > 0 && scored[0]._score >= 60) {
+    const match = scored[0];
+    await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${match.id}`, {
+      method: 'PATCH', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+    });
+    return { action: 'updated', slug: match.slug, matched_name: match.name, fields: Object.keys(patch) };
+  }
+  if (scored.length > 0 && scored[0]._score >= 20) {
+    const candidates = scored.slice(0, 3).map(p => `${p.name} (slug: ${p.slug}${p.repo_path ? ', path: ' + p.repo_path : ''})`);
+    return { action: 'clarify', message: 'Found similar projects but not confident enough to auto-match. Did you mean one of these?', candidates, input_slug: inputSlug, hint: 'If one of these is correct, call register_project again with that exact slug. If none match, confirm this is a brand new project.' };
+  }
+  const existingList = projects.map(p => `${p.name} (${p.slug})`).join(', ');
+  const crypto = await import('crypto');
+  const newProject = { id: crypto.randomUUID(), slug: inputSlug, name: args.name || inputSlug, color: '#6B7280', icon: 'folder', type: 'internal', is_active: true, ...patch };
+  await sbFetch('/rest/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(newProject) });
+  return { action: 'created', slug: inputSlug, fields: Object.keys(patch), note: `Created new project. Existing projects were: ${existingList}` };
 }
 
 async function startRunner() {
@@ -417,6 +489,7 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
           }
         }
         else if (name === 'start_runner') result = await startRunner();
+        else if (name === 'register_project') result = await registerProject(args);
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
         // Gemini requires functionResponse.response to be an object, not an array
