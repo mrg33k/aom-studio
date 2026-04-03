@@ -250,7 +250,7 @@ function useColumnChat(agentSlug, isActive) {
               if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
               updated.push(msg)
             }
-            updated.sort((a, b) => new Date(a.time) - new Date(b.time))
+            updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
             return updated
           })
           if (newMsgs.some(m => m.role === 'assistant')) setSending(false)
@@ -388,7 +388,7 @@ function useColumnChat(agentSlug, isActive) {
                       if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
                       updated.push(msg)
                     }
-                    updated.sort((a, b) => new Date(a.time) - new Date(b.time))
+                    updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
                     return updated
                   })
                 }
@@ -456,7 +456,8 @@ function useColumnChat(agentSlug, isActive) {
             setTimeout(() => {
               setMessages(prev => {
                 let u = prev.filter(m => !m.streaming)
-                u.push({ role: 'assistant', content: latest.text, time: latest.timestamp })
+                u.push({ id: latest.id, role: 'assistant', content: latest.text, time: latest.timestamp })
+                u.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
                 return u
               })
               setSending(false)
