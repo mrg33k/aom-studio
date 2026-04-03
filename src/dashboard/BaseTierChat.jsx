@@ -10,10 +10,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Loader2, Users, ChevronDown } from 'lucide-react'
-import { marked } from 'marked'
 import { supabase } from './lib/supabase'
-
-marked.setOptions({ breaks: true, gfm: true })
+import ChatMessageRenderer from './components/ChatMessageRenderer'
 
 const IS_LOCAL = typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -33,18 +31,6 @@ function getAgentColor(agentSlug) {
   if (!agentSlug) return '#78716C'
   const slug = agentSlug.toLowerCase()
   return AGENT_COLORS[slug] || '#60A5FA'
-}
-
-// ── Render markdown safely ───────────────────────────────────────────────────
-function renderMarkdown(text) {
-  if (!text) return ''
-  try {
-    let html = marked.parse(text)
-    html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    return html
-  } catch {
-    return text
-  }
 }
 
 // ── Message types ────────────────────────────────────────────────────────────
@@ -163,10 +149,7 @@ function MessageBubble({ msg }) {
       </div>
       <div className="max-w-[75%]">
         <div className="bg-[#161A12] border border-white/8 rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-[#E5E0D8]">
-          <div
-            className="prose prose-invert prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-          />
+          <ChatMessageRenderer content={msg.content} className="prose prose-invert prose-sm max-w-none" />
         </div>
         <div
           className="text-[10px] mt-1 ml-1 font-medium"
