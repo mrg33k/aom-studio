@@ -175,6 +175,7 @@ function useColumnChat(agentSlug, isActive) {
             if (hasReply) msgs[i] = { ...msgs[i], status: 'read' }
           }
         }
+        msgs.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
         setMessages(msgs)
         setLoading(false)
       })
@@ -269,9 +270,9 @@ function useColumnChat(agentSlug, isActive) {
     // Step 1: single gray check (sent)
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
-      return [...cleaned,
-        { role: 'user', content: trimmed, time: sentTime, id: msgId, status: 'sent' },
-      ]
+      const updated = [...cleaned, { role: 'user', content: trimmed, time: sentTime, id: msgId, status: 'sent' }]
+      updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
+      return updated
     })
     setSending(true)
 
@@ -318,6 +319,7 @@ function useColumnChat(agentSlug, isActive) {
             const freshMsgs = (refetchData.messages || []).map(m => ({
               id: m.id, role: m.role || 'assistant', content: m.text, time: m.timestamp, source: m.source,
             }))
+            freshMsgs.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
             setMessages(freshMsgs)
           }
         } catch (e) { /* silent */ }
@@ -356,6 +358,7 @@ function useColumnChat(agentSlug, isActive) {
         setMessages(prev => {
           let u = prev.filter(m => !m.streaming)
           u.push({ role: 'assistant', content: replyText, time: replyTime, source: 'gemini' })
+          u.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
           return u
         })
         setSending(false)
@@ -473,7 +476,11 @@ function useColumnChat(agentSlug, isActive) {
           pollRef.current = null
           setSending(false)
           // Show timeout message so user isn't left hanging
-          setMessages(prev => [...prev, { role: 'assistant', content: 'Agent is offline. Message saved and will be delivered when they reconnect.', time: new Date().toISOString(), source: 'system' }])
+          setMessages(prev => {
+            const u = [...prev, { role: 'assistant', content: 'Agent is offline. Message saved and will be delivered when they reconnect.', time: new Date().toISOString(), source: 'system' }]
+            u.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
+            return u
+          })
         }
       }, 30000)
     } catch {
