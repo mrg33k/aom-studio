@@ -19,6 +19,7 @@ import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
+import TaskQueueFAB from './components/TaskQueueFAB.jsx'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -2700,6 +2701,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           />
         </div>
       )}
+
+      <TaskQueueFAB isNightMode={isNightMode} />
     </div>
   )
 }
