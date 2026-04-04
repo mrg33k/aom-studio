@@ -21,6 +21,7 @@ import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
 import TaskQueueFAB from './components/TaskQueueFAB.jsx'
 import ChatMessageRenderer from './components/ChatMessageRenderer.jsx'
+import bubbleStyles from './BoardViewMessageContent.module.css'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -711,17 +712,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
             }}>
               <div
                 data-msg-idx={i}
-                style={{
-                padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
-                maxWidth: '88%',
-                wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
-                background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
-                border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
-                color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
-                borderBottomLeftRadius: m.role !== 'user' ? 4 : 12,
-                borderBottomRightRadius: m.role === 'user' ? 4 : 12,
-                cursor: 'context-menu',
-              }}>
+                className={m.role === 'user' ? bubbleStyles.userBubble : bubbleStyles.agentBubble}
+                style={m.role !== 'user' ? { '--agent-accent-color': `${color}80` } : undefined}
+              >
                 <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
                   {m.role === 'user' ? 'You' : agentName}
                 </div>
