@@ -109,6 +109,8 @@ ${BASE_INSTRUCTION}`;
         activityHandling: 'START_OF_ACTIVITY_INTERRUPTS',
         turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY',
       },
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
     },
   };
 

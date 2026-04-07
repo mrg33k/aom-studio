@@ -83,6 +83,9 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
   const [sessionSecs, setSessionSecs] = useState(0)
+  const [isMuted, setIsMuted] = useState(false)
+  const isMutedRef = useRef(false)
+  const sessionIdRef = useRef(null)
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(() => {
     try {
@@ -108,6 +111,33 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
   const addSystemMessage = useCallback((text) => {
     setTranscript(prev => [...prev, { role: 'system', text, id: Date.now() + Math.random() }])
+  }, [])
+
+  const saveTranscript = useCallback((role, text) => {
+    if (!text?.trim() || !sessionIdRef.current) return
+    fetch('/api/dashboard/supabase-messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        agent: agentSlug,
+        role: role,
+        content: text.trim(),
+        metadata: { source: 'voice', session_id: sessionIdRef.current },
+      }),
+    }).catch(() => {})
+  }, [clientId, agentSlug])
+
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const next = !prev
+      isMutedRef.current = next
+      // When unmuting, send activity end to signal "I'm done"
+      if (next && wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ realtimeInput: { audioStreamEnd: true } }))
+      }
+      return next
+    })
   }, [])
 
   const updateStatus = useCallback((s) => {
@@ -165,6 +195,9 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
     if (audioCtxRef.current) { try { audioCtxRef.current.close() } catch (_) {} audioCtxRef.current = null }
     if (playbackCtxRef.current) { try { playbackCtxRef.current.close() } catch (_) {} playbackCtxRef.current = null }
     if (workletBlobUrlRef.current) { URL.revokeObjectURL(workletBlobUrlRef.current); workletBlobUrlRef.current = null }
+    sessionIdRef.current = null
+    setIsMuted(false)
+    isMutedRef.current = false
     playQueueRef.current = []
     isPlayingRef.current = false
     setSessionSecs(0)
@@ -174,6 +207,8 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   const startSession = useCallback(async () => {
     if (status !== 'idle') return
     setErrorMsg('')
+    setTranscript([])
+    sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     updateStatus('connecting')
 
     try {
@@ -227,7 +262,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         const workletNode = new AudioWorkletNode(audioCtx, 'pcm-capture')
         workletNodeRef.current = workletNode
         workletNode.port.onmessage = (e) => {
-          if (e.data?.type === 'pcm' && wsRef.current?.readyState === WebSocket.OPEN && statusRef.current !== 'speaking') {
+          if (e.data?.type === 'pcm' && wsRef.current?.readyState === WebSocket.OPEN && statusRef.current !== 'speaking' && !isMutedRef.current) {
             wsRef.current.send(JSON.stringify({
               realtimeInput: {
                 audio: {
@@ -247,7 +282,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         const scriptNode = audioCtx.createScriptProcessor(bufferSize, 1, 1)
         workletNodeRef.current = scriptNode
         scriptNode.onaudioprocess = (e) => {
-          if (wsRef.current?.readyState !== WebSocket.OPEN || statusRef.current === 'speaking') return
+          if (wsRef.current?.readyState !== WebSocket.OPEN || statusRef.current === 'speaking' || isMutedRef.current) return
           const float32 = e.inputBuffer.getChannelData(0)
           const int16 = new Int16Array(float32.length)
           for (let i = 0; i < float32.length; i++) {
@@ -306,23 +341,40 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
             return
           }
 
-          // Server content (audio, text, turn complete)
+          // Server content (audio, text, turn complete, transcriptions)
           if (msg.serverContent) {
             const sc = msg.serverContent
 
             // Model turn with audio/text parts
             if (sc.modelTurn?.parts) {
               for (const part of sc.modelTurn.parts) {
-                // Audio chunk
                 if (part.inlineData?.data) {
                   const rawBuffer = fromBase64(part.inlineData.data)
                   enqueueAudio(rawBuffer)
                 }
-                // Text transcript from model
                 if (part.text) {
                   setTranscript(prev => [...prev, { role: 'model', text: part.text, id: Date.now() + Math.random() }])
                   onTranscript?.(part.text, 'model')
                 }
+              }
+            }
+
+            // Input transcription (what the user said)
+            if (sc.inputTranscription?.text) {
+              const text = sc.inputTranscription.text
+              if (sc.inputTranscription.finished) {
+                setTranscript(prev => [...prev, { role: 'user', text, id: Date.now() + Math.random() }])
+                onTranscript?.(text, 'user')
+                saveTranscript('user', text)
+              }
+            }
+
+            // Output transcription (what the model said)
+            if (sc.outputTranscription?.text) {
+              const text = sc.outputTranscription.text
+              if (sc.outputTranscription.finished) {
+                setTranscript(prev => [...prev, { role: 'model-text', text, id: Date.now() + Math.random() }])
+                saveTranscript('assistant', text)
               }
             }
 
@@ -398,7 +450,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       updateStatus('error')
       stopSession()
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage, saveTranscript])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()
@@ -537,8 +589,34 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
           {status === 'connecting' && (
             <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: '2px solid transparent', borderTopColor: statusColor, animation: 'voiceSpin 0.8s linear infinite' }} />
           )}
-          <MicIcon size={34} color={isActive ? statusColor : '#4B6080'} muted={status === 'idle' || status === 'error'} />
+          <MicIcon size={34} color={isActive ? statusColor : '#4B6080'} muted={status === 'idle' || status === 'error' || isMuted} />
         </button>
+
+        {/* Mute/Done button (visible when active) */}
+        {isActive && (
+          <button
+            onClick={toggleMute}
+            style={{
+              padding: '6px 16px', borderRadius: 20, cursor: 'pointer',
+              background: isMuted ? 'rgba(248,113,113,0.15)' : 'rgba(255,255,255,0.06)',
+              border: isMuted ? '1px solid rgba(248,113,113,0.4)' : '1px solid rgba(255,255,255,0.1)',
+              color: isMuted ? '#F87171' : 'rgba(148,168,200,0.7)',
+              fontSize: 11, fontWeight: 700, fontFamily: "'Inter', system-ui, sans-serif",
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              transition: 'all 150ms ease', outline: 'none',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {isMuted ? (
+                <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="3" y1="3" x2="21" y2="21" stroke="#F87171" /></>
+              ) : (
+                <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="19" x2="12" y2="22" /></>
+              )}
+            </svg>
+            {isMuted ? 'Muted' : 'Mute'}
+          </button>
+        )}
 
         {/* Waveform bars (speaking) */}
         {status === 'speaking' && (
@@ -594,7 +672,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
       {/* Transcript area */}
       {transcript.length > 0 && (
-        <div style={{ borderTop: '1px solid rgba(59,130,246,0.12)', padding: '10px 16px 14px', maxHeight: 130, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ borderTop: '1px solid rgba(59,130,246,0.12)', padding: '10px 16px 14px', maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 }}>
           {transcript.slice(-8).map(entry => (
             <div key={entry.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
               {entry.role === 'system' ? (
@@ -602,10 +680,10 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
                   {entry.text}
                 </span>
               ) : (<>
-                <span style={{ color: entry.role === 'model' ? agentColor : 'rgba(100,130,180,0.7)', fontSize: 9, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0, paddingTop: 2, minWidth: 26 }}>
-                  {entry.role === 'model' ? 'AI' : 'You'}
+                <span style={{ color: (entry.role === 'model' || entry.role === 'model-text') ? agentColor : 'rgba(100,130,180,0.7)', fontSize: 9, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0, paddingTop: 2, minWidth: 26 }}>
+                  {(entry.role === 'model' || entry.role === 'model-text') ? 'REX' : 'YOU'}
                 </span>
-                <span style={{ color: entry.role === 'model' ? 'rgba(210,225,255,0.9)' : 'rgba(150,175,220,0.7)', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>
+                <span style={{ color: (entry.role === 'model' || entry.role === 'model-text') ? 'rgba(210,225,255,0.9)' : 'rgba(150,175,220,0.7)', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>
                   {entry.text}
                 </span>
               </>)}
