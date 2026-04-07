@@ -3,27 +3,25 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, Phone } from 'lucide-react';
 
 /**
- * Shared site navigation component.
+ * SiteNav -- single source of truth for all page navigation.
  *
- * Usage:
- *   <SiteNav />                          // default minimal nav
- *   <SiteNav variant="minimal" />        // same as default
- *   <SiteNav transparent />              // starts transparent, goes solid on scroll
+ * RULE: Every page uses <SiteNav />. No page builds its own nav.
+ * If the nav needs to change, change it HERE and it updates everywhere.
  *
  * Props:
- *   variant   - "minimal" (default). Logo + links + CTA.
- *   transparent - if true, nav starts transparent and becomes solid after 80px scroll
+ *   transparent - if true, nav starts transparent and goes solid on scroll
  */
 
 const NAV_LINKS = [
+  { label: 'Home', href: '/' },
   { label: 'Work', href: '/#work' },
   { label: 'AI', href: '/ai' },
-  { label: 'Book a Call', href: '/book' },
 ];
 
-export default function SiteNav({ variant = 'minimal', transparent = false }) {
+export default function SiteNav({ transparent = false }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   useEffect(() => {
     if (!transparent) return;
@@ -54,12 +52,6 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-4">
-            <a
-              href="/"
-              className="text-base font-body font-bold uppercase tracking-[0.15em] text-[#8A847C] hover:text-[#F0ECE6] transition-colors px-3 py-2"
-            >
-              Home
-            </a>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -69,22 +61,28 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
                 {link.label}
               </a>
             ))}
-            <a
-              href="tel:6023732164"
+            <button
+              onClick={() => setPhoneOpen(true)}
               className="flex items-center gap-2 px-6 py-3 min-h-[44px] bg-white/5 text-[#8A847C] font-body font-bold text-base uppercase tracking-[0.15em] hover:text-[#F0ECE6] border border-white/10 hover:border-white/20 transition-all"
             >
               <Phone size={14} />
               Talk to Us
+            </button>
+            <a
+              href="/book"
+              className="px-8 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all flex items-center"
+            >
+              Start a Brief
             </a>
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile */}
           <div className="flex md:hidden items-center gap-3">
             <a
               href="/book"
               className="px-5 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all"
             >
-              Call
+              Brief
             </a>
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -96,6 +94,64 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
           </div>
         </div>
       </nav>
+
+      {/* Phone directory modal */}
+      <AnimatePresence>
+        {phoneOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setPhoneOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[#0A0A08] border border-white/10 rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-headline font-extrabold uppercase tracking-[0.1em] text-[#F0ECE6]">
+                  Talk to Us
+                </h3>
+                <button
+                  onClick={() => setPhoneOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <a
+                  href="tel:6023732164"
+                  className="flex items-center gap-3 p-4 rounded-lg border border-white/10 bg-white/[0.03] hover:border-[#E85D26]/40 hover:bg-white/[0.06] transition-all group"
+                >
+                  <Phone size={18} className="text-[#E85D26]" />
+                  <div>
+                    <p className="text-sm font-body font-bold text-[#F0ECE6] group-hover:text-[#E85D26] transition-colors">(602) 373-2164</p>
+                    <p className="text-xs text-[#8A847C] mt-0.5">Call or text</p>
+                  </div>
+                </a>
+                <a
+                  href="mailto:hello@aheadofmarket.com"
+                  className="flex items-center gap-3 p-4 rounded-lg border border-white/10 bg-white/[0.03] hover:border-[#E85D26]/40 hover:bg-white/[0.06] transition-all group"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E85D26]">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                  <div>
+                    <p className="text-sm font-body font-bold text-[#F0ECE6] group-hover:text-[#E85D26] transition-colors">hello@aheadofmarket.com</p>
+                    <p className="text-xs text-[#8A847C] mt-0.5">Email us</p>
+                  </div>
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile menu overlay */}
       <AnimatePresence>
@@ -119,12 +175,6 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
               </button>
             </div>
             <nav className="flex-1 flex flex-col items-center justify-center gap-8" aria-label="Mobile navigation">
-              <a
-                href="/"
-                className="text-3xl font-headline font-extrabold uppercase tracking-tight text-[#F0ECE6] hover:text-[#E85D26] transition-colors min-h-[44px] flex items-center"
-              >
-                Home
-              </a>
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.href}
@@ -135,17 +185,17 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
                 </a>
               ))}
               <div className="w-12 h-[1px] bg-white/10 my-4" />
-              <a
-                href="tel:6023732164"
+              <button
+                onClick={() => { setMobileMenuOpen(false); setPhoneOpen(true); }}
                 className="text-lg font-headline font-bold uppercase tracking-widest text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
               >
-                (602) 373-2164
-              </a>
+                Talk to Us
+              </button>
               <a
                 href="/book"
                 className="px-12 py-4 bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/20"
               >
-                Book a Call
+                Start a Brief
               </a>
             </nav>
           </motion.div>
