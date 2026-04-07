@@ -13,7 +13,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, X, MessageSquare, CheckCircle2, AlertTriangle, Zap, Clock, Trash2 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
-import { useToast } from './hooks/useToast.js'
+import { useToast } from './hooks/useToast.jsx'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -180,7 +180,7 @@ function useAgentNotifications() {
     const poll = async () => {
       if (document.hidden) return // Skip when tab not visible
       try {
-        const { getClientId } = await import('../lib/clientConfig.js')
+        const { getClientId } = await import('./lib/clientConfig.js')
         const clientId = getClientId()
         const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
