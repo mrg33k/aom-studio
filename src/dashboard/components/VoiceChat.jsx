@@ -260,6 +260,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       // 5. Connect directly to Gemini Live WebSocket
       addSystemMessage('Connecting to voice...')
       const ws = new WebSocket(sessionConfig.wsUrl)
+      ws.binaryType = 'arraybuffer'
       wsRef.current = ws
 
       // 10s timeout -- if setupComplete never arrives, kill it
@@ -289,7 +290,10 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data)
+          const raw = event.data instanceof ArrayBuffer
+            ? new TextDecoder().decode(event.data)
+            : event.data
+          const msg = JSON.parse(raw)
 
           // Setup complete
           if (msg.setupComplete) {
