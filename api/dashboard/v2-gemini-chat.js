@@ -421,27 +421,8 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         else if (name === 'lookup_context') {
           const query = (args.query || '').trim();
           if (!query) throw new Error('query required');
-          try {
-            const { readFileSync } = await import('fs');
-            const { join, dirname } = await import('path');
-            const { fileURLToPath } = await import('url');
-            const __dirname2 = dirname(fileURLToPath(import.meta.url));
-            const contextIndex = JSON.parse(readFileSync(join(__dirname2, 'context-index.json'), 'utf-8'));
-            const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-            const scored = contextIndex.map(entry => {
-              const searchable = [entry.name||'',entry.path||'',entry.desc||'',entry.section||'',entry.line||'',entry.type||''].join(' ').toLowerCase();
-              let score = 0;
-              for (const term of terms) {
-                if (searchable.includes(term)) score++;
-                if ((entry.name||'').toLowerCase().includes(term)) score += 2;
-              }
-              return { ...entry, score };
-            }).filter(e => e.score > 0);
-            scored.sort((a, b) => b.score - a.score);
-            result = { query, count: Math.min(scored.length, 15), results: scored.slice(0, 15).map(({ score, ...rest }) => rest) };
-          } catch (e) {
-            result = { error: `Context lookup failed: ${e.message}` };
-          }
+          const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
+          result = await ctxResp.json();
         }
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
