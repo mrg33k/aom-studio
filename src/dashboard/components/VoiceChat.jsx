@@ -644,13 +644,14 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         {/* Mic button */}
         <button
           onClick={toggleSession}
+          disabled={status === 'connecting'}
           style={{
             width: 88, height: 88, borderRadius: '50%',
             border: `2px solid ${isActive ? statusColor + 'AA' : 'rgba(100,130,180,0.2)'}`,
             background: isActive
               ? `radial-gradient(circle at 40% 35%, ${statusColor}30 0%, ${statusColor}10 60%, transparent 100%)`
               : 'radial-gradient(circle at 40% 35%, rgba(100,140,220,0.12) 0%, rgba(60,90,160,0.06) 100%)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: status === 'connecting' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)', outline: 'none', position: 'relative',
             boxShadow: isActive
               ? `0 0 0 1px ${statusColor}33, 0 8px 32px ${statusColor}25, inset 0 1px 0 rgba(255,255,255,0.08)`
@@ -666,10 +667,13 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
           {isActive && (
             <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `2px solid ${statusColor}`, opacity: status === 'speaking' ? 0.55 : 0.35, animation: status === 'speaking' ? 'voiceRingInnerFast 0.7s ease-in-out infinite' : 'voiceRingInner 1.8s ease-in-out infinite' }} />
           )}
-          {status === 'connecting' && (
-            <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: '2px solid transparent', borderTopColor: statusColor, animation: 'voiceSpin 0.8s linear infinite' }} />
+          {status === 'connecting' ? (
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={statusColor} strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'voiceSpin 0.8s linear infinite' }}>
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            </svg>
+          ) : (
+            <MicIcon size={34} color={isActive ? statusColor : '#4B6080'} muted={status === 'idle' || status === 'error' || isMuted} />
           )}
-          <MicIcon size={34} color={isActive ? statusColor : '#4B6080'} muted={status === 'idle' || status === 'error' || isMuted} />
         </button>
 
         {/* Mute/Done button (visible when active) */}

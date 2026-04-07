@@ -5,6 +5,7 @@
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
 
 const BASE_INSTRUCTION = `You talk to Patrik directly. You know him. You work with him every day. This is a real voice conversation. Keep it natural and human.
 
@@ -102,6 +103,31 @@ async function getTasks(clientId, limit = 10) {
   } catch { return []; }
 }
 
+async function getAgentTape(slug) {
+  if (!slug) return '';
+  try {
+    const res = await fetch(`${RAG_URL}/agent-tape?slug=${encodeURIComponent(slug)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data?.tape || '';
+  } catch { return ''; }
+}
+
+async function getRecentCompleted(clientId, limit = 5) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/tasks?client_id=eq.${encodeURIComponent(clientId)}&status=eq.done&order=completed_at.desc&limit=${limit}&select=title,qa_score,completed_at,agent_identity`,
+      { headers: supaHeaders() }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : [];
+  } catch { return []; }
+}
+
 async function getAgentStatuses(clientId) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
@@ -129,11 +155,13 @@ export default async function handler(req, res) {
   const clientId = (client_id && String(client_id).trim()) || 'aom';
 
   // Pull live context in parallel
-  const [agentRow, recentMessages, activeTasks, agentStatuses] = await Promise.all([
+  const [agentRow, recentMessages, activeTasks, agentStatuses, tape, recentDone] = await Promise.all([
     getAgentIdentity(agentSlug),
     getRecentMessages(agentSlug, clientId),
     getTasks(clientId),
     getAgentStatuses(clientId),
+    getAgentTape(agentSlug),
+    getRecentCompleted(clientId),
   ]);
 
   // Build system instruction with agent identity + live context
@@ -147,6 +175,11 @@ Voice: ${agentRow.voice_style || 'Natural, human, direct.'}
 ${BASE_INSTRUCTION}`;
   }
 
+  // Inject tape (agent's long-term memory)
+  if (tape) {
+    systemInstruction += `\n\nYOUR TAPE (your recent work log, key decisions, what's in flight -- this is your memory):\n${tape}`;
+  }
+
   // Inject live context
   const contextParts = [];
 
@@ -158,6 +191,11 @@ ${BASE_INSTRUCTION}`;
   if (activeTasks.length > 0) {
     const taskList = activeTasks.map(t => `- [${t.status}] ${t.title}${t.agent ? ` (${t.agent})` : ''}`).join('\n');
     contextParts.push(`ACTIVE TASKS:\n${taskList}`);
+  }
+
+  if (recentDone.length > 0) {
+    const doneList = recentDone.map(t => `- ${t.title} (QA: ${t.qa_score || '?'}/10${t.agent_identity ? ', ' + t.agent_identity : ''}${t.completed_at ? ', ' + t.completed_at.slice(0, 16) : ''})`).join('\n');
+    contextParts.push(`RECENTLY COMPLETED:\n${doneList}`);
   }
 
   if (agentStatuses.length > 0) {
