@@ -20,7 +20,7 @@ function MicIcon({ active, color = 'currentColor' }) {
   )
 }
 
-export default function VoiceToggle({ mode, onChange, disabled, isActive, onToggle, status = 'idle' }) {
+export default function VoiceToggle({ mode, onChange, disabled, isActive, onToggle, status = 'idle', volumeLevel = 0 }) {
   // Button mode: standalone voice chat toggle
   if (onToggle !== undefined || isActive !== undefined) {
     // Derive visual state from status prop (fallback: isActive boolean)
@@ -34,6 +34,14 @@ export default function VoiceToggle({ mode, onChange, disabled, isActive, onTogg
       error:      { color: '#F87171', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(248,113,113,0.35)', shadow: '0 0 10px rgba(239,68,68,0.2)',       anim: 'none',                   label: 'Error' },
     }
     const cfg = stateConfig[vStatus] || stateConfig.idle
+
+    // Volume-reactive styles: override CSS animation with data-driven scale + glow when listening
+    const isVolumeActive = vStatus === 'listening' && volumeLevel > 0.05
+    const volScale = isVolumeActive ? 1 + volumeLevel * 0.06 : 1
+    const volGlowHex = isVolumeActive ? Math.round(volumeLevel * 120).toString(16).padStart(2, '0') : ''
+    const volShadow = isVolumeActive
+      ? `0 0 ${Math.round(volumeLevel * 24)}px ${cfg.color}${volGlowHex}`
+      : cfg.shadow
 
     return (
       <button
@@ -52,12 +60,15 @@ export default function VoiceToggle({ mode, onChange, disabled, isActive, onTogg
           fontFamily: "'Inter', system-ui, sans-serif",
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          transition: 'all 180ms ease',
+          transition: isVolumeActive
+            ? 'box-shadow 60ms linear, transform 60ms linear'
+            : 'all 180ms ease',
           background: cfg.bg,
           color: cfg.color,
           outline: 'none',
-          boxShadow: cfg.shadow,
-          animation: cfg.anim,
+          boxShadow: volShadow,
+          animation: isVolumeActive ? 'none' : cfg.anim,
+          transform: `scale(${volScale})`,
           position: 'relative',
           flexShrink: 0,
         }}

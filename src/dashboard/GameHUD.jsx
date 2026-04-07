@@ -383,6 +383,7 @@ export default function GameHUD({
   const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
+  const [voiceVolume, setVoiceVolume] = useState(0)
   const overflowBtnRef = useRef(null)
   const overflowPanelRef = useRef(null)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
@@ -989,6 +990,7 @@ export default function GameHUD({
               agentColor="#3B9EFF"
               clientId={getClientId()}
               onStatusChange={setVoiceStatus}
+              onVolumeChange={setVoiceVolume}
             />
           </motion.div>
         )}
@@ -1484,6 +1486,7 @@ export default function GameHUD({
           <VoiceToggle
             isActive={voiceOpen}
             status={voiceStatus}
+            volumeLevel={voiceVolume}
             onToggle={() => setVoiceOpen(v => !v)}
           />
         </div>

@@ -80,12 +80,13 @@ function pcmToAudioBuffer(audioCtx, rawBuffer, sampleRate = GEMINI_OUTPUT_RATE) 
 // Default settings
 const DEFAULT_SETTINGS = { voice: 'kore', temperature: 0.8 }
 
-export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange }) {
+export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange }) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
   const [sessionSecs, setSessionSecs] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
+  const [volumeLevel, setVolumeLevel] = useState(0)
   const isMutedRef = useRef(false)
   const sessionIdRef = useRef(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -110,6 +111,9 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   const sessionTimerRef = useRef(null)
   const statusRef = useRef('idle')
   const connectTimeoutRef = useRef(null)
+  const analyserRef = useRef(null)
+  const rafRef = useRef(null)
+  const volumeLevelRef = useRef(0)
 
   const addSystemMessage = useCallback((text) => {
     setTranscript(prev => [...prev, { role: 'system', text, id: Date.now() + Math.random() }])
@@ -203,6 +207,10 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
     playQueueRef.current = []
     isPlayingRef.current = false
     setSessionSecs(0)
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+    analyserRef.current = null
+    volumeLevelRef.current = 0
+    setVolumeLevel(0)
     updateStatus('idle')
   }, [updateStatus])
 
@@ -254,6 +262,30 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       // 4. Set up mic capture
       const sourceNode = audioCtx.createMediaStreamSource(stream)
       sourceNodeRef.current = sourceNode
+
+      // Volume level detection via AnalyserNode (runs in parallel with PCM capture)
+      const analyserNode = audioCtx.createAnalyser()
+      analyserNode.fftSize = 256
+      analyserNode.smoothingTimeConstant = 0.6
+      analyserRef.current = analyserNode
+      sourceNode.connect(analyserNode)
+      const freqData = new Uint8Array(analyserNode.frequencyBinCount)
+      const measureVol = () => {
+        if (!analyserRef.current) return
+        analyserRef.current.getByteFrequencyData(freqData)
+        let sum = 0
+        for (let i = 0; i < freqData.length; i++) sum += freqData[i]
+        const normalized = Math.min(1, (sum / freqData.length) / 75)
+        const rounded = Math.round(normalized * 100) / 100
+        if (rounded !== volumeLevelRef.current) {
+          volumeLevelRef.current = rounded
+          setVolumeLevel(rounded)
+          onVolumeChange?.(rounded)
+        }
+        rafRef.current = requestAnimationFrame(measureVol)
+      }
+      rafRef.current = requestAnimationFrame(measureVol)
+
       let captureReady = false
 
       try {
@@ -567,6 +599,17 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   const statusColor = { idle: '#4B5563', connecting: '#F59E0B', listening: '#60A5FA', speaking: '#34D399', error: '#F87171' }[status] || agentColor
   const statusLabel = { idle: 'Tap to speak', connecting: 'Connecting', listening: 'Listening', speaking: 'Responding', error: 'Error' }[status] || status
 
+  // Volume-reactive button animation (only when listening)
+  const isListening = status === 'listening'
+  const volumeScale = isListening ? 1 + volumeLevel * 0.12 : 1
+  const volGlowOpacity = isListening && volumeLevel > 0.05 ? Math.round(volumeLevel * 120).toString(16).padStart(2, '0') : ''
+  const volGlowSize = isListening ? Math.round(volumeLevel * 48) : 0
+  const micButtonShadow = isActive
+    ? (volGlowOpacity
+        ? `0 0 ${volGlowSize}px ${statusColor}${volGlowOpacity}, 0 0 0 1px ${statusColor}33, 0 8px 32px ${statusColor}25, inset 0 1px 0 rgba(255,255,255,0.08)`
+        : `0 0 0 1px ${statusColor}33, 0 8px 32px ${statusColor}25, inset 0 1px 0 rgba(255,255,255,0.08)`)
+    : '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)'
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
@@ -673,10 +716,12 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
               ? `radial-gradient(circle at 40% 35%, ${statusColor}30 0%, ${statusColor}10 60%, transparent 100%)`
               : 'radial-gradient(circle at 40% 35%, rgba(100,140,220,0.12) 0%, rgba(60,90,160,0.06) 100%)',
             cursor: status === 'connecting' ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)', outline: 'none', position: 'relative',
-            boxShadow: isActive
-              ? `0 0 0 1px ${statusColor}33, 0 8px 32px ${statusColor}25, inset 0 1px 0 rgba(255,255,255,0.08)`
-              : '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+            transition: isListening
+              ? 'border 180ms ease, background 180ms ease, box-shadow 60ms linear, transform 60ms linear'
+              : 'all 220ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+            outline: 'none', position: 'relative',
+            transform: `scale(${volumeScale})`,
+            boxShadow: micButtonShadow,
           }}
         >
           {(status === 'listening' || status === 'speaking') && (

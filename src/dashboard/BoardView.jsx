@@ -570,7 +570,7 @@ function ReadReceipt({ status }) {
 
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
-function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent, isVoiceActive, voiceStatus = 'idle', onVoiceToggle }) {
+function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent, isVoiceActive, voiceStatus = 'idle', voiceVolume = 0, onVoiceToggle }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -935,7 +935,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         />
         {/* Voice toggle */}
         <div onClick={e => e.stopPropagation()}>
-          <VoiceToggle isActive={isVoiceActive} status={voiceStatus} onToggle={onVoiceToggle} />
+          <VoiceToggle isActive={isVoiceActive} status={voiceStatus} volumeLevel={voiceVolume} onToggle={onVoiceToggle} />
         </div>
         {/* Send button */}
         <button
@@ -1495,7 +1495,7 @@ function AddColumnButton({ allItems, visibleSlugs, onToggle }) {
 
 // ── AGENT COLUMN ─────────────────────────────────────────────────────────────
 
-function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent, isVoiceActive, voiceStatus = 'idle', onVoiceToggle }) {
+function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent, isVoiceActive, voiceStatus = 'idle', voiceVolume = 0, onVoiceToggle }) {
   const chat = useColumnChat(agent.slug, true)
   const navigate = useNavigate()
   const color = agent.color || getAgentColor(agent.slug)
@@ -1626,7 +1626,7 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <ColTabBar tabs={['chat', 'files', 'tasks', 'info']} active={tab} onChange={setTab} />
 
       {/* Tab content */}
-      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} isVoiceActive={isVoiceActive} voiceStatus={voiceStatus} onVoiceToggle={onVoiceToggle} />}
+      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} isVoiceActive={isVoiceActive} voiceStatus={voiceStatus} voiceVolume={voiceVolume} onVoiceToggle={onVoiceToggle} />}
       {tab === 'tasks' && <TaskList tasks={tasks} onContextMenu={onContextMenu} />}
       {tab === 'info' && <InfoPanel slug={agent.slug} isAgent />}
       {tab === 'files' && <FilesTab agentSlug={agent.slug} clientId={getClientId()} />}
@@ -1962,11 +1962,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   // Voice chat panel visibility + status
   const [isVoiceChatActive, setIsVoiceChatActive] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
+  const [voiceVolume, setVoiceVolume] = useState(0)
   const handleVoiceChatToggle = () => setIsVoiceChatActive(prev => !prev)
 
   // Reset voice status when panel closes
   useEffect(() => {
-    if (!isVoiceChatActive) setVoiceStatus('idle')
+    if (!isVoiceChatActive) { setVoiceStatus('idle'); setVoiceVolume(0) }
   }, [isVoiceChatActive])
 
   // Context menu (tasks)
@@ -2403,6 +2404,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                     onSendToAgent={handleSendToAgent}
                     isVoiceActive={isVoiceChatActive}
                     voiceStatus={voiceStatus}
+                    voiceVolume={voiceVolume}
                     onVoiceToggle={handleVoiceChatToggle}
                   />
                 ) : (
@@ -2490,7 +2492,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             {/* Active column */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               {activeMobileItem?.isAgent ? (
-                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} isVoiceActive={isVoiceChatActive} voiceStatus={voiceStatus} onVoiceToggle={handleVoiceChatToggle} />
+                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} isVoiceActive={isVoiceChatActive} voiceStatus={voiceStatus} voiceVolume={voiceVolume} onVoiceToggle={handleVoiceChatToggle} />
               ) : activeMobileItem ? (
                 <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} onHeaderContextMenu={setHeaderCtx} />
               ) : (
@@ -2581,6 +2583,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             agentColor="#60A5FA"
             clientId={getClientId()}
             onStatusChange={setVoiceStatus}
+            onVolumeChange={setVoiceVolume}
           />
         </div>
       )}
