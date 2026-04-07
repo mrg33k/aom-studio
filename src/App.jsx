@@ -737,7 +737,8 @@ export default function App() {
               <a href="/case-study" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</a>
               <a href="/ai" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">AI</a>
               <a href="/book" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Book a Call</a>
-              <a href="tel:6023732164" className="flex items-center gap-2 px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-base uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</a>
+              <button onClick={openPhone} className="flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-base uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
+              <button onClick={() => openBrief()} className="px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
             </nav>
             {/* Mobile nav */}
             <div className="flex md:hidden gap-3 items-center pointer-events-auto">
@@ -760,7 +761,8 @@ export default function App() {
                   <a href="/ai" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">AI</a>
                   <a href="/book" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Book a Call</a>
                   <div className="w-12 h-[1px] bg-white/10 my-4" />
-                  <a href="tel:6023732164" className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">(602) 373-2164</a>
+                  <button onClick={() => { setMobileMenuOpen(false); openPhone(); }} className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">Talk to Us</button>
+                  <button onClick={() => { setMobileMenuOpen(false); openBrief(); }} className="px-12 py-4 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-aom-orange-hover transition-all shadow-lg shadow-aom-orange/20">Start a Brief</button>
                 </nav>
               </motion.div>
             )}
@@ -899,11 +901,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* 9. AI / DIGITAL (dark) */}
-          <AITeaser />
-
-          {/* 9.5. SKILLS SHOWCASE (dark, "WTF" moment) */}
-          <SkillsShowcase />
+          {/* AI content lives on /ai now */}
 
           {/* Pattern strip */}
           <PatternStrip variant="dots" />
