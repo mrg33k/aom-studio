@@ -1997,6 +1997,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     return [...ordered, ...missing]
   }, [allItems, visibleSlugs, colOrder])
 
+  // True when any item (across all agents/projects) has a live or queued task
+  const hasActiveTasks = useMemo(() =>
+    allItems.some(item => item.tasks.some(t => t._source === 'rightNow' || t._source === 'todo'))
+  , [allItems])
+
   // Unread counts per agent (merge poll-based inboxItems + Realtime unreadAgents)
   const unreadMap = useMemo(() => {
     const m = {}
@@ -2348,32 +2353,42 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                 <div style={{ fontSize: 11, opacity: 0.5 }}>Your view saves automatically</div>
               </div>
             )}
-            {orderedVisibleItems.map(item => (
-              item.isAgent ? (
-                <AgentColumn
-                  key={item.slug} agent={item} tasks={item.tasks} isMobile={false}
-                  onContextMenu={handleContextMenu}
-                  onClose={() => toggleSlug(item.slug)}
-                  onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
-                  isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
-                  onHeaderContextMenu={setHeaderCtx}
-                  allAgents={allItems.filter(it => it.isAgent)}
-                  onSendToAgent={handleSendToAgent}
-                  isVoiceActive={isVoiceChatActive}
-                  voiceStatus={voiceStatus}
-                  onVoiceToggle={handleVoiceChatToggle}
-                />
-              ) : (
-                <ProjectColumn
-                  key={item.slug} project={item} tasks={item.tasks} isMobile={false}
-                  onContextMenu={handleContextMenu} onAddTask={handleAddTask}
-                  onClose={() => toggleSlug(item.slug)}
-                  onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
-                  isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
-                  onHeaderContextMenu={setHeaderCtx}
-                />
-              )
-            ))}
+            {orderedVisibleItems.length > 0 && !hasActiveTasks ? (
+              <div style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                textAlign: 'center', color: '#888', padding: '40px 20px', fontSize: '1.2em',
+                boxSizing: 'border-box', width: '100%',
+              }}>
+                No tasks in queue.
+              </div>
+            ) : (
+              orderedVisibleItems.map(item => (
+                item.isAgent ? (
+                  <AgentColumn
+                    key={item.slug} agent={item} tasks={item.tasks} isMobile={false}
+                    onContextMenu={handleContextMenu}
+                    onClose={() => toggleSlug(item.slug)}
+                    onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
+                    isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
+                    onHeaderContextMenu={setHeaderCtx}
+                    allAgents={allItems.filter(it => it.isAgent)}
+                    onSendToAgent={handleSendToAgent}
+                    isVoiceActive={isVoiceChatActive}
+                    voiceStatus={voiceStatus}
+                    onVoiceToggle={handleVoiceChatToggle}
+                  />
+                ) : (
+                  <ProjectColumn
+                    key={item.slug} project={item} tasks={item.tasks} isMobile={false}
+                    onContextMenu={handleContextMenu} onAddTask={handleAddTask}
+                    onClose={() => toggleSlug(item.slug)}
+                    onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
+                    isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
+                    onHeaderContextMenu={setHeaderCtx}
+                  />
+                )
+              ))
+            )}
             {/* Add column button */}
             <AddColumnButton allItems={allItems} visibleSlugs={visibleSlugs} onToggle={toggleSlug} />
           </div>
