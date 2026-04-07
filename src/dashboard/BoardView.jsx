@@ -575,6 +575,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
   const isUserScrolledUp = useRef(false)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
   const color = agentColor || getAgentColor(agentSlug)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role }
   const [pendingFiles, setPendingFiles] = useState([])
@@ -587,18 +588,26 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   const isStreaming = chat.messages.some(m => m.streaming)
 
   // Smart scroll: auto-scroll unless user scrolled up
-  const scrollToBottom = useCallback(() => {
-    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
+  const scrollToBottom = useCallback((smooth = false) => {
+    if (ref.current) ref.current.scrollTo({ top: ref.current.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
   }, [])
 
+  // Scroll to bottom on initial mount
   useEffect(() => {
-    if (!isUserScrolledUp.current) scrollToBottom()
+    scrollToBottom(false)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Smooth auto-scroll on new messages if user is at bottom
+  useEffect(() => {
+    if (!isUserScrolledUp.current) scrollToBottom(true)
   }, [chat.messages.length, scrollToBottom])
 
   const handleScroll = useCallback(() => {
     if (!ref.current) return
     const { scrollTop, scrollHeight, clientHeight } = ref.current
-    isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 80
+    const scrolledUp = scrollHeight - scrollTop - clientHeight > 80
+    isUserScrolledUp.current = scrolledUp
+    setShowScrollBtn(scrolledUp)
   }, [])
 
   const doSend = async () => {
@@ -648,7 +657,8 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       chat.setInput('')
       if (inputRef.current) { inputRef.current.style.height = 'auto' }
       isUserScrolledUp.current = false
-      setTimeout(scrollToBottom, 50)
+      setShowScrollBtn(false)
+      setTimeout(() => scrollToBottom(true), 50)
     }
   }
 
@@ -819,9 +829,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       )}
 
       {/* Scroll to bottom button -- appears when user scrolls up */}
-      {isUserScrolledUp.current && (
+      {showScrollBtn && (
         <button
-          onClick={() => { isUserScrolledUp.current = false; scrollToBottom() }}
+          onClick={() => { isUserScrolledUp.current = false; setShowScrollBtn(false); scrollToBottom(true) }}
           style={{
             position: 'absolute', bottom: 56, right: 16, zIndex: 5,
             width: 28, height: 28, borderRadius: '50%',
