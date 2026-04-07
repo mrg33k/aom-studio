@@ -32,17 +32,62 @@ const VOICES = {
   zephyr: 'Zephyr',
 };
 
+const supaHeaders = () => ({
+  apikey: SUPABASE_KEY,
+  Authorization: `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+});
+
 async function getAgentIdentity(slug) {
   if (!slug || !SUPABASE_URL || !SUPABASE_KEY) return null;
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/agents?slug=eq.${encodeURIComponent(slug)}&limit=1&select=display_name,description,personality,voice_style`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      { headers: supaHeaders() }
     );
     if (!res.ok) return null;
     const rows = await res.json();
     return Array.isArray(rows) ? rows[0] : null;
   } catch { return null; }
+}
+
+async function getRecentMessages(agentSlug, clientId, limit = 15) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&client_id=eq.${encodeURIComponent(clientId)}&order=created_at.desc&limit=${limit}&select=role,content,created_at`,
+      { headers: supaHeaders() }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.reverse() : [];
+  } catch { return []; }
+}
+
+async function getTasks(clientId, limit = 10) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/tasks?client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=${limit}&select=title,status,agent,created_at`,
+      { headers: supaHeaders() }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : [];
+  } catch { return []; }
+}
+
+async function getAgentStatuses(clientId) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/agent_status?client_id=eq.${encodeURIComponent(clientId)}&select=agent_slug,status,current_task,updated_at`,
+      { headers: supaHeaders() }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : [];
+  } catch { return []; }
 }
 
 export default async function handler(req, res) {
@@ -56,9 +101,18 @@ export default async function handler(req, res) {
   const { agent, client_id, voice, temperature, model } = req.body || {};
   const agentSlug = (agent && String(agent).trim()) || 'rex';
 
-  // Build system instruction with agent identity
+  const clientId = (client_id && String(client_id).trim()) || 'aom';
+
+  // Pull live context in parallel
+  const [agentRow, recentMessages, activeTasks, agentStatuses] = await Promise.all([
+    getAgentIdentity(agentSlug),
+    getRecentMessages(agentSlug, clientId),
+    getTasks(clientId),
+    getAgentStatuses(clientId),
+  ]);
+
+  // Build system instruction with agent identity + live context
   let systemInstruction = BASE_INSTRUCTION;
-  const agentRow = await getAgentIdentity(agentSlug);
   if (agentRow) {
     systemInstruction = `You are ${agentRow.display_name}. ${agentRow.description || ''}
 
@@ -66,6 +120,31 @@ Personality: ${agentRow.personality || 'Direct, real, gets things done.'}
 Voice: ${agentRow.voice_style || 'Natural, human, direct.'}
 
 ${BASE_INSTRUCTION}`;
+  }
+
+  // Inject live context
+  const contextParts = [];
+
+  if (recentMessages.length > 0) {
+    const chatLog = recentMessages.map(m => `${m.role}: ${m.content}`).join('\n');
+    contextParts.push(`RECENT CONVERSATION (most recent messages with Patrik):\n${chatLog}`);
+  }
+
+  if (activeTasks.length > 0) {
+    const taskList = activeTasks.map(t => `- [${t.status}] ${t.title}${t.agent ? ` (${t.agent})` : ''}`).join('\n');
+    contextParts.push(`ACTIVE TASKS:\n${taskList}`);
+  }
+
+  if (agentStatuses.length > 0) {
+    const statusList = agentStatuses.map(s => `- ${s.agent_slug}: ${s.status}${s.current_task ? ` -- ${s.current_task}` : ''}`).join('\n');
+    contextParts.push(`AGENT STATUS (who's doing what right now):\n${statusList}`);
+  }
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  contextParts.push(`TODAY: ${today}`);
+
+  if (contextParts.length > 0) {
+    systemInstruction += `\n\nLIVE CONTEXT (use this to answer questions about what's happening):\n\n${contextParts.join('\n\n')}`;
   }
 
   // Voice selection (default: Kore for a clear, professional voice)
