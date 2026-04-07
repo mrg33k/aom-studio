@@ -777,25 +777,28 @@ const SlideWork = () => {
 // SLIDE 4: SERVICES
 // ============================================================
 
-const SlideServices = () => {
+const SlideServices = ({ goToSlide }) => {
   const cards = [
     {
       icon: HardHat,
       title: 'Construction Companies',
       body: 'Social content from the work you actually do. Monthly filming, editing, and posting that fills your pipeline.',
       cta: 'See Construction Work',
+      target: 4,
     },
     {
       icon: Film,
       title: 'Brands + Corporate',
       body: 'Video and content that tells your story and closes deals. Launch films, event recaps, recruiting assets.',
       cta: 'See the Work',
+      target: 2,
     },
     {
       icon: Code2,
       title: 'Digital + Systems',
       body: 'Websites, workflows, and the AI systems that make it all run. Built fast, built right.',
       cta: 'Learn More',
+      target: 5,
     },
   ]
 
@@ -819,14 +822,17 @@ const SlideServices = () => {
             const Icon = card.icon
             return (
               <motion.div key={card.title} {...stagger(i, 0.25, 0.12)}>
-                <div className="bg-white/[0.03] border border-white/[0.08] hover:border-[#E85D26]/30 hover:bg-white/[0.05] transition-all duration-200 p-8 md:p-10 h-full flex flex-col group">
+                <button
+                  onClick={() => goToSlide(card.target)}
+                  className="bg-white/[0.03] border border-white/[0.08] hover:border-[#E85D26]/30 hover:bg-white/[0.05] transition-all duration-200 p-8 md:p-10 h-full flex flex-col group text-left cursor-pointer w-full"
+                >
                   <Icon size={32} strokeWidth={2} className="text-[#E85D26] mb-6" />
                   <h3 className="font-body text-xl font-semibold text-[#F0ECE6] mb-3">{card.title}</h3>
                   <p className="font-body text-base text-[#8A847C] leading-relaxed mb-6 flex-1">{card.body}</p>
                   <span className="font-body text-base font-semibold uppercase tracking-[0.05em] text-[#E85D26] flex items-center gap-2 group-hover:gap-3 transition-all">
                     {card.cta} <ArrowRight size={16} />
                   </span>
-                </div>
+                </button>
               </motion.div>
             )
           })}
