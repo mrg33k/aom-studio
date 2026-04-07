@@ -218,13 +218,12 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         workletNodeRef.current = workletNode
         workletNode.port.onmessage = (e) => {
           if (e.data?.type === 'pcm' && wsRef.current?.readyState === WebSocket.OPEN) {
-            // Send audio in Gemini Live format
             wsRef.current.send(JSON.stringify({
               realtimeInput: {
-                mediaChunks: [{
-                  mimeType: 'audio/pcm;rate=16000',
+                audio: {
                   data: toBase64(e.data.chunk),
-                }],
+                  mimeType: 'audio/pcm',
+                },
               },
             }))
           }
@@ -247,10 +246,10 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
           }
           wsRef.current.send(JSON.stringify({
             realtimeInput: {
-              mediaChunks: [{
-                mimeType: 'audio/pcm;rate=16000',
+              audio: {
                 data: toBase64(int16.buffer),
-              }],
+                mimeType: 'audio/pcm',
+              },
             },
           }))
         }
