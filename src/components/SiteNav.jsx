@@ -18,7 +18,7 @@ const NAV_LINKS = [
   { label: 'AI', href: '/ai' },
 ];
 
-export default function SiteNav({ transparent = false }) {
+export default function SiteNav({ transparent = false, onBrief }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
@@ -68,22 +68,40 @@ export default function SiteNav({ transparent = false }) {
               <Phone size={14} />
               Talk to Us
             </button>
-            <a
-              href="/book"
-              className="px-8 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all flex items-center"
-            >
-              Start a Brief
-            </a>
+            {onBrief ? (
+              <button
+                onClick={onBrief}
+                className="px-8 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all flex items-center"
+              >
+                Start a Brief
+              </button>
+            ) : (
+              <a
+                href="/book"
+                className="px-8 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all flex items-center"
+              >
+                Start a Brief
+              </a>
+            )}
           </div>
 
           {/* Mobile */}
           <div className="flex md:hidden items-center gap-3">
-            <a
-              href="/book"
-              className="px-5 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all"
-            >
-              Brief
-            </a>
+            {onBrief ? (
+              <button
+                onClick={onBrief}
+                className="px-5 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all"
+              >
+                Brief
+              </button>
+            ) : (
+              <a
+                href="/book"
+                className="px-5 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all"
+              >
+                Brief
+              </a>
+            )}
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="w-11 h-11 flex items-center justify-center bg-white/5 border border-white/10 text-[#F0ECE6]"
@@ -191,12 +209,21 @@ export default function SiteNav({ transparent = false }) {
               >
                 Talk to Us
               </button>
-              <a
-                href="/book"
-                className="px-12 py-4 bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/20"
-              >
-                Start a Brief
-              </a>
+              {onBrief ? (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onBrief(); }}
+                  className="px-12 py-4 bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/20"
+                >
+                  Start a Brief
+                </button>
+              ) : (
+                <a
+                  href="/book"
+                  className="px-12 py-4 bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/20"
+                >
+                  Start a Brief
+                </a>
+              )}
             </nav>
           </motion.div>
         )}

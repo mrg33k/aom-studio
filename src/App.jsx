@@ -718,7 +718,7 @@ export default function App() {
           </AnimatePresence>
 
           {/* --- NAV: Use shared SiteNav --- */}
-          <SiteNav transparent />
+          <SiteNav transparent onBrief={() => openBrief()} />
 
           {/* === SECTION ORDER: Hook > Prove > Show > Explain > Convert === */}
 
