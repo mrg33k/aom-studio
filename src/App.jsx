@@ -14,9 +14,8 @@ import {
 import HeroSection from './components/HeroSection';
 import ServicesGrid from './components/ServicesGrid';
 import ConstructionCallout from './components/ConstructionCallout';
-import AITeaser from './components/AITeaser';
 import BrandsCallout from './components/BrandsCallout';
-import SkillsShowcase from './components/SkillsShowcase';
+import SiteNav from './components/SiteNav';
 
 // --- FIREBASE & STORAGE CONFIG ---
 import { initializeApp } from 'firebase/app';
@@ -564,11 +563,9 @@ export default function App() {
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingBudget, setPendingBudget] = useState(null);
-  const [navSolid, setNavSolid] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const playerFrameRef = useRef(null);
 
-  const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen || mobileMenuOpen;
+  const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen;
 
   // SESSION-BASED RANDOMIZATION
   const shuffledData = useMemo(() => {
@@ -628,15 +625,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Nav scroll listener
-  useEffect(() => {
-    if (!isInitialized) return;
-    const main = document.querySelector('main');
-    if (!main) return;
-    const handleScroll = () => setNavSolid(main.scrollTop > 80);
-    main.addEventListener('scroll', handleScroll, { passive: true });
-    return () => main.removeEventListener('scroll', handleScroll);
-  }, [isInitialized]);
 
   const videoTotal = useMemo(() => Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0), []);
 
@@ -729,44 +717,8 @@ export default function App() {
             {isPhoneModalOpen && <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />}
           </AnimatePresence>
 
-          {/* --- NAV: Transparent on hero, solid dark on scroll --- */}
-          <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
-            <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto inline-flex items-center min-h-[44px] min-w-[44px]">AOM<span className="text-aom-orange">.</span></a>
-            {/* Desktop nav */}
-            <nav className="hidden md:flex gap-4 items-center pointer-events-auto" aria-label="Main navigation">
-              <a href="/case-study" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</a>
-              <a href="/ai" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">AI</a>
-              <a href="/book" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Book a Call</a>
-              <button onClick={openPhone} className="flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-base uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
-              <button onClick={() => openBrief()} className="px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
-            </nav>
-            {/* Mobile nav */}
-            <div className="flex md:hidden gap-3 items-center pointer-events-auto">
-              <button onClick={() => openBrief()} className="px-5 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all">Brief</button>
-              <button onClick={() => setMobileMenuOpen(true)} className="w-11 h-11 flex items-center justify-center bg-white/5 border border-white/10 text-aom-text-light" aria-label="Open menu"><Menu size={20} /></button>
-            </div>
-          </header>
-
-          {/* --- MOBILE MENU OVERLAY --- */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] bg-aom-night/98 backdrop-blur-xl flex flex-col">
-                <div className="flex justify-between items-center px-6 py-4">
-                  <span className="text-2xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light">AOM<span className="text-aom-orange">.</span></span>
-                  <button onClick={() => setMobileMenuOpen(false)} className="w-11 h-11 flex items-center justify-center text-aom-text-light" aria-label="Close menu"><X size={24} /></button>
-                </div>
-                <nav className="flex-1 flex flex-col items-center justify-center gap-8" aria-label="Mobile navigation">
-                  <a href="/" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Home</a>
-                  <a href="/case-study" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Work</a>
-                  <a href="/ai" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">AI</a>
-                  <a href="/book" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Book a Call</a>
-                  <div className="w-12 h-[1px] bg-white/10 my-4" />
-                  <button onClick={() => { setMobileMenuOpen(false); openPhone(); }} className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">Talk to Us</button>
-                  <button onClick={() => { setMobileMenuOpen(false); openBrief(); }} className="px-12 py-4 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-aom-orange-hover transition-all shadow-lg shadow-aom-orange/20">Start a Brief</button>
-                </nav>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* --- NAV: Use shared SiteNav --- */}
+          <SiteNav transparent />
 
           {/* === SECTION ORDER: Hook > Prove > Show > Explain > Convert === */}
 
