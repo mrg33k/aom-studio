@@ -16,10 +16,8 @@ import { Menu, X, Phone } from 'lucide-react';
  */
 
 const NAV_LINKS = [
-  { label: 'The System', href: '/system' },
-  { label: 'Skills', href: '/skills' },
-  { label: 'Briefs', href: '/briefs' },
-  { label: 'Book', href: '/book' },
+  { label: 'Work', href: '/case-study' },
+  { label: 'Book a Call', href: '/book' },
 ];
 
 export default function SiteNav({ variant = 'minimal', transparent = false }) {
@@ -55,6 +53,12 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-4">
+            <a
+              href="/"
+              className="text-base font-body font-bold uppercase tracking-[0.15em] text-[#8A847C] hover:text-[#F0ECE6] transition-colors px-3 py-2"
+            >
+              Home
+            </a>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -79,7 +83,7 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
               href="/book"
               className="px-5 py-3 min-h-[44px] bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-[#D14E1C] shadow-lg shadow-[#E85D26]/20 transition-all"
             >
-              Book
+              Call
             </a>
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -140,7 +144,7 @@ export default function SiteNav({ variant = 'minimal', transparent = false }) {
                 href="/book"
                 className="px-12 py-4 bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/20"
               >
-                Book an Audit
+                Book a Call
               </a>
             </nav>
           </motion.div>
