@@ -555,7 +555,7 @@ function ReadReceipt({ status }) {
 
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
-function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent }) {
+function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent, isVoiceActive, onVoiceToggle }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -1619,7 +1619,7 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <ColTabBar tabs={['chat', 'files', 'tasks', 'info']} active={tab} onChange={setTab} />
 
       {/* Tab content */}
-      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} />}
+      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} isVoiceActive={isVoiceActive} onVoiceToggle={onVoiceToggle} />}
       {tab === 'tasks' && <TaskList tasks={tasks} onContextMenu={onContextMenu} />}
       {tab === 'info' && <InfoPanel slug={agent.slug} isAgent />}
       {tab === 'files' && <FilesTab agentSlug={agent.slug} clientId={getClientId()} />}
