@@ -734,12 +734,10 @@ export default function App() {
             <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto inline-flex items-center min-h-[44px] min-w-[44px]">AOM<span className="text-aom-orange">.</span></a>
             {/* Desktop nav */}
             <nav className="hidden md:flex gap-4 items-center pointer-events-auto" aria-label="Main navigation">
-              <button onClick={() => scrollToSection('work')} className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</button>
-              <button onClick={() => scrollToSection('packages')} className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Services</button>
-              <a href="/system" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">The System</a>
-              <a href="/skills" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Skills</a>
-              <button onClick={openPhone} className="flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-base uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
-              <button onClick={() => openBrief()} className="px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
+              <a href="/case-study" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</a>
+              <a href="/ai" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">AI</a>
+              <a href="/book" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Book a Call</a>
+              <a href="tel:6023732164" className="flex items-center gap-2 px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-base uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</a>
             </nav>
             {/* Mobile nav */}
             <div className="flex md:hidden gap-3 items-center pointer-events-auto">
@@ -757,28 +755,12 @@ export default function App() {
                   <button onClick={() => setMobileMenuOpen(false)} className="w-11 h-11 flex items-center justify-center text-aom-text-light" aria-label="Close menu"><X size={24} /></button>
                 </div>
                 <nav className="flex-1 flex flex-col items-center justify-center gap-8" aria-label="Mobile navigation">
-                  {[
-                    { label: 'Work', target: 'work' },
-                    { label: 'Construction', target: 'construction' },
-                    { label: 'Brands', target: 'brands' },
-                    { label: 'Services', target: 'packages' },
-                    { label: 'The System', target: 'system', href: '/system' },
-                    { label: 'Skills', target: 'skills', href: '/skills' },
-                    { label: 'Digital', target: 'digital' },
-                  ].map(item => (
-                    item.href ? (
-                      <a key={item.target} href={item.href} className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors">
-                        {item.label}
-                      </a>
-                    ) : (
-                      <button key={item.target} onClick={() => scrollToSection(item.target)} className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors">
-                        {item.label}
-                      </button>
-                    )
-                  ))}
+                  <a href="/" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Home</a>
+                  <a href="/case-study" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Work</a>
+                  <a href="/ai" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">AI</a>
+                  <a href="/book" className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center">Book a Call</a>
                   <div className="w-12 h-[1px] bg-white/10 my-4" />
-                  <button onClick={() => { setMobileMenuOpen(false); openPhone(); }} className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">Talk to Us</button>
-                  <button onClick={() => { setMobileMenuOpen(false); openBrief(); }} className="px-12 py-4 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-aom-orange-hover transition-all shadow-lg shadow-aom-orange/20">Start a Brief</button>
+                  <a href="tel:6023732164" className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">(602) 373-2164</a>
                 </nav>
               </motion.div>
             )}
