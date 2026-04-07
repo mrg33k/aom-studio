@@ -681,17 +681,7 @@ export default function App() {
 
   const scrollToSection = (id) => {
     setMobileMenuOpen(false);
-    const el = document.getElementById(id);
-    const main = document.querySelector('main');
-    if (el && main) {
-      let top = 0;
-      let node = el;
-      while (node && node !== main) {
-        top += node.offsetTop;
-        node = node.offsetParent;
-      }
-      main.scrollTo({ top, behavior: 'smooth' });
-    }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -712,7 +702,7 @@ export default function App() {
       </AnimatePresence>
 
       {isInitialized && (
-        <main className={`pb-24 text-left h-screen overflow-y-auto scroll-smooth hide-scrollbar ${isModalOpen ? 'snap-none overflow-hidden' : ''}`}>
+        <main className={`pb-24 text-left scroll-smooth ${isModalOpen ? 'overflow-hidden' : ''}`}>
           <TextureOverlay />
           <AnimatePresence>
             {isPhoneModalOpen && <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />}

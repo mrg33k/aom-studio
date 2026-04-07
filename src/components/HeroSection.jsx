@@ -37,7 +37,7 @@ const pathways = [
     hook: 'Video and content that tells your story and closes deals.',
     cta: 'See the production work',
     accent: 'orange',
-    scrollTo: 'brands',
+    href: '#brands',
   },
   {
     icon: Building2,
@@ -45,7 +45,7 @@ const pathways = [
     hook: 'Social content from the work you actually do.',
     cta: 'See the construction work',
     accent: 'orange',
-    scrollTo: 'construction',
+    href: '#construction',
   },
   {
     icon: Cpu,
@@ -57,7 +57,7 @@ const pathways = [
   },
 ]
 
-export default function HeroSection({ openBrief, scrollToSection }) {
+export default function HeroSection({ openBrief }) {
   const [playlist] = useState(() => shufflePick(GUMLET_IDS, 5))
   const [activeIdx, setActiveIdx] = useState(0)
   const [visible, setVisible] = useState(true)
@@ -194,12 +194,12 @@ export default function HeroSection({ openBrief, scrollToSection }) {
           >
             Let's Talk <ArrowRight size={16} />
           </button>
-          <button
-            onClick={() => scrollToSection('work')}
-            className="border-2 border-white/20 text-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-white hover:text-aom-black transition-all text-base"
+          <a
+            href="#work"
+            className="border-2 border-white/20 text-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-white hover:text-aom-black transition-all text-base no-underline"
           >
             See the Work
-          </button>
+          </a>
         </motion.div>
 
         {/* Bottom status bar */}
@@ -234,10 +234,10 @@ export default function HeroSection({ openBrief, scrollToSection }) {
             const Icon = p.icon
             const borderColor = p.accent === 'sage' ? 'border-t-aom-sage' : 'border-t-aom-orange'
             return (
-              <button
+              <a
                 key={p.title}
-                onClick={() => p.scrollTo ? scrollToSection(p.scrollTo) : (window.location.href = p.href)}
-                className={`p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor} text-left`}
+                href={p.href}
+                className={`block p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor} text-left no-underline`}
               >
                 <Icon size={24} className={p.accent === 'sage' ? 'text-aom-sage mb-3' : 'text-aom-orange mb-3'} />
                 <p className="font-headline text-base font-bold text-aom-text-light mb-1">{p.title}</p>
@@ -245,7 +245,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
                 <span className={`text-base font-bold flex items-center gap-1 font-body ${p.accent === 'sage' ? 'text-aom-sage' : 'text-aom-orange'}`}>
                   {p.cta} <ArrowRight size={14} />
                 </span>
-              </button>
+              </a>
             )
           })}
         </motion.div>
