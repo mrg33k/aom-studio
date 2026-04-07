@@ -72,7 +72,7 @@ ${BASE_INSTRUCTION}`;
   const voiceName = VOICES[(voice || '').toLowerCase()] || 'Kore';
 
   // Model selection
-  const modelId = model || 'gemini-2.0-flash-live-001';
+  const modelId = model || 'gemini-2.5-flash-preview-native-audio-dialog';
 
   // Temperature (0.0 - 2.0, default 0.8 for natural conversation)
   const temp = Math.min(2.0, Math.max(0.0, parseFloat(temperature) || 0.8));
@@ -109,6 +109,6 @@ ${BASE_INSTRUCTION}`;
     model: modelId,
     agent: agentSlug,
     availableVoices: Object.keys(VOICES),
-    availableModels: ['gemini-2.0-flash-live-001'],
+    availableModels: ['gemini-2.5-flash-preview-native-audio-dialog'],
   });
 }
