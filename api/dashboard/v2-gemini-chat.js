@@ -26,6 +26,7 @@ THE TEAM:
 Elon (system architect), Bobby (web dev), Gary (operations), Rex (executive assistant), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI, not humans.
 
 YOUR TOOLS (use naturally, only when the conversation calls for it):
+- lookup_context: search the codebase for files, components, scripts. Use this BEFORE creating tasks and when Patrik asks about code.
 - run_query: look up data in Supabase (messages, tasks, agents, events, projects)
 - search_history: find past conversations or decisions
 - get_queue / get_status: check what's being worked on
@@ -53,6 +54,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'search_history', description: 'Search conversation history for past discussions, decisions, or events. Use when asked about what happened before.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for in conversation history' }, agent: { type: 'string', description: 'Optional: limit search to specific agent' } }, required: ['query'] } },
   { name: 'start_runner', description: 'Start the task runner to process queued tasks. Use when asked to run the queue, start building, get tasks going, or kick off work. The runner picks up queued tasks and builds them.', parameters: { type: 'object', properties: {} } },
   { name: 'register_project', description: 'Add or update a project in the registry. Use proactively when conversation implies a project change: new repo mentioned, project moved, rules changed, work should go to a specific repo. Fuzzy-matches existing projects so you don\'t need the exact slug. If unsure which project, it will return candidates to clarify with Patrik.', parameters: { type: 'object', properties: { slug: { type: 'string', description: 'Best guess at project slug (lowercase, hyphenated). Fuzzy-matched against all existing projects.' }, name: { type: 'string', description: 'Display name' }, repo_path: { type: 'string', description: 'Absolute filesystem path to the repo' }, repo_description: { type: 'string', description: 'What this repo is, one line' }, scan_dirs: { type: 'string', description: 'Comma-separated directories to scan for the phonebook (e.g. "src,api,tests")' }, hard_rules: { type: 'string', description: 'Comma-separated rules agents must follow for this project' } }, required: ['slug'] } },
+  { name: 'lookup_context', description: 'Search the codebase for relevant files, scripts, components, and architecture. Use this BEFORE creating tasks to check what already exists. Also use when Patrik asks about how something works or where something lives in the code.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for (e.g. "voice chat", "onboarding", "task runner", "auth")' } }, required: ['query'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -416,6 +418,31 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         }
         else if (name === 'start_runner') result = await startRunner();
         else if (name === 'register_project') result = await registerProject(args);
+        else if (name === 'lookup_context') {
+          const query = (args.query || '').trim();
+          if (!query) throw new Error('query required');
+          try {
+            const { readFileSync } = await import('fs');
+            const { join, dirname } = await import('path');
+            const { fileURLToPath } = await import('url');
+            const __dirname2 = dirname(fileURLToPath(import.meta.url));
+            const contextIndex = JSON.parse(readFileSync(join(__dirname2, 'context-index.json'), 'utf-8'));
+            const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+            const scored = contextIndex.map(entry => {
+              const searchable = [entry.name||'',entry.path||'',entry.desc||'',entry.section||'',entry.line||'',entry.type||''].join(' ').toLowerCase();
+              let score = 0;
+              for (const term of terms) {
+                if (searchable.includes(term)) score++;
+                if ((entry.name||'').toLowerCase().includes(term)) score += 2;
+              }
+              return { ...entry, score };
+            }).filter(e => e.score > 0);
+            scored.sort((a, b) => b.score - a.score);
+            result = { query, count: Math.min(scored.length, 15), results: scored.slice(0, 15).map(({ score, ...rest }) => rest) };
+          } catch (e) {
+            result = { error: `Context lookup failed: ${e.message}` };
+          }
+        }
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
         // Gemini requires functionResponse.response to be an object, not an array
