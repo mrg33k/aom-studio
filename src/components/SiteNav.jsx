@@ -44,7 +44,7 @@ export default function SiteNav({ transparent = false }) {
             : 'bg-gradient-to-b from-black/40 to-transparent border-transparent'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="w-full px-6 md:px-12 py-4 flex items-center justify-between">
           {/* Logo */}
           <a
             href="/"
