@@ -682,8 +682,15 @@ export default function App() {
   const scrollToSection = (id) => {
     setMobileMenuOpen(false);
     const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const main = document.querySelector('main');
+    if (el && main) {
+      let top = 0;
+      let node = el;
+      while (node && node !== main) {
+        top += node.offsetTop;
+        node = node.offsetParent;
+      }
+      main.scrollTo({ top, behavior: 'smooth' });
     }
   };
 
