@@ -94,6 +94,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
   const wsRef = useRef(null)
   const audioCtxRef = useRef(null)
+  const playbackCtxRef = useRef(null)
   const workletNodeRef = useRef(null)
   const mediaStreamRef = useRef(null)
   const sourceNodeRef = useRef(null)
@@ -120,17 +121,18 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
     try { localStorage.setItem('corner-voice-settings', JSON.stringify(settings)) } catch {}
   }, [settings])
 
-  // Sequential audio playback
+  // Sequential audio playback (uses separate 24kHz playback context)
   const playNextChunk = useCallback(() => {
     if (isPlayingRef.current || playQueueRef.current.length === 0) return
-    const audioCtx = audioCtxRef.current
-    if (!audioCtx) return
+    const playCtx = playbackCtxRef.current
+    if (!playCtx) return
+    if (playCtx.state === 'suspended') { playCtx.resume() }
     isPlayingRef.current = true
     updateStatus('speaking')
     const buffer = playQueueRef.current.shift()
-    const source = audioCtx.createBufferSource()
+    const source = playCtx.createBufferSource()
     source.buffer = buffer
-    source.connect(audioCtx.destination)
+    source.connect(playCtx.destination)
     source.onended = () => {
       isPlayingRef.current = false
       if (playQueueRef.current.length > 0) playNextChunk()
@@ -140,10 +142,10 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   }, [updateStatus])
 
   const enqueueAudio = useCallback((rawBuffer) => {
-    const audioCtx = audioCtxRef.current
-    if (!audioCtx) return
+    const playCtx = playbackCtxRef.current
+    if (!playCtx) return
     try {
-      const audioBuf = pcmToAudioBuffer(audioCtx, rawBuffer, GEMINI_OUTPUT_RATE)
+      const audioBuf = pcmToAudioBuffer(playCtx, rawBuffer, GEMINI_OUTPUT_RATE)
       playQueueRef.current.push(audioBuf)
       if (!isPlayingRef.current) playNextChunk()
     } catch (_) {}
@@ -161,6 +163,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       wsRef.current = null
     }
     if (audioCtxRef.current) { try { audioCtxRef.current.close() } catch (_) {} audioCtxRef.current = null }
+    if (playbackCtxRef.current) { try { playbackCtxRef.current.close() } catch (_) {} playbackCtxRef.current = null }
     if (workletBlobUrlRef.current) { URL.revokeObjectURL(workletBlobUrlRef.current); workletBlobUrlRef.current = null }
     playQueueRef.current = []
     isPlayingRef.current = false
@@ -196,13 +199,20 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       })
       mediaStreamRef.current = stream
 
-      // 3. Create AudioContext
+      // 3. Create AudioContexts (separate for input 16kHz and output 24kHz)
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
         sampleRate: TARGET_SAMPLE_RATE,
         latencyHint: 'interactive',
       })
       audioCtxRef.current = audioCtx
       if (audioCtx.state === 'suspended') await audioCtx.resume()
+
+      const playbackCtx = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: GEMINI_OUTPUT_RATE,
+        latencyHint: 'playback',
+      })
+      playbackCtxRef.current = playbackCtx
+      if (playbackCtx.state === 'suspended') await playbackCtx.resume()
 
       // 4. Set up mic capture
       const sourceNode = audioCtx.createMediaStreamSource(stream)
