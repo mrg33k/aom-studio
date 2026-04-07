@@ -681,16 +681,10 @@ export default function App() {
 
   const scrollToSection = (id) => {
     setMobileMenuOpen(false);
-    requestAnimationFrame(() => {
-      const main = document.querySelector('main');
-      const el = document.getElementById(id);
-      if (main && el) {
-        const mainRect = main.getBoundingClientRect();
-        const elRect = el.getBoundingClientRect();
-        const offset = elRect.top - mainRect.top + main.scrollTop - 80;
-        main.scrollTo({ top: offset, behavior: 'smooth' });
-      }
-    });
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
