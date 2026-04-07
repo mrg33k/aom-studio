@@ -2,7 +2,12 @@
 // Searches the codebase index for relevant files, scripts, and architecture.
 // Used by Rex voice (Gemini function calling) to check what exists before speccing tasks.
 
-import contextIndex from './context-index.json' assert { type: 'json' };
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const contextIndex = JSON.parse(readFileSync(join(__dirname, 'context-index.json'), 'utf-8'));
 
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
