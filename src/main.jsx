@@ -41,6 +41,7 @@ import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
 import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
+import AI from './pages/AI.jsx'
 import AmbitionPerformance from './pages/AmbitionPerformance.jsx'
 import AmbitionPerformanceV2 from './pages/AmbitionPerformanceV2.jsx'
 import Corner from './pages/Corner.jsx'
@@ -246,6 +247,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/guides/ambition-memorial-tower" element={<GuideAmbitionMemorialTower />} />
           <Route path="/roi-calculator" element={<ROICalculator />} />
           <Route path="/case-study" element={<CaseStudy />} />
+          <Route path="/ai" element={<AI />} />
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
           <Route path="/skills" element={<Skills />} />
