@@ -37,7 +37,7 @@ const pathways = [
     hook: 'Video and content that tells your story and closes deals.',
     cta: 'See the production work',
     accent: 'orange',
-    href: '#brands',
+    scrollTo: 'brands',
   },
   {
     icon: Building2,
@@ -45,7 +45,7 @@ const pathways = [
     hook: 'Social content from the work you actually do.',
     cta: 'See the construction work',
     accent: 'orange',
-    href: '#construction',
+    scrollTo: 'construction',
   },
   {
     icon: Cpu,
@@ -53,7 +53,7 @@ const pathways = [
     hook: 'Websites, workflows, and the systems that make it all run.',
     cta: 'See how we build',
     accent: 'sage',
-    href: '#digital',
+    href: '/ai',
   },
 ]
 
@@ -236,7 +236,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
             return (
               <button
                 key={p.title}
-                onClick={() => scrollToSection(p.href.replace('#', ''))}
+                onClick={() => p.scrollTo ? scrollToSection(p.scrollTo) : (window.location.href = p.href)}
                 className={`p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor} text-left`}
               >
                 <Icon size={24} className={p.accent === 'sage' ? 'text-aom-sage mb-3' : 'text-aom-orange mb-3'} />

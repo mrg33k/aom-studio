@@ -30,8 +30,8 @@ const services = [
     description: 'Websites, AI workflows, and automation that make everything repeatable. The engine behind the brand.',
     accent: 'sage',
     cta: 'See what we\'d build',
-    action: 'scroll',
-    target: 'digital',
+    action: 'navigate',
+    target: '/ai',
   },
 ]
 
@@ -74,7 +74,7 @@ function ServiceCard({ service, index, scrollToSection }) {
       </p>
 
       {/* Ghost CTA */}
-      <button onClick={() => scrollToSection(service.target)} className={`${ctaColor} text-base font-bold transition-colors flex items-center gap-1 self-start font-body min-h-[44px]`}>
+      <button onClick={() => service.action === 'navigate' ? (window.location.href = service.target) : scrollToSection(service.target)} className={`${ctaColor} text-base font-bold transition-colors flex items-center gap-1 self-start font-body min-h-[44px]`}>
         {service.cta} <ArrowRight size={16} />
       </button>
     </motion.div>
