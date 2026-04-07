@@ -277,13 +277,6 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         // Send setup message (model config, system instruction, voice)
         ws.send(JSON.stringify(sessionConfig.setupMessage))
 
-        // Keepalive ping
-        pingIntervalRef.current = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ clientContent: { turnComplete: true } }))
-          }
-        }, 25000)
-
         // Session timer
         sessionTimerRef.current = setInterval(() => setSessionSecs(s => s + 1), 1000)
       }

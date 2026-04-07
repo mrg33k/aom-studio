@@ -98,6 +98,15 @@ ${BASE_INSTRUCTION}`;
       systemInstruction: {
         parts: [{ text: systemInstruction }],
       },
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          disabled: false,
+          silenceDurationMs: 2000,
+          prefixPaddingMs: 500,
+        },
+        activityHandling: 'START_OF_ACTIVITY_INTERRUPTS',
+        turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY',
+      },
     },
   };
 
