@@ -71,31 +71,32 @@ function cssVars(isNight) {
     '--bv-accent-text': '#60A5FA',
     '--bv-badge': 'rgba(59,130,246,0.10)',
   }
+  // Day mode: clean dark (same family as night, slightly lighter)
   return {
-    '--bv-bg': '#1A3A7A',
-    '--bv-rail': 'rgba(15,35,80,0.7)',
-    '--bv-bar': 'rgba(20,50,120,0.7)',
-    '--bv-bar2': 'rgba(25,55,130,0.5)',
-    '--bv-col': 'rgba(30,65,155,0.45)',
-    '--bv-col-exp': 'rgba(35,75,175,0.55)',
-    '--bv-col-border': 'rgba(80,150,255,0.25)',
-    '--bv-col-border-exp': 'rgba(100,175,255,0.45)',
-    '--bv-card': 'rgba(40,85,200,0.25)',
-    '--bv-card-border': 'rgba(80,150,255,0.2)',
-    '--bv-card-hover': 'rgba(50,100,220,0.35)',
-    '--bv-divider': 'rgba(80,150,255,0.12)',
-    '--bv-input-bg': 'rgba(30,65,160,0.5)',
-    '--bv-input-border': 'rgba(80,150,255,0.25)',
-    '--bv-chat-agent': 'rgba(40,85,200,0.3)',
-    '--bv-chat-user': 'rgba(59,158,255,0.3)',
+    '--bv-bg': '#0C1220',
+    '--bv-rail': '#101828',
+    '--bv-bar': 'rgba(16,24,40,0.98)',
+    '--bv-bar2': 'rgba(12,18,32,0.4)',
+    '--bv-col': '#141E30',
+    '--bv-col-exp': '#1A2740',
+    '--bv-col-border': 'rgba(255,255,255,0.06)',
+    '--bv-col-border-exp': 'rgba(255,255,255,0.12)',
+    '--bv-card': '#1A2740',
+    '--bv-card-border': 'rgba(255,255,255,0.05)',
+    '--bv-card-hover': '#1E2F4A',
+    '--bv-divider': 'rgba(255,255,255,0.04)',
+    '--bv-input-bg': '#141E30',
+    '--bv-input-border': 'rgba(255,255,255,0.08)',
+    '--bv-chat-agent': '#1A2740',
+    '--bv-chat-user': 'rgba(59,130,246,0.15)',
     '--bv-text': '#F0F4FF',
-    '--bv-text2': '#D4E0F8',
-    '--bv-muted': '#8AABE0',
-    '--bv-dim': '#6B90CC',
-    '--bv-accent': 'rgba(59,158,255,0.3)',
-    '--bv-accent-border': 'rgba(80,170,255,0.6)',
-    '--bv-accent-text': '#7CC4FF',
-    '--bv-badge': 'rgba(80,150,255,0.15)',
+    '--bv-text2': '#B0BDD0',
+    '--bv-muted': '#607090',
+    '--bv-dim': '#3E5070',
+    '--bv-accent': 'rgba(59,130,246,0.10)',
+    '--bv-accent-border': 'rgba(96,165,250,0.35)',
+    '--bv-accent-text': '#60A5FA',
+    '--bv-badge': 'rgba(59,130,246,0.10)',
   }
 }
 
@@ -908,6 +909,28 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
             fontFamily: "'Inter', sans-serif", outline: 'none',
           }}
         />
+        {/* Voice mic button */}
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); onVoiceToggle?.() }}
+          title={isVoiceActive ? 'Stop voice' : 'Start voice chat'}
+          style={{
+            width: 36, height: 36, borderRadius: 10, border: 'none',
+            background: isVoiceActive ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
+            color: isVoiceActive ? '#F87171' : 'var(--bv-muted)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            transition: 'all 0.15s',
+            animation: isVoiceActive ? 'bvPulse 2s infinite' : 'none',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        {/* Send button */}
         <button
           type="button"
           onClick={e => { e.stopPropagation(); doSend() }}
@@ -1465,7 +1488,7 @@ function AddColumnButton({ allItems, visibleSlugs, onToggle }) {
 
 // ── AGENT COLUMN ─────────────────────────────────────────────────────────────
 
-function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent }) {
+function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent, isVoiceActive, onVoiceToggle }) {
   const chat = useColumnChat(agent.slug, true)
   const navigate = useNavigate()
   const color = agent.color || getAgentColor(agent.slug)
@@ -2171,7 +2194,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
       {/* V5 board background: radial gradients over void */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden',
-        background: 'radial-gradient(ellipse at 15% 50%, rgba(59,130,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(168,85,247,0.02) 0%, transparent 50%)',
+        background: 'radial-gradient(ellipse at 15% 50%, rgba(255,255,255,0.015) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(255,255,255,0.01) 0%, transparent 50%)',
       }}>
 
         {/* LEFT RAIL -- collapsible. V5: 56px collapsed, 280px expanded */}
@@ -2296,84 +2319,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             </div>
           )}
 
-          {/* V5: Bottom rail controls -- collapse + reset */}
+          {/* Bottom rail controls -- collapse only */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
             padding: '8px', borderTop: '1px solid var(--bv-divider)',
             background: 'var(--bv-rail)', display: 'flex', flexDirection: 'column', gap: 4,
           }}>
-            {/* Reset Agents button */}
-            <button
-              onClick={handleResetAgents}
-              disabled={resetting}
-              title="Restart all agents"
-              style={{
-                width: '100%', height: railOpen ? 30 : 30, borderRadius: 8,
-                border: '1px solid rgba(239,68,68,0.25)',
-                background: resetting ? 'rgba(239,68,68,0.15)' : resetResult === 'sent' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.08)',
-                color: resetting ? '#F87171' : resetResult === 'sent' ? '#22C55E' : '#EF4444',
-                cursor: resetting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                transition: 'all 0.2s',
-                opacity: resetting ? 0.7 : 1,
-              }}
-              onMouseEnter={e => { if (!resetting) { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)' }}}
-              onMouseLeave={e => { if (!resetting) { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' }}}
-            >
-              {resetting ? (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'bvPulse 1s infinite' }}>
-                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                </svg>
-              ) : (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                  <path d="M21 3v9h-9"/>
-                </svg>
-              )}
-              {railOpen && <span>{resetting ? 'Resetting...' : resetResult === 'sent' ? 'Sent' : 'Reset Agents'}</span>}
-            </button>
-            {/* Sleep/Wake toggle */}
-            <button
-              onClick={handleSleepWake}
-              title={agentsSleeping ? 'Wake agents' : 'Put agents to sleep'}
-              style={{
-                width: '100%', height: 30, borderRadius: 8,
-                border: `1px solid ${agentsSleeping ? 'rgba(234,179,8,0.3)' : 'rgba(34,197,94,0.25)'}`,
-                background: agentsSleeping ? 'rgba(234,179,8,0.1)' : 'rgba(34,197,94,0.08)',
-                color: agentsSleeping ? '#EAB308' : '#22C55E',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
-            >
-              {agentsSleeping ? (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-              ) : (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-              )}
-              {railOpen && <span>{agentsSleeping ? 'Wake' : 'Sleep'}</span>}
-            </button>
-            {/* Voice chat toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '2px 0' }}>
-              <VoiceToggle isActive={isVoiceChatActive} onToggle={handleVoiceChatToggle} />
-              {railOpen && (
-                <span style={{
-                  color: isVoiceChatActive ? '#60A5FA' : 'var(--bv-muted)',
-                  fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.06em', textTransform: 'uppercase',
-                }}>
-                  {isVoiceChatActive ? 'Voice On' : 'Voice'}
-                </span>
-              )}
-            </div>
             {/* Collapse/expand toggle */}
             <button
               onClick={() => setRailOpen(!railOpen)}
@@ -2422,6 +2373,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                   onHeaderContextMenu={setHeaderCtx}
                   allAgents={allItems.filter(it => it.isAgent)}
                   onSendToAgent={handleSendToAgent}
+                  isVoiceActive={isVoiceChatActive}
+                  onVoiceToggle={handleVoiceChatToggle}
                 />
               ) : (
                 <ProjectColumn
@@ -2507,7 +2460,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             {/* Active column */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               {activeMobileItem?.isAgent ? (
-                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} />
+                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} isVoiceActive={isVoiceChatActive} onVoiceToggle={handleVoiceChatToggle} />
               ) : activeMobileItem ? (
                 <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} onHeaderContextMenu={setHeaderCtx} />
               ) : (
@@ -2594,8 +2547,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             </button>
           </div>
           <VoiceChat
-            agentSlug={orderedVisibleItems.find(it => it.isAgent)?.slug || 'elon'}
-            agentColor={orderedVisibleItems.find(it => it.isAgent)?.color || '#3B82F6'}
+            agentSlug="rex"
+            agentColor="#60A5FA"
             clientId={getClientId()}
           />
         </div>
