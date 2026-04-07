@@ -637,6 +637,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     if (messageText) {
       chat.sendMessage(messageText)
       chat.setInput('')
+      if (inputRef.current) { inputRef.current.style.height = 'auto' }
       isUserScrolledUp.current = false
       setTimeout(scrollToBottom, 50)
     }
@@ -859,7 +860,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       )}
 
       <div style={{
-        display: 'flex', gap: 6, padding: '10px 12px', alignItems: 'center',
+        display: 'flex', gap: 6, padding: '10px 12px', alignItems: 'flex-end',
         borderTop: '1px solid rgba(59,130,246,0.15)', flexShrink: 0, background: 'var(--bv-bar)',
         minHeight: 52, position: 'relative',
       }}>
@@ -893,10 +894,15 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <input
+        <textarea
           ref={inputRef}
           value={chat.input}
-          onChange={e => chat.setInput(e.target.value)}
+          rows={1}
+          onChange={e => {
+            chat.setInput(e.target.value)
+            e.target.style.height = 'auto'
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+          }}
           onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
           placeholder={`Message ${agentName}...`}
           onClick={e => e.stopPropagation()}
@@ -904,6 +910,8 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
             flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
             borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
             fontFamily: "'Inter', sans-serif", outline: 'none',
+            resize: 'none', overflowY: 'auto', lineHeight: '1.4',
+            minHeight: 36, maxHeight: 120,
           }}
         />
         {/* Voice toggle */}
