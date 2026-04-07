@@ -326,7 +326,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         sessionTimerRef.current = setInterval(() => setSessionSecs(s => s + 1), 1000)
       }
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
         try {
           const raw = event.data instanceof ArrayBuffer
             ? new TextDecoder().decode(event.data)
@@ -395,9 +395,74 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
             return
           }
 
-          // Tool calls (if any, for future use)
+          // Tool calls from Gemini (create_task, get_task_status)
           if (msg.toolCall) {
-            console.log('[VoiceChat] Tool call:', msg.toolCall)
+            const calls = msg.toolCall.functionCalls || []
+            console.log('[VoiceChat] Tool calls:', calls)
+            const responses = []
+
+            for (const call of calls) {
+              const args = call.args || {}
+              let result = {}
+
+              if (call.name === 'create_task') {
+                addSystemMessage(`Creating task: ${args.title}`)
+                try {
+                  const resp = await fetch('/api/dashboard/v2-task-create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      title: args.title,
+                      description: args.description || args.title,
+                      text: args.title,
+                      agent: args.agent || 'bobby',
+                      complexity: args.complexity || 'medium',
+                      status: 'queued',
+                      client_id: clientId,
+                      source: 'voice',
+                      created_by: 'rex-voice',
+                    }),
+                  })
+                  const data = await resp.json()
+                  if (resp.ok) {
+                    const taskId = data?.id || data?.[0]?.id || 'created'
+                    result = { success: true, task_id: taskId, message: `Task created: ${args.title}` }
+                    addSystemMessage(`Task created for ${args.agent || 'bobby'}: ${args.title}`)
+                    saveTranscript('system', `[Task created] ${args.title} (${args.agent || 'bobby'})`)
+                  } else {
+                    result = { success: false, error: data?.error || 'Failed to create task' }
+                    addSystemMessage(`Failed to create task: ${data?.error || 'unknown error'}`)
+                  }
+                } catch (err) {
+                  result = { success: false, error: err.message }
+                  addSystemMessage(`Task creation error: ${err.message}`)
+                }
+              } else if (call.name === 'get_task_status') {
+                try {
+                  const limit = args.limit || 5
+                  const resp = await fetch(`/api/dashboard/v2-task-list?client=${clientId}&limit=${limit}&status=neq.done`)
+                  const tasks = await resp.json()
+                  if (Array.isArray(tasks)) {
+                    result = { tasks: tasks.map(t => ({ title: t.title || t.text, status: t.status, agent: t.agent })) }
+                  } else {
+                    result = { tasks: [] }
+                  }
+                } catch (err) {
+                  result = { error: err.message }
+                }
+              } else {
+                result = { error: `Unknown function: ${call.name}` }
+              }
+
+              responses.push({ id: call.id, name: call.name, response: result })
+            }
+
+            // Send tool responses back to Gemini
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+              wsRef.current.send(JSON.stringify({
+                toolResponse: { functionResponses: responses },
+              }))
+            }
             return
           }
 

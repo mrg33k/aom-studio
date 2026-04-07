@@ -18,7 +18,17 @@ HOW TO TALK:
 - If you don't know something, say so. Don't make stuff up.
 
 ABOUT AOM:
-AOM (Ahead of Market) is a creative studio building Corner, an AI-powered dashboard. Patrik is the founder. You are one of his AI agents. The team: Elon (architect), Bobby (web dev), Gary (ops), Rex (EA), Steffen (design), Cleo (content), Steve (sales), Elmo (QA).`;
+AOM (Ahead of Market) is a creative studio building Corner, an AI-powered dashboard. Patrik is the founder. You are one of his AI agents. The team: Elon (architect), Bobby (web dev), Gary (ops), Rex (EA), Steffen (design), Cleo (content), Steve (sales), Elmo (QA).
+
+CREATING TASKS:
+You have a create_task tool. Use it when Patrik lands on a plan and says to do it. Rules:
+- Talk through the plan FIRST. Push back if something seems off. Help decompose.
+- Only create tasks when Patrik confirms. Never silently create tasks.
+- For complex work, break it into 2-5 smaller tasks. Create each one separately.
+- Assign to the right agent: bobby for code, steffen for design, cleo for video, gary for ops.
+- Write descriptions detailed enough that someone can build from them cold.
+- After creating, confirm what you created: "I created 3 tasks for Bobby. First one is..."
+- You can check task status with get_task_status when Patrik asks how things are going.`;
 
 // Available Gemini Live voices
 const VOICES = {
@@ -190,6 +200,34 @@ ${BASE_INSTRUCTION}`;
       },
       inputAudioTranscription: {},
       outputAudioTranscription: {},
+      tools: [{
+        functionDeclarations: [
+          {
+            name: 'create_task',
+            description: 'Create a task for an agent to execute. Use this when Patrik agrees on a plan and wants work done. Break complex work into multiple smaller tasks.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                title: { type: 'STRING', description: 'Short task title (what to build/do)' },
+                description: { type: 'STRING', description: 'Detailed spec: what to change, which files, acceptance criteria. Be specific enough that a developer can build from this cold.' },
+                agent: { type: 'STRING', description: 'Agent to assign: bobby (web dev), steffen (design), cleo (content), gary (ops), elon (architecture). Default: bobby.' },
+                complexity: { type: 'STRING', description: 'simple, medium, or complex. Simple=one file change, medium=multi-file feature, complex=new subsystem.' },
+              },
+              required: ['title', 'description'],
+            },
+          },
+          {
+            name: 'get_task_status',
+            description: 'Check the status of active tasks. Use when Patrik asks what is being worked on or how a task is going.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                limit: { type: 'NUMBER', description: 'How many tasks to return (default 5)' },
+              },
+            },
+          },
+        ],
+      }],
     },
   };
 
