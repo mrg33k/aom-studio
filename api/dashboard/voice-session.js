@@ -290,6 +290,22 @@ ${BASE_INSTRUCTION}`;
               required: ['query'],
             },
           },
+          {
+            name: 'get_queue',
+            description: 'List all queued and active tasks. Use when Patrik asks what is in the queue or what is being worked on.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {},
+            },
+          },
+          {
+            name: 'start_runner',
+            description: 'Start the task runner to process queued tasks. Use when Patrik says to start building, run the queue, or kick off tasks.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {},
+            },
+          },
         ],
       }],
     },

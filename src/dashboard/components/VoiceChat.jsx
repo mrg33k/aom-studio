@@ -465,6 +465,27 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
                 } catch (err) {
                   result = { error: err.message }
                 }
+              } else if (call.name === 'get_queue') {
+                try {
+                  const resp = await fetch(`/api/dashboard/v2-task-list?client_id=${clientId}&status=queued,classifying,planning,building,qa`)
+                  const data = await resp.json()
+                  const tasks = data?.tasks || []
+                  if (tasks.length > 0) {
+                    addSystemMessage(`${tasks.length} task(s) in queue`)
+                    result = { tasks: tasks.map(t => ({ title: t.title, status: t.status, agent: t.agent_identity })), total: tasks.length }
+                  } else {
+                    result = { tasks: [], total: 0, message: 'Queue is empty' }
+                  }
+                } catch (err) {
+                  result = { error: err.message }
+                }
+              } else if (call.name === 'start_runner') {
+                try {
+                  addSystemMessage('Sending start signal to task runner...')
+                  result = { signaled: true, message: 'Start signal sent. The runner watches the queue and picks up tasks automatically.' }
+                } catch (err) {
+                  result = { error: err.message }
+                }
               } else {
                 result = { error: `Unknown function: ${call.name}` }
               }

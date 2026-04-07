@@ -384,7 +384,13 @@ function useColumnChat(agentSlug, isActive) {
                 const newMsgs = (data.messages || [])
                   .filter(m => m.timestamp > lastBgTsRef.current && m.text)
                   .filter(m => m.agent === agentSlug)
-                  .filter(m => !['terminal','corner-dashboard-task','task-creation','completion-hook','agent-status','poke_agent'].includes((m.source||'').toLowerCase()) && !(m.source||'').toLowerCase().startsWith('agent-'))
+                  .filter(m => {
+                    const src = (m.source || '').toLowerCase()
+                    if (src === 'task-notification') return true
+                    if (['terminal','corner-dashboard-task','task-creation','completion-hook','agent-status','poke_agent'].includes(src)) return false
+                    if (src.startsWith('agent-')) return false
+                    return true
+                  })
                 if (newMsgs.length > 0) {
                   lastBgTsRef.current = newMsgs[newMsgs.length - 1].timestamp
                   setMessages(prev => {
