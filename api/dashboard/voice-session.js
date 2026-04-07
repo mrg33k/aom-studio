@@ -81,17 +81,15 @@ ${BASE_INSTRUCTION}`;
   const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 
   // Setup message the client sends as first WebSocket message
+  // Gemini 3.1 Live uses "config" (not "setup") as top-level key
   const setupMessage = {
-    setup: {
+    config: {
       model: `models/${modelId}`,
-      generationConfig: {
-        temperature: temp,
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: voiceName,
-            },
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: voiceName,
           },
         },
       },
