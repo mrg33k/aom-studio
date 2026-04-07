@@ -93,7 +93,23 @@ export default async function handler(req, res) {
 
     const result = await supabasePostTask(newTask);
     const created = Array.isArray(result) ? result[0] : result;
-    return res.status(200).json(created);
+
+    // Fetch agent display_name if agent_identity is set
+    let agentDisplayName = null;
+    if (agent_identity) {
+      try {
+        const agentResp = await fetch(
+          `${SUPABASE_URL}/rest/v1/agents?slug=eq.${encodeURIComponent(agent_identity)}&select=display_name&limit=1`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+        );
+        if (agentResp.ok) {
+          const agents = await agentResp.json();
+          agentDisplayName = agents[0]?.display_name || null;
+        }
+      } catch { /* silent */ }
+    }
+
+    return res.status(200).json({ ...created, agentDisplayName });
   } catch (err) {
     console.error('[v2-task-create] Error:', err.message);
     return res.status(500).json({ error: err.message });

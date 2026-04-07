@@ -13,6 +13,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, X, MessageSquare, CheckCircle2, AlertTriangle, Zap, Clock, Trash2 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
+import { useToast } from './hooks/useToast.js'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -692,6 +693,77 @@ export function HUDToasts() {
             </motion.div>
           )
         })}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// Task-queued toast overlay (bottom-right, driven by ToastProvider context)
+export function TaskQueuedToasts() {
+  const { toasts, dismissToast } = useToast()
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 20,
+      right: 20,
+      zIndex: 1000,
+      display: 'flex',
+      flexDirection: 'column-reverse',
+      gap: 10,
+      pointerEvents: 'none',
+    }}>
+      <AnimatePresence>
+        {toasts.map(t => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+            style={{
+              pointerEvents: 'auto',
+              background: 'rgba(8, 20, 40, 0.95)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(59, 158, 255, 0.25)',
+              borderLeft: '3px solid #3B9EFF',
+              borderRadius: 10,
+              padding: '10px 14px 10px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              minWidth: 200,
+              maxWidth: 320,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(59,158,255,0.1)',
+            }}
+          >
+            <Zap size={14} color="#3B9EFF" style={{ flexShrink: 0 }} />
+            <span style={{
+              flex: 1,
+              fontSize: 13,
+              color: '#EDF2FA',
+              fontFamily: "'Inter', system-ui, sans-serif",
+              lineHeight: 1.4,
+            }}>
+              {t.message}
+            </span>
+            <button
+              onClick={() => dismissToast(t.id)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'rgba(255,255,255,0.35)',
+                padding: 2,
+                flexShrink: 0,
+                lineHeight: 1,
+              }}
+            >
+              <X size={12} />
+            </button>
+          </motion.div>
+        ))}
       </AnimatePresence>
     </div>
   )

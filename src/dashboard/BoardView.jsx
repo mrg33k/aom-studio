@@ -7,6 +7,8 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Info } from 'lucide-react'
+import { ToastProvider, useToast } from './hooks/useToast.js'
+import { TaskQueuedToasts } from './HUDNotifications.jsx'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
@@ -120,6 +122,7 @@ function useColumnChat(agentSlug, isActive) {
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const pollRef = useRef(null)
+  const { showToast } = useToast()
   const loadedRef = useRef(false)
 
   useEffect(() => {
@@ -311,6 +314,12 @@ function useColumnChat(agentSlug, isActive) {
       geminiReply = reply || null
       // If a delete_messages function was called, reset local messages from Supabase
       const hadDelete = (data.functionCalls || []).some(c => c.name === 'delete_messages')
+      // Show toast for any successfully created tasks
+      const taskCreates = (data.functionCalls || []).filter(c => c.name === 'create_task' && c.result && !c.result.error)
+      for (const c of taskCreates) {
+        const taskAgent = c.args?.agent || c.result?.agent_identity || agentSlug
+        showToast(`Task queued for ${getAgentName(taskAgent)}`, 3000)
+      }
       if (hadDelete) {
         try {
           const cid = getClientId()
@@ -2167,6 +2176,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const activeMobileItem = mobileItems[mobileIdx] || mobileItems[0]
 
   return (
+    <ToastProvider>
     <div style={{
       ...vars, display: 'flex', flexDirection: 'column',
       height: '100%', width: '100%', background: 'var(--bv-bg)',
@@ -2567,5 +2577,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
       <TaskQueueFAB isNightMode={isNightMode} />
     </div>
+    <TaskQueuedToasts />
+    </ToastProvider>
   )
 }
