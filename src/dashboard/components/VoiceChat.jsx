@@ -437,6 +437,19 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
                   result = { success: false, error: err.message }
                   addSystemMessage(`Task creation error: ${err.message}`)
                 }
+              } else if (call.name === 'lookup_context') {
+                try {
+                  const resp = await fetch(`/api/dashboard/voice-context-lookup?q=${encodeURIComponent(args.query || '')}`)
+                  const data = await resp.json()
+                  if (data.results?.length) {
+                    addSystemMessage(`Found ${data.count} relevant items for "${args.query}"`)
+                    result = { results: data.results }
+                  } else {
+                    result = { results: [], message: `Nothing found for "${args.query}"` }
+                  }
+                } catch (err) {
+                  result = { error: err.message }
+                }
               } else if (call.name === 'get_task_status') {
                 try {
                   const limit = args.limit || 5
