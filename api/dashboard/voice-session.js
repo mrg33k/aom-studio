@@ -102,7 +102,9 @@ ${BASE_INSTRUCTION}`;
         automaticActivityDetection: {
           disabled: false,
           silenceDurationMs: 2000,
-          prefixPaddingMs: 500,
+          prefixPaddingMs: 800,
+          startOfSpeechSensitivity: 'START_SENSITIVITY_LOW',
+          endOfSpeechSensitivity: 'END_SENSITIVITY_LOW',
         },
         activityHandling: 'START_OF_ACTIVITY_INTERRUPTS',
         turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY',

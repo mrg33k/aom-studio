@@ -227,7 +227,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         const workletNode = new AudioWorkletNode(audioCtx, 'pcm-capture')
         workletNodeRef.current = workletNode
         workletNode.port.onmessage = (e) => {
-          if (e.data?.type === 'pcm' && wsRef.current?.readyState === WebSocket.OPEN) {
+          if (e.data?.type === 'pcm' && wsRef.current?.readyState === WebSocket.OPEN && statusRef.current !== 'speaking') {
             wsRef.current.send(JSON.stringify({
               realtimeInput: {
                 audio: {
@@ -247,7 +247,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         const scriptNode = audioCtx.createScriptProcessor(bufferSize, 1, 1)
         workletNodeRef.current = scriptNode
         scriptNode.onaudioprocess = (e) => {
-          if (wsRef.current?.readyState !== WebSocket.OPEN) return
+          if (wsRef.current?.readyState !== WebSocket.OPEN || statusRef.current === 'speaking') return
           const float32 = e.inputBuffer.getChannelData(0)
           const int16 = new Int16Array(float32.length)
           for (let i = 0; i < float32.length; i++) {
