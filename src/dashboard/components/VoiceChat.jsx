@@ -122,8 +122,8 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         client_id: clientId,
         agent: agentSlug,
         role: role,
-        content: text.trim(),
-        metadata: { source: 'voice', session_id: sessionIdRef.current },
+        text: text.trim(),
+        source: 'voice',
       }),
     }).catch(() => {})
   }, [clientId, agentSlug])

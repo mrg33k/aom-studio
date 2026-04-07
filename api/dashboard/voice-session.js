@@ -55,7 +55,7 @@ async function getRecentMessages(agentSlug, clientId, limit = 15) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&client_id=eq.${encodeURIComponent(clientId)}&order=created_at.desc&limit=${limit}&select=role,content,created_at`,
+      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=${limit}&select=role,text,timestamp`,
       { headers: supaHeaders() }
     );
     if (!res.ok) return [];
@@ -68,7 +68,7 @@ async function getTasks(clientId, limit = 10) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=${limit}&select=title,status,agent,created_at`,
+      `${SUPABASE_URL}/rest/v1/tasks?client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=timestamp.desc&limit=${limit}&select=title,status,agent,timestamp`,
       { headers: supaHeaders() }
     );
     if (!res.ok) return [];
@@ -126,7 +126,7 @@ ${BASE_INSTRUCTION}`;
   const contextParts = [];
 
   if (recentMessages.length > 0) {
-    const chatLog = recentMessages.map(m => `${m.role}: ${m.content}`).join('\n');
+    const chatLog = recentMessages.map(m => `${m.role}: ${m.text}`).join('\n');
     contextParts.push(`RECENT CONVERSATION (most recent messages with Patrik):\n${chatLog}`);
   }
 
