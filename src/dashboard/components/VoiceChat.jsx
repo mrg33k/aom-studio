@@ -16,6 +16,8 @@
 //   onTranscript(text, role) - called when transcript arrives
 //   onStatusChange(status)   - 'idle' | 'connecting' | 'listening' | 'speaking' | 'error'
 
+// Voice pipeline verified working 2026-04-07.
+
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 // Target sample rate for Gemini Live input
