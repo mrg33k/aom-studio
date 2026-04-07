@@ -102,8 +102,15 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   const isPlayingRef = useRef(false)
   const pingIntervalRef = useRef(null)
   const sessionTimerRef = useRef(null)
+  const statusRef = useRef('idle')
+  const connectTimeoutRef = useRef(null)
+
+  const addSystemMessage = useCallback((text) => {
+    setTranscript(prev => [...prev, { role: 'system', text, id: Date.now() + Math.random() }])
+  }, [])
 
   const updateStatus = useCallback((s) => {
+    statusRef.current = s
     setStatus(s)
     onStatusChange?.(s)
   }, [onStatusChange])
@@ -143,6 +150,7 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
   }, [playNextChunk])
 
   const stopSession = useCallback(() => {
+    if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
     if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null }
     if (sessionTimerRef.current) { clearInterval(sessionTimerRef.current); sessionTimerRef.current = null }
     if (sourceNodeRef.current) { try { sourceNodeRef.current.disconnect() } catch (_) {} sourceNodeRef.current = null }
@@ -251,8 +259,19 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       }
 
       // 5. Connect directly to Gemini Live WebSocket
+      addSystemMessage('Connecting to voice...')
       const ws = new WebSocket(sessionConfig.wsUrl)
       wsRef.current = ws
+
+      // 10s timeout -- if setupComplete never arrives, kill it
+      connectTimeoutRef.current = setTimeout(() => {
+        if (statusRef.current === 'connecting') {
+          addSystemMessage('Connection timed out. Gemini did not respond.')
+          setErrorMsg('Connection timed out')
+          stopSession()
+          updateStatus('error')
+        }
+      }, 10000)
 
       ws.onopen = () => {
         // Send setup message (model config, system instruction, voice)
@@ -275,6 +294,8 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
           // Setup complete
           if (msg.setupComplete) {
+            if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
+            addSystemMessage('Connected. Listening.')
             updateStatus('listening')
             return
           }
@@ -318,26 +339,43 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
           // Tool calls (if any, for future use)
           if (msg.toolCall) {
-            // For now, just log
             console.log('[VoiceChat] Tool call:', msg.toolCall)
             return
           }
+
+          // Catch unrecognized messages (could be Gemini errors)
+          if (msg.error) {
+            const errDetail = msg.error.message || msg.error.status || JSON.stringify(msg.error)
+            addSystemMessage(`Gemini error: ${errDetail}`)
+            console.error('[VoiceChat] Gemini error:', msg.error)
+            setErrorMsg(errDetail)
+            stopSession()
+            updateStatus('error')
+            return
+          }
+
+          // Log anything else so we can debug
+          console.log('[VoiceChat] Unhandled message:', msg)
 
         } catch (_) {}
       }
 
       ws.onerror = () => {
-        setErrorMsg('Voice connection failed. Check network and try again.')
+        addSystemMessage('Voice connection failed. Check network and try again.')
+        setErrorMsg('Voice connection failed')
         updateStatus('error')
         stopSession()
       }
 
       ws.onclose = (event) => {
-        if (status !== 'idle') {
+        if (statusRef.current !== 'idle') {
           if (event.code !== 1000) {
-            setErrorMsg(`Connection closed: ${event.reason || 'unknown'}`)
+            const reason = event.reason || `closed (code ${event.code})`
+            addSystemMessage(`Disconnected: ${reason}`)
+            setErrorMsg(reason)
             updateStatus('error')
           } else {
+            addSystemMessage('Session ended.')
             updateStatus('idle')
           }
         }
@@ -349,11 +387,12 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         : err?.name === 'NotFoundError'
         ? 'No microphone found. Plug in a mic and try again.'
         : `Failed to start voice: ${err?.message || err}`
+      addSystemMessage(msg)
       setErrorMsg(msg)
       updateStatus('error')
       stopSession()
     }
-  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript])
+  }, [status, agentSlug, clientId, settings, updateStatus, enqueueAudio, stopSession, onTranscript, addSystemMessage])
 
   const toggleSession = useCallback(() => {
     if (status === 'idle' || status === 'error') startSession()
@@ -552,12 +591,18 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
         <div style={{ borderTop: '1px solid rgba(59,130,246,0.12)', padding: '10px 16px 14px', maxHeight: 130, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 }}>
           {transcript.slice(-8).map(entry => (
             <div key={entry.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <span style={{ color: entry.role === 'model' ? agentColor : 'rgba(100,130,180,0.7)', fontSize: 9, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0, paddingTop: 2, minWidth: 26 }}>
-                {entry.role === 'model' ? 'AI' : 'You'}
-              </span>
-              <span style={{ color: entry.role === 'model' ? 'rgba(210,225,255,0.9)' : 'rgba(150,175,220,0.7)', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>
-                {entry.text}
-              </span>
+              {entry.role === 'system' ? (
+                <span style={{ color: 'rgba(148,168,200,0.45)', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", fontStyle: 'italic', lineHeight: 1.45 }}>
+                  {entry.text}
+                </span>
+              ) : (<>
+                <span style={{ color: entry.role === 'model' ? agentColor : 'rgba(100,130,180,0.7)', fontSize: 9, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0, paddingTop: 2, minWidth: 26 }}>
+                  {entry.role === 'model' ? 'AI' : 'You'}
+                </span>
+                <span style={{ color: entry.role === 'model' ? 'rgba(210,225,255,0.9)' : 'rgba(150,175,220,0.7)', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>
+                  {entry.text}
+                </span>
+              </>)}
             </div>
           ))}
         </div>
