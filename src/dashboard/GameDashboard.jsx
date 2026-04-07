@@ -13920,13 +13920,13 @@ export default function GameDashboard() {
                   animation: 'bvPulse 2s ease-in-out infinite',
                 }} />
                 <span style={{ fontSize: 12, fontWeight: 700, color: agentColor }}>
-                  {task.agent ? task.agent.charAt(0).toUpperCase() + task.agent.slice(1) : ''}
+                  {(task.agentDisplayName || AGENTS.find(a => a.slug === task.agent)?.name || (task.agent ? task.agent.charAt(0).toUpperCase() + task.agent.slice(1) : '')) + ':'}
                 </span>
                 <span style={{
                   fontSize: 11, color: isNightMode ? '#94A3B8' : '#CBD5E1',
                   maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
-                  {task.text || task.task || ''}
+                  {task.rawTitle || (task.text || task.task || '').replace(/^\[.*?\]\s*/, '')}
                 </span>
               </div>
             )

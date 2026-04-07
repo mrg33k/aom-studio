@@ -287,11 +287,20 @@ export function useDataPipe(parsePunchList) {
           if (sbRes.ok) {
             const sbData = await sbRes.json()
             if (sbData.tasks) {
+              // Build agent display name lookup from response data
+              const sbAgentNameMap = {}
+              if (sbData.agents) {
+                for (const a of sbData.agents) sbAgentNameMap[a.slug] = a.name
+              }
+
               // Pipeline tasks -> Right Now
               const pipelineTasks = sbData.tasks.filter(t => STAGE_LABELS[t.status])
               for (const t of pipelineTasks) {
+                const agentSlug = t.agent || t.agent_identity || 'system'
                 mergedTasks.push({
-                  agent: t.agent || t.agent_identity || 'system',
+                  agent: agentSlug,
+                  agentDisplayName: sbAgentNameMap[agentSlug] || null,
+                  rawTitle: t.title || t.text || 'Task',
                   text: `[${STAGE_LABELS[t.status]}] ${t.title || t.text || 'Task'}`,
                   isLive: t.status !== 'queued',
                   isQueued: t.status === 'queued',
@@ -362,11 +371,20 @@ export function useDataPipe(parsePunchList) {
           }
 
           if (data.tasks) {
+            // Build agent display name lookup from response data
+            const agentNameMap = {}
+            if (data.agents) {
+              for (const a of data.agents) agentNameMap[a.slug] = a.name
+            }
+
             // Active pipeline tasks -> Right Now
             const pipelineTasks = data.tasks.filter(t => STAGE_LABELS[t.status])
             for (const t of pipelineTasks) {
+              const agentSlug = t.agent || t.agent_identity || 'system'
               active.push({
-                agent: t.agent || t.agent_identity || 'system',
+                agent: agentSlug,
+                agentDisplayName: agentNameMap[agentSlug] || null,
+                rawTitle: t.title || t.text || 'Task',
                 text: `[${STAGE_LABELS[t.status]}] ${t.title || t.text || 'Task'}`,
                 isLive: t.status !== 'queued',
                 isQueued: t.status === 'queued',
