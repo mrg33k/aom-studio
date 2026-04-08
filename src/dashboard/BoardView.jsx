@@ -603,6 +603,13 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     if (!isVoiceActive) { setLocalVoiceStatus('idle'); setLocalVoiceVolume(0) }
   }, [isVoiceActive])
 
+  // Voice transcript handler: feed spoken text into the chat pipeline
+  const handleTranscript = useCallback((text, role) => {
+    if (role === 'user' && text?.trim()) {
+      chat.sendMessage(text.trim())
+    }
+  }, [chat])
+
   // Fade-in animation tracking
   const messageRefs = useRef({})
   const animatedMessageIds = useRef(new Set())
@@ -824,19 +831,6 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         ))}
       </div>
 
-      {/* Voice Chat -- inline below messages when active */}
-      {isVoiceActive && (
-        <div style={{ flexShrink: 0, borderTop: '1px solid rgba(59,130,246,0.15)', background: 'rgba(10,16,32,0.6)' }}>
-          <VoiceChat
-            agentSlug={agentSlug}
-            agentColor={color}
-            clientId={getClientId()}
-            onStatusChange={setLocalVoiceStatus}
-            onVolumeChange={setLocalVoiceVolume}
-          />
-        </div>
-      )}
-
       {/* Message context menu: portal to body to escape transform containers */}
       {msgCtx && createPortal(
         <div
@@ -960,80 +954,98 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         minHeight: 52, position: 'relative',
       }}>
         {skillAC.dropdown}
-        {/* + button: attach images/files */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.md"
-          style={{ display: 'none' }}
-          onChange={e => {
-            if (e.target.files?.length) {
-              setPendingFiles(prev => [...prev, ...Array.from(e.target.files)])
-              e.target.value = ''
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
-          style={{
-            width: 32, height: 32, borderRadius: 8, border: '1.5px solid var(--bv-input-border)',
-            background: 'var(--bv-input-bg)', color: 'var(--bv-muted)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            transition: 'color 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--bv-text)'; e.currentTarget.style.borderColor = 'var(--bv-accent)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--bv-muted)'; e.currentTarget.style.borderColor = 'var(--bv-input-border)' }}
-          title="Attach images or files"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-        <textarea
-          ref={inputRef}
-          value={chat.input}
-          rows={1}
-          onChange={e => {
-            chat.setInput(e.target.value)
-            e.target.style.height = 'auto'
-            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
-          }}
-          onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
-          placeholder={`Message ${agentName}...`}
-          onClick={e => e.stopPropagation()}
-          style={{
-            flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
-            borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
-            fontFamily: "'Inter', sans-serif", outline: 'none',
-            resize: 'none', overflowY: 'auto', lineHeight: '1.4',
-            minHeight: 36, maxHeight: 120,
-          }}
-        />
-        {/* Voice toggle */}
+        {/* Voice mode: VoiceChat replaces text input. Text mode: file attach + textarea + send */}
+        {isVoiceActive ? (
+          <div style={{ flex: 1 }} onClick={e => e.stopPropagation()}>
+            <VoiceChat
+              agentSlug="user"
+              agentColor={color}
+              clientId={getClientId()}
+              onTranscript={handleTranscript}
+              onStatusChange={setLocalVoiceStatus}
+              onVolumeChange={setLocalVoiceVolume}
+            />
+          </div>
+        ) : (
+          <>
+            {/* + button: attach images/files */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.md"
+              style={{ display: 'none' }}
+              onChange={e => {
+                if (e.target.files?.length) {
+                  setPendingFiles(prev => [...prev, ...Array.from(e.target.files)])
+                  e.target.value = ''
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+              style={{
+                width: 32, height: 32, borderRadius: 8, border: '1.5px solid var(--bv-input-border)',
+                background: 'var(--bv-input-bg)', color: 'var(--bv-muted)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                transition: 'color 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--bv-text)'; e.currentTarget.style.borderColor = 'var(--bv-accent)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--bv-muted)'; e.currentTarget.style.borderColor = 'var(--bv-input-border)' }}
+              title="Attach images or files"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <textarea
+              ref={inputRef}
+              value={chat.input}
+              rows={1}
+              onChange={e => {
+                chat.setInput(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+              }}
+              onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
+              placeholder={`Message ${agentName}...`}
+              onClick={e => e.stopPropagation()}
+              style={{
+                flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
+                borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
+                fontFamily: "'Inter', sans-serif", outline: 'none',
+                resize: 'none', overflowY: 'auto', lineHeight: '1.4',
+                minHeight: 36, maxHeight: 120,
+              }}
+            />
+          </>
+        )}
+        {/* Voice toggle -- always visible so user can switch modes */}
         <div onClick={e => e.stopPropagation()}>
           <VoiceToggle isActive={isVoiceActive} status={localVoiceStatus} volumeLevel={localVoiceVolume} onToggle={onVoiceToggle} />
         </div>
-        {/* Send button */}
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); doSend() }}
-          disabled={uploading}
-          style={{
-            width: 36, height: 36, borderRadius: 10, border: 'none',
-            background: chat.input?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
-            color: '#fff',
-            cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            opacity: uploading ? 0.5 : 1,
-            boxShadow: chat.input?.trim() ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
-            transition: 'all 0.15s',
-          }}
-        >
-          {uploading ? (
-            <div className="animate-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          )}
-        </button>
+        {/* Send button -- text mode only */}
+        {!isVoiceActive && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); doSend() }}
+            disabled={uploading}
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: 'none',
+              background: chat.input?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+              color: '#fff',
+              cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              opacity: uploading ? 0.5 : 1,
+              boxShadow: chat.input?.trim() ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
+              transition: 'all 0.15s',
+            }}
+          >
+            {uploading ? (
+              <div className="animate-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
