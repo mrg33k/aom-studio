@@ -284,7 +284,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/dashboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/agent/:slug/info" element={<AuthGuard><AgentInfoPage /></AuthGuard>} />
           <Route path="/dashboard/checklist" element={<AuthGuard><GameDashboard /></AuthGuard>} />
