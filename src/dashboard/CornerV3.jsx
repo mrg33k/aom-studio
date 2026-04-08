@@ -2276,13 +2276,109 @@ export default function CornerV3() {
         {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
 
-      {/* ── INPUT BAR (persistent -- hidden on chat tab, ChatPanel has own input) */}
+      {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
+      {rootVoiceActive && tab !== 'chat' && (
+        <>
+          <style>{`@keyframes vw-root { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }`}</style>
+          {/* Hidden VoiceChat for audio logic */}
+          <div style={{ display: 'none' }}>
+            <VoiceChat
+              ref={rootVoiceChatRef}
+              agentSlug={(selectedAgent || agents?.find(a => a.slug === 'rex') || agents?.[0])?.slug || 'rex'}
+              agentColor={C.accent}
+              clientId={worldId}
+              autoStart={true}
+              onTranscript={(text) => setRootVoiceTranscript(text)}
+              onStatusChange={(s) => {
+                setRootVoiceStatus(s)
+                if (s === 'idle') {
+                  setRootVoiceActive(false)
+                  setRootVoiceMuted(false)
+                  setRootVoiceTranscript('')
+                }
+              }}
+            />
+          </div>
+          {/* Voice mode UI */}
+          <div style={{
+            flexShrink: 0,
+            padding: '14px 20px',
+            background: C.bg2,
+            borderTop: '1px solid ' + C.border,
+          }}>
+            {/* Waveform bars */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, height: 40, marginBottom: 8 }}>
+              {[
+                { h: 14, d: '0s' }, { h: 26, d: '.08s' }, { h: 38, d: '.16s' },
+                { h: 30, d: '.24s' }, { h: 18, d: '.32s' }, { h: 34, d: '.12s' },
+                { h: 22, d: '.20s' }, { h: 40, d: '.28s' }, { h: 16, d: '.36s' },
+              ].map((bar, i) => (
+                <div key={i} style={{
+                  width: 3, height: bar.h, borderRadius: 2,
+                  background: C.accent,
+                  animation: `vw-root 1s ease-in-out ${bar.d} infinite`,
+                }} />
+              ))}
+            </div>
+            {/* Status */}
+            <div style={{
+              textAlign: 'center', fontSize: 12, fontWeight: 600,
+              color: C.accent, fontFamily: "'JetBrains Mono', monospace",
+              marginBottom: 4,
+            }}>
+              {rootVoiceStatus === 'connecting' ? 'Connecting...'
+                : rootVoiceStatus === 'speaking' ? 'Speaking...'
+                : rootVoiceStatus === 'error' ? 'Error'
+                : 'Listening...'}
+            </div>
+            {/* Transcript */}
+            <div style={{
+              fontSize: 13, color: C.text2, textAlign: 'center',
+              minHeight: 18, padding: '0 20px',
+            }}>
+              {rootVoiceTranscript ? `"${rootVoiceTranscript}"` : ''}
+            </div>
+            {/* Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 10 }}>
+              {/* Mute */}
+              <button
+                onClick={() => { rootVoiceChatRef.current?.toggleMute(); setRootVoiceMuted(v => !v) }}
+                style={{
+                  width: 42, height: 42, borderRadius: '50%',
+                  border: '1px solid ' + C.border,
+                  background: rootVoiceMuted ? 'rgba(239,68,68,0.15)' : C.s2,
+                  color: rootVoiceMuted ? '#F87171' : C.muted,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 15, fontWeight: 700, transition: 'transform 0.15s',
+                }}
+              >M</button>
+              {/* End */}
+              <button
+                onClick={() => {
+                  rootVoiceChatRef.current?.stop()
+                  setRootVoiceActive(false)
+                  setRootVoiceMuted(false)
+                  setRootVoiceTranscript('')
+                }}
+                style={{
+                  width: 42, height: 42, borderRadius: '50%', border: 'none',
+                  background: C.red, color: '#fff',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 15, fontWeight: 700, transition: 'transform 0.15s',
+                }}
+              >&#x00D7;</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── INPUT BAR (persistent -- hidden on chat tab or when root voice is active) */}
       <div style={{
         flexShrink: 0,
         padding: '8px 12px 10px',
         background: C.bg,
         borderTop: '1px solid ' + C.border,
-        display: tab === 'chat' ? 'none' : undefined,
+        display: (tab === 'chat' || rootVoiceActive) ? 'none' : undefined,
       }}>
         <div style={{
           display: 'flex',
@@ -2344,7 +2440,7 @@ export default function CornerV3() {
           </div>
           {/* Mic (hidden when text present) */}
           {!inputBarText.trim() && (
-            <button title="Voice" style={{
+            <button title="Voice" onClick={() => setRootVoiceActive(true)} style={{
               width: 42, height: 42, borderRadius: '50%',
               background: C.accent, border: 'none',
               color: '#000', cursor: 'pointer',
