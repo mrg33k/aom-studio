@@ -1,0 +1,276 @@
+/* BoardViewMessageContent.module.css */
+/* Robust styling for chat message content in BoardView */
+
+.messageContent {
+  line-height: 1.6;
+  font-size: 0.9rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal; /* prevent pre-wrap inheritance from parent bubble div */
+  color: inherit;
+}
+
+.messageContent p {
+  margin: 0 0 0.7em 0;
+  white-space: pre-wrap;
+}
+
+.messageContent p:last-child {
+  margin-bottom: 0;
+}
+
+.messageContent ul {
+  list-style-type: disc;
+  margin: 0 0 0.7em 1.5em;
+  padding: 0;
+  white-space: normal;
+}
+
+.messageContent ul:last-child {
+  margin-bottom: 0;
+}
+
+.messageContent ol {
+  list-style-type: decimal;
+  margin: 0 0 0.7em 1.5em;
+  padding: 0;
+  white-space: normal;
+}
+
+.messageContent ol:last-child {
+  margin-bottom: 0;
+}
+
+.messageContent li {
+  margin-bottom: 0.3em;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.messageContent li:last-child {
+  margin-bottom: 0;
+}
+
+/* Collapse gap when a blank line between bullets creates back-to-back lists */
+.messageContent ul + ul,
+.messageContent ol + ol,
+.messageContent ul + ol,
+.messageContent ol + ul {
+  margin-top: -0.4em;
+}
+
+.messageContent ul li::marker {
+  color: var(--bullet-point-color, #888);
+}
+
+.messageContent ol li::marker {
+  font-weight: 600;
+  color: var(--numbered-list-color, #777);
+}
+
+.messageContent strong,
+.messageContent b {
+  font-weight: 700;
+}
+
+.messageContent em,
+.messageContent i {
+  font-style: italic;
+}
+
+.messageContent code {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  color: #a5d6a7;
+  white-space: pre-wrap;
+}
+
+.messageContent pre {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.75em 1em;
+  margin: 0.75em 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.messageContent pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85em;
+  color: #e2e8f0;
+  white-space: pre;
+}
+
+.messageContent h1,
+.messageContent h2,
+.messageContent h3 {
+  font-weight: 600;
+  margin: 0.8em 0 0.4em 0;
+  line-height: 1.3;
+  color: var(--text-color-primary, #e2e8f0);
+}
+
+.messageContent h1 { font-size: 1.15em; }
+.messageContent h2 { font-size: 1.05em; }
+.messageContent h3 { font-size: 0.98em; }
+
+/* ── Chat Bubbles ────────────────────────────────────────────────────────── */
+
+.agentBubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 88%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: var(--bv-chat-agent);
+  border: 1px solid var(--bv-card-border);
+  border-left: 3px solid var(--agent-accent-color, rgba(96, 165, 250, 0.5));
+  color: var(--bv-text2);
+  cursor: context-menu;
+}
+
+.userBubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 88%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: var(--bv-chat-user);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: var(--bv-text);
+  cursor: context-menu;
+}
+
+.taskNotification {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 92%;
+  width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--bv-text2);
+  cursor: context-menu;
+}
+
+.taskCompletionNotification {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 92%;
+  width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--bv-text2);
+  cursor: context-menu;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  border-left: 3px solid rgba(34, 197, 94, 0.5);
+}
+
+.taskFailNotification {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 92%;
+  width: 100%;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--bv-text2);
+  cursor: context-menu;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-left: 3px solid rgba(239, 68, 68, 0.5);
+}
+
+.taskCompletionHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.taskCompletionLabel {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #22C55E;
+}
+
+.taskFailLabel {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #EF4444;
+}
+
+/* ── Typing Indicator ─────────────────────────────────────────────────────── */
+
+.typingIndicatorContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 4px 2px;
+  color: var(--bv-dim, #64748B);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.typingDots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.typingDot {
+  width: 5px;
+  height: 5px;
+  background-color: var(--bv-dim, #64748B);
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typingDot:nth-child(1) { animation-delay: -0.32s; }
+.typingDot:nth-child(2) { animation-delay: -0.16s; }
+.typingDot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+  40%            { transform: scale(1); opacity: 1; }
+}
+
+/* ── Message Fade-In ─────────────────────────────────────────────────────── */
+
+@keyframes msgFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.messageFadeIn {
+  animation: msgFadeIn 200ms ease-out both;
+}

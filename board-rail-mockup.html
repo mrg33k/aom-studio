@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Corner Board -- Rail Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0B1A3E;
+    color: #E8ECF4;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────────────── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 10px 68px;
+    border-bottom: 1px solid rgba(60,120,255,0.12);
+    flex-shrink: 0;
+    background: rgba(10,20,50,0.6);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+  }
+
+  .top-bar h1 {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #A0C4FF;
+  }
+
+  /* ── MAIN LAYOUT: RAIL + COLUMNS ─────────────────────────── */
+  .main-layout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── LEFT RAIL ───────────────────────────────────────────── */
+  .rail {
+    width: 56px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(8,16,40,0.7);
+    border-right: 1px solid rgba(60,120,255,0.1);
+    padding: 8px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 5;
+  }
+
+  .rail::-webkit-scrollbar { width: 0; }
+
+  .rail-section-label {
+    font-size: 7px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgba(100,140,200,0.4);
+    text-align: center;
+    padding: 8px 0 4px;
+  }
+
+  .rail-divider {
+    height: 1px;
+    background: rgba(60,120,255,0.1);
+    margin: 6px 10px;
+  }
+
+  .rail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 0;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+  }
+
+  .rail-item:hover .rail-avatar {
+    transform: scale(1.1);
+  }
+
+  .rail-avatar {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* Agents = circles */
+  .rail-avatar.agent {
+    border-radius: 50%;
+  }
+
+  /* Projects = rounded squares */
+  .rail-avatar.project {
+    border-radius: 10px;
+  }
+
+  /* Active: bright, full size */
+  .rail-item.active .rail-avatar {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(59,130,246,0.2);
+  }
+
+  /* Active indicator bar on left */
+  .rail-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 24px;
+    border-radius: 0 3px 3px 0;
+    background: #60A5FA;
+  }
+
+  /* Inactive: dimmed, slightly smaller */
+  .rail-item:not(.active) .rail-avatar {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+
+  .rail-item:not(.active):hover .rail-avatar {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+
+  /* Status ring */
+  .rail-avatar.status-working {
+    box-shadow: 0 0 0 2px #22C55E, 0 0 8px rgba(34,197,94,0.25) !important;
+  }
+
+  .rail-avatar.status-idle {
+    box-shadow: 0 0 0 2px rgba(107,114,128,0.35);
+  }
+
+  .rail-avatar.status-done {
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.4);
+  }
+
+  /* Notification badge */
+  .rail-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: #F97316;
+    border: 2px solid #080A20;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    animation: badgePop 0.3s ease;
+    z-index: 2;
+  }
+
+  .rail-badge.dot {
+    min-width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  @keyframes badgePop {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .rail-name {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(100,140,200,0.5);
+    margin-top: 2px;
+    max-width: 48px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rail-item.active .rail-name {
+    color: rgba(150,190,255,0.8);
+  }
+
+  /* Tooltip on hover */
+  .rail-item .rail-tooltip {
+    display: none;
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(15,25,50,0.95);
+    border: 1px solid rgba(60,120,255,0.2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .rail-item:hover .rail-tooltip {
+    display: block;
+  }
+
+  .rail-tooltip-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #E8ECF4;
+  }
+
+  .rail-tooltip-role {
+    font-size: 10px;
+    color: #6B7280;
+    margin-top: 1px;
+  }
+
+  .rail-tooltip-status {
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+
+  /* ── COLUMNS AREA ────────────────────────────────────────── */
+  .columns-area {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .columns-area::-webkit-scrollbar { height: 4px; }
+  .columns-area::-webkit-scrollbar-thumb { background: rgba(60,120,255,0.2); border-radius: 4px; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: rgba(100,140,200,0.3);
+  }
+
+  .empty-state-icon {
+    font-size: 40px;
+    opacity: 0.3;
+  }
+
+  .empty-state-text {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .empty-state-hint {
+    font-size: 11px;
+    color: rgba(100,140,200,0.2);
+  }
+
+  /* ── COLUMN ──────────────────────────────────────────────── */
+  .column {
+    min-width: 320px;
+    max-width: 380px;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px;
+    border: 1px solid rgba(60,120,255,0.15);
+    background: rgba(15,35,90,0.35);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+    animation: colSlideIn 0.25s ease;
+  }
+
+  @keyframes colSlideIn {
+    from { opacity: 0; transform: translateX(20px) scale(0.97); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(60,120,255,0.08);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .col-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .col-avatar {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  .col-name { font-size: 15px; font-weight: 800; color: #E8ECF4; }
+  .col-role { font-size: 10px; color: #6B7280; margin-top: 1px; }
+
+  .col-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+
+  .col-status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  /* Tasks bar (minimized) */
+  .tasks-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    border-bottom: 1px solid rgba(60,120,255,0.06);
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .tasks-bar:hover { background: rgba(15,45,140,0.15); }
+
+  .tasks-bar-label {
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #6B7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tasks-bar-count {
+    font-size: 10px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 10px;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .tasks-bar-count.has-tasks {
+    color: #22C55E;
+    background: rgba(34,197,94,0.12);
+  }
+
+  .tasks-bar-count.empty {
+    color: #4A6585;
+    background: rgba(60,120,255,0.1);
+  }
+
+  /* Chat label */
+  .chat-label {
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #6B7280;
+    padding: 8px 16px 4px;
+    flex-shrink: 0;
+  }
+
+  /* Chat messages */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 0;
+  }
+
+  .chat-area::-webkit-scrollbar { width: 3px; }
+  .chat-area::-webkit-scrollbar-thumb { background: rgba(60,120,255,0.12); border-radius: 3px; }
+
+  .msg {
+    padding: 7px 11px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 88%;
+  }
+
+  .msg.agent-msg {
+    background: rgba(15,45,140,0.25);
+    border: 1px solid rgba(60,120,255,0.1);
+    color: #C8D4E0;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.user-msg {
+    background: rgba(59,130,246,0.2);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: #E8ECF4;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-who {
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    opacity: 0.5;
+  }
+
+  /* Chat input */
+  .chat-input-bar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-top: 1px solid rgba(60,120,255,0.06);
+    flex-shrink: 0;
+    background: rgba(10,20,50,0.3);
+  }
+
+  .chat-input {
+    flex: 1;
+    background: rgba(15,35,80,0.5);
+    border: 1.5px solid rgba(60,120,255,0.15);
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: #E8ECF4;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+  }
+
+  .chat-input:focus { border-color: rgba(59,130,246,0.4); }
+  .chat-input::placeholder { color: #4A6585; }
+
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(59,130,246,0.2);
+    color: #60A5FA;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── COLUMN TABS ──────────────────────────────────────────── */
+  .col-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(60,120,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .col-tab {
+    flex: 1;
+    padding: 7px 0;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #4A6585;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .col-tab.active {
+    color: #60A5FA;
+    border-bottom-color: #60A5FA;
+  }
+
+  .col-tab:hover:not(.active) {
+    color: #7BA4D4;
+    background: rgba(59,130,246,0.04);
+  }
+
+  /* Tab content panels */
+  .col-tab-content {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .col-tab-content.active {
+    display: flex;
+  }
+
+  /* Info tab content */
+  .info-section {
+    padding: 12px 14px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .info-block {
+    margin-bottom: 12px;
+  }
+
+  .info-label {
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #6B7280;
+    margin-bottom: 5px;
+  }
+
+  .info-text {
+    font-size: 12px;
+    color: #C8D4E0;
+    line-height: 1.5;
+    font-style: italic;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border-left: 2px solid rgba(60,120,255,0.3);
+    background: rgba(15,45,140,0.12);
+  }
+
+  .info-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .info-pill {
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(60,120,255,0.1);
+    border: 1px solid rgba(60,120,255,0.2);
+    color: #60A5FA;
+  }
+
+  /* Files tab */
+  .files-empty {
+    padding: 30px 14px;
+    text-align: center;
+    color: #4A6585;
+    font-size: 12px;
+  }
+
+  /* ── CLOSE BUTTON (X in column header) ───────────────────── */
+  .col-close {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid rgba(60,120,255,0.15);
+    background: transparent;
+    color: #4A6585;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .col-close:hover {
+    background: rgba(239,68,68,0.15);
+    border-color: rgba(239,68,68,0.3);
+    color: #EF4444;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <h1>CORNER BOARD</h1>
+  <span style="font-size:11px;color:#4A6585;font-family:'JetBrains Mono',monospace;">AOM</span>
+</div>
+
+<div class="main-layout">
+
+  <!-- LEFT RAIL -->
+  <div class="rail">
+    <div class="rail-section-label">Team</div>
+
+    <div class="rail-item active" onclick="toggle('elon')">
+      <div class="rail-avatar agent status-working" style="background:rgba(76,175,80,0.15);border:1.5px solid rgba(76,175,80,0.4);color:#4CAF50;">E</div>
+      <span class="rail-name">Elon</span>
+      <div class="rail-tooltip">
+        <div class="rail-tooltip-name">Elon</div>
+        <div class="rail-tooltip-role">Infrastructure</div>
+        <div class="rail-tooltip-status" style="color:#22C55E;">Working</div>
+      </div>
+    </div>
+
+    <div class="rail-item active" onclick="toggle('bobby')">
+      <div class="rail-avatar agent status-idle" style="background:rgba(156,39,176,0.15);border:1.5px solid rgba(156,39,176,0.4);color:#9C27B0;">B</div>
+      <span class="rail-name">Bobby</span>
+      <div class="rail-tooltip">
+        <div class="rail-tooltip-name">Bobby</div>
+        <div class="rail-tooltip-role">Web Dev</div>
+        <div class="rail-tooltip-status" style="color:#6B7280;">Idle</div>
+      </div>
+    </div>
+
+    <div class="rail-item" onclick="toggle('steffen')">
+      <div class="rail-avatar agent status-done" style="background:rgba(201,168,76,0.15);border:1.5px solid rgba(201,168,76,0.4);color:#C9A84C;">
+        S
+        <span class="rail-badge">2</span>
+      </div>
+      <span class="rail-name">Steffen</span>
+      <div class="rail-tooltip">
+        <div class="rail-tooltip-name">Steffen</div>
+        <div class="rail-tooltip-role">Brand / Creative</div>
+        <div class="rail-tooltip-status" style="color:#3B82F6;">Done</div>
+      </div>
+    </div>
+
+    <div class="rail-item" onclick="toggle('cleo')">
+      <div class="rail-avatar agent status-idle" style="background:rgba(249,115,22,0.15);border:1.5px solid rgba(249,115,22,0.4);color:#F97316;">C</div>
+      <span class="rail-name">Cleo</span>
+      <div class="rail-tooltip">
+        <div class="rail-tooltip-name">Cleo</div>
+        <div class="rail-tooltip-role">Content</div>
+        <div class="rail-tooltip-status" style="color:#6B7280;">Idle</div>
+      </div>
+    </div>
+
+    <div class="rail-item" onclick="toggle('gary')">
+      <div class="rail-avatar agent status-working" style="background:rgba(76,175,80,0.15);border:1.5px solid rgba(76,175,80,0.4);color:#4CAF50;">G</div>
+      <span class="rail-name">Gary</span>
+      <div class="rail-tooltip">
+        <div class="rail-tooltip-name">Gary</div>
+        <div class="rail-tooltip-role">AOM Ops</div>
+        <div class="rail-tooltip-status" style="color:#22C55E;">Working</div>
+      </div>
+    </div>
+
+    <div class="rail-item" onclick="toggle('steve')">
+      <div class="rail-avatar agent status-idle" style="background:rgba(124,154,114,0.15);border:1.5px solid rgba(124,154,114,0.4);color:#7C9A72;">
+        St
+        <span class="rail-badge dot"></span>
+      </div>
+      <span class="rail-name">Steve</span>
+    </div>
+
+    <div class="rail-item" onclick="toggle('jacob')">
+      <div class="rail-avatar agent status-idle" style="background:rgba(239,68,68,0.15);border:1.5px solid rgba(239,68,68,0.4);color:#EF4444;">J</div>
+      <span class="rail-name">Jacob</span>
+    </div>
+
+    <div class="rail-divider"></div>
+    <div class="rail-section-label">Projects</div>
+
+    <div class="rail-item active" onclick="toggle('corner')">
+      <div class="rail-avatar project" style="background:rgba(59,130,246,0.15);border:1.5px solid rgba(59,130,246,0.4);color:#3B82F6;">C</div>
+      <span class="rail-name">Corner</span>
+      <div class="rail-tooltip">
+        <div class="rail-tooltip-name">Corner</div>
+        <div class="rail-tooltip-role">Product</div>
+      </div>
+    </div>
+
+    <div class="rail-item" onclick="toggle('ambition')">
+      <div class="rail-avatar project" style="background:rgba(232,93,38,0.15);border:1.5px solid rgba(232,93,38,0.4);color:#E85D26;">A</div>
+      <span class="rail-name">Ambition</span>
+    </div>
+
+    <div class="rail-item" onclick="toggle('kohrs')">
+      <div class="rail-avatar project" style="background:rgba(253,216,53,0.15);border:1.5px solid rgba(253,216,53,0.4);color:#FDD835;">K</div>
+      <span class="rail-name">KOHRS</span>
+    </div>
+
+    <div class="rail-item" onclick="toggle('isa')">
+      <div class="rail-avatar project" style="background:rgba(76,175,80,0.15);border:1.5px solid rgba(76,175,80,0.4);color:#4CAF50;">I</div>
+      <span class="rail-name">ISA</span>
+    </div>
+
+  </div>
+
+  <!-- COLUMNS AREA -->
+  <div class="columns-area" id="columns-area">
+
+    <!-- ELON -->
+    <div class="column" id="col-elon">
+      <div class="col-header" style="--accent:#4CAF50;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#4CAF50;border-radius:0 2px 2px 0;"></div>
+        <div class="col-avatar agent" style="background:rgba(76,175,80,0.15);border:1.5px solid rgba(76,175,80,0.4);color:#4CAF50;border-radius:50%;">E</div>
+        <div style="flex:1"><div class="col-name">Elon</div><div class="col-role">Infrastructure</div></div>
+        <div class="col-status" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#22C55E;"><span class="col-status-dot" style="background:#22C55E;box-shadow:0 0 6px #22C55E;"></span>Working</div>
+        <button class="col-close" onclick="event.stopPropagation();toggle('elon')">&times;</button>
+      </div>
+      <div class="col-tabs" id="elon-tabs">
+        <div class="col-tab active" onclick="switchTab('elon','chat')">Chat</div>
+        <div class="col-tab" onclick="switchTab('elon','tasks')">Tasks</div>
+        <div class="col-tab" onclick="switchTab('elon','info')">Info</div>
+        <div class="col-tab" onclick="switchTab('elon','files')">Files</div>
+      </div>
+      <!-- Chat tab -->
+      <div class="col-tab-content active" data-col="elon" data-tab="chat">
+        <div class="chat-area">
+          <div class="msg agent-msg"><div class="msg-who">Elon</div>Relay dedup fixed. prompt_id collision resolved.</div>
+          <div class="msg user-msg"><div class="msg-who">You</div>Good. Fix the ghost loop next.</div>
+          <div class="msg agent-msg"><div class="msg-who">Elon</div>On it. Hook cache persists stale IDs across compaction. Clearing on session start.</div>
+        </div>
+        <div class="chat-input-bar">
+          <input class="chat-input" placeholder="Message Elon..." />
+          <button class="send-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+      <!-- Tasks tab -->
+      <div class="col-tab-content" data-col="elon" data-tab="tasks" style="padding:8px 12px;overflow-y:auto;">
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:5px;font-size:12px;color:#C8D4E0;">Fix relay dedup for multi-agent spawn<div style="margin-top:3px;"><span style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:1px 6px;border-radius:4px;background:rgba(76,175,80,0.12);color:#4CAF50;">INFRA</span></div></div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:5px;font-size:12px;color:#C8D4E0;">Hook cache cleanup for ghost loops<div style="margin-top:3px;"><span style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.12);color:#EF4444;">BUG</span></div></div>
+      </div>
+      <!-- Info tab -->
+      <div class="col-tab-content" data-col="elon" data-tab="info">
+        <div class="info-section">
+          <div class="info-block">
+            <div class="info-label">Superpower</div>
+            <div class="info-text">The engine room. Server racks, green terminal, exposed cables. Functional, not decorative.</div>
+          </div>
+          <div class="info-block">
+            <div class="info-label">Skills</div>
+            <div class="info-pills">
+              <span class="info-pill">/status</span>
+              <span class="info-pill">/masterplan</span>
+              <span class="info-pill">/supersaiyan</span>
+              <span class="info-pill">/council</span>
+            </div>
+          </div>
+          <div class="info-block">
+            <div class="info-label">Owns</div>
+            <div style="font-size:12px;color:#C8D4E0;">Infrastructure, relay system, agent orchestration, Supabase schema</div>
+          </div>
+        </div>
+      </div>
+      <!-- Files tab -->
+      <div class="col-tab-content" data-col="elon" data-tab="files">
+        <div class="files-empty">No files yet</div>
+      </div>
+    </div>
+
+    <!-- BOBBY -->
+    <div class="column" id="col-bobby">
+      <div class="col-header">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#9C27B0;border-radius:0 2px 2px 0;"></div>
+        <div class="col-avatar agent" style="background:rgba(156,39,176,0.15);border:1.5px solid rgba(156,39,176,0.4);color:#9C27B0;border-radius:50%;">B</div>
+        <div style="flex:1"><div class="col-name">Bobby</div><div class="col-role">Web Dev</div></div>
+        <div class="col-status" style="background:rgba(107,114,128,0.12);border:1px solid rgba(107,114,128,0.3);color:#6B7280;"><span class="col-status-dot" style="background:#6B7280;"></span>Idle</div>
+        <button class="col-close" onclick="event.stopPropagation();toggle('bobby')">&times;</button>
+      </div>
+      <div class="col-tabs" id="bobby-tabs">
+        <div class="col-tab active" onclick="switchTab('bobby','chat')">Chat</div>
+        <div class="col-tab" onclick="switchTab('bobby','tasks')">Tasks</div>
+        <div class="col-tab" onclick="switchTab('bobby','info')">Info</div>
+        <div class="col-tab" onclick="switchTab('bobby','files')">Files</div>
+      </div>
+      <!-- Chat tab -->
+      <div class="col-tab-content active" data-col="bobby" data-tab="chat">
+        <div class="chat-area">
+          <div class="msg agent-msg"><div class="msg-who">Bobby</div>World isolation shipped. Gary restored. Jarvis seeded for Q.</div>
+          <div class="msg user-msg"><div class="msg-who">You</div>Show me the rail mockup before we go.</div>
+          <div class="msg agent-msg"><div class="msg-who">Bobby</div>On it. Building now.</div>
+        </div>
+        <div class="chat-input-bar">
+          <input class="chat-input" placeholder="Message Bobby..." />
+          <button class="send-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+      <!-- Tasks tab -->
+      <div class="col-tab-content" data-col="bobby" data-tab="tasks" style="padding:8px 12px;overflow-y:auto;">
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:5px;font-size:12px;color:#C8D4E0;">Board view redesign<div style="margin-top:3px;"><span style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:1px 6px;border-radius:4px;background:rgba(59,130,246,0.12);color:#3B82F6;">CORNER</span></div></div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:5px;font-size:12px;color:#C8D4E0;">World isolation</div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:5px;font-size:12px;color:#C8D4E0;">Agent rename persistence</div>
+      </div>
+      <!-- Info tab -->
+      <div class="col-tab-content" data-col="bobby" data-tab="info">
+        <div class="info-section">
+          <div class="info-block">
+            <div class="info-label">Superpower</div>
+            <div class="info-text">Dev cave. Purple LED underglow, triple monitors, dark walls. The room hums.</div>
+          </div>
+          <div class="info-block">
+            <div class="info-label">Skills</div>
+            <div class="info-pills">
+              <span class="info-pill">/kill-the-bugs</span>
+              <span class="info-pill">/quick-fix</span>
+              <span class="info-pill">/cage-match</span>
+              <span class="info-pill">/ship-it</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Files tab -->
+      <div class="col-tab-content" data-col="bobby" data-tab="files">
+        <div class="files-empty">No files yet</div>
+      </div>
+    </div>
+
+    <!-- CORNER (project) -->
+    <div class="column" id="col-corner">
+      <div class="col-header">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#3B82F6;border-radius:0 2px 2px 0;"></div>
+        <div class="col-avatar project" style="background:rgba(59,130,246,0.15);border:1.5px solid rgba(59,130,246,0.4);color:#3B82F6;border-radius:10px;">C</div>
+        <div style="flex:1"><div class="col-name">Corner</div><div class="col-role">Product</div></div>
+        <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#4A6585;background:rgba(60,120,255,0.1);padding:2px 8px;border-radius:10px;">8 tasks</span>
+        <button class="col-close" onclick="event.stopPropagation();toggle('corner')">&times;</button>
+      </div>
+      <div class="col-tabs" id="corner-tabs">
+        <div class="col-tab active" onclick="switchTab('corner','tasks')">Tasks</div>
+        <div class="col-tab" onclick="switchTab('corner','activity')">Activity</div>
+        <div class="col-tab" onclick="switchTab('corner','info')">Info</div>
+        <div class="col-tab" onclick="switchTab('corner','files')">Files</div>
+      </div>
+      <!-- Tasks tab -->
+      <div class="col-tab-content active" data-col="corner" data-tab="tasks" style="padding:6px 12px;overflow-y:auto;">
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:4px;font-size:12px;color:#C8D4E0;display:flex;gap:8px;align-items:flex-start;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(60,120,255,0.2);flex-shrink:0;margin-top:1px;"></div><div>Board view redesign<div style="margin-top:2px;"><span style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:1px 5px;border-radius:3px;background:rgba(156,39,176,0.12);color:#9C27B0;">Bobby</span></div></div></div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:4px;font-size:12px;color:#C8D4E0;display:flex;gap:8px;align-items:flex-start;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(60,120,255,0.2);flex-shrink:0;margin-top:1px;"></div><div>World isolation + multi-tenant<div style="margin-top:2px;"><span style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:1px 5px;border-radius:3px;background:rgba(156,39,176,0.12);color:#9C27B0;">Bobby</span></div></div></div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:4px;font-size:12px;color:#C8D4E0;display:flex;gap:8px;align-items:flex-start;opacity:0.5;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid #22C55E;background:rgba(34,197,94,0.15);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><span style="text-decoration:line-through;">Room position persistence</span></div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:4px;font-size:12px;color:#C8D4E0;display:flex;gap:8px;align-items:flex-start;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(60,120,255,0.2);flex-shrink:0;margin-top:1px;"></div><div>Q account onboarding<div style="margin-top:2px;"><span style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:1px 5px;border-radius:3px;background:rgba(76,175,80,0.12);color:#4CAF50;">Elon</span></div></div></div>
+        <div style="padding:7px 10px;border-radius:8px;background:rgba(15,45,140,0.2);border:1px solid rgba(60,120,255,0.12);margin-bottom:4px;font-size:12px;color:#C8D4E0;display:flex;gap:8px;align-items:flex-start;"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(60,120,255,0.2);flex-shrink:0;margin-top:1px;"></div>Agent rename via Info tab</div>
+      </div>
+      <!-- Activity tab -->
+      <div class="col-tab-content" data-col="corner" data-tab="activity">
+        <div class="chat-area">
+          <div class="msg agent-msg"><div class="msg-who">Bobby</div>World isolation shipped (88e5d48). All queries scoped.</div>
+          <div class="msg agent-msg"><div class="msg-who">Elon</div>Relay dedup fixed. Ghost loop root cause found.</div>
+          <div class="msg agent-msg"><div class="msg-who">Bobby</div>Board view v2 pushed. Rail mockup built.</div>
+        </div>
+      </div>
+      <!-- Info tab -->
+      <div class="col-tab-content" data-col="corner" data-tab="info">
+        <div class="info-section">
+          <div class="info-block">
+            <div class="info-label">Team</div>
+            <div class="info-pills">
+              <span class="info-pill" style="background:rgba(156,39,176,0.12);border-color:rgba(156,39,176,0.3);color:#9C27B0;">Bobby</span>
+              <span class="info-pill" style="background:rgba(76,175,80,0.12);border-color:rgba(76,175,80,0.3);color:#4CAF50;">Elon</span>
+              <span class="info-pill" style="background:rgba(124,154,114,0.12);border-color:rgba(124,154,114,0.3);color:#7C9A72;">Steve</span>
+              <span class="info-pill" style="background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.3);color:#C9A84C;">Steffen</span>
+            </div>
+          </div>
+          <div class="info-block">
+            <div class="info-label">Status</div>
+            <div style="font-size:12px;color:#C8D4E0;">15 commits shipped Mar 24-25. Board view redesign in progress.</div>
+          </div>
+        </div>
+      </div>
+      <!-- Files tab -->
+      <div class="col-tab-content" data-col="corner" data-tab="files">
+        <div class="files-empty">No files yet</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // Track which columns are visible
+  const visible = new Set(['elon', 'bobby', 'corner']);
+
+  function toggle(id) {
+    const item = document.querySelector(`.rail-item[onclick*="${id}"]`);
+    const col = document.getElementById('col-' + id);
+
+    if (visible.has(id)) {
+      // Hide
+      visible.delete(id);
+      if (item) item.classList.remove('active');
+      if (col) {
+        col.style.animation = 'none';
+        col.style.opacity = '0';
+        col.style.transform = 'translateX(-10px) scale(0.97)';
+        setTimeout(() => { col.style.display = 'none'; checkEmpty(); }, 200);
+      }
+    } else {
+      // Show
+      visible.add(id);
+      if (item) {
+        item.classList.add('active');
+        // Clear badge
+        const badge = item.querySelector('.rail-badge');
+        if (badge) badge.remove();
+      }
+      if (col) {
+        col.style.display = 'flex';
+        col.style.opacity = '0';
+        col.style.transform = 'translateX(20px) scale(0.97)';
+        col.style.animation = 'none';
+        requestAnimationFrame(() => {
+          col.style.transition = 'opacity 0.25s, transform 0.25s';
+          col.style.opacity = '1';
+          col.style.transform = 'translateX(0) scale(1)';
+        });
+      }
+      checkEmpty();
+    }
+  }
+
+  function checkEmpty() {
+    const area = document.getElementById('columns-area');
+    let empty = area.querySelector('.empty-state');
+    const visibleCols = area.querySelectorAll('.column[style*="display: flex"], .column:not([style*="display: none"])');
+    // Count truly visible
+    let count = 0;
+    area.querySelectorAll('.column').forEach(c => {
+      if (c.style.display !== 'none') count++;
+    });
+    if (count === 0 && !empty) {
+      empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = '<div class="empty-state-icon">&#9776;</div><div class="empty-state-text">Click agents or projects in the rail</div><div class="empty-state-hint">Your view saves automatically</div>';
+      area.appendChild(empty);
+    } else if (count > 0 && empty) {
+      empty.remove();
+    }
+  }
+
+  // Tab switching per column
+  function switchTab(colId, tabName) {
+    // Update tab bar
+    const tabBar = document.getElementById(colId + '-tabs');
+    if (tabBar) {
+      tabBar.querySelectorAll('.col-tab').forEach(t => t.classList.remove('active'));
+      tabBar.querySelectorAll('.col-tab').forEach(t => {
+        if (t.getAttribute('onclick')?.includes(tabName)) t.classList.add('active');
+      });
+    }
+    // Update content
+    document.querySelectorAll(`.col-tab-content[data-col="${colId}"]`).forEach(c => {
+      c.classList.toggle('active', c.getAttribute('data-tab') === tabName);
+    });
+  }
+
+  // Simulate notification after 5s on Steffen (hidden agent)
+  setTimeout(() => {
+    const steffen = document.querySelector('.rail-item[onclick*="steffen"]');
+    if (steffen && !steffen.classList.contains('active')) {
+      const avatar = steffen.querySelector('.rail-avatar');
+      const old = avatar.querySelector('.rail-badge');
+      if (old) old.remove();
+      const b = document.createElement('span');
+      b.className = 'rail-badge';
+      b.textContent = '3';
+      avatar.appendChild(b);
+    }
+  }, 5000);
+</script>
+
+</body>
+</html>
