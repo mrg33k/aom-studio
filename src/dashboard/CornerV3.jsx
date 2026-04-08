@@ -312,7 +312,7 @@ const agentColors = {
   jacob:   '#FACC15',
 }
 
-function AgentCard({ agent, lastMessage, unreadCount, onClick }) {
+function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
   const [hovered, setHovered] = useState(false)
   const cfg = getStatusCfg(agent.status)
   const bgColor = agentColors[agent.slug] || '#60A5FA'
@@ -332,7 +332,7 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick }) {
         padding: '12px 14px',
         borderRadius: 14,
         background: hovered ? C.s2 : C.s1,
-        border: `1px solid ${hovered ? C.border2 : isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
+        border: `1px solid ${hovered ? C.border2 : isSelected ? 'rgba(16,185,129,0.15)' : C.border}`,
         cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
@@ -341,8 +341,8 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick }) {
         boxShadow: hovered ? '0 6px 20px rgba(0,0,0,0.25)' : 'none',
       }}
     >
-      {/* Active accent left bar */}
-      {isActive && (
+      {/* Active accent left bar -- shown for currently selected chat agent */}
+      {isSelected && (
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />
       )}
 
@@ -431,7 +431,7 @@ const GREETINGS = [
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
 
-function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
+function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug }) {
   const [greetingIdx, setGreetingIdx] = useState(0)
 
   // Build a quick lookup: agent slug -> last inbox item (message preview)
@@ -647,6 +647,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
                 lastMessage={inboxMap[agent.slug] || null}
                 unreadCount={unreadCounts[agent.slug] || 0}
                 onClick={onSelectAgent}
+                isSelected={agent.slug === selectedAgentSlug}
               />
             </Reorder.Item>
           ))}
@@ -2306,7 +2307,7 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} onSelectAgent={handleSelectAgent} />}
+        {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} onSelectAgent={handleSelectAgent} selectedAgentSlug={selectedAgent?.slug} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
         {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
