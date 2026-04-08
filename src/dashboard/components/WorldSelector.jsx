@@ -1,35 +1,49 @@
-// WorldSelector.jsx -- World Selector Step 3: Dropdown UI
-//
-// Self-contained dropdown that fetches worlds from the Supabase `worlds` table
-// (via /api/worlds?user_id=...) and lets the user switch between them.
+// WorldSelector.jsx -- World Switcher Dropdown (cv3.html design)
 //
 // Props:
 //   currentWorldId  string  -- active world slug (from getClientId())
 //   currentUser     object  -- Supabase auth user
 //   onEnterWorld    fn(w)   -- called with world object { world: slug, name, id, color }
 //   onReturnToMyWorld fn()  -- called when user clicks "Return to My World"
-//   isNightMode     bool
-//   isMobile        bool
+//   isNightMode     bool    (unused, kept for API compat)
+//   isMobile        bool    (unused, kept for API compat)
 //
 // Data shape emitted to onEnterWorld: { id, world (slug), name, color }
-// This matches the shape the existing handleEnterWorld() expects.
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const SUPER_ADMIN_ID = '833f6828-1dae-409c-a24b-1438f46544d0'
-
-// Default color if config.color is not set
-const DEFAULT_WORLD_COLOR = '#3B9EFF'
-
-function hexToRgba(hex, alpha) {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.substring(0, 2), 16)
-  const g = parseInt(h.substring(2, 4), 16)
-  const b = parseInt(h.substring(4, 6), 16)
-  return `rgba(${r},${g},${b},${alpha})`
+// Color palette matching cv3.html / CornerV3.jsx
+const C = {
+  s1:       '#111827',
+  s2:       '#1A2035',
+  border:   'rgba(255,255,255,0.04)',
+  border2:  'rgba(255,255,255,0.08)',
+  text2:    '#94A3B8',
+  muted:    '#475569',
+  dim:      '#334155',
+  accent:   '#10B981',
+  accentBg: 'rgba(16,185,129,0.08)',
+  blue:     '#60A5FA',
+  orange:   '#FB923C',
+  red:      '#EF4444',
+  purple:   '#A78BFA',
+  pink:     '#F472B6',
+  yellow:   '#EAB308',
+  teal:     '#2DD4BF',
 }
+
+// Preset gradients for world option icons (cycles by index)
+const ICON_GRADIENTS = [
+  `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
+  `linear-gradient(135deg, ${C.orange}, ${C.red})`,
+  `linear-gradient(135deg, ${C.purple}, ${C.pink})`,
+  `linear-gradient(135deg, ${C.teal}, ${C.blue})`,
+  `linear-gradient(135deg, ${C.yellow}, ${C.orange})`,
+]
+
+const DEFAULT_WORLD_COLOR = '#3B9EFF'
 
 export default function WorldSelector({
   currentWorldId,
@@ -45,12 +59,13 @@ export default function WorldSelector({
   const [error, setError] = useState(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const [focusIdx, setFocusIdx] = useState(-1)
+  const [hoveredItem, setHoveredItem] = useState(null)
 
   const btnRef = useRef(null)
   const wrapperRef = useRef(null)
   const dropdownRef = useRef(null)
 
-  // Fetch worlds from /api/worlds?user_id=... (worlds table via RLS / service role)
+  // Fetch worlds from /api/worlds?user_id=...
   const fetchWorlds = useCallback(async () => {
     if (!currentUser?.id) return
     setLoading(true)
@@ -60,7 +75,6 @@ export default function WorldSelector({
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const data = await r.json()
       const raw = data.worlds || []
-      // Normalize to { id, world (slug), name, color, role }
       const normalized = raw.map(w => ({
         id: w.id,
         world: w.slug,
@@ -100,7 +114,7 @@ export default function WorldSelector({
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  // iOS back gesture: push history entry when dropdown opens
+  // iOS back gesture support
   useEffect(() => {
     if (!open) return
     window.history.pushState({ worldSelector: true }, '')
@@ -115,9 +129,9 @@ export default function WorldSelector({
     setFocusIdx(-1)
     if (next && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect()
-      const dropW = 260
+      const dropW = 220
       const left = Math.min(rect.left, Math.max(0, window.innerWidth - dropW - 8))
-      setDropdownPos({ top: rect.bottom + 8, left })
+      setDropdownPos({ top: rect.bottom + 4, left })
     }
   }
 
@@ -129,16 +143,14 @@ export default function WorldSelector({
 
   const myWorld = currentUser?.user_metadata?.world || 'aom'
   const isOverriding = currentWorldId && currentWorldId !== myWorld
-
-  // Display name for the active world -- try to match from loaded worlds, fallback to slug
   const activeWorld = worlds.find(w => w.world === currentWorldId)
-  const activeColor = activeWorld?.color || DEFAULT_WORLD_COLOR
   const activeLabel = activeWorld?.name
     || (currentWorldId === 'q' ? 'QA' : (currentWorldId || 'AOM').toUpperCase())
+  const activeInitial = activeLabel[0]?.toUpperCase() || 'A'
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', flexShrink: 0 }}>
-      {/* Trigger button */}
+      {/* Trigger -- .world-switch */}
       <button
         ref={btnRef}
         onClick={handleToggle}
@@ -146,48 +158,52 @@ export default function WorldSelector({
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          background: open
-            ? hexToRgba(activeColor, 0.15)
-            : hexToRgba(activeColor, 0.08),
-          border: open
-            ? `1.5px solid ${hexToRgba(activeColor, 0.55)}`
-            : `1.5px solid ${hexToRgba(activeColor, 0.28)}`,
-          borderRadius: 8,
-          padding: isMobile ? '4px 8px' : '5px 11px',
+          padding: '4px 10px 4px 6px',
+          background: open ? C.s2 : C.s1,
+          border: `1px solid ${open ? C.border2 : C.border}`,
+          borderRadius: 10,
           cursor: 'pointer',
-          transition: 'all 150ms ease',
+          transition: 'all 0.15s',
         }}
         onMouseEnter={e => {
           if (!open) {
-            e.currentTarget.style.background = hexToRgba(activeColor, 0.12)
-            e.currentTarget.style.borderColor = hexToRgba(activeColor, 0.4)
+            e.currentTarget.style.background = C.s2
+            e.currentTarget.style.borderColor = C.border2
           }
         }}
         onMouseLeave={e => {
           if (!open) {
-            e.currentTarget.style.background = hexToRgba(activeColor, 0.08)
-            e.currentTarget.style.borderColor = hexToRgba(activeColor, 0.28)
+            e.currentTarget.style.background = C.s1
+            e.currentTarget.style.borderColor = C.border
           }
         }}
         aria-label="Switch world"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        {/* Color dot */}
-        <span style={{
-          width: 7,
-          height: 7,
-          borderRadius: '50%',
-          background: activeColor,
-          boxShadow: `0 0 5px ${hexToRgba(activeColor, 0.7)}`,
-          flexShrink: 0,
-        }} />
-        <span style={{
-          fontSize: isMobile ? 12 : 13,
+        {/* ws-icon */}
+        <div style={{
+          width: 22,
+          height: 22,
+          borderRadius: 6,
+          background: `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 10,
           fontWeight: 800,
-          color: activeColor,
+          color: '#fff',
+          flexShrink: 0,
           fontFamily: "'Inter', sans-serif",
-          letterSpacing: '0.06em',
+        }}>
+          {activeInitial}
+        </div>
+        {/* ws-name */}
+        <span style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: C.text2,
+          fontFamily: "'Inter', sans-serif",
         }}>
           {activeLabel}
         </span>
@@ -195,9 +211,9 @@ export default function WorldSelector({
           <span style={{
             fontSize: 9,
             fontWeight: 700,
-            color: '#F59E0B',
-            background: 'rgba(245,158,11,0.14)',
-            border: '1px solid rgba(245,158,11,0.3)',
+            color: C.yellow,
+            background: 'rgba(234,179,8,0.14)',
+            border: '1px solid rgba(234,179,8,0.3)',
             borderRadius: 3,
             padding: '1px 4px',
             fontFamily: "'Inter', sans-serif",
@@ -205,21 +221,21 @@ export default function WorldSelector({
             textTransform: 'uppercase',
           }}>VIEW</span>
         )}
-        <svg
-          width={10} height={10} viewBox="0 0 24 24" fill="none"
-          stroke={activeColor} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-          style={{
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 200ms ease',
-            flexShrink: 0,
-            opacity: 0.8,
-          }}
-        >
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+        {/* ws-arrow */}
+        <span style={{
+          fontSize: 10,
+          color: C.dim,
+          marginLeft: 2,
+          display: 'inline-block',
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 200ms ease',
+          lineHeight: 1,
+        }}>
+          ▾
+        </span>
       </button>
 
-      {/* Dropdown -- rendered via portal to escape overflow:hidden on the top bar */}
+      {/* Dropdown -- rendered via portal to escape overflow:hidden */}
       {createPortal(
         <AnimatePresence>
           {open && (
@@ -250,83 +266,16 @@ export default function WorldSelector({
                 position: 'fixed',
                 top: dropdownPos.top,
                 left: dropdownPos.left,
-                minWidth: 220,
-                maxWidth: 300,
-                width: 260,
-                background: 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1.5px solid rgba(59,130,246,0.25)',
+                background: C.s1,
+                border: `1px solid ${C.border2}`,
                 borderRadius: 12,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(59,130,246,0.08)',
-                overflow: 'hidden',
+                padding: 4,
+                minWidth: 200,
                 zIndex: 9999,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
                 outline: 'none',
               }}
             >
-              {/* Header */}
-              <div style={{
-                padding: '10px 14px 8px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: '#475569',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  fontFamily: "'Inter', sans-serif",
-                  marginBottom: 4,
-                }}>
-                  Worlds {loading ? '…' : worlds.length > 0 ? `(${worlds.length})` : ''}
-                </div>
-                {/* Active world indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: activeColor,
-                    boxShadow: `0 0 6px ${hexToRgba(activeColor, 0.7)}`,
-                    flexShrink: 0,
-                  }} />
-                  <span style={{
-                    fontSize: 14,
-                    fontWeight: 800,
-                    color: activeColor,
-                    fontFamily: "'Inter', sans-serif",
-                    letterSpacing: '0.06em',
-                  }}>
-                    {activeLabel}
-                  </span>
-                  {isOverriding && (
-                    <span style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: '#F59E0B',
-                      background: 'rgba(245,158,11,0.12)',
-                      border: '1px solid rgba(245,158,11,0.3)',
-                      borderRadius: 4,
-                      padding: '1px 5px',
-                      fontFamily: "'Inter', sans-serif",
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                    }}>VIEWING</span>
-                  )}
-                </div>
-                {currentUser?.email && (
-                  <div style={{
-                    fontSize: 12,
-                    color: '#475569',
-                    fontFamily: "'Inter', sans-serif",
-                    marginTop: 2,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>
-                    {currentUser.email}
-                  </div>
-                )}
-              </div>
-
               {/* Return to my world (only when viewing another world) */}
               {isOverriding && (
                 <button
@@ -337,26 +286,27 @@ export default function WorldSelector({
                     alignItems: 'center',
                     gap: 8,
                     width: '100%',
-                    minHeight: 40,
-                    padding: '0 14px',
-                    background: 'transparent',
+                    padding: '8px 10px',
+                    background: hoveredItem === '__return' ? C.s2 : 'transparent',
                     border: 'none',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    borderBottom: `1px solid ${C.border}`,
+                    borderRadius: 8,
                     cursor: 'pointer',
-                    transition: 'background 100ms ease',
                     textAlign: 'left',
                     boxSizing: 'border-box',
+                    marginBottom: 4,
+                    transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.07)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  onMouseEnter={() => setHoveredItem('__return')}
+                  onMouseLeave={() => setHoveredItem(null)}
                 >
-                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.yellow} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 18 9 12 15 6"/>
                   </svg>
                   <span style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#F59E0B',
+                    color: C.yellow,
                     fontFamily: "'Inter', sans-serif",
                   }}>
                     Return to {myWorld.toUpperCase()}
@@ -365,150 +315,104 @@ export default function WorldSelector({
               )}
 
               {/* World list */}
-              <div style={{ maxHeight: 260, overflowY: 'auto' }} role="presentation">
+              <div style={{ maxHeight: 280, overflowY: 'auto' }} role="presentation">
                 {loading && (
                   <div style={{
-                    padding: '14px 14px',
+                    padding: '10px 10px',
                     fontSize: 13,
-                    color: '#475569',
+                    color: C.muted,
                     fontFamily: "'Inter', sans-serif",
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                   }}>
-                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                    <style>{`@keyframes ws-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'ws-spin 1s linear infinite' }}>
                       <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                     </svg>
-                    <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
-                    Loading…
+                    Loading...
                   </div>
                 )}
 
                 {!loading && error && (
-                  <div style={{ padding: '12px 14px', fontSize: 13, color: '#EF4444', fontFamily: "'Inter', sans-serif" }}>
+                  <div style={{ padding: '10px 10px', fontSize: 13, color: C.red, fontFamily: "'Inter', sans-serif" }}>
                     {error}
                   </div>
                 )}
 
                 {!loading && !error && worlds.length === 0 && (
-                  <div style={{ padding: '12px 14px', fontSize: 13, color: '#475569', fontFamily: "'Inter', sans-serif" }}>
+                  <div style={{ padding: '10px 10px', fontSize: 13, color: C.muted, fontFamily: "'Inter', sans-serif" }}>
                     No worlds found
                   </div>
                 )}
 
-                {!loading && !error && worlds.map((w) => {
+                {!loading && !error && worlds.map((w, idx) => {
                   const isCurrent = w.world === currentWorldId
-                  const worldColor = w.color || DEFAULT_WORLD_COLOR
+                  const isHovered = hoveredItem === w.id
+                  const iconGradient = ICON_GRADIENTS[idx % ICON_GRADIENTS.length]
+                  const initial = (w.name || w.world)[0]?.toUpperCase() || 'W'
                   return (
-                    <button
+                    <div
                       key={w.id}
                       data-world-item
                       role="option"
                       aria-selected={isCurrent}
+                      tabIndex={0}
                       onClick={() => handleSelect(w)}
+                      onMouseEnter={() => setHoveredItem(w.id)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(w) } }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 10,
-                        width: '100%',
-                        minHeight: 44,
-                        padding: '0 14px',
-                        background: isCurrent
-                          ? hexToRgba(worldColor, 0.1)
-                          : 'transparent',
-                        border: 'none',
+                        gap: 8,
+                        padding: '8px 10px',
+                        borderRadius: 8,
                         cursor: 'pointer',
-                        transition: 'background 100ms ease',
-                        textAlign: 'left',
-                        boxSizing: 'border-box',
-                      }}
-                      onMouseEnter={e => {
-                        if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = isCurrent
-                          ? hexToRgba(worldColor, 0.1)
-                          : 'transparent'
+                        transition: 'background 0.15s',
+                        background: isCurrent ? C.accentBg : isHovered ? C.s2 : 'transparent',
                       }}
                     >
-                      {/* Color dot / avatar */}
+                      {/* .ws-opt-icon */}
                       <div style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        background: isCurrent
-                          ? hexToRgba(worldColor, 0.2)
-                          : 'rgba(255,255,255,0.06)',
-                        border: isCurrent
-                          ? `1.5px solid ${hexToRgba(worldColor, 0.4)}`
-                          : '1.5px solid rgba(255,255,255,0.08)',
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        background: iconGradient,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: '#fff',
                         flexShrink: 0,
-                        position: 'relative',
+                        fontFamily: "'Inter', sans-serif",
                       }}>
-                        <span style={{
-                          fontSize: 12,
-                          fontWeight: 800,
-                          color: isCurrent ? worldColor : '#64748B',
-                          fontFamily: "'Inter', sans-serif",
-                        }}>
-                          {(w.name || w.world)[0]?.toUpperCase() || 'W'}
-                        </span>
-                        {/* Active pulse dot */}
-                        {isCurrent && (
-                          <span style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            width: 7,
-                            height: 7,
-                            borderRadius: '50%',
-                            background: worldColor,
-                            boxShadow: `0 0 5px ${hexToRgba(worldColor, 0.8)}`,
-                            border: '1.5px solid rgba(6,14,36,0.99)',
-                          }} />
-                        )}
+                        {initial}
                       </div>
-
-                      {/* Name + slug */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* .ws-opt-name + .ws-opt-type */}
+                      <div>
                         <div style={{
                           fontSize: 13,
                           fontWeight: 600,
-                          color: isCurrent ? worldColor : '#F1F5F9',
+                          color: isCurrent ? C.accent : C.text2,
                           fontFamily: "'Inter', sans-serif",
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
+                          maxWidth: 140,
                         }}>
                           {w.name}
                         </div>
                         <div style={{
-                          fontSize: 11,
-                          color: '#475569',
+                          fontSize: 10,
+                          color: C.muted,
                           fontFamily: "'Inter', sans-serif",
                         }}>
                           {w.world}
-                          {w.role && w.role !== 'member' && (
-                            <span style={{ marginLeft: 5, color: '#334155' }}>{w.role}</span>
-                          )}
                         </div>
                       </div>
-
-                      {/* Checkmark if active */}
-                      {isCurrent && (
-                        <svg
-                          width={14} height={14} viewBox="0 0 24 24" fill="none"
-                          stroke={worldColor} strokeWidth={2.5}
-                          strokeLinecap="round" strokeLinejoin="round"
-                          style={{ flexShrink: 0 }}
-                        >
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
-                    </button>
+                    </div>
                   )
                 })}
               </div>
