@@ -1814,73 +1814,115 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                 <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={22} />
               )}
               <div style={{ maxWidth: '78%', minWidth: 0 }}>
-                <div style={{
-                  padding: '9px 13px',
-                  borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  fontSize: 13, lineHeight: 1.5,
-                  color: isUser ? '#fff' : C.text,
-                  background: isUser
-                    ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                    : 'rgba(255,255,255,0.06)',
-                  border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}>
-                  {msg.text}
-                  {msg.attachment_url && (
-                    <div style={{ marginTop: msg.text ? 8 : 0 }}>
-                      {msg.file_mime_type && msg.file_mime_type.startsWith('image/') ? (
-                        <img
-                          src={msg.attachment_url}
-                          alt={msg.text}
+                {/* Text bubble -- hidden when text is only the attachment label */}
+                {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (
+                  <div style={{
+                    padding: '9px 13px',
+                    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    fontSize: 13, lineHeight: 1.5,
+                    color: isUser ? '#fff' : C.text,
+                    background: isUser
+                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                      : 'rgba(255,255,255,0.06)',
+                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}>
+                    {msg.text}
+                  </div>
+                )}
+                {/* Attachments -- rendered outside bubble using Steffen's styles */}
+                {(() => {
+                  const atts = (msg.attachments && msg.attachments.length)
+                    ? msg.attachments
+                    : msg.attachment_url
+                      ? [{
+                          url: msg.attachment_url,
+                          mime: msg.file_mime_type,
+                          size: msg.file_size,
+                          name: msg.text && msg.text.startsWith('Attached file: ')
+                            ? msg.text.replace('Attached file: ', '')
+                            : msg.file_name || null,
+                        }]
+                      : []
+                  if (!atts.length) return null
+                  const hasText = msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: '))
+                  const isMulti = atts.length > 1
+                  const items = atts.map((att, idx) => {
+                    const isImage = att.mime && att.mime.startsWith('image/')
+                    if (isImage) {
+                      return (
+                        <div
+                          key={idx}
                           style={{
-                            maxWidth: 200, maxHeight: 150,
-                            borderRadius: 8,
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            objectFit: 'cover',
-                            display: 'block',
+                            alignSelf: isUser ? 'flex-end' : 'flex-start',
+                            borderRadius: 16,
+                            overflow: 'hidden',
+                            maxWidth: '70%',
+                            cursor: 'pointer',
+                            transition: 'transform 0.15s',
                           }}
-                        />
-                      ) : (
-                        <a
-                          href={msg.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '8px 10px', borderRadius: 8,
-                            background: 'rgba(255,255,255,0.08)',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            textDecoration: 'none', color: 'inherit',
-                            maxWidth: 240,
-                          }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)' }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
                         >
-                          <svg width={18} height={18} viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-                            style={{ flexShrink: 0 }}>
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                          </svg>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              fontSize: 12, fontWeight: 600,
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            }}>
-                              {msg.text.replace('Attached file: ', '')}
-                            </div>
-                            {msg.file_size != null && (
-                              <div style={{ fontSize: 11, color: isUser ? 'rgba(255,255,255,0.6)' : C.muted }}>
-                                {msg.file_size < 1024 * 1024
-                                  ? `${Math.round(msg.file_size / 1024)} KB`
-                                  : `${(msg.file_size / (1024 * 1024)).toFixed(1)} MB`}
-                              </div>
-                            )}
+                          <img src={att.url} alt="" style={{ width: '100%', display: 'block', borderRadius: 16 }} />
+                        </div>
+                      )
+                    }
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          alignSelf: isUser ? 'flex-end' : 'flex-start',
+                          background: C.s2,
+                          border: '1px solid ' + C.border,
+                          borderRadius: 14,
+                          padding: '10px 14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          maxWidth: '75%',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: C.accentBg,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                          color: C.accent,
+                          fontSize: 11, fontWeight: 800,
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}>
+                          {att.name ? att.name.split('.').pop().toUpperCase().slice(0, 4) : 'FILE'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 13, fontWeight: 600,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          }}>
+                            {att.name || 'Attached file'}
                           </div>
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
+                          {att.size != null && (
+                            <div style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
+                              {att.size < 1024 * 1024
+                                ? `${Math.round(att.size / 1024)} KB`
+                                : `${(att.size / (1024 * 1024)).toFixed(1)} MB`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                  if (isMulti) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'row', gap: 6, padding: '6px 16px', marginTop: hasText ? 6 : 0 }}>
+                        {items}
+                      </div>
+                    )
+                  }
+                  return <div style={{ marginTop: hasText ? 6 : 0 }}>{items}</div>
+                })()}
                 <div style={{
                   fontSize: 10, color: 'rgba(80,100,128,0.55)',
                   marginTop: 3,
