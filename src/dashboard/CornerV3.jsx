@@ -2461,8 +2461,8 @@ export default function CornerV3() {
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 2 }}>
             <Tab
-              label="Chat"
-              icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
+              label="Home"
+              icon={<HomeIcon color={tab === 'chat' ? C.text : C.muted} />}
               active={tab === 'chat'}
               onClick={() => handleTabChange('chat')}
               badge={<Badge count={unreadChat} />}
