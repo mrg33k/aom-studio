@@ -241,7 +241,7 @@ function ChatIcon({ color }) {
 // ── Status dot config ─────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  BUILDING: { color: '#22C55E', pulse: true,  label: 'Building'  },
+  BUILDING: { color: C.yellow,  pulse: false, label: 'Building'  },
   PLANNING: { color: '#F59E0B', pulse: false, label: 'Planning'  },
   QA:       { color: '#3B9EFF', pulse: false, label: 'QA'        },
   QUEUED:   { color: '#F59E0B', pulse: false, label: 'Queued'    },
