@@ -42,6 +42,32 @@ function getAgentName(slug) {
   return p?.name || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Agent')
 }
 
+function formatRelativeTime(ts) {
+  if (!ts) return ''
+  const date = new Date(ts)
+  if (isNaN(date.getTime())) return ''
+  const now = new Date()
+  const diffMs = now - date
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 60) return 'just now'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today - 86400000)
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  if (msgDay.getTime() === yesterday.getTime()) return 'yesterday'
+  const mo = date.getMonth() + 1
+  const d = date.getDate()
+  const yr = date.getFullYear()
+  let h = date.getHours()
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  h = h % 12 || 12
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${mo}/${d}/${yr} ${h}:${min} ${ampm}`
+}
+
 // ── CSS VARS (night / day) ───────────────────────────────────────────────────
 
 function cssVars(isNight) {
@@ -856,6 +882,11 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                   </span>
                 </div>
                 <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{m.content}</span>
+                {m.time && (
+                  <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4, textAlign: 'center' }}>
+                    {formatRelativeTime(m.time)}
+                  </div>
+                )}
               </div>
               ); })()}
             </div>
@@ -905,6 +936,11 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 {m.role === 'user' && m.status && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
                     <ReadReceipt status={m.status} />
+                  </div>
+                )}
+                {m.time && (
+                  <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4, textAlign: m.role === 'user' ? 'right' : 'left' }}>
+                    {formatRelativeTime(m.time)}
                   </div>
                 )}
               </div>
