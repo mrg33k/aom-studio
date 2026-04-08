@@ -22,8 +22,6 @@ import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
 import TaskQueueFAB from './components/TaskQueueFAB.jsx'
-import ChatMessageRenderer from './components/ChatMessageRenderer.jsx'
-import bubbleStyles from './BoardViewMessageContent.module.css'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -266,6 +264,66 @@ function useColumnChat(agentSlug, isActive) {
       } catch {}
     }, 3000)
     return () => clearInterval(bgPollRef.current)
+  }, [agentSlug, isActive])
+
+  // Supabase Realtime: instant message updates filtered by agent + client_id
+  useEffect(() => {
+    if (!agentSlug || !isActive || !supabase) return
+    const clientId = getClientId()
+    const channelId = `chat-msgs-${agentSlug}-${clientId}-${Date.now()}`
+    const channel = supabase
+      .channel(channelId)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `agent=eq.${agentSlug}`,
+      }, (payload) => {
+        const row = payload.new
+        if (!row) return
+        if (row.client_id && row.client_id !== clientId) return
+        const src = (row.source || '').toLowerCase()
+        if (src === 'terminal' || src.startsWith('agent-') || src === 'corner-dashboard-task' ||
+            src === 'task-creation' || src === 'completion-hook' || src === 'agent-status' ||
+            src === 'poke_agent') return
+        if (row.is_task) return
+        const txt = row.text || ''
+        if (!txt) return
+        if (txt.startsWith('[SESSION LOG]') || txt.startsWith('[From ') || txt.startsWith('[Dashboard]')) return
+        if (txt.startsWith('You are ') && txt.includes('Working directory:')) return
+        if (txt.startsWith('MANDATORY FIRST STEP:') || txt.startsWith('PRIORITY:') || txt.startsWith('CRITICAL:') || txt.startsWith('NEW MANDATORY')) return
+        if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return
+        if (/^Task auto-confirmed:/i.test(txt)) return
+        if (/\bsession (ended|started)\b/i.test(txt)) return
+        if (txt.includes('Working directory:') && txt.includes('Read your context')) return
+        if (txt.includes('Task ID:') && txt.includes('YOUR TASK:')) return
+        if (txt.includes('REMINDER: Write your result summary')) return
+        if (txt.includes('Read the output file to retrieve the result:')) return
+        if (txt.startsWith('export CORNER_AGENT=')) return
+        const msg = {
+          id: row.id,
+          role: row.role || 'assistant',
+          content: txt,
+          time: row.timestamp || row.created_at || new Date().toISOString(),
+          source: row.source,
+          status: row.status || null,
+        }
+        setMessages(prev => {
+          if (prev.some(m => m.id && m.id === msg.id)) return prev
+          if (prev.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) return prev
+          let updated = [...prev]
+          if (msg.role === 'assistant') {
+            updated = updated.filter(m => !m.streaming)
+            updated = updated.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
+          }
+          updated.push(msg)
+          updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
+          return updated
+        })
+        if (msg.role === 'assistant') setSending(false)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [agentSlug, isActive])
 
   const sendMessage = useCallback(async (text) => {
@@ -772,19 +830,26 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               {(() => { const isFail = m.content?.toLowerCase().includes('fail'); return (
               <div
                 data-msg-idx={i}
-                className={isFail ? bubbleStyles.taskFailNotification : bubbleStyles.taskCompletionNotification}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, fontSize: 13, lineHeight: 1.5,
+                  maxWidth: '92%', width: '100%', wordBreak: 'break-word', overflowWrap: 'anywhere',
+                  whiteSpace: 'pre-wrap', color: 'var(--bv-text2)', cursor: 'context-menu',
+                  background: isFail ? 'rgba(239, 68, 68, 0.06)' : 'rgba(34, 197, 94, 0.06)',
+                  border: isFail ? '1px solid rgba(239, 68, 68, 0.15)' : '1px solid rgba(34, 197, 94, 0.15)',
+                  borderLeft: isFail ? '3px solid rgba(239, 68, 68, 0.5)' : '3px solid rgba(34, 197, 94, 0.5)',
+                }}
               >
-                <div className={bubbleStyles.taskCompletionHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isFail ? '#EF4444' : '#22C55E'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     {isFail
                       ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
                       : <polyline points="20 6 9 17 4 12"/>}
                   </svg>
-                  <span className={isFail ? bubbleStyles.taskFailLabel : bubbleStyles.taskCompletionLabel}>
+                  <span style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', 'SF Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', color: isFail ? '#EF4444' : '#22C55E' }}>
                     {isFail ? 'Task Failed' : 'Task Complete'}
                   </span>
                 </div>
-                <ChatMessageRenderer content={m.content} />
+                <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{m.content}</span>
               </div>
               ); })()}
             </div>
@@ -800,8 +865,19 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
             >
               <div
                 data-msg-idx={i}
-                className={m.role === 'user' ? bubbleStyles.userBubble : bubbleStyles.agentBubble}
-                style={m.role !== 'user' ? { '--agent-accent-color': `${color}80` } : undefined}
+                style={m.role === 'user' ? {
+                  padding: '10px 14px', borderRadius: 12, borderBottomRightRadius: 4,
+                  fontSize: 14, lineHeight: 1.6, maxWidth: '88%', wordBreak: 'break-word',
+                  overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+                  background: 'var(--bv-chat-user)', border: '1px solid rgba(59, 130, 246, 0.25)',
+                  color: 'var(--bv-text)', cursor: 'context-menu',
+                } : {
+                  padding: '10px 14px', borderRadius: 12, borderBottomLeftRadius: 4,
+                  fontSize: 14, lineHeight: 1.6, maxWidth: '88%', wordBreak: 'break-word',
+                  overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+                  background: 'var(--bv-chat-agent)', border: '1px solid var(--bv-card-border)',
+                  borderLeft: `3px solid ${color}80`, color: 'var(--bv-text2)', cursor: 'context-menu',
+                }}
               >
                 <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
                   {m.role === 'user' ? 'You' : agentName}
@@ -817,7 +893,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                     compact={true}
                   />
                 ) : (
-                  <ChatMessageRenderer content={m.content} />
+                  <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{m.content}</span>
                 )}
                 {/* WhatsApp-style read receipts on user messages */}
                 {m.role === 'user' && m.status && (
