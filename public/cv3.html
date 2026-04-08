@@ -48,18 +48,20 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 
 /* Agent cards */
 .agents-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;padding:20px 20px 10px}
-.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:0 16px}
-.agent-card{padding:16px;border-radius:16px;background:var(--s1);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.agents-grid{display:flex;flex-direction:column;gap:8px;padding:0 16px}
+.agent-card{padding:14px 16px;border-radius:16px;background:var(--s1);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px}
 .agent-card:hover{background:var(--s2);border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
 .agent-card.active{border-color:rgba(16,185,129,0.2)}
 .agent-card.active::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
-.ac-ava{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#000;margin-bottom:10px}
-.ac-name{font-size:14px;font-weight:700;margin-bottom:2px}
-.ac-role{font-size:11px;color:var(--muted);margin-bottom:8px}
+.ac-ava{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#000;flex-shrink:0}
+.ac-info{flex:1;min-width:0}
+.ac-name{font-size:14px;font-weight:700;margin-bottom:1px}
+.ac-role{font-size:11px;color:var(--muted);margin-bottom:4px}
 .ac-status{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace}
 .ac-status .dot{width:5px;height:5px}
 .ac-status.on{color:var(--accent)}.ac-status.busy{color:var(--yellow)}.ac-status.off{color:var(--dim)}
-.ac-preview{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ac-preview{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-right{flex-shrink:0;text-align:right}
 
 /* Recent conversations */
 .recent-section{padding:20px 16px 0}
@@ -214,7 +216,7 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 
 @keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes su{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-@media(max-width:480px){.hero{padding:24px 16px 12px}.hero h1{font-size:28px}.agents-grid{grid-template-columns:repeat(2,1fr);gap:6px;padding:0 12px}}
+@media(max-width:480px){.hero{padding:24px 16px 12px}.hero h1{font-size:28px}.agents-grid{padding:0 12px}}
 </style>
 </head>
 <body>
@@ -250,40 +252,33 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
       <div class="agents-grid">
         <div class="agent-card active" onclick="openChat('rex','Rex','EA','var(--accent)')">
           <div class="ac-ava" style="background:var(--accent)">R</div>
-          <div class="ac-name">Rex</div>
-          <div class="ac-role">Executive Assistant</div>
-          <div class="ac-status on"><div class="dot"></div> Online</div>
-          <div class="ac-preview">Queue is clear. 8 shipped today, all 8+/10 QA.</div>
+          <div class="ac-info"><div class="ac-name">Rex</div><div class="ac-role">Executive Assistant</div><div class="ac-preview">Queue is clear. 8 shipped today, all 8+/10 QA.</div></div>
+          <div class="ac-right"><div class="ac-status on"><div class="dot"></div> Online</div></div>
         </div>
         <div class="agent-card" onclick="openChat('bobby','Bobby','Web Dev','var(--yellow)')">
           <div class="ac-ava" style="background:var(--yellow)">B</div>
-          <div class="ac-name">Bobby</div>
-          <div class="ac-role">Web Developer</div>
-          <div class="ac-status busy"><div class="dot" style="background:var(--yellow);box-shadow:0 0 6px rgba(234,179,8,0.5)"></div> Building</div>
+          <div class="ac-info"><div class="ac-name">Bobby</div><div class="ac-role">Web Developer</div></div>
+          <div class="ac-right"><div class="ac-status busy"><div class="dot" style="background:var(--yellow);box-shadow:0 0 6px rgba(234,179,8,0.5)"></div> Building</div></div>
         </div>
         <div class="agent-card" onclick="openChat('steffen','Steffen','Design','var(--purple)')">
           <div class="ac-ava" style="background:var(--purple)">S</div>
-          <div class="ac-name">Steffen</div>
-          <div class="ac-role">Brand / Design</div>
-          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+          <div class="ac-info"><div class="ac-name">Steffen</div><div class="ac-role">Brand / Design</div></div>
+          <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
         <div class="agent-card" onclick="openChat('cleo','Cleo','Content','var(--pink)')">
           <div class="ac-ava" style="background:var(--pink)">C</div>
-          <div class="ac-name">Cleo</div>
-          <div class="ac-role">Content / Video</div>
-          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+          <div class="ac-info"><div class="ac-name">Cleo</div><div class="ac-role">Content / Video</div></div>
+          <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
         <div class="agent-card" onclick="openChat('elon','Elon','Architect','var(--blue)')">
           <div class="ac-ava" style="background:var(--blue)">E</div>
-          <div class="ac-name">Elon</div>
-          <div class="ac-role">System Architect</div>
-          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+          <div class="ac-info"><div class="ac-name">Elon</div><div class="ac-role">System Architect</div></div>
+          <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
         <div class="agent-card" onclick="openChat('gary','Gary','Ops','var(--orange)')">
           <div class="ac-ava" style="background:var(--orange)">G</div>
-          <div class="ac-name">Gary</div>
-          <div class="ac-role">Operations</div>
-          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+          <div class="ac-info"><div class="ac-name">Gary</div><div class="ac-role">Operations</div></div>
+          <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
       </div>
 
