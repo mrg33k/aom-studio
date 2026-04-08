@@ -22,6 +22,7 @@ import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
 import TaskQueueFAB from './components/TaskQueueFAB.jsx'
+import WorldSelector from './components/WorldSelector'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -2178,6 +2179,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const [isVoiceChatActive, setIsVoiceChatActive] = useState(false)
   const handleVoiceChatToggle = () => setIsVoiceChatActive(prev => !prev)
 
+  // CV3 nav bar state
+  const [chatPanelVisible, setChatPanelVisible] = useState(false)
+  const [cv3Tab, setCv3Tab] = useState('home')
+
   // Context menu (tasks)
   const [ctxMenu, setCtxMenu] = useState(null)
 
@@ -2345,8 +2350,15 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const toggleSlug = (slug) => {
     setVisibleSlugs(prev => {
       const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
+      if (next.has(slug)) {
+        next.delete(slug)
+      } else {
+        next.add(slug)
+        // Show Chat tab when an agent column is added
+        if (allItems.find(it => it.slug === slug && it.isAgent)) {
+          setChatPanelVisible(true)
+        }
+      }
       return next
     })
   }
@@ -2460,6 +2472,117 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         .bv-columns-area::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.12); border-radius: 3px; }
       `}</style>
 
+      {/* CV3 Nav Bar -- Home/Tasks/Chat tabs + world selector + task stats */}
+      <div style={{
+        flexShrink: 0,
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        background: 'var(--bv-bg)',
+      }}>
+        {/* Top row: logo + world selector + bell + avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.04em', cursor: 'pointer', color: 'var(--bv-text)', fontFamily: "'Inter', sans-serif" }}>
+              Corner<span style={{ color: '#10B981' }}>.</span>
+            </div>
+            <WorldSelector
+              currentWorldId={getClientId()}
+              currentUser={currentUser}
+              onEnterWorld={() => {}}
+              onReturnToMyWorld={() => {}}
+              isNightMode={isNightMode}
+              isMobile={isMobile}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10,
+              background: 'var(--bv-col)', border: '1px solid rgba(255,255,255,0.04)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', position: 'relative',
+              color: 'var(--bv-muted)', fontSize: 14,
+              transition: 'all 0.15s',
+            }}>
+              🔔
+              <div style={{
+                position: 'absolute', top: 5, right: 5,
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#10B981', border: '1.5px solid var(--bv-bg)',
+              }} />
+            </div>
+            <div style={{
+              width: 28, height: 28, borderRadius: 9,
+              background: 'linear-gradient(135deg, #10B981, #60A5FA)',
+              cursor: 'pointer', flexShrink: 0,
+            }} />
+          </div>
+        </div>
+        {/* Bottom row: tabs + nav stats */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 8px' }}>
+          <div style={{ display: 'flex', gap: 2 }}>
+            {['home', 'tasks'].map(t => (
+              <button
+                key={t}
+                onClick={() => setCv3Tab(t)}
+                style={{
+                  padding: '7px 18px', borderRadius: 10, fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', border: 'none', background: 'none',
+                  color: cv3Tab === t ? 'var(--bv-text)' : 'var(--bv-muted)',
+                  position: 'relative', transition: 'color 0.15s',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {cv3Tab === t && (
+                  <span style={{
+                    position: 'absolute', bottom: 0, left: '20%', right: '20%',
+                    height: 2, background: '#10B981', borderRadius: 2,
+                  }} />
+                )}
+              </button>
+            ))}
+            {chatPanelVisible && (
+              <button
+                onClick={() => setCv3Tab('chat')}
+                style={{
+                  padding: '7px 18px', borderRadius: 10, fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', border: 'none', background: 'none',
+                  color: cv3Tab === 'chat' ? 'var(--bv-text)' : 'var(--bv-muted)',
+                  position: 'relative', transition: 'color 0.15s',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                Chat
+                {cv3Tab === 'chat' && (
+                  <span style={{
+                    position: 'absolute', bottom: 0, left: '20%', right: '20%',
+                    height: 2, background: '#10B981', borderRadius: 2,
+                  }} />
+                )}
+              </button>
+            )}
+          </div>
+          {/* Task stats: building (yellow) + done (green) */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--bv-dim)',
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#EAB308' }} />
+              <b style={{ color: 'var(--bv-text2)' }}>{rightNow.length}</b> building
+            </div>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--bv-dim)',
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22C55E' }} />
+              <b style={{ color: 'var(--bv-text2)' }}>{v2Done.length}</b> done
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Project filter pills -- dynamically generated from Supabase projects table */}
       {projectDefs.length > 0 && (
         <div style={{
@@ -2566,7 +2689,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                 return (
                 <div
                   key={item.slug}
-                  onClick={() => { setMobileIdx(idx); if (item.isAgent) onAgentSelect?.(item.slug) }}
+                  onClick={() => { setMobileIdx(idx); if (item.isAgent) { onAgentSelect?.(item.slug); setChatPanelVisible(true) } }}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                     padding: '3px 8px', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
