@@ -12,12 +12,16 @@ HOW TO TALK:
 - Be direct. Be warm. Be real. No corporate voice, no assistant voice, no filler.
 - Short responses for short messages. Think with him when he's thinking out loud.
 - If the point already landed, just confirm it. Don't repackage what he said back to him.
-- Have opinions. Push back when something is off. Say what you actually think.
+- Have strong opinions. Push back when something is off. If you think an approach is wrong, say so clearly.
+- If a task is too vague, don't just accept it. Ask what success looks like. "What does done look like?" is a valid question.
+- If something was already built, say so immediately. Don't let Patrik re-invent what exists.
+- When you see a pattern of failures (same kind of task keeps failing QA), flag it and suggest a different approach.
 - Match his energy exactly. Brief when he's brief. Deep when he goes deep.
 - Never say "Great question!" or "Absolutely!" or "I'd be happy to help!" or any of that.
 - No em dashes. No emojis unless he uses them first.
 - Reference real things: what you've been working on, what's going on in the system, what happened recently.
 - If you don't know something, say so. Or look it up with your tools. Don't guess.
+- You are Rex: sharp, efficient, slightly no-nonsense. You keep the system running and you know it.
 
 ABOUT AOM:
 AOM (Ahead of Market) is a creative studio. Patrik is building Corner, an AI-powered dashboard where clients get a team of AI agents that do real work. You are one of those agents. The system runs on Supabase, Gemini, Claude, and Vercel.
@@ -89,6 +93,16 @@ async function getMaxSortOrder(clientId) {
 
 async function createTask(args = {}, clientId) {
   if (!args.title || typeof args.title !== 'string' || !args.title.trim()) throw new Error('title required');
+  // Pre-flight validation: warn if description is weak
+  const desc = (args.description || '').trim();
+  const warnings = [];
+  if (desc.length < 30) warnings.push('Description is very short. Include file paths and acceptance criteria for better results.');
+  if (!/\.(jsx|js|tsx|ts|py|sh|css)/.test(desc) && !/BoardView|VoiceChat|GameDashboard|useTasks|useDataPipe/.test(desc)) {
+    warnings.push('No specific file mentioned. Tasks with file paths have higher QA pass rates.');
+  }
+  if (!/inline style|acceptance|criteria|should|must/i.test(desc)) {
+    warnings.push('Consider adding acceptance criteria (what "done" looks like).');
+  }
   const sort_order = (await getMaxSortOrder(clientId)) + 100;
   let priority = args.priority;
   if (priority === undefined || priority === null || priority === '') priority = 0;
@@ -99,7 +113,9 @@ async function createTask(args = {}, clientId) {
   const newTask = { id: crypto.randomUUID(), title: titleText, text: titleText, description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
   if (args.agent_identity !== undefined) newTask.agent_identity = args.agent_identity;
   const created = await sbFetch('/rest/v1/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(newTask) });
-  return Array.isArray(created) ? created[0] : created;
+  const result = Array.isArray(created) ? created[0] : created;
+  if (warnings.length > 0) result._warnings = warnings;
+  return result;
 }
 
 async function getQueue(clientId) {

@@ -105,13 +105,27 @@ async function getTasks(clientId, limit = 10) {
 
 async function getAgentTape(slug) {
   if (!slug) return '';
+  // Try RAG server first (has the full tape from last-conversation.md)
   try {
     const res = await fetch(`${RAG_URL}/agent-tape?slug=${encodeURIComponent(slug)}`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(3000),
     });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.tape) return data.tape;
+    }
+  } catch { /* fall through to Supabase */ }
+  // Fallback: build a mini-tape from recent task completions in Supabase
+  if (!SUPABASE_URL || !SUPABASE_KEY) return '';
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(slug)}&source=eq.task-notification&order=timestamp.desc&limit=5&select=text,timestamp`,
+      { headers: supaHeaders() }
+    );
     if (!res.ok) return '';
-    const data = await res.json();
-    return data?.tape || '';
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) return '';
+    return 'Recent task notifications:\n' + rows.reverse().map(r => `- ${r.text}`).join('\n');
   } catch { return ''; }
 }
 
