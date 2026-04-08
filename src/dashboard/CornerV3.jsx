@@ -436,7 +436,7 @@ function HomePanel({ user, agents, inboxItems }) {
       </div>
 
       {/* ── Pulse keyframe (injected once) ─────────────────────────────────── */}
-      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }`}</style>
+      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } }`}</style>
 
       {/* ── Section label ───────────────────────────────────────────────────── */}
       {sortedAgents.length > 0 && (
@@ -818,6 +818,7 @@ function ChatPanel({ agents, inboxItems, worldId }) {
     const text = input.trim()
     if (!text || sending || !selectedAgent) return
     setInput('')
+    if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
 
     // Optimistic user message
@@ -1172,7 +1173,11 @@ function ChatPanel({ agents, inboxItems, worldId }) {
           <textarea
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => {
+              setInput(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
+            }}
             onKeyDown={handleKeyDown}
             placeholder={`Message ${selectedAgent.name}…`}
             rows={1}
@@ -1188,7 +1193,8 @@ function ChatPanel({ agents, inboxItems, worldId }) {
               outline: 'none',
               resize: 'none',
               lineHeight: 1.5,
-              maxHeight: 80,
+              minHeight: 36,
+              maxHeight: 100,
               overflowY: 'auto',
             }}
           />
@@ -1207,12 +1213,22 @@ function ChatPanel({ agents, inboxItems, worldId }) {
               transition: 'background 150ms ease',
             }}
           >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-              stroke={input.trim() && !sending ? '#fff' : C.muted}
-              strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
+            {sending ? (
+              <div style={{
+                width: 14, height: 14,
+                border: '2px solid rgba(255,255,255,0.2)',
+                borderTopColor: C.muted,
+                borderRadius: '50%',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+            ) : (
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+                stroke={input.trim() ? '#fff' : C.muted}
+                strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            )}
           </button>
         </div>
       </div>
