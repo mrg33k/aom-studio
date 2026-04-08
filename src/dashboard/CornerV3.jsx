@@ -8,6 +8,7 @@
 // All styling is inline -- no CSS modules.
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { Reorder } from 'framer-motion'
 import { supabase } from './lib/supabase.js'
 import {
   getClientId,
@@ -467,15 +468,67 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
   // Find first active agent for hero sub text
   const activeAgent = (agents || []).find(a => a.status?.toUpperCase() !== 'IDLE')
 
-  // Sort agents: active first (non-IDLE), then idle
-  const sortedAgents = useMemo(() => {
-    if (!agents) return []
-    return [...agents].sort((a, b) => {
-      const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
-      const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
-      return aActive - bActive
-    })
+  // ── Drag-to-reorder state ────────────────────────────────────────────────
+  // orderedSlugs: the persistent order. null = not yet initialized.
+  const [orderedSlugs, setOrderedSlugs] = useState(null)
+  const orderInitialized = useRef(false)
+
+  // Initialize order once when agents first loads
+  useEffect(() => {
+    if (!agents?.length || orderInitialized.current) return
+    orderInitialized.current = true
+    const saved = localStorage.getItem('aom_agent_order')
+    if (saved) {
+      try {
+        setOrderedSlugs(JSON.parse(saved))
+        return
+      } catch {}
+    }
+    // Default: active first, then idle
+    const defaultSlugs = [...agents]
+      .sort((a, b) => {
+        const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        return aActive - bActive
+      })
+      .map(a => a.slug)
+    setOrderedSlugs(defaultSlugs)
   }, [agents])
+
+  // Derive display list: order from orderedSlugs, live data from agents
+  const displayAgents = useMemo(() => {
+    if (!agents?.length) return []
+    if (!orderedSlugs) {
+      // Before initialization: active first
+      return [...agents].sort((a, b) => {
+        const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        return aActive - bActive
+      })
+    }
+    const agentMap = Object.fromEntries(agents.map(a => [a.slug, a]))
+    const ordered = orderedSlugs.map(s => agentMap[s]).filter(Boolean)
+    // Append any newly added agents not yet in saved order
+    const savedSet = new Set(orderedSlugs)
+    const extras = agents.filter(a => !savedSet.has(a.slug))
+    return [...ordered, ...extras]
+  }, [agents, orderedSlugs])
+
+  const handleReorder = useCallback((newAgents) => {
+    const newSlugs = newAgents.map(a => a.slug)
+    setOrderedSlugs(newSlugs)
+    localStorage.setItem('aom_agent_order', JSON.stringify(newSlugs))
+    // Persist display_order to Supabase (fire and forget)
+    if (supabase) {
+      newAgents.forEach((agent, index) => {
+        supabase
+          .from('agents')
+          .update({ display_order: (index + 1) * 100 })
+          .eq('id', agent.id)
+          .then()
+      })
+    }
+  }, [])
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
@@ -531,7 +584,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
       </div>
 
       {/* ── Agent cards ─────────────────────────────────────────────────────── */}
-      {sortedAgents.length === 0 ? (
+      {displayAgents.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 48, gap: 8, color: C.muted }}>
           <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <circle cx={12} cy={8} r={4}/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
@@ -539,17 +592,30 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
           <span style={{ fontSize: 13 }}>No agents found</span>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 16px' }}>
-          {sortedAgents.map(agent => (
-            <AgentCard
+        <Reorder.Group
+          as="div"
+          axis="y"
+          values={displayAgents}
+          onReorder={handleReorder}
+          style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 16px', listStyle: 'none', margin: 0 }}
+        >
+          {displayAgents.map(agent => (
+            <Reorder.Item
+              as="div"
               key={agent.slug}
-              agent={agent}
-              lastMessage={inboxMap[agent.slug] || null}
-              unreadCount={unreadCounts[agent.slug] || 0}
-              onClick={onSelectAgent}
-            />
+              value={agent}
+              style={{ touchAction: 'none', cursor: 'grab' }}
+              whileDrag={{ scale: 1.02, boxShadow: '0 5px 20px rgba(0,0,0,0.35)', zIndex: 10 }}
+            >
+              <AgentCard
+                agent={agent}
+                lastMessage={inboxMap[agent.slug] || null}
+                unreadCount={unreadCounts[agent.slug] || 0}
+                onClick={onSelectAgent}
+              />
+            </Reorder.Item>
           ))}
-        </div>
+        </Reorder.Group>
       )}
 
       <div style={{ height: 20 }} />
@@ -1935,6 +2001,11 @@ export default function CornerV3() {
   const [inputBarText, setInputBarText] = useState('')
   const [inputBarSending, setInputBarSending] = useState(false)
   const [inputBarFocused, setInputBarFocused] = useState(false)
+  const [rootVoiceActive, setRootVoiceActive] = useState(false)
+  const [rootVoiceStatus, setRootVoiceStatus] = useState('idle')
+  const [rootVoiceMuted, setRootVoiceMuted]   = useState(false)
+  const [rootVoiceTranscript, setRootVoiceTranscript] = useState('')
+  const rootVoiceChatRef = useRef(null)
 
   const { queued, rightNow, done } = useTasks()
   // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
