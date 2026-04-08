@@ -293,6 +293,7 @@ function useColumnChat(agentSlug, isActive) {
       }))
 
     let geminiReply = null
+    let geminiHandled = false
     const geminiStart = Date.now()
     try {
       const geminiRes = await fetch('/api/dashboard/v2-gemini-chat', {
@@ -312,6 +313,7 @@ function useColumnChat(agentSlug, isActive) {
       const data = await geminiRes.json()
       const reply = typeof data?.reply === 'string' ? data.reply : ''
       geminiReply = reply || null
+      geminiHandled = true  // Gemini processed it, even if reply is empty
       // If a delete_messages function was called, reset local messages from Supabase
       const hadDelete = (data.functionCalls || []).some(c => c.name === 'delete_messages')
       // Show toast for any successfully created tasks
@@ -341,7 +343,19 @@ function useColumnChat(agentSlug, isActive) {
       console.error('[v2-gemini-chat] Error:', err)
     }
 
-    if (geminiReply) {
+    // Gemini handled the message. Only fall to relay if Gemini actually errored.
+    if (geminiHandled) {
+      if (!geminiReply) {
+        // Gemini processed but returned empty (function-call-only response). Just mark as sent.
+        setSending(false)
+        // Persist user message only
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: agentSlug, text: trimmed, role: 'user', source: 'corner-dashboard', client_id: clientId }),
+        }).catch(() => {})
+        return
+      }
       const replyText = geminiReply
       const replyTime = new Date().toISOString()
       const elapsed = Date.now() - geminiStart
@@ -407,7 +421,8 @@ function useColumnChat(agentSlug, isActive) {
                     for (const row of newMsgs) {
                       const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
                       if (updated.some(m => m.id && m.id === msg.id)) continue
-                      if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
+                      // Dedup: same content within 30s window (Supabase timestamps can lag)
+                      if (updated.some(m => m.content === msg.content && m.role === msg.role && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 30000)) continue
                       updated.push(msg)
                     }
                     updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
