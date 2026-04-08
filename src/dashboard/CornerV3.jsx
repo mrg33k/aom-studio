@@ -473,9 +473,52 @@ function HomePanel({ user, agents, inboxItems }) {
   )
 }
 
+// ── Status color helpers ──────────────────────────────────────────────────────
+
+function getStatusColor(status) {
+  switch (status) {
+    case 'building':  return { dot: '#22C55E', glow: '0 0 6px rgba(34,197,94,0.6)',  border: 'rgba(34,197,94,0.2)',  bg: 'rgba(34,197,94,0.05)' }
+    case 'qa':        return { dot: '#3B9EFF', glow: '0 0 6px rgba(59,158,255,0.5)', border: 'rgba(59,158,255,0.2)', bg: 'rgba(59,158,255,0.05)' }
+    case 'queued':    return { dot: '#F59E0B', glow: 'none',                          border: 'rgba(245,158,11,0.15)', bg: 'rgba(245,158,11,0.03)' }
+    case 'planning':  return { dot: '#A78BFA', glow: 'none',                          border: 'rgba(167,139,250,0.15)', bg: 'rgba(167,139,250,0.03)' }
+    case 'classifying': return { dot: '#FB923C', glow: 'none',                        border: 'rgba(251,146,60,0.15)', bg: 'rgba(251,146,60,0.03)' }
+    case 'done':      return { dot: '#22C55E', glow: 'none',                          border: 'rgba(255,255,255,0.04)', bg: 'rgba(255,255,255,0.02)' }
+    case 'failed':    return { dot: '#EF4444', glow: 'none',                          border: 'rgba(239,68,68,0.2)',  bg: 'rgba(239,68,68,0.04)' }
+    default:          return { dot: '#506480', glow: 'none',                          border: 'rgba(255,255,255,0.06)', bg: 'rgba(255,255,255,0.04)' }
+  }
+}
+
 function TasksPanel({ queued, rightNow, done }) {
-  const active = [...(rightNow || []), ...(queued || [])]
+  const [searchQuery,    setSearchQuery]    = useState('')
+  const [activeProject,  setActiveProject]  = useState('all')
+
+  const active    = [...(rightNow || []), ...(queued || [])]
   const completed = done || []
+  const allTasks  = [...active, ...completed]
+
+  // Collect unique agents/projects from all tasks
+  const projects = useMemo(() => {
+    const seen = new Set()
+    allTasks.forEach(t => {
+      const label = t.agent_identity || t.agentIdentity
+      if (label) seen.add(label)
+    })
+    return Array.from(seen).sort()
+  }, [allTasks])
+
+  // Filter helper
+  function filterTasks(tasks) {
+    return tasks.filter(t => {
+      const title   = (t.title || t.text || '').toLowerCase()
+      const matchQ  = !searchQuery || title.includes(searchQuery.toLowerCase())
+      const agent   = t.agent_identity || t.agentIdentity || ''
+      const matchP  = activeProject === 'all' || agent === activeProject
+      return matchQ && matchP
+    })
+  }
+
+  const filteredActive    = filterTasks(active)
+  const filteredCompleted = filterTasks(completed)
 
   return (
     <div style={{
@@ -484,73 +527,177 @@ function TasksPanel({ queued, rightNow, done }) {
       padding: '16px 20px',
       fontFamily: "'Inter', sans-serif",
     }}>
-      {active.length > 0 && (
+
+      {/* Search + Filters */}
+      <div style={{ marginBottom: 16 }}>
+        {/* Search input */}
+        <div style={{ position: 'relative', marginBottom: 10 }}>
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+            stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '7px 10px 7px 30px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 7,
+              color: C.text,
+              fontSize: 13,
+              outline: 'none',
+              fontFamily: "'Inter', sans-serif",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
+                fontSize: 14, lineHeight: 1, padding: 0,
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Project filter pills */}
+        {projects.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['all', ...projects].map(p => (
+              <button
+                key={p}
+                onClick={() => setActiveProject(p)}
+                style={{
+                  padding: '3px 10px',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: activeProject === p ? '1px solid rgba(59,158,255,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                  background: activeProject === p ? 'rgba(59,158,255,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: activeProject === p ? C.accent : C.muted,
+                  textTransform: p === 'all' ? 'uppercase' : 'capitalize',
+                  letterSpacing: p === 'all' ? '0.06em' : 0,
+                  transition: 'all 0.15s',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                {p === 'all' ? 'All' : p}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Active tasks */}
+      {filteredActive.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Active ({active.length})
+            Active ({filteredActive.length})
           </div>
-          {active.map(t => (
-            <div key={t.id} style={{
-              padding: '10px 14px',
-              marginBottom: 6,
-              borderRadius: 8,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}>
-              <span style={{
-                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: t.status === 'building' || t.status === 'qa' ? '#22C55E' : '#F59E0B',
-                boxShadow: t.status === 'building' ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
-              }} />
-              <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {t.title || t.text || 'Untitled task'}
-              </span>
-              <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, textTransform: 'capitalize' }}>
-                {t.status}
-              </span>
-            </div>
-          ))}
+          {filteredActive.map(t => {
+            const sc = getStatusColor(t.status)
+            return (
+              <div key={t.id} style={{
+                padding: '10px 14px',
+                marginBottom: 6,
+                borderRadius: 8,
+                background: sc.bg,
+                border: `1px solid ${sc.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}>
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                  background: sc.dot,
+                  boxShadow: sc.glow,
+                }} />
+                <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t.title || t.text || 'Untitled task'}
+                </span>
+                {(t.qa_score || t.qaScore) && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: '#22C55E',
+                    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)',
+                    borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+                  }}>
+                    QA {t.qa_score || t.qaScore}
+                  </span>
+                )}
+                <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, textTransform: 'capitalize' }}>
+                  {t.status}
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {completed.length > 0 && (
+      {/* Completed tasks */}
+      {filteredCompleted.length > 0 && (
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Done ({completed.length})
+            Done ({filteredCompleted.length})
           </div>
-          {completed.slice(0, 20).map(t => (
-            <div key={t.id} style={{
-              padding: '8px 14px',
-              marginBottom: 4,
-              borderRadius: 8,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.04)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              opacity: 0.6,
-            }}>
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {t.title || t.text || 'Untitled task'}
-              </span>
-            </div>
-          ))}
+          {filteredCompleted.slice(0, 20).map(t => {
+            const sc = getStatusColor(t.status)
+            return (
+              <div key={t.id} style={{
+                padding: '8px 14px',
+                marginBottom: 4,
+                borderRadius: 8,
+                background: sc.bg,
+                border: `1px solid ${sc.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                opacity: 0.65,
+              }}>
+                {t.status === 'failed' ? (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                ) : (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+                <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t.title || t.text || 'Untitled task'}
+                </span>
+                {(t.qa_score || t.qaScore) && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: '#3B9EFF',
+                    background: 'rgba(59,158,255,0.1)', border: '1px solid rgba(59,158,255,0.2)',
+                    borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+                  }}>
+                    QA {t.qa_score || t.qaScore}
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {active.length === 0 && completed.length === 0 && (
+      {/* Empty state */}
+      {filteredActive.length === 0 && filteredCompleted.length === 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: C.muted, gap: 8, paddingTop: 60 }}>
           <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
             <line x1="8" y1="18" x2="21" y2="18"/>
           </svg>
-          <span style={{ fontSize: 13 }}>No tasks</span>
+          <span style={{ fontSize: 13 }}>{searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'No tasks'}</span>
         </div>
       )}
     </div>
