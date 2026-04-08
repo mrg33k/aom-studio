@@ -728,6 +728,9 @@ function TasksPanel({ queued, rightNow, done }) {
   const [searchQuery,   setSearchQuery]   = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
+  const [projectName,            setProjectName]            = useState('')
+  const [selectedColor,          setSelectedColor]          = useState('#10B981')
 
   const active    = [...(rightNow || []), ...(queued || [])]
   const completed = done || []
@@ -782,7 +785,7 @@ function TasksPanel({ queued, rightNow, done }) {
   const MAX_BAR_H     = 19
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
 
       {/* Keyframes for animated progress bars */}
       <style>{`
@@ -874,6 +877,22 @@ function TasksPanel({ queued, rightNow, done }) {
                 >{p}</button>
               )
             })}
+            <button
+              onClick={() => { setProjectName(''); setSelectedColor('#10B981'); setShowCreateProjectModal(true) }}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 16,
+                fontSize: 14,
+                fontWeight: 400,
+                lineHeight: 1,
+                cursor: 'pointer',
+                flexShrink: 0,
+                border: '1px solid ' + C.border,
+                background: C.s1,
+                color: C.text2,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >+</button>
           </div>
         </div>
 
@@ -1119,6 +1138,102 @@ function TasksPanel({ queued, rightNow, done }) {
           </div>
         )}
       </div>
+
+      {/* Create Project Modal */}
+      {showCreateProjectModal && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.65)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => { setShowCreateProjectModal(false); setProjectName(''); setSelectedColor('#10B981') }}
+        >
+          <div
+            style={{
+              background: C.s1,
+              border: '1px solid ' + C.border2,
+              borderRadius: 16,
+              padding: 24,
+              width: 300,
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+              New Project
+            </div>
+
+            <input
+              type="text"
+              placeholder="Project name..."
+              value={projectName}
+              onChange={e => setProjectName(e.target.value)}
+              style={{
+                background: C.bg2,
+                border: '1px solid ' + C.border2,
+                borderRadius: 8,
+                padding: '8px 12px',
+                color: C.text,
+                fontSize: 13,
+                fontFamily: "'Inter', sans-serif",
+                outline: 'none',
+              }}
+            />
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['#EAB308', '#22C55E', '#A78BFA', '#F59E0B', '#10B981', '#F97316'].map(color => (
+                <div
+                  key={color}
+                  onClick={() => setSelectedColor(color)}
+                  style={{
+                    width: 28, height: 28,
+                    borderRadius: '50%',
+                    background: color,
+                    cursor: 'pointer',
+                    border: selectedColor === color ? '2px solid #fff' : '2px solid transparent',
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
+                    outline: selectedColor === color ? '2px solid rgba(255,255,255,0.25)' : 'none',
+                    outlineOffset: 2,
+                  }}
+                />
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setShowCreateProjectModal(false); setProjectName(''); setSelectedColor('#10B981') }}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: '1px solid ' + C.border2,
+                  background: 'none',
+                  color: C.text2,
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >Cancel</button>
+              <button
+                onClick={() => setShowCreateProjectModal(false)}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: C.accent,
+                  color: '#fff',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >Create</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
