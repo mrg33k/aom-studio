@@ -917,7 +917,7 @@ function TasksPanel({ queued, rightNow, done }) {
                   top: 0,
                   left: 0,
                   height: 2,
-                  background: '#FACC15',
+                  background: C.yellow,
                   animation: 'bld 5s ease-in-out infinite',
                   borderRadius: '14px 14px 0 0',
                 }} />
@@ -926,7 +926,7 @@ function TasksPanel({ queued, rightNow, done }) {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                   {/* Left: title + tags */}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ color: '#FACC15', fontSize: 14, fontWeight: 700, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ color: C.yellow, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
@@ -944,10 +944,10 @@ function TasksPanel({ queued, rightNow, done }) {
                   </div>
                   {/* Right: score + label */}
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ color: '#FACC15', fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div style={{ color: C.yellow, fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
                       {t.qa_score || t.qaScore || '...'}
                     </div>
-                    <div style={{ color: '#475569', fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
+                    <div style={{ color: C.muted, fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
                       {t.status === 'right_now' ? 'Building' : 'Queued'}
                     </div>
                   </div>
@@ -975,29 +975,63 @@ function TasksPanel({ queued, rightNow, done }) {
               const project   = t.project_name || t.projectName
               const isFailed  = t.status === 'failed'
               return (
-                <div key={t.id} style={{
-                  padding: '14px 16px',
-                  marginBottom: 8,
-                  borderRadius: 14,
-                  backgroundColor: isFailed ? 'rgba(239,68,68,0.15)' : cardColor,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                }}>
-                  {/* Left: title + agent/project */}
+                <div
+                  key={t.id}
+                  style={{
+                    padding: '14px 16px',
+                    marginBottom: 8,
+                    borderRadius: 14,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'transform 0.15s, box-shadow 0.15s',
+                    backgroundColor: isFailed ? 'rgba(239,68,68,0.15)' : cardColor,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = ''
+                    e.currentTarget.style.boxShadow = ''
+                  }}
+                >
+                  {/* Left: title + tags */}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: isFailed ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: isFailed ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
-                    <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: isFailed ? 'rgba(240,244,255,0.5)' : 'rgba(10,10,10,0.5)', marginTop: 4, fontWeight: 700 }}>
-                      {[agent, project].filter(Boolean).join(' · ') || (isFailed ? 'Failed' : 'Shipped')}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                      {agent && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: isFailed ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {agent}
+                        </span>
+                      )}
+                      {project && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: isFailed ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {project}
+                        </span>
+                      )}
+                      {!agent && !project && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: isFailed ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {isFailed ? 'Failed' : 'Shipped'}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  {/* Right: QA score */}
+                  {/* Right: QA score + label */}
                   {qa && (
-                    <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : '#0A0A0A', flexShrink: 0, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
-                      {qa}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : 'rgba(0,0,0,0.55)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                        {qa}
+                      </div>
+                      <div style={{ fontSize: 8, fontWeight: 600, color: isFailed ? 'rgba(240,244,255,0.3)' : 'rgba(0,0,0,0.3)', textTransform: 'uppercase', textAlign: 'right', marginTop: 2 }}>
+                        QA
+                      </div>
                     </div>
                   )}
                 </div>
