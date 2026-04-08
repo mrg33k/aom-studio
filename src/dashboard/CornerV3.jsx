@@ -1738,12 +1738,9 @@ export default function CornerV3() {
       {/* ── NAV BAR ────────────────────────────────────────────────────────── */}
       <nav style={{
         width: '100%',
-        height: NAV_H,
-        background: C.s1,
-        borderBottom: '1px solid ' + C.border,
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
         flexShrink: 0,
+        background: C.bg,
+        borderBottom: '1px solid ' + C.border,
         display: 'flex',
         flexDirection: 'column',
         position: 'sticky',
@@ -1751,20 +1748,16 @@ export default function CornerV3() {
         zIndex: 100,
       }}>
 
-        {/* Row 1: Logo | World | Bell + Avatar */}
+        {/* Row 1: Logo + World (left) | Bell + Avatar (right) */}
         <div style={{
-          height: ROW1_H,
           display: 'flex',
           alignItems: 'center',
-          padding: '10px 16px 0px 16px',
-          gap: 12,
-          borderBottom: '1px solid ' + C.border,
+          justifyContent: 'space-between',
+          padding: '10px 16px 0',
         }}>
-          {/* Left: Logo */}
-          <AomLogo />
-
-          {/* Center: WorldSelector */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          {/* Left: Logo + World switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AomLogo />
             <WorldSelector
               currentWorldId={worldId}
               currentUser={currentUser}
@@ -1776,57 +1769,60 @@ export default function CornerV3() {
           </div>
 
           {/* Right: Bell + Avatar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BellIcon hasNew={unreadChat > 0} />
             <UserAvatar user={currentUser} />
           </div>
         </div>
 
-        {/* Row 2: Nav tabs */}
+        {/* Row 2: Tabs (left) | Stats (right) */}
         <div style={{
-          height: ROW2_H,
           display: 'flex',
           alignItems: 'center',
-          padding: '8px 16px 8px 16px',
-          gap: 2,
+          justifyContent: 'space-between',
+          padding: '8px 16px',
         }}>
-          <Tab
-            label="Home"
-            icon={<HomeIcon color={tab === 'home' ? C.text : C.muted} />}
-            active={tab === 'home'}
-            onClick={() => handleTabChange('home')}
-            badge={null}
-          />
-          <Tab
-            label="Tasks"
-            icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
-            active={tab === 'tasks'}
-            onClick={() => handleTabChange('tasks')}
-            badge={<Badge count={activeTaskCount} />}
-          />
-          <Tab
-            label="Chat"
-            icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
-            active={tab === 'chat'}
-            onClick={() => handleTabChange('chat')}
-            badge={<Badge count={unreadChat} />}
-          />
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 2 }}>
+            <Tab
+              label="Home"
+              icon={<HomeIcon color={tab === 'home' ? C.text : C.muted} />}
+              active={tab === 'home'}
+              onClick={() => handleTabChange('home')}
+              badge={null}
+            />
+            <Tab
+              label="Tasks"
+              icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
+              active={tab === 'tasks'}
+              onClick={() => handleTabChange('tasks')}
+              badge={<Badge count={activeTaskCount} />}
+            />
+            <div style={{ display: (tab === 'chat' || selectedAgent) ? undefined : 'none' }}>
+              <Tab
+                label="Chat"
+                icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
+                active={tab === 'chat'}
+                onClick={() => handleTabChange('chat')}
+                badge={<Badge count={unreadChat} />}
+              />
+            </div>
+          </div>
 
           {/* Nav stats: hidden on mobile (< 480px) */}
           <div style={{
             display: window.innerWidth < 480 ? 'none' : 'flex',
             alignItems: 'center',
-            gap: 10,
-            marginLeft: 'auto',
+            gap: 12,
             flexShrink: 0,
           }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />
-              <span style={{ fontWeight: 800 }}>{rightNow?.length || 0}</span> building
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.yellow, flexShrink: 0 }} />
+              <b style={{ color: C.text2 }}>{rightNow?.length || 0}</b> building
             </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, flexShrink: 0 }} />
-              <span style={{ fontWeight: 800 }}>{done?.length || 0}</span> done
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.green, flexShrink: 0 }} />
+              <b style={{ color: C.text2 }}>{done?.length || 0}</b> done
             </span>
           </div>
         </div>
