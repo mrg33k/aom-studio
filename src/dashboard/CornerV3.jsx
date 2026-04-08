@@ -957,6 +957,74 @@ function TasksPanel({ queued, rightNow, done }) {
           </div>
         )}
 
+        {/* Weekly Stats Bar */}
+        {completed.length > 0 && (
+          <div style={{
+            background: C.s1,
+            border: '1px solid ' + C.border,
+            borderRadius: 14,
+            padding: '12px 14px',
+            marginBottom: 16,
+          }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: C.muted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              fontFamily: "'JetBrains Mono', monospace",
+              marginBottom: 8,
+            }}>This Week</div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: MAX_BAR_H + 16, marginBottom: 4 }}>
+              {DAY_LABELS.map((label, i) => {
+                const count    = dailyCounts[i]
+                const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
+                const barH     = count > 0 ? Math.round((count / maxDailyCount) * (MAX_BAR_H - MIN_BAR_H)) + MIN_BAR_H : MIN_BAR_H
+                return (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 3 }}>
+                    <div style={{
+                      width: '100%',
+                      height: barH,
+                      borderRadius: 3,
+                      background: isFuture || count === 0 ? 'rgba(255,255,255,0.06)' : C.accent,
+                      minHeight: 2,
+                      transition: 'height 0.3s ease',
+                    }} />
+                    <div style={{
+                      fontSize: 8,
+                      fontWeight: 600,
+                      color: C.dim,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>{label}</div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: 8,
+              paddingTop: 8,
+              borderTop: '1px solid ' + C.border,
+            }}>
+              <div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{weekTotal}</div>
+                <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Tasks</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{passRate !== null ? passRate + '%' : '--'}</div>
+                <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Pass Rate</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
+                <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Avg QA</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Shipped tasks */}
         {filteredCompleted.length > 0 && (
           <div style={{ marginBottom: 16 }}>
@@ -1037,64 +1105,6 @@ function TasksPanel({ queued, rightNow, done }) {
                 </div>
               )
             })}
-          </div>
-        )}
-
-        {/* Weekly Stats Bar */}
-        {completed.length > 0 && (
-          <div style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 14,
-            padding: '12px 14px',
-            marginBottom: 16,
-          }}>
-            {/* Header */}
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.muted, fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>
-              This Week
-            </div>
-
-            {/* 7 vertical bars for M-S */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: MAX_BAR_H + 16, marginBottom: 10 }}>
-              {DAY_LABELS.map((label, i) => {
-                const count  = dailyCounts[i]
-                const barH   = count > 0 ? Math.round((count / maxDailyCount) * (MAX_BAR_H - MIN_BAR_H)) + MIN_BAR_H : MIN_BAR_H
-                const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 4 }}>
-                    <div style={{
-                      width: '100%',
-                      height: barH,
-                      borderRadius: 3,
-                      background: isFuture
-                        ? 'rgba(255,255,255,0.06)'
-                        : count > 0
-                          ? '#60A5FA'
-                          : 'rgba(255,255,255,0.08)',
-                      transition: 'height 0.3s ease',
-                    }} />
-                    <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* 3 metrics */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, color: C.text }}>
-                Tasks: {completed.length}
-              </div>
-              {passRate !== null && (
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, color: '#22C55E' }}>
-                  Pass Rate: {passRate}%
-                </div>
-              )}
-              {avgQA !== null && (
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, color: C.accent }}>
-                  Avg QA Score: {avgQA}
-                </div>
-              )}
-            </div>
           </div>
         )}
 
