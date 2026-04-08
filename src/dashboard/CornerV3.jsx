@@ -547,6 +547,11 @@ function TasksPanel({ queued, rightNow, done }) {
           50%  { width: 72% }
           100% { width: 25% }
         }
+        @keyframes bld {
+          0%   { width: 5% }
+          50%  { width: 60% }
+          100% { width: 90% }
+        }
       `}</style>
 
       {/* Scrollable content */}
@@ -627,40 +632,68 @@ function TasksPanel({ queued, rightNow, done }) {
               Building Now ({filteredActive.length})
             </div>
             {filteredActive.map((t, i) => (
-              <div key={t.id} style={{
-                padding: '11px 14px',
-                marginBottom: 8,
-                borderRadius: 10,
-                background: 'rgba(245,158,11,0.07)',
-                border: '1px solid rgba(245,158,11,0.18)',
-                overflow: 'hidden',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
-                  <span style={{
-                    width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                    background: '#F59E0B',
-                    boxShadow: '0 0 6px rgba(245,158,11,0.65)',
-                  }} />
-                  <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.title || t.text || 'Untitled task'}
-                  </span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, color: '#F59E0B',
-                    background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.28)',
-                    borderRadius: 4, padding: '2px 7px', flexShrink: 0, textTransform: 'capitalize',
-                  }}>
-                    {t.status || 'building'}
-                  </span>
-                </div>
-                {/* Animated progress bar */}
-                <div style={{ height: 3, borderRadius: 2, background: 'rgba(245,158,11,0.14)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    borderRadius: 2,
-                    background: 'linear-gradient(90deg, #F59E0B, #FCD34D)',
-                    animation: `cv3-progress-sweep 2.6s ease-in-out infinite`,
-                    animationDelay: `${i * 0.45}s`,
-                  }} />
+              <div
+                key={t.id}
+                style={{
+                  padding: '14px 16px',
+                  marginBottom: 8,
+                  borderRadius: 14,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                  background: '#1A2035',
+                  border: '1px solid rgba(234,179,8,0.1)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = ''
+                  e.currentTarget.style.boxShadow = ''
+                }}
+              >
+                {/* Animated top progress bar */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  height: 2,
+                  background: '#FACC15',
+                  animation: 'bld 5s ease-in-out infinite',
+                  borderRadius: '14px 14px 0 0',
+                }} />
+
+                {/* Card content row */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  {/* Left: title + tags */}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ color: '#FACC15', fontSize: 14, fontWeight: 700, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.title || t.text || 'Untitled task'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                      {t.agent_identity || t.agentIdentity ? (
+                        <span style={{ color: '#475569', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {t.agent_identity || t.agentIdentity}
+                        </span>
+                      ) : null}
+                      {t.attempt_count > 1 ? (
+                        <span style={{ color: '#475569', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          Attempt {t.attempt_count}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  {/* Right: score + label */}
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ color: '#FACC15', fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                      {t.qa_score || t.qaScore || '...'}
+                    </div>
+                    <div style={{ color: '#475569', fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
+                      {t.status === 'right_now' ? 'Building' : 'Queued'}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
