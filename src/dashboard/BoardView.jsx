@@ -2087,6 +2087,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     catch { return null }
   })
 
+  // display_order map from agents table: slug -> display_order number
+  const [agentDisplayOrder, setAgentDisplayOrder] = useState({})
+
   // Load from Supabase on mount (overrides localStorage if found)
   useEffect(() => {
     const cid = getClientId()
@@ -2105,6 +2108,24 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         if (data?.value && Array.isArray(data.value)) {
           setColOrder(data.value)
           try { localStorage.setItem('corner-board-order', JSON.stringify(data.value)) } catch {}
+        }
+      })
+      .catch(() => {})
+    // Load agent display_order from Supabase agents table
+    fetch(`/api/dashboard/update-agent-order?client=${encodeURIComponent(cid)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.agents && Array.isArray(data.agents)) {
+          const orderMap = {}
+          data.agents.forEach(a => { orderMap[a.slug] = a.display_order })
+          setAgentDisplayOrder(orderMap)
+          // If no saved colOrder yet, seed initial order from Supabase display_order
+          setColOrder(prev => {
+            if (prev) return prev
+            const slugOrder = data.agents.map(a => a.slug)
+            try { localStorage.setItem('corner-board-order', JSON.stringify(slugOrder)) } catch {}
+            return slugOrder
+          })
         }
       })
       .catch(() => {})
@@ -2175,6 +2196,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     const agentItems = agents.map(a => ({
       slug: a.slug, name: a.name || getAgentName(a.slug), color: a.color || getAgentColor(a.slug),
       status: a.status || 'IDLE', role: a.role || '', isAgent: true,
+      display_order: agentDisplayOrder[a.slug] ?? 9999,
       tasks: (() => {
         const at = agentTasks[a.slug] || { completed: [], todo: [], projects: {} }
         const live = rightNow.filter(t => t.agent === a.slug).map(t => ({ ...t, _source: 'rightNow' }))
@@ -2200,12 +2222,23 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       tasks: (p.tasks || []).map(t => ({ ...t, project: p.section })),
     }))
     return [...agentItems, ...projectItems]
-  }, [agents, rightNow, punchData, personalTodos, completedFeed, agentTasks])
+  }, [agents, rightNow, punchData, personalTodos, completedFeed, agentTasks, agentDisplayOrder])
 
-  // Apply saved column order
+  // Apply saved column order (or sort by display_order/status/slug when no saved order)
   const orderedVisibleItems = useMemo(() => {
     const visItems = allItems.filter(it => visibleSlugs.has(it.slug))
-    if (!colOrder) return visItems
+    if (!colOrder) {
+      // Initial sort: display_order asc, then active status (non-IDLE first), then slug
+      return [...visItems].sort((a, b) => {
+        const aOrd = a.isAgent ? (a.display_order ?? 9999) : 99999
+        const bOrd = b.isAgent ? (b.display_order ?? 9999) : 99999
+        if (aOrd !== bOrd) return aOrd - bOrd
+        const aActive = a.status && a.status !== 'IDLE' ? 0 : 1
+        const bActive = b.status && b.status !== 'IDLE' ? 0 : 1
+        if (aActive !== bActive) return aActive - bActive
+        return (a.slug || '').localeCompare(b.slug || '')
+      })
+    }
     const map = Object.fromEntries(visItems.map(it => [it.slug, it]))
     const ordered = colOrder.filter(s => map[s]).map(s => map[s])
     const missing = visItems.filter(it => !colOrder.includes(it.slug))
@@ -2331,7 +2364,22 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     setColOrder(newOrder)
     setDragSource(null)
     setDragTarget(null)
-  }, [dragSource, orderedVisibleItems])
+    // Persist agent display_order to Supabase agents table
+    const cid = getClientId()
+    const agentOrders = newOrder
+      .filter(s => allItems.find(it => it.slug === s && it.isAgent))
+      .map((s, i) => ({ slug: s, display_order: (i + 1) * 10 }))
+    if (agentOrders.length > 0) {
+      const newOrderMap = {}
+      agentOrders.forEach(a => { newOrderMap[a.slug] = a.display_order })
+      setAgentDisplayOrder(newOrderMap)
+      fetch('/api/dashboard/update-agent-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agents: agentOrders, client_id: cid }),
+      }).catch(() => {})
+    }
+  }, [dragSource, orderedVisibleItems, allItems])
 
   // Add task to project
   const handleAddTask = async (text, projectSlug) => {
