@@ -462,11 +462,11 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
     return m
   }, [inboxItems])
 
-  // Count unread messages per agent
+  // Count unread messages per agent (uses isUnread flag from useDataPipe)
   const unreadCounts = useMemo(() => {
     const counts = {}
     for (const item of (inboxItems || [])) {
-      if (item.agent) counts[item.agent] = (counts[item.agent] || 0) + 1
+      if (item.agent && item.isUnread) counts[item.agent] = (counts[item.agent] || 0) + 1
     }
     return counts
   }, [inboxItems])

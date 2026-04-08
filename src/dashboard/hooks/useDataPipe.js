@@ -438,33 +438,30 @@ export function useDataPipe(parsePunchList) {
           setCompletedFeed(completed)
         }
 
-        // Compute unread inbox items: assistant messages newer than user's last message per agent
+        // Build inbox: latest message per agent (for card previews) + unread counts
         if (data.messages) {
-          // Messages arrive oldest-first (reversed in supabase-status.js)
           const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
+          const latestPerAgent = {} // agent -> most recent message (any role)
           for (const msg of data.messages) {
             if (msg.role === 'user' && msg.source === 'corner-dashboard') {
               agentLastSeen[msg.agent] = msg.timestamp
             }
           }
-          const unread = []
-          const seenAgents = new Set() // one card per agent max
-          for (const msg of [...data.messages].reverse()) { // newest first
-            if (msg.role === 'assistant' && msg.agent && !seenAgents.has(msg.agent)) {
+          // Walk newest-first to find latest message per agent (for preview)
+          for (const msg of [...data.messages].reverse()) {
+            if (msg.agent && !latestPerAgent[msg.agent]) {
+              const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
               const lastSeen = agentLastSeen[msg.agent]
-              if (!lastSeen || msg.timestamp > lastSeen) {
-                seenAgents.add(msg.agent)
-                const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
-                unread.push({
-                  agent: msg.agent,
-                  text: preview,
-                  timestamp: msg.timestamp,
-                  id: msg.id,
-                })
+              latestPerAgent[msg.agent] = {
+                agent: msg.agent,
+                text: preview,
+                timestamp: msg.timestamp,
+                id: msg.id,
+                isUnread: msg.role === 'assistant' && (!lastSeen || msg.timestamp > lastSeen),
               }
             }
           }
-          setInboxItems(unread)
+          setInboxItems(Object.values(latestPerAgent))
         }
 
         // Build punchData from Supabase tasks so pills render on production.
