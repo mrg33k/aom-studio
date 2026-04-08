@@ -13856,7 +13856,7 @@ export default function GameDashboard() {
             isMobile={isMobile}
             isNightMode={isNightMode}
             hudHeight={hudBarHeight}
-            hasRightNow={(v2RightNow.length > 0 ? v2RightNow : rightNowTasks).length > 0}
+            hasRightNow={true}
             unreadAgents={unreadAgents}
             currentUser={currentUser}
             onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
@@ -13873,66 +13873,91 @@ export default function GameDashboard() {
         </BoardErrorBoundary>
       </div>
 
-      {/* Right Now Bar -- flex child at bottom, pushes BoardView up naturally */}
-      {(v2RightNow.length > 0 ? v2RightNow : rightNowTasks).length > 0 && (
-        <div style={{
-          flexShrink: 0,
-          height: isMobile ? 'calc(70px + env(safe-area-inset-bottom, 0px))' : 70,
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: isMobile ? '0 12px env(safe-area-inset-bottom, 0px) 12px' : '0 20px',
-          zIndex: 34,
-          background: isNightMode
-            ? 'rgba(6,10,18,0.92)'
-            : 'linear-gradient(180deg, rgba(14,38,74,0.95) 0%, rgba(14,38,74,0.85) 100%)',
-          backdropFilter: 'blur(20px)',
-          borderTop: isNightMode ? '1px solid rgba(255,255,255,0.025)' : '1px solid rgba(255,107,61,0.15)',
-          overflowX: 'auto', overflowY: 'hidden',
-          scrollbarWidth: 'none',
-        }}>
-          <span style={{
-            fontSize: 9, fontWeight: 700, color: '#FF6B3D',
-            textTransform: 'uppercase', letterSpacing: '0.14em',
-            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-            fontFamily: "'JetBrains Mono', monospace",
-            marginRight: 4,
+      {/* Right Now Bar -- flex child at bottom, always visible */}
+      {(() => {
+        const activeTasks = (v2RightNow.length > 0 ? v2RightNow : rightNowTasks)
+          .filter(t => t.isLive || t.isQA)
+          .filter((t, i, arr) => {
+            const slug = t.agentIdentity || t.agent
+            return arr.findIndex(x => (x.agentIdentity || x.agent) === slug) === i
+          })
+        return (
+          <div style={{
+            flexShrink: 0,
+            height: isMobile ? 'calc(70px + env(safe-area-inset-bottom, 0px))' : 70,
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: isMobile ? '0 12px env(safe-area-inset-bottom, 0px) 12px' : '0 20px',
+            zIndex: 34,
+            background: isNightMode
+              ? 'rgba(6,10,18,0.92)'
+              : 'linear-gradient(180deg, rgba(14,38,74,0.95) 0%, rgba(14,38,74,0.85) 100%)',
+            backdropFilter: 'blur(20px)',
+            borderTop: isNightMode ? '1px solid rgba(255,255,255,0.025)' : '1px solid rgba(255,107,61,0.15)',
+            overflowX: 'auto', overflowY: 'hidden',
+            scrollbarWidth: 'none',
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B3D', boxShadow: '0 0 8px #FF6B3D, 0 0 16px rgba(255,107,61,0.25)', animation: 'bvPulse 2s infinite', display: 'inline-block' }} />
-            NOW
-          </span>
-          {(v2RightNow.length > 0 ? v2RightNow : rightNowTasks).filter(t => t.isLive).filter((t, i, arr) => arr.findIndex(x => x.agent === t.agent) === i).map((task, i) => {
-            const agentColor = AGENTS.find(a => a.slug === task.agent)?.color || '#FF6B3D'
-            return (
-              <div key={task.agent + i}
-                onClick={() => { setSelectedRoom(task.agent); setCameraTarget(task.agent); setIsOverview(false) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '4px 10px', borderRadius: 8, flexShrink: 0,
-                  background: `${agentColor}18`,
-                  border: `1px solid ${agentColor}35`,
-                  cursor: 'pointer',
-                  transition: 'all 150ms',
-                }}
-              >
-                <span style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: agentColor,
-                  boxShadow: `0 0 6px ${agentColor}80`,
-                  animation: 'bvPulse 2s ease-in-out infinite',
-                }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: agentColor }}>
-                  {(task.agentDisplayName || AGENTS.find(a => a.slug === task.agent)?.name || (task.agent ? task.agent.charAt(0).toUpperCase() + task.agent.slice(1) : '')) + ':'}
-                </span>
-                <span style={{
-                  fontSize: 11, color: isNightMode ? '#94A3B8' : '#CBD5E1',
-                  maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {task.rawTitle || (task.text || task.task || '').replace(/^\[.*?\]\s*/, '')}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+            <span style={{
+              fontSize: 9, fontWeight: 700, color: '#FF6B3D',
+              textTransform: 'uppercase', letterSpacing: '0.14em',
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+              fontFamily: "'JetBrains Mono', monospace",
+              marginRight: 4,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B3D', boxShadow: '0 0 8px #FF6B3D, 0 0 16px rgba(255,107,61,0.25)', animation: activeTasks.length > 0 ? 'bvPulse 2s infinite' : 'none', display: 'inline-block', opacity: activeTasks.length > 0 ? 1 : 0.3 }} />
+              NOW
+            </span>
+            {activeTasks.length === 0 ? (
+              <span style={{
+                fontSize: 11, color: isNightMode ? 'rgba(148,163,184,0.4)' : 'rgba(203,213,225,0.5)',
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.06em',
+              }}>
+                All clear
+              </span>
+            ) : activeTasks.map((task, i) => {
+              const agentSlug = task.agentIdentity || task.agent
+              const agentColor = AGENTS.find(a => a.slug === agentSlug)?.color || '#FF6B3D'
+              const agentName = task.agentDisplayName || AGENTS.find(a => a.slug === agentSlug)?.name || (agentSlug ? agentSlug.charAt(0).toUpperCase() + agentSlug.slice(1) : '')
+              const taskTitle = task.title || task.rawTitle || (task.text || task.task || '').replace(/^\[.*?\]\s*/, '')
+              const isQA = task.isQA
+              return (
+                <div key={(agentSlug || i) + i}
+                  onClick={() => { if (agentSlug) { setSelectedRoom(agentSlug); setCameraTarget(agentSlug); setIsOverview(false) } }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '4px 10px', borderRadius: 8, flexShrink: 0,
+                    background: `${agentColor}18`,
+                    border: `1px solid ${agentColor}35`,
+                    cursor: agentSlug ? 'pointer' : 'default',
+                    transition: 'all 150ms',
+                  }}
+                >
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: agentColor,
+                    boxShadow: `0 0 6px ${agentColor}80`,
+                    animation: 'bvPulse 2s ease-in-out infinite',
+                  }} />
+                  {agentName && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: agentColor }}>
+                      {agentName + ':'}
+                    </span>
+                  )}
+                  {isQA && (
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em' }}>QA</span>
+                  )}
+                  <span style={{
+                    fontSize: 11, color: isNightMode ? '#94A3B8' : '#CBD5E1',
+                    maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {taskTitle}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* Game view, sidebar, GameHUD, checklist, megaboard all KILLED Mar 27.
           Board view is the only view now. All functionality lives in board column tabs. */}
@@ -14399,7 +14424,7 @@ export default function GameDashboard() {
           }}
           // Raise input above the GameHUD bar + Now Bar when active.
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
-          bottomOffset={hudBarHeight + ((v2RightNow.length > 0 ? v2RightNow : rightNowTasks).length > 0 ? 40 : 0)}
+          bottomOffset={hudBarHeight + 40}
         />
       )}
       </>}
