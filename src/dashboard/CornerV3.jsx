@@ -487,19 +487,19 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
       } catch {}
     }
 
-    // Fall back to Supabase user_preferences
+    // Fall back to Supabase agents.display_order
     if (supabase) {
       const clientId = getClientId()
       supabase
-        .from('user_preferences')
-        .select('value')
+        .from('agents')
+        .select('slug, display_order')
         .eq('client_id', clientId)
-        .eq('key', 'agent_order')
-        .maybeSingle()
+        .order('display_order', { ascending: true })
         .then(({ data }) => {
-          if (data?.value?.slugs?.length) {
-            setOrderedSlugs(data.value.slugs)
-            localStorage.setItem('aom_agent_order', JSON.stringify(data.value.slugs))
+          if (data?.length) {
+            const slugs = data.map(a => a.slug)
+            setOrderedSlugs(slugs)
+            localStorage.setItem('aom_agent_order', JSON.stringify(slugs))
           } else {
             // Default: active first, then idle
             const defaultSlugs = [...agents]
@@ -548,18 +548,20 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
     const newSlugs = newAgents.map(a => a.slug)
     setOrderedSlugs(newSlugs)
     localStorage.setItem('aom_agent_order', JSON.stringify(newSlugs))
-    // Persist to Supabase user_preferences (fire-and-forget, cross-device)
+    // Persist display_order to agents table (fire-and-forget, cross-device)
     if (supabase) {
       const clientId = getClientId()
-      supabase
-        .from('user_preferences')
-        .upsert(
-          { client_id: clientId, key: 'agent_order', value: { slugs: newSlugs }, updated_at: new Date().toISOString() },
-          { onConflict: 'client_id,key' }
-        )
-        .then(({ error }) => {
-          if (error) console.warn('[Corner] agent_order upsert failed:', error.message)
-        })
+      const updates = newAgents.map((a, i) =>
+        supabase
+          .from('agents')
+          .update({ display_order: (i + 1) * 10 })
+          .eq('slug', a.slug)
+          .eq('client_id', clientId)
+      )
+      Promise.all(updates).then(results => {
+        const failed = results.find(r => r.error)
+        if (failed) console.warn('[Corner] display_order update failed:', failed.error?.message)
+      })
     }
   }, [])
 
