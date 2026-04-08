@@ -20,6 +20,8 @@ import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
+import { ProjectCard } from './components/ProjectCard.jsx'
+import { projectDefs } from './data/mockProjects.js'
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
 
@@ -672,6 +674,28 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
           ))}
         </Reorder.Group>
       )}
+
+      {/* ── Section label: Your Projects ────────────────────────────────────── */}
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: C.muted,
+        textTransform: 'uppercase', letterSpacing: '0.1em',
+        fontFamily: "'JetBrains Mono', monospace",
+        padding: '18px 20px 8px',
+      }}>
+        Your Projects
+      </div>
+
+      {/* ── Project cards ───────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: isMobile ? '0 12px' : '0 16px' }}>
+        {projectDefs.map(project => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            isExpanded={false}
+            isNightMode={true}
+          />
+        ))}
+      </div>
 
       <div style={{ height: 20 }} />
     </div>
