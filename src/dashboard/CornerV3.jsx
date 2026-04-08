@@ -704,23 +704,456 @@ function TasksPanel({ queued, rightNow, done }) {
   )
 }
 
-function ChatPanel() {
+// ── Time formatter (relative) ─────────────────────────────────────────────────
+
+function formatChatTime(ts) {
+  if (!ts) return ''
+  try {
+    const date = new Date(ts)
+    if (isNaN(date.getTime())) return ''
+    const now = new Date()
+    const diffMs = now - date
+    const diffMin = Math.floor(diffMs / 60000)
+    const diffHr = Math.floor(diffMs / 3600000)
+    const diffDay = Math.floor(diffMs / 86400000)
+    if (diffMin < 1) return 'just now'
+    if (diffMin < 60) return `${diffMin}m ago`
+    if (diffHr < 24) return `${diffHr}h ago`
+    if (diffDay === 1) return 'yesterday'
+    if (diffDay < 7) return `${diffDay}d ago`
+    return date.toLocaleDateString()
+  } catch { return '' }
+}
+
+// ── Chat panel ────────────────────────────────────────────────────────────────
+
+function ChatPanel({ agents, inboxItems, worldId }) {
+  const [selectedAgent, setSelectedAgent] = useState(null)
+  const [messages, setMessages]           = useState([])
+  const [input, setInput]                 = useState('')
+  const [sending, setSending]             = useState(false)
+  const [loadingMsgs, setLoadingMsgs]     = useState(false)
+  const messagesEndRef = useRef(null)
+  const inputRef       = useRef(null)
+
+  // Build unread map: agent slug -> inbox item (last unread message)
+  const unreadMap = useMemo(() => {
+    const m = {}
+    for (const item of (inboxItems || [])) {
+      if (item.agent) m[item.agent] = item
+    }
+    return m
+  }, [inboxItems])
+
+  // Agents sorted: unread first, then active, then idle
+  const chattableAgents = useMemo(() => {
+    return (agents || [])
+      .filter(a => a.slug && a.name)
+      .sort((a, b) => {
+        const aU = unreadMap[a.slug] ? 0 : 1
+        const bU = unreadMap[b.slug] ? 0 : 1
+        if (aU !== bU) return aU - bU
+        const aAct = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        const bAct = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        return aAct - bAct
+      })
+  }, [agents, unreadMap])
+
+  // Load message history when agent selected
+  useEffect(() => {
+    if (!selectedAgent || !supabase || !worldId) return
+    setLoadingMsgs(true)
+    setMessages([])
+    supabase
+      .from('messages')
+      .select('*')
+      .eq('client_id', worldId)
+      .eq('agent', selectedAgent.slug)
+      .order('timestamp', { ascending: true })
+      .limit(60)
+      .then(({ data, error }) => {
+        setLoadingMsgs(false)
+        if (!error && data) setMessages(data)
+      })
+  }, [selectedAgent, worldId])
+
+  // Realtime: watch for new messages in this thread
+  useEffect(() => {
+    if (!selectedAgent || !supabase || !worldId) return
+    const channel = supabase
+      .channel(`cv3-thread-${worldId}-${selectedAgent.slug}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        (payload) => {
+          const msg = payload.new
+          if (msg.agent === selectedAgent.slug) {
+            // Deduplicate: skip if we already have this id (from optimistic insert)
+            setMessages(prev => {
+              if (prev.some(m => m.id === msg.id)) return prev
+              return [...prev, msg]
+            })
+          }
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [selectedAgent, worldId])
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // Focus input when thread opens
+  useEffect(() => {
+    if (selectedAgent) setTimeout(() => inputRef.current?.focus(), 100)
+  }, [selectedAgent])
+
+  const handleSend = useCallback(async () => {
+    const text = input.trim()
+    if (!text || sending || !selectedAgent) return
+    setInput('')
+    setSending(true)
+
+    // Optimistic message
+    const tempId = `temp-${Date.now()}`
+    setMessages(prev => [...prev, {
+      id: tempId,
+      role: 'user',
+      agent: selectedAgent.slug,
+      text,
+      timestamp: new Date().toISOString(),
+      source: 'corner-dashboard',
+    }])
+
+    try {
+      await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: selectedAgent.slug,
+          text,
+          role: 'user',
+          source: 'corner-dashboard',
+          client_id: worldId,
+        }),
+      })
+    } catch (err) {
+      console.error('[ChatPanel] send error:', err)
+    } finally {
+      setSending(false)
+      inputRef.current?.focus()
+    }
+  }, [input, sending, selectedAgent, worldId])
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }, [handleSend])
+
+  // ── Agent list ───────────────────────────────────────────────────────────────
+
+  if (!selectedAgent) {
+    return (
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px 20px',
+        fontFamily: "'Inter', sans-serif",
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: C.muted,
+          letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12,
+        }}>
+          Direct Messages
+        </div>
+
+        {chattableAgents.length === 0 ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', paddingTop: 60, gap: 8, color: C.muted,
+          }}>
+            <svg width={36} height={36} viewBox="0 0 24 24" fill="none"
+              stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span style={{ fontSize: 13 }}>No agents available</span>
+          </div>
+        ) : (
+          chattableAgents.map(agent => {
+            const lastMsg    = unreadMap[agent.slug]
+            const hasUnread  = !!lastMsg
+            return (
+              <button
+                key={agent.slug}
+                onClick={() => setSelectedAgent(agent)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  width: '100%', padding: '12px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.025)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  cursor: 'pointer', textAlign: 'left', marginBottom: 6,
+                  transition: 'background 150ms ease, border-color 150ms ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+                }}
+              >
+                {/* Avatar + unread dot */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <AgentAvatar name={agent.name} color={agent.color} size={40} />
+                  {hasUnread && (
+                    <span style={{
+                      position: 'absolute', top: -3, right: -3,
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: C.accent, border: `2px solid ${C.bg}`,
+                    }} />
+                  )}
+                </div>
+
+                {/* Name + preview */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: hasUnread ? 700 : 600,
+                      color: hasUnread ? C.text : 'rgba(240,244,255,0.8)',
+                      fontFamily: "'Inter', sans-serif",
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{agent.name}</span>
+                    <StatusDot status={agent.status} />
+                  </div>
+                  {lastMsg ? (
+                    <div style={{
+                      fontSize: 12,
+                      color: hasUnread ? C.muted : 'rgba(80,100,128,0.5)',
+                      fontWeight: hasUnread ? 500 : 400,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>{lastMsg.text}</div>
+                  ) : (
+                    <div style={{
+                      fontSize: 12, color: 'rgba(80,100,128,0.4)',
+                      fontStyle: 'italic', fontFamily: "'Inter', sans-serif",
+                    }}>No messages yet</div>
+                  )}
+                </div>
+
+                {/* Timestamp + chevron */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                  {lastMsg?.timestamp && (
+                    <span style={{ fontSize: 10, color: 'rgba(80,100,128,0.6)', fontFamily: "'Inter', sans-serif" }}>
+                      {formatChatTime(lastMsg.timestamp)}
+                    </span>
+                  )}
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+                    stroke="rgba(80,100,128,0.4)" strokeWidth={2.5}
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </div>
+              </button>
+            )
+          })
+        )}
+      </div>
+    )
+  }
+
+  // ── Thread view ──────────────────────────────────────────────────────────────
+
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      gap: 12,
-      color: C.muted,
+      flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
       fontFamily: "'Inter', sans-serif",
     }}>
-      <svg width={40} height={40} viewBox="0 0 24 24" fill="none"
-        stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      <span style={{ fontSize: 14 }}>Chat</span>
+
+      {/* Thread header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(8,14,28,0.95)',
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => { setSelectedAgent(null); setMessages([]) }}
+          style={{
+            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+            stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={30} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              fontSize: 14, fontWeight: 700, color: C.text,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{selectedAgent.name}</span>
+            <StatusDot status={selectedAgent.status} />
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.2 }}>
+            {getStatusCfg(selectedAgent.status).label}
+          </div>
+        </div>
+      </div>
+
+      {/* Messages scroll area */}
+      <div style={{
+        flex: 1, overflowY: 'auto',
+        padding: '12px 14px',
+        display: 'flex', flexDirection: 'column', gap: 6,
+      }}>
+
+        {loadingMsgs && (
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
+            <span style={{ fontSize: 12, color: C.muted }}>Loading…</span>
+          </div>
+        )}
+
+        {!loadingMsgs && messages.length === 0 && (
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 8, paddingTop: 60,
+          }}>
+            <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={44} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: C.text, marginTop: 4 }}>
+              {selectedAgent.name}
+            </span>
+            <span style={{ fontSize: 12, color: C.muted }}>Start a conversation</span>
+          </div>
+        )}
+
+        {messages.map(msg => {
+          const isUser = msg.role === 'user'
+          return (
+            <div
+              key={msg.id}
+              style={{
+                display: 'flex',
+                justifyContent: isUser ? 'flex-end' : 'flex-start',
+                alignItems: 'flex-end',
+                gap: 6,
+              }}
+            >
+              {!isUser && (
+                <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={22} />
+              )}
+              <div style={{ maxWidth: '78%', minWidth: 0 }}>
+                <div style={{
+                  padding: '9px 13px',
+                  borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                  fontSize: 13, lineHeight: 1.5,
+                  color: isUser ? '#fff' : C.text,
+                  background: isUser
+                    ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                    : 'rgba(255,255,255,0.06)',
+                  border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}>
+                  {msg.text}
+                </div>
+                <div style={{
+                  fontSize: 10, color: 'rgba(80,100,128,0.55)',
+                  marginTop: 3,
+                  textAlign: isUser ? 'right' : 'left',
+                  paddingRight: isUser ? 4 : 0,
+                  paddingLeft: isUser ? 0 : 4,
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  {formatChatTime(msg.timestamp)}
+                </div>
+              </div>
+              {isUser && (
+                <div style={{
+                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                  background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>P</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input area */}
+      <div style={{
+        padding: '10px 14px 14px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(8,14,28,0.95)',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={`Message ${selectedAgent.name}…`}
+            rows={1}
+            style={{
+              flex: 1,
+              padding: '9px 12px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              color: C.text,
+              fontSize: 13,
+              fontFamily: "'Inter', sans-serif",
+              outline: 'none',
+              resize: 'none',
+              lineHeight: 1.5,
+              maxHeight: 80,
+              overflowY: 'auto',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || sending}
+            style={{
+              width: 36, height: 36, flexShrink: 0,
+              borderRadius: 10,
+              background: input.trim() && !sending
+                ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                : 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: input.trim() && !sending ? 'pointer' : 'default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 150ms ease',
+            }}
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+              stroke={input.trim() && !sending ? '#fff' : C.muted}
+              strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -915,7 +1348,7 @@ export default function CornerV3() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
-        {tab === 'chat'  && <ChatPanel />}
+        {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} />}
       </div>
 
     </div>
