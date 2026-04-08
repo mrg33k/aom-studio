@@ -423,96 +423,101 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
       }
     }
 
-    const first = await callGemini(contents, systemInstruction);
-    const firstContent = first?.candidates?.[0]?.content || { role: 'model', parts: [] };
-    const parts = Array.isArray(firstContent.parts) ? firstContent.parts : [];
-    const calls = parts.filter(p => p.functionCall).map(p => p.functionCall);
+    // Multi-round function calling loop: keeps calling Gemini until it returns pure text (no function calls).
+    // Max 5 rounds to prevent infinite loops.
+    const MAX_ROUNDS = 5;
+    let currentContents = [...contents];
+    const allFunctionCalls = [];
 
-    if (calls.length === 0) {
-      const reply = parts.filter(p => p.text).map(p => p.text).join('') || '';
-      await setAgentStatus(agentSlug, 'idle');
-      return res.status(200).json({ reply, functionCalls: [], history: [...contents, firstContent], agent: agentSlug });
-    }
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const geminiResult = await callGemini(currentContents, systemInstruction);
+      const geminiContent = geminiResult?.candidates?.[0]?.content || { role: 'model', parts: [] };
+      const geminiParts = Array.isArray(geminiContent.parts) ? geminiContent.parts : [];
+      const calls = geminiParts.filter(p => p.functionCall).map(p => p.functionCall);
 
-    const functionCalls = [];
-    const functionResponses = [];
-    for (const call of calls) {
-      const name = call.name;
-      const args = typeof call.args === 'string' ? (JSON.parse(call.args || '{}') || {}) : (call.args || {});
-      try {
-        let result;
-        if (name === 'create_task') {
-          // Use Gemini's routed agent, fall back to chat agent
-          const taskAgent = args.agent || agentSlug || null;
-          const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
-          result = await createTask(argsWithAgent, clientId);
-        }
-        else if (name === 'get_queue') result = await getQueue(clientId);
-        else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
-        else if (name === 'delete_messages') result = await deleteMessages(agentSlug, clientId, args.count || 10);
-        else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select);
-        else if (name === 'search_history') {
-          const searchAgent = args.agent || agentSlug;
-          const searchQuery = (args.query || '').trim();
-          // Call RAG server on home machine (searches JSONL + ChromaDB)
-          const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
-          try {
-            const ragRes = await fetch(`${RAG_URL}/search-messages`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: searchQuery, agent: searchAgent, top_k: 10 }),
-              signal: AbortSignal.timeout(10000),
-            });
-            if (ragRes.ok) {
-              result = await ragRes.json();
-            } else {
-              throw new Error('RAG server unavailable');
-            }
-          } catch {
-            // Fallback: ILIKE on Supabase messages table (with client_id isolation)
-            const searchFilter = searchAgent
-              ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
-              : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
-            result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
-          }
-        }
-        else if (name === 'start_runner') result = await startRunner();
-        else if (name === 'register_project') result = await registerProject(args);
-        else if (name === 'lookup_context') {
-          const query = (args.query || '').trim();
-          if (!query) throw new Error('query required');
-          const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
-          result = await ctxResp.json();
-        }
-        else if (name === 'cancel_task') {
-          const taskId = (args.task_id || '').trim();
-          if (!taskId) throw new Error('task_id required');
-          const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&status=eq.queued`, {
-            method: 'PATCH', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-            body: JSON.stringify({ status: 'cancelled' }),
-          });
-          if (!resp.ok) throw new Error(`Cancel failed: ${resp.status}`);
-          const cancelled = await resp.json();
-          result = Array.isArray(cancelled) && cancelled.length > 0 ? { cancelled: true, id: taskId } : { cancelled: false, reason: 'Task not found or already picked up' };
-        }
-        else throw new Error(`Unknown function: ${name}`);
-        functionCalls.push({ name, args, result });
-        // Gemini requires functionResponse.response to be an object, not an array
-        const wrappedResult = Array.isArray(result) ? { items: result } : (result && typeof result === 'object' ? result : { value: result });
-        functionResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: wrappedResult } }] });
-      } catch (err) {
-        const errorResult = { error: err.message };
-        functionCalls.push({ name, args, result: errorResult });
-        functionResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: errorResult } }] });
+      if (calls.length === 0) {
+        // No function calls -- extract text and return
+        const reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
+        currentContents.push(geminiContent);
+        await setAgentStatus(agentSlug, 'idle');
+        return res.status(200).json({ reply, functionCalls: allFunctionCalls, history: currentContents, agent: agentSlug });
       }
+
+      // Execute all function calls from this round
+      const roundResponses = [];
+      for (const call of calls) {
+        const name = call.name;
+        const args = typeof call.args === 'string' ? (JSON.parse(call.args || '{}') || {}) : (call.args || {});
+        try {
+          let result;
+          if (name === 'create_task') {
+            const taskAgent = args.agent || agentSlug || null;
+            const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
+            result = await createTask(argsWithAgent, clientId);
+          }
+          else if (name === 'get_queue') result = await getQueue(clientId);
+          else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
+          else if (name === 'delete_messages') result = await deleteMessages(agentSlug, clientId, args.count || 10);
+          else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select);
+          else if (name === 'search_history') {
+            const searchAgent = args.agent || agentSlug;
+            const searchQuery = (args.query || '').trim();
+            const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+            try {
+              const ragRes = await fetch(`${RAG_URL}/search-messages`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: searchQuery, agent: searchAgent, top_k: 10 }),
+                signal: AbortSignal.timeout(10000),
+              });
+              if (ragRes.ok) { result = await ragRes.json(); }
+              else { throw new Error('RAG server unavailable'); }
+            } catch {
+              const searchFilter = searchAgent
+                ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+                : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
+              result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
+            }
+          }
+          else if (name === 'start_runner') result = await startRunner();
+          else if (name === 'register_project') result = await registerProject(args);
+          else if (name === 'lookup_context') {
+            const query = (args.query || '').trim();
+            if (!query) throw new Error('query required');
+            const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
+            result = await ctxResp.json();
+          }
+          else if (name === 'cancel_task') {
+            const taskId = (args.task_id || '').trim();
+            if (!taskId) throw new Error('task_id required');
+            const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&status=eq.queued`, {
+              method: 'PATCH', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+              body: JSON.stringify({ status: 'cancelled' }),
+            });
+            if (!resp.ok) throw new Error(`Cancel failed: ${resp.status}`);
+            const cancelled = await resp.json();
+            result = Array.isArray(cancelled) && cancelled.length > 0 ? { cancelled: true, id: taskId } : { cancelled: false, reason: 'Task not found or already picked up' };
+          }
+          else throw new Error(`Unknown function: ${name}`);
+          allFunctionCalls.push({ name, args, result });
+          const wrappedResult = Array.isArray(result) ? { items: result } : (result && typeof result === 'object' ? result : { value: result });
+          roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: wrappedResult } }] });
+        } catch (err) {
+          const errorResult = { error: err.message };
+          allFunctionCalls.push({ name, args, result: errorResult });
+          roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: errorResult } }] });
+        }
+      }
+
+      // Add this round's content + responses to the conversation for the next round
+      currentContents = [...currentContents, geminiContent, ...roundResponses];
     }
 
-    const secondContents = [...contents, firstContent, ...functionResponses];
-    const second = await callGemini(secondContents, systemInstruction);
-    const secondContent = second?.candidates?.[0]?.content || { role: 'model', parts: [] };
-    const reply = (secondContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '';
+    // Max rounds reached -- return whatever text we have
+    const finalResult = await callGemini(currentContents, systemInstruction);
+    const finalContent = finalResult?.candidates?.[0]?.content || { role: 'model', parts: [] };
+    const reply = (finalContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '';
     await setAgentStatus(agentSlug, 'idle');
-    return res.status(200).json({ reply, functionCalls, history: [...secondContents, secondContent], agent: agentSlug });
+    return res.status(200).json({ reply, functionCalls: allFunctionCalls, history: [...currentContents, finalContent], agent: agentSlug });
   } catch (err) {
     console.error('[v2-gemini-chat] Error:', err.message);
     await setAgentStatus(agentSlug, 'idle');
