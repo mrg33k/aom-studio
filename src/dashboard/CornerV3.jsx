@@ -1459,6 +1459,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             const qaMatch = msg.text?.match(/QA:\s*(\d+(?:\.\d+)?)/i)
             const qaScore = qaMatch ? parseFloat(qaMatch[1]) : null
             const isFailed = /fail/i.test(msg.text || '')
+            // Extract clean title: first non-empty line
+            const taskLines = (msg.text || '').split('\n').filter(l => l.trim())
+            const rawTitle = taskLines[0] || ''
+            const taskTitle = rawTitle.replace(/^(task\s+(complete|failed|done)[:\s]*)/i, '').trim() || rawTitle
+            const taskDesc = taskLines.slice(1).join(' ').trim()
             return (
               <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <div style={{
@@ -1468,6 +1473,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                   padding: '12px 16px',
                   maxWidth: '88%',
                 }}>
+                  {/* mt-head */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                     <div style={{
                       width: 18, height: 18, borderRadius: 6,
@@ -1482,7 +1488,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                       fontFamily: "'JetBrains Mono', monospace",
                     }}>{isFailed ? 'Task Failed' : 'Task Complete'}</span>
                   </div>
-                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.text}</div>
+                  {/* mt-title */}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{taskTitle}</div>
+                  {/* mt-desc */}
+                  {taskDesc && (
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{taskDesc}</div>
+                  )}
+                  {/* mt-foot */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                     {qaScore !== null ? (
                       <span style={{
@@ -1502,6 +1514,69 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                     <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>
                       {msg.agent || selectedAgent?.name}
                     </span>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(80,100,128,0.55)', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
+                    {formatChatTime(msg.timestamp)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          // Inline task card for task-created notifications (rex announcing a new task)
+          if (
+            msg.source === 'gemini-chat' &&
+            msg.agent === 'rex' &&
+            msg.text?.toLowerCase().includes('task created')
+          ) {
+            const textLines = (msg.text || '').split('\n').filter(l => l.trim())
+            const firstLine = textLines[0] || ''
+            const titleMatch = firstLine.match(/task created[:\s]+(.+)/i)
+            const taskTitle = (titleMatch ? titleMatch[1].trim() : firstLine.replace(/task created/i, '').trim()) || 'New Task'
+            const taskDesc = textLines.slice(1).join(' ').trim()
+            const agentMatch = msg.text?.match(/(?:assigned to|for agent|agent[:\s]+)\s*([A-Za-z]+)/i)
+            const taskAgent = agentMatch ? agentMatch[1] : (selectedAgent?.name || '')
+            return (
+              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{
+                  background: C.s1,
+                  border: '1px solid ' + C.border,
+                  borderRadius: 14,
+                  padding: '12px 16px',
+                  maxWidth: '88%',
+                }}>
+                  {/* mt-head */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 6,
+                      background: C.accentBg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, color: C.accent, fontWeight: 800,
+                    }}>+</div>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700,
+                      color: C.accent,
+                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>Task Created</span>
+                  </div>
+                  {/* mt-title */}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{taskTitle}</div>
+                  {/* mt-desc */}
+                  {taskDesc && (
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{taskDesc}</div>
+                  )}
+                  {/* mt-foot */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      background: 'rgba(234,179,8,0.12)',
+                      color: C.yellow,
+                    }}>Queued</span>
+                    {taskAgent && (
+                      <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>{taskAgent}</span>
+                    )}
                   </div>
                   <div style={{ fontSize: 10, color: 'rgba(80,100,128,0.55)', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
                     {formatChatTime(msg.timestamp)}
