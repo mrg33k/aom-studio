@@ -288,9 +288,23 @@ function StatusDot({ status }) {
 
 // ── Agent card ────────────────────────────────────────────────────────────────
 
+const agentColors = {
+  rex:     '#84CC16',
+  bobby:   '#EAB308',
+  colton:  '#EAB308',
+  steffen: '#A78BFA',
+  cleo:    '#F472B6',
+  elon:    '#60A5FA',
+  gary:    '#FB923C',
+  alex:    '#22C55E',
+  tony:    '#22C55E',
+  jacob:   '#FACC15',
+}
+
 function AgentCard({ agent, lastMessage, onClick }) {
   const [hovered, setHovered] = useState(false)
   const cfg = getStatusCfg(agent.status)
+  const bgColor = agentColors[agent.slug] || '#60A5FA'
 
   return (
     <div
@@ -299,43 +313,51 @@ function AgentCard({ agent, lastMessage, onClick }) {
       onClick={() => onClick?.(agent)}
       style={{
         display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         borderRadius: 10,
-        background: hovered ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.025)',
-        border: `1px solid ${hovered ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}`,
+        overflow: 'hidden',
+        border: `1px solid ${hovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)'}`,
         cursor: 'pointer',
-        transition: 'background 150ms ease, border-color 150ms ease',
-        marginBottom: 6,
+        transition: 'border-color 150ms ease, transform 120ms ease',
+        transform: hovered ? 'translateY(-1px)' : 'none',
+        marginBottom: 10,
       }}
     >
-      {/* Avatar */}
-      <AgentAvatar name={agent.name} color={agent.color} size={40} />
-
-      {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: C.text,
+      {/* Colored block: role label + massive name */}
+      <div style={{
+        backgroundColor: bgColor,
+        padding: '14px 16px 14px',
+      }}>
+        {agent.role && (
+          <div style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: 'rgba(0,0,0,0.45)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
             fontFamily: "'Inter', sans-serif",
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>{agent.name}</span>
-          <StatusDot status={agent.status} />
-          <span style={{
-            fontSize: 11,
-            color: cfg.color,
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            opacity: 0.85,
-          }}>{cfg.label}</span>
-        </div>
+            marginBottom: 4,
+          }}>{agent.role}</div>
+        )}
+        <div style={{
+          fontSize: 32,
+          fontWeight: 900,
+          color: 'black',
+          fontFamily: "'Inter', sans-serif",
+          lineHeight: 1.0,
+          letterSpacing: '-0.02em',
+        }}>{agent.name}</div>
+      </div>
 
-        {/* Last message preview */}
+      {/* Bottom section: last message + status pill */}
+      <div style={{
+        padding: '10px 14px 12px',
+        background: 'rgba(255,255,255,0.03)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}>
         {lastMessage ? (
           <div style={{
             fontSize: 12,
@@ -347,23 +369,22 @@ function AgentCard({ agent, lastMessage, onClick }) {
             lineHeight: 1.35,
           }}>{lastMessage.text}</div>
         ) : (
-          <div style={{ fontSize: 12, color: 'rgba(80,100,128,0.5)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
+          <div style={{ fontSize: 12, color: 'rgba(80,100,128,0.4)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
             No recent messages
           </div>
         )}
-      </div>
 
-      {/* Timestamp */}
-      {lastMessage?.timestamp && (
-        <div style={{
-          fontSize: 11,
-          color: 'rgba(80,100,128,0.7)',
-          fontFamily: "'Inter', sans-serif",
-          flexShrink: 0,
-        }}>
-          {lastMessage.timestamp}
+        {/* Status pill */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start' }}>
+          <StatusDot status={agent.status} />
+          <span style={{
+            fontSize: 11,
+            color: cfg.color,
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 500,
+          }}>{cfg.label}</span>
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -455,14 +476,20 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
           <span style={{ fontSize: 13 }}>No agents found</span>
         </div>
       ) : (
-        sortedAgents.map(agent => (
-          <AgentCard
-            key={agent.slug}
-            agent={agent}
-            lastMessage={inboxMap[agent.slug] || null}
-            onClick={onSelectAgent}
-          />
-        ))
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 10,
+        }}>
+          {sortedAgents.map(agent => (
+            <AgentCard
+              key={agent.slug}
+              agent={agent}
+              lastMessage={inboxMap[agent.slug] || null}
+              onClick={onSelectAgent}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
