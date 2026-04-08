@@ -2088,12 +2088,13 @@ export default function CornerV3() {
         {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
 
-      {/* ── INPUT BAR (persistent) ─────────────────────────────────────────── */}
+      {/* ── INPUT BAR (persistent -- hidden on chat tab, ChatPanel has own input) */}
       <div style={{
         flexShrink: 0,
         padding: '8px 12px 10px',
         background: C.bg,
         borderTop: '1px solid ' + C.border,
+        display: tab === 'chat' ? 'none' : undefined,
       }}>
         <div style={{
           display: 'flex',
