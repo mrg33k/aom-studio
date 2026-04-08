@@ -351,7 +351,7 @@ function AgentCard({ agent, lastMessage, onClick }) {
           }}>{agent.role}</div>
         )}
         <div style={{
-          fontSize: 32,
+          fontSize: 38,
           fontWeight: 900,
           color: 'black',
           fontFamily: "'Inter', sans-serif",
@@ -371,7 +371,7 @@ function AgentCard({ agent, lastMessage, onClick }) {
         {lastMessage ? (
           <div style={{
             fontSize: 12,
-            color: 'rgba(0,0,0,0.6)',
+            color: C.text,
             fontFamily: "'Inter', sans-serif",
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -379,7 +379,7 @@ function AgentCard({ agent, lastMessage, onClick }) {
             lineHeight: 1.35,
           }}>{lastMessage.text}</div>
         ) : (
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
+          <div style={{ fontSize: 12, color: C.text, fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
             No recent messages
           </div>
         )}
