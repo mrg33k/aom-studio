@@ -328,6 +328,31 @@ export function useDataPipe(parsePunchList) {
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
               setPersonalTodos(patrikEntries)
             }
+
+            // Build inbox: latest message per agent (for card previews) -- all sources, no filter
+            if (sbData.messages && sbData.messages.length > 0) {
+              const agentLastSeen = {}
+              const latestPerAgent = {}
+              for (const msg of sbData.messages) {
+                if (msg.role === 'user' && msg.source === 'corner-dashboard') {
+                  agentLastSeen[msg.agent] = msg.timestamp
+                }
+              }
+              for (const msg of [...sbData.messages].reverse()) {
+                if (msg.agent && !latestPerAgent[msg.agent]) {
+                  const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
+                  const lastSeen = agentLastSeen[msg.agent]
+                  latestPerAgent[msg.agent] = {
+                    agent: msg.agent,
+                    text: preview,
+                    timestamp: msg.timestamp,
+                    id: msg.id,
+                    isUnread: msg.role === 'assistant' && (!lastSeen || msg.timestamp > lastSeen),
+                  }
+                }
+              }
+              setInboxItems(Object.values(latestPerAgent))
+            }
           }
         } catch {
           // Supabase unavailable in local dev
