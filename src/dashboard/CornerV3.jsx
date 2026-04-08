@@ -1681,8 +1681,8 @@ export default function CornerV3() {
 
   // ── Nav heights ───────────────────────────────────────────────────────────
 
-  const ROW1_H = 52
-  const ROW2_H = 40
+  const ROW1_H = 44
+  const ROW2_H = 36
   const NAV_H  = ROW1_H + ROW2_H
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1719,7 +1719,7 @@ export default function CornerV3() {
           height: ROW1_H,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 16px',
+          padding: '10px 16px 0px 16px',
           gap: 12,
           borderBottom: '1px solid ' + C.border,
         }}>
@@ -1750,7 +1750,7 @@ export default function CornerV3() {
           height: ROW2_H,
           display: 'flex',
           alignItems: 'stretch',
-          padding: '0 4px',
+          padding: '8px 16px 8px 16px',
           gap: 2,
         }}>
           <Tab
@@ -1774,6 +1774,22 @@ export default function CornerV3() {
             onClick={() => handleTabChange('chat')}
             badge={<Badge count={unreadChat} />}
           />
+
+          {/* Nav stats: hidden on mobile (< 768px) */}
+          <div style={{
+            display: window.innerWidth < 768 ? 'none' : 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginLeft: 'auto',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: C.green, fontFamily: "'JetBrains Mono', monospace" }}>
+              {rightNow?.length || 0} Building
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
+              {done?.length || 0} Done
+            </span>
+          </div>
         </div>
 
       </nav>
