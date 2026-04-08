@@ -44,15 +44,12 @@ KEY CODEBASE FACTS (memorize these):
 - useTasks.js and useDataPipe.js are the critical realtime hooks.
 - When you see a recently completed task that matches what Patrik is asking for, tell him it was already done.
 
-COMMON MISTAKES (you have made these before -- DO NOT repeat them):
-- WRONG: src/views/, src/components/, src/components/dashboard/. These directories DO NOT EXIST.
-- WRONG: "Modify GameDashboard.jsx to add a route." GameDashboard does NOT handle routing. Routes are in src/main.jsx.
-- WRONG: Creating a task for "integrate auth" as a separate step. Auth = one line in main.jsx (<AuthGuard> wrapper).
-- WRONG: Task descriptions without exact file paths. "Build the nav bar" fails. "In src/dashboard/CornerV3.jsx, add a two-row nav..." succeeds.
-- WRONG: Forgetting vercel.json rewrite for new routes. Production will 404.
-- RIGHT: New dashboard components go in src/dashboard/ComponentName.jsx (flat, no subdirectories).
-- RIGHT: New routes go in src/main.jsx wrapped with <AuthGuard>.
-- RIGHT: New routes also need a vercel.json rewrite entry.
+HOW TO CREATE GOOD TASKS:
+- ALWAYS use read_file to see the current code before writing a task description. The builder needs to know what exists.
+- ALWAYS use list_files to verify paths before mentioning them. Never guess directory structures.
+- Include: which file, what function/section to modify, what the code should do, what "done" looks like.
+- For new routes: include main.jsx Route entry AND vercel.json rewrite.
+- The builder sees ONLY your description. If you're vague, the task fails.
 
 CV3 REDESIGN (current major project):
 - Mockup live at /cv3 (source: public/cv3.html). Patrik approved it.
@@ -64,13 +61,15 @@ CV3 REDESIGN (current major project):
 - 6-phase wire-up plan. Each phase is standalone deploy.
 
 YOUR TOOLS (use naturally, only when the conversation calls for it):
-- lookup_context: search the codebase for files, components, scripts. Use this BEFORE creating tasks and when Patrik asks about code.
+- read_file: READ THE ACTUAL CODE before writing task descriptions. This is your most important tool for creating good tasks. See what exists before you tell Bobby what to change.
+- list_files: Check directory structure. Never guess file paths -- verify them.
+- lookup_context: search the codebase for files, components, scripts.
 - run_query: look up data in Supabase (messages, tasks, agents, events, projects)
 - search_history: find past conversations or decisions
 - get_queue / get_status: check what's being worked on
 - create_task: queue work for the build pipeline
 - start_runner: kick off the task runner
-- cancel_task: cancel a task you created with wrong details. Use this to clean up mistakes before the runner picks them up.
+- cancel_task: cancel a task you created with wrong details.
 - delete_messages: clean up chat
 - register_project: add or update a project in the registry
 
@@ -103,6 +102,8 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'register_project', description: 'Add or update a project in the registry. Use proactively when conversation implies a project change: new repo mentioned, project moved, rules changed, work should go to a specific repo. Fuzzy-matches existing projects so you don\'t need the exact slug. If unsure which project, it will return candidates to clarify with Patrik.', parameters: { type: 'object', properties: { slug: { type: 'string', description: 'Best guess at project slug (lowercase, hyphenated). Fuzzy-matched against all existing projects.' }, name: { type: 'string', description: 'Display name' }, repo_path: { type: 'string', description: 'Absolute filesystem path to the repo' }, repo_description: { type: 'string', description: 'What this repo is, one line' }, scan_dirs: { type: 'string', description: 'Comma-separated directories to scan for the phonebook (e.g. "src,api,tests")' }, hard_rules: { type: 'string', description: 'Comma-separated rules agents must follow for this project' } }, required: ['slug'] } },
   { name: 'lookup_context', description: 'Search the codebase for relevant files, scripts, components, and architecture. Use this BEFORE creating tasks to check what already exists. Also use when Patrik asks about how something works or where something lives in the code.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for (e.g. "voice chat", "onboarding", "task runner", "auth")' } }, required: ['query'] } },
   { name: 'cancel_task', description: 'Cancel a queued task. Use when you created a task with wrong details and need to clean it up before the runner picks it up.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to cancel' } }, required: ['task_id'] } },
+  { name: 'read_file', description: 'Read a source file from the codebase. Use this BEFORE creating tasks to see what code already exists in a file. Returns the file contents. Paths are relative to the repo root (e.g. "src/dashboard/CornerV3.jsx").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to repo root' }, start_line: { type: 'number', description: 'Start line (1-indexed, default 1)' }, end_line: { type: 'number', description: 'End line (default: start+100)' } }, required: ['path'] } },
+  { name: 'list_files', description: 'List files in a directory. Use this to verify file paths and see the actual directory structure instead of guessing. Returns file names in the directory.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path relative to repo root (e.g. "src/dashboard")' } }, required: ['path'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -496,6 +497,34 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
             if (!resp.ok) throw new Error(`Cancel failed: ${resp.status}`);
             const cancelled = await resp.json();
             result = Array.isArray(cancelled) && cancelled.length > 0 ? { cancelled: true, id: taskId } : { cancelled: false, reason: 'Task not found or already picked up' };
+          }
+          else if (name === 'read_file') {
+            const filePath = (args.path || '').trim().replace(/^\//, '');
+            if (!filePath) throw new Error('path required');
+            const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+            const startLine = args.start_line || 1;
+            const endLine = args.end_line || startLine + 100;
+            const ghResp = await fetch(`https://api.github.com/repos/mrg33k/aom-studio/contents/${encodeURIComponent(filePath)}?ref=main`, {
+              headers: { Accept: 'application/vnd.github.v3.raw', ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}) },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (!ghResp.ok) throw new Error(`File not found: ${filePath} (${ghResp.status})`);
+            const content = await ghResp.text();
+            const lines = content.split('\n');
+            const slice = lines.slice(startLine - 1, endLine).map((l, i) => `${startLine + i}: ${l}`).join('\n');
+            result = { path: filePath, lines: `${startLine}-${Math.min(endLine, lines.length)}`, total_lines: lines.length, content: slice };
+          }
+          else if (name === 'list_files') {
+            const dirPath = (args.path || '').trim().replace(/^\//, '').replace(/\/$/, '');
+            const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+            const ghResp = await fetch(`https://api.github.com/repos/mrg33k/aom-studio/contents/${dirPath ? encodeURIComponent(dirPath) : ''}?ref=main`, {
+              headers: { Accept: 'application/vnd.github.v3+json', ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}) },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (!ghResp.ok) throw new Error(`Directory not found: ${dirPath} (${ghResp.status})`);
+            const items = await ghResp.json();
+            if (!Array.isArray(items)) throw new Error(`Not a directory: ${dirPath}`);
+            result = { path: dirPath || '/', files: items.map(i => ({ name: i.name, type: i.type, size: i.size })) };
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
