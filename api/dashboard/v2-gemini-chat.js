@@ -44,6 +44,16 @@ KEY CODEBASE FACTS (memorize these):
 - useTasks.js and useDataPipe.js are the critical realtime hooks.
 - When you see a recently completed task that matches what Patrik is asking for, tell him it was already done.
 
+COMMON MISTAKES (you have made these before -- DO NOT repeat them):
+- WRONG: src/views/, src/components/, src/components/dashboard/. These directories DO NOT EXIST.
+- WRONG: "Modify GameDashboard.jsx to add a route." GameDashboard does NOT handle routing. Routes are in src/main.jsx.
+- WRONG: Creating a task for "integrate auth" as a separate step. Auth = one line in main.jsx (<AuthGuard> wrapper).
+- WRONG: Task descriptions without exact file paths. "Build the nav bar" fails. "In src/dashboard/CornerV3.jsx, add a two-row nav..." succeeds.
+- WRONG: Forgetting vercel.json rewrite for new routes. Production will 404.
+- RIGHT: New dashboard components go in src/dashboard/ComponentName.jsx (flat, no subdirectories).
+- RIGHT: New routes go in src/main.jsx wrapped with <AuthGuard>.
+- RIGHT: New routes also need a vercel.json rewrite entry.
+
 CV3 REDESIGN (current major project):
 - Mockup live at /cv3 (source: public/cv3.html). Patrik approved it.
 - CornerV3.jsx is being built at src/dashboard/CornerV3.jsx with route /dashboard/v2.
@@ -60,6 +70,7 @@ YOUR TOOLS (use naturally, only when the conversation calls for it):
 - get_queue / get_status: check what's being worked on
 - create_task: queue work for the build pipeline
 - start_runner: kick off the task runner
+- cancel_task: cancel a task you created with wrong details. Use this to clean up mistakes before the runner picks them up.
 - delete_messages: clean up chat
 - register_project: add or update a project in the registry
 
@@ -77,6 +88,7 @@ TASK CREATION RULES:
 - QUALITY BAR: Vague descriptions = failed tasks. The builder has zero context beyond your description. Include: exact file paths, specific UI details (layout, colors, elements), data sources (which Supabase table/hook), and what "done" looks like. If you're referencing a mockup, describe what the mockup shows in detail, don't just say "based on the mockup."
 - When corrected about file paths or architecture, use lookup_context to verify before responding. Don't just accept the correction and repeat it -- confirm it yourself. If lookup_context returns 0 results, try different search terms (e.g. "main.jsx" instead of "routing").
 - For new routes: always include BOTH the main.jsx Route entry AND the vercel.json rewrite in the task description. Missing either = broken deployment.
+- AFTER CREATING: If Patrik follows up with changes ("actually use a different file", "add X to that description", "change the approach"), cancel the old task and create a corrected one. Don't leave stale tasks in the queue. Use cancel_task to remove the wrong one first.
 
 IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out loud, or just chatting, TALK TO HIM. Don't reach for a tool. Only use tools when there's a clear action to take.`;
 
@@ -90,6 +102,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'start_runner', description: 'Start the task runner to process queued tasks. Use when asked to run the queue, start building, get tasks going, or kick off work. The runner picks up queued tasks and builds them.', parameters: { type: 'object', properties: {} } },
   { name: 'register_project', description: 'Add or update a project in the registry. Use proactively when conversation implies a project change: new repo mentioned, project moved, rules changed, work should go to a specific repo. Fuzzy-matches existing projects so you don\'t need the exact slug. If unsure which project, it will return candidates to clarify with Patrik.', parameters: { type: 'object', properties: { slug: { type: 'string', description: 'Best guess at project slug (lowercase, hyphenated). Fuzzy-matched against all existing projects.' }, name: { type: 'string', description: 'Display name' }, repo_path: { type: 'string', description: 'Absolute filesystem path to the repo' }, repo_description: { type: 'string', description: 'What this repo is, one line' }, scan_dirs: { type: 'string', description: 'Comma-separated directories to scan for the phonebook (e.g. "src,api,tests")' }, hard_rules: { type: 'string', description: 'Comma-separated rules agents must follow for this project' } }, required: ['slug'] } },
   { name: 'lookup_context', description: 'Search the codebase for relevant files, scripts, components, and architecture. Use this BEFORE creating tasks to check what already exists. Also use when Patrik asks about how something works or where something lives in the code.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for (e.g. "voice chat", "onboarding", "task runner", "auth")' } }, required: ['query'] } },
+  { name: 'cancel_task', description: 'Cancel a queued task. Use when you created a task with wrong details and need to clean it up before the runner picks it up.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to cancel' } }, required: ['task_id'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -470,6 +483,17 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
           if (!query) throw new Error('query required');
           const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
           result = await ctxResp.json();
+        }
+        else if (name === 'cancel_task') {
+          const taskId = (args.task_id || '').trim();
+          if (!taskId) throw new Error('task_id required');
+          const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&status=eq.queued`, {
+            method: 'PATCH', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+            body: JSON.stringify({ status: 'cancelled' }),
+          });
+          if (!resp.ok) throw new Error(`Cancel failed: ${resp.status}`);
+          const cancelled = await resp.json();
+          result = Array.isArray(cancelled) && cancelled.length > 0 ? { cancelled: true, id: taskId } : { cancelled: false, reason: 'Task not found or already picked up' };
         }
         else throw new Error(`Unknown function: ${name}`);
         functionCalls.push({ name, args, result });
