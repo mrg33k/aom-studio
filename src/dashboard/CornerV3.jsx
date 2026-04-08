@@ -2152,6 +2152,55 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+// ── Toast notification ────────────────────────────────────────────────────────
+
+function TaskCompletionToast({ message, visible, onDismiss }) {
+  useEffect(() => {
+    if (!visible) return
+    const t = setTimeout(onDismiss, 4000)
+    return () => clearTimeout(t)
+  }, [visible, onDismiss])
+
+  if (!visible) return null
+
+  return (
+    <>
+      <style>{`@keyframes su{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+      <div style={{
+        position: 'fixed',
+        bottom: 72,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 200,
+        background: C.s2,
+        border: '1px solid rgba(34,197,94,0.15)',
+        borderRadius: 14,
+        padding: '10px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        animation: 'su 0.3s ease-out',
+        whiteSpace: 'nowrap',
+      }}>
+        <div style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: C.green,
+          flexShrink: 0,
+        }} />
+        <span style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: C.text2,
+          fontFamily: "'Inter', sans-serif",
+        }}>{message}</span>
+      </div>
+    </>
+  )
+}
+
 export default function CornerV3() {
   const [currentUser, setCurrentUser]   = useState(null)
   const [worldId, setWorldId]           = useState(getClientId())
@@ -2167,6 +2216,8 @@ export default function CornerV3() {
   const [rootVoiceTranscript, setRootVoiceTranscript] = useState('')
   const rootVoiceChatRef = useRef(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
+  const [toast, setToast] = useState({ visible: false, message: '' })
+  const prevDoneIdsRef = useRef(null)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 480)
@@ -2175,6 +2226,24 @@ export default function CornerV3() {
   }, [])
 
   const { queued, rightNow, done } = useTasks()
+
+  // ── Toast: detect newly completed tasks ──────────────────────────────────────
+  useEffect(() => {
+    if (!done) return
+    if (prevDoneIdsRef.current === null) {
+      // Seed on first load -- no toast for already-done tasks
+      prevDoneIdsRef.current = new Set(done.map(t => t.id))
+      return
+    }
+    const newDone = done.filter(t => !prevDoneIdsRef.current.has(t.id))
+    if (newDone.length > 0) {
+      const task = newDone[0]
+      const title = task.title || task.text || 'Task'
+      const label = title.length > 45 ? title.slice(0, 45) + '...' : title
+      setToast({ visible: true, message: `${label} shipped.` })
+    }
+    prevDoneIdsRef.current = new Set(done.map(t => t.id))
+  }, [done])
   // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
   const { agents, inboxItems } = useDataPipe(null)
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
@@ -2646,6 +2715,13 @@ export default function CornerV3() {
           )}
         </div>
       </div>
+
+      {/* ── TOAST NOTIFICATION ────────────────────────────────────────────── */}
+      <TaskCompletionToast
+        message={toast.message}
+        visible={toast.visible}
+        onDismiss={() => setToast(t => ({ ...t, visible: false }))}
+      />
 
     </div>
   )
