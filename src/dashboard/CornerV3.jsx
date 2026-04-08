@@ -24,15 +24,28 @@ import VoiceChat from './components/VoiceChat.jsx'
 // ── Color palette (dark-first) ────────────────────────────────────────────────
 
 const C = {
-  bg:           '#060A12',
-  nav:          'rgba(8,14,28,0.98)',
-  navBorder:    'rgba(255,255,255,0.06)',
-  text:         '#F0F4FF',
-  muted:        '#506480',
-  accent:       '#3B9EFF',
-  accentFaint:  'rgba(59,158,255,0.12)',
-  tabActive:    '#60A5FA',
-  badge:        '#EF4444',
+  bg:        '#06090F',
+  bg2:       '#0B1018',
+  s1:        '#111827',
+  s2:        '#1A2035',
+  s3:        '#222942',
+  border:    'rgba(255,255,255,0.04)',
+  border2:   'rgba(255,255,255,0.08)',
+  text:      '#F1F5F9',
+  text2:     '#94A3B8',
+  muted:     '#475569',
+  dim:       '#334155',
+  accent:    '#10B981',
+  accent2:   '#34D399',
+  accentBg:  'rgba(16,185,129,0.08)',
+  yellow:    '#EAB308',
+  green:     '#22C55E',
+  purple:    '#A78BFA',
+  blue:      '#60A5FA',
+  pink:      '#F472B6',
+  orange:    '#FB923C',
+  teal:      '#2DD4BF',
+  red:       '#EF4444',
 }
 
 // ── AOM Logo mark ─────────────────────────────────────────────────────────────
@@ -83,7 +96,7 @@ function BellIcon({ hasNew = false }) {
           width: 7,
           height: 7,
           borderRadius: '50%',
-          background: C.badge,
+          background: C.red,
           border: '1.5px solid ' + C.bg,
         }} />
       )}
@@ -131,7 +144,7 @@ function Badge({ count }) {
       minWidth: 18,
       height: 18,
       borderRadius: 9,
-      background: C.badge,
+      background: C.red,
       color: '#fff',
       fontSize: 11,
       fontWeight: 700,
@@ -159,9 +172,9 @@ function Tab({ label, icon, active, onClick, badge }) {
         padding: '0 14px',
         background: 'transparent',
         border: 'none',
-        borderBottom: active ? `2px solid ${C.tabActive}` : '2px solid transparent',
+        borderBottom: active ? `2px solid ${C.blue}` : '2px solid transparent',
         cursor: 'pointer',
-        color: active ? C.tabActive : C.muted,
+        color: active ? C.blue : C.muted,
         fontSize: 13,
         fontWeight: active ? 700 : 500,
         fontFamily: "'Inter', sans-serif",
@@ -1689,8 +1702,8 @@ export default function CornerV3() {
       <nav style={{
         width: '100%',
         height: NAV_H,
-        background: C.nav,
-        borderBottom: '1px solid ' + C.navBorder,
+        background: C.s1,
+        borderBottom: '1px solid ' + C.border,
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         flexShrink: 0,
@@ -1708,7 +1721,7 @@ export default function CornerV3() {
           alignItems: 'center',
           padding: '0 16px',
           gap: 12,
-          borderBottom: '1px solid ' + C.navBorder,
+          borderBottom: '1px solid ' + C.border,
         }}>
           {/* Left: Logo */}
           <AomLogo />
@@ -1742,21 +1755,21 @@ export default function CornerV3() {
         }}>
           <Tab
             label="Home"
-            icon={<HomeIcon color={tab === 'home' ? C.tabActive : C.muted} />}
+            icon={<HomeIcon color={tab === 'home' ? C.blue : C.muted} />}
             active={tab === 'home'}
             onClick={() => handleTabChange('home')}
             badge={null}
           />
           <Tab
             label="Tasks"
-            icon={<TasksIcon color={tab === 'tasks' ? C.tabActive : C.muted} />}
+            icon={<TasksIcon color={tab === 'tasks' ? C.blue : C.muted} />}
             active={tab === 'tasks'}
             onClick={() => handleTabChange('tasks')}
             badge={<Badge count={activeTaskCount} />}
           />
           <Tab
             label="Chat"
-            icon={<ChatIcon color={tab === 'chat' ? C.tabActive : C.muted} />}
+            icon={<ChatIcon color={tab === 'chat' ? C.blue : C.muted} />}
             active={tab === 'chat'}
             onClick={() => handleTabChange('chat')}
             badge={<Badge count={unreadChat} />}
