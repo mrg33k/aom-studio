@@ -332,7 +332,6 @@ function AgentCard({ agent, lastMessage, onClick }) {
         cursor: 'pointer',
         transition: 'border-color 150ms ease, transform 120ms ease',
         transform: hovered ? 'translateY(-1px)' : 'none',
-        marginBottom: 10,
       }}
     >
       {/* Colored block: role label + massive name */}
@@ -363,8 +362,8 @@ function AgentCard({ agent, lastMessage, onClick }) {
 
       {/* Bottom section: last message + status pill */}
       <div style={{
-        padding: '10px 14px 12px',
-        background: 'rgba(255,255,255,0.03)',
+        padding: '10px 16px 14px',
+        backgroundColor: bgColor,
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
@@ -372,7 +371,7 @@ function AgentCard({ agent, lastMessage, onClick }) {
         {lastMessage ? (
           <div style={{
             fontSize: 12,
-            color: C.muted,
+            color: 'rgba(0,0,0,0.6)',
             fontFamily: "'Inter', sans-serif",
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -380,7 +379,7 @@ function AgentCard({ agent, lastMessage, onClick }) {
             lineHeight: 1.35,
           }}>{lastMessage.text}</div>
         ) : (
-          <div style={{ fontSize: 12, color: 'rgba(80,100,128,0.4)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
+          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
             No recent messages
           </div>
         )}
@@ -390,9 +389,9 @@ function AgentCard({ agent, lastMessage, onClick }) {
           <StatusDot status={agent.status} />
           <span style={{
             fontSize: 11,
-            color: cfg.color,
+            color: 'rgba(0,0,0,0.55)',
             fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
+            fontWeight: 600,
           }}>{cfg.label}</span>
         </div>
       </div>
@@ -488,8 +487,8 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
         </div>
       ) : (
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          display: 'flex',
+          flexDirection: 'column',
           gap: 10,
         }}>
           {sortedAgents.map(agent => (
