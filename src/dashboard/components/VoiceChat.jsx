@@ -18,7 +18,7 @@
 
 // Voice pipeline verified working 2026-04-07.
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 
 // Target sample rate for Gemini Live input
 const TARGET_SAMPLE_RATE = 16000
@@ -80,7 +80,7 @@ function pcmToAudioBuffer(audioCtx, rawBuffer, sampleRate = GEMINI_OUTPUT_RATE) 
 // Default settings
 const DEFAULT_SETTINGS = { voice: 'kore', temperature: 0.8 }
 
-export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange }) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange, autoStart = false }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -592,6 +592,14 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
 
   useEffect(() => { return () => { stopSession() } }, []) // eslint-disable-line
   useEffect(() => { if (status !== 'idle') stopSession() }, [agentSlug]) // eslint-disable-line
+  useEffect(() => { if (autoStart) startSession() }, []) // eslint-disable-line
+
+  useImperativeHandle(ref, () => ({
+    start: startSession,
+    stop: stopSession,
+    toggleMute,
+    get isMuted() { return isMutedRef.current },
+  }), [startSession, stopSession, toggleMute])
 
   const formatSecs = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
 
@@ -855,7 +863,9 @@ export default function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId 
       `}</style>
     </div>
   )
-}
+})
+
+export default VoiceChat
 
 function MicIcon({ size = 24, color = '#6B7280', muted = false }) {
   return (

@@ -18,7 +18,6 @@ import {
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import WorldSelector from './components/WorldSelector.jsx'
-import VoiceToggle from './components/VoiceToggle.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
@@ -973,9 +972,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
   const [isVoiceActive, setIsVoiceActive] = useState(false)
   const [voiceStatus, setVoiceStatus]     = useState('idle')
   const [voiceVolume, setVoiceVolume]     = useState(0)
+  const [voiceTranscriptText, setVoiceTranscriptText] = useState('')
+  const [voiceMuted, setVoiceMuted]       = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef       = useRef(null)
   const fileInputRef   = useRef(null)
+  const voiceChatRef   = useRef(null)
 
   // Build unread map: agent slug -> inbox item (last unread message)
   const unreadMap = useMemo(() => {
@@ -1390,22 +1392,46 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             <span style={{ fontSize: 11, color: C.muted, lineHeight: 1 }}>Online</span>
           </div>
         </div>
-        <VoiceToggle
-          isActive={isVoiceActive}
-          onToggle={() => setIsVoiceActive(v => !v)}
-          status={voiceStatus}
-          volumeLevel={voiceVolume}
-        />
+        {/* Mic button in header */}
+        <button
+          onClick={() => {
+            if (isVoiceActive) {
+              voiceChatRef.current?.stop()
+              setIsVoiceActive(false)
+              setVoiceMuted(false)
+              setVoiceTranscriptText('')
+            } else {
+              setIsVoiceActive(true)
+            }
+          }}
+          title={isVoiceActive ? 'End voice' : 'Start voice'}
+          style={{
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            background: isVoiceActive ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
+            border: isVoiceActive ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: isVoiceActive ? C.accent : C.muted,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"/>
+            <path d="M5 10a7 7 0 0014 0"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+        </button>
       </div>
 
-      {/* Voice chat panel -- replaces messages when active */}
+      {/* Hidden VoiceChat for audio logic -- mounts when voice is active */}
       {isVoiceActive && (
-        <div style={{ flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'none' }}>
           <VoiceChat
+            ref={voiceChatRef}
             agentSlug={selectedAgent.slug}
             agentColor={selectedAgent.color}
             clientId={worldId}
+            autoStart={true}
             onTranscript={(text, role) => {
+              setVoiceTranscriptText(text)
               setMessages(prev => [...prev, {
                 id: `voice-${role}-${Date.now()}`,
                 role: role === 'model' ? 'agent' : 'user',
@@ -1417,15 +1443,19 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             }}
             onStatusChange={(s) => {
               setVoiceStatus(s)
-              if (s === 'idle') setIsVoiceActive(false)
+              if (s === 'idle') {
+                setIsVoiceActive(false)
+                setVoiceMuted(false)
+                setVoiceTranscriptText('')
+              }
             }}
             onVolumeChange={setVoiceVolume}
           />
         </div>
       )}
 
-      {/* Messages scroll area */}
-      {!isVoiceActive && <div style={{
+      {/* Messages scroll area -- always visible */}
+      <div style={{
         flex: 1, overflowY: 'auto',
         padding: '12px 14px',
         display: 'flex', flexDirection: 'column', gap: 6,
@@ -1692,10 +1722,97 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         })}
 
         <div ref={messagesEndRef} />
-      </div>}
+      </div>
 
-      {/* Input area */}
-      <div style={{
+      {/* Voice mode UI -- replaces input bar when voice is active */}
+      {isVoiceActive && (
+        <div style={{
+          padding: '14px 20px',
+          background: C.bg2,
+          borderTop: '1px solid ' + C.border,
+          flexShrink: 0,
+        }}>
+          <style>{`
+            @keyframes vw { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
+          `}</style>
+          {/* Waveform bars */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 3, height: 40, marginBottom: 8,
+          }}>
+            {[
+              { h: 14, d: '0s' }, { h: 26, d: '.08s' }, { h: 38, d: '.16s' },
+              { h: 30, d: '.24s' }, { h: 18, d: '.32s' }, { h: 34, d: '.12s' },
+              { h: 22, d: '.20s' }, { h: 40, d: '.28s' }, { h: 16, d: '.36s' },
+            ].map((bar, i) => (
+              <div key={i} style={{
+                width: 3, height: bar.h, borderRadius: 2,
+                background: C.accent,
+                animation: `vw 1s ease-in-out ${bar.d} infinite`,
+              }} />
+            ))}
+          </div>
+          {/* Status */}
+          <div style={{
+            textAlign: 'center', fontSize: 12, fontWeight: 600,
+            color: C.accent, fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: 4,
+          }}>
+            {voiceStatus === 'connecting' ? 'Connecting...'
+              : voiceStatus === 'speaking' ? 'Speaking...'
+              : voiceStatus === 'error' ? 'Error'
+              : 'Listening...'}
+          </div>
+          {/* Transcript */}
+          <div style={{
+            fontSize: 13, color: C.text2, textAlign: 'center',
+            minHeight: 18, padding: '0 20px',
+          }}>
+            {voiceTranscriptText ? `"${voiceTranscriptText}"` : ''}
+          </div>
+          {/* Buttons */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: 14, marginTop: 10,
+          }}>
+            {/* Mute */}
+            <button
+              onClick={() => {
+                voiceChatRef.current?.toggleMute()
+                setVoiceMuted(v => !v)
+              }}
+              style={{
+                width: 42, height: 42, borderRadius: '50%', border: '1px solid ' + C.border,
+                background: voiceMuted ? 'rgba(239,68,68,0.15)' : C.s2,
+                color: voiceMuted ? '#F87171' : C.muted,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 15, fontWeight: 700, transition: 'transform 0.15s',
+              }}
+            >
+              M
+            </button>
+            {/* End */}
+            <button
+              onClick={() => {
+                voiceChatRef.current?.stop()
+                setIsVoiceActive(false)
+                setVoiceMuted(false)
+                setVoiceTranscriptText('')
+              }}
+              style={{
+                width: 42, height: 42, borderRadius: '50%', border: 'none',
+                background: C.red, color: '#fff',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 15, fontWeight: 700, transition: 'transform 0.15s',
+              }}
+            >
+              &#x00D7;
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Input area -- hidden when voice is active */}
+      {!isVoiceActive && <div style={{
         padding: '10px 14px 14px',
         borderTop: '1px solid rgba(255,255,255,0.06)',
         background: 'rgba(8,14,28,0.95)',
@@ -1802,7 +1919,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             )}
           </button>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
