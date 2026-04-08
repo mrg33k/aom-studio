@@ -1815,6 +1815,9 @@ export default function CornerV3() {
   const [tab, setTab]                   = useState('home')
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
+  const [inputBarText, setInputBarText] = useState('')
+  const [inputBarSending, setInputBarSending] = useState(false)
+  const [inputBarFocused, setInputBarFocused] = useState(false)
 
   const { queued, rightNow, done } = useTasks()
   // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
@@ -1901,6 +1904,69 @@ export default function CornerV3() {
     const myWorld = getUserWorld()
     setWorldId(myWorld)
   }, [])
+
+  // ── Input bar handlers ────────────────────────────────────────────────────
+
+  const handleInputBarFocus = useCallback(() => {
+    // If not already on chat view, open chat with last selected agent or rex
+    if (tab !== 'chat') {
+      const target = selectedAgent || agents?.find(a => a.slug === 'rex') || agents?.[0]
+      if (target) {
+        setSelectedAgent(target)
+      }
+      setTab('chat')
+      setUnreadChat(0)
+    }
+  }, [tab, selectedAgent, agents])
+
+  const handleInputBarSend = useCallback(async () => {
+    const text = inputBarText.trim()
+    if (!text || inputBarSending) return
+
+    // Ensure we have an agent to send to
+    const target = selectedAgent || agents?.find(a => a.slug === 'rex') || agents?.[0]
+    if (!target) return
+
+    // Switch to chat tab if not already there
+    if (tab !== 'chat') {
+      setSelectedAgent(target)
+      setTab('chat')
+      setUnreadChat(0)
+    }
+
+    setInputBarText('')
+    setInputBarSending(true)
+
+    try {
+      await Promise.allSettled([
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: target.slug,
+            text,
+            role: 'user',
+            source: 'corner-dashboard',
+            client_id: worldId,
+          }),
+        }).then(r => r.json()),
+        fetch('/api/dashboard/v2-gemini-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            agent: target.slug,
+            client_id: worldId,
+            history: [],
+          }),
+        }).then(r => r.json()),
+      ])
+    } catch (e) {
+      // silent fail -- message already persisted optimistically by ChatPanel
+    } finally {
+      setInputBarSending(false)
+    }
+  }, [inputBarText, inputBarSending, selectedAgent, agents, tab, worldId])
 
   // ── Nav heights ───────────────────────────────────────────────────────────
 
@@ -2020,6 +2086,113 @@ export default function CornerV3() {
         {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} onSelectAgent={handleSelectAgent} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
         {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
+      </div>
+
+      {/* ── INPUT BAR (persistent) ─────────────────────────────────────────── */}
+      <div style={{
+        flexShrink: 0,
+        padding: '8px 12px 10px',
+        background: C.bg,
+        borderTop: '1px solid ' + C.border,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          background: C.s1,
+          border: '1.5px solid ' + (inputBarFocused ? 'rgba(16,185,129,0.25)' : C.border2),
+          borderRadius: 26,
+          padding: '5px 5px 5px 16px',
+          maxWidth: 560,
+          margin: '0 auto',
+          boxShadow: inputBarFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+          transition: 'border-color 0.25s, box-shadow 0.25s',
+        }}>
+          <input
+            type="text"
+            placeholder="Start typing or speaking..."
+            value={inputBarText}
+            onChange={e => setInputBarText(e.target.value)}
+            onFocus={() => { setInputBarFocused(true); handleInputBarFocus() }}
+            onBlur={() => setInputBarFocused(false)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInputBarSend() } }}
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: C.text,
+              fontSize: 15,
+              fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
+            }}
+          />
+          {/* Action buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Attach */}
+            <button title="Attach" style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            {/* Commands */}
+            <button title="Commands" style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+            </button>
+          </div>
+          {/* Mic (hidden when text present) */}
+          {!inputBarText.trim() && (
+            <button title="Voice" style={{
+              width: 42, height: 42, borderRadius: '50%',
+              background: C.accent, border: 'none',
+              color: '#000', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'transform 0.15s, box-shadow 0.2s',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10a7 7 0 0014 0"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </button>
+          )}
+          {/* Send (shown when text present) */}
+          {inputBarText.trim() && (
+            <button
+              title="Send"
+              onClick={handleInputBarSend}
+              disabled={inputBarSending}
+              style={{
+                width: 42, height: 42, borderRadius: '50%',
+                background: C.accent, border: 'none',
+                color: '#000', cursor: inputBarSending ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                opacity: inputBarSending ? 0.6 : 1,
+                transition: 'transform 0.15s',
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
     </div>
