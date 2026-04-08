@@ -471,27 +471,31 @@ function getStatusColor(status) {
 }
 
 // ── Card color palette for shipped tasks ─────────────────────────────────────
-const CARD_COLORS = [
-  { bg: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.22)',  accent: '#F59E0B' },
-  { bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.22)',   accent: '#22C55E' },
-  { bg: 'rgba(167,139,250,0.10)', border: 'rgba(167,139,250,0.22)', accent: '#A78BFA' },
-  { bg: 'rgba(20,184,166,0.10)',  border: 'rgba(20,184,166,0.22)',  accent: '#14B8A6' },
+const SHIPPED_CARD_COLORS = [
+  '#EAB308',
+  '#22C55E',
+  '#A78BFA',
+  '#60A5FA',
+  '#F472B6',
+  '#FB923C',
+  '#2DD4BF',
 ]
 
-const AGENT_CARD_COLORS = {
-  bobby:   CARD_COLORS[0],
-  colton:  CARD_COLORS[0],
-  steffen: CARD_COLORS[2],
-  gary:    CARD_COLORS[3],
-  alex:    CARD_COLORS[1],
-  tony:    CARD_COLORS[1],
-  jacob:   CARD_COLORS[0],
-  elon:    CARD_COLORS[3],
+const AGENT_CARD_COLOR_MAP = {
+  bobby:   '#FB923C',
+  colton:  '#FB923C',
+  steffen: '#A78BFA',
+  gary:    '#2DD4BF',
+  alex:    '#22C55E',
+  tony:    '#22C55E',
+  jacob:   '#EAB308',
+  elon:    '#60A5FA',
+  cleo:    '#F472B6',
 }
 
-function getCardColors(task, index) {
+function getShippedCardColor(task, index) {
   const agent = (task.agent_identity || task.agentIdentity || '').toLowerCase()
-  return AGENT_CARD_COLORS[agent] || CARD_COLORS[index % CARD_COLORS.length]
+  return AGENT_CARD_COLOR_MAP[agent] || SHIPPED_CARD_COLORS[index % SHIPPED_CARD_COLORS.length]
 }
 
 // ── Static project filter pills ───────────────────────────────────────────────
@@ -528,14 +532,30 @@ function TasksPanel({ queued, rightNow, done }) {
   const passCount = withQA.filter(t => Number(t.qa_score || t.qaScore || 0) >= 8).length
   const passRate  = withQA.length > 0 ? Math.round((passCount / withQA.length) * 100) : null
 
-  // Bar chart data: last 7 completed tasks, height from QA score
-  const chartTasks = completed.slice(0, 7)
-  const chartBars  = chartTasks.map((t, i) => {
-    const qa = Number(t.qa_score || t.qaScore || 0)
-    return qa > 0 ? Math.round((qa / 10) * 24) + 4 : [10, 14, 18, 12, 20, 16, 8][i % 7]
-  })
-  // Pad to 7 bars if fewer tasks
-  while (chartBars.length < 7) chartBars.push([10, 14, 18, 12, 20, 16, 8][chartBars.length % 7])
+  // Per-day task counts for M-S bar chart
+  const now         = new Date()
+  const dayOfWeek   = now.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+  const daysFromMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const weekStart   = new Date(now)
+  weekStart.setHours(0, 0, 0, 0)
+  weekStart.setDate(weekStart.getDate() - daysFromMon)
+
+  const dailyCounts = [0, 0, 0, 0, 0, 0, 0] // Mon=0 ... Sun=6
+  for (const t of completed) {
+    const ts = t.completed_at || t.updated_at || t.created_at
+    if (!ts) continue
+    const date = new Date(ts)
+    if (date >= weekStart) {
+      const d   = date.getDay()
+      const idx = d === 0 ? 6 : d - 1
+      dailyCounts[idx]++
+    }
+  }
+  const maxDailyCount = Math.max(...dailyCounts, 1)
+  const weekTotal     = dailyCounts.reduce((s, c) => s + c, 0)
+  const DAY_LABELS    = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const MIN_BAR_H     = 4
+  const MAX_BAR_H     = 36
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
@@ -702,48 +722,103 @@ function TasksPanel({ queued, rightNow, done }) {
 
         {/* Shipped tasks */}
         {filteredCompleted.length > 0 && (
-          <div style={{ marginBottom: 8 }}>
+          <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
               Shipped ({filteredCompleted.length})
             </div>
             {filteredCompleted.slice(0, 20).map((t, i) => {
-              const colors = getCardColors(t, i)
-              const qa     = t.qa_score || t.qaScore
+              const cardColor = getShippedCardColor(t, i)
+              const qa        = t.qa_score || t.qaScore
+              const agent     = t.agent_identity || t.agentIdentity
+              const project   = t.project_name || t.projectName
+              const isFailed  = t.status === 'failed'
               return (
                 <div key={t.id} style={{
-                  padding: '10px 14px',
-                  marginBottom: 6,
-                  borderRadius: 10,
-                  background: colors.bg,
-                  border: `1px solid ${colors.border}`,
+                  padding: '14px 16px',
+                  marginBottom: 8,
+                  borderRadius: 14,
+                  backgroundColor: isFailed ? 'rgba(239,68,68,0.15)' : cardColor,
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   gap: 10,
                 }}>
-                  {t.status === 'failed' ? (
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  ) : (
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
-                  <span style={{ fontSize: 13, fontWeight: 600, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.title || t.text || 'Untitled task'}
-                  </span>
+                  {/* Left: title + agent/project */}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: isFailed ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.title || t.text || 'Untitled task'}
+                    </div>
+                    <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: isFailed ? 'rgba(240,244,255,0.5)' : 'rgba(10,10,10,0.5)', marginTop: 4, fontWeight: 700 }}>
+                      {[agent, project].filter(Boolean).join(' · ') || (isFailed ? 'Failed' : 'Shipped')}
+                    </div>
+                  </div>
+                  {/* Right: QA score */}
                   {qa && (
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, color: colors.accent,
-                      background: colors.bg, border: `1px solid ${colors.border}`,
-                      borderRadius: 5, padding: '2px 7px', flexShrink: 0,
-                    }}>
-                      QA {qa}
-                    </span>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : '#0A0A0A', flexShrink: 0, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                      {qa}
+                    </div>
                   )}
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Weekly Stats Bar */}
+        {completed.length > 0 && (
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 14,
+            padding: '12px 14px',
+            marginBottom: 16,
+          }}>
+            {/* Header */}
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.muted, fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>
+              This Week
+            </div>
+
+            {/* 7 vertical bars for M-S */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: MAX_BAR_H + 16, marginBottom: 10 }}>
+              {DAY_LABELS.map((label, i) => {
+                const count  = dailyCounts[i]
+                const barH   = count > 0 ? Math.round((count / maxDailyCount) * (MAX_BAR_H - MIN_BAR_H)) + MIN_BAR_H : MIN_BAR_H
+                const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
+                return (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 4 }}>
+                    <div style={{
+                      width: '100%',
+                      height: barH,
+                      borderRadius: 3,
+                      background: isFuture
+                        ? 'rgba(255,255,255,0.06)'
+                        : count > 0
+                          ? '#60A5FA'
+                          : 'rgba(255,255,255,0.08)',
+                      transition: 'height 0.3s ease',
+                    }} />
+                    <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* 3 metrics */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, color: C.text }}>
+                Tasks: {completed.length}
+              </div>
+              {passRate !== null && (
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, color: '#22C55E' }}>
+                  Pass Rate: {passRate}%
+                </div>
+              )}
+              {avgQA !== null && (
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, color: C.accent }}>
+                  Avg QA Score: {avgQA}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -758,53 +833,6 @@ function TasksPanel({ queued, rightNow, done }) {
           </div>
         )}
       </div>
-
-      {/* Weekly stats bar */}
-      {completed.length > 0 && (
-        <div style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          padding: '10px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          background: 'rgba(6,10,18,0.7)',
-          flexShrink: 0,
-        }}>
-          {/* Mini bar chart */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 28 }}>
-            {chartBars.map((h, i) => (
-              <div key={i} style={{
-                width: 4,
-                height: h,
-                borderRadius: 2,
-                background: i < chartTasks.length
-                  ? 'rgba(59,158,255,0.55)'
-                  : 'rgba(255,255,255,0.08)',
-              }} />
-            ))}
-          </div>
-
-          {/* Stats */}
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, lineHeight: 1 }}>{completed.length}</div>
-              <div style={{ fontSize: 10, color: C.muted, marginTop: 2, letterSpacing: '0.04em' }}>tasks</div>
-            </div>
-            {passRate !== null && (
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#22C55E', lineHeight: 1 }}>{passRate}%</div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 2, letterSpacing: '0.04em' }}>pass rate</div>
-              </div>
-            )}
-            {avgQA !== null && (
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: C.accent, lineHeight: 1 }}>{avgQA}</div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 2, letterSpacing: '0.04em' }}>avg QA</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
