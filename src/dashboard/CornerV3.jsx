@@ -39,31 +39,9 @@ const C = {
 
 function AomLogo() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-      <div style={{
-        width: 28,
-        height: 28,
-        borderRadius: 7,
-        background: 'linear-gradient(135deg, #3B9EFF 0%, #2563EB 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 0 10px rgba(59,158,255,0.35)',
-        flexShrink: 0,
-      }}>
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L3 20h18L12 2z" fill="white" opacity={0.9} />
-          <path d="M12 8l-4.5 10h9L12 8z" fill="rgba(0,0,0,0.3)" />
-        </svg>
-      </div>
-      <span style={{
-        fontSize: 14,
-        fontWeight: 800,
-        color: C.text,
-        fontFamily: "'Inter', sans-serif",
-        letterSpacing: '0.04em',
-      }}>
-        AOM
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+      <span style={{ fontWeight: 900, fontSize: '18px', letterSpacing: '-0.04em', color: C.text, fontFamily: "'Inter', sans-serif" }}>
+        Corne<span style={{ color: C.accent }}>r</span>.
       </span>
     </div>
   )
@@ -78,7 +56,7 @@ function BellIcon({ hasNew = false }) {
         position: 'relative',
         width: 32,
         height: 32,
-        borderRadius: 8,
+        borderRadius: 10,
         background: 'transparent',
         border: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
@@ -86,10 +64,10 @@ function BellIcon({ hasNew = false }) {
         justifyContent: 'center',
         cursor: 'pointer',
         flexShrink: 0,
-        transition: 'background 150ms ease',
+        transition: 'background 150ms ease, border 150ms ease',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.2)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)' }}
       aria-label="Notifications"
     >
       <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
@@ -123,7 +101,7 @@ function UserAvatar({ user }) {
     <div style={{
       width: 32,
       height: 32,
-      borderRadius: 8,
+      borderRadius: 9,
       background: avatarUrl ? 'transparent' : 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
       border: '1px solid rgba(255,255,255,0.1)',
       display: 'flex',
