@@ -7,7 +7,7 @@
 //
 // All styling is inline -- no CSS modules.
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { supabase } from './lib/supabase.js'
 import {
   getClientId,
@@ -16,6 +16,7 @@ import {
   getUserWorld,
 } from './lib/clientConfig.js'
 import { useTasks } from './hooks/useTasks'
+import { useDataPipe } from './hooks/useDataPipe'
 import WorldSelector from './components/WorldSelector.jsx'
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
@@ -233,26 +234,241 @@ function ChatIcon({ color }) {
   )
 }
 
-// ── Placeholder content panels ────────────────────────────────────────────────
+// ── Status dot config ─────────────────────────────────────────────────────────
 
-function HomePanel() {
+const STATUS_CONFIG = {
+  BUILDING: { color: '#22C55E', pulse: true,  label: 'Building'  },
+  PLANNING: { color: '#F59E0B', pulse: false, label: 'Planning'  },
+  QA:       { color: '#3B9EFF', pulse: false, label: 'QA'        },
+  QUEUED:   { color: '#F59E0B', pulse: false, label: 'Queued'    },
+  IDLE:     { color: '#3D4D60', pulse: false, label: 'Idle'      },
+}
+
+function getStatusCfg(status) {
+  return STATUS_CONFIG[status?.toUpperCase()] || STATUS_CONFIG.IDLE
+}
+
+// ── Agent avatar (color circle + initial) ─────────────────────────────────────
+
+function AgentAvatar({ name, color, size = 38 }) {
+  const initial = (name || '?')[0].toUpperCase()
   return (
     <div style={{
+      width: size,
+      height: size,
+      borderRadius: size * 0.3,
+      background: color || '#3B9EFF',
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
+      flexShrink: 0,
+      boxShadow: `0 0 0 1px rgba(255,255,255,0.08)`,
+    }}>
+      <span style={{
+        fontSize: size * 0.42,
+        fontWeight: 700,
+        color: '#fff',
+        fontFamily: "'Inter', sans-serif",
+        lineHeight: 1,
+      }}>{initial}</span>
+    </div>
+  )
+}
+
+// ── Status dot ────────────────────────────────────────────────────────────────
+
+function StatusDot({ status }) {
+  const cfg = getStatusCfg(status)
+  return (
+    <span style={{
+      display: 'inline-block',
+      width: 7,
+      height: 7,
+      borderRadius: '50%',
+      background: cfg.color,
+      flexShrink: 0,
+      boxShadow: cfg.pulse ? `0 0 6px ${cfg.color}` : 'none',
+      animation: cfg.pulse ? 'cvPulse 1.8s ease-in-out infinite' : 'none',
+    }} />
+  )
+}
+
+// ── Agent card ────────────────────────────────────────────────────────────────
+
+function AgentCard({ agent, lastMessage }) {
+  const [hovered, setHovered] = useState(false)
+  const cfg = getStatusCfg(agent.status)
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        borderRadius: 10,
+        background: hovered ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.025)',
+        border: `1px solid ${hovered ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}`,
+        cursor: 'pointer',
+        transition: 'background 150ms ease, border-color 150ms ease',
+        marginBottom: 6,
+      }}
+    >
+      {/* Avatar */}
+      <AgentAvatar name={agent.name} color={agent.color} size={40} />
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <span style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: C.text,
+            fontFamily: "'Inter', sans-serif",
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{agent.name}</span>
+          <StatusDot status={agent.status} />
+          <span style={{
+            fontSize: 11,
+            color: cfg.color,
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 500,
+            opacity: 0.85,
+          }}>{cfg.label}</span>
+        </div>
+
+        {/* Last message preview */}
+        {lastMessage ? (
+          <div style={{
+            fontSize: 12,
+            color: C.muted,
+            fontFamily: "'Inter', sans-serif",
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            lineHeight: 1.35,
+          }}>{lastMessage.text}</div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'rgba(80,100,128,0.5)', fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
+            No recent messages
+          </div>
+        )}
+      </div>
+
+      {/* Timestamp */}
+      {lastMessage?.timestamp && (
+        <div style={{
+          fontSize: 11,
+          color: 'rgba(80,100,128,0.7)',
+          fontFamily: "'Inter', sans-serif",
+          flexShrink: 0,
+        }}>
+          {lastMessage.timestamp}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Home panel with agent cards ────────────────────────────────────────────────
+
+function HomePanel({ user, agents, inboxItems }) {
+  // Build a quick lookup: agent slug -> inbox item (last message preview)
+  const inboxMap = useMemo(() => {
+    const m = {}
+    for (const item of (inboxItems || [])) {
+      if (item.agent) m[item.agent] = item
+    }
+    return m
+  }, [inboxItems])
+
+  // Derive greeting based on time of day
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }, [])
+
+  const displayName =
+    user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    'there'
+
+  // Sort agents: active first (non-IDLE), then idle
+  const sortedAgents = useMemo(() => {
+    if (!agents) return []
+    return [...agents].sort((a, b) => {
+      const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+      const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+      return aActive - bActive
+    })
+  }, [agents])
+
+  return (
+    <div style={{
       flex: 1,
-      gap: 12,
-      color: C.muted,
+      overflowY: 'auto',
+      padding: '24px 20px 32px',
       fontFamily: "'Inter', sans-serif",
     }}>
-      <svg width={40} height={40} viewBox="0 0 24 24" fill="none"
-        stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-      <span style={{ fontSize: 14 }}>Home</span>
+
+      {/* ── Hero greeting ───────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: C.text,
+          lineHeight: 1.2,
+          marginBottom: 4,
+        }}>
+          {greeting}, {displayName}
+        </div>
+        <div style={{ fontSize: 13, color: C.muted }}>
+          {sortedAgents.filter(a => a.status?.toUpperCase() !== 'IDLE').length > 0
+            ? `${sortedAgents.filter(a => a.status?.toUpperCase() !== 'IDLE').length} agent${sortedAgents.filter(a => a.status?.toUpperCase() !== 'IDLE').length > 1 ? 's' : ''} active`
+            : 'All agents idle'}
+        </div>
+      </div>
+
+      {/* ── Pulse keyframe (injected once) ─────────────────────────────────── */}
+      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }`}</style>
+
+      {/* ── Section label ───────────────────────────────────────────────────── */}
+      {sortedAgents.length > 0 && (
+        <div style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: C.muted,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          marginBottom: 10,
+        }}>
+          Your Team ({sortedAgents.length})
+        </div>
+      )}
+
+      {/* ── Agent cards ─────────────────────────────────────────────────────── */}
+      {sortedAgents.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 48, gap: 8, color: C.muted }}>
+          <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx={12} cy={8} r={4}/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          <span style={{ fontSize: 13 }}>No agents found</span>
+        </div>
+      ) : (
+        sortedAgents.map(agent => (
+          <AgentCard
+            key={agent.slug}
+            agent={agent}
+            lastMessage={inboxMap[agent.slug] || null}
+          />
+        ))
+      )}
     </div>
   )
 }
@@ -371,6 +587,8 @@ export default function CornerV3() {
   const [unreadChat, setUnreadChat]   = useState(0)
 
   const { queued, rightNow, done } = useTasks()
+  // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
+  const { agents, inboxItems } = useDataPipe(null)
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
@@ -548,7 +766,7 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'home'  && <HomePanel />}
+        {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
         {tab === 'chat'  && <ChatPanel />}
       </div>
