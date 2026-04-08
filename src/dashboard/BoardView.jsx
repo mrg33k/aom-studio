@@ -581,6 +581,10 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   const [pendingFiles, setPendingFiles] = useState([])
   const [uploading, setUploading] = useState(false)
 
+  // Fade-in animation tracking
+  const messageRefs = useRef({})
+  const animatedMessageIds = useRef(new Set())
+
   // Skill autocomplete
   const skillAC = useSkillAutocomplete(chat.input || '', chat.setInput)
 
@@ -601,6 +605,35 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   useEffect(() => {
     if (!isUserScrolledUp.current) scrollToBottom(true)
   }, [chat.messages.length, scrollToBottom])
+
+  // Fade-in new messages
+  useEffect(() => {
+    const msgs = chat.messages
+    const newToAnimate = []
+    msgs.forEach((m, i) => {
+      const key = String(m.id || i)
+      if (!animatedMessageIds.current.has(key)) {
+        animatedMessageIds.current.add(key)
+        newToAnimate.push(key)
+      }
+    })
+    if (newToAnimate.length > 0) {
+      setTimeout(() => {
+        newToAnimate.forEach(key => {
+          const el = messageRefs.current[key]
+          if (el) el.style.opacity = '1'
+        })
+      }, 50)
+    }
+    // Cleanup refs for removed messages
+    const currentKeys = new Set(msgs.map((m, i) => String(m.id || i)))
+    Object.keys(messageRefs.current).forEach(key => {
+      if (!currentKeys.has(key)) {
+        delete messageRefs.current[key]
+        animatedMessageIds.current.delete(key)
+      }
+    })
+  }, [chat.messages])
 
   const handleScroll = useCallback(() => {
     if (!ref.current) return
@@ -703,7 +736,10 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
         {chat.messages.map((m, i) => (
           (m.source === 'task_completion_notification' || m.source === 'task-runner') ? (
             /* Task notification card -- centered, distinct from chat bubbles */
-            <div key={m.id || i} style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
+            <div key={m.id || i}
+              ref={el => (messageRefs.current[String(m.id || i)] = el)}
+              style={{ display: 'flex', justifyContent: 'center', padding: '2px 0', opacity: animatedMessageIds.current.has(String(m.id || i)) ? 1 : 0, transition: 'opacity 200ms ease-in' }}
+            >
               {(() => { const isFail = m.content?.toLowerCase().includes('fail'); return (
               <div
                 data-msg-idx={i}
@@ -724,10 +760,15 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               ); })()}
             </div>
           ) : (
-            <div key={m.id || i} style={{
-              display: 'flex',
-              justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
-            }}>
+            <div key={m.id || i}
+              ref={el => (messageRefs.current[String(m.id || i)] = el)}
+              style={{
+                display: 'flex',
+                justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
+                opacity: animatedMessageIds.current.has(String(m.id || i)) ? 1 : 0,
+                transition: 'opacity 200ms ease-in',
+              }}
+            >
               <div
                 data-msg-idx={i}
                 className={m.role === 'user' ? bubbleStyles.userBubble : bubbleStyles.agentBubble}
