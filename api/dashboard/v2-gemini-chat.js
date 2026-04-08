@@ -30,8 +30,9 @@ THE TEAM:
 Elon (system architect), Bobby (web dev), Gary (operations), Rex (executive assistant), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI, not humans.
 
 KEY CODEBASE FACTS (memorize these):
-- BoardView.jsx is the ONLY production view. 127KB monolith. Inline styles everywhere.
-- GameDashboard.jsx is a container component that renders BoardView. It does NOT own routes.
+- CornerV3.jsx is the ACTIVE BUILD TARGET. All CV3 work goes here. 1846 lines. Inline styles everywhere.
+- BoardView.jsx is LEGACY. Do NOT modify or reference it unless explicitly asked.
+- GameDashboard.jsx is a container component. It does NOT own routes.
 - ALL routes live in main.jsx using React Router. Pattern: <Route path="/dashboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />. To add a new route, edit main.jsx.
 - AuthGuard already exists in main.jsx. Adding auth to a new route = wrapping with <AuthGuard>. One line, not a separate task.
 - src/dashboard/ is FLAT. All components are at the root level (BoardView.jsx, GameDashboard.jsx, etc). No subdirectories. Do not invent subdirectories like src/dashboard/v2/.
