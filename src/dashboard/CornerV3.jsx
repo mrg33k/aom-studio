@@ -445,6 +445,13 @@ const GREETINGS = [
 
 function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug }) {
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 480)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Build a quick lookup: agent slug -> last inbox item (message preview)
   const inboxMap = useMemo(() => {
@@ -584,7 +591,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
       <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } }`}</style>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <div style={{ padding: '28px 20px 12px', position: 'relative' }}>
+      <div style={{ padding: isMobile ? '20px 14px 10px' : '28px 20px 12px', position: 'relative' }}>
         {/* Radial gradient glow */}
         <div style={{
           position: 'absolute', top: -20, left: 0, right: 0, height: 140,
@@ -608,7 +615,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
 
         {/* Rotating heading */}
         <h1 style={{
-          fontSize: 'clamp(26px, 5.5vw, 40px)',
+          fontSize: isMobile ? '26px' : 'clamp(26px, 5.5vw, 40px)',
           fontWeight: 800,
           lineHeight: 1.08,
           letterSpacing: '-0.04em',
@@ -644,7 +651,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
           axis="y"
           values={displayAgents}
           onReorder={handleReorder}
-          style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 16px', listStyle: 'none', margin: 0 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: isMobile ? '0 12px' : '0 16px', listStyle: 'none', margin: 0 }}
         >
           {displayAgents.map(agent => (
             <Reorder.Item
@@ -2054,6 +2061,13 @@ export default function CornerV3() {
   const [rootVoiceMuted, setRootVoiceMuted]   = useState(false)
   const [rootVoiceTranscript, setRootVoiceTranscript] = useState('')
   const rootVoiceChatRef = useRef(null)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 480)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const { queued, rightNow, done } = useTasks()
   // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
@@ -2299,7 +2313,7 @@ export default function CornerV3() {
 
           {/* Nav stats: hidden on mobile (< 480px) */}
           <div style={{
-            display: window.innerWidth < 480 ? 'none' : 'flex',
+            display: isMobile ? 'none' : 'flex',
             alignItems: 'center',
             gap: 12,
             flexShrink: 0,
