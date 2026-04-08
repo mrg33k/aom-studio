@@ -810,16 +810,20 @@ function ChatPanel({ agents, inboxItems, worldId }) {
     if (selectedAgent) setTimeout(() => inputRef.current?.focus(), 100)
   }, [selectedAgent])
 
+  // Keep a ref so handleSend can read current messages without stale closure
+  const messagesRef = useRef(messages)
+  useEffect(() => { messagesRef.current = messages }, [messages])
+
   const handleSend = useCallback(async () => {
     const text = input.trim()
     if (!text || sending || !selectedAgent) return
     setInput('')
     setSending(true)
 
-    // Optimistic message
-    const tempId = `temp-${Date.now()}`
+    // Optimistic user message
+    const tempUserId = `temp-user-${Date.now()}`
     setMessages(prev => [...prev, {
-      id: tempId,
+      id: tempUserId,
       role: 'user',
       agent: selectedAgent.slug,
       text,
@@ -827,18 +831,76 @@ function ChatPanel({ agents, inboxItems, worldId }) {
       source: 'corner-dashboard',
     }])
 
+    // Build Gemini-format history from the last 20 messages for context
+    const history = messagesRef.current.slice(-20).map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text || '' }],
+    }))
+
     try {
-      await fetch('/api/dashboard/supabase-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Run in parallel: persist user message + get AI response
+      const [saveResult, geminiResult] = await Promise.allSettled([
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: selectedAgent.slug,
+            text,
+            role: 'user',
+            source: 'corner-dashboard',
+            client_id: worldId,
+          }),
+        }).then(r => r.json()),
+        fetch('/api/dashboard/v2-gemini-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            agent: selectedAgent.slug,
+            client_id: worldId,
+            history,
+          }),
+        }).then(r => r.json()),
+      ])
+
+      // Replace temp user msg with real DB id -- prevents realtime duplicate
+      if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
+        const realMsg = saveResult.value.message
+        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...realMsg } : m))
+      }
+
+      // Append AI response
+      if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
+        const reply = geminiResult.value.reply
+        const tempAgentId = `temp-agent-${Date.now()}`
+        setMessages(prev => [...prev, {
+          id: tempAgentId,
+          role: 'agent',
           agent: selectedAgent.slug,
-          text,
-          role: 'user',
-          source: 'corner-dashboard',
-          client_id: worldId,
-        }),
-      })
+          text: reply,
+          timestamp: new Date().toISOString(),
+          source: 'gemini',
+        }])
+        // Persist AI response; swap temp id for real one when saved
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: selectedAgent.slug,
+            text: reply,
+            role: 'agent',
+            source: 'gemini',
+            client_id: worldId,
+          }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data?.message?.id) {
+              setMessages(prev => prev.map(m => m.id === tempAgentId ? { ...data.message } : m))
+            }
+          })
+          .catch(() => {})
+      }
     } catch (err) {
       console.error('[ChatPanel] send error:', err)
     } finally {
