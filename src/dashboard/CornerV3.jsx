@@ -314,11 +314,13 @@ const agentColors = {
 
 function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
   const [hovered, setHovered] = useState(false)
-  const cfg = getStatusCfg(agent.status)
   const bgColor = agentColors[agent.slug] || '#60A5FA'
-  const isActive = agent.status?.toUpperCase() !== 'IDLE'
   const initial = (agent.name || '?')[0].toUpperCase()
-  const statusColor = isActive ? cfg.color : C.dim
+  // cv3.html 3-state status model: on (accent) | busy/building (yellow) | off (dim)
+  const statusUpper = agent.status?.toUpperCase()
+  const statusColor = statusUpper === 'IDLE' ? C.dim : statusUpper === 'BUILDING' ? C.yellow : C.accent
+  const statusLabel = statusUpper === 'IDLE' ? 'Idle' : statusUpper === 'BUILDING' ? 'Building' : 'Online'
+  const statusGlow = statusUpper === 'BUILDING' ? '0 0 6px rgba(234,179,8,0.5)' : 'none'
 
   return (
     <div
@@ -370,7 +372,7 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
           </span>
           {lastMessage?.timestamp && (
             <span style={{ fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
-              {lastMessage.timestamp}
+              {formatChatTime(lastMessage.timestamp)}
             </span>
           )}
         </div>
@@ -398,9 +400,9 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
           <div style={{
             width: 5, height: 5, borderRadius: '50%',
             background: statusColor,
-            boxShadow: isActive ? `0 0 6px ${statusColor}` : 'none',
+            boxShadow: statusGlow,
           }} />
-          {cfg.label}
+          {statusLabel}
         </div>
         {unreadCount > 0 && (
           <div style={{
@@ -2309,7 +2311,7 @@ export default function CornerV3() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} onSelectAgent={handleSelectAgent} selectedAgentSlug={selectedAgent?.slug} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
-        {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
