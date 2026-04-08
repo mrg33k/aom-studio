@@ -20,8 +20,6 @@ import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
-import { ProjectCard } from './components/ProjectCard.jsx'
-import { projectDefs } from './data/mockProjects.js'
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
 
@@ -675,28 +673,6 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
         </Reorder.Group>
       )}
 
-      {/* ── Section label: Your Projects ────────────────────────────────────── */}
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: C.muted,
-        textTransform: 'uppercase', letterSpacing: '0.1em',
-        fontFamily: "'JetBrains Mono', monospace",
-        padding: '18px 20px 8px',
-      }}>
-        Your Projects
-      </div>
-
-      {/* ── Project cards ───────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: isMobile ? '0 12px' : '0 16px' }}>
-        {projectDefs.map(project => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            isExpanded={false}
-            isNightMode={true}
-          />
-        ))}
-      </div>
-
       <div style={{ height: 20 }} />
     </div>
   )
@@ -1311,7 +1287,7 @@ function formatChatTime(ts) {
 
 // ── Chat panel ────────────────────────────────────────────────────────────────
 
-function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
+function ChatPanel({ agents, inboxItems, worldId, initialAgent, projectDefs }) {
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
   const [messages, setMessages]           = useState([])
   const [input, setInput]                 = useState('')
@@ -1682,6 +1658,67 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
               </button>
             )
           })
+        )}
+
+        {/* ── Projects section ──────────────────────────────────────────────── */}
+        {(projectDefs || []).length > 0 && (
+          <>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: C.muted,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginTop: 20, marginBottom: 12,
+            }}>
+              Projects
+            </div>
+            {projectDefs.map(project => (
+              <button
+                key={project.id || project.slug}
+                onClick={() => setSelectedAgent({ slug: project.slug, name: project.name, isProject: true })}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  width: '100%', padding: '12px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.025)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  cursor: 'pointer', textAlign: 'left', marginBottom: 6,
+                  transition: 'background 150ms ease, border-color 150ms ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+                }}
+              >
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: project.color || 'rgba(59,158,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, fontSize: 16, fontWeight: 800,
+                  color: project.color ? '#000' : C.accent,
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  {(project.name || '?')[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{
+                    fontSize: 13, fontWeight: 600,
+                    color: 'rgba(240,244,255,0.8)',
+                    fontFamily: "'Inter', sans-serif",
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    display: 'block',
+                  }}>{project.name}</span>
+                </div>
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+                  stroke="rgba(80,100,128,0.4)" strokeWidth={2.5}
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            ))}
+          </>
         )}
       </div>
     )
@@ -2409,8 +2446,8 @@ export default function CornerV3() {
     }
     prevDoneIdsRef.current = new Set(done.map(t => t.id))
   }, [done])
-  // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
-  const { agents, inboxItems } = useDataPipe(null)
+  // useDataPipe provides agents (with realtime status), inboxItems, and projectDefs
+  const { agents, inboxItems, projectDefs } = useDataPipe(null)
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
@@ -2664,7 +2701,7 @@ export default function CornerV3() {
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} projectDefs={projectDefs} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
