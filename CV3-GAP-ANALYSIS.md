@@ -251,10 +251,10 @@ The current bold wallet-style cards were a Patrik directive but the SIZING from 
 ### 33. Nav background (same as #1 but emphasizing)
 - **Fix**: Line 1742, change `C.s1` to `C.bg`. This is the MOST VISIBLE difference.
 
-### 34. Chat tab should be HIDDEN until an agent is clicked
-- **Spec** (cv3.html:281): `<button class="tab" data-v="chat" id="tab-chat" style="display:none">Chat</button>` -- Chat tab is hidden by default, appears only after clicking an agent card.
-- **Current**: Chat tab always visible in nav.
-- **Fix**: Default Chat tab to hidden. Show it when an agent is selected. This matches Steffen's UX: Home is the landing, you tap an agent to enter chat.
+### 34. Nav should show ONLY Home and Tasks tabs (CRITICAL)
+- **Spec** (cv3.html:278-281): Only Home and Tasks visible by default. Chat tab has `style="display:none"` and only appears after clicking an agent card.
+- **Current**: Home, Tasks, and Chat all visible at all times.
+- **Fix**: Remove Chat from the default visible tabs. Show Chat tab ONLY after an agent card is clicked. Nav must be EXACTLY like Steffen's: Home + Tasks (with badge) + stats on the right. Nothing else until user interaction.
 
 ### 35. Nav stats show building count with YELLOW dot, not green
 - **Spec** (cv3.html:284): `<div class="dot" style="background:var(--yellow)"></div><b>2</b> building`
