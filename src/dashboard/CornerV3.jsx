@@ -18,6 +18,8 @@ import {
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import WorldSelector from './components/WorldSelector.jsx'
+import VoiceToggle from './components/VoiceToggle.jsx'
+import VoiceChat from './components/VoiceChat.jsx'
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
 
@@ -734,6 +736,9 @@ function ChatPanel({ agents, inboxItems, worldId }) {
   const [sending, setSending]             = useState(false)
   const [loadingMsgs, setLoadingMsgs]     = useState(false)
   const [uploading, setUploading]         = useState(false)
+  const [isVoiceActive, setIsVoiceActive] = useState(false)
+  const [voiceStatus, setVoiceStatus]     = useState('idle')
+  const [voiceVolume, setVoiceVolume]     = useState(0)
   const messagesEndRef = useRef(null)
   const inputRef       = useRef(null)
   const fileInputRef   = useRef(null)
@@ -1114,37 +1119,79 @@ function ChatPanel({ agents, inboxItems, worldId }) {
         flexShrink: 0,
       }}>
         <button
-          onClick={() => { setSelectedAgent(null); setMessages([]) }}
+          onClick={() => { setSelectedAgent(null); setMessages([]); setIsVoiceActive(false) }}
           style={{
             width: 30, height: 30, borderRadius: 8, flexShrink: 0,
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid rgba(255,255,255,0.08)',
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#A0A0A0', fontSize: 18, lineHeight: 1,
           }}
         >
-          <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
-            stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
+          &#x2190;
         </button>
-        <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={30} />
+        {/* Circle avatar with agent initial */}
+        <div style={{
+          width: 30, height: 30, borderRadius: '50%',
+          backgroundColor: selectedAgent.color || '#3B9EFF',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1 }}>
+            {(selectedAgent.name || '?')[0].toUpperCase()}
+          </span>
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            fontSize: 14, fontWeight: 'bold', color: 'white',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            display: 'block',
+          }}>{selectedAgent.name}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
             <span style={{
-              fontSize: 14, fontWeight: 700, color: C.text,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{selectedAgent.name}</span>
-            <StatusDot status={selectedAgent.status} />
-          </div>
-          <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.2 }}>
-            {getStatusCfg(selectedAgent.status).label}
+              backgroundColor: 'green', borderRadius: '50%',
+              width: 8, height: 8, display: 'inline-block', flexShrink: 0, verticalAlign: 'middle',
+            }} />
+            <span style={{ fontSize: 11, color: C.muted, lineHeight: 1 }}>Online</span>
           </div>
         </div>
+        <VoiceToggle
+          isActive={isVoiceActive}
+          onToggle={() => setIsVoiceActive(v => !v)}
+          status={voiceStatus}
+          volumeLevel={voiceVolume}
+        />
       </div>
 
+      {/* Voice chat panel -- replaces messages when active */}
+      {isVoiceActive && (
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <VoiceChat
+            agentSlug={selectedAgent.slug}
+            agentColor={selectedAgent.color}
+            clientId={worldId}
+            onTranscript={(text, role) => {
+              setMessages(prev => [...prev, {
+                id: `voice-${role}-${Date.now()}`,
+                role: role === 'model' ? 'agent' : 'user',
+                agent: selectedAgent.slug,
+                text,
+                timestamp: new Date().toISOString(),
+                source: 'voice',
+              }])
+            }}
+            onStatusChange={(s) => {
+              setVoiceStatus(s)
+              if (s === 'idle') setIsVoiceActive(false)
+            }}
+            onVolumeChange={setVoiceVolume}
+          />
+        </div>
+      )}
+
       {/* Messages scroll area */}
-      <div style={{
+      {!isVoiceActive && <div style={{
         flex: 1, overflowY: 'auto',
         padding: '12px 14px',
         display: 'flex', flexDirection: 'column', gap: 6,
@@ -1278,7 +1325,7 @@ function ChatPanel({ agents, inboxItems, worldId }) {
         })}
 
         <div ref={messagesEndRef} />
-      </div>
+      </div>}
 
       {/* Input area */}
       <div style={{
