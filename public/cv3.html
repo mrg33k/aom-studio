@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Corner.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#06090F;--bg2:#0B1018;--s1:#111827;--s2:#1A2035;--s3:#222942;
+  --border:rgba(255,255,255,0.04);--border2:rgba(255,255,255,0.08);
+  --text:#F1F5F9;--text2:#94A3B8;--muted:#475569;--dim:#334155;
+  --accent:#10B981;--accent2:#34D399;--accent-bg:rgba(16,185,129,0.08);
+  --yellow:#EAB308;--green:#22C55E;--purple:#A78BFA;--blue:#60A5FA;
+  --pink:#F472B6;--orange:#FB923C;--teal:#2DD4BF;--red:#EF4444;
+}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden}
+.app{height:100%;display:flex;flex-direction:column}
+
+/* ══ TOP BAR ══ */
+.top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg)}
+.top-left{display:flex;align-items:center;gap:14px}
+.logo{font-weight:900;font-size:18px;letter-spacing:-0.04em;cursor:pointer}
+.logo i{color:var(--accent);font-style:normal}
+.pills{display:flex;background:var(--s1);border-radius:10px;padding:2px;gap:1px}
+.pill{padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;transition:all 0.15s}
+.pill.on{background:var(--s2);color:var(--text)}
+.pill:hover:not(.on){color:var(--text2)}
+.top-right{display:flex;align-items:center;gap:8px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(16,185,129,0.5)}
+.ava{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--blue));cursor:pointer}
+
+/* ══ VIEWS ══ */
+.v{display:none;flex:1;flex-direction:column;overflow:hidden}.v.on{display:flex}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}.scroll::-webkit-scrollbar{display:none}
+
+/* ══ HOME (conversation-focused) ══ */
+.hero{padding:32px 20px 16px;position:relative}
+.hero::after{content:'';position:absolute;top:-20px;left:0;right:0;height:160px;background:radial-gradient(ellipse at 30% 40%,rgba(16,185,129,0.04),transparent 60%);pointer-events:none}
+.hero-sub{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.hero h1{font-size:clamp(28px,6vw,44px);font-weight:800;line-height:1.08;letter-spacing:-0.04em}
+.hero-row{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.badge{display:flex;align-items:center;gap:4px;padding:5px 11px;background:var(--s1);border:1px solid var(--border);border-radius:18px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all 0.15s}
+.badge:hover{background:var(--s2)}
+.badge b{font-family:'JetBrains Mono',monospace;font-weight:700}
+.badge.y b{color:var(--yellow)}.badge.g b{color:var(--green)}.badge.a b{color:var(--accent)}
+
+/* Agent cards */
+.agents-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;padding:20px 20px 10px}
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:0 16px}
+.agent-card{padding:16px;border-radius:16px;background:var(--s1);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.agent-card:hover{background:var(--s2);border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.agent-card.active{border-color:rgba(16,185,129,0.2)}
+.agent-card.active::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.ac-ava{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#000;margin-bottom:10px}
+.ac-name{font-size:14px;font-weight:700;margin-bottom:2px}
+.ac-role{font-size:11px;color:var(--muted);margin-bottom:8px}
+.ac-status{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.ac-status .dot{width:5px;height:5px}
+.ac-status.on{color:var(--accent)}.ac-status.busy{color:var(--yellow)}.ac-status.off{color:var(--dim)}
+.ac-preview{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Recent conversations */
+.recent-section{padding:20px 16px 0}
+.recent-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+.recent-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--s1);border:1px solid var(--border);border-radius:14px;margin-bottom:6px;cursor:pointer;transition:background 0.15s}
+.recent-item:hover{background:var(--s2)}
+.ri-ava{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000;flex-shrink:0}
+.ri-info{flex:1;min-width:0}
+.ri-name{font-size:13px;font-weight:700}
+.ri-msg{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-time{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.ri-unread{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* ══ TASKS VIEW ══ */
+.tasks-top{padding:16px 16px 8px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 14px}
+.search-bar input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:'Inter',sans-serif}
+.search-bar input::placeholder{color:var(--dim)}
+.search-icon{color:var(--dim);flex-shrink:0}
+.project-filters{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px}
+.project-filters::-webkit-scrollbar{display:none}
+.pf{padding:5px 12px;border-radius:16px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--s1);color:var(--text2);white-space:nowrap;transition:all 0.15s}
+.pf.on{background:var(--accent-bg);border-color:rgba(16,185,129,0.2);color:var(--accent)}
+.pf:hover:not(.on){background:var(--s2)}
+
+.task-list{display:flex;flex-direction:column;gap:8px;padding:0 16px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 0 6px}
+.sec-t{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace}
+.sec-ct{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+
+.tc{padding:14px 16px;border-radius:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s}
+.tc:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.3)}
+.tc-r{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tc-t{font-size:16px;font-weight:800;line-height:1.2;letter-spacing:-0.01em;color:#0A0A0A}
+.tc-tags{display:flex;gap:6px;margin-top:5px}
+.tc-tag{font-size:9px;font-weight:700;color:rgba(0,0,0,0.4);text-transform:uppercase;letter-spacing:0.06em}
+.tc-s{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;color:rgba(0,0,0,0.55);line-height:1}
+.tc-l{font-size:8px;font-weight:600;color:rgba(0,0,0,0.3);text-transform:uppercase;text-align:right}
+.ty{background:var(--yellow)}.tg{background:var(--green)}.tp{background:var(--purple)}
+.tb{background:var(--blue)}.tpk{background:var(--pink)}.to{background:var(--orange)}.tt{background:var(--teal)}
+.tc.bld{background:var(--s2);border:1px solid rgba(234,179,8,0.1)}
+.tc.bld .tc-t{color:var(--yellow);font-size:14px}.tc.bld .tc-tag{color:var(--muted)}
+.tc.bld .tc-s{color:var(--yellow);font-size:12px}.tc.bld .tc-l{color:var(--muted)}
+.tc.bld::before{content:'';position:absolute;top:0;left:0;height:2px;background:var(--yellow);animation:bld 5s ease-in-out infinite;border-radius:14px 14px 0 0}
+@keyframes bld{0%{width:5%}50%{width:60%}100%{width:90%}}
+
+/* Weekly stats */
+.stats{margin:16px 16px 0;padding:14px;background:var(--s1);border:1px solid var(--border);border-radius:14px}
+.stats-t{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+.bars-w{display:flex;align-items:flex-end;gap:5px;height:36px}
+.bw-c{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bw-f{width:100%;border-radius:3px;background:var(--accent);min-height:2px}
+.bw-d{font-size:8px;font-weight:600;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.stats-r{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+.sr-v{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;text-align:center}
+.sr-l{font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;text-align:center}
+
+/* ══ CHAT VIEW ══ */
+.chat-head{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
+.chat-back{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px}
+.ch-ava{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000}
+.ch-info{flex:1}.ch-name{font-size:14px;font-weight:700}.ch-st{font-size:11px;color:var(--accent);font-weight:500}
+.ch-actions{display:flex;gap:6px}
+.ch-btn{width:32px;height:32px;border-radius:10px;background:var(--s1);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px}
+
+.msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.msgs::-webkit-scrollbar{width:3px}.msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.04);border-radius:2px}
+
+.m{max-width:80%;padding:10px 14px;font-size:14px;line-height:1.5;animation:fu 0.2s ease-out}
+.m-u{align-self:flex-end;background:var(--accent);color:#000;font-weight:500;border-radius:18px 18px 4px 18px}
+.m-a{align-self:flex-start;background:var(--s2);color:var(--text2);border-radius:18px 18px 18px 4px}
+.m-time{font-size:10px;color:var(--dim);padding:1px 4px}
+.m-time.r{text-align:right}
+/* Read receipts */
+.m-checks{display:flex;align-items:center;justify-content:flex-end;gap:2px;padding:0 4px}
+.m-check{font-size:10px;color:var(--accent);font-weight:700}
+.m-check.gray{color:var(--dim)}
+
+/* Typing indicator */
+.typing{align-self:flex-start;padding:12px 16px;background:var(--s2);border-radius:18px 18px 18px 4px;display:flex;gap:4px}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce 1.2s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:0.15s}.typing-dot:nth-child(3){animation-delay:0.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* Inline task card */
+.m-task{align-self:flex-start;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 16px;max-width:88%}
+.mt-head{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.mt-icon{width:18px;height:18px;border-radius:6px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);font-weight:800}
+.mt-label{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-family:'JetBrains Mono',monospace}
+.mt-title{font-size:14px;font-weight:700}.mt-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+.mt-foot{display:flex;align-items:center;gap:8px;margin-top:8px}
+.mt-pill{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace}
+.mt-pill.q{background:rgba(234,179,8,0.12);color:var(--yellow)}.mt-pill.d{background:rgba(34,197,94,0.12);color:var(--green)}
+.mt-agent{font-size:10px;color:var(--muted);font-weight:600}
+
+/* Image attachment in chat */
+.m-img{align-self:flex-end;border-radius:16px;overflow:hidden;max-width:70%;cursor:pointer;transition:transform 0.15s}
+.m-img:hover{transform:scale(1.02)}
+.m-img img{width:100%;display:block;border-radius:16px}
+.m-img-caption{padding:6px 10px;background:var(--accent);color:#000;font-size:12px;font-weight:500;border-radius:0 0 16px 16px}
+
+/* File attachment in chat */
+.m-file{align-self:flex-end;background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:75%;cursor:pointer}
+.mf-icon{width:36px;height:36px;border-radius:10px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);font-size:14px;font-weight:800}
+.mf-info{flex:1;min-width:0}.mf-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mf-size{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* Attachment preview bar (pre-send) */
+.attach-bar{display:flex;gap:6px;padding:6px 16px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.attach-bar::-webkit-scrollbar{display:none}
+.at{width:56px;height:56px;border-radius:10px;background:var(--s2);border:1px solid var(--border);position:relative;flex-shrink:0;overflow:hidden}
+.at img{width:100%;height:100%;object-fit:cover}
+.at-x{position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg2)}
+.at-file{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:10px;background:var(--s2);border:1px solid var(--border);flex-shrink:0;position:relative}
+.at-file span{font-size:8px;color:var(--muted);font-weight:600;margin-top:2px}
+
+/* Voice mode (replaces input area) */
+.voice-mode{padding:16px 20px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;display:none}
+.voice-mode.on{display:block}
+.vm-vis{display:flex;align-items:center;justify-content:center;gap:3px;height:44px;margin-bottom:10px}
+.vm-bar{width:3px;border-radius:2px;background:var(--accent);animation:vw 1s ease-in-out infinite}
+.vm-bar:nth-child(1){height:14px;animation-delay:0}.vm-bar:nth-child(2){height:26px;animation-delay:.08s}
+.vm-bar:nth-child(3){height:38px;animation-delay:.16s}.vm-bar:nth-child(4){height:30px;animation-delay:.24s}
+.vm-bar:nth-child(5){height:18px;animation-delay:.32s}.vm-bar:nth-child(6){height:34px;animation-delay:.12s}
+.vm-bar:nth-child(7){height:22px;animation-delay:.2s}.vm-bar:nth-child(8){height:40px;animation-delay:.28s}
+.vm-bar:nth-child(9){height:16px;animation-delay:.36s}
+@keyframes vw{0%,100%{transform:scaleY(0.3);opacity:0.3}50%{transform:scaleY(1);opacity:1}}
+.vm-status{text-align:center;font-size:12px;font-weight:600;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.vm-transcript{font-size:13px;color:var(--text2);text-align:center;min-height:20px;padding:0 20px}
+.vm-btns{display:flex;justify-content:center;gap:14px;margin-top:12px}
+.vm-btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;transition:transform 0.15s}
+.vm-btn:hover{transform:scale(1.08)}
+.vm-end{background:var(--red);color:#fff}.vm-mute{background:var(--s2);color:var(--muted);border:1px solid var(--border) !important}
+
+/* ══ INPUT BAR ══ */
+.input-bar{flex-shrink:0;padding:6px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)}
+.input-w{display:flex;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:24px;padding:4px 4px 4px 14px;max-width:540px;margin:0 auto;transition:border-color 0.2s,box-shadow 0.2s}
+.input-w:focus-within{border-color:rgba(16,185,129,0.2);box-shadow:0 0 0 3px rgba(16,185,129,0.04)}
+.input-w input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:'Inter',sans-serif}
+.input-w input::placeholder{color:var(--dim)}
+.ib{width:34px;height:34px;border-radius:50%;background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color 0.15s}
+.ib:hover{color:var(--text2)}
+.mic{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform 0.15s,box-shadow 0.2s}
+.mic:hover{transform:scale(1.06);box-shadow:0 0 20px rgba(16,185,129,0.3)}
+.mic svg{width:16px;height:16px}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:200;background:var(--s2);border:1px solid rgba(34,197,94,0.15);border-radius:14px;padding:10px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:su 0.3s ease-out;white-space:nowrap;display:none}
+.toast.on{display:flex}
+.toast-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.toast-t{font-size:12px;font-weight:600;color:var(--text2)}
+
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes su{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(max-width:480px){.hero{padding:24px 16px 12px}.hero h1{font-size:28px}.agents-grid{grid-template-columns:repeat(2,1fr);gap:6px;padding:0 12px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="top">
+    <div class="top-left">
+      <div class="logo" onclick="go('home')">Corner<i>.</i></div>
+      <div class="pills">
+        <button class="pill on" data-v="home">Home</button>
+        <button class="pill" data-v="tasks">Tasks</button>
+        <button class="pill" data-v="chat" id="pill-chat" style="display:none">Chat</button>
+      </div>
+    </div>
+    <div class="top-right"><div class="dot"></div><div class="ava"></div></div>
+  </div>
+
+  <!-- ══════ HOME VIEW ══════ -->
+  <div class="v on" id="v-home">
+    <div class="scroll" style="padding-bottom:70px">
+      <div class="hero">
+        <div class="hero-sub"><div class="dot"></div> Rex is online</div>
+        <h1>Hey Patrik,<br>what are we<br>working on?</h1>
+        <div class="hero-row">
+          <div class="badge y"><b>2</b> building</div>
+          <div class="badge g"><b>8</b> shipped</div>
+          <div class="badge a"><b>0</b> queued</div>
+        </div>
+      </div>
+
+      <div class="agents-label">Your Team</div>
+      <div class="agents-grid">
+        <div class="agent-card active" onclick="openChat('rex','Rex','EA','var(--accent)')">
+          <div class="ac-ava" style="background:var(--accent)">R</div>
+          <div class="ac-name">Rex</div>
+          <div class="ac-role">Executive Assistant</div>
+          <div class="ac-status on"><div class="dot"></div> Online</div>
+          <div class="ac-preview">Queue is clear. 8 shipped today, all 8+/10 QA.</div>
+        </div>
+        <div class="agent-card" onclick="openChat('bobby','Bobby','Web Dev','var(--yellow)')">
+          <div class="ac-ava" style="background:var(--yellow)">B</div>
+          <div class="ac-name">Bobby</div>
+          <div class="ac-role">Web Developer</div>
+          <div class="ac-status busy"><div class="dot" style="background:var(--yellow);box-shadow:0 0 6px rgba(234,179,8,0.5)"></div> Building</div>
+        </div>
+        <div class="agent-card" onclick="openChat('steffen','Steffen','Design','var(--purple)')">
+          <div class="ac-ava" style="background:var(--purple)">S</div>
+          <div class="ac-name">Steffen</div>
+          <div class="ac-role">Brand / Design</div>
+          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+        </div>
+        <div class="agent-card" onclick="openChat('cleo','Cleo','Content','var(--pink)')">
+          <div class="ac-ava" style="background:var(--pink)">C</div>
+          <div class="ac-name">Cleo</div>
+          <div class="ac-role">Content / Video</div>
+          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+        </div>
+        <div class="agent-card" onclick="openChat('elon','Elon','Architect','var(--blue)')">
+          <div class="ac-ava" style="background:var(--blue)">E</div>
+          <div class="ac-name">Elon</div>
+          <div class="ac-role">System Architect</div>
+          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+        </div>
+        <div class="agent-card" onclick="openChat('gary','Gary','Ops','var(--orange)')">
+          <div class="ac-ava" style="background:var(--orange)">G</div>
+          <div class="ac-name">Gary</div>
+          <div class="ac-role">Operations</div>
+          <div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div>
+        </div>
+      </div>
+
+      <div class="recent-section">
+        <div class="recent-label">Recent Conversations</div>
+        <div class="recent-item" onclick="openChat('rex','Rex','EA','var(--accent)')">
+          <div class="ri-ava" style="background:var(--accent)">R</div>
+          <div class="ri-info"><div class="ri-name">Rex</div><div class="ri-msg">Queue is clear. 8 shipped today. What's next?</div></div>
+          <div class="ri-time">2m</div>
+          <div class="ri-unread"></div>
+        </div>
+        <div class="recent-item" onclick="openChat('bobby','Bobby','Web Dev','var(--yellow)')">
+          <div class="ri-ava" style="background:var(--yellow)">B</div>
+          <div class="ri-info"><div class="ri-name">Bobby</div><div class="ri-msg">Voice button animation shipped. 10/10.</div></div>
+          <div class="ri-time">15m</div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ══════ TASKS VIEW ══════ -->
+  <div class="v" id="v-tasks">
+    <div class="tasks-top">
+      <div class="search-bar">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search tasks by project..." />
+      </div>
+      <div class="project-filters">
+        <div class="pf on">All</div>
+        <div class="pf">Corner</div>
+        <div class="pf">AOM Website</div>
+        <div class="pf">Ambition</div>
+        <div class="pf">Sourcing</div>
+        <div class="pf">Outreach</div>
+      </div>
+    </div>
+    <div class="scroll" style="padding-bottom:70px">
+      <div style="padding:0 16px">
+        <div class="sec-hd"><span class="sec-t">Building Now</span></div>
+        <div class="task-list">
+          <div class="tc bld"><div class="tc-r"><div><div class="tc-t">Move VoiceChat into ChatPanel</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Attempt 1/3</span></div></div><div><div class="tc-s">...</div><div class="tc-l">Building</div></div></div></div>
+          <div class="tc bld"><div class="tc-r"><div><div class="tc-t">Audit Dark Theme Colors</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">&mdash;</div><div class="tc-l">Queued</div></div></div></div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stats-t">This Week</div>
+        <div class="bars-w">
+          <div class="bw-c"><div class="bw-f" style="height:15%"></div><div class="bw-d">M</div></div>
+          <div class="bw-c"><div class="bw-f" style="height:25%"></div><div class="bw-d">T</div></div>
+          <div class="bw-c"><div class="bw-f" style="height:40%"></div><div class="bw-d">W</div></div>
+          <div class="bw-c"><div class="bw-f" style="height:30%"></div><div class="bw-d">T</div></div>
+          <div class="bw-c"><div class="bw-f" style="height:55%"></div><div class="bw-d">F</div></div>
+          <div class="bw-c"><div class="bw-f" style="height:70%"></div><div class="bw-d">S</div></div>
+          <div class="bw-c"><div class="bw-f" style="height:100%"></div><div class="bw-d">S</div></div>
+        </div>
+        <div class="stats-r">
+          <div><div class="sr-v">23</div><div class="sr-l">Tasks</div></div>
+          <div><div class="sr-v">87%</div><div class="sr-l">Pass Rate</div></div>
+          <div><div class="sr-v">9.1</div><div class="sr-l">Avg QA</div></div>
+        </div>
+      </div>
+      <div style="padding:0 16px">
+        <div class="sec-hd"><span class="sec-t">Shipped Today</span><span class="sec-ct">8 tasks</span></div>
+        <div class="task-list">
+          <div class="tc ty"><div class="tc-r"><div><div class="tc-t">Auto-Scroll to Bottom</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">UX</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tg"><div class="tc-r"><div><div class="tc-t">Voice Button Animation</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tp"><div class="tc-r"><div><div class="tc-t">Agent in Right Now Bar</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">9</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tt"><div class="tc-r"><div><div class="tc-t">Enter / Shift+Enter</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">UX</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tb"><div class="tc-r"><div><div class="tc-t">Task Toast Notification</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">8</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc to"><div class="tc-r"><div><div class="tc-t">Message Fade-In</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">8</div><div class="tc-l">QA</div></div></div></div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- ══════ CHAT VIEW ══════ -->
+  <div class="v" id="v-chat">
+    <div class="chat-head">
+      <button class="chat-back" onclick="go('home')">&larr;</button>
+      <div class="ch-ava" id="ch-ava" style="background:var(--accent)">R</div>
+      <div class="ch-info"><div class="ch-name" id="ch-name">Rex</div><div class="ch-st">Online</div></div>
+      <div class="ch-actions">
+        <div class="ch-btn" onclick="toggleVoice()" title="Voice">&#127908;</div>
+        <div class="ch-btn" title="Info">i</div>
+      </div>
+    </div>
+
+    <div class="msgs" id="msgs">
+      <div class="m m-a">Hey Patrik. Queue is clear, Bobby just finished the voice button animation. 10/10 QA. What's next?</div>
+      <div class="m-time">2m ago</div>
+
+      <div class="m m-u">I want to redo the dashboard layout. Bold cards, dark, clean. Like those references I sent.</div>
+      <div class="m-checks"><span class="m-check">&#10003;&#10003;</span></div>
+      <div class="m-time r">1m ago</div>
+
+      <div class="m m-a">Got it. That's a significant redesign. Before I create anything, what does "done" look like for you? Are we replacing the multi-column BoardView entirely?</div>
+      <div class="m-time">1m ago</div>
+
+      <div class="m m-u">Yeah. Home screen with agent cards, tap to chat. Tasks in a separate tab with project filters.</div>
+      <div class="m-checks"><span class="m-check">&#10003;&#10003;</span></div>
+      <div class="m-time r">just now</div>
+
+      <!-- Image attachment from user -->
+      <div class="m-img">
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='200'%3E%3Crect fill='%231a2035' width='280' height='200' rx='12'/%3E%3Ctext x='50%25' y='45%25' fill='%23475569' font-family='Inter' font-size='14' text-anchor='middle'%3EReference image%3C/text%3E%3Ctext x='50%25' y='60%25' fill='%23334155' font-family='Inter' font-size='11' text-anchor='middle'%3EIMG_0434.jpg%3C/text%3E%3C/svg%3E" alt="reference" />
+      </div>
+      <div class="m-time r">just now</div>
+
+      <div class="m m-a">I see the vibe. Bold type, color-blocked cards, dark background. Let me spec this properly.</div>
+      <div class="m-time">just now</div>
+
+      <!-- Inline task card -->
+      <div class="m-task">
+        <div class="mt-head"><div class="mt-icon">+</div><span class="mt-label">Task Created</span></div>
+        <div class="mt-title">Redesign dashboard: home view with agent cards</div>
+        <div class="mt-desc">Replace multi-column BoardView with focused home screen. Agent grid, recent conversations, hero greeting. Tap agent to open chat.</div>
+        <div class="mt-foot"><span class="mt-pill q">Queued</span><span class="mt-agent">Bobby</span></div>
+      </div>
+
+      <!-- File attachment from user -->
+      <div class="m-file">
+        <div class="mf-icon">PDF</div>
+        <div class="mf-info"><div class="mf-name">brand-guidelines-v4.pdf</div><div class="mf-size">2.4 MB</div></div>
+      </div>
+      <div class="m-time r">just now</div>
+
+      <div class="m m-a">Got the brand guidelines. I'll make sure the redesign follows these. Anything else before I queue the rest?</div>
+      <div class="m-time">just now</div>
+
+      <!-- Typing indicator -->
+      <div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+    </div>
+
+    <!-- Attachment preview bar (pre-send state) -->
+    <div class="attach-bar" id="attach-bar" style="display:none">
+      <div class="at"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect fill='%231a2035' width='56' height='56'/%3E%3Ctext x='50%25' y='55%25' fill='%23475569' font-size='9' text-anchor='middle'%3Eimg%3C/text%3E%3C/svg%3E" /><div class="at-x">x</div></div>
+      <div class="at"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect fill='%231a2035' width='56' height='56'/%3E%3Ctext x='50%25' y='55%25' fill='%23475569' font-size='9' text-anchor='middle'%3Eimg%3C/text%3E%3C/svg%3E" /><div class="at-x">x</div></div>
+      <div class="at-file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>.pdf</span><div class="at-x">x</div></div>
+    </div>
+
+    <!-- Voice mode (toggled) -->
+    <div class="voice-mode" id="voice-mode">
+      <div class="vm-vis">
+        <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
+        <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
+        <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
+      </div>
+      <div class="vm-status">Listening...</div>
+      <div class="vm-transcript">"I want the cards to be more colorful"</div>
+      <div class="vm-btns">
+        <button class="vm-btn vm-mute" title="Mute">M</button>
+        <button class="vm-btn vm-end" onclick="toggleVoice()" title="End">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT BAR (always visible) -->
+  <div class="input-bar" id="input-bar">
+    <div class="input-w">
+      <input type="text" placeholder="Start typing or speaking..." onfocus="if(!document.getElementById('v-chat').classList.contains('on'))openChat('rex','Rex','EA','var(--accent)')" />
+      <button class="ib" title="Attach" onclick="toggleAttach()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <button class="mic" title="Voice" onclick="toggleVoice()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"><div class="toast-dot"></div><span class="toast-t">Voice button animation shipped. QA 10/10.</span></div>
+
+</div>
+
+<script>
+const pills=document.querySelectorAll('.pill');
+function go(id){
+  document.querySelectorAll('.v').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+id).classList.add('on');
+  pills.forEach(p=>{p.classList.toggle('on',p.dataset.v===id)});
+  // Show/hide chat pill
+  document.getElementById('pill-chat').style.display=id==='chat'?'':'none';
+  // Hide voice when leaving chat
+  if(id!=='chat'){document.getElementById('voice-mode').classList.remove('on');document.getElementById('input-bar').style.display=''}
+}
+pills.forEach(p=>p.addEventListener('click',()=>go(p.dataset.v)));
+
+function openChat(slug,name,role,color){
+  document.getElementById('ch-name').textContent=name;
+  document.getElementById('ch-ava').style.background=color;
+  document.getElementById('ch-ava').textContent=name[0];
+  go('chat');
+}
+
+let voiceOn=false;
+function toggleVoice(){
+  voiceOn=!voiceOn;
+  document.getElementById('voice-mode').classList.toggle('on',voiceOn);
+  document.getElementById('input-bar').style.display=voiceOn?'none':'';
+}
+
+function toggleAttach(){
+  const bar=document.getElementById('attach-bar');
+  bar.style.display=bar.style.display==='none'?'flex':'none';
+}
+
+// Toast demo
+setTimeout(()=>{document.getElementById('toast').classList.add('on');setTimeout(()=>document.getElementById('toast').classList.remove('on'),4000)},3000);
+</script>
+</body>
+</html>
