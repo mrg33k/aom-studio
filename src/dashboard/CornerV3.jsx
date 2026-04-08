@@ -2204,7 +2204,7 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
 export default function CornerV3() {
   const [currentUser, setCurrentUser]   = useState(null)
   const [worldId, setWorldId]           = useState(getClientId())
-  const [tab, setTab]                   = useState('home')
+  const [tab, setTab]                   = useState('chat')
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
@@ -2461,11 +2461,11 @@ export default function CornerV3() {
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 2 }}>
             <Tab
-              label="Home"
-              icon={<HomeIcon color={tab === 'home' ? C.text : C.muted} />}
-              active={tab === 'home'}
-              onClick={() => handleTabChange('home')}
-              badge={null}
+              label="Chat"
+              icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
+              active={tab === 'chat'}
+              onClick={() => handleTabChange('chat')}
+              badge={<Badge count={unreadChat} />}
             />
             <Tab
               label="Tasks"
@@ -2474,15 +2474,6 @@ export default function CornerV3() {
               onClick={() => handleTabChange('tasks')}
               badge={<Badge count={activeTaskCount} />}
             />
-            <div style={{ display: (tab === 'chat' || selectedAgent) ? undefined : 'none' }}>
-              <Tab
-                label="Chat"
-                icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
-                active={tab === 'chat'}
-                onClick={() => handleTabChange('chat')}
-                badge={<Badge count={unreadChat} />}
-              />
-            </div>
           </div>
 
           {/* Nav stats: hidden on mobile (< 480px) */}
@@ -2507,7 +2498,6 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} onSelectAgent={handleSelectAgent} selectedAgentSlug={selectedAgent?.slug} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
