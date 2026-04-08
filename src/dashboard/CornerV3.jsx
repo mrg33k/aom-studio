@@ -3,7 +3,7 @@
 //
 // Layout:
 //   Row 1: AOM logo | WorldSelector | bell icon + user avatar
-//   Row 2: Home / Tasks (badge) / Chat (badge) tabs
+//   Row 2: Chat (badge) / Tasks (badge) tabs
 //
 // All styling is inline -- no CSS modules.
 
