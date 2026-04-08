@@ -694,6 +694,11 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     if (!isUserScrolledUp.current) scrollToBottom(true)
   }, [chat.messages.length, scrollToBottom])
 
+  // Scroll to bottom when typing indicator appears
+  useEffect(() => {
+    if (chat.sending && !isUserScrolledUp.current) scrollToBottom(true)
+  }, [chat.sending, scrollToBottom])
+
   // Fade-in new messages
   useEffect(() => {
     const msgs = chat.messages
@@ -906,6 +911,19 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
             </div>
           )
         ))}
+        {/* Typing indicator: visible while agent is processing the message */}
+        {chat.sending && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '2px 0' }}>
+            <TypingIndicatorV2
+              streaming={true}
+              agentSlug={agentSlug}
+              agentColor={color}
+              agentName={agentName}
+              onPoke={(text) => chat.sendMessage(text)}
+              compact={false}
+            />
+          </div>
+        )}
       </div>
 
       {/* Message context menu: portal to body to escape transform containers */}
