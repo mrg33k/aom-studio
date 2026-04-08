@@ -1453,6 +1453,64 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
         {messages.map(msg => {
           const isUser = msg.role === 'user'
+
+          // Inline task card for task-runner completion notifications
+          if (msg.source === 'task-runner') {
+            const qaMatch = msg.text?.match(/QA:\s*(\d+(?:\.\d+)?)/i)
+            const qaScore = qaMatch ? parseFloat(qaMatch[1]) : null
+            const isFailed = /fail/i.test(msg.text || '')
+            return (
+              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{
+                  background: C.s1,
+                  border: '1px solid ' + C.border,
+                  borderRadius: 14,
+                  padding: '12px 16px',
+                  maxWidth: '88%',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 6,
+                      background: C.accentBg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, color: isFailed ? C.red : C.accent, fontWeight: 800,
+                    }}>{isFailed ? '!' : '✓'}</div>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700,
+                      color: isFailed ? C.red : C.accent,
+                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>{isFailed ? 'Task Failed' : 'Task Complete'}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.text}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    {qaScore !== null ? (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        background: qaScore >= 8 ? 'rgba(34,197,94,0.12)' : qaScore >= 5 ? 'rgba(234,179,8,0.12)' : 'rgba(239,68,68,0.12)',
+                        color: qaScore >= 8 ? C.green : qaScore >= 5 ? C.yellow : C.red,
+                      }}>QA {qaScore}/10</span>
+                    ) : (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        background: isFailed ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
+                        color: isFailed ? C.red : C.green,
+                      }}>{isFailed ? 'Failed' : 'Done'}</span>
+                    )}
+                    <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>
+                      {msg.agent || selectedAgent?.name}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(80,100,128,0.55)', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
+                    {formatChatTime(msg.timestamp)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           return (
             <div
               key={msg.id}
