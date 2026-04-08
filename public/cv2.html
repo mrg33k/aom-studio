@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Corner.</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root {
+    --bg:#080C15; --bg2:#0D1220; --s1:#131928; --s2:#1A2035; --s3:#212845;
+    --border:rgba(255,255,255,0.05); --text:#E8ECF4; --text2:#CBD5E1; --muted:#475569;
+    --accent:#10B981; --accent-dim:rgba(16,185,129,0.12);
+    --yellow:#FACC15; --green:#86EFAC; --purple:#C4B5FD; --blue:#93C5FD;
+    --pink:#FCA5D0; --orange:#FDBA74; --teal:#5EEAD4; --red:#FCA5A5;
+  }
+  body { font-family:'Inter',-apple-system,system-ui,sans-serif; background:var(--bg); color:var(--text); height:100dvh; overflow:hidden; }
+  .app { height:100%; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* ═══ TOP BAR ═══ */
+  .top-bar { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; flex-shrink:0; z-index:50; border-bottom:1px solid var(--border); background:var(--bg); }
+  .top-left { display:flex; align-items:center; gap:16px; }
+  .logo { font-weight:900; font-size:17px; letter-spacing:-0.03em; cursor:pointer; }
+  .logo span { color:var(--accent); }
+  .nav-pills { display:flex; gap:2px; background:var(--s1); border-radius:10px; padding:3px; }
+  .pill { padding:5px 14px; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer; color:var(--muted); border:none; background:none; transition:all 0.2s; white-space:nowrap; }
+  .pill.active { background:var(--s2); color:var(--text); }
+  .pill:hover:not(.active) { color:var(--text2); }
+  .top-right { display:flex; align-items:center; gap:10px; }
+  .online-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px rgba(16,185,129,0.5); }
+  .avatar { width:28px; height:28px; border-radius:9px; background:linear-gradient(135deg,#10B981,#3B82F6); cursor:pointer; }
+
+  /* ═══ VIEWS (only one visible) ═══ */
+  .view { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .view.active { display:flex; }
+
+  /* ═══ HOME VIEW ═══ */
+  .home-scroll { flex:1; overflow-y:auto; padding-bottom:90px; }
+  .home-scroll::-webkit-scrollbar { display:none; }
+
+  .hero { padding:28px 24px 20px; position:relative; }
+  .hero::after { content:''; position:absolute; top:0; left:5%; right:5%; height:180px; background:radial-gradient(ellipse,rgba(16,185,129,0.035) 0%,transparent 70%); pointer-events:none; }
+  .greeting-sub { font-size:13px; font-weight:500; color:var(--muted); display:flex; align-items:center; gap:7px; margin-bottom:6px; }
+  .greeting-sub .online-dot { width:5px; height:5px; }
+  .hero h1 { font-size:clamp(26px,5.5vw,40px); font-weight:800; line-height:1.1; letter-spacing:-0.035em; color:#F8FAFC; }
+  .hero-chips { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
+  .chip { display:flex; align-items:center; gap:5px; padding:6px 12px; background:var(--s1); border:1px solid var(--border); border-radius:20px; font-size:11px; font-weight:600; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .chip:hover { background:var(--s2); }
+  .chip b { font-family:'JetBrains Mono',monospace; color:var(--accent); font-weight:700; }
+  .chip.warn b { color:var(--yellow); }
+  .chip.good b { color:var(--green); }
+
+  /* Section headers */
+  .sec { padding:0 20px; }
+  .sec-head { display:flex; align-items:center; justify-content:space-between; padding:16px 0 8px; }
+  .sec-title { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-family:'JetBrains Mono',monospace; }
+  .sec-action { font-size:10px; font-weight:600; color:var(--accent); cursor:pointer; }
+
+  /* ── Task cards (file-tab style) ── */
+  .card-stack { display:flex; flex-direction:column; }
+  .card-stack .tcard { margin-bottom:-4px; border-radius:14px 14px 3px 3px; }
+  .card-stack .tcard:last-child { margin-bottom:0; border-radius:14px; }
+  .card-list { display:flex; flex-direction:column; gap:8px; }
+
+  .tcard { padding:14px 16px; border-radius:14px; cursor:pointer; position:relative; overflow:hidden; transition:transform 0.15s,box-shadow 0.15s; }
+  .tcard:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.35); z-index:5; }
+  .tcard-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .tcard-title { font-size:16px; font-weight:800; line-height:1.2; letter-spacing:-0.01em; color:#0A0A0A; }
+  .tcard-tags { display:flex; gap:6px; margin-top:6px; }
+  .tcard-tag { font-size:9px; font-weight:700; color:rgba(0,0,0,0.45); text-transform:uppercase; letter-spacing:0.06em; }
+  .tcard-score { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:800; color:rgba(0,0,0,0.6); line-height:1; }
+  .tcard-label { font-size:8px; font-weight:600; color:rgba(0,0,0,0.35); text-transform:uppercase; letter-spacing:0.08em; text-align:right; }
+
+  /* Building cards (dark) */
+  .tcard.building { background:var(--s2); border:1px solid rgba(250,204,21,0.12); }
+  .tcard.building .tcard-title { color:var(--yellow); font-size:14px; }
+  .tcard.building .tcard-tag { color:var(--muted); }
+  .tcard.building .tcard-score { color:var(--yellow); font-size:12px; }
+  .tcard.building .tcard-label { color:var(--muted); }
+  .tcard.building::before { content:''; position:absolute; top:0; left:0; height:2px; background:var(--yellow); animation:bar 6s ease-in-out infinite; border-radius:14px 14px 0 0; }
+  @keyframes bar { 0%{width:5%} 50%{width:60%} 100%{width:95%} }
+
+  /* Color variants */
+  .tc-y { background:var(--yellow); } .tc-g { background:var(--green); }
+  .tc-p { background:var(--purple); } .tc-b { background:var(--blue); }
+  .tc-pk { background:var(--pink); } .tc-o { background:var(--orange); }
+  .tc-t { background:var(--teal); }
+
+  /* Weekly stats */
+  .stats-bar { margin:16px 20px 0; padding:14px 16px; background:var(--s1); border:1px solid var(--border); border-radius:14px; }
+  .stats-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; font-family:'JetBrains Mono',monospace; margin-bottom:10px; }
+  .bars { display:flex; align-items:flex-end; gap:5px; height:40px; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .bar-fill { width:100%; border-radius:3px; background:var(--accent); min-height:2px; }
+  .bar-day { font-size:8px; font-weight:600; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .stats-row { display:flex; justify-content:space-between; margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
+  .stat-item { text-align:center; }
+  .stat-val { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:800; color:var(--text); }
+  .stat-lbl { font-size:8px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; }
+
+  /* ═══ CHAT VIEW ═══ */
+  .chat-messages { flex:1; overflow-y:auto; padding:16px 20px 16px; display:flex; flex-direction:column; gap:8px; }
+  .chat-messages::-webkit-scrollbar { width:3px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.06); border-radius:2px; }
+
+  .msg { max-width:82%; padding:10px 14px; font-size:14px; line-height:1.5; animation:fadeUp 0.25s ease-out; }
+  .msg-user { align-self:flex-end; background:var(--accent); color:#000; font-weight:500; border-radius:16px 16px 4px 16px; }
+  .msg-agent { align-self:flex-start; background:var(--s2); color:var(--text2); border-radius:16px 16px 16px 4px; }
+  .msg-time { font-size:10px; color:var(--muted); margin-top:2px; padding:0 4px; }
+  .msg-time.right { text-align:right; }
+
+  /* Inline task card in chat */
+  .msg-task-card { align-self:flex-start; background:var(--s1); border:1px solid var(--border); border-radius:14px; padding:12px 16px; max-width:85%; }
+  .msg-task-head { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .msg-task-icon { width:18px; height:18px; border-radius:5px; background:var(--accent-dim); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--accent); }
+  .msg-task-label { font-size:10px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; font-family:'JetBrains Mono',monospace; }
+  .msg-task-title { font-size:14px; font-weight:700; color:var(--text); }
+  .msg-task-desc { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.4; }
+  .msg-task-footer { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .msg-task-pill { font-size:9px; font-weight:700; padding:3px 8px; border-radius:6px; background:rgba(250,204,21,0.12); color:var(--yellow); font-family:'JetBrains Mono',monospace; }
+  .msg-task-pill.done { background:rgba(134,239,172,0.12); color:var(--green); }
+  .msg-task-agent { font-size:10px; color:var(--muted); font-weight:600; }
+
+  /* Voice active state (replaces input area) */
+  .voice-active { padding:16px 20px; border-top:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+  .voice-vis { display:flex; align-items:center; justify-content:center; gap:3px; height:40px; margin-bottom:12px; }
+  .voice-bar { width:3px; border-radius:2px; background:var(--accent); animation:vwave 1.2s ease-in-out infinite; }
+  .voice-bar:nth-child(1) { height:12px; animation-delay:0s; }
+  .voice-bar:nth-child(2) { height:24px; animation-delay:0.1s; }
+  .voice-bar:nth-child(3) { height:36px; animation-delay:0.2s; }
+  .voice-bar:nth-child(4) { height:28px; animation-delay:0.3s; }
+  .voice-bar:nth-child(5) { height:16px; animation-delay:0.4s; }
+  .voice-bar:nth-child(6) { height:32px; animation-delay:0.15s; }
+  .voice-bar:nth-child(7) { height:20px; animation-delay:0.25s; }
+  @keyframes vwave { 0%,100%{transform:scaleY(0.4);opacity:0.4} 50%{transform:scaleY(1);opacity:1} }
+  .voice-status { text-align:center; font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px; }
+  .voice-transcript { font-size:13px; color:var(--text2); text-align:center; min-height:20px; }
+  .voice-controls { display:flex; justify-content:center; gap:16px; margin-top:12px; }
+  .voice-btn { width:48px; height:48px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.15s; }
+  .voice-btn:hover { transform:scale(1.08); }
+  .voice-btn.end { background:var(--red); color:#000; }
+  .voice-btn.mute { background:var(--s2); color:var(--muted); border:1px solid var(--border); }
+
+  /* Attachment preview */
+  .attach-preview { display:flex; gap:6px; padding:4px 20px 8px; flex-shrink:0; overflow-x:auto; }
+  .attach-thumb { width:56px; height:56px; border-radius:10px; background:var(--s2); border:1px solid var(--border); position:relative; flex-shrink:0; overflow:hidden; }
+  .attach-thumb img { width:100%; height:100%; object-fit:cover; }
+  .attach-remove { position:absolute; top:-4px; right:-4px; width:16px; height:16px; border-radius:50%; background:var(--red); color:#000; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid var(--bg); }
+
+  /* ═══ TEAM VIEW ═══ */
+  .team-scroll { flex:1; overflow-y:auto; padding:16px 20px 90px; }
+  .team-scroll::-webkit-scrollbar { display:none; }
+  .agent-row { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--s1); border:1px solid var(--border); border-radius:14px; margin-bottom:8px; cursor:pointer; transition:background 0.15s; }
+  .agent-row:hover { background:var(--s2); }
+  .agent-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:#000; flex-shrink:0; }
+  .agent-info { flex:1; }
+  .agent-name { font-size:14px; font-weight:700; }
+  .agent-role { font-size:11px; color:var(--muted); }
+  .agent-status-text { font-size:10px; font-weight:600; font-family:'JetBrains Mono',monospace; }
+  .agent-status-text.working { color:var(--yellow); }
+  .agent-status-text.idle { color:var(--muted); }
+  .agent-status-text.online { color:var(--accent); }
+
+  /* ═══ INPUT BAR (fixed bottom, all views) ═══ */
+  .input-bar { position:fixed; bottom:0; left:0; right:0; padding:6px 16px calc(12px + env(safe-area-inset-bottom,0px)); background:linear-gradient(to top,var(--bg) 75%,transparent); z-index:100; }
+  .input-wrap { display:flex; align-items:center; background:var(--s1); border:1px solid var(--border); border-radius:24px; padding:4px 4px 4px 16px; max-width:540px; margin:0 auto; transition:border-color 0.2s,box-shadow 0.2s; }
+  .input-wrap:focus-within { border-color:rgba(16,185,129,0.2); box-shadow:0 0 0 3px rgba(16,185,129,0.05),0 4px 16px rgba(0,0,0,0.25); }
+  .input-wrap input { flex:1; background:none; border:none; outline:none; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; }
+  .input-wrap input::placeholder { color:var(--muted); }
+  .attach-btn { width:36px; height:36px; border-radius:50%; background:none; border:none; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:color 0.15s; }
+  .attach-btn:hover { color:var(--text2); }
+  .mic-btn { width:40px; height:40px; border-radius:50%; background:var(--accent); border:none; color:#000; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:transform 0.15s,box-shadow 0.2s; }
+  .mic-btn:hover { transform:scale(1.06); box-shadow:0 0 20px rgba(16,185,129,0.35); }
+  .mic-btn svg { width:17px; height:17px; }
+
+  /* ═══ TOAST NOTIFICATION ═══ */
+  .toast { position:fixed; bottom:80px; right:20px; z-index:200; background:var(--s2); border:1px solid rgba(134,239,172,0.15); border-radius:14px; padding:12px 16px; max-width:300px; box-shadow:0 8px 32px rgba(0,0,0,0.5); animation:slideIn 0.3s ease-out; }
+  .toast-head { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .toast-dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+  .toast-title { font-size:11px; font-weight:700; color:var(--green); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; }
+  .toast-body { font-size:13px; color:var(--text2); line-height:1.4; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(12px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+  /* ═══ SLIDE MENU ═══ */
+  .menu-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; backdrop-filter:blur(4px); }
+  .menu-overlay.open { display:block; }
+  .menu-panel { position:fixed; top:0; left:0; bottom:0; width:280px; background:var(--bg2); border-right:1px solid var(--border); z-index:301; padding:20px; display:none; flex-direction:column; }
+  .menu-panel.open { display:flex; }
+  .menu-header { font-weight:900; font-size:20px; margin-bottom:24px; }
+  .menu-header span { color:var(--accent); }
+  .menu-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text2); transition:background 0.15s; margin-bottom:2px; }
+  .menu-item:hover { background:var(--s1); }
+  .menu-item.active { background:var(--accent-dim); color:var(--accent); }
+  .menu-item svg { width:18px; height:18px; opacity:0.6; }
+  .menu-divider { height:1px; background:var(--border); margin:12px 0; }
+  .menu-section-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; font-family:'JetBrains Mono',monospace; padding:4px 12px; margin-bottom:4px; }
+
+  /* ═══ GLOBAL ═══ */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @media(max-width:480px) { .hero{padding:20px 18px 16px} .sec{padding:0 16px} .hero h1{font-size:26px} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="logo" onclick="toggleMenu()">Corner<span>.</span></div>
+      <div class="nav-pills">
+        <button class="pill active" onclick="showView('home',this)">Home</button>
+        <button class="pill" onclick="showView('chat',this)">Chat</button>
+        <button class="pill" onclick="showView('team',this)">Team</button>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="online-dot"></div>
+      <div class="avatar" onclick="toggleMenu()"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ HOME VIEW ═══════════ -->
+  <div class="view active" id="view-home">
+    <div class="home-scroll">
+      <div class="hero">
+        <div class="greeting-sub"><div class="online-dot"></div>Rex is online</div>
+        <h1>Hey Patrik,<br>what are we<br>working on?</h1>
+        <div class="hero-chips">
+          <div class="chip warn"><b>2</b> building</div>
+          <div class="chip good"><b>8</b> shipped today</div>
+          <div class="chip"><b>0</b> queued</div>
+        </div>
+      </div>
+
+      <!-- Building Now -->
+      <div class="sec">
+        <div class="sec-head">
+          <span class="sec-title">Building Now</span>
+        </div>
+        <div class="card-stack">
+          <div class="tcard building">
+            <div class="tcard-row">
+              <div><div class="tcard-title">Move VoiceChat into ChatPanel</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span><span class="tcard-tag">Attempt 1/3</span></div></div>
+              <div><div class="tcard-score">...</div><div class="tcard-label">Building</div></div>
+            </div>
+          </div>
+          <div class="tcard building">
+            <div class="tcard-row">
+              <div><div class="tcard-title">Audit Dark Theme Colors</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span></div></div>
+              <div><div class="tcard-score">&mdash;</div><div class="tcard-label">Queued</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Stats -->
+      <div class="stats-bar">
+        <div class="stats-label">This Week</div>
+        <div class="bars">
+          <div class="bar-col"><div class="bar-fill" style="height:15%"></div><div class="bar-day">M</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:25%"></div><div class="bar-day">T</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:40%"></div><div class="bar-day">W</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:30%"></div><div class="bar-day">T</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:55%"></div><div class="bar-day">F</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:70%"></div><div class="bar-day">S</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:100%"></div><div class="bar-day">S</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-item"><div class="stat-val">23</div><div class="stat-lbl">Tasks</div></div>
+          <div class="stat-item"><div class="stat-val">87%</div><div class="stat-lbl">Pass Rate</div></div>
+          <div class="stat-item"><div class="stat-val">9.1</div><div class="stat-lbl">Avg QA</div></div>
+        </div>
+      </div>
+
+      <!-- Shipped Today -->
+      <div class="sec">
+        <div class="sec-head">
+          <span class="sec-title">Shipped Today</span>
+          <span class="sec-action">View all</span>
+        </div>
+        <div class="card-list">
+          <div class="tcard tc-y"><div class="tcard-row"><div><div class="tcard-title">Auto-Scroll to Bottom</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span><span class="tcard-tag">UX</span></div></div><div><div class="tcard-score">10</div><div class="tcard-label">QA</div></div></div></div>
+          <div class="tcard tc-g"><div class="tcard-row"><div><div class="tcard-title">Voice Button Animation</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span><span class="tcard-tag">Voice</span></div></div><div><div class="tcard-score">10</div><div class="tcard-label">QA</div></div></div></div>
+          <div class="tcard tc-p"><div class="tcard-row"><div><div class="tcard-title">Agent in Right Now Bar</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span></div></div><div><div class="tcard-score">9</div><div class="tcard-label">QA</div></div></div></div>
+          <div class="tcard tc-t"><div class="tcard-row"><div><div class="tcard-title">Enter / Shift+Enter</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span><span class="tcard-tag">UX</span></div></div><div><div class="tcard-score">10</div><div class="tcard-label">QA</div></div></div></div>
+          <div class="tcard tc-b"><div class="tcard-row"><div><div class="tcard-title">Task Toast Notification</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span></div></div><div><div class="tcard-score">8</div><div class="tcard-label">QA</div></div></div></div>
+          <div class="tcard tc-o"><div class="tcard-row"><div><div class="tcard-title">Message Fade-In</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span><span class="tcard-tag">Polish</span></div></div><div><div class="tcard-score">8</div><div class="tcard-label">QA</div></div></div></div>
+          <div class="tcard tc-pk"><div class="tcard-row"><div><div class="tcard-title">Empty Queue Placeholder</div><div class="tcard-tags"><span class="tcard-tag">Bobby</span></div></div><div><div class="tcard-score">8</div><div class="tcard-label">QA</div></div></div></div>
+        </div>
+      </div>
+
+      <div style="height:40px"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CHAT VIEW ═══════════ -->
+  <div class="view" id="view-chat">
+    <div class="chat-messages" id="chat-msgs">
+      <div class="msg msg-agent">Hey Patrik. Queue is clear, Bobby just finished the voice button animation. 10/10. What's next?</div>
+      <div class="msg-time">2m ago</div>
+
+      <div class="msg msg-user">I want to redo the whole dashboard layout. More like this vibe. Bold cards, dark, clean.</div>
+      <div class="msg-time right">1m ago</div>
+
+      <div class="msg msg-agent">Got it. That's a significant redesign. We're talking about replacing the multi-column layout with a focused single-view. Let me think through what that involves before we create anything.</div>
+      <div class="msg-time">1m ago</div>
+
+      <div class="msg msg-user">Yeah exactly. Home screen with tasks as cards, then a clean chat when you tap in.</div>
+      <div class="msg-time right">just now</div>
+
+      <div class="msg msg-agent">Makes sense. Here's what I'd break this into:</div>
+      <div class="msg-time">just now</div>
+
+      <!-- Inline task card -->
+      <div class="msg-task-card">
+        <div class="msg-task-head">
+          <div class="msg-task-icon">+</div>
+          <span class="msg-task-label">Task Created</span>
+        </div>
+        <div class="msg-task-title">Redesign dashboard: home view with card layout</div>
+        <div class="msg-task-desc">Replace multi-column BoardView with focused home screen. Bold color cards for tasks, stats bar, hero greeting.</div>
+        <div class="msg-task-footer">
+          <span class="msg-task-pill">Queued</span>
+          <span class="msg-task-agent">Bobby</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice active state (toggle with mic) -->
+    <!--
+    <div class="voice-active">
+      <div class="voice-vis">
+        <div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div>
+        <div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div>
+        <div class="voice-bar"></div>
+      </div>
+      <div class="voice-status">Listening...</div>
+      <div class="voice-transcript">"I want the cards to be more colorful"</div>
+      <div class="voice-controls">
+        <button class="voice-btn mute" title="Mute">M</button>
+        <button class="voice-btn end" title="End">X</button>
+      </div>
+    </div>
+    -->
+
+    <!-- Attachment preview row (visible when files attached) -->
+    <!--
+    <div class="attach-preview">
+      <div class="attach-thumb"><div class="attach-remove">x</div></div>
+      <div class="attach-thumb"><div class="attach-remove">x</div></div>
+    </div>
+    -->
+  </div>
+
+  <!-- ═══════════ TEAM VIEW ═══════════ -->
+  <div class="view" id="view-team">
+    <div class="team-scroll">
+      <div class="sec-head"><span class="sec-title">Online</span></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--accent)">R</div><div class="agent-info"><div class="agent-name">Rex</div><div class="agent-role">Executive Assistant</div></div><div class="agent-status-text online">Online</div></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--yellow)">B</div><div class="agent-info"><div class="agent-name">Bobby</div><div class="agent-role">Web Developer</div></div><div class="agent-status-text working">Building</div></div>
+
+      <div class="sec-head" style="margin-top:12px"><span class="sec-title">Idle</span></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--purple)">S</div><div class="agent-info"><div class="agent-name">Steffen</div><div class="agent-role">Brand / Design</div></div><div class="agent-status-text idle">Idle</div></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--pink)">C</div><div class="agent-info"><div class="agent-name">Cleo</div><div class="agent-role">Content / Video</div></div><div class="agent-status-text idle">Idle</div></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--blue)">E</div><div class="agent-info"><div class="agent-name">Elon</div><div class="agent-role">System Architect</div></div><div class="agent-status-text idle">Idle</div></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--orange)">G</div><div class="agent-info"><div class="agent-name">Gary</div><div class="agent-role">Operations</div></div><div class="agent-status-text idle">Idle</div></div>
+      <div class="agent-row"><div class="agent-avatar" style="background:var(--teal)">E</div><div class="agent-info"><div class="agent-name">Elmo</div><div class="agent-role">QA / Testing</div></div><div class="agent-status-text idle">Idle</div></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast" style="display:none">
+    <div class="toast-head"><div class="toast-dot"></div><span class="toast-title">Task Complete</span></div>
+    <div class="toast-body">Voice button animation shipped. QA 10/10.</div>
+  </div>
+
+  <!-- SLIDE MENU -->
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <div class="menu-panel" id="menu-panel">
+    <div class="menu-header">Corner<span>.</span></div>
+    <div class="menu-item active" onclick="showView('home');toggleMenu()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      Home
+    </div>
+    <div class="menu-item" onclick="showView('chat');toggleMenu()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Chat with Rex
+    </div>
+    <div class="menu-item" onclick="showView('team');toggleMenu()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Team
+    </div>
+    <div class="menu-divider"></div>
+    <div class="menu-section-label">Projects</div>
+    <div class="menu-item">Corner Dashboard</div>
+    <div class="menu-item">AOM Website</div>
+    <div class="menu-item">Ambition Mechanical</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </div>
+  </div>
+
+  <!-- INPUT BAR -->
+  <div class="input-bar" id="input-bar">
+    <div class="input-wrap">
+      <input type="text" placeholder="Start typing or speaking..." />
+      <button class="attach-btn" title="Attach file">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <button class="mic-btn" title="Voice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showView(id, pill) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  if (pill) pill.classList.add('active');
+  else document.querySelector(`.pill[onclick*="${id}"]`)?.classList.add('active');
+}
+function toggleMenu() {
+  document.getElementById('menu-overlay').classList.toggle('open');
+  document.getElementById('menu-panel').classList.toggle('open');
+}
+// Show toast after 3s demo
+setTimeout(() => {
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 4000);
+}, 3000);
+</script>
+</body>
+</html>
