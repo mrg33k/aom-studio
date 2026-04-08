@@ -733,8 +733,10 @@ function ChatPanel({ agents, inboxItems, worldId }) {
   const [input, setInput]                 = useState('')
   const [sending, setSending]             = useState(false)
   const [loadingMsgs, setLoadingMsgs]     = useState(false)
+  const [uploading, setUploading]         = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef       = useRef(null)
+  const fileInputRef   = useRef(null)
 
   // Build unread map: agent slug -> inbox item (last unread message)
   const unreadMap = useMemo(() => {
@@ -916,6 +918,69 @@ function ChatPanel({ agents, inboxItems, worldId }) {
       handleSend()
     }
   }, [handleSend])
+
+  const handleFileSelection = useCallback(async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length || !selectedAgent || !supabase || !worldId) return
+    // Reset input so the same file can be re-selected later
+    e.target.value = ''
+    setUploading(true)
+    for (const file of files) {
+      try {
+        const filePath = `attachments/${worldId}/${Date.now()}-${file.name}`
+        const { error: uploadError } = await supabase.storage
+          .from('attachments')
+          .upload(filePath, file, { upsert: false })
+        if (uploadError) {
+          console.error('[ChatPanel] upload error:', uploadError)
+          continue
+        }
+        const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(filePath)
+        const publicUrl = urlData?.publicUrl
+        if (!publicUrl) continue
+
+        // Optimistic message
+        const tempId = `temp-attach-${Date.now()}`
+        setMessages(prev => [...prev, {
+          id: tempId,
+          role: 'user',
+          agent: selectedAgent.slug,
+          text: `Attached file: ${file.name}`,
+          timestamp: new Date().toISOString(),
+          source: 'corner-dashboard',
+          attachment_url: publicUrl,
+          file_mime_type: file.type,
+          file_size: file.size,
+        }])
+
+        // Persist to DB
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: selectedAgent.slug,
+            text: `Attached file: ${file.name}`,
+            role: 'user',
+            source: 'corner-dashboard',
+            client_id: worldId,
+            attachment_url: publicUrl,
+            file_mime_type: file.type,
+            file_size: file.size,
+          }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data?.message?.id) {
+              setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
+            }
+          })
+          .catch(() => {})
+      } catch (err) {
+        console.error('[ChatPanel] file attach error:', err)
+      }
+    }
+    setUploading(false)
+  }, [selectedAgent, worldId])
 
   // ── Agent list ───────────────────────────────────────────────────────────────
 
@@ -1134,6 +1199,59 @@ function ChatPanel({ agents, inboxItems, worldId }) {
                   wordBreak: 'break-word',
                 }}>
                   {msg.text}
+                  {msg.attachment_url && (
+                    <div style={{ marginTop: msg.text ? 8 : 0 }}>
+                      {msg.file_mime_type && msg.file_mime_type.startsWith('image/') ? (
+                        <img
+                          src={msg.attachment_url}
+                          alt={msg.text}
+                          style={{
+                            maxWidth: 200, maxHeight: 150,
+                            borderRadius: 8,
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                      ) : (
+                        <a
+                          href={msg.attachment_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '8px 10px', borderRadius: 8,
+                            background: 'rgba(255,255,255,0.08)',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            textDecoration: 'none', color: 'inherit',
+                            maxWidth: 240,
+                          }}
+                        >
+                          <svg width={18} height={18} viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+                            style={{ flexShrink: 0 }}>
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: 12, fontWeight: 600,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {msg.text.replace('Attached file: ', '')}
+                            </div>
+                            {msg.file_size != null && (
+                              <div style={{ fontSize: 11, color: isUser ? 'rgba(255,255,255,0.6)' : C.muted }}>
+                                {msg.file_size < 1024 * 1024
+                                  ? `${Math.round(msg.file_size / 1024)} KB`
+                                  : `${(msg.file_size / (1024 * 1024)).toFixed(1)} MB`}
+                              </div>
+                            )}
+                          </div>
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div style={{
                   fontSize: 10, color: 'rgba(80,100,128,0.55)',
@@ -1170,6 +1288,45 @@ function ChatPanel({ agents, inboxItems, worldId }) {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            style={{ display: 'none' }}
+            onChange={handleFileSelection}
+          />
+          {/* Paperclip attach button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="Attach file"
+            style={{
+              width: 36, height: 36, flexShrink: 0,
+              borderRadius: 10,
+              background: uploading ? 'rgba(59,158,255,0.15)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: uploading ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 150ms ease',
+            }}
+          >
+            {uploading ? (
+              <div style={{
+                width: 14, height: 14,
+                border: '2px solid rgba(255,255,255,0.15)',
+                borderTopColor: C.accent,
+                borderRadius: '50%',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+            ) : (
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
+                stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            )}
+          </button>
           <textarea
             ref={inputRef}
             value={input}

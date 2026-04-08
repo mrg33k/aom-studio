@@ -86,7 +86,11 @@ export default async function handler(req, res) {
 
   // ---- POST: write a new message (user send from dashboard) ---------------
   if (req.method === 'POST') {
-    const { agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id } = req.body || {}
+    const {
+      agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id,
+      // Attachment fields (optional)
+      attachment_url, file_mime_type, file_size,
+    } = req.body || {}
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
     // Resolve client_id: prefer body field, else default to 'aom'
@@ -105,6 +109,10 @@ export default async function handler(req, res) {
       // These fields are optional -- only present when admin is overriding world context.
       ...(sender_role ? { sender_role } : {}),
       ...(world_id ? { world_id } : {}),
+      // File attachment fields (optional)
+      ...(attachment_url ? { attachment_url } : {}),
+      ...(file_mime_type ? { file_mime_type } : {}),
+      ...(file_size != null ? { file_size } : {}),
     }
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
