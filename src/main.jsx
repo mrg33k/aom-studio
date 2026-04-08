@@ -45,6 +45,7 @@ import AI from './pages/AI.jsx'
 import AmbitionPerformance from './pages/AmbitionPerformance.jsx'
 import AmbitionPerformanceV2 from './pages/AmbitionPerformanceV2.jsx'
 import Corner from './pages/Corner.jsx'
+import CornerV3 from './pages/CornerV3.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import ISAShootScript from './pages/ISAShootScript.jsx'
 import Skills from './pages/Skills.jsx'
@@ -290,6 +291,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/checklist/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/megaboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/megaboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
         </Routes>
       </Suspense>
     </BrowserRouter>
