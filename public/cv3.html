@@ -18,66 +18,80 @@
 body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden}
 .app{height:100%;display:flex;flex-direction:column}
 
-/* ══ TOP BAR ══ */
-.top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg)}
-.top-left{display:flex;align-items:center;gap:14px}
+/* ══════════════════════════════════════════════════════════
+   NAV BAR - This is the control center. Not just chrome.
+   World switcher + view tabs + quick actions + profile
+   ══════════════════════════════════════════════════════════ */
+.nav{flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg)}
+
+/* Top row: logo, world, profile */
+.nav-top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0}
+.nav-left{display:flex;align-items:center;gap:10px}
 .logo{font-weight:900;font-size:18px;letter-spacing:-0.04em;cursor:pointer}
 .logo i{color:var(--accent);font-style:normal}
-.pills{display:flex;background:var(--s1);border-radius:10px;padding:2px;gap:1px}
-.pill{padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;transition:all 0.15s}
-.pill.on{background:var(--s2);color:var(--text)}
-.pill:hover:not(.on){color:var(--text2)}
-.top-right{display:flex;align-items:center;gap:8px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(16,185,129,0.5)}
+
+/* World switcher (multi-tenant) */
+.world-switch{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;background:var(--s1);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.15s}
+.world-switch:hover{background:var(--s2);border-color:var(--border2)}
+.ws-icon{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+.ws-name{font-size:12px;font-weight:700;color:var(--text2)}
+.ws-arrow{font-size:10px;color:var(--dim);margin-left:2px}
+
+.nav-right{display:flex;align-items:center;gap:8px}
+/* Notification bell */
+.nav-bell{width:32px;height:32px;border-radius:10px;background:var(--s1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:var(--muted);font-size:14px;transition:all 0.15s}
+.nav-bell:hover{background:var(--s2);color:var(--text2)}
+.nav-bell-dot{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--accent);border:1.5px solid var(--bg)}
 .ava{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--blue));cursor:pointer}
+
+/* Bottom row: view tabs + quick stats */
+.nav-tabs{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 8px}
+.tabs{display:flex;gap:2px}
+.tab{padding:7px 18px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;transition:all 0.15s;position:relative}
+.tab.on{color:var(--text)}
+.tab.on::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;background:var(--accent);border-radius:2px}
+.tab:hover:not(.on){color:var(--text2)}
+.tab-badge{position:absolute;top:2px;right:4px;min-width:14px;height:14px;border-radius:7px;background:var(--accent);color:#000;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 3px;font-family:'JetBrains Mono',monospace}
+.tab-badge.warn{background:var(--yellow)}
+/* Quick stats in nav */
+.nav-stats{display:flex;gap:12px}
+.ns{font-size:11px;font-weight:600;color:var(--dim);display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace}
+.ns b{color:var(--text2)}
+.ns .dot{width:5px;height:5px}
 
 /* ══ VIEWS ══ */
 .v{display:none;flex:1;flex-direction:column;overflow:hidden}.v.on{display:flex}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}.scroll::-webkit-scrollbar{display:none}
 
 /* ══ HOME (conversation-focused) ══ */
-.hero{padding:32px 20px 16px;position:relative}
-.hero::after{content:'';position:absolute;top:-20px;left:0;right:0;height:160px;background:radial-gradient(ellipse at 30% 40%,rgba(16,185,129,0.04),transparent 60%);pointer-events:none}
-.hero-sub{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.hero h1{font-size:clamp(28px,6vw,44px);font-weight:800;line-height:1.08;letter-spacing:-0.04em}
-.hero-row{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
-.badge{display:flex;align-items:center;gap:4px;padding:5px 11px;background:var(--s1);border:1px solid var(--border);border-radius:18px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all 0.15s}
-.badge:hover{background:var(--s2)}
-.badge b{font-family:'JetBrains Mono',monospace;font-weight:700}
-.badge.y b{color:var(--yellow)}.badge.g b{color:var(--green)}.badge.a b{color:var(--accent)}
+.hero{padding:28px 20px 12px;position:relative}
+.hero::after{content:'';position:absolute;top:-20px;left:0;right:0;height:140px;background:radial-gradient(ellipse at 30% 40%,rgba(16,185,129,0.035),transparent 60%);pointer-events:none}
+.hero-sub{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.hero h1{font-size:clamp(26px,5.5vw,40px);font-weight:800;line-height:1.08;letter-spacing:-0.04em}
 
-/* Agent cards */
-.agents-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;padding:20px 20px 10px}
-.agents-grid{display:flex;flex-direction:column;gap:8px;padding:0 16px}
-.agent-card{padding:14px 16px;border-radius:16px;background:var(--s1);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px}
-.agent-card:hover{background:var(--s2);border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
-.agent-card.active{border-color:rgba(16,185,129,0.2)}
-.agent-card.active::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
-.ac-ava{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#000;flex-shrink:0}
+/* Agent cards - single column */
+.agents-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;padding:18px 20px 8px}
+.agents-grid{display:flex;flex-direction:column;gap:6px;padding:0 16px}
+.agent-card{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;display:flex;align-items:center;gap:12px}
+.agent-card:hover{background:var(--s2);border-color:var(--border2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.25)}
+.agent-card.active{border-color:rgba(16,185,129,0.15)}
+.agent-card.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent)}
+.ac-ava{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#000;flex-shrink:0}
 .ac-info{flex:1;min-width:0}
-.ac-name{font-size:14px;font-weight:700;margin-bottom:1px}
-.ac-role{font-size:11px;color:var(--muted);margin-bottom:4px}
-.ac-status{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.ac-top-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ac-name{font-size:13px;font-weight:700}
+.ac-time{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.ac-preview{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.ac-status{display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;font-family:'JetBrains Mono',monospace}
 .ac-status .dot{width:5px;height:5px}
 .ac-status.on{color:var(--accent)}.ac-status.busy{color:var(--yellow)}.ac-status.off{color:var(--dim)}
-.ac-preview{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ac-right{flex-shrink:0;text-align:right}
-
-/* Recent conversations */
-.recent-section{padding:20px 16px 0}
-.recent-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
-.recent-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--s1);border:1px solid var(--border);border-radius:14px;margin-bottom:6px;cursor:pointer;transition:background 0.15s}
-.recent-item:hover{background:var(--s2)}
-.ri-ava{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000;flex-shrink:0}
-.ri-info{flex:1;min-width:0}
-.ri-name{font-size:13px;font-weight:700}
-.ri-msg{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ri-time{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;flex-shrink:0}
-.ri-unread{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.ac-unread{min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:#000;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;padding:0 4px}
 
 /* ══ TASKS VIEW ══ */
-.tasks-top{padding:16px 16px 8px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
-.search-bar{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 14px}
+.tasks-top{padding:12px 16px 8px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:9px 14px;transition:border-color 0.2s}
+.search-bar:focus-within{border-color:rgba(16,185,129,0.15)}
 .search-bar input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:'Inter',sans-serif}
 .search-bar input::placeholder{color:var(--dim)}
 .search-icon{color:var(--dim);flex-shrink:0}
@@ -88,9 +102,8 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 .pf:hover:not(.on){background:var(--s2)}
 
 .task-list{display:flex;flex-direction:column;gap:8px;padding:0 16px}
-.sec-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 0 6px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px}
 .sec-t{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace}
-.sec-ct{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 
 .tc{padding:14px 16px;border-radius:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s}
 .tc:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.3)}
@@ -108,15 +121,14 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 .tc.bld::before{content:'';position:absolute;top:0;left:0;height:2px;background:var(--yellow);animation:bld 5s ease-in-out infinite;border-radius:14px 14px 0 0}
 @keyframes bld{0%{width:5%}50%{width:60%}100%{width:90%}}
 
-/* Weekly stats */
-.stats{margin:16px 16px 0;padding:14px;background:var(--s1);border:1px solid var(--border);border-radius:14px}
-.stats-t{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
-.bars-w{display:flex;align-items:flex-end;gap:5px;height:36px}
+.stats{margin:14px 16px 0;padding:12px 14px;background:var(--s1);border:1px solid var(--border);border-radius:14px}
+.stats-t{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.bars-w{display:flex;align-items:flex-end;gap:5px;height:32px}
 .bw-c{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
 .bw-f{width:100%;border-radius:3px;background:var(--accent);min-height:2px}
 .bw-d{font-size:8px;font-weight:600;color:var(--dim);font-family:'JetBrains Mono',monospace}
-.stats-r{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
-.sr-v{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;text-align:center}
+.stats-r{display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.sr-v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:800;text-align:center}
 .sr-l{font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;text-align:center}
 
 /* ══ CHAT VIEW ══ */
@@ -125,22 +137,18 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 .ch-ava{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#000}
 .ch-info{flex:1}.ch-name{font-size:14px;font-weight:700}.ch-st{font-size:11px;color:var(--accent);font-weight:500}
 .ch-actions{display:flex;gap:6px}
-.ch-btn{width:32px;height:32px;border-radius:10px;background:var(--s1);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px}
+.ch-btn{width:32px;height:32px;border-radius:10px;background:var(--s1);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all 0.15s}
+.ch-btn:hover{background:var(--s2);color:var(--text2)}
 
 .msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
 .msgs::-webkit-scrollbar{width:3px}.msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.04);border-radius:2px}
-
 .m{max-width:80%;padding:10px 14px;font-size:14px;line-height:1.5;animation:fu 0.2s ease-out}
 .m-u{align-self:flex-end;background:var(--accent);color:#000;font-weight:500;border-radius:18px 18px 4px 18px}
 .m-a{align-self:flex-start;background:var(--s2);color:var(--text2);border-radius:18px 18px 18px 4px}
-.m-time{font-size:10px;color:var(--dim);padding:1px 4px}
-.m-time.r{text-align:right}
-/* Read receipts */
+.m-time{font-size:10px;color:var(--dim);padding:1px 4px}.m-time.r{text-align:right}
 .m-checks{display:flex;align-items:center;justify-content:flex-end;gap:2px;padding:0 4px}
 .m-check{font-size:10px;color:var(--accent);font-weight:700}
-.m-check.gray{color:var(--dim)}
 
-/* Typing indicator */
 .typing{align-self:flex-start;padding:12px 16px;background:var(--s2);border-radius:18px 18px 18px 4px;display:flex;gap:4px}
 .typing-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce 1.2s ease-in-out infinite}
 .typing-dot:nth-child(2){animation-delay:0.15s}.typing-dot:nth-child(3){animation-delay:0.3s}
@@ -157,31 +165,27 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 .mt-pill.q{background:rgba(234,179,8,0.12);color:var(--yellow)}.mt-pill.d{background:rgba(34,197,94,0.12);color:var(--green)}
 .mt-agent{font-size:10px;color:var(--muted);font-weight:600}
 
-/* Image attachment in chat */
+/* Image attachment */
 .m-img{align-self:flex-end;border-radius:16px;overflow:hidden;max-width:70%;cursor:pointer;transition:transform 0.15s}
 .m-img:hover{transform:scale(1.02)}
 .m-img img{width:100%;display:block;border-radius:16px}
-.m-img-caption{padding:6px 10px;background:var(--accent);color:#000;font-size:12px;font-weight:500;border-radius:0 0 16px 16px}
-
-/* File attachment in chat */
+/* File attachment */
 .m-file{align-self:flex-end;background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:75%;cursor:pointer}
-.mf-icon{width:36px;height:36px;border-radius:10px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);font-size:14px;font-weight:800}
+.mf-icon{width:36px;height:36px;border-radius:10px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace}
 .mf-info{flex:1;min-width:0}.mf-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mf-size{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace}
 
-/* Attachment preview bar (pre-send) */
+/* Attachment bar */
 .attach-bar{display:flex;gap:6px;padding:6px 16px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
 .attach-bar::-webkit-scrollbar{display:none}
-.at{width:56px;height:56px;border-radius:10px;background:var(--s2);border:1px solid var(--border);position:relative;flex-shrink:0;overflow:hidden}
+.at{width:52px;height:52px;border-radius:10px;background:var(--s2);border:1px solid var(--border);position:relative;flex-shrink:0;overflow:hidden}
 .at img{width:100%;height:100%;object-fit:cover}
-.at-x{position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg2)}
-.at-file{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:10px;background:var(--s2);border:1px solid var(--border);flex-shrink:0;position:relative}
-.at-file span{font-size:8px;color:var(--muted);font-weight:600;margin-top:2px}
+.at-x{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg2)}
 
-/* Voice mode (replaces input area) */
-.voice-mode{padding:16px 20px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;display:none}
+/* Voice mode */
+.voice-mode{padding:14px 20px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;display:none}
 .voice-mode.on{display:block}
-.vm-vis{display:flex;align-items:center;justify-content:center;gap:3px;height:44px;margin-bottom:10px}
+.vm-vis{display:flex;align-items:center;justify-content:center;gap:3px;height:40px;margin-bottom:8px}
 .vm-bar{width:3px;border-radius:2px;background:var(--accent);animation:vw 1s ease-in-out infinite}
 .vm-bar:nth-child(1){height:14px;animation-delay:0}.vm-bar:nth-child(2){height:26px;animation-delay:.08s}
 .vm-bar:nth-child(3){height:38px;animation-delay:.16s}.vm-bar:nth-child(4){height:30px;animation-delay:.24s}
@@ -190,110 +194,156 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
 .vm-bar:nth-child(9){height:16px;animation-delay:.36s}
 @keyframes vw{0%,100%{transform:scaleY(0.3);opacity:0.3}50%{transform:scaleY(1);opacity:1}}
 .vm-status{text-align:center;font-size:12px;font-weight:600;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:4px}
-.vm-transcript{font-size:13px;color:var(--text2);text-align:center;min-height:20px;padding:0 20px}
-.vm-btns{display:flex;justify-content:center;gap:14px;margin-top:12px}
-.vm-btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;transition:transform 0.15s}
+.vm-transcript{font-size:13px;color:var(--text2);text-align:center;min-height:18px;padding:0 20px}
+.vm-btns{display:flex;justify-content:center;gap:14px;margin-top:10px}
+.vm-btn{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;transition:transform 0.15s}
 .vm-btn:hover{transform:scale(1.08)}
 .vm-end{background:var(--red);color:#fff}.vm-mute{background:var(--s2);color:var(--muted);border:1px solid var(--border) !important}
 
-/* ══ INPUT BAR ══ */
-.input-bar{flex-shrink:0;padding:6px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)}
-.input-w{display:flex;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:24px;padding:4px 4px 4px 14px;max-width:540px;margin:0 auto;transition:border-color 0.2s,box-shadow 0.2s}
-.input-w:focus-within{border-color:rgba(16,185,129,0.2);box-shadow:0 0 0 3px rgba(16,185,129,0.04)}
-.input-w input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:'Inter',sans-serif}
-.input-w input::placeholder{color:var(--dim)}
-.ib{width:34px;height:34px;border-radius:50%;background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color 0.15s}
-.ib:hover{color:var(--text2)}
-.mic{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform 0.15s,box-shadow 0.2s}
-.mic:hover{transform:scale(1.06);box-shadow:0 0 20px rgba(16,185,129,0.3)}
-.mic svg{width:16px;height:16px}
+/* ══════════════════════════════════════════════════════════
+   INPUT BAR - This is the command line. The primary action.
+   Persistent across all views. Text + voice + attach.
+   ══════════════════════════════════════════════════════════ */
+.input-bar{flex-shrink:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--border)}
+.input-w{display:flex;align-items:center;background:var(--s1);border:1.5px solid var(--border2);border-radius:26px;padding:5px 5px 5px 16px;max-width:560px;margin:0 auto;transition:border-color 0.25s,box-shadow 0.25s}
+.input-w:focus-within{border-color:rgba(16,185,129,0.25);box-shadow:0 0 0 4px rgba(16,185,129,0.06),0 4px 20px rgba(0,0,0,0.2)}
+.input-w input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:15px;font-weight:500;font-family:'Inter',sans-serif}
+.input-w input::placeholder{color:var(--muted);font-weight:400}
+/* Action buttons inside input */
+.input-actions{display:flex;align-items:center;gap:2px}
+.ia-btn{width:36px;height:36px;border-radius:50%;background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.ia-btn:hover{color:var(--text2);background:var(--s2)}
+.ia-btn svg{width:17px;height:17px}
+.mic{width:42px;height:42px;border-radius:50%;background:var(--accent);border:none;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform 0.15s,box-shadow 0.2s}
+.mic:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(16,185,129,0.35)}
+.mic svg{width:18px;height:18px}
 
-/* ══ TOAST ══ */
-.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:200;background:var(--s2);border:1px solid rgba(34,197,94,0.15);border-radius:14px;padding:10px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:su 0.3s ease-out;white-space:nowrap;display:none}
+/* Send button (appears when text is present) */
+.send{width:42px;height:42px;border-radius:50%;background:var(--accent);border:none;color:#000;display:none;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform 0.15s}
+.send.show{display:flex}
+.send:hover{transform:scale(1.06)}
+.send svg{width:18px;height:18px}
+
+/* Toast */
+.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:200;background:var(--s2);border:1px solid rgba(34,197,94,0.15);border-radius:14px;padding:10px 16px;display:none;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:su 0.3s ease-out;white-space:nowrap}
 .toast.on{display:flex}
 .toast-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
 .toast-t{font-size:12px;font-weight:600;color:var(--text2)}
 
+/* World switcher dropdown */
+.ws-dropdown{display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:4px;min-width:200px;z-index:300;box-shadow:0 12px 40px rgba(0,0,0,0.5)}
+.ws-dropdown.on{display:block}
+.ws-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s}
+.ws-opt:hover{background:var(--s2)}
+.ws-opt-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.ws-opt-name{font-size:13px;font-weight:600}
+.ws-opt-type{font-size:10px;color:var(--muted)}
+.ws-opt.active{background:var(--accent-bg)}
+.ws-opt.active .ws-opt-name{color:var(--accent)}
+
 @keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes su{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-@media(max-width:480px){.hero{padding:24px 16px 12px}.hero h1{font-size:28px}.agents-grid{padding:0 12px}}
+@media(max-width:480px){.hero{padding:20px 14px 10px}.hero h1{font-size:26px}.agents-grid{padding:0 12px}.nav-stats{display:none}}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- TOP BAR -->
-  <div class="top">
-    <div class="top-left">
-      <div class="logo" onclick="go('home')">Corner<i>.</i></div>
-      <div class="pills">
-        <button class="pill on" data-v="home">Home</button>
-        <button class="pill" data-v="tasks">Tasks</button>
-        <button class="pill" data-v="chat" id="pill-chat" style="display:none">Chat</button>
+  <!-- ══ NAV BAR ══ -->
+  <div class="nav">
+    <div class="nav-top">
+      <div class="nav-left">
+        <div class="logo" onclick="go('home')">Corner<i>.</i></div>
+        <!-- World switcher (multi-tenant) -->
+        <div class="world-switch" onclick="toggleWorld()" style="position:relative">
+          <div class="ws-icon">A</div>
+          <span class="ws-name">AOM</span>
+          <span class="ws-arrow">&#9662;</span>
+          <div class="ws-dropdown" id="ws-dd">
+            <div class="ws-opt active"><div class="ws-opt-icon" style="background:linear-gradient(135deg,var(--accent),var(--blue))">A</div><div><div class="ws-opt-name">AOM</div><div class="ws-opt-type">Creative Studio</div></div></div>
+            <div class="ws-opt"><div class="ws-opt-icon" style="background:linear-gradient(135deg,var(--orange),var(--red))">M</div><div><div class="ws-opt-name">Ambition Mechanical</div><div class="ws-opt-type">HVAC Client</div></div></div>
+            <div class="ws-opt"><div class="ws-opt-icon" style="background:linear-gradient(135deg,var(--purple),var(--pink))">I</div><div><div class="ws-opt-name">ISA Energy</div><div class="ws-opt-type">Solar Client</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav-right">
+        <div class="nav-bell" title="Notifications">
+          &#128276;
+          <div class="nav-bell-dot"></div>
+        </div>
+        <div class="ava"></div>
       </div>
     </div>
-    <div class="top-right"><div class="dot"></div><div class="ava"></div></div>
+    <div class="nav-tabs">
+      <div class="tabs">
+        <button class="tab on" data-v="home">Home</button>
+        <button class="tab" data-v="tasks">Tasks <span class="tab-badge warn">2</span></button>
+        <button class="tab" data-v="chat" id="tab-chat" style="display:none">Chat</button>
+      </div>
+      <div class="nav-stats">
+        <div class="ns"><div class="dot" style="background:var(--yellow)"></div><b>2</b> building</div>
+        <div class="ns"><div class="dot" style="background:var(--green)"></div><b>8</b> done</div>
+      </div>
+    </div>
   </div>
 
   <!-- ══════ HOME VIEW ══════ -->
   <div class="v on" id="v-home">
-    <div class="scroll" style="padding-bottom:70px">
+    <div class="scroll" style="padding-bottom:80px">
       <div class="hero">
         <div class="hero-sub"><div class="dot"></div> Rex is online</div>
         <h1>Hey Patrik,<br>what are we<br>working on?</h1>
-        <div class="hero-row">
-          <div class="badge y"><b>2</b> building</div>
-          <div class="badge g"><b>8</b> shipped</div>
-          <div class="badge a"><b>0</b> queued</div>
-        </div>
       </div>
 
       <div class="agents-label">Your Team</div>
       <div class="agents-grid">
         <div class="agent-card active" onclick="openChat('rex','Rex','EA','var(--accent)')">
           <div class="ac-ava" style="background:var(--accent)">R</div>
-          <div class="ac-info"><div class="ac-name">Rex</div><div class="ac-role">Executive Assistant</div><div class="ac-preview">Queue is clear. 8 shipped today, all 8+/10 QA.</div></div>
-          <div class="ac-right"><div class="ac-status on"><div class="dot"></div> Online</div></div>
+          <div class="ac-info">
+            <div class="ac-top-row"><span class="ac-name">Rex</span><span class="ac-time">2m</span></div>
+            <div class="ac-preview">Queue is clear. 8 shipped today, all 8+/10 QA.</div>
+          </div>
+          <div class="ac-right"><div class="ac-status on"><div class="dot"></div> Online</div><div class="ac-unread">3</div></div>
         </div>
         <div class="agent-card" onclick="openChat('bobby','Bobby','Web Dev','var(--yellow)')">
           <div class="ac-ava" style="background:var(--yellow)">B</div>
-          <div class="ac-info"><div class="ac-name">Bobby</div><div class="ac-role">Web Developer</div></div>
+          <div class="ac-info">
+            <div class="ac-top-row"><span class="ac-name">Bobby</span><span class="ac-time">15m</span></div>
+            <div class="ac-preview">Voice button animation shipped. 10/10.</div>
+          </div>
           <div class="ac-right"><div class="ac-status busy"><div class="dot" style="background:var(--yellow);box-shadow:0 0 6px rgba(234,179,8,0.5)"></div> Building</div></div>
         </div>
         <div class="agent-card" onclick="openChat('steffen','Steffen','Design','var(--purple)')">
           <div class="ac-ava" style="background:var(--purple)">S</div>
-          <div class="ac-info"><div class="ac-name">Steffen</div><div class="ac-role">Brand / Design</div></div>
+          <div class="ac-info">
+            <div class="ac-top-row"><span class="ac-name">Steffen</span><span class="ac-time">2d</span></div>
+            <div class="ac-preview">Sprite sheets ready for review.</div>
+          </div>
           <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
         <div class="agent-card" onclick="openChat('cleo','Cleo','Content','var(--pink)')">
           <div class="ac-ava" style="background:var(--pink)">C</div>
-          <div class="ac-info"><div class="ac-name">Cleo</div><div class="ac-role">Content / Video</div></div>
+          <div class="ac-info">
+            <div class="ac-top-row"><span class="ac-name">Cleo</span><span class="ac-time">3d</span></div>
+            <div class="ac-preview">B-roll package for Ambition ready.</div>
+          </div>
           <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
         <div class="agent-card" onclick="openChat('elon','Elon','Architect','var(--blue)')">
           <div class="ac-ava" style="background:var(--blue)">E</div>
-          <div class="ac-info"><div class="ac-name">Elon</div><div class="ac-role">System Architect</div></div>
+          <div class="ac-info">
+            <div class="ac-top-row"><span class="ac-name">Elon</span><span class="ac-time">1d</span></div>
+            <div class="ac-preview">Pipeline running stable. 23 tasks this week.</div>
+          </div>
           <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
         </div>
         <div class="agent-card" onclick="openChat('gary','Gary','Ops','var(--orange)')">
           <div class="ac-ava" style="background:var(--orange)">G</div>
-          <div class="ac-info"><div class="ac-name">Gary</div><div class="ac-role">Operations</div></div>
+          <div class="ac-info">
+            <div class="ac-top-row"><span class="ac-name">Gary</span><span class="ac-time">4d</span></div>
+            <div class="ac-preview">SOPs updated. 33 email drafts waiting.</div>
+          </div>
           <div class="ac-right"><div class="ac-status off"><div class="dot" style="background:var(--dim);box-shadow:none"></div> Idle</div></div>
-        </div>
-      </div>
-
-      <div class="recent-section">
-        <div class="recent-label">Recent Conversations</div>
-        <div class="recent-item" onclick="openChat('rex','Rex','EA','var(--accent)')">
-          <div class="ri-ava" style="background:var(--accent)">R</div>
-          <div class="ri-info"><div class="ri-name">Rex</div><div class="ri-msg">Queue is clear. 8 shipped today. What's next?</div></div>
-          <div class="ri-time">2m</div>
-          <div class="ri-unread"></div>
-        </div>
-        <div class="recent-item" onclick="openChat('bobby','Bobby','Web Dev','var(--yellow)')">
-          <div class="ri-ava" style="background:var(--yellow)">B</div>
-          <div class="ri-info"><div class="ri-name">Bobby</div><div class="ri-msg">Voice button animation shipped. 10/10.</div></div>
-          <div class="ri-time">15m</div>
         </div>
       </div>
       <div style="height:20px"></div>
@@ -305,23 +355,23 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
     <div class="tasks-top">
       <div class="search-bar">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" placeholder="Search tasks by project..." />
+        <input type="text" placeholder="Search tasks..." />
       </div>
       <div class="project-filters">
         <div class="pf on">All</div>
         <div class="pf">Corner</div>
         <div class="pf">AOM Website</div>
         <div class="pf">Ambition</div>
+        <div class="pf">ISA Energy</div>
         <div class="pf">Sourcing</div>
-        <div class="pf">Outreach</div>
       </div>
     </div>
-    <div class="scroll" style="padding-bottom:70px">
+    <div class="scroll" style="padding-bottom:80px">
       <div style="padding:0 16px">
         <div class="sec-hd"><span class="sec-t">Building Now</span></div>
         <div class="task-list">
-          <div class="tc bld"><div class="tc-r"><div><div class="tc-t">Move VoiceChat into ChatPanel</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Attempt 1/3</span></div></div><div><div class="tc-s">...</div><div class="tc-l">Building</div></div></div></div>
-          <div class="tc bld"><div class="tc-r"><div><div class="tc-t">Audit Dark Theme Colors</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">&mdash;</div><div class="tc-l">Queued</div></div></div></div>
+          <div class="tc bld"><div class="tc-r"><div><div class="tc-t">Move VoiceChat into ChatPanel</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Corner</span></div></div><div><div class="tc-s">...</div><div class="tc-l">Building</div></div></div></div>
+          <div class="tc bld"><div class="tc-r"><div><div class="tc-t">Audit Dark Theme Colors</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Corner</span></div></div><div><div class="tc-s">&mdash;</div><div class="tc-l">Queued</div></div></div></div>
         </div>
       </div>
       <div class="stats">
@@ -342,14 +392,12 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
         </div>
       </div>
       <div style="padding:0 16px">
-        <div class="sec-hd"><span class="sec-t">Shipped Today</span><span class="sec-ct">8 tasks</span></div>
+        <div class="sec-hd"><span class="sec-t">Shipped Today</span></div>
         <div class="task-list">
-          <div class="tc ty"><div class="tc-r"><div><div class="tc-t">Auto-Scroll to Bottom</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">UX</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
-          <div class="tc tg"><div class="tc-r"><div><div class="tc-t">Voice Button Animation</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
-          <div class="tc tp"><div class="tc-r"><div><div class="tc-t">Agent in Right Now Bar</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">9</div><div class="tc-l">QA</div></div></div></div>
-          <div class="tc tt"><div class="tc-r"><div><div class="tc-t">Enter / Shift+Enter</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">UX</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
-          <div class="tc tb"><div class="tc-r"><div><div class="tc-t">Task Toast Notification</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">8</div><div class="tc-l">QA</div></div></div></div>
-          <div class="tc to"><div class="tc-r"><div><div class="tc-t">Message Fade-In</div><div class="tc-tags"><span class="tc-tag">Bobby</span></div></div><div><div class="tc-s">8</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc ty"><div class="tc-r"><div><div class="tc-t">Auto-Scroll to Bottom</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Corner</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tg"><div class="tc-r"><div><div class="tc-t">Voice Button Animation</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Corner</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tp"><div class="tc-r"><div><div class="tc-t">Agent in Right Now Bar</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Corner</span></div></div><div><div class="tc-s">9</div><div class="tc-l">QA</div></div></div></div>
+          <div class="tc tt"><div class="tc-r"><div><div class="tc-t">Enter / Shift+Enter</div><div class="tc-tags"><span class="tc-tag">Bobby</span><span class="tc-tag">Corner</span></div></div><div><div class="tc-s">10</div><div class="tc-l">QA</div></div></div></div>
         </div>
       </div>
       <div style="height:20px"></div>
@@ -367,112 +415,85 @@ body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg)
         <div class="ch-btn" title="Info">i</div>
       </div>
     </div>
-
     <div class="msgs" id="msgs">
       <div class="m m-a">Hey Patrik. Queue is clear, Bobby just finished the voice button animation. 10/10 QA. What's next?</div>
       <div class="m-time">2m ago</div>
-
-      <div class="m m-u">I want to redo the dashboard layout. Bold cards, dark, clean. Like those references I sent.</div>
+      <div class="m m-u">I want to redo the dashboard layout. Bold cards, dark, clean.</div>
       <div class="m-checks"><span class="m-check">&#10003;&#10003;</span></div>
       <div class="m-time r">1m ago</div>
-
-      <div class="m m-a">Got it. That's a significant redesign. Before I create anything, what does "done" look like for you? Are we replacing the multi-column BoardView entirely?</div>
+      <div class="m m-a">Got it. That's a significant redesign. Before I create anything, what does "done" look like? Are we replacing the multi-column BoardView entirely?</div>
       <div class="m-time">1m ago</div>
-
       <div class="m m-u">Yeah. Home screen with agent cards, tap to chat. Tasks in a separate tab with project filters.</div>
       <div class="m-checks"><span class="m-check">&#10003;&#10003;</span></div>
       <div class="m-time r">just now</div>
-
-      <!-- Image attachment from user -->
-      <div class="m-img">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='200'%3E%3Crect fill='%231a2035' width='280' height='200' rx='12'/%3E%3Ctext x='50%25' y='45%25' fill='%23475569' font-family='Inter' font-size='14' text-anchor='middle'%3EReference image%3C/text%3E%3Ctext x='50%25' y='60%25' fill='%23334155' font-family='Inter' font-size='11' text-anchor='middle'%3EIMG_0434.jpg%3C/text%3E%3C/svg%3E" alt="reference" />
-      </div>
+      <div class="m-img"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='180'%3E%3Crect fill='%231a2035' width='260' height='180' rx='12'/%3E%3Ctext x='50%25' y='45%25' fill='%23475569' font-family='Inter' font-size='13' text-anchor='middle'%3EReference image%3C/text%3E%3Ctext x='50%25' y='60%25' fill='%23334155' font-family='Inter' font-size='10' text-anchor='middle'%3EIMG_0434.jpg%3C/text%3E%3C/svg%3E" /></div>
       <div class="m-time r">just now</div>
-
-      <div class="m m-a">I see the vibe. Bold type, color-blocked cards, dark background. Let me spec this properly.</div>
+      <div class="m m-a">I see the vibe. Bold type, color cards, dark bg. Let me spec this properly.</div>
       <div class="m-time">just now</div>
-
-      <!-- Inline task card -->
       <div class="m-task">
         <div class="mt-head"><div class="mt-icon">+</div><span class="mt-label">Task Created</span></div>
         <div class="mt-title">Redesign dashboard: home view with agent cards</div>
-        <div class="mt-desc">Replace multi-column BoardView with focused home screen. Agent grid, recent conversations, hero greeting. Tap agent to open chat.</div>
+        <div class="mt-desc">Replace multi-column BoardView with focused home screen. Agent grid, recent conversations, hero greeting.</div>
         <div class="mt-foot"><span class="mt-pill q">Queued</span><span class="mt-agent">Bobby</span></div>
       </div>
-
-      <!-- File attachment from user -->
       <div class="m-file">
         <div class="mf-icon">PDF</div>
         <div class="mf-info"><div class="mf-name">brand-guidelines-v4.pdf</div><div class="mf-size">2.4 MB</div></div>
       </div>
       <div class="m-time r">just now</div>
-
-      <div class="m m-a">Got the brand guidelines. I'll make sure the redesign follows these. Anything else before I queue the rest?</div>
+      <div class="m m-a">Got the brand guidelines. I'll follow them for the redesign. Anything else?</div>
       <div class="m-time">just now</div>
-
-      <!-- Typing indicator -->
       <div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
     </div>
-
-    <!-- Attachment preview bar (pre-send state) -->
-    <div class="attach-bar" id="attach-bar" style="display:none">
-      <div class="at"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect fill='%231a2035' width='56' height='56'/%3E%3Ctext x='50%25' y='55%25' fill='%23475569' font-size='9' text-anchor='middle'%3Eimg%3C/text%3E%3C/svg%3E" /><div class="at-x">x</div></div>
-      <div class="at"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect fill='%231a2035' width='56' height='56'/%3E%3Ctext x='50%25' y='55%25' fill='%23475569' font-size='9' text-anchor='middle'%3Eimg%3C/text%3E%3C/svg%3E" /><div class="at-x">x</div></div>
-      <div class="at-file"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>.pdf</span><div class="at-x">x</div></div>
-    </div>
-
-    <!-- Voice mode (toggled) -->
     <div class="voice-mode" id="voice-mode">
-      <div class="vm-vis">
-        <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
-        <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
-        <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
-      </div>
+      <div class="vm-vis"><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div></div>
       <div class="vm-status">Listening...</div>
       <div class="vm-transcript">"I want the cards to be more colorful"</div>
-      <div class="vm-btns">
-        <button class="vm-btn vm-mute" title="Mute">M</button>
-        <button class="vm-btn vm-end" onclick="toggleVoice()" title="End">&times;</button>
-      </div>
+      <div class="vm-btns"><button class="vm-btn vm-mute">M</button><button class="vm-btn vm-end" onclick="toggleVoice()">&times;</button></div>
     </div>
   </div>
 
-  <!-- INPUT BAR (always visible) -->
+  <!-- ══ INPUT BAR ══ -->
   <div class="input-bar" id="input-bar">
     <div class="input-w">
-      <input type="text" placeholder="Start typing or speaking..." onfocus="if(!document.getElementById('v-chat').classList.contains('on'))openChat('rex','Rex','EA','var(--accent)')" />
-      <button class="ib" title="Attach" onclick="toggleAttach()">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-      </button>
-      <button class="mic" title="Voice" onclick="toggleVoice()">
+      <input type="text" id="main-input" placeholder="Start typing or speaking..." oninput="toggleSend()" onfocus="if(!document.getElementById('v-chat').classList.contains('on'))openChat('rex','Rex','EA','var(--accent)')" />
+      <div class="input-actions">
+        <button class="ia-btn" title="Attach" onclick="toggleAttach()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <button class="ia-btn" title="Commands" onclick="">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </button>
+      </div>
+      <button class="mic" id="mic-btn" title="Voice" onclick="toggleVoice()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+      <button class="send" id="send-btn" title="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
   </div>
 
-  <!-- TOAST -->
   <div class="toast" id="toast"><div class="toast-dot"></div><span class="toast-t">Voice button animation shipped. QA 10/10.</span></div>
-
 </div>
 
 <script>
-const pills=document.querySelectorAll('.pill');
+const tabs=document.querySelectorAll('.tab');
 function go(id){
   document.querySelectorAll('.v').forEach(v=>v.classList.remove('on'));
   document.getElementById('v-'+id).classList.add('on');
-  pills.forEach(p=>{p.classList.toggle('on',p.dataset.v===id)});
-  // Show/hide chat pill
-  document.getElementById('pill-chat').style.display=id==='chat'?'':'none';
-  // Hide voice when leaving chat
+  tabs.forEach(t=>{t.classList.toggle('on',t.dataset.v===id);if(t.dataset.v===id)t.querySelector('.tab-badge')?.remove()});
+  document.getElementById('tab-chat').style.display=id==='chat'?'':'none';
   if(id!=='chat'){document.getElementById('voice-mode').classList.remove('on');document.getElementById('input-bar').style.display=''}
 }
-pills.forEach(p=>p.addEventListener('click',()=>go(p.dataset.v)));
+tabs.forEach(t=>t.addEventListener('click',()=>go(t.dataset.v)));
 
 function openChat(slug,name,role,color){
   document.getElementById('ch-name').textContent=name;
   document.getElementById('ch-ava').style.background=color;
   document.getElementById('ch-ava').textContent=name[0];
   go('chat');
+  document.getElementById('msgs').scrollTop=999999;
 }
 
 let voiceOn=false;
@@ -483,11 +504,19 @@ function toggleVoice(){
 }
 
 function toggleAttach(){
-  const bar=document.getElementById('attach-bar');
-  bar.style.display=bar.style.display==='none'?'flex':'none';
+  const b=document.getElementById('attach-bar');
+  if(b)b.style.display=b.style.display==='none'?'flex':'none';
 }
 
-// Toast demo
+function toggleSend(){
+  const v=document.getElementById('main-input').value.trim();
+  document.getElementById('mic-btn').style.display=v?'none':'flex';
+  document.getElementById('send-btn').classList.toggle('show',!!v);
+}
+
+function toggleWorld(){document.getElementById('ws-dd').classList.toggle('on')}
+document.addEventListener('click',e=>{if(!e.target.closest('.world-switch'))document.getElementById('ws-dd').classList.remove('on')});
+
 setTimeout(()=>{document.getElementById('toast').classList.add('on');setTimeout(()=>document.getElementById('toast').classList.remove('on'),4000)},3000);
 </script>
 </body>
