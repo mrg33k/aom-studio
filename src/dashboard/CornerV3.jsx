@@ -726,6 +726,7 @@ const PROJECT_PILLS = ['All', 'Corner', 'AOM', 'Ambition', 'ISA', 'Sourcing']
 
 function TasksPanel({ queued, rightNow, done }) {
   const [searchQuery,   setSearchQuery]   = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
 
   const active    = [...(rightNow || []), ...(queued || [])]
@@ -803,10 +804,20 @@ function TasksPanel({ queued, rightNow, done }) {
         {/* Search + Filters */}
         <div style={{ marginBottom: 16 }}>
           {/* Search input */}
-          <div style={{ position: 'relative', marginBottom: 10 }}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
-              stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: C.s1,
+            border: '1px solid ' + (searchFocused ? 'rgba(16,185,129,0.15)' : C.border),
+            borderRadius: 12,
+            padding: '9px 14px',
+            transition: 'border-color 0.2s',
+            marginBottom: 10,
+          }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+              stroke={C.dim} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+              style={{ flexShrink: 0 }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input
@@ -814,16 +825,15 @@ function TasksPanel({ queued, rightNow, done }) {
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '7px 10px 7px 30px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8,
+                flex: 1,
+                background: 'none',
+                border: 'none',
+                outline: 'none',
                 color: C.text,
                 fontSize: 13,
-                outline: 'none',
                 fontFamily: "'Inter', sans-serif",
               }}
             />
@@ -831,16 +841,15 @@ function TasksPanel({ queued, rightNow, done }) {
               <button
                 onClick={() => setSearchQuery('')}
                 style={{
-                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
-                  fontSize: 16, lineHeight: 1, padding: 0,
+                  fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0,
                 }}
               >×</button>
             )}
           </div>
 
           {/* Static project filter pills */}
-          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
             {PROJECT_PILLS.map(p => {
               const key      = p === 'All' ? 'all' : p.toLowerCase()
               const isActive = activeProject === key
@@ -849,16 +858,16 @@ function TasksPanel({ queued, rightNow, done }) {
                   key={p}
                   onClick={() => setActiveProject(key)}
                   style={{
-                    padding: '4px 12px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    fontWeight: 600,
+                    padding: '5px 12px',
+                    borderRadius: 16,
+                    fontSize: 10,
+                    fontWeight: 700,
                     cursor: 'pointer',
                     flexShrink: 0,
-                    border: isActive ? '1px solid rgba(59,158,255,0.45)' : '1px solid rgba(255,255,255,0.07)',
-                    background: isActive ? 'rgba(59,158,255,0.14)' : 'rgba(255,255,255,0.04)',
-                    color: isActive ? C.accent : C.muted,
-                    letterSpacing: '0.04em',
+                    border: isActive ? '1px solid rgba(16,185,129,0.2)' : '1px solid ' + C.border,
+                    background: isActive ? 'rgba(16,185,129,0.1)' : C.s1,
+                    color: isActive ? C.accent : C.text2,
+                    whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
                     fontFamily: "'Inter', sans-serif",
                   }}
@@ -871,8 +880,13 @@ function TasksPanel({ queued, rightNow, done }) {
         {/* Building Now */}
         {filteredActive.length > 0 && (
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-              Building Now ({filteredActive.length})
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 6px' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+                Building Now
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+                {filteredActive.length}
+              </span>
             </div>
             {filteredActive.map((t, i) => (
               <div
@@ -946,8 +960,13 @@ function TasksPanel({ queued, rightNow, done }) {
         {/* Shipped tasks */}
         {filteredCompleted.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-              Shipped ({filteredCompleted.length})
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 6px' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+                Shipped
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+                {filteredCompleted.length}
+              </span>
             </div>
             {filteredCompleted.slice(0, 20).map((t, i) => {
               const cardColor = getShippedCardColor(t, i)
