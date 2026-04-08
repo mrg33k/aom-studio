@@ -54,20 +54,46 @@ teal: '#2DD4BF'        red: '#EF4444'
 - Heading: `fontSize: clamp(26px, 5.5vw, 40px), fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.04em'`
 - Text: "Hey {name}, what are we working on?"
 
-### Agent Cards (single column)
-- Label: `fontSize: 10, fontWeight: 700, color: muted, uppercase, letterSpacing: '0.1em', JetBrains Mono, padding: '18px 20px 8px'`
-- Grid: `flexDirection: column, gap: 6, padding: '0 16px'`
-- Card: `padding: '12px 14px', borderRadius: 14, background: s1, border: '1px solid' + border, cursor: pointer, display: flex, gap: 12`
-  - Hover: `background: s2, borderColor: border2, transform: translateY(-1px), boxShadow: '0 6px 20px rgba(0,0,0,0.25)'`
-  - Active: `borderColor: rgba(16,185,129,0.15)`, left accent bar 2px
-  - Avatar: 38x38 circle, colored bg, initial letter `fontSize: 15, fontWeight: 800, color: #000`
-  - Name: `fontSize: 13, fontWeight: 700`
-  - Time: `fontSize: 10, color: dim, JetBrains Mono`
-  - Preview: `fontSize: 12, color: muted, ellipsis overflow`
-  - Status: `fontSize: 9, fontWeight: 600, JetBrains Mono` + 5x5 dot
-    - Online: color accent, Working: color yellow, Idle: color dim
-  - Unread badge: `minWidth: 18, height: 18, borderRadius: 9, background: accent, color: #000, fontSize: 9, fontWeight: 800, JetBrains Mono`
+### Agent Cards (BOLD WALLET STYLE -- Patrik's vision)
+
+> References: Banking app color cards, Purrweb task manager with massive text,
+> categories UI with big bold names on colored blocks. Apple Wallet stacking feel.
+> "I LIKE BIG TEXT" -- agents should feel bigger and bolder than tasks.
+
+- Grid: `flexDirection: column, gap: 10, padding: '0 16px'`
+- **Card: FULL-WIDTH colored blocks, NOT subtle list items.**
+  - `padding: '20px 20px 16px'`
+  - `borderRadius: 20`
+  - `cursor: pointer`
+  - `position: relative, overflow: hidden`
+  - Each agent gets a UNIQUE vibrant background color:
+    - Rex: `#10B981` (accent green)
+    - Bobby: `#EAB308` (yellow)
+    - Steffen: `#A78BFA` (purple)
+    - Cleo: `#F472B6` (pink)
+    - Elon: `#60A5FA` (blue)
+    - Gary: `#FB923C` (orange)
+  - Hover: `transform: translateY(-3px), boxShadow: '0 12px 32px rgba(0,0,0,0.35)'`
+  - Active agent (online): subtle glow `boxShadow: '0 0 20px' + color at 0.3 opacity`
+- **Agent Name: MASSIVE**
+  - `fontSize: 32, fontWeight: 900, color: '#000', letterSpacing: '-0.03em', lineHeight: 1.1`
+  - This is the dominant visual element. Like "FILMING" or "DESIGN MEETING" from the references.
+- **Role label** (above name): `fontSize: 10, fontWeight: 700, color: 'rgba(0,0,0,0.4)', uppercase, letterSpacing: '0.08em', JetBrains Mono`
+  - e.g. "EXECUTIVE ASSISTANT", "WEB DEV", "BRAND DESIGN"
+- **Preview message**: `fontSize: 13, fontWeight: 500, color: 'rgba(0,0,0,0.55)', marginTop: 6`
+  - Last message or current task, truncated with ellipsis
+- **Bottom row** (status + meta): `display: flex, justifyContent: space-between, marginTop: 10`
+  - Left: Status pill `fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.1)', JetBrains Mono`
+    - Online/Working/Idle text
+  - Right: timestamp `fontSize: 10, color: 'rgba(0,0,0,0.35)', JetBrains Mono`
+- **Unread badge**: `position: absolute, top: 14, right: 14, minWidth: 22, height: 22, borderRadius: 11, background: '#000', color: card-bg-color, fontSize: 11, fontWeight: 800, JetBrains Mono`
 - **onClick: set selectedAgent + switch to chat tab**
+
+### Apple Wallet Stacking Effect (stretch goal)
+- Cards slightly overlap vertically (negative margin -4px on non-first cards)
+- Active/online agent card is "pulled out" (full size, no overlap)
+- Idle agents compress slightly (paddingTop: 14 instead of 20)
+- Tap an idle card to expand it, then tap again to open chat
 
 ## TASKS VIEW
 
