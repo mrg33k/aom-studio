@@ -1025,7 +1025,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       )}
 
       <div style={{
-        display: 'flex', gap: 6, padding: '10px 12px', alignItems: 'flex-end',
+        display: 'flex', gap: 8, padding: '10px 12px', alignItems: 'flex-end',
         borderTop: '1px solid rgba(59,130,246,0.15)', flexShrink: 0, background: 'var(--bv-bar)',
         minHeight: 52, position: 'relative',
       }}>
@@ -1082,7 +1082,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 e.target.style.height = 'auto'
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
               }}
-              onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
+              onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (chat.input?.trim()) doSend() } }}
               placeholder={`Message ${agentName}...`}
               onClick={e => e.stopPropagation()}
               style={{
@@ -1090,7 +1090,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                 borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
                 fontFamily: "'Inter', sans-serif", outline: 'none',
                 resize: 'none', overflowY: 'auto', lineHeight: '1.4',
-                minHeight: 36, maxHeight: 120,
+                minHeight: 36, maxHeight: 80,
               }}
             />
           </>
@@ -1104,14 +1104,15 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
           <button
             type="button"
             onClick={e => { e.stopPropagation(); doSend() }}
-            disabled={uploading}
+            disabled={!chat.input?.trim() || chat.sending || uploading}
             style={{
               width: 36, height: 36, borderRadius: 10, border: 'none',
-              background: chat.input?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
-              color: '#fff',
-              cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              opacity: uploading ? 0.5 : 1,
-              boxShadow: chat.input?.trim() ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
+              background: chat.input?.trim() && !chat.sending && !uploading ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+              color: chat.input?.trim() && !chat.sending && !uploading ? '#fff' : 'rgba(255,255,255,0.35)',
+              cursor: uploading || chat.sending ? 'wait' : !chat.input?.trim() ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              opacity: 1,
+              boxShadow: chat.input?.trim() && !chat.sending && !uploading ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
               transition: 'all 0.15s',
             }}
           >
