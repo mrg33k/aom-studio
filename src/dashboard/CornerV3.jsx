@@ -878,7 +878,10 @@ function TasksPanel({ queued, rightNow, done }) {
               )
             })}
             <button
-              onClick={() => { setProjectName(''); setSelectedColor('#10B981'); setShowCreateProjectModal(true) }}
+              onClick={() => {
+                if (!showCreateProjectModal) { setProjectName(''); setSelectedColor('#10B981'); }
+                setShowCreateProjectModal(prev => !prev);
+              }}
               style={{
                 padding: '5px 10px',
                 borderRadius: 16,
