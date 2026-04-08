@@ -423,18 +423,28 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
 
 // ── Rotating greeting messages ────────────────────────────────────────────────
 
+const _timeOfDay = () => {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}
+
 const GREETINGS = [
   (name) => `Hey ${name}, what are we working on?`,
   (name) => `What's on the agenda, ${name}?`,
   (name) => `What are we shipping today, ${name}?`,
   (name) => `Let's build something great, ${name}.`,
-  (name) => `Morning ${name}, let's get after it.`,
+  (name) => `Ready when you are, ${name}.`,
+  (name) => `What's the move, ${name}?`,
+  (name) => `Back at it, ${name}. What's first?`,
+  (name) => `Good ${_timeOfDay()}, ${name}. Let's go.`,
 ]
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
 
 function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug }) {
-  const [greetingIdx, setGreetingIdx] = useState(0)
+  const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
 
   // Build a quick lookup: agent slug -> last inbox item (message preview)
   const inboxMap = useMemo(() => {
