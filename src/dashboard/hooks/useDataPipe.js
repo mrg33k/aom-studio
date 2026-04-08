@@ -237,6 +237,8 @@ export function useDataPipe(parsePunchList) {
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
+  // Active projects from Supabase projects table (is_active=true, scoped by client_id)
+  const [projectDefs, setProjectDefs] = useState([])
   // Supabase-sourced agent list for the current world (replaces hardcoded ALL_AGENT_SLUGS)
   const [supabaseAgents, setSupabaseAgents] = useState([])
   // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
@@ -305,6 +307,9 @@ export function useDataPipe(parsePunchList) {
                   isLive: t.status !== 'queued',
                   isQueued: t.status === 'queued',
                   taskId: t.id,
+                  qa_score: t.qa_score || null,
+                  agent_identity: t.agent_identity || agentSlug,
+                  project: t.project || null,
                 })
               }
 
@@ -389,6 +394,9 @@ export function useDataPipe(parsePunchList) {
                 isLive: t.status !== 'queued',
                 isQueued: t.status === 'queued',
                 taskId: t.id,
+                qa_score: t.qa_score || null,
+                agent_identity: t.agent_identity || agentSlug,
+                project: t.project || null,
               })
             }
 
@@ -415,6 +423,11 @@ export function useDataPipe(parsePunchList) {
         // Store Supabase agent list for world-scoped rooms (replaces hardcoded ALL_AGENT_SLUGS)
         if (data.agents && data.agents.length > 0) {
           setSupabaseAgents(data.agents)
+        }
+
+        // Store active project definitions from projects table (is_active=true)
+        if (data.projectDefs) {
+          setProjectDefs(data.projectDefs)
         }
 
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
@@ -503,6 +516,8 @@ export function useDataPipe(parsePunchList) {
               projectSource: proj.name,
               projectSection: slug,
               projectColor: proj.color,
+              qa_score: task.qa_score || null,
+              agent_identity: task.agent_identity || task.agent || null,
             }
             proj.tasks.push(taskObj)
 
@@ -708,6 +723,7 @@ export function useDataPipe(parsePunchList) {
     punchLoading,
     lastUpdated,
     agents,
+    projectDefs,
     refetch: fetchAll,
   }
 }

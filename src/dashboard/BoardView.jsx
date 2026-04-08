@@ -1314,6 +1314,30 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
               fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
               textDecoration: isDone ? 'line-through' : 'none',
             }}>{t.text || 'Task'}</div>
+            {/* Project, agent identity, and QA score always visible on card face */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
+              {(t.agent_identity || t.agent) && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                  padding: '1px 5px', borderRadius: 3, textTransform: 'uppercase',
+                  background: `${getAgentColor(t.agent_identity || t.agent)}18`,
+                  color: getAgentColor(t.agent_identity || t.agent),
+                }}>{getAgentName(t.agent_identity || t.agent)}</span>
+              )}
+              {(t.project || t.projectSource) && (
+                <span style={{
+                  fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
+                  background: `${t.projectColor || '#888'}18`, color: t.projectColor || '#888',
+                }}>{t.project || t.projectSource}</span>
+              )}
+              {(t.qa_score != null && t.qa_score !== '') && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
+                  background: Number(t.qa_score) >= 8 ? 'rgba(34,197,94,0.15)' : Number(t.qa_score) >= 6 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: Number(t.qa_score) >= 8 ? '#22C55E' : Number(t.qa_score) >= 6 ? '#FBBF24' : '#EF4444',
+                }}>QA {t.qa_score}</span>
+              )}
+            </div>
           </div>
           <span style={{ fontSize: 10, color: 'var(--bv-muted)', flexShrink: 0, marginTop: 2 }}>{isOpen ? '▾' : '▸'}</span>
         </div>
@@ -2012,6 +2036,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const inboxItems = pipeData?.inboxItems || []
   const personalTodos = pipeData?.personalTodos || []
   const completedFeed = pipeData?.completedFeed || []
+  // Active projects from Supabase projects table (is_active=true, fetched via useDataPipe)
+  const projectDefs = pipeData?.projectDefs || []
+
+  // Project filter: 'all' or a project name from projectDefs
+  const [activeProjectFilter, setActiveProjectFilter] = useState('all')
 
   // Build per-agent task index from punchData (Supabase tasks table)
   const agentTasks = useMemo(() => {
@@ -2183,6 +2212,19 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     return [...ordered, ...missing]
   }, [allItems, visibleSlugs, colOrder])
 
+  // Apply project filter to task lists in each column
+  const filteredVisibleItems = useMemo(() => {
+    if (activeProjectFilter === 'all') return orderedVisibleItems
+    return orderedVisibleItems.map(item => ({
+      ...item,
+      tasks: item.tasks.filter(t => {
+        const taskProject = (t.project || t.projectSource || '').toLowerCase()
+        const filterVal = activeProjectFilter.toLowerCase()
+        return taskProject === filterVal || taskProject.includes(filterVal) || filterVal.includes(taskProject)
+      }),
+    }))
+  }, [orderedVisibleItems, activeProjectFilter])
+
   // True when any item (across all agents/projects) has a live or queued task
   const hasActiveTasks = useMemo(() =>
     allItems.some(item => item.tasks.some(t => t._source === 'rightNow' || t._source === 'todo'))
@@ -2340,8 +2382,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const railAgents = allItems.filter(it => it.isAgent)
   const railProjects = allItems.filter(it => !it.isAgent)
 
-  // Mobile: visible items as array for tab switching
-  const mobileItems = orderedVisibleItems
+  // Mobile: visible items as array for tab switching (use filtered for consistent behavior)
+  const mobileItems = filteredVisibleItems
   const activeMobileItem = mobileItems[mobileIdx] || mobileItems[0]
 
   return (
@@ -2370,6 +2412,45 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         .bv-columns-area::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.12); border-radius: 3px; }
       `}</style>
 
+      {/* Project filter pills -- dynamically generated from Supabase projects table */}
+      {projectDefs.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px',
+          overflowX: 'auto', flexShrink: 0, borderBottom: '1px solid var(--bv-divider)',
+        }}>
+          {/* All pill */}
+          <button
+            onClick={() => setActiveProjectFilter('all')}
+            style={{
+              padding: '3px 10px', borderRadius: 20, border: '1px solid',
+              borderColor: activeProjectFilter === 'all' ? 'var(--bv-accent-border)' : 'var(--bv-card-border)',
+              background: activeProjectFilter === 'all' ? 'var(--bv-accent)' : 'transparent',
+              color: activeProjectFilter === 'all' ? 'var(--bv-accent-text)' : 'var(--bv-muted)',
+              fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              transition: 'all 0.15s',
+            }}
+          >All</button>
+          {projectDefs.map(proj => {
+            const isActive = activeProjectFilter === proj.name
+            const color = proj.color || '#60A5FA'
+            return (
+              <button
+                key={proj.id || proj.slug || proj.name}
+                onClick={() => setActiveProjectFilter(isActive ? 'all' : proj.name)}
+                style={{
+                  padding: '3px 10px', borderRadius: 20, border: '1px solid',
+                  borderColor: isActive ? color : 'var(--bv-card-border)',
+                  background: isActive ? `${color}20` : 'transparent',
+                  color: isActive ? color : 'var(--bv-muted)',
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  transition: 'all 0.15s',
+                }}
+              >{proj.name}</button>
+            )
+          })}
+        </div>
+      )}
+
       {/* V5 board background: radial gradients over void */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden',
         background: 'radial-gradient(ellipse at 15% 50%, rgba(255,255,255,0.015) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(255,255,255,0.01) 0%, transparent 50%)',
@@ -2378,14 +2459,14 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         {/* COLUMNS AREA */}
         {!isMobile ? (
           <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '4px 14px 4px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
-            {orderedVisibleItems.length === 0 && (
+            {filteredVisibleItems.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--bv-dim)' }}>
                 <div style={{ fontSize: 36, opacity: 0.2 }}>&#9776;</div>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>Click agents or projects in the rail</div>
                 <div style={{ fontSize: 11, opacity: 0.5 }}>Your view saves automatically</div>
               </div>
             )}
-            {orderedVisibleItems.length > 0 && !hasActiveTasks ? (
+            {filteredVisibleItems.length > 0 && !hasActiveTasks ? (
               <div style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 textAlign: 'center', color: '#888', padding: '40px 20px', fontSize: '1.2em',
@@ -2394,7 +2475,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                 No tasks in queue.
               </div>
             ) : (
-              orderedVisibleItems.map(item => (
+              filteredVisibleItems.map(item => (
                 item.isAgent ? (
                   <AgentColumn
                     key={item.slug} agent={item} tasks={item.tasks} isMobile={false}
