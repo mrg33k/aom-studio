@@ -778,8 +778,8 @@ function TasksPanel({ queued, rightNow, done }) {
   const maxDailyCount = Math.max(...dailyCounts, 1)
   const weekTotal     = dailyCounts.reduce((s, c) => s + c, 0)
   const DAY_LABELS    = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-  const MIN_BAR_H     = 4
-  const MAX_BAR_H     = 36
+  const MIN_BAR_H     = 2
+  const MAX_BAR_H     = 19
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
@@ -964,7 +964,7 @@ function TasksPanel({ queued, rightNow, done }) {
             border: '1px solid ' + C.border,
             borderRadius: 14,
             padding: '12px 14px',
-            marginBottom: 16,
+            margin: '0 -4px 16px',
           }}>
             <div style={{
               fontSize: 10,
@@ -976,7 +976,7 @@ function TasksPanel({ queued, rightNow, done }) {
               marginBottom: 8,
             }}>This Week</div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: MAX_BAR_H + 16, marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 32, marginBottom: 4 }}>
               {DAY_LABELS.map((label, i) => {
                 const count    = dailyCounts[i]
                 const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
