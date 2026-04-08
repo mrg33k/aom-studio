@@ -473,10 +473,12 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
   const [orderedSlugs, setOrderedSlugs] = useState(null)
   const orderInitialized = useRef(false)
 
-  // Initialize order once when agents first loads
+  // Initialize order: localStorage first (instant), then Supabase (async fallback)
   useEffect(() => {
     if (!agents?.length || orderInitialized.current) return
     orderInitialized.current = true
+
+    // Try localStorage first (fastest)
     const saved = localStorage.getItem('aom_agent_order')
     if (saved) {
       try {
@@ -484,15 +486,43 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
         return
       } catch {}
     }
-    // Default: active first, then idle
-    const defaultSlugs = [...agents]
-      .sort((a, b) => {
-        const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
-        const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
-        return aActive - bActive
-      })
-      .map(a => a.slug)
-    setOrderedSlugs(defaultSlugs)
+
+    // Fall back to Supabase user_preferences
+    if (supabase) {
+      const clientId = getClientId()
+      supabase
+        .from('user_preferences')
+        .select('value')
+        .eq('client_id', clientId)
+        .eq('key', 'agent_order')
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.value?.slugs?.length) {
+            setOrderedSlugs(data.value.slugs)
+            localStorage.setItem('aom_agent_order', JSON.stringify(data.value.slugs))
+          } else {
+            // Default: active first, then idle
+            const defaultSlugs = [...agents]
+              .sort((a, b) => {
+                const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+                const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+                return aActive - bActive
+              })
+              .map(a => a.slug)
+            setOrderedSlugs(defaultSlugs)
+          }
+        })
+    } else {
+      // No Supabase -- default order
+      const defaultSlugs = [...agents]
+        .sort((a, b) => {
+          const aActive = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+          const bActive = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+          return aActive - bActive
+        })
+        .map(a => a.slug)
+      setOrderedSlugs(defaultSlugs)
+    }
   }, [agents])
 
   // Derive display list: order from orderedSlugs, live data from agents
@@ -518,15 +548,18 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
     const newSlugs = newAgents.map(a => a.slug)
     setOrderedSlugs(newSlugs)
     localStorage.setItem('aom_agent_order', JSON.stringify(newSlugs))
-    // Persist display_order to Supabase (fire and forget)
+    // Persist to Supabase user_preferences (fire-and-forget, cross-device)
     if (supabase) {
-      newAgents.forEach((agent, index) => {
-        supabase
-          .from('agents')
-          .update({ display_order: (index + 1) * 100 })
-          .eq('id', agent.id)
-          .then()
-      })
+      const clientId = getClientId()
+      supabase
+        .from('user_preferences')
+        .upsert(
+          { client_id: clientId, key: 'agent_order', value: { slugs: newSlugs }, updated_at: new Date().toISOString() },
+          { onConflict: 'client_id,key' }
+        )
+        .then(({ error }) => {
+          if (error) console.warn('[Corner] agent_order upsert failed:', error.message)
+        })
     }
   }, [])
 
