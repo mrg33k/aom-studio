@@ -300,7 +300,7 @@ function StatusDot({ status }) {
 // ── Agent card ────────────────────────────────────────────────────────────────
 
 const agentColors = {
-  rex:     '#84CC16',
+  rex:     '#10B981',
   bobby:   '#EAB308',
   colton:  '#EAB308',
   steffen: '#A78BFA',
@@ -312,10 +312,13 @@ const agentColors = {
   jacob:   '#FACC15',
 }
 
-function AgentCard({ agent, lastMessage, onClick }) {
+function AgentCard({ agent, lastMessage, unreadCount, onClick }) {
   const [hovered, setHovered] = useState(false)
   const cfg = getStatusCfg(agent.status)
   const bgColor = agentColors[agent.slug] || '#60A5FA'
+  const isActive = agent.status?.toUpperCase() !== 'IDLE'
+  const initial = (agent.name || '?')[0].toUpperCase()
+  const statusColor = isActive ? cfg.color : C.dim
 
   return (
     <div
@@ -324,85 +327,114 @@ function AgentCard({ agent, lastMessage, onClick }) {
       onClick={() => onClick?.(agent)}
       style={{
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        borderRadius: 10,
-        overflow: 'hidden',
-        border: `1px solid ${hovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)'}`,
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 14px',
+        borderRadius: 14,
+        background: hovered ? C.s2 : C.s1,
+        border: `1px solid ${hovered ? C.border2 : isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
         cursor: 'pointer',
-        transition: 'border-color 150ms ease, transform 120ms ease',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'background 150ms ease, border-color 150ms ease, transform 120ms ease, box-shadow 120ms ease',
         transform: hovered ? 'translateY(-1px)' : 'none',
+        boxShadow: hovered ? '0 6px 20px rgba(0,0,0,0.25)' : 'none',
       }}
     >
-      {/* Colored block: role label + massive name */}
+      {/* Active accent left bar */}
+      {isActive && (
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />
+      )}
+
+      {/* 38px circle avatar */}
       <div style={{
-        backgroundColor: bgColor,
-        padding: '14px 16px 14px',
-      }}>
-        {agent.role && (
-          <div style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: 'rgba(0,0,0,0.45)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            fontFamily: "'Inter', sans-serif",
-            marginBottom: 4,
-          }}>{agent.role}</div>
-        )}
+        width: 38,
+        height: 38,
+        borderRadius: '50%',
+        background: bgColor,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        fontWeight: 800,
+        fontSize: 15,
+        color: '#000',
+        fontFamily: "'Inter', sans-serif",
+      }}>{initial}</div>
+
+      {/* Info: name + preview */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+            {agent.name}
+          </span>
+          {lastMessage?.timestamp && (
+            <span style={{ fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+              {lastMessage.timestamp}
+            </span>
+          )}
+        </div>
         <div style={{
-          fontSize: 38,
-          fontWeight: 900,
-          color: 'black',
+          fontSize: 12,
+          color: C.muted,
+          marginTop: 2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
           fontFamily: "'Inter', sans-serif",
-          lineHeight: 1.0,
-          letterSpacing: '-0.02em',
-        }}>{agent.name}</div>
+        }}>
+          {lastMessage?.text || agent.role || 'No recent messages'}
+        </div>
       </div>
 
-      {/* Bottom section: last message + status pill */}
-      <div style={{
-        padding: '10px 16px 14px',
-        backgroundColor: bgColor,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-      }}>
-        {lastMessage ? (
+      {/* Right: status + unread count */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 3,
+          fontSize: 9, fontWeight: 600,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: statusColor,
+        }}>
           <div style={{
-            fontSize: 12,
-            color: C.text,
-            fontFamily: "'Inter', sans-serif",
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            lineHeight: 1.35,
-          }}>{lastMessage.text}</div>
-        ) : (
-          <div style={{ fontSize: 12, color: C.text, fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
-            No recent messages
+            width: 5, height: 5, borderRadius: '50%',
+            background: statusColor,
+            boxShadow: isActive ? `0 0 6px ${statusColor}` : 'none',
+          }} />
+          {cfg.label}
+        </div>
+        {unreadCount > 0 && (
+          <div style={{
+            minWidth: 18, height: 18, borderRadius: 9,
+            background: C.accent, color: '#000',
+            fontSize: 9, fontWeight: 800,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: "'JetBrains Mono', monospace",
+            padding: '0 4px',
+          }}>
+            {unreadCount > 9 ? '9+' : unreadCount}
           </div>
         )}
-
-        {/* Status pill */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start' }}>
-          <StatusDot status={agent.status} />
-          <span style={{
-            fontSize: 11,
-            color: 'rgba(0,0,0,0.55)',
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 600,
-          }}>{cfg.label}</span>
-        </div>
       </div>
     </div>
   )
 }
 
+// ── Rotating greeting messages ────────────────────────────────────────────────
+
+const GREETINGS = [
+  (name) => `Hey ${name}, what are we working on?`,
+  (name) => `What's on the agenda, ${name}?`,
+  (name) => `What are we shipping today, ${name}?`,
+  (name) => `Let's build something great, ${name}.`,
+  (name) => `Morning ${name}, let's get after it.`,
+]
+
 // ── Home panel with agent cards ────────────────────────────────────────────────
 
 function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
-  // Build a quick lookup: agent slug -> inbox item (last message preview)
+  const [greetingIdx, setGreetingIdx] = useState(0)
+
+  // Build a quick lookup: agent slug -> last inbox item (message preview)
   const inboxMap = useMemo(() => {
     const m = {}
     for (const item of (inboxItems || [])) {
@@ -411,18 +443,30 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
     return m
   }, [inboxItems])
 
-  // Derive greeting based on time of day
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon'
-    return 'Good evening'
+  // Count unread messages per agent
+  const unreadCounts = useMemo(() => {
+    const counts = {}
+    for (const item of (inboxItems || [])) {
+      if (item.agent) counts[item.agent] = (counts[item.agent] || 0) + 1
+    }
+    return counts
+  }, [inboxItems])
+
+  // Rotate greeting every 4 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setGreetingIdx(prev => (prev + 1) % GREETINGS.length)
+    }, 4000)
+    return () => clearInterval(timer)
   }, [])
 
   const displayName =
     user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.email?.split('@')[0] ||
     'there'
+
+  // Find first active agent for hero sub text
+  const activeAgent = (agents || []).find(a => a.status?.toUpperCase() !== 'IDLE')
 
   // Sort agents: active first (non-IDLE), then idle
   const sortedAgents = useMemo(() => {
@@ -435,47 +479,57 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
   }, [agents])
 
   return (
-    <div style={{
-      flex: 1,
-      overflowY: 'auto',
-      padding: '24px 20px 32px',
-      fontFamily: "'Inter', sans-serif",
-    }}>
-
-      {/* ── Hero greeting ───────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: C.text,
-          lineHeight: 1.2,
-          marginBottom: 4,
-        }}>
-          {greeting}, {displayName}
-        </div>
-        <div style={{ fontSize: 13, color: C.muted }}>
-          {sortedAgents.filter(a => a.status?.toUpperCase() !== 'IDLE').length > 0
-            ? `${sortedAgents.filter(a => a.status?.toUpperCase() !== 'IDLE').length} agent${sortedAgents.filter(a => a.status?.toUpperCase() !== 'IDLE').length > 1 ? 's' : ''} active`
-            : 'All agents idle'}
-        </div>
-      </div>
+    <div style={{ flex: 1, overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Pulse keyframe (injected once) ─────────────────────────────────── */}
       <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } }`}</style>
 
-      {/* ── Section label ───────────────────────────────────────────────────── */}
-      {sortedAgents.length > 0 && (
+      {/* ── Hero ────────────────────────────────────────────────────────────── */}
+      <div style={{ padding: '28px 20px 12px', position: 'relative' }}>
+        {/* Radial gradient glow */}
         <div style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: C.muted,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          marginBottom: 10,
+          position: 'absolute', top: -20, left: 0, right: 0, height: 140,
+          background: 'radial-gradient(ellipse at 30% 40%, rgba(16,185,129,0.035), transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Sub text with status dot */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 12, fontWeight: 500, color: C.muted, marginBottom: 6,
         }}>
-          Your Team ({sortedAgents.length})
+          <div style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: activeAgent ? C.accent : C.dim,
+            boxShadow: activeAgent ? `0 0 6px ${C.accent}` : 'none',
+            animation: activeAgent ? 'cvPulse 1.8s ease-in-out infinite' : 'none',
+          }} />
+          {activeAgent ? `${activeAgent.name} is online` : 'All agents idle'}
         </div>
-      )}
+
+        {/* Rotating heading */}
+        <h1 style={{
+          fontSize: 'clamp(26px, 5.5vw, 40px)',
+          fontWeight: 800,
+          lineHeight: 1.08,
+          letterSpacing: '-0.04em',
+          color: C.text,
+          margin: 0,
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          {GREETINGS[greetingIdx](displayName)}
+        </h1>
+      </div>
+
+      {/* ── Section label ───────────────────────────────────────────────────── */}
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: C.muted,
+        textTransform: 'uppercase', letterSpacing: '0.1em',
+        fontFamily: "'JetBrains Mono', monospace",
+        padding: '18px 20px 8px',
+      }}>
+        Your Team
+      </div>
 
       {/* ── Agent cards ─────────────────────────────────────────────────────── */}
       {sortedAgents.length === 0 ? (
@@ -486,21 +540,20 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
           <span style={{ fontSize: 13 }}>No agents found</span>
         </div>
       ) : (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 16px' }}>
           {sortedAgents.map(agent => (
             <AgentCard
               key={agent.slug}
               agent={agent}
               lastMessage={inboxMap[agent.slug] || null}
+              unreadCount={unreadCounts[agent.slug] || 0}
               onClick={onSelectAgent}
             />
           ))}
         </div>
       )}
+
+      <div style={{ height: 20 }} />
     </div>
   )
 }
