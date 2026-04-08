@@ -23,6 +23,7 @@ import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
 import TaskQueueFAB from './components/TaskQueueFAB.jsx'
 import WorldSelector from './components/WorldSelector'
+import { formatRelativeTime } from './timeUtils'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -42,31 +43,6 @@ function getAgentName(slug) {
   return p?.name || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Agent')
 }
 
-function formatRelativeTime(ts) {
-  if (!ts) return ''
-  const date = new Date(ts)
-  if (isNaN(date.getTime())) return ''
-  const now = new Date()
-  const diffMs = now - date
-  const diffSec = Math.floor(diffMs / 1000)
-  if (diffSec < 60) return 'just now'
-  const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterday = new Date(today - 86400000)
-  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  if (msgDay.getTime() === yesterday.getTime()) return 'yesterday'
-  const mo = date.getMonth() + 1
-  const d = date.getDate()
-  const yr = date.getFullYear()
-  let h = date.getHours()
-  const ampm = h >= 12 ? 'PM' : 'AM'
-  h = h % 12 || 12
-  const min = String(date.getMinutes()).padStart(2, '0')
-  return `${mo}/${d}/${yr} ${h}:${min} ${ampm}`
-}
 
 // ── CSS VARS (night / day) ───────────────────────────────────────────────────
 

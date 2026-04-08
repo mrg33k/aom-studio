@@ -1,30 +1,22 @@
-export const formatRelativeTime = (timestamp) => {
-  if (!timestamp) return ''
-  const now = new Date()
-  const date = new Date(timestamp)
+// Relative time formatting for chat messages
+export function formatRelativeTime(ts) {
+  if (!ts) return ''
+  const date = new Date(ts)
   if (isNaN(date.getTime())) return ''
-
-  const seconds = Math.floor((now - date) / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-
-  if (seconds < 60) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-
-  // Calendar-day boundaries (midnight local time)
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterdayStart = new Date(todayStart)
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-
-  // Message sent today (same calendar day) — use hours
-  if (date >= todayStart) return `${hours}h ago`
-
-  // Message sent on the previous calendar day
-  if (date >= yesterdayStart) return 'yesterday'
-
-  // Older than 2 calendar days — show full date
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${month}/${day}/${year}`
+  const now = new Date()
+  const diffMs = now - date
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 60) return 'just now'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today - 86400000)
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  if (msgDay.getTime() === yesterday.getTime()) return 'yesterday'
+  const mo = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const yr = date.getFullYear()
+  return `${mo}/${d}/${yr}`
 }
