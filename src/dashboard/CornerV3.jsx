@@ -470,31 +470,49 @@ function getStatusColor(status) {
   }
 }
 
+// ── Card color palette for shipped tasks ─────────────────────────────────────
+const CARD_COLORS = [
+  { bg: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.22)',  accent: '#F59E0B' },
+  { bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.22)',   accent: '#22C55E' },
+  { bg: 'rgba(167,139,250,0.10)', border: 'rgba(167,139,250,0.22)', accent: '#A78BFA' },
+  { bg: 'rgba(20,184,166,0.10)',  border: 'rgba(20,184,166,0.22)',  accent: '#14B8A6' },
+]
+
+const AGENT_CARD_COLORS = {
+  bobby:   CARD_COLORS[0],
+  colton:  CARD_COLORS[0],
+  steffen: CARD_COLORS[2],
+  gary:    CARD_COLORS[3],
+  alex:    CARD_COLORS[1],
+  tony:    CARD_COLORS[1],
+  jacob:   CARD_COLORS[0],
+  elon:    CARD_COLORS[3],
+}
+
+function getCardColors(task, index) {
+  const agent = (task.agent_identity || task.agentIdentity || '').toLowerCase()
+  return AGENT_CARD_COLORS[agent] || CARD_COLORS[index % CARD_COLORS.length]
+}
+
+// ── Static project filter pills ───────────────────────────────────────────────
+const PROJECT_PILLS = ['All', 'Corner', 'AOM', 'Ambition', 'ISA', 'Sourcing']
+
 function TasksPanel({ queued, rightNow, done }) {
-  const [searchQuery,    setSearchQuery]    = useState('')
-  const [activeProject,  setActiveProject]  = useState('all')
+  const [searchQuery,   setSearchQuery]   = useState('')
+  const [activeProject, setActiveProject] = useState('all')
 
   const active    = [...(rightNow || []), ...(queued || [])]
   const completed = done || []
-  const allTasks  = [...active, ...completed]
 
-  // Collect unique agents/projects from all tasks
-  const projects = useMemo(() => {
-    const seen = new Set()
-    allTasks.forEach(t => {
-      const label = t.agent_identity || t.agentIdentity
-      if (label) seen.add(label)
-    })
-    return Array.from(seen).sort()
-  }, [allTasks])
-
-  // Filter helper
+  // Filter helper -- project pill matches title keyword or agent identity
   function filterTasks(tasks) {
     return tasks.filter(t => {
-      const title   = (t.title || t.text || '').toLowerCase()
-      const matchQ  = !searchQuery || title.includes(searchQuery.toLowerCase())
-      const agent   = t.agent_identity || t.agentIdentity || ''
-      const matchP  = activeProject === 'all' || agent === activeProject
+      const title  = (t.title || t.text || '').toLowerCase()
+      const matchQ = !searchQuery || title.includes(searchQuery.toLowerCase())
+      const agent  = (t.agent_identity || t.agentIdentity || '').toLowerCase()
+      const matchP = activeProject === 'all'
+        || title.includes(activeProject.toLowerCase())
+        || agent.includes(activeProject.toLowerCase())
       return matchQ && matchP
     })
   }
@@ -502,184 +520,256 @@ function TasksPanel({ queued, rightNow, done }) {
   const filteredActive    = filterTasks(active)
   const filteredCompleted = filterTasks(completed)
 
-  return (
-    <div style={{
-      flex: 1,
-      overflowY: 'auto',
-      padding: '16px 20px',
-      fontFamily: "'Inter', sans-serif",
-    }}>
+  // Weekly stats derived from completed tasks
+  const withQA    = completed.filter(t => t.qa_score || t.qaScore)
+  const avgQA     = withQA.length > 0
+    ? (withQA.reduce((s, t) => s + Number(t.qa_score || t.qaScore || 0), 0) / withQA.length).toFixed(1)
+    : null
+  const passCount = withQA.filter(t => Number(t.qa_score || t.qaScore || 0) >= 8).length
+  const passRate  = withQA.length > 0 ? Math.round((passCount / withQA.length) * 100) : null
 
-      {/* Search + Filters */}
-      <div style={{ marginBottom: 16 }}>
-        {/* Search input */}
-        <div style={{ position: 'relative', marginBottom: 10 }}>
-          <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
-            stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search tasks..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '7px 10px 7px 30px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 7,
-              color: C.text,
-              fontSize: 13,
-              outline: 'none',
-              fontFamily: "'Inter', sans-serif",
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
+  // Bar chart data: last 7 completed tasks, height from QA score
+  const chartTasks = completed.slice(0, 7)
+  const chartBars  = chartTasks.map((t, i) => {
+    const qa = Number(t.qa_score || t.qaScore || 0)
+    return qa > 0 ? Math.round((qa / 10) * 24) + 4 : [10, 14, 18, 12, 20, 16, 8][i % 7]
+  })
+  // Pad to 7 bars if fewer tasks
+  while (chartBars.length < 7) chartBars.push([10, 14, 18, 12, 20, 16, 8][chartBars.length % 7])
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
+
+      {/* Keyframes for animated progress bars */}
+      <style>{`
+        @keyframes cv3-progress-sweep {
+          0%   { width: 25% }
+          50%  { width: 72% }
+          100% { width: 25% }
+        }
+      `}</style>
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+
+        {/* Search + Filters */}
+        <div style={{ marginBottom: 16 }}>
+          {/* Search input */}
+          <div style={{ position: 'relative', marginBottom: 10 }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+              stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
               style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
-                fontSize: 14, lineHeight: 1, padding: 0,
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '7px 10px 7px 30px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 8,
+                color: C.text,
+                fontSize: 13,
+                outline: 'none',
+                fontFamily: "'Inter', sans-serif",
               }}
-            >
-              ×
-            </button>
-          )}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
+                  fontSize: 16, lineHeight: 1, padding: 0,
+                }}
+              >×</button>
+            )}
+          </div>
+
+          {/* Static project filter pills */}
+          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+            {PROJECT_PILLS.map(p => {
+              const key      = p === 'All' ? 'all' : p.toLowerCase()
+              const isActive = activeProject === key
+              return (
+                <button
+                  key={p}
+                  onClick={() => setActiveProject(key)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    border: isActive ? '1px solid rgba(59,158,255,0.45)' : '1px solid rgba(255,255,255,0.07)',
+                    background: isActive ? 'rgba(59,158,255,0.14)' : 'rgba(255,255,255,0.04)',
+                    color: isActive ? C.accent : C.muted,
+                    letterSpacing: '0.04em',
+                    transition: 'all 0.15s',
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >{p}</button>
+              )
+            })}
+          </div>
         </div>
 
-        {/* Project filter pills */}
-        {projects.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {['all', ...projects].map(p => (
-              <button
-                key={p}
-                onClick={() => setActiveProject(p)}
-                style={{
-                  padding: '3px 10px',
-                  borderRadius: 20,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: activeProject === p ? '1px solid rgba(59,158,255,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                  background: activeProject === p ? 'rgba(59,158,255,0.15)' : 'rgba(255,255,255,0.04)',
-                  color: activeProject === p ? C.accent : C.muted,
-                  textTransform: p === 'all' ? 'uppercase' : 'capitalize',
-                  letterSpacing: p === 'all' ? '0.06em' : 0,
-                  transition: 'all 0.15s',
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                {p === 'all' ? 'All' : p}
-              </button>
+        {/* Building Now */}
+        {filteredActive.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
+              Building Now ({filteredActive.length})
+            </div>
+            {filteredActive.map((t, i) => (
+              <div key={t.id} style={{
+                padding: '11px 14px',
+                marginBottom: 8,
+                borderRadius: 10,
+                background: 'rgba(245,158,11,0.07)',
+                border: '1px solid rgba(245,158,11,0.18)',
+                overflow: 'hidden',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+                  <span style={{
+                    width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                    background: '#F59E0B',
+                    boxShadow: '0 0 6px rgba(245,158,11,0.65)',
+                  }} />
+                  <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.title || t.text || 'Untitled task'}
+                  </span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, color: '#F59E0B',
+                    background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.28)',
+                    borderRadius: 4, padding: '2px 7px', flexShrink: 0, textTransform: 'capitalize',
+                  }}>
+                    {t.status || 'building'}
+                  </span>
+                </div>
+                {/* Animated progress bar */}
+                <div style={{ height: 3, borderRadius: 2, background: 'rgba(245,158,11,0.14)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    borderRadius: 2,
+                    background: 'linear-gradient(90deg, #F59E0B, #FCD34D)',
+                    animation: `cv3-progress-sweep 2.6s ease-in-out infinite`,
+                    animationDelay: `${i * 0.45}s`,
+                  }} />
+                </div>
+              </div>
             ))}
+          </div>
+        )}
+
+        {/* Shipped tasks */}
+        {filteredCompleted.length > 0 && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
+              Shipped ({filteredCompleted.length})
+            </div>
+            {filteredCompleted.slice(0, 20).map((t, i) => {
+              const colors = getCardColors(t, i)
+              const qa     = t.qa_score || t.qaScore
+              return (
+                <div key={t.id} style={{
+                  padding: '10px 14px',
+                  marginBottom: 6,
+                  borderRadius: 10,
+                  background: colors.bg,
+                  border: `1px solid ${colors.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}>
+                  {t.status === 'failed' ? (
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  ) : (
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.title || t.text || 'Untitled task'}
+                  </span>
+                  {qa && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: colors.accent,
+                      background: colors.bg, border: `1px solid ${colors.border}`,
+                      borderRadius: 5, padding: '2px 7px', flexShrink: 0,
+                    }}>
+                      QA {qa}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {filteredActive.length === 0 && filteredCompleted.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: C.muted, gap: 8, paddingTop: 60 }}>
+            <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+            </svg>
+            <span style={{ fontSize: 13 }}>{searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'No tasks'}</span>
           </div>
         )}
       </div>
 
-      {/* Active tasks */}
-      {filteredActive.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Active ({filteredActive.length})
+      {/* Weekly stats bar */}
+      {completed.length > 0 && (
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '10px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 18,
+          background: 'rgba(6,10,18,0.7)',
+          flexShrink: 0,
+        }}>
+          {/* Mini bar chart */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 28 }}>
+            {chartBars.map((h, i) => (
+              <div key={i} style={{
+                width: 4,
+                height: h,
+                borderRadius: 2,
+                background: i < chartTasks.length
+                  ? 'rgba(59,158,255,0.55)'
+                  : 'rgba(255,255,255,0.08)',
+              }} />
+            ))}
           </div>
-          {filteredActive.map(t => {
-            const sc = getStatusColor(t.status)
-            return (
-              <div key={t.id} style={{
-                padding: '10px 14px',
-                marginBottom: 6,
-                borderRadius: 8,
-                background: sc.bg,
-                border: `1px solid ${sc.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}>
-                <span style={{
-                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                  background: sc.dot,
-                  boxShadow: sc.glow,
-                }} />
-                <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {t.title || t.text || 'Untitled task'}
-                </span>
-                {(t.qa_score || t.qaScore) && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: '#22C55E',
-                    background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)',
-                    borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                  }}>
-                    QA {t.qa_score || t.qaScore}
-                  </span>
-                )}
-                <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, textTransform: 'capitalize' }}>
-                  {t.status}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
 
-      {/* Completed tasks */}
-      {filteredCompleted.length > 0 && (
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Done ({filteredCompleted.length})
+          {/* Stats */}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, lineHeight: 1 }}>{completed.length}</div>
+              <div style={{ fontSize: 10, color: C.muted, marginTop: 2, letterSpacing: '0.04em' }}>tasks</div>
+            </div>
+            {passRate !== null && (
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#22C55E', lineHeight: 1 }}>{passRate}%</div>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 2, letterSpacing: '0.04em' }}>pass rate</div>
+              </div>
+            )}
+            {avgQA !== null && (
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.accent, lineHeight: 1 }}>{avgQA}</div>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 2, letterSpacing: '0.04em' }}>avg QA</div>
+              </div>
+            )}
           </div>
-          {filteredCompleted.slice(0, 20).map(t => {
-            const sc = getStatusColor(t.status)
-            return (
-              <div key={t.id} style={{
-                padding: '8px 14px',
-                marginBottom: 4,
-                borderRadius: 8,
-                background: sc.bg,
-                border: `1px solid ${sc.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                opacity: 0.65,
-              }}>
-                {t.status === 'failed' ? (
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                ) : (
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                )}
-                <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {t.title || t.text || 'Untitled task'}
-                </span>
-                {(t.qa_score || t.qaScore) && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: '#3B9EFF',
-                    background: 'rgba(59,158,255,0.1)', border: '1px solid rgba(59,158,255,0.2)',
-                    borderRadius: 4, padding: '1px 5px', flexShrink: 0,
-                  }}>
-                    QA {t.qa_score || t.qaScore}
-                  </span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {filteredActive.length === 0 && filteredCompleted.length === 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: C.muted, gap: 8, paddingTop: 60 }}>
-          <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-            <line x1="8" y1="18" x2="21" y2="18"/>
-          </svg>
-          <span style={{ fontSize: 13 }}>{searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'No tasks'}</span>
         </div>
       )}
     </div>
