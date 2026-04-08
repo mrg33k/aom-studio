@@ -260,8 +260,8 @@ async function getCachedSystemState() {
   try {
     const [activeTasks, recentDone, recentFailed] = await Promise.all([
       sbFetch('/rest/v1/tasks?status=in.(queued,classifying,planning,building,qa)&order=priority.desc&limit=10&select=id,title,status,priority,agent_identity'),
-      sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc&limit=5&select=id,title,qa_score,completed_at,agent_identity'),
-      sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc&limit=3&select=id,title,error,completed_at,agent_identity'),
+      sbFetch('/rest/v1/tasks?status=eq.done&order=completed_at.desc.nullslast&limit=8&select=id,title,qa_score,completed_at,agent_identity'),
+      sbFetch('/rest/v1/tasks?status=eq.failed&order=completed_at.desc.nullslast&limit=5&select=id,title,error,completed_at,agent_identity'),
     ]);
     const parts = [];
     if (Array.isArray(activeTasks) && activeTasks.length > 0) {
