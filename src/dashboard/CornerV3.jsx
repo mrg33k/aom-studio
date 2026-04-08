@@ -721,8 +721,7 @@ function getShippedCardColor(task, index) {
   return AGENT_CARD_COLOR_MAP[agent] || SHIPPED_CARD_COLORS[index % SHIPPED_CARD_COLORS.length]
 }
 
-// ── Static project filter pills ───────────────────────────────────────────────
-const PROJECT_PILLS = ['All', 'Corner', 'AOM', 'Ambition', 'ISA', 'Sourcing']
+// ── Project filter pills (loaded from Supabase projects table) ────────────────
 
 function TasksPanel({ queued, rightNow, done }) {
   const [searchQuery,   setSearchQuery]   = useState('')
@@ -731,9 +730,23 @@ function TasksPanel({ queued, rightNow, done }) {
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
   const [projectName,            setProjectName]            = useState('')
   const [selectedColor,          setSelectedColor]          = useState('#10B981')
+  const [shippedLimit,           setShippedLimit]           = useState(50)
+  const [projectNames,           setProjectNames]           = useState([])
+
+  // Load project names from Supabase on mount
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('projects').select('name,slug').eq('is_active', true).order('name')
+      .then(({ data }) => {
+        if (data) setProjectNames(data.map(p => p.name))
+      })
+  }, [])
 
   const active    = [...(rightNow || []), ...(queued || [])]
   const completed = done || []
+
+  // Project pills from Supabase projects table
+  const projectPills = ['All', ...projectNames]
 
   // Filter helper -- project pill matches title keyword or agent identity
   function filterTasks(tasks) {
@@ -851,9 +864,9 @@ function TasksPanel({ queued, rightNow, done }) {
             )}
           </div>
 
-          {/* Static project filter pills */}
+          {/* Project filter pills */}
           <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
-            {PROJECT_PILLS.map(p => {
+            {projectPills.map(p => {
               const key      = p === 'All' ? 'all' : p.toLowerCase()
               const isActive = activeProject === key
               return (
@@ -1058,7 +1071,7 @@ function TasksPanel({ queued, rightNow, done }) {
                 {filteredCompleted.length}
               </span>
             </div>
-            {filteredCompleted.slice(0, 20).map((t, i) => {
+            {filteredCompleted.slice(0, shippedLimit).map((t, i) => {
               const cardColor = getShippedCardColor(t, i)
               const qa        = t.qa_score || t.qaScore
               const agent     = t.agent_identity || t.agentIdentity
@@ -1127,6 +1140,16 @@ function TasksPanel({ queued, rightNow, done }) {
                 </div>
               )
             })}
+            {filteredCompleted.length > shippedLimit && (
+              <div
+                onClick={() => setShippedLimit(prev => prev + 50)}
+                style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: C.muted, cursor: 'pointer', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 8 }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+              >
+                Show more ({filteredCompleted.length - shippedLimit} remaining)
+              </div>
+            )}
           </div>
         )}
 

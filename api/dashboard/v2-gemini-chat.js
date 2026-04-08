@@ -77,6 +77,7 @@ YOUR TOOLS (use naturally, only when the conversation calls for it):
 - search_history: find past conversations or decisions
 - get_queue / get_status: check what's being worked on
 - create_task: queue work for the build pipeline
+- update_task: update task status, QA score, or error. Use when Patrik asks to fix scores, mark tasks done, requeue failed tasks, or correct metadata.
 - start_runner: kick off the task runner
 - cancel_task: cancel a task you created with wrong details.
 - delete_messages: clean up chat
@@ -123,6 +124,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'start_runner', description: 'Start the task runner to process queued tasks. Use when asked to run the queue, start building, get tasks going, or kick off work. The runner picks up queued tasks and builds them.', parameters: { type: 'object', properties: {} } },
   { name: 'register_project', description: 'Add or update a project in the registry. Use proactively when conversation implies a project change: new repo mentioned, project moved, rules changed, work should go to a specific repo. Fuzzy-matches existing projects so you don\'t need the exact slug. If unsure which project, it will return candidates to clarify with Patrik.', parameters: { type: 'object', properties: { slug: { type: 'string', description: 'Best guess at project slug (lowercase, hyphenated). Fuzzy-matched against all existing projects.' }, name: { type: 'string', description: 'Display name' }, repo_path: { type: 'string', description: 'Absolute filesystem path to the repo' }, repo_description: { type: 'string', description: 'What this repo is, one line' }, scan_dirs: { type: 'string', description: 'Comma-separated directories to scan for the phonebook (e.g. "src,api,tests")' }, hard_rules: { type: 'string', description: 'Comma-separated rules agents must follow for this project' } }, required: ['slug'] } },
   { name: 'lookup_context', description: 'Search the codebase for relevant files, scripts, components, and architecture. Use this BEFORE creating tasks to check what already exists. Also use when Patrik asks about how something works or where something lives in the code.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for (e.g. "voice chat", "onboarding", "task runner", "auth")' } }, required: ['query'] } },
+  { name: 'update_task', description: 'Update a task status, QA score, or error. Use when Patrik asks to fix task scores, mark tasks done, requeue failed tasks, or correct task metadata.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to update' }, status: { type: 'string', description: 'New status: queued, done, failed, cancelled' }, qa_score: { type: 'number', description: 'QA score 1-10' }, qa_notes: { type: 'string', description: 'QA notes explaining the score' }, error: { type: 'string', description: 'Error message (set to empty string to clear)' } }, required: ['task_id'] } },
   { name: 'cancel_task', description: 'Cancel a queued task. Use when you created a task with wrong details and need to clean it up before the runner picks it up.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to cancel' } }, required: ['task_id'] } },
   { name: 'read_file', description: 'Read a source file from the codebase. Use this BEFORE creating tasks to see what code already exists in a file. Returns the file contents. Paths are relative to the repo root (e.g. "src/dashboard/CornerV3.jsx").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to repo root' }, start_line: { type: 'number', description: 'Start line (1-indexed, default 1)' }, end_line: { type: 'number', description: 'End line (default: start+100)' } }, required: ['path'] } },
   { name: 'list_files', description: 'List files in a directory. Use this to verify file paths and see the actual directory structure instead of guessing. Returns file names in the directory.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path relative to repo root (e.g. "src/dashboard")' } }, required: ['path'] } },
@@ -508,6 +510,24 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
             if (!query) throw new Error('query required');
             const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
             result = await ctxResp.json();
+          }
+          else if (name === 'update_task') {
+            const taskId = (args.task_id || '').trim();
+            if (!taskId) throw new Error('task_id required');
+            const updates = {};
+            if (args.status) updates.status = args.status;
+            if (args.qa_score !== undefined) updates.qa_score = args.qa_score;
+            if (args.qa_notes !== undefined) updates.qa_notes = args.qa_notes;
+            if (args.error !== undefined) updates.error = args.error || null;
+            if (args.status === 'done') updates.completed_at = new Date().toISOString();
+            if (Object.keys(updates).length === 0) throw new Error('No fields to update');
+            const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}`, {
+              method: 'PATCH', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+              body: JSON.stringify(updates),
+            });
+            if (!resp.ok) throw new Error(`Update failed: ${resp.status}`);
+            const updated = await resp.json();
+            result = Array.isArray(updated) && updated.length > 0 ? { updated: true, id: taskId, changes: updates } : { updated: false, reason: 'Task not found' };
           }
           else if (name === 'cancel_task') {
             const taskId = (args.task_id || '').trim();
