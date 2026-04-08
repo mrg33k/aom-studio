@@ -275,7 +275,7 @@ function StatusDot({ status }) {
 
 // ── Agent card ────────────────────────────────────────────────────────────────
 
-function AgentCard({ agent, lastMessage }) {
+function AgentCard({ agent, lastMessage, onClick }) {
   const [hovered, setHovered] = useState(false)
   const cfg = getStatusCfg(agent.status)
 
@@ -283,6 +283,7 @@ function AgentCard({ agent, lastMessage }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => onClick?.(agent)}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -356,7 +357,7 @@ function AgentCard({ agent, lastMessage }) {
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
 
-function HomePanel({ user, agents, inboxItems }) {
+function HomePanel({ user, agents, inboxItems, onSelectAgent }) {
   // Build a quick lookup: agent slug -> inbox item (last message preview)
   const inboxMap = useMemo(() => {
     const m = {}
@@ -446,6 +447,7 @@ function HomePanel({ user, agents, inboxItems }) {
             key={agent.slug}
             agent={agent}
             lastMessage={inboxMap[agent.slug] || null}
+            onClick={onSelectAgent}
           />
         ))
       )}
@@ -707,8 +709,8 @@ function formatChatTime(ts) {
 
 // ── Chat panel ────────────────────────────────────────────────────────────────
 
-function ChatPanel({ agents, inboxItems, worldId }) {
-  const [selectedAgent, setSelectedAgent] = useState(null)
+function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
+  const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
   const [messages, setMessages]           = useState([])
   const [input, setInput]                 = useState('')
   const [sending, setSending]             = useState(false)
@@ -1421,10 +1423,11 @@ function ChatPanel({ agents, inboxItems, worldId }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function CornerV3() {
-  const [currentUser, setCurrentUser] = useState(null)
-  const [worldId, setWorldId]         = useState(getClientId())
-  const [tab, setTab]                 = useState('home')
-  const [unreadChat, setUnreadChat]   = useState(0)
+  const [currentUser, setCurrentUser]   = useState(null)
+  const [worldId, setWorldId]           = useState(getClientId())
+  const [tab, setTab]                   = useState('home')
+  const [unreadChat, setUnreadChat]     = useState(0)
+  const [selectedAgent, setSelectedAgent] = useState(null)
 
   const { queued, rightNow, done } = useTasks()
   // useDataPipe provides agents (with realtime status) and inboxItems (last message per agent)
@@ -1490,6 +1493,13 @@ export default function CornerV3() {
   const handleTabChange = useCallback((newTab) => {
     setTab(newTab)
     if (newTab === 'chat') setUnreadChat(0)
+  }, [])
+
+  // Select an agent and switch to chat tab
+  const handleSelectAgent = useCallback((agent) => {
+    setSelectedAgent(agent)
+    setTab('chat')
+    setUnreadChat(0)
   }, [])
 
   // ── World switching ───────────────────────────────────────────────────────
@@ -1606,9 +1616,9 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} />}
+        {tab === 'home'  && <HomePanel user={currentUser} agents={agents} inboxItems={inboxItems} onSelectAgent={handleSelectAgent} />}
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
-        {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} />}
+        {tab === 'chat'  && <ChatPanel agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
 
     </div>
