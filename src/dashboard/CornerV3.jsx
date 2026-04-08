@@ -957,73 +957,73 @@ function TasksPanel({ queued, rightNow, done }) {
           </div>
         )}
 
-        {/* Weekly Stats Bar */}
-        {completed.length > 0 && (
+        {/* Weekly Stats Bar -- always visible, matches cv3.html .stats */}
+        <div style={{
+          background: C.s1,
+          border: '1px solid ' + C.border,
+          borderRadius: 14,
+          padding: '12px 14px',
+          margin: '14px -4px 16px',
+        }}>
           <div style={{
-            background: C.s1,
-            border: '1px solid ' + C.border,
-            borderRadius: 14,
-            padding: '12px 14px',
-            margin: '0 -4px 16px',
+            fontSize: 10,
+            fontWeight: 700,
+            color: C.muted,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: 8,
+          }}>This Week</div>
+
+          {/* 7-day bar chart: M T W T F S S */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 32 }}>
+            {DAY_LABELS.map((label, i) => {
+              const count    = dailyCounts[i]
+              const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
+              const barH     = count > 0 ? Math.round((count / maxDailyCount) * (MAX_BAR_H - MIN_BAR_H)) + MIN_BAR_H : MIN_BAR_H
+              return (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 3 }}>
+                  <div style={{
+                    width: '100%',
+                    height: barH,
+                    borderRadius: 3,
+                    background: isFuture || count === 0 ? 'rgba(255,255,255,0.06)' : C.accent,
+                    minHeight: 2,
+                    transition: 'height 0.3s ease',
+                  }} />
+                  <div style={{
+                    fontSize: 8,
+                    fontWeight: 600,
+                    color: C.dim,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>{label}</div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Metrics row: Tasks, Pass Rate, Avg QA */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: '1px solid ' + C.border,
           }}>
-            <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.muted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              fontFamily: "'JetBrains Mono', monospace",
-              marginBottom: 8,
-            }}>This Week</div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 32, marginBottom: 4 }}>
-              {DAY_LABELS.map((label, i) => {
-                const count    = dailyCounts[i]
-                const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
-                const barH     = count > 0 ? Math.round((count / maxDailyCount) * (MAX_BAR_H - MIN_BAR_H)) + MIN_BAR_H : MIN_BAR_H
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 3 }}>
-                    <div style={{
-                      width: '100%',
-                      height: barH,
-                      borderRadius: 3,
-                      background: isFuture || count === 0 ? 'rgba(255,255,255,0.06)' : C.accent,
-                      minHeight: 2,
-                      transition: 'height 0.3s ease',
-                    }} />
-                    <div style={{
-                      fontSize: 8,
-                      fontWeight: 600,
-                      color: C.dim,
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>{label}</div>
-                  </div>
-                )
-              })}
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{weekTotal}</div>
+              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Tasks</div>
             </div>
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: '1px solid ' + C.border,
-            }}>
-              <div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{weekTotal}</div>
-                <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Tasks</div>
-              </div>
-              <div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{passRate !== null ? passRate + '%' : '--'}</div>
-                <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Pass Rate</div>
-              </div>
-              <div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
-                <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Avg QA</div>
-              </div>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{passRate !== null ? passRate + '%' : '--'}</div>
+              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Pass Rate</div>
+            </div>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
+              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Avg QA</div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Shipped tasks */}
         {filteredCompleted.length > 0 && (
