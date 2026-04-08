@@ -54,7 +54,7 @@ function AomLogo() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
       <span style={{ fontWeight: 900, fontSize: '18px', letterSpacing: '-0.04em', color: C.text, fontFamily: "'Inter', sans-serif" }}>
-        Corne<span style={{ color: C.accent }}>r</span>.
+        Corner<span style={{ color: C.accent }}>.</span>
       </span>
     </div>
   )
@@ -70,8 +70,8 @@ function BellIcon({ hasNew = false }) {
         width: 32,
         height: 32,
         borderRadius: 10,
-        background: 'transparent',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: C.s1,
+        border: '1px solid ' + C.border,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -79,8 +79,8 @@ function BellIcon({ hasNew = false }) {
         flexShrink: 0,
         transition: 'background 150ms ease, border 150ms ease',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.2)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)' }}
+      onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.border = '1px solid ' + C.border2 }}
+      onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.border = '1px solid ' + C.border }}
       aria-label="Notifications"
     >
       <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
@@ -93,10 +93,10 @@ function BellIcon({ hasNew = false }) {
           position: 'absolute',
           top: 5,
           right: 5,
-          width: 7,
-          height: 7,
+          width: 6,
+          height: 6,
           borderRadius: '50%',
-          background: C.red,
+          background: C.accent,
           border: '1.5px solid ' + C.bg,
         }} />
       )}
@@ -112,10 +112,10 @@ function UserAvatar({ user }) {
 
   return (
     <div style={{
-      width: 32,
-      height: 32,
+      width: 28,
+      height: 28,
       borderRadius: 9,
-      background: avatarUrl ? 'transparent' : 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+      background: avatarUrl ? 'transparent' : `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
       border: '1px solid rgba(255,255,255,0.1)',
       display: 'flex',
       alignItems: 'center',
@@ -141,15 +141,15 @@ function Badge({ count }) {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
-      background: C.red,
-      color: '#fff',
-      fontSize: 11,
-      fontWeight: 700,
-      fontFamily: "'Inter', sans-serif",
-      padding: '0 5px',
+      minWidth: 14,
+      height: 14,
+      borderRadius: 7,
+      background: C.accent,
+      color: '#000',
+      fontSize: 8,
+      fontWeight: 800,
+      fontFamily: "'JetBrains Mono', monospace",
+      padding: '0 4px',
       lineHeight: 1,
       flexShrink: 0,
     }}>
@@ -165,29 +165,40 @@ function Tab({ label, icon, active, onClick, badge }) {
     <button
       onClick={onClick}
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         gap: 6,
-        height: '100%',
-        padding: '0 14px',
+        padding: '7px 18px',
         background: 'transparent',
         border: 'none',
-        borderBottom: active ? `2px solid ${C.blue}` : '2px solid transparent',
+        borderRadius: 10,
         cursor: 'pointer',
-        color: active ? C.blue : C.muted,
-        fontSize: 13,
-        fontWeight: active ? 700 : 500,
+        color: active ? C.text : C.muted,
+        fontSize: 12,
+        fontWeight: 600,
         fontFamily: "'Inter', sans-serif",
-        transition: 'color 150ms ease, border-color 150ms ease',
+        transition: 'color 150ms ease',
         flexShrink: 0,
         whiteSpace: 'nowrap',
       }}
-      onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#94A3B8' }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text2 }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.muted }}
     >
       {icon}
       {label}
       {badge}
+      {active && (
+        <span style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: 2,
+          background: C.accent,
+          borderRadius: 1,
+        }} />
+      )}
     </button>
   )
 }
@@ -1776,45 +1787,47 @@ export default function CornerV3() {
         <div style={{
           height: ROW2_H,
           display: 'flex',
-          alignItems: 'stretch',
+          alignItems: 'center',
           padding: '8px 16px 8px 16px',
           gap: 2,
         }}>
           <Tab
             label="Home"
-            icon={<HomeIcon color={tab === 'home' ? C.blue : C.muted} />}
+            icon={<HomeIcon color={tab === 'home' ? C.text : C.muted} />}
             active={tab === 'home'}
             onClick={() => handleTabChange('home')}
             badge={null}
           />
           <Tab
             label="Tasks"
-            icon={<TasksIcon color={tab === 'tasks' ? C.blue : C.muted} />}
+            icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
             active={tab === 'tasks'}
             onClick={() => handleTabChange('tasks')}
             badge={<Badge count={activeTaskCount} />}
           />
           <Tab
             label="Chat"
-            icon={<ChatIcon color={tab === 'chat' ? C.blue : C.muted} />}
+            icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
             active={tab === 'chat'}
             onClick={() => handleTabChange('chat')}
             badge={<Badge count={unreadChat} />}
           />
 
-          {/* Nav stats: hidden on mobile (< 768px) */}
+          {/* Nav stats: hidden on mobile (< 480px) */}
           <div style={{
-            display: window.innerWidth < 768 ? 'none' : 'flex',
+            display: window.innerWidth < 480 ? 'none' : 'flex',
             alignItems: 'center',
             gap: 10,
             marginLeft: 'auto',
             flexShrink: 0,
           }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.green, fontFamily: "'JetBrains Mono', monospace" }}>
-              {rightNow?.length || 0} Building
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />
+              <span style={{ fontWeight: 800 }}>{rightNow?.length || 0}</span> building
             </span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
-              {done?.length || 0} Done
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, flexShrink: 0 }} />
+              <span style={{ fontWeight: 800 }}>{done?.length || 0}</span> done
             </span>
           </div>
         </div>
