@@ -174,6 +174,18 @@ async function createTask(args = {}, clientId) {
   const created = await sbFetch('/rest/v1/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(newTask) });
   const result = Array.isArray(created) ? created[0] : created;
   if (warnings.length > 0) result._warnings = warnings;
+  // Auto-signal runner to start (idempotent -- runner watcher picks it up)
+  try {
+    await sbFetch('/rest/v1/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        agent: 'system',
+        event_type: 'runner_start_requested',
+        payload: { source: 'create_task', task_id: result.id, agent: newTask.agent_identity || null },
+      }),
+    });
+  } catch (e) { /* non-fatal */ }
   return result;
 }
 
