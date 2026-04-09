@@ -3755,6 +3755,19 @@ export default function CornerV3() {
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
 
+      {/* ── POWERED BY AOM ────────────────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed',
+        bottom: 8,
+        left: 12,
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.3)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}>
+        Powered by AOM
+      </div>
+
       {/* ── BUILD TIMESTAMP ───────────────────────────────────────────────── */}
       <div style={{
         position: 'fixed',
