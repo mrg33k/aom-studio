@@ -1309,7 +1309,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
   const fileInputRef   = useRef(null)
   const voiceChatRef   = useRef(null)
 
-  const { isLoading: projectsLoading, isError: projectsError, data: projects } = useProjects()
+  const { isLoading: projectsLoading, isError: projectsError, projects } = useProjects()
 
   // Fetch latest message per agent that's missing from inboxItems
   const [agentPreviews, setAgentPreviews] = useState({})
@@ -1741,7 +1741,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         )}
 
         {/* ── Projects section ──────────────────────────────────────────────── */}
-        {!projectsLoading && !projectsError && projects.length > 0 && (
+        {!projectsLoading && !projectsError && projects?.length > 0 && (
           <>
             <div style={{
               fontSize: 11, fontWeight: 700, color: C.muted,
