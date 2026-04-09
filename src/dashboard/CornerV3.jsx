@@ -1497,7 +1497,7 @@ function SwipeCard({ children, actions, style }) {
   )
 }
 
-function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
+function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
@@ -2016,7 +2016,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
           flexShrink: 0,
         }}>
           <button
-            onClick={() => { setMessages([]); setInlineProject(null); if (projectId) navigate('/dashboard') }}
+            onClick={() => { setMessages([]); setInlineProject(null); onBack?.(); if (projectId) navigate('/dashboard') }}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
               background: 'rgba(255,255,255,0.05)',
@@ -2255,7 +2255,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                   const agent = (agents || []).find(a => a.slug === fav.slug)
                   if (!agent) return null
                   return (
-                    <button key={`fav-${fav.slug}`} onClick={() => setSelectedAgent(agent)} style={{
+                    <button key={`fav-${fav.slug}`} onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       width: '100%', padding: '10px 12px', borderRadius: 12,
                       background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)',
@@ -2276,7 +2276,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                   const proj = (projects || []).find(p => p.slug === fav.slug)
                   if (!proj) return null
                   return (
-                    <button key={`fav-${fav.slug}`} onClick={() => { setInlineProject(proj); setMessages([]); setSelectedAgent(null) }} style={{
+                    <button key={`fav-${fav.slug}`} onClick={() => { setInlineProject(proj); setMessages([]); setSelectedAgent(null); onSelectProject?.(proj) }} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       width: '100%', padding: '10px 12px', borderRadius: 12,
                       background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)',
@@ -2344,7 +2344,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                   onAction: () => toggleMute(agent.slug) },
               ]}>
                 <button
-                  onClick={() => setSelectedAgent(agent)}
+                  onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     width: '100%', padding: '12px 14px',
@@ -2451,7 +2451,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                     onAction: () => {} },
                 ]}>
                   <button
-                    onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null) }}
+                    onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null); onSelectProject?.(project) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12,
                       width: '100%', padding: '12px 14px',
@@ -2504,7 +2504,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         flexShrink: 0,
       }}>
         <button
-          onClick={() => { setSelectedAgent(null); setMessages([]); setIsVoiceActive(false) }}
+          onClick={() => { setSelectedAgent(null); setMessages([]); setIsVoiceActive(false); onBack?.() }}
           style={{
             width: 30, height: 30, borderRadius: 8, flexShrink: 0,
             background: 'rgba(255,255,255,0.05)',
@@ -3177,6 +3177,7 @@ export default function CornerV3() {
   const [tab, setTab]                   = useState('chat')
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
+  const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
   const [inputBarText, setInputBarText] = useState('')
   const [inputBarSending, setInputBarSending] = useState(false)
   const [inputBarFocused, setInputBarFocused] = useState(false)
@@ -3274,17 +3275,36 @@ export default function CornerV3() {
     return () => { supabase.removeChannel(channel) }
   }, [worldId])
 
-  // Clear unread when switching to chat
+  // Clear unread when switching to chat; Home tab always clears conversation
   const handleTabChange = useCallback((newTab) => {
     setTab(newTab)
-    if (newTab === 'chat') setUnreadChat(0)
+    if (newTab === 'chat') {
+      setUnreadChat(0)
+      setSelectedAgent(null)
+      setConversationTarget(null)
+    }
   }, [])
 
   // Select an agent and switch to chat tab
   const handleSelectAgent = useCallback((agent) => {
     setSelectedAgent(agent)
+    setConversationTarget({ name: agent.name, type: 'agent' })
     setTab('chat')
     setUnreadChat(0)
+  }, [])
+
+  // Called by ChatPanel when a project is selected
+  const handleSelectProject = useCallback((project) => {
+    setSelectedAgent(null)
+    setConversationTarget({ name: project.name, type: 'project' })
+    setTab('chat')
+    setUnreadChat(0)
+  }, [])
+
+  // Called by ChatPanel back button — clear conversation
+  const handleBackFromConversation = useCallback(() => {
+    setSelectedAgent(null)
+    setConversationTarget(null)
   }, [])
 
   // ── World switching ───────────────────────────────────────────────────────
@@ -3308,6 +3328,7 @@ export default function CornerV3() {
       const target = selectedAgent || agents?.find(a => a.slug === 'rex') || agents?.[0]
       if (target) {
         setSelectedAgent(target)
+        setConversationTarget({ name: target.name, type: 'agent' })
       }
       setTab('chat')
       setUnreadChat(0)
@@ -3325,6 +3346,7 @@ export default function CornerV3() {
     // Switch to chat tab if not already there
     if (tab !== 'chat') {
       setSelectedAgent(target)
+      setConversationTarget({ name: target.name, type: 'agent' })
       setTab('chat')
       setUnreadChat(0)
     }
@@ -3435,11 +3457,19 @@ export default function CornerV3() {
           <div style={{ display: 'flex', gap: 2 }}>
             <Tab
               label="Home"
-              icon={<HomeIcon color={tab === 'chat' ? C.text : C.muted} />}
-              active={tab === 'chat'}
+              icon={<HomeIcon color={tab === 'chat' && !conversationTarget ? C.text : C.muted} />}
+              active={tab === 'chat' && !conversationTarget}
               onClick={() => handleTabChange('chat')}
               badge={<Badge count={unreadChat} />}
             />
+            {conversationTarget && (
+              <Tab
+                label={conversationTarget.name}
+                icon={<ChatIcon color={tab === 'chat' && conversationTarget ? C.text : C.muted} />}
+                active={tab === 'chat' && !!conversationTarget}
+                onClick={() => { setTab('chat'); setUnreadChat(0) }}
+              />
+            )}
             <Tab
               label="Tasks"
               icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
@@ -3472,7 +3502,7 @@ export default function CornerV3() {
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
