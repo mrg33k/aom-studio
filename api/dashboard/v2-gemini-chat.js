@@ -499,11 +499,12 @@ export default async function handler(req, res) {
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const { message, history, client_id, agent, project_id } = req.body || {};
+  const { message, history, client_id, agent, project_id, project_slug } = req.body || {};
   if (!message || typeof message !== 'string') return res.status(400).json({ error: 'message required' });
 
   const clientId = (client_id && String(client_id).trim()) || 'aom';
   const agentSlug = (agent && String(agent).trim()) || null;
+  const projectSlug = (project_slug && String(project_slug).trim()) || null;
   const baseHistory = Array.isArray(history) ? history : [];
   const contents = [...baseHistory, { role: 'user', parts: [{ text: message }] }];
 
@@ -562,6 +563,33 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         }
       } catch (err) {
         console.error('[v2-gemini-chat] Agent lookup failed:', err.message);
+      }
+    } else if (projectSlug) {
+      try {
+        // Fetch project details by slug
+        const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,name,description`);
+        const project = Array.isArray(projects) ? projects[0] : null;
+
+        let contextMd = '';
+        if (project?.id) {
+          const ctxRows = await sbFetch(`/rest/v1/project_context?project_id=eq.${project.id}&limit=1&select=context_md`);
+          contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.context_md) ? ctxRows[0].context_md : '';
+        }
+
+        const systemState = await getCachedSystemState();
+
+        const projectName = project?.name || projectSlug;
+        const projectDescription = project?.description ? `\n${project.description}` : '';
+        const contextSection = contextMd
+          ? `\n\nPROJECT CONTEXT:\n${contextMd}`
+          : '\n\nPROJECT CONTEXT: No specific context has been recorded for this project yet.';
+
+        systemInstruction = `You are the operator assistant for the "${projectName}" project.${projectDescription}
+${contextSection}
+
+${SYSTEM_INSTRUCTION}${systemState}`;
+      } catch (err) {
+        console.error('[v2-gemini-chat] Project context lookup failed:', err.message);
       }
     }
 
