@@ -2131,13 +2131,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         padding: '16px 20px',
         fontFamily: "'Inter', sans-serif",
       }}>
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: C.muted,
-          letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12,
-        }}>
-          Direct Messages
+        <div
+          onClick={() => toggleSection('agents')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontSize: 11, fontWeight: 700, color: C.muted,
+            letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: sectionStates.agents ? 12 : 4,
+            cursor: 'pointer', userSelect: 'none',
+          }}
+        >
+          <span>Agents{chattableAgents.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{chattableAgents.length}</span>}</span>
+          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.agents ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
         </div>
 
+        <div style={{ maxHeight: sectionStates.agents ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
         {chattableAgents.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -2232,25 +2239,25 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             )
           })
         )}
+        </div>
 
         {/* ── Projects section ──────────────────────────────────────────────── */}
         {!projectsLoading && !projectsError && projects?.length > 0 && (
           <>
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: C.muted,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              marginTop: 20, marginBottom: 12,
-            }}>
-              Projects{projects.length > 0 && <span style={{
-                marginLeft: 6,
-                fontSize: 10, fontWeight: 600,
-                color: C.muted,
-                background: 'rgba(255,255,255,0.06)',
-                borderRadius: 8,
-                padding: '1px 6px',
-                letterSpacing: '0.02em',
-              }}>{projects.length}</span>}
+            <div
+              onClick={() => toggleSection('projects')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontSize: 11, fontWeight: 700, color: C.muted,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                marginTop: 20, marginBottom: sectionStates.projects ? 12 : 4,
+                cursor: 'pointer', userSelect: 'none',
+              }}
+            >
+              <span>Projects{projects.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{projects.length}</span>}</span>
+              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.projects ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
+            <div style={{ maxHeight: sectionStates.projects ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
             {projects.map(project => (
               <button
                 key={project.id || project.slug}
@@ -2306,6 +2313,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                 </svg>
               </button>
             ))}
+            </div>
           </>
         )}
       </div>
