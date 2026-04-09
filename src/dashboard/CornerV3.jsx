@@ -18,8 +18,10 @@ import {
 } from './lib/clientConfig.js'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
+import { useProjects } from './hooks/useProjects'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
+import { ProjectCard } from './components/ProjectCard.jsx'
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
 
@@ -1287,7 +1289,7 @@ function formatChatTime(ts) {
 
 // ── Chat panel ────────────────────────────────────────────────────────────────
 
-function ChatPanel({ agents, inboxItems, worldId, initialAgent, projectDefs }) {
+function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
   const [messages, setMessages]           = useState([])
   const [input, setInput]                 = useState('')
@@ -1303,6 +1305,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, projectDefs }) {
   const inputRef       = useRef(null)
   const fileInputRef   = useRef(null)
   const voiceChatRef   = useRef(null)
+
+  const { isLoading: projectsLoading, isError: projectsError, data: projects } = useProjects()
 
   // Build unread map: agent slug -> inbox item (last unread message)
   const unreadMap = useMemo(() => {
@@ -1661,65 +1665,37 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, projectDefs }) {
         )}
 
         {/* ── Projects section ──────────────────────────────────────────────── */}
-        {(projectDefs || []).length > 0 && (
-          <>
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: C.muted,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              marginTop: 20, marginBottom: 12,
-            }}>
-              Projects
+        <>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: C.muted,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            marginTop: 20, marginBottom: 12,
+          }}>
+            Your Projects
+          </div>
+          {projectsLoading && (
+            <div style={{ fontSize: 13, color: C.text2, fontFamily: "'Inter', sans-serif", padding: '8px 0' }}>
+              Loading projects...
             </div>
-            {projectDefs.map(project => (
-              <button
-                key={project.id || project.slug}
-                onClick={() => setSelectedAgent({ slug: project.slug, name: project.name, isProject: true })}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  width: '100%', padding: '12px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(255,255,255,0.025)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  cursor: 'pointer', textAlign: 'left', marginBottom: 6,
-                  transition: 'background 150ms ease, border-color 150ms ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-                }}
-              >
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: project.color || 'rgba(59,158,255,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, fontSize: 16, fontWeight: 800,
-                  color: project.color ? '#000' : C.accent,
-                  fontFamily: "'Inter', sans-serif",
-                }}>
-                  {(project.name || '?')[0].toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: 'rgba(240,244,255,0.8)',
-                    fontFamily: "'Inter', sans-serif",
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    display: 'block',
-                  }}>{project.name}</span>
-                </div>
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(80,100,128,0.4)" strokeWidth={2.5}
-                  strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </button>
-            ))}
-          </>
-        )}
+          )}
+          {projectsError && (
+            <div style={{ fontSize: 13, color: C.red, fontFamily: "'Inter', sans-serif", padding: '8px 0' }}>
+              Error loading projects!
+            </div>
+          )}
+          {!projectsLoading && !projectsError && projects.map(project => (
+            <ProjectCard
+              key={project.id || project.slug}
+              project={project}
+              isExpanded={false}
+              onClick={() => setSelectedAgent({ slug: project.slug, name: project.name, isProject: true })}
+              isNightMode={true}
+              wiggle={false}
+              isMobile={false}
+              isTablet={false}
+            />
+          ))}
+        </>
       </div>
     )
   }
@@ -2701,7 +2677,7 @@ export default function CornerV3() {
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} projectDefs={projectDefs} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
