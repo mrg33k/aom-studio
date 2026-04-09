@@ -128,6 +128,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'cancel_task', description: 'Cancel a queued task. Use when you created a task with wrong details and need to clean it up before the runner picks it up.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to cancel' } }, required: ['task_id'] } },
   { name: 'read_file', description: 'Read a source file from the codebase. Use this BEFORE creating tasks to see what code already exists in a file. Returns the file contents. Paths are relative to the repo root (e.g. "src/dashboard/CornerV3.jsx").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to repo root' }, start_line: { type: 'number', description: 'Start line (1-indexed, default 1)' }, end_line: { type: 'number', description: 'End line (default: start+100)' } }, required: ['path'] } },
   { name: 'list_files', description: 'List files in a directory. Use this to verify file paths and see the actual directory structure instead of guessing. Returns file names in the directory.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path relative to repo root (e.g. "src/dashboard")' } }, required: ['path'] } },
+  { name: 'update_context', description: 'Update a section of a project CONTEXT.md document. Use when the operator asks to record decisions, update project status, add constraints, or note architectural choices for a project. Only works within a project conversation (requires project_slug).', parameters: { type: 'object', properties: { project_slug: { type: 'string', description: 'The project slug to update context for' }, section: { type: 'string', enum: ['overview', 'status', 'decisions', 'constraints', 'architecture', 'notes'], description: 'Which section of the CONTEXT.md to update' }, content: { type: 'string', description: 'The content to write into the section' }, action: { type: 'string', enum: ['replace', 'append'], description: 'Whether to replace the section content or append to it (default: replace)' } }, required: ['project_slug', 'section', 'content'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -253,6 +254,121 @@ async function registerProject(args = {}) {
   const newProject = { id: crypto.randomUUID(), slug: inputSlug, name: args.name || inputSlug, color: '#6B7280', icon: 'folder', type: 'internal', is_active: true, ...patch };
   await sbFetch('/rest/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(newProject) });
   return { action: 'created', slug: inputSlug, fields: Object.keys(patch), note: `Created new project. Existing projects were: ${existingList}` };
+}
+
+const CONTEXT_TEMPLATE = `# Project Context
+
+## Overview
+
+
+## Status
+
+
+## Decisions
+
+
+## Constraints
+
+
+## Architecture
+
+
+## Notes
+
+`;
+
+const CONTEXT_SECTIONS = ['overview', 'status', 'decisions', 'constraints', 'architecture', 'notes'];
+
+function parseContextSections(md) {
+  const sections = {};
+  const lines = md.split('\n');
+  let currentSection = null;
+  let currentLines = [];
+  for (const line of lines) {
+    const match = line.match(/^## (.+)$/);
+    if (match) {
+      if (currentSection) sections[currentSection] = currentLines.join('\n').trim();
+      currentSection = match[1].toLowerCase().trim();
+      currentLines = [];
+    } else if (currentSection) {
+      currentLines.push(line);
+    }
+  }
+  if (currentSection) sections[currentSection] = currentLines.join('\n').trim();
+  return sections;
+}
+
+function rebuildContext(sections) {
+  let md = '# Project Context\n\n';
+  for (const s of CONTEXT_SECTIONS) {
+    const header = s.charAt(0).toUpperCase() + s.slice(1);
+    md += `## ${header}\n\n${sections[s] || ''}\n\n`;
+  }
+  // Include any extra sections not in the standard list
+  for (const [key, val] of Object.entries(sections)) {
+    if (!CONTEXT_SECTIONS.includes(key)) {
+      const header = key.charAt(0).toUpperCase() + key.slice(1);
+      md += `## ${header}\n\n${val}\n\n`;
+    }
+  }
+  return md.trimEnd() + '\n';
+}
+
+async function updateContext(args, clientId) {
+  const slug = (args.project_slug || '').trim();
+  if (!slug) return { error: 'update_context only works in project chat -- project_slug is required' };
+  const section = (args.section || '').trim().toLowerCase();
+  if (!section) return { error: 'section is required' };
+  const content = args.content || '';
+  const action = (args.action || 'replace').trim().toLowerCase();
+
+  // Look up project by slug
+  const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&limit=1&select=id,slug`);
+  const project = Array.isArray(projects) ? projects[0] : null;
+  if (!project) return { error: `Project not found: ${slug}` };
+
+  // Fetch existing context or initialize
+  const existing = await sbFetch(`/rest/v1/project_context?project_id=eq.${project.id}&limit=1`);
+  const row = Array.isArray(existing) ? existing[0] : null;
+  const currentMd = (row && row.context_md) ? row.context_md : CONTEXT_TEMPLATE;
+
+  // Parse sections
+  const sections = parseContextSections(currentMd);
+
+  // Apply update
+  if (action === 'append') {
+    const prev = sections[section] || '';
+    sections[section] = prev ? prev + '\n' + content : content;
+  } else {
+    sections[section] = content;
+  }
+
+  const updatedMd = rebuildContext(sections);
+  const wordCount = updatedMd.split(/\s+/).filter(Boolean).length;
+
+  // Upsert to project_context
+  if (row) {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/project_context?id=eq.${row.id}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ context_md: updatedMd, updated_at: new Date().toISOString() }),
+    });
+    if (!resp.ok) throw new Error(`Failed to update project_context: ${resp.status}`);
+  } else {
+    const crypto = await import('crypto');
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/project_context`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ id: crypto.randomUUID(), project_id: project.id, context_md: updatedMd, updated_at: new Date().toISOString() }),
+    });
+    if (!resp.ok) throw new Error(`Failed to insert project_context: ${resp.status}`);
+  }
+
+  const result = { updated: true, section, word_count: wordCount };
+  if (wordCount > 3000) {
+    result.warning = `Context document is ${wordCount} words (over 3000). Consider summarizing older sections to keep it focused.`;
+  }
+  return result;
 }
 
 async function startRunner() {
@@ -568,6 +684,7 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
             if (!Array.isArray(items)) throw new Error(`Not a directory: ${dirPath}`);
             result = { path: dirPath || '/', files: items.map(i => ({ name: i.name, type: i.type, size: i.size })) };
           }
+          else if (name === 'update_context') result = await updateContext(args, clientId);
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
           const wrappedResult = Array.isArray(result) ? { items: result } : (result && typeof result === 'object' ? result : { value: result });
