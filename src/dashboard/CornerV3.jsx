@@ -1428,6 +1428,75 @@ function formatChatTime(ts) {
 
 // ── Chat panel ────────────────────────────────────────────────────────────────
 
+// ── Swipeable card with action buttons revealed on swipe-left ────────────────
+function SwipeCard({ children, actions, style }) {
+  const [offsetX, setOffsetX] = useState(0)
+  const [swiping, setSwiping] = useState(false)
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const moved = useRef(false)
+  const actionsWidth = actions.length * 56
+
+  const onTouchStart = useCallback((e) => {
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
+    moved.current = false
+    setSwiping(true)
+  }, [])
+  const onTouchMove = useCallback((e) => {
+    if (!swiping) return
+    const dx = e.touches[0].clientX - startX.current
+    const dy = e.touches[0].clientY - startY.current
+    if (!moved.current && Math.abs(dy) > Math.abs(dx)) { setSwiping(false); return }
+    moved.current = true
+    const clamped = Math.max(-actionsWidth, Math.min(0, dx + (offsetX < -10 ? -actionsWidth : 0)))
+    setOffsetX(clamped)
+  }, [swiping, actionsWidth, offsetX])
+  const onTouchEnd = useCallback(() => {
+    setSwiping(false)
+    setOffsetX(prev => prev < -actionsWidth / 2 ? -actionsWidth : 0)
+  }, [actionsWidth])
+  // Desktop: click away to close
+  const onMouseDown = useCallback((e) => {
+    if (offsetX < 0) { e.preventDefault(); e.stopPropagation(); setOffsetX(0) }
+  }, [offsetX])
+
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 10, marginBottom: 6, ...style }}>
+      {/* Action buttons behind */}
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0,
+        display: 'flex', alignItems: 'stretch',
+      }}>
+        {actions.map((a, i) => (
+          <button key={i} onClick={(e) => { e.stopPropagation(); a.onAction(); setOffsetX(0) }} style={{
+            width: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+            background: a.bg || 'rgba(255,255,255,0.08)', border: 'none', cursor: 'pointer', padding: 0,
+          }}>
+            {a.icon}
+            <span style={{ fontSize: 9, fontWeight: 700, color: a.color || '#fff', letterSpacing: '0.02em' }}>{a.label}</span>
+          </button>
+        ))}
+      </div>
+      {/* Foreground card */}
+      <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onMouseDown={onMouseDown}
+        style={{
+          transform: `translateX(${offsetX}px)`,
+          transition: swiping ? 'none' : 'transform 200ms ease',
+          position: 'relative', zIndex: 1,
+          background: C.bg,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -1460,6 +1529,40 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
     setSectionStates(prev => {
       const next = { ...prev, [key]: !prev[key] }
       try { localStorage.setItem('aom_section_states', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
+  // ── Unread counts per agent ──────────────────────────────────────────────
+  const unreadCounts = useMemo(() => {
+    const counts = {}
+    for (const item of (inboxItems || [])) {
+      if (item.agent && item.isUnread) counts[item.agent] = (counts[item.agent] || 0) + 1
+    }
+    return counts
+  }, [inboxItems])
+
+  // ── Favorites + muted state ──────────────────────────────────────────────
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('aom_favorites')) || [] } catch { return [] }
+  })
+  const [mutedSlugs, setMutedSlugs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('aom_muted')) || [] } catch { return [] }
+  })
+  const isFav = useCallback((type, slug) => favorites.some(f => f.type === type && f.slug === slug), [favorites])
+  const isMuted = useCallback((slug) => mutedSlugs.includes(slug), [mutedSlugs])
+  const toggleFav = useCallback((type, slug) => {
+    setFavorites(prev => {
+      const exists = prev.some(f => f.type === type && f.slug === slug)
+      const next = exists ? prev.filter(f => !(f.type === type && f.slug === slug)) : [...prev, { type, slug }]
+      localStorage.setItem('aom_favorites', JSON.stringify(next))
+      return next
+    })
+  }, [])
+  const toggleMute = useCallback((slug) => {
+    setMutedSlugs(prev => {
+      const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+      localStorage.setItem('aom_muted', JSON.stringify(next))
       return next
     })
   }, [])
@@ -2131,6 +2234,71 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         padding: '16px 20px',
         fontFamily: "'Inter', sans-serif",
       }}>
+        {/* ── Favorites section (pinned agents + projects) ────────────────── */}
+        {favorites.length > 0 && (
+          <>
+            <div
+              onClick={() => toggleSection('favorites')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontSize: 11, fontWeight: 700, color: C.muted,
+                letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: sectionStates.favorites ? 12 : 4,
+                cursor: 'pointer', userSelect: 'none',
+              }}
+            >
+              <span>Pinned <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{favorites.length}</span></span>
+              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.favorites ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+            <div style={{ maxHeight: sectionStates.favorites ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease', marginBottom: sectionStates.favorites ? 16 : 0 }}>
+              {favorites.map(fav => {
+                if (fav.type === 'agent') {
+                  const agent = (agents || []).find(a => a.slug === fav.slug)
+                  if (!agent) return null
+                  return (
+                    <button key={`fav-${fav.slug}`} onClick={() => setSelectedAgent(agent)} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      width: '100%', padding: '10px 12px', borderRadius: 12,
+                      background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)',
+                      cursor: 'pointer', textAlign: 'left', marginBottom: 4, transition: 'all 150ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.04)' }}
+                    >
+                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: agent.color || C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, color: '#000', flexShrink: 0 }}>
+                        {(agent.name || '?')[0].toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: "'Inter', sans-serif" }}>{agent.name}</span>
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill={C.accent} stroke={C.accent} strokeWidth={2} style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.5 }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                  )
+                }
+                if (fav.type === 'project') {
+                  const proj = (projects || []).find(p => p.slug === fav.slug)
+                  if (!proj) return null
+                  return (
+                    <button key={`fav-${fav.slug}`} onClick={() => { setInlineProject(proj); setMessages([]); setSelectedAgent(null) }} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      width: '100%', padding: '10px 12px', borderRadius: 12,
+                      background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)',
+                      cursor: 'pointer', textAlign: 'left', marginBottom: 4, transition: 'all 150ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.04)' }}
+                    >
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: `linear-gradient(135deg, ${proj.color}44, ${proj.color}22)`, border: `1px solid ${proj.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 3, background: proj.color }} />
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: "'Inter', sans-serif" }}>{proj.name}</span>
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill={C.accent} stroke={C.accent} strokeWidth={2} style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.5 }}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                  )
+                }
+                return null
+              })}
+            </div>
+          </>
+        )}
+
         <div
           onClick={() => toggleSection('agents')}
           style={{
@@ -2160,82 +2328,94 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
           chattableAgents.map(agent => {
             const lastMsg    = unreadMap[agent.slug]
             const hasUnread  = !!lastMsg
+            const unreadCount = unreadCounts[agent.slug] || 0
+            const isActive   = agent.status?.toUpperCase() !== 'IDLE'
+            const pinned     = isFav('agent', agent.slug)
+            const muted      = isMuted(agent.slug)
+            const statusInfo = getStatusColor(agent.status)
+            const statusLabel = agent.status === 'building' ? 'Building' : agent.status === 'qa' ? 'QA' : agent.status === 'queued' ? 'Queued' : isActive ? 'Online' : 'Idle'
             return (
-              <button
-                key={agent.slug}
-                onClick={() => setSelectedAgent(agent)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  width: '100%', padding: '12px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(255,255,255,0.025)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  cursor: 'pointer', textAlign: 'left', marginBottom: 6,
-                  transition: 'background 150ms ease, border-color 150ms ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-                }}
-              >
-                {/* Avatar + unread dot */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <AgentAvatar name={agent.name} color={agent.color} size={40} />
-                  {hasUnread && (
-                    <span style={{
-                      position: 'absolute', top: -3, right: -3,
-                      width: 10, height: 10, borderRadius: '50%',
-                      background: C.accent, border: `2px solid ${C.bg}`,
-                    }} />
-                  )}
-                </div>
+              <SwipeCard key={agent.slug} actions={[
+                { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
+                  icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+                  onAction: () => toggleFav('agent', agent.slug) },
+                { label: muted ? 'Unmute' : 'Mute', bg: 'rgba(255,255,255,0.06)', color: C.muted,
+                  icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2} strokeLinecap="round"><path d={muted ? "M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" : "M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"}/></svg>,
+                  onAction: () => toggleMute(agent.slug) },
+              ]}>
+                <button
+                  onClick={() => setSelectedAgent(agent)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    width: '100%', padding: '12px 14px',
+                    borderRadius: 14,
+                    background: C.s1,
+                    border: `1px solid ${isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 200ms ease',
+                    position: 'relative', overflow: 'hidden',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = isActive ? 'rgba(16,185,129,0.15)' : C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                >
+                  {/* Active left accent */}
+                  {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />}
 
-                {/* Name + preview */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    <span style={{
-                      fontSize: 13,
-                      fontWeight: hasUnread ? 700 : 600,
-                      color: hasUnread ? C.text : 'rgba(240,244,255,0.8)',
-                      fontFamily: "'Inter', sans-serif",
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>{agent.name}</span>
-                    <StatusDot status={agent.status} />
+                  {/* Avatar */}
+                  <div style={{
+                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                    background: agent.color || C.accent,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 800, fontSize: 15, color: '#000',
+                  }}>
+                    {(agent.name || '?')[0].toUpperCase()}
                   </div>
-                  {lastMsg ? (
-                    <div style={{
-                      fontSize: 12,
-                      color: hasUnread ? C.muted : 'rgba(80,100,128,0.5)',
-                      fontWeight: hasUnread ? 500 : 400,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      fontFamily: "'Inter', sans-serif",
-                    }}>{lastMsg.text}</div>
-                  ) : (
-                    <div style={{
-                      fontSize: 12, color: 'rgba(80,100,128,0.4)',
-                      fontStyle: 'italic', fontFamily: "'Inter', sans-serif",
-                    }}>No messages yet</div>
-                  )}
-                </div>
 
-                {/* Timestamp + chevron */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-                  {lastMsg?.timestamp && (
-                    <span style={{ fontSize: 10, color: 'rgba(80,100,128,0.6)', fontFamily: "'Inter', sans-serif" }}>
-                      {formatChatTime(lastMsg.timestamp)}
-                    </span>
-                  )}
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
-                    stroke="rgba(80,100,128,0.4)" strokeWidth={2.5}
-                    strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </div>
-              </button>
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>{agent.name}</span>
+                      <span style={{ fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                        {lastMsg?.timestamp ? formatChatTime(lastMsg.timestamp) : ''}
+                      </span>
+                    </div>
+                    <div style={{
+                      fontSize: 12, color: C.muted, marginTop: 2,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {lastMsg?.text || 'No messages yet'}
+                    </div>
+                  </div>
+
+                  {/* Right: status + unread badge */}
+                  <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 3,
+                      fontSize: 9, fontWeight: 600,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: isActive ? C.accent : agent.status === 'building' ? C.yellow : C.dim,
+                    }}>
+                      <div style={{
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: statusInfo.dot,
+                        boxShadow: statusInfo.glow,
+                      }} />
+                      {statusLabel}
+                    </div>
+                    {unreadCount > 0 && (
+                      <span style={{
+                        minWidth: 18, height: 18, borderRadius: 9,
+                        background: C.accent, color: '#000',
+                        fontSize: 9, fontWeight: 800,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        padding: '0 4px',
+                      }}>{unreadCount}</span>
+                    )}
+                  </div>
+                </button>
+              </SwipeCard>
             )
           })
         )}
@@ -2258,61 +2438,48 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
               <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.projects ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
             <div style={{ maxHeight: sectionStates.projects ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
-            {projects.map(project => (
-              <button
-                key={project.id || project.slug}
-                onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  width: '100%', padding: '12px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(255,255,255,0.025)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  cursor: 'pointer', textAlign: 'left', marginBottom: 6,
-                  transition: 'background 150ms ease, border-color 150ms ease',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
-                }}
-              >
-                {/* Color dot */}
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                  background: `linear-gradient(135deg, ${project.color || '#6B8AB0'}44, ${project.color || '#6B8AB0'}22)`,
-                  border: `1px solid ${project.color || '#6B8AB0'}33`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <div style={{
-                    width: 14, height: 14, borderRadius: 4,
-                    background: project.color || '#6B8AB0',
-                    boxShadow: `0 0 8px ${project.color || '#6B8AB0'}55`,
-                  }} />
-                </div>
-
-                {/* Name */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: 'rgba(240,244,255,0.8)',
-                    fontFamily: "'Inter', sans-serif",
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    display: 'block',
-                  }}>{project.name}</span>
-                </div>
-
-                {/* Chevron */}
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(80,100,128,0.4)" strokeWidth={2.5}
-                  strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </button>
-            ))}
+            {projects.map(project => {
+              const pColor = project.color || '#6B8AB0'
+              const pinned = isFav('project', project.slug)
+              return (
+                <SwipeCard key={project.id || project.slug} actions={[
+                  { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
+                    icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+                    onAction: () => toggleFav('project', project.slug) },
+                  { label: 'Archive', bg: 'rgba(239,68,68,0.15)', color: C.red,
+                    icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={2} strokeLinecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>,
+                    onAction: () => {} },
+                ]}>
+                  <button
+                    onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      width: '100%', padding: '12px 14px',
+                      borderRadius: 14,
+                      background: C.s1,
+                      border: `1px solid ${C.border}`,
+                      cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 200ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                  >
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                      background: `linear-gradient(135deg, ${pColor}44, ${pColor}22)`,
+                      border: `1px solid ${pColor}33`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 4, background: pColor, boxShadow: `0 0 8px ${pColor}55` }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{project.name}</span>
+                    </div>
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(80,100,128,0.4)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </SwipeCard>
+              )
+            })}
             </div>
           </>
         )}
