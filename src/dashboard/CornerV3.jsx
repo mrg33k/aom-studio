@@ -1319,7 +1319,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
         )}
       </div>
 
-      {/* ── Task creation input bar (bottom-pinned, matches chat input style) ── */}
+      {/* ── Task creation input bar (CV3 pill design) ── */}
       <div style={{
         flexShrink: 0,
         padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
@@ -1341,7 +1341,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
           <input
             ref={taskInputRef}
             type="text"
-            placeholder="Add a task"
+            placeholder="Add a task..."
             value={taskInput}
             onChange={e => setTaskInput(e.target.value)}
             onFocus={() => setTaskInputFocused(true)}
@@ -1358,6 +1358,50 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
               fontFamily: "'Inter', sans-serif",
             }}
           />
+          {/* Action buttons inside pill */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Attach */}
+            <button title="Attach" onClick={() => {}} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.15s',
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            {/* Commands */}
+            <button title="Commands" onClick={() => {}} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.15s',
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+            </button>
+          </div>
+          {/* Mic button (hidden when text present) */}
+          {!taskInput.trim() && (
+            <button title="Voice" onClick={() => {}} style={{
+              width: 42, height: 42, borderRadius: '50%',
+              background: C.accent, border: 'none',
+              color: '#000', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'transform 0.15s, box-shadow 0.2s',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10a7 7 0 0014 0"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </button>
+          )}
+          {/* Send button (shown when text present) */}
           {taskInput.trim() && (
             <button
               title="Create task"
@@ -1383,7 +1427,8 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                 }} />
               ) : (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
               )}
             </button>
@@ -1591,6 +1636,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [sending, setSending]             = useState(false)
   const [loadingMsgs, setLoadingMsgs]     = useState(false)
   const [uploading, setUploading]         = useState(false)
+  const [chatInputFocused, setChatInputFocused] = useState(false)
   const [isVoiceActive, setIsVoiceActive] = useState(false)
   const [voiceStatus, setVoiceStatus]     = useState('idle')
   const [voiceVolume, setVoiceVolume]     = useState(0)
@@ -3156,12 +3202,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           display: 'flex',
           alignItems: 'center',
           background: C.s1,
-          border: '1.5px solid ' + (inputRef.current === document.activeElement ? 'rgba(16,185,129,0.25)' : C.border2),
+          border: '1.5px solid ' + (chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
           borderRadius: 26,
           padding: '5px 5px 5px 16px',
           maxWidth: 560,
           margin: '0 auto',
-          boxShadow: inputRef.current === document.activeElement ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+          boxShadow: chatInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
           transition: 'border-color 0.25s, box-shadow 0.25s',
         }}>
           <input
@@ -3170,6 +3216,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setChatInputFocused(true)}
+            onBlur={() => setChatInputFocused(false)}
             placeholder={`Message ${selectedAgent.name}...`}
             style={{
               flex: 1,
@@ -3204,6 +3252,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
                 </svg>
               )}
+            </button>
+            {/* Commands */}
+            <button title="Commands" onClick={() => {}} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.15s',
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
             </button>
           </div>
           {/* Mic button (hidden when text present) */}
@@ -3858,31 +3918,6 @@ export default function CornerV3() {
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
 
-      {/* ── POWERED BY AOM ────────────────────────────────────────────────── */}
-      <div style={{
-        position: 'fixed',
-        bottom: 8,
-        left: 12,
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.3)',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}>
-        Powered by AOM
-      </div>
-
-      {/* ── BUILD TIMESTAMP ───────────────────────────────────────────────── */}
-      <div style={{
-        position: 'fixed',
-        bottom: 8,
-        right: 12,
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.3)',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}>
-        {'Built ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-      </div>
 
     </div>
   )
