@@ -3686,6 +3686,19 @@ export default function CornerV3() {
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
 
+      {/* ── BUILD TIMESTAMP ───────────────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed',
+        bottom: 8,
+        right: 12,
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.3)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}>
+        {'Built ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+      </div>
+
     </div>
   )
 }
