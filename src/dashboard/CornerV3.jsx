@@ -8,6 +8,7 @@
 // All styling is inline -- no CSS modules.
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Reorder } from 'framer-motion'
 import { supabase } from './lib/supabase.js'
 import {
@@ -1290,6 +1291,8 @@ function formatChatTime(ts) {
 // ── Chat panel ────────────────────────────────────────────────────────────────
 
 function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
+  const { projectId } = useParams()
+  const navigate = useNavigate()
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
   const [messages, setMessages]           = useState([])
   const [input, setInput]                 = useState('')
@@ -1552,6 +1555,43 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
     setUploading(false)
   }, [selectedAgent, worldId])
 
+  // ── Project view ─────────────────────────────────────────────────────────────
+
+  if (projectId && !selectedAgent) {
+    return (
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        fontFamily: "'Inter', sans-serif",
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(8,14,28,0.95)',
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={() => navigate('/dashboard')}
+            style={{
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#A0A0A0', fontSize: 18, lineHeight: 1,
+            }}
+          >
+            &#x2190;
+          </button>
+          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Project</span>
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.text2, fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
+          Project ID: {projectId}
+        </div>
+      </div>
+    )
+  }
+
   // ── Agent list ───────────────────────────────────────────────────────────────
 
   if (!selectedAgent) {
@@ -1688,7 +1728,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
               key={project.id || project.slug}
               project={project}
               isExpanded={false}
-              onClick={() => setSelectedAgent({ slug: project.slug, name: project.name, isProject: true })}
+              onClick={() => navigate(`/dashboard/project/${project.id}`)}
               isNightMode={true}
               wiggle={false}
               isMobile={false}
