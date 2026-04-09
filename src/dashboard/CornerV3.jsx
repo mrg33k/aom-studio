@@ -1516,6 +1516,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             agent: selectedAgent.slug,
             client_id: worldId,
             history,
+            project_id: selectedProject?.id || null,
           }),
         }).then(r => r.json()),
       ])
@@ -2942,6 +2943,7 @@ export default function CornerV3() {
             agent: target.slug,
             client_id: worldId,
             history: [],
+            project_id: selectedProject?.id || null,
           }),
         }).then(r => r.json()),
       ])
