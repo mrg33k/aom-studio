@@ -726,7 +726,7 @@ function getShippedCardColor(task, index) {
 
 // ── Project filter pills (loaded from Supabase projects table) ────────────────
 
-function TasksPanel({ queued, rightNow, done }) {
+function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
   const [searchQuery,   setSearchQuery]   = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
@@ -735,7 +735,57 @@ function TasksPanel({ queued, rightNow, done }) {
   const [selectedColor,          setSelectedColor]          = useState('#10B981')
   const [shippedLimit,           setShippedLimit]           = useState(50)
   const [projectNames,           setProjectNames]           = useState([])
+  const [taskInput,              setTaskInput]              = useState('')
+  const [taskInputFocused,       setTaskInputFocused]       = useState(false)
+  const [taskSubmitting,         setTaskSubmitting]         = useState(false)
+  const taskInputRef = useRef(null)
   const { projects: taskProjects } = useProjects()
+
+  // ── Instant task maker: submit handler ──────────────────────────────────────
+  const handleTaskSubmit = useCallback(async () => {
+    const text = taskInput.trim()
+    if (!text || taskSubmitting) return
+
+    setTaskSubmitting(true)
+    try {
+      const clientId = worldId || getClientId()
+      const res = await fetch('/api/dashboard/v2-task-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: text,
+          description: text,
+          status: 'queued',
+          priority: 0,
+          client_id: clientId,
+          created_by: 'dashboard',
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        console.error('[task-maker] API error:', err)
+      } else {
+        setTaskInput('')
+        if (taskInputRef.current) {
+          taskInputRef.current.style.height = 'auto'
+          taskInputRef.current.style.height = '36px'
+        }
+        // Refresh tasks to pick up the new one immediately
+        if (refreshTasks) refreshTasks()
+      }
+    } catch (err) {
+      console.error('[task-maker] Network error:', err)
+    } finally {
+      setTaskSubmitting(false)
+    }
+  }, [taskInput, taskSubmitting, worldId, refreshTasks])
+
+  const handleTaskInputKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleTaskSubmit()
+    }
+  }, [handleTaskSubmit])
 
   // Load project names from Supabase on mount
   useEffect(() => {
@@ -816,6 +866,7 @@ function TasksPanel({ queued, rightNow, done }) {
           50%  { width: 60% }
           100% { width: 90% }
         }
+        @keyframes spin { to { transform: rotate(360deg) } }
       `}</style>
 
       {/* Scrollable content */}
@@ -913,6 +964,84 @@ function TasksPanel({ queued, rightNow, done }) {
                 fontFamily: "'Inter', sans-serif",
               }}
             >+</button>
+          </div>
+        </div>
+
+        {/* ── Instant task maker input bar ────────────────────────────────── */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 8,
+            background: C.s1,
+            border: '1px solid ' + (taskInputFocused ? 'rgba(16,185,129,0.15)' : C.border),
+            borderRadius: 12,
+            padding: '6px 8px',
+            transition: 'border-color 0.2s',
+          }}>
+            <textarea
+              ref={taskInputRef}
+              value={taskInput}
+              onChange={e => {
+                setTaskInput(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
+              }}
+              onKeyDown={handleTaskInputKeyDown}
+              onFocus={() => setTaskInputFocused(true)}
+              onBlur={() => setTaskInputFocused(false)}
+              placeholder="Add a task..."
+              rows={1}
+              style={{
+                flex: 1,
+                padding: '8px 10px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 10,
+                color: C.text,
+                fontSize: 13,
+                fontFamily: "'Inter', sans-serif",
+                outline: 'none',
+                resize: 'none',
+                lineHeight: 1.5,
+                minHeight: 36,
+                maxHeight: 100,
+                overflowY: 'auto',
+              }}
+            />
+            <button
+              onClick={handleTaskSubmit}
+              disabled={!taskInput.trim() || taskSubmitting}
+              style={{
+                width: 36, height: 36, flexShrink: 0,
+                borderRadius: 10,
+                background: taskInput.trim() && !taskSubmitting
+                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                  : 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                cursor: taskInput.trim() && !taskSubmitting ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'background 150ms ease',
+              }}
+            >
+              {taskSubmitting ? (
+                <div style={{
+                  width: 14, height: 14,
+                  border: '2px solid rgba(255,255,255,0.15)',
+                  borderTopColor: C.accent,
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              ) : (
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+                  stroke={taskInput.trim() ? '#fff' : C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              )}
+            </button>
+          </div>
+          <div style={{ fontSize: 10, color: C.dim, marginTop: 5, paddingLeft: 4, fontFamily: "'Inter', sans-serif" }}>
+            Rex will figure out who handles this
           </div>
         </div>
 
@@ -2886,7 +3015,7 @@ export default function CornerV3() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const { queued, rightNow, done } = useTasks()
+  const { queued, rightNow, done, refresh: refreshTasks } = useTasks()
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {
@@ -3162,7 +3291,7 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} />}
+        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} />}
       </div>
 
