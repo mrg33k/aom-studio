@@ -483,10 +483,11 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
     return () => clearInterval(timer)
   }, [])
 
-  const displayName =
+  const displayName = useMemo(() =>
     user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.email?.split('@')[0] ||
     'there'
+  , [user?.id])
 
   // Find first active agent for hero sub text
   const activeAgent = (agents || []).find(a => a.status?.toUpperCase() !== 'IDLE')
@@ -1524,10 +1525,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     const timer = setInterval(() => setGreetingIdx(prev => (prev + 1) % GREETINGS.length), 4000)
     return () => clearInterval(timer)
   }, [])
-  const displayName =
+  // Memoize on user ID so the displayed name stays stable during greeting
+  // rotations, tab switches, and agent selection — it only re-derives when
+  // the user identity itself changes (login / logout).
+  const displayName = useMemo(() =>
     currentUser?.user_metadata?.full_name?.split(' ')[0] ||
     currentUser?.email?.split('@')[0] ||
     'there'
+  , [currentUser?.id])
   const lastLoginText = formatRelativeTime(currentUser?.last_sign_in_at)
 
   // ── Collapsible section states (Favorites=open, Agents=closed, Projects=closed) ──
@@ -3268,7 +3273,10 @@ export default function CornerV3() {
   useEffect(() => {
     if (!supabase) return
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // getSession() reads from localStorage (near-instant) rather than making a network
+    // request like getUser() does. This seeds currentUser before the first paint cycle.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user || null
       if (user) {
         setCurrentUser(user)
         setClientIdFromUser(user)
@@ -3278,7 +3286,13 @@ export default function CornerV3() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user || null
-      setCurrentUser(user)
+      // Only update state when the user identity actually changes.
+      // Passing a function to setCurrentUser avoids re-renders on transient
+      // events (TOKEN_REFRESHED, USER_UPDATED) where the user ID is the same.
+      setCurrentUser(prev => {
+        if (user?.id && user.id === prev?.id) return prev
+        return user
+      })
       if (user) {
         setClientIdFromUser(user)
         setWorldId(getClientId())
