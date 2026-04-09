@@ -328,10 +328,10 @@ async function updateContext(args, clientId) {
   const project = Array.isArray(projects) ? projects[0] : null;
   if (!project) return { error: `Project not found: ${slug}` };
 
-  // Fetch existing context or initialize
-  const existing = await sbFetch(`/rest/v1/project_context?project_id=eq.${project.id}&limit=1`);
+  // Fetch existing context from events table (event_type='project_context', agent=project slug)
+  const existing = await sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(slug)}&order=timestamp.desc&limit=1&select=id,payload`);
   const row = Array.isArray(existing) ? existing[0] : null;
-  const currentMd = (row && row.context_md) ? row.context_md : CONTEXT_TEMPLATE;
+  const currentMd = (row?.payload?.context_md) ? row.payload.context_md : CONTEXT_TEMPLATE;
 
   // Parse sections
   const sections = parseContextSections(currentMd);
@@ -347,22 +347,21 @@ async function updateContext(args, clientId) {
   const updatedMd = rebuildContext(sections);
   const wordCount = updatedMd.split(/\s+/).filter(Boolean).length;
 
-  // Upsert to project_context
+  // Upsert context via events table
   if (row) {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/project_context?id=eq.${row.id}`, {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/events?id=eq.${row.id}`, {
       method: 'PATCH',
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ context_md: updatedMd, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ payload: { context_md: updatedMd, project_id: project.id }, timestamp: new Date().toISOString() }),
     });
-    if (!resp.ok) throw new Error(`Failed to update project_context: ${resp.status}`);
+    if (!resp.ok) throw new Error(`Failed to update project context: ${resp.status}`);
   } else {
-    const crypto = await import('crypto');
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/project_context`, {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/events`, {
       method: 'POST',
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ id: crypto.randomUUID(), project_id: project.id, context_md: updatedMd, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ agent: slug, event_type: 'project_context', payload: { context_md: updatedMd, project_id: project.id } }),
     });
-    if (!resp.ok) throw new Error(`Failed to insert project_context: ${resp.status}`);
+    if (!resp.ok) throw new Error(`Failed to insert project context: ${resp.status}`);
   }
 
   const result = { updated: true, section, word_count: wordCount };
@@ -575,9 +574,9 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         if (project?.id) resolvedProjectId = project.id;
 
         let contextMd = '';
-        if (project?.id) {
-          const ctxRows = await sbFetch(`/rest/v1/project_context?project_id=eq.${project.id}&limit=1&select=context_md`);
-          contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.context_md) ? ctxRows[0].context_md : '';
+        if (project?.slug) {
+          const ctxRows = await sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(project.slug)}&order=timestamp.desc&limit=1&select=payload`);
+          contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.payload?.context_md) ? ctxRows[0].payload.context_md : '';
         }
 
         const systemState = await getCachedSystemState();
@@ -718,7 +717,11 @@ ${SYSTEM_INSTRUCTION}${systemState}`;
             if (!Array.isArray(items)) throw new Error(`Not a directory: ${dirPath}`);
             result = { path: dirPath || '/', files: items.map(i => ({ name: i.name, type: i.type, size: i.size })) };
           }
-          else if (name === 'update_context') result = await updateContext(args, clientId);
+          else if (name === 'update_context') {
+            // Auto-fill project_slug from request context if not provided by Gemini
+            if (!args.project_slug && projectSlug) args.project_slug = projectSlug;
+            result = await updateContext(args, clientId);
+          }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
           const wrappedResult = Array.isArray(result) ? { items: result } : (result && typeof result === 'object' ? result : { value: result });
