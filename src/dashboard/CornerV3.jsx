@@ -2031,7 +2031,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
               letterSpacing: '0.1em', textTransform: 'uppercase',
               marginTop: 20, marginBottom: 12,
             }}>
-              Projects
+              Projects{projects.length > 0 && <span style={{
+                marginLeft: 6,
+                fontSize: 10, fontWeight: 600,
+                color: C.muted,
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: 8,
+                padding: '1px 6px',
+                letterSpacing: '0.02em',
+              }}>{projects.length}</span>}
             </div>
             {projects.map(project => (
               <button
