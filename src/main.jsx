@@ -48,6 +48,7 @@ import Corner from './pages/Corner.jsx'
 import CornerV3 from './dashboard/CornerV3.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import ISAShootScript from './pages/ISAShootScript.jsx'
+import ISABrandBible from './pages/ISABrandBible.jsx'
 import Skills from './pages/Skills.jsx'
 import Settings from './pages/Settings.jsx'
 import Onboarding from './pages/Onboarding.jsx'
@@ -241,6 +242,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/ambition-linkedin" element={<BriefAmbitionLinkedIn />} />
           <Route path="/briefs/ambition-market-strategy" element={<BriefAmbitionStrategy />} />
           <Route path="/briefs/isa-energy-shoot-script" element={<ISAShootScript />} />
+          <Route path="/briefs/isa-energy-brand-bible" element={<ISABrandBible />} />
           <Route path="/briefs/:slug" element={<BriefPage />} />
           <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/ideas" element={<IdeasTracker />} />
