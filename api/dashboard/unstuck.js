@@ -28,6 +28,12 @@ export default async function handler(req, res) {
     'Prefer': 'return=representation',
   };
 
+  // Multi-tenant: scope unstuck to a specific client_id
+  const clientId = (req.body && req.body.client_id && req.body.client_id.trim())
+    ? req.body.client_id.trim().toLowerCase()
+    : 'aom';
+  const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
+
   const now = new Date().toISOString();
   let cleared = 0;
   let reset = 0;
@@ -36,9 +42,9 @@ export default async function handler(req, res) {
   let resetAgents = [];
 
   try {
-    // 1. PATCH tasks: status=active -> status=done, completed_at=now
+    // 1. PATCH tasks: status=active -> status=done, completed_at=now (scoped by client_id)
     const taskResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?status=eq.active`,
+      `${SUPABASE_URL}/rest/v1/tasks?status=eq.active${clientFilter}`,
       {
         method: 'PATCH',
         headers,
@@ -53,9 +59,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2. PATCH agent_status: status in (working, stuck) -> status=idle
+    // 2. PATCH agent_status: status in (working, stuck) -> status=idle (scoped by client_id)
     const agentResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/agent_status?status=in.(working,stuck)`,
+      `${SUPABASE_URL}/rest/v1/agent_status?status=in.(working,stuck)${clientFilter}`,
       {
         method: 'PATCH',
         headers,
@@ -70,9 +76,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. COUNT queued tasks (for status report)
+    // 3. COUNT queued tasks (for status report, scoped by client_id)
     const queueResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?status=eq.queued&select=id`,
+      `${SUPABASE_URL}/rest/v1/tasks?status=eq.queued${clientFilter}&select=id`,
       { headers: { ...headers, Prefer: 'count=exact' } }
     );
     if (queueResp.ok) {
@@ -95,7 +101,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             event_type: 'restart_agents',
             agent: 'system',
-            client_id: 'aom',
+            client_id: clientId,
             timestamp: now,
             payload: { source: 'unstuck-button', agents: ['bobby', 'elon', 'gary'] },
           }),

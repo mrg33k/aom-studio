@@ -604,12 +604,14 @@ export function useDataPipe(parsePunchList) {
     let messagesChannel = null
     if (supabase) {
       const cid = channelIdRef.current
-      console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages... id:', cid)
+      const clientId = getClientId()
+      console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages... id:', cid, 'client:', clientId)
 
       // agent_status table: any change triggers full refresh (RNB, alive dots, agent status)
+      // Scoped by client_id for multi-tenant isolation
       agentStatusChannel = supabase
         .channel(`agent-status-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status', filter: `client_id=eq.${clientId}` }, () => {
           console.log('[Corner Realtime] agent_status changed')
           fetchAll()
         })
@@ -618,7 +620,7 @@ export function useDataPipe(parsePunchList) {
       // tasks table: any change triggers refresh (new tasks, status changes -> pills + RNB)
       tasksChannel = supabase
         .channel(`tasks-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${clientId}` }, () => {
           console.log('[Corner Realtime] tasks changed')
           fetchAll()
         })
@@ -627,7 +629,7 @@ export function useDataPipe(parsePunchList) {
       // messages table: INSERT triggers refresh (new chat messages update throughput + unread)
       messagesChannel = supabase
         .channel(`messages-inserts-${cid}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${clientId}` }, () => {
           console.log('[Corner Realtime] messages INSERT')
           fetchAll()
         })

@@ -103,7 +103,7 @@ async function getTasks(clientId, limit = 10) {
   } catch { return []; }
 }
 
-async function getAgentTape(slug) {
+async function getAgentTape(slug, clientId = 'aom') {
   if (!slug) return '';
   // Try RAG server first (has the full tape from last-conversation.md)
   try {
@@ -115,11 +115,11 @@ async function getAgentTape(slug) {
       if (data?.tape) return data.tape;
     }
   } catch { /* fall through to Supabase */ }
-  // Fallback: build a mini-tape from recent task completions in Supabase
+  // Fallback: build a mini-tape from recent task completions in Supabase (scoped by client_id)
   if (!SUPABASE_URL || !SUPABASE_KEY) return '';
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(slug)}&source=eq.task-notification&order=timestamp.desc&limit=5&select=text,timestamp`,
+      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}&source=eq.task-notification&order=timestamp.desc&limit=5&select=text,timestamp`,
       { headers: supaHeaders() }
     );
     if (!res.ok) return '';
@@ -174,7 +174,7 @@ export default async function handler(req, res) {
     getRecentMessages(agentSlug, clientId),
     getTasks(clientId),
     getAgentStatuses(clientId),
-    getAgentTape(agentSlug),
+    getAgentTape(agentSlug, clientId),
     getRecentCompleted(clientId),
   ]);
 

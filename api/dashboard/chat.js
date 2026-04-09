@@ -10,7 +10,7 @@ const REPO = 'mrg33k/AOM-EA'
 const BRANCH = 'master'
 
 // Write a message to Supabase so the Mac listener can wake up and stay in sync
-async function writeToSupabase(role, agent, text, source = 'dashboard', replyTo = '') {
+async function writeToSupabase(role, agent, text, source = 'dashboard', replyTo = '', clientId = 'aom') {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null
   const id = crypto.randomUUID()
   try {
@@ -31,6 +31,7 @@ async function writeToSupabase(role, agent, text, source = 'dashboard', replyTo 
         text,
         project: '',
         reply_to: replyTo,
+        client_id: clientId,
       }),
     })
   } catch {}
@@ -122,7 +123,8 @@ export default async function handler(req, res) {
 
   res.setHeader('Access-Control-Allow-Origin', '*')
 
-  const { slug, message, history } = req.body
+  const { slug, message, history, client_id } = req.body
+  const resolvedClientId = (client_id && client_id.trim()) ? client_id.trim().toLowerCase() : 'aom'
 
   if (!slug || !message) {
     return res.status(400).json({ error: 'slug and message required' })
@@ -146,7 +148,7 @@ export default async function handler(req, res) {
     // Write user message to Supabase (wakes Mac listener + syncs conversation)
     // Fire-and-forget: don't block the chat response
     const userMsgId = crypto.randomUUID()
-    writeToSupabase('user', slug, message, 'dashboard').catch(() => {})
+    writeToSupabase('user', slug, message, 'dashboard', '', resolvedClientId).catch(() => {})
 
     // Load agent context from GitHub
     const { agentMd, lastConvo, priorities } = await loadAgentContext(slug)
@@ -243,7 +245,7 @@ export default async function handler(req, res) {
     // Write assistant response to Supabase (syncs conversation to Mac)
     // Fire-and-forget
     if (fullResponse) {
-      writeToSupabase('assistant', slug, fullResponse, 'dashboard-api', userMsgId).catch(() => {})
+      writeToSupabase('assistant', slug, fullResponse, 'dashboard-api', userMsgId, resolvedClientId).catch(() => {})
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`)

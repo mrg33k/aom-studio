@@ -54,19 +54,14 @@ export default async function handler(req, res) {
       // Events table: last 30 minutes only -- prevents stale ghost pills in the RNB.
       // task_started events older than 30 min with no matching task_completed are ghosts.
       // The 10-min client-side filter in deriveStateFromEvents catches anything that slips through.
-      // NOTE: events table has no client_id column -- we post-filter by agent slugs below.
-      supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}`),
+      // Migration 017 added client_id to events -- filter directly for tenant isolation.
+      supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}${clientFilter}`),
     ]);
     const tasks = [...activeTasks, ...recentDone];
 
-    // World-scope events: the events table has no client_id column, so we filter by the
-    // agent slugs that belong to this world (sourced from agent_status which IS scoped).
-    // AOM ('aom') sees all events (its agents populate the full list).
-    // Non-AOM worlds only see events for their own agents -- no AOM task bleed-through.
-    const worldAgentSlugs = new Set(agents.filter(a => a.type === 'agent').map(a => a.slug));
-    const recentEvents = clientId === 'aom'
-      ? rawEvents
-      : rawEvents.filter(ev => worldAgentSlugs.has(ev.agent));
+    // Events are now scoped by client_id at the DB level (migration 017).
+    // No post-filter needed -- rawEvents already contains only this tenant's events.
+    const recentEvents = rawEvents;
 
     // Split agents vs projects
     const agentList = agents.filter(a => a.type === 'agent');

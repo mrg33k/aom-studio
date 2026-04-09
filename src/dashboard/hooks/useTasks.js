@@ -20,6 +20,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { getClientId } from '../lib/clientConfig'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -87,9 +88,11 @@ export function useTasks() {
     }
 
     try {
+      const clientId = getClientId()
       const { data, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
+        .eq('client_id', clientId)
         .order('priority',   { ascending: false })
         .order('sort_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
@@ -139,12 +142,13 @@ export function useTasks() {
     // Initial fetch
     fetchTasks()
 
-    // Subscribe to realtime changes on the tasks table
+    // Subscribe to realtime changes on the tasks table (scoped by client_id)
+    const clientId = getClientId()
     const channel = supabase
       .channel(channelIdRef.current)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
+        { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${clientId}` },
         handleRealtimeChange,
       )
       .subscribe((status) => {

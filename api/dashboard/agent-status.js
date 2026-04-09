@@ -14,10 +14,11 @@ export default async function handler(req, res) {
 
   // POST: create a new task (merged from supabase-tasks.js)
   if (req.method === 'POST') {
-    const { agent, text, project, status: taskStatus = 'todo' } = req.body || {};
+    const { agent, text, project, status: taskStatus = 'todo', client_id } = req.body || {};
     if (!text) return res.status(400).json({ error: 'text required' });
     const crypto = await import('crypto');
-    const payload = { id: crypto.randomUUID(), agent: agent || 'elon', text: text.trim(), project: project || null, status: taskStatus };
+    const resolvedClientId = (client_id && client_id.trim()) ? client_id.trim().toLowerCase() : 'aom';
+    const payload = { id: crypto.randomUUID(), agent: agent || 'elon', text: text.trim(), project: project || null, status: taskStatus, client_id: resolvedClientId };
     try {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
         method: 'POST',
@@ -95,8 +96,14 @@ export default async function handler(req, res) {
   const body = { status };
   if (current_task !== undefined) body.current_task = current_task;
 
+  // Multi-tenant: scope agent_status update by client_id
+  const clientId = (clientIdParam && clientIdParam.trim())
+    ? clientIdParam.trim().toLowerCase()
+    : 'aom';
+  const filter = `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}`;
+
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?slug=eq.${encodeURIComponent(slug)}`, {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
       method: 'PATCH', headers, body: JSON.stringify(body),
     });
     res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });
