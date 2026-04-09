@@ -2139,23 +2139,81 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
     const agentKey = `project:${selectedProject.slug}`
-    const tempId = `temp-proj-${Date.now()}`
+    const now = new Date().toISOString()
+    const tempUserId = `temp-proj-${Date.now()}`
     setMessages(prev => [...prev, {
-      id: tempId,
+      id: tempUserId,
       role: 'user',
       agent: agentKey,
       text,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       source: 'corner-dashboard',
     }])
+
+    // Build Gemini-format history from the last 20 messages for context
+    const history = messagesRef.current.slice(-20).map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text || '' }],
+    }))
+
     try {
-      const result = await fetch('/api/dashboard/supabase-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: worldId }),
-      }).then(r => r.json())
-      if (result?.message?.id) {
-        setMessages(prev => prev.map(m => m.id === tempId ? { ...result.message } : m))
+      // Run in parallel: persist user message + get AI response
+      const [saveResult, geminiResult] = await Promise.allSettled([
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: worldId }),
+        }).then(r => r.json()),
+        fetch('/api/dashboard/v2-gemini-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            project_slug: selectedProject.slug,
+            project_id: selectedProject.id || null,
+            client_id: worldId,
+            history,
+          }),
+        }).then(r => r.json()),
+      ])
+
+      // Replace temp user msg with real DB id
+      if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
+        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.value.message } : m))
+      }
+
+      // Append AI response
+      if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
+        const reply = geminiResult.value.reply
+        const replyTime = new Date().toISOString()
+        const tempAgentId = `temp-proj-reply-${Date.now()}`
+        setMessages(prev => [...prev, {
+          id: tempAgentId,
+          role: 'agent',
+          agent: agentKey,
+          text: reply,
+          timestamp: replyTime,
+          source: 'gemini',
+        }])
+        // Persist AI response
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: agentKey,
+            text: reply,
+            role: 'agent',
+            source: 'gemini',
+            client_id: worldId,
+          }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data?.message?.id) {
+              setMessages(prev => prev.map(m => m.id === tempAgentId ? { ...data.message } : m))
+            }
+          })
+          .catch(() => {})
       }
     } catch (err) {
       console.error('[ChatPanel] project send error:', err)
