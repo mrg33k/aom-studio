@@ -472,25 +472,34 @@ export function useDataPipe(parsePunchList) {
           setCompletedFeed(completed)
         }
 
-        // Build inbox: latest message per agent (for card previews) + unread counts
-        // Use direct Supabase query (newest-first) so we get the absolute latest per agent,
-        // not constrained by the 500-message batch limit from supabase-status which can
-        // miss agents whose last message falls outside the top 500 global messages.
+        // Build inbox: latest message per agent (for card previews)
+        // FIXED: Fetch latest message PER AGENT individually instead of a global
+        // limit(300) which gets drowned by high-volume agents (gary, system, task threads).
         if (supabase) {
-          const { data: inboxMsgs } = await supabase
-            .from('messages')
-            .select('id, agent, text, timestamp, role, source')
-            .eq('client_id', clientId)
-            .order('timestamp', { ascending: false })
-            .limit(300)
-          if (inboxMsgs && inboxMsgs.length > 0) {
-            setInboxItems(buildInboxItems(inboxMsgs)) // already newest-first
-          } else if (data.messages) {
-            // Fallback: use supabase-status batch (oldest-first -> reverse)
-            setInboxItems(buildInboxItems([...data.messages].reverse()))
+          // Get all known agent slugs from the agents list
+          const agentSlugs = supabaseAgents.length > 0
+            ? supabaseAgents.map(a => a.slug).filter(Boolean)
+            : ['rex','bobby','elon','gary','steffen','alex','cleo','colton','jacob','mark','mom','paige','pixel','steve','tony']
+          if (agentSlugs.length > 0) {
+            const perAgentResults = await Promise.all(
+              agentSlugs.map(slug =>
+                supabase
+                  .from('messages')
+                  .select('id, agent, text, timestamp, role, source')
+                  .eq('client_id', clientId)
+                  .eq('agent', slug)
+                  .not('agent', 'like', 'task:%')
+                  .order('timestamp', { ascending: false })
+                  .limit(1)
+                  .then(({ data }) => data?.[0] || null)
+              )
+            )
+            const inboxMsgs = perAgentResults.filter(Boolean)
+            if (inboxMsgs.length > 0) {
+              setInboxItems(buildInboxItems(inboxMsgs))
+            }
           }
         } else if (data.messages) {
-          // No supabase client (env vars not set) -- fall back to batch
           setInboxItems(buildInboxItems([...data.messages].reverse()))
         }
 
