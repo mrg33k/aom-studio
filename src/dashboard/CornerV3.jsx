@@ -22,7 +22,7 @@ import { useDataPipe } from './hooks/useDataPipe'
 import { useProjects } from './hooks/useProjects'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
-import { ProjectCard } from './components/ProjectCard.jsx'
+// ProjectCard import removed -- projects now render as inline cards matching agent card style
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
 
@@ -1311,14 +1311,50 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
   const { isLoading: projectsLoading, isError: projectsError, data: projects } = useProjects()
 
-  // Build unread map: agent slug -> inbox item (last unread message)
+  // Fetch latest message per agent that's missing from inboxItems
+  const [agentPreviews, setAgentPreviews] = useState({})
+  useEffect(() => {
+    if (!supabase || !worldId || !agents?.length) return
+    const inboxSlugs = new Set((inboxItems || []).map(i => i.agent))
+    const missing = agents.filter(a => a.slug && !inboxSlugs.has(a.slug))
+    if (missing.length === 0) return
+
+    // Fetch latest message for each missing agent
+    Promise.all(missing.map(a =>
+      supabase
+        .from('messages')
+        .select('agent, text, timestamp, id, role')
+        .eq('client_id', worldId)
+        .eq('agent', a.slug)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .then(({ data }) => data?.[0] || null)
+    )).then(results => {
+      const previews = {}
+      for (const msg of results) {
+        if (msg?.agent) {
+          previews[msg.agent] = {
+            agent: msg.agent,
+            text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
+            timestamp: msg.timestamp,
+            id: msg.id,
+            isUnread: false,
+          }
+        }
+      }
+      setAgentPreviews(previews)
+    })
+  }, [agents, inboxItems, worldId])
+
+  // Build unread map: agent slug -> inbox item (last message preview)
+  // Merges inboxItems (from useDataPipe) with individually fetched previews
   const unreadMap = useMemo(() => {
-    const m = {}
+    const m = { ...agentPreviews }
     for (const item of (inboxItems || [])) {
       if (item.agent) m[item.agent] = item
     }
     return m
-  }, [inboxItems])
+  }, [inboxItems, agentPreviews])
 
   // Agents sorted: unread first, then active, then idle
   const chattableAgents = useMemo(() => {
@@ -1705,37 +1741,72 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         )}
 
         {/* ── Projects section ──────────────────────────────────────────────── */}
-        <>
-          <div style={{
-            fontSize: 11, fontWeight: 700, color: C.muted,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            marginTop: 20, marginBottom: 12,
-          }}>
-            Your Projects
-          </div>
-          {projectsLoading && (
-            <div style={{ fontSize: 13, color: C.text2, fontFamily: "'Inter', sans-serif", padding: '8px 0' }}>
-              Loading projects...
+        {!projectsLoading && !projectsError && projects.length > 0 && (
+          <>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: C.muted,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              marginTop: 20, marginBottom: 12,
+            }}>
+              Projects
             </div>
-          )}
-          {projectsError && (
-            <div style={{ fontSize: 13, color: C.red, fontFamily: "'Inter', sans-serif", padding: '8px 0' }}>
-              Error loading projects!
-            </div>
-          )}
-          {!projectsLoading && !projectsError && projects.map(project => (
-            <ProjectCard
-              key={project.id || project.slug}
-              project={project}
-              isExpanded={false}
-              onClick={() => navigate(`/dashboard/project/${project.id}`)}
-              isNightMode={true}
-              wiggle={false}
-              isMobile={false}
-              isTablet={false}
-            />
-          ))}
-        </>
+            {projects.map(project => (
+              <button
+                key={project.id || project.slug}
+                onClick={() => navigate(`/dashboard/project/${project.id}`)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  width: '100%', padding: '12px 14px',
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.025)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  cursor: 'pointer', textAlign: 'left', marginBottom: 6,
+                  transition: 'background 150ms ease, border-color 150ms ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+                }}
+              >
+                {/* Color dot */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: `linear-gradient(135deg, ${project.color || '#6B8AB0'}44, ${project.color || '#6B8AB0'}22)`,
+                  border: `1px solid ${project.color || '#6B8AB0'}33`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <div style={{
+                    width: 14, height: 14, borderRadius: 4,
+                    background: project.color || '#6B8AB0',
+                    boxShadow: `0 0 8px ${project.color || '#6B8AB0'}55`,
+                  }} />
+                </div>
+
+                {/* Name */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{
+                    fontSize: 13, fontWeight: 600,
+                    color: 'rgba(240,244,255,0.8)',
+                    fontFamily: "'Inter', sans-serif",
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    display: 'block',
+                  }}>{project.name}</span>
+                </div>
+
+                {/* Chevron */}
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+                  stroke="rgba(80,100,128,0.4)" strokeWidth={2.5}
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            ))}
+          </>
+        )}
       </div>
     )
   }
@@ -2171,7 +2242,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
       {/* Voice mode UI -- replaces input bar when voice is active */}
       {isVoiceActive && (
         <div style={{
-          padding: '14px 20px',
+          padding: '14px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
           background: C.bg2,
           borderTop: '1px solid ' + C.border,
           flexShrink: 0,
@@ -2257,7 +2328,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
       {/* Input area -- hidden when voice is active */}
       {!isVoiceActive && <div style={{
-        padding: '10px 14px 14px',
+        padding: '10px 14px calc(14px + env(safe-area-inset-bottom, 0px))',
         borderTop: '1px solid rgba(255,255,255,0.06)',
         background: 'rgba(8,14,28,0.95)',
         flexShrink: 0,
@@ -2621,7 +2692,7 @@ export default function CornerV3() {
   return (
     <div style={{
       width: '100%',
-      height: '100vh',
+      height: '100dvh',
       background: C.bg,
       display: 'flex',
       flexDirection: 'column',
@@ -2640,6 +2711,7 @@ export default function CornerV3() {
         position: 'sticky',
         top: 0,
         zIndex: 100,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
 
         {/* Row 1: Logo + World (left) | Bell + Avatar (right) */}
@@ -2746,7 +2818,7 @@ export default function CornerV3() {
           {/* Voice mode UI */}
           <div style={{
             flexShrink: 0,
-            padding: '14px 20px',
+            padding: '14px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
             background: C.bg2,
             borderTop: '1px solid ' + C.border,
           }}>
@@ -2819,7 +2891,7 @@ export default function CornerV3() {
       {/* ── INPUT BAR (persistent -- hidden on chat tab or when root voice is active) */}
       <div style={{
         flexShrink: 0,
-        padding: '8px 12px 10px',
+        padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
         background: C.bg,
         borderTop: '1px solid ' + C.border,
         display: (tab === 'chat' || rootVoiceActive) ? 'none' : undefined,
