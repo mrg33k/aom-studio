@@ -167,7 +167,7 @@ async function createTask(args = {}, clientId) {
   const titleText = args.title.trim();
   const newTask = { id: crypto.randomUUID(), title: titleText, text: titleText, description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
   if (args.agent_identity !== undefined) newTask.agent_identity = args.agent_identity;
-  if (args.project_id !== undefined) newTask.project = args.project_id;
+  if (args.project_id !== undefined) newTask.project_id = args.project_id;
   const created = await sbFetch('/rest/v1/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(newTask) });
   const result = Array.isArray(created) ? created[0] : created;
   if (warnings.length > 0) result._warnings = warnings;
@@ -510,6 +510,8 @@ export default async function handler(req, res) {
 
   try {
     await setAgentStatus(agentSlug, 'working');
+    // Resolved project UUID: from request body or looked up from project_slug below
+    let resolvedProjectId = (project_id && String(project_id).trim()) || null;
     let systemInstruction = SYSTEM_INSTRUCTION;
     if (agentSlug) {
       try {
@@ -570,6 +572,8 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,name,description`);
         const project = Array.isArray(projects) ? projects[0] : null;
 
+        if (project?.id) resolvedProjectId = project.id;
+
         let contextMd = '';
         if (project?.id) {
           const ctxRows = await sbFetch(`/rest/v1/project_context?project_id=eq.${project.id}&limit=1&select=context_md`);
@@ -623,7 +627,7 @@ ${SYSTEM_INSTRUCTION}${systemState}`;
           if (name === 'create_task') {
             const taskAgent = args.agent || agentSlug || null;
             const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
-            if (project_id && !argsWithAgent.project_id) argsWithAgent.project_id = project_id;
+            if (resolvedProjectId && !argsWithAgent.project_id) argsWithAgent.project_id = resolvedProjectId;
             result = await createTask(argsWithAgent, clientId);
           }
           else if (name === 'get_queue') result = await getQueue(clientId);
