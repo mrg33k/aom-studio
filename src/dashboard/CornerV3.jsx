@@ -1647,6 +1647,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const fileInputRef   = useRef(null)
   const voiceChatRef   = useRef(null)
   const [inlineProject, setInlineProject] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -2498,6 +2499,43 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           }}>
             {GREETINGS[greetingIdx](displayName)}
           </h1>
+        </div>
+
+        {/* ── Search bar ───────────────────────────────────────── */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 10,
+            padding: '8px 12px',
+          }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search agents and projects..."
+              style={{
+                flex: 1, background: 'none', border: 'none', outline: 'none',
+                fontSize: 13, color: 'rgba(255,255,255,0.8)',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, flexShrink: 0,
+                }}
+              >
+                &#x2715;
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Pins section ─────────────────────────────────────── */}
