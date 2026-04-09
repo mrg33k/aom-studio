@@ -587,16 +587,18 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
     } else if (projectSlug) {
       try {
         // Fetch project details, context, and task history in parallel
-        const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,name,description`);
+        const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,slug,name,repo_description,repo_path`);
         const project = Array.isArray(projects) ? projects[0] : null;
 
         if (project?.id) resolvedProjectId = project.id;
 
-        // Parallel fetch: project context + recent tasks + recent chat messages
-        const [ctxRows, recentTasks, recentProjectMsgs, systemState] = await Promise.all([
-          project?.slug
-            ? sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(project.slug)}&order=timestamp.desc&limit=1&select=payload`)
-            : Promise.resolve([]),
+        // Parallel fetch: project context (from disk via RAG server) + tasks + messages
+        const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+        const [contextResult, recentTasks, recentProjectMsgs, systemState] = await Promise.all([
+          // Primary: read CONTEXT.md from disk via RAG server (source of truth)
+          fetch(`${RAG_URL}/project-context?slug=${encodeURIComponent(projectSlug)}`, {
+            signal: AbortSignal.timeout(5000),
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
           sbFetch(`/rest/v1/tasks?project_path=eq.${encodeURIComponent(projectSlug)}&order=completed_at.desc.nullslast,created_at.desc&limit=15&select=id,title,text,status,agent,agent_identity,qa_score,error,completed_at,created_at`),
           baseHistory.length >= 4
             ? Promise.resolve([])
@@ -604,7 +606,14 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
           getCachedSystemState(),
         ]);
 
-        const contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.payload?.context_md) ? ctxRows[0].payload.context_md : '';
+        // Use RAG server result (disk), fall back to events table (Supabase), fall back to empty
+        let contextMd = contextResult?.context_md || '';
+        if (!contextMd && project?.slug) {
+          try {
+            const ctxRows = await sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(project.slug)}&order=timestamp.desc&limit=1&select=payload`);
+            contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.payload?.context_md) ? ctxRows[0].payload.context_md : '';
+          } catch { /* silent fallback */ }
+        }
 
         // Build task history section
         let taskHistory = '';
@@ -626,7 +635,7 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         }
 
         const projectName = project?.name || projectSlug;
-        const projectDescription = project?.description ? `\n${project.description}` : '';
+        const projectDescription = project?.repo_description ? `\n${project.repo_description}` : '';
         const contextSection = contextMd
           ? `\n\nPROJECT CONTEXT:\n${contextMd}`
           : '\n\nPROJECT CONTEXT: No specific context has been recorded for this project yet.';
