@@ -85,6 +85,7 @@ YOUR TOOLS (use naturally, only when the conversation calls for it):
 
 TASK CREATION RULES:
 - NEVER create a task on the first message about a topic. Discuss the approach first.
+- Before creating ANY task, check if a similar task already exists (use run_query on the tasks table filtered by project_path). If a matching task failed, check its error with get_status and discuss whether to fix the approach before requeuing. If it shows "done", it completed and may just need approval, not recreation.
 - Only create tasks when Patrik says "do it", "lets go", "queue it", "create it", or clearly confirms.
 - If Patrik describes what he WANTS, discuss how to approach it first.
 - Keep task scope small. One clear change per task. "Add X to Y" not "Redesign the Z system".
@@ -582,19 +583,44 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
       }
     } else if (projectSlug) {
       try {
-        // Fetch project details by slug
+        // Fetch project details, context, and task history in parallel
         const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,name,description`);
         const project = Array.isArray(projects) ? projects[0] : null;
 
         if (project?.id) resolvedProjectId = project.id;
 
-        let contextMd = '';
-        if (project?.slug) {
-          const ctxRows = await sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(project.slug)}&order=timestamp.desc&limit=1&select=payload`);
-          contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.payload?.context_md) ? ctxRows[0].payload.context_md : '';
+        // Parallel fetch: project context + recent tasks + recent chat messages
+        const [ctxRows, recentTasks, recentProjectMsgs, systemState] = await Promise.all([
+          project?.slug
+            ? sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(project.slug)}&order=timestamp.desc&limit=1&select=payload`)
+            : Promise.resolve([]),
+          sbFetch(`/rest/v1/tasks?project_path=eq.${encodeURIComponent(projectSlug)}&order=completed_at.desc.nullslast,created_at.desc&limit=15&select=id,title,text,status,agent,agent_identity,qa_score,error,completed_at,created_at`),
+          baseHistory.length >= 4
+            ? Promise.resolve([])
+            : sbFetch(`/rest/v1/messages?agent=eq.project:${encodeURIComponent(projectSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp`),
+          getCachedSystemState(),
+        ]);
+
+        const contextMd = (Array.isArray(ctxRows) && ctxRows[0]?.payload?.context_md) ? ctxRows[0].payload.context_md : '';
+
+        // Build task history section
+        let taskHistory = '';
+        if (Array.isArray(recentTasks) && recentTasks.length > 0) {
+          const taskLines = recentTasks.map(t => {
+            const agent = t.agent_identity || t.agent || '?';
+            const score = t.qa_score ? ` QA:${t.qa_score}/10` : '';
+            const err = t.error ? ` Error: ${t.error.slice(0, 100)}` : '';
+            const date = (t.completed_at || t.created_at || '').slice(0, 16);
+            return `- [${t.status}] ${t.title || t.text} (${agent}${score}${err}) ${date}`;
+          });
+          taskHistory = '\n\nRECENT TASKS FOR THIS PROJECT:\n' + taskLines.join('\n') + '\n\nIMPORTANT: Before creating a new task, check if a similar task already exists above. If a task failed, use get_status or run_query to check the error details before recreating it. If a task shows as "done", it completed and may just need approval.';
         }
 
-        const systemState = await getCachedSystemState();
+        // Build recent conversation context (only if client didn't send enough history)
+        let recentContext = '';
+        if (Array.isArray(recentProjectMsgs) && recentProjectMsgs.length > 0) {
+          recentContext = '\n\nRecent project conversation:\n' + recentProjectMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`).join('\n');
+        }
 
         const projectName = project?.name || projectSlug;
         const projectDescription = project?.description ? `\n${project.description}` : '';
@@ -603,9 +629,9 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
           : '\n\nPROJECT CONTEXT: No specific context has been recorded for this project yet.';
 
         systemInstruction = `You are the operator assistant for the "${projectName}" project.${projectDescription}
-${contextSection}
+${contextSection}${taskHistory}
 
-${SYSTEM_INSTRUCTION}${systemState}`;
+${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
       } catch (err) {
         console.error('[v2-gemini-chat] Project context lookup failed:', err.message);
       }
