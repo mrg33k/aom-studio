@@ -407,7 +407,7 @@ async function startRunner() {
 // Server-side cache: agent identity + system state + tapes + RAG. Refreshes per TTL.
 const _cache = { agents: {}, systemState: null, systemStateAt: 0, tapes: {}, rag: {} };
 const CACHE_TTL = 60000; // 60 seconds
-const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
 
 async function getCachedTape(slug) {
   if (_cache.tapes[slug] && Date.now() - _cache.tapes[slug]._at < CACHE_TTL) {
@@ -593,8 +593,9 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         if (project?.id) resolvedProjectId = project.id;
 
         // Parallel fetch: project context (from disk via RAG server) + tasks + messages
-        const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
-        const [contextResult, recentTasks, recentProjectMsgs, systemState] = await Promise.all([
+        // Use Promise.allSettled so one failure doesn't kill the whole project chat
+        const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
+        const [ctxSettled, tasksSettled, msgsSettled, stateSettled] = await Promise.allSettled([
           // Primary: read CONTEXT.md from disk via RAG server (source of truth)
           fetch(`${RAG_URL}/project-context?slug=${encodeURIComponent(projectSlug)}`, {
             signal: AbortSignal.timeout(5000),
@@ -605,6 +606,10 @@ ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
             : sbFetch(`/rest/v1/messages?agent=eq.project:${encodeURIComponent(projectSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp`),
           getCachedSystemState(),
         ]);
+        const contextResult = ctxSettled.status === 'fulfilled' ? ctxSettled.value : null;
+        const recentTasks = tasksSettled.status === 'fulfilled' ? tasksSettled.value : [];
+        const recentProjectMsgs = msgsSettled.status === 'fulfilled' ? msgsSettled.value : [];
+        const systemState = stateSettled.status === 'fulfilled' ? stateSettled.value : '';
 
         // Use RAG server result (disk), fall back to events table (Supabase), fall back to empty
         let contextMd = contextResult?.context_md || '';
@@ -660,6 +665,16 @@ Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/desi
 ${BASE_INSTRUCTION}${systemState}${recentContext}`;
       } catch (err) {
         console.error('[v2-gemini-chat] Project context lookup failed:', err.message);
+        // NEVER fall back to Rex identity for project chats -- use a minimal project operator instruction
+        systemInstruction = `You are the project operator for "${projectSlug}". You are NOT Rex, Bobby, or any named agent. Do not introduce yourself by name.
+
+PROJECT CONTEXT: Context loading failed temporarily. Ask the user what they need help with.
+
+CONVERSATION RULES:
+- Never introduce yourself. The user already knows what this chat is.
+- Be useful immediately. If you can't load context, just have a helpful conversation.
+
+${BASE_INSTRUCTION}`;
       }
     }
 
@@ -705,7 +720,7 @@ ${BASE_INSTRUCTION}${systemState}${recentContext}`;
           else if (name === 'search_history') {
             const searchAgent = args.agent || agentSlug;
             const searchQuery = (args.query || '').trim();
-            const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+            const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
             try {
               const ragRes = await fetch(`${RAG_URL}/search-messages`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
