@@ -1311,6 +1311,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
   const { isLoading: projectsLoading, isError: projectsError, projects } = useProjects()
 
+  const selectedProject = useMemo(() => {
+    if (!projectId || !projects?.length) return null
+    return projects.find(p => String(p.id) === String(projectId)) || null
+  }, [projectId, projects])
+
   // Fetch latest message per agent that's missing from inboxItems
   const [agentPreviews, setAgentPreviews] = useState({})
   useEffect(() => {
@@ -1410,6 +1415,46 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [selectedAgent, worldId])
+
+  // Load project messages when a project is selected
+  useEffect(() => {
+    if (!projectId || selectedAgent || !supabase || !worldId || !selectedProject) return
+    setLoadingMsgs(true)
+    setMessages([])
+    supabase
+      .from('messages')
+      .select('*')
+      .eq('client_id', worldId)
+      .eq('agent', `project:${selectedProject.slug}`)
+      .order('timestamp', { ascending: true })
+      .limit(100)
+      .then(({ data, error }) => {
+        setLoadingMsgs(false)
+        if (!error && data) setMessages(data)
+      })
+  }, [projectId, worldId, selectedProject, selectedAgent])
+
+  // Realtime subscription for project messages
+  useEffect(() => {
+    if (!projectId || selectedAgent || !supabase || !worldId || !selectedProject) return
+    const channel = supabase
+      .channel(`cv3-project-${worldId}-${selectedProject.slug}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        (payload) => {
+          const msg = payload.new
+          if (msg.agent === `project:${selectedProject.slug}`) {
+            setMessages(prev => {
+              if (prev.some(m => m.id === msg.id)) return prev
+              return [...prev, msg]
+            })
+          }
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [projectId, worldId, selectedProject, selectedAgent])
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -1591,14 +1636,53 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
     setUploading(false)
   }, [selectedAgent, worldId])
 
+  const handleProjectSend = useCallback(async () => {
+    if (!input.trim() || sending || !selectedProject || !worldId) return
+    const text = input.trim()
+    setInput('')
+    if (inputRef.current) inputRef.current.style.height = 'auto'
+    setSending(true)
+    const agentKey = `project:${selectedProject.slug}`
+    const tempId = `temp-proj-${Date.now()}`
+    setMessages(prev => [...prev, {
+      id: tempId,
+      role: 'user',
+      agent: agentKey,
+      text,
+      timestamp: new Date().toISOString(),
+      source: 'corner-dashboard',
+    }])
+    try {
+      const result = await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: worldId }),
+      }).then(r => r.json())
+      if (result?.message?.id) {
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...result.message } : m))
+      }
+    } catch (err) {
+      console.error('[ChatPanel] project send error:', err)
+    } finally {
+      setSending(false)
+      inputRef.current?.focus()
+    }
+  }, [input, sending, selectedProject, worldId])
+
+  const handleProjectKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleProjectSend() }
+  }, [handleProjectSend])
+
   // ── Project view ─────────────────────────────────────────────────────────────
 
   if (projectId && !selectedAgent) {
+    const projColor = selectedProject?.color || '#6B8AB0'
     return (
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         fontFamily: "'Inter', sans-serif",
       }}>
+        {/* Project chat header */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '10px 14px',
@@ -1607,7 +1691,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
           flexShrink: 0,
         }}>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => { setMessages([]); navigate('/dashboard') }}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
               background: 'rgba(255,255,255,0.05)',
@@ -1619,10 +1703,197 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
           >
             &#x2190;
           </button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Project</span>
+          {/* Project color dot */}
+          <div style={{
+            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+            background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
+            border: `1px solid ${projColor}55`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              width: 12, height: 12, borderRadius: 3,
+              background: projColor,
+              boxShadow: `0 0 6px ${projColor}66`,
+            }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{
+              fontSize: 14, fontWeight: 700, color: C.text,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              display: 'block',
+            }}>
+              {selectedProject?.name || 'Project'}
+            </span>
+          </div>
         </div>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.text2, fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
-          Project ID: {projectId}
+
+        {/* Messages scroll area */}
+        <div style={{
+          flex: 1, overflowY: 'auto',
+          padding: '12px 14px',
+          display: 'flex', flexDirection: 'column', gap: 6,
+        }}>
+          {loadingMsgs && (
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
+              <span style={{ fontSize: 12, color: C.muted }}>Loading…</span>
+            </div>
+          )}
+          {!loadingMsgs && messages.length === 0 && (
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              gap: 8, paddingTop: 60,
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
+                border: `1px solid ${projColor}55`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{
+                  width: 18, height: 18, borderRadius: 5,
+                  background: projColor,
+                  boxShadow: `0 0 10px ${projColor}77`,
+                }} />
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: C.text, marginTop: 4 }}>
+                {selectedProject?.name || 'Project'}
+              </span>
+              <span style={{ fontSize: 12, color: C.muted }}>Start a conversation</span>
+            </div>
+          )}
+          {messages.map(msg => {
+            const isUser = msg.role === 'user'
+            return (
+              <div
+                key={msg.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: isUser ? 'flex-end' : 'flex-start',
+                  alignItems: 'flex-end',
+                  gap: 6,
+                }}
+              >
+                {!isUser && (
+                  <div style={{
+                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                    background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
+                    border: `1px solid ${projColor}55`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <div style={{ width: 8, height: 8, borderRadius: 2, background: projColor }} />
+                  </div>
+                )}
+                <div style={{ maxWidth: '78%', minWidth: 0 }}>
+                  <div style={{
+                    padding: '9px 13px',
+                    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    fontSize: 13, lineHeight: 1.5,
+                    color: isUser ? '#fff' : C.text,
+                    background: isUser
+                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                      : 'rgba(255,255,255,0.06)',
+                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}>
+                    {msg.text}
+                  </div>
+                  <div style={{
+                    fontSize: 10, color: 'rgba(80,100,128,0.55)',
+                    marginTop: 3,
+                    textAlign: isUser ? 'right' : 'left',
+                    paddingRight: isUser ? 4 : 0,
+                    paddingLeft: isUser ? 0 : 4,
+                    fontFamily: "'Inter', sans-serif",
+                  }}>
+                    {formatChatTime(msg.timestamp)}
+                  </div>
+                </div>
+                {isUser && (
+                  <div style={{
+                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                    background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>P</span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Project chat input */}
+        <div style={{
+          padding: '10px 14px calc(14px + env(safe-area-inset-bottom, 0px))',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(8,14,28,0.95)',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => {
+                setInput(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
+              }}
+              onKeyDown={handleProjectKeyDown}
+              placeholder={`Message ${selectedProject?.name || 'project'}…`}
+              rows={1}
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 10,
+                color: C.text,
+                fontSize: 13,
+                fontFamily: "'Inter', sans-serif",
+                outline: 'none',
+                resize: 'none',
+                lineHeight: 1.5,
+                minHeight: 36,
+                maxHeight: 100,
+                overflowY: 'auto',
+              }}
+            />
+            <button
+              onClick={handleProjectSend}
+              disabled={!input.trim() || sending}
+              style={{
+                width: 36, height: 36, flexShrink: 0,
+                borderRadius: 10,
+                background: input.trim() && !sending
+                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                  : 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                cursor: input.trim() && !sending ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'background 150ms ease',
+              }}
+            >
+              {sending ? (
+                <div style={{
+                  width: 14, height: 14,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                  borderTopColor: C.muted,
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              ) : (
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+                  stroke={input.trim() ? '#fff' : C.muted}
+                  strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     )
