@@ -20,6 +20,7 @@ import {
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useProjects } from './hooks/useProjects'
+import { useSearchIndex } from './hooks/useSearchIndex'
 import { formatRelativeTime } from './timeUtils'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
@@ -3626,6 +3627,17 @@ export default function CornerV3() {
   }, [done])
   // useDataPipe provides agents (with realtime status), inboxItems, and projectDefs
   const { agents, inboxItems, projectDefs } = useDataPipe(null)
+  // Top-level projects for search index (ChatPanel has its own useProjects call for chat UI)
+  const { projects: rootProjects } = useProjects()
+  // Global search index: agents + projects + recent message previews
+  const searchIndex = useSearchIndex({ agents, projects: rootProjects, inboxItems })
+  // Verification: log first 5 entries whenever the index updates (confirms { id, text, type } shape)
+  useEffect(() => {
+    if (searchIndex.length > 0) {
+      // eslint-disable-next-line no-console
+      console.log('[SearchIndex] built', searchIndex.length, 'entries. First 5:', searchIndex.slice(0, 5))
+    }
+  }, [searchIndex])
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
