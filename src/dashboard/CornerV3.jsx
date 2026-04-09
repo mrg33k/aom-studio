@@ -1319,6 +1319,22 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
   const voiceChatRef   = useRef(null)
   const [inlineProject, setInlineProject] = useState(null)
 
+  // ── Collapsible section states (Favorites=open, Agents=closed, Projects=closed) ──
+  const [sectionStates, setSectionStates] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('aom_section_states'))
+      if (saved && typeof saved === 'object') return { favorites: true, agents: false, projects: false, ...saved }
+    } catch {}
+    return { favorites: true, agents: false, projects: false }
+  })
+  const toggleSection = useCallback((key) => {
+    setSectionStates(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem('aom_section_states', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
   const { isLoading: projectsLoading, isError: projectsError, projects } = useProjects()
 
   const selectedProject = useMemo(() => {
@@ -2820,7 +2836,8 @@ export default function CornerV3() {
       const task = newDone[0]
       const title = task.title || task.text || 'Task'
       const label = title.length > 45 ? title.slice(0, 45) + '...' : title
-      setToast({ visible: true, message: `${label} shipped.` })
+      const wasBuilt = task.qa_score != null && task.qa_score > 0
+      setToast({ visible: true, message: `${label} ${wasBuilt ? 'shipped.' : 'done.'}` })
     }
     prevDoneIdsRef.current = new Set(done.map(t => t.id))
   }, [done])
