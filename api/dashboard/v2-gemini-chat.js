@@ -115,7 +115,7 @@ This process works for ANY visual spec: mockups, Figma exports, reference screen
 IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out loud, or just chatting, TALK TO HIM. Don't reach for a tool. Only use tools when there's a clear action to take.`;
 
 const TOOLS = [{ functionDeclarations: [
-  { name: 'create_task', description: 'Create a task in the AOM queue. Always set agent to route the task to the right builder.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' }, agent: { type: 'string', description: 'Agent to assign: bobby (frontend/web), gary (ops/SOPs), steffen (design/brand), cleo (video/content), jacob (outreach/email), elmo (QA/testing), rex (admin/EA tasks)' }, project_id: { type: 'string', description: 'UUID of the project to associate this task with (optional)' } }, required: ['title', 'description', 'agent'] } },
+  { name: 'create_task', description: 'Create a task in the AOM queue. Always set agent AND project to route correctly.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' }, agent: { type: 'string', description: 'Agent to assign: bobby (frontend/web), gary (ops/SOPs), steffen (design/brand), cleo (video/content), jacob (outreach/email), elmo (QA/testing), rex (admin/EA tasks)' }, project: { type: 'string', description: 'Project slug: corner (dashboard/product), sourcing (sourcing.directory), ambition (ambitionac.com), aom-website (aheadofmarket.com marketing), brandon-wiley-documentary, isa-energy. ALWAYS set this.' }, project_id: { type: 'string', description: 'UUID of the project (optional, auto-resolved from slug if not set)' } }, required: ['title', 'description', 'agent', 'project'] } },
   { name: 'get_queue', description: 'List queued/active tasks.', parameters: { type: 'object', properties: {} } },
   { name: 'get_status', description: 'Fetch a task by id.', parameters: { type: 'object', properties: { task_id: { type: 'string' } }, required: ['task_id'] } },
   { name: 'delete_messages', description: 'Delete recent messages for this agent. Use when asked to clean up, clear, or delete messages.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of recent messages to delete (default 10)' } } } },
@@ -168,6 +168,9 @@ async function createTask(args = {}, clientId) {
   const newTask = { id: crypto.randomUUID(), title: titleText, text: titleText, description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
   if (args.agent_identity !== undefined) newTask.agent_identity = args.agent_identity;
   if (args.project_id !== undefined) newTask.project_id = args.project_id;
+  // Set project_path (slug) so the pipeline can load the right CONTEXT.md
+  if (args.project) newTask.project_path = args.project;
+  if (args.agent_identity && !newTask.agent_identity) newTask.agent_identity = args.agent_identity;
   const created = await sbFetch('/rest/v1/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(newTask) });
   const result = Array.isArray(created) ? created[0] : created;
   if (warnings.length > 0) result._warnings = warnings;
@@ -627,6 +630,8 @@ ${SYSTEM_INSTRUCTION}${systemState}`;
             const taskAgent = args.agent || agentSlug || null;
             const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
             if (resolvedProjectId && !argsWithAgent.project_id) argsWithAgent.project_id = resolvedProjectId;
+            // Pass project slug through so pipeline gets it as project_path
+            if (args.project && !argsWithAgent.project) argsWithAgent.project = args.project;
             result = await createTask(argsWithAgent, clientId);
           }
           else if (name === 'get_queue') result = await getQueue(clientId);
