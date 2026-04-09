@@ -571,12 +571,9 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
     return counts
   }, [inboxItems])
 
-  // Rotate greeting every 4 seconds
+  // Pick a new random greeting each time HomePanel mounts (tab switch / navigation)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setGreetingIdx(prev => (prev + 1) % GREETINGS.length)
-    }, 4000)
-    return () => clearInterval(timer)
+    setGreetingIdx(Math.floor(Math.random() * GREETINGS.length))
   }, [])
 
   const displayName = useMemo(() =>
@@ -1605,15 +1602,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const voiceChatRef   = useRef(null)
   const [inlineProject, setInlineProject] = useState(null)
 
-  // ── Greeting rotation + last login ────────────────────────────────────────
+  // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
-  useEffect(() => {
-    const timer = setInterval(() => setGreetingIdx(prev => (prev + 1) % GREETINGS.length), 4000)
-    return () => clearInterval(timer)
-  }, [])
-  // Memoize on user ID so the displayed name stays stable during greeting
-  // rotations, tab switches, and agent selection — it only re-derives when
-  // the user identity itself changes (login / logout).
+  // Memoize on user ID so the displayed name stays stable during tab switches
+  // and agent selection — it only re-derives when the user identity changes.
   const displayName = useMemo(() =>
     currentUser?.user_metadata?.full_name?.split(' ')[0] ||
     currentUser?.email?.split('@')[0] ||
