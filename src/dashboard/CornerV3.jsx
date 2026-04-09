@@ -735,6 +735,7 @@ function TasksPanel({ queued, rightNow, done }) {
   const [selectedColor,          setSelectedColor]          = useState('#10B981')
   const [shippedLimit,           setShippedLimit]           = useState(50)
   const [projectNames,           setProjectNames]           = useState([])
+  const { projects: taskProjects } = useProjects()
 
   // Load project names from Supabase on mount
   useEffect(() => {
@@ -1418,7 +1419,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
   // Load project messages when a project is selected
   useEffect(() => {
-    if (!projectId || selectedAgent || !supabase || !worldId || !selectedProject) return
+    if (selectedAgent || !supabase || !worldId || !selectedProject) return
     setLoadingMsgs(true)
     setMessages([])
     supabase
@@ -1432,11 +1433,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         setLoadingMsgs(false)
         if (!error && data) setMessages(data)
       })
-  }, [projectId, worldId, selectedProject, selectedAgent])
+  }, [worldId, selectedProject, selectedAgent])
 
   // Realtime subscription for project messages
   useEffect(() => {
-    if (!projectId || selectedAgent || !supabase || !worldId || !selectedProject) return
+    if (selectedAgent || !supabase || !worldId || !selectedProject) return
     const channel = supabase
       .channel(`cv3-project-${worldId}-${selectedProject.slug}`)
       .on(
@@ -1454,7 +1455,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [projectId, worldId, selectedProject, selectedAgent])
+  }, [worldId, selectedProject, selectedAgent])
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -1676,7 +1677,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
 
   // ── Project view ─────────────────────────────────────────────────────────────
 
-  if (projectId && !selectedAgent) {
+  if ((projectId || inlineProject) && !selectedAgent) {
     const projColor = selectedProject?.color || '#6B8AB0'
     return (
       <div style={{
@@ -1692,7 +1693,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
           flexShrink: 0,
         }}>
           <button
-            onClick={() => { setMessages([]); navigate('/dashboard') }}
+            onClick={() => { setMessages([]); setInlineProject(null); if (projectId) navigate('/dashboard') }}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
               background: 'rgba(255,255,255,0.05)',
@@ -2025,7 +2026,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             {projects.map(project => (
               <button
                 key={project.id || project.slug}
-                onClick={() => navigate(`/dashboard/project/${project.id}`)}
+                onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   width: '100%', padding: '12px 14px',
