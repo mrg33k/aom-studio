@@ -1793,11 +1793,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       .select('*')
       .eq('client_id', worldId)
       .eq('agent', selectedAgent.slug)
-      .order('timestamp', { ascending: true })
+      .order('timestamp', { ascending: false })
       .limit(60)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
-        if (!error && data) setMessages(data)
+        if (!error && data) setMessages(data.reverse())
       })
   }, [selectedAgent, worldId])
 
