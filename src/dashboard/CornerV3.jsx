@@ -108,30 +108,126 @@ function BellIcon({ hasNew = false }) {
   )
 }
 
-// ── User avatar ───────────────────────────────────────────────────────────────
+// ── User avatar with profile name edit popover ───────────────────────────────
 
-function UserAvatar({ user }) {
+function UserAvatar({ user, onUserUpdate }) {
   const initial = user?.email?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || 'U'
   const avatarUrl = user?.user_metadata?.avatar_url
 
+  const [open, setOpen] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const popoverRef = useRef(null)
+
+  // Sync input when popover opens
+  useEffect(() => {
+    if (open) {
+      setNameInput(user?.user_metadata?.full_name || user?.email?.split('@')[0] || '')
+    }
+  }, [open])
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleSave = async () => {
+    const trimmed = nameInput.trim()
+    if (!trimmed || saving) return
+    setSaving(true)
+    try {
+      const { data, error } = await supabase.auth.updateUser({ data: { full_name: trimmed } })
+      if (!error && data?.user && onUserUpdate) onUserUpdate(data.user)
+      setOpen(false)
+    } catch (_) { /* silent */ }
+    setSaving(false)
+  }
+
   return (
-    <div style={{
-      width: 28,
-      height: 28,
-      borderRadius: 9,
-      background: avatarUrl ? 'transparent' : `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
-      border: '1px solid rgba(255,255,255,0.1)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      overflow: 'hidden',
-      cursor: 'pointer',
-    }}>
-      {avatarUrl
-        ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{initial}</span>
-      }
+    <div ref={popoverRef} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setOpen(prev => !prev)}
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 9,
+          background: avatarUrl ? 'transparent' : `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
+          border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          overflow: 'hidden',
+          cursor: 'pointer',
+        }}
+      >
+        {avatarUrl
+          ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{initial}</span>
+        }
+      </div>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 36,
+          right: 0,
+          width: 240,
+          background: C.s1,
+          border: `1px solid ${C.border2}`,
+          borderRadius: 12,
+          padding: 16,
+          zIndex: 9999,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}>
+          <div style={{ fontSize: 12, color: C.text2, marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
+            Display name
+          </div>
+          <input
+            autoFocus
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSave()}
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontSize: 14,
+              fontFamily: "'Inter', sans-serif",
+              color: C.text,
+              background: C.s2,
+              border: `1px solid ${C.border2}`,
+              borderRadius: 8,
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving || !nameInput.trim()}
+            style={{
+              marginTop: 10,
+              width: '100%',
+              padding: '7px 0',
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: "'Inter', sans-serif",
+              color: '#fff',
+              background: saving || !nameInput.trim() ? C.muted : C.accent,
+              border: 'none',
+              borderRadius: 8,
+              cursor: saving || !nameInput.trim() ? 'default' : 'pointer',
+              transition: 'background 0.15s',
+            }}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -3495,7 +3591,7 @@ export default function CornerV3() {
           {/* Right: Bell + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <BellIcon hasNew={unreadChat > 0} />
-            <UserAvatar user={currentUser} />
+            <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
           </div>
         </div>
 
