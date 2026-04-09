@@ -119,7 +119,7 @@ When working on a design that has an approved mockup or spec:
 This process works for ANY visual spec: mockups, Figma exports, reference screenshots, brand guidelines.`;
 
 const TOOLS = [{ functionDeclarations: [
-  { name: 'create_task', description: 'Create a task in the AOM queue. Always set agent AND project to route correctly.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' }, agent: { type: 'string', description: 'Agent to assign: bobby (frontend/web), gary (ops/SOPs), steffen (design/brand), cleo (video/content), jacob (outreach/email), elmo (QA/testing), rex (admin/EA tasks)' }, project: { type: 'string', description: 'Project slug: corner (dashboard/product), sourcing (sourcing.directory), ambition (ambitionac.com), aom-website (aheadofmarket.com marketing), brandon-wiley-documentary, isa-energy. ALWAYS set this.' }, project_id: { type: 'string', description: 'UUID of the project (optional, auto-resolved from slug if not set)' } }, required: ['title', 'description', 'agent', 'project'] } },
+  { name: 'create_task', description: 'Create a task in the AOM queue. Always set agent AND project to route correctly.', parameters: { type: 'object', properties: { title: { type: 'string' }, description: { type: 'string' }, priority: { type: 'number' }, agent: { type: 'string', description: 'Agent to assign: bobby (frontend/web), gary (ops/SOPs), steffen (design/brand), cleo (video/content), jacob (outreach/email), elmo (QA/testing), rex (admin/EA tasks)' }, project: { type: 'string', description: 'Project slug: corner (dashboard/product), sourcing (sourcing.directory), ambition (ambitionac.com), aom-website (aheadofmarket.com marketing), brandon-wiley-documentary, isa-energy. ALWAYS set this. In project chats this is auto-filled.' } }, required: ['title', 'description', 'agent'] } },
   { name: 'get_queue', description: 'List queued/active tasks.', parameters: { type: 'object', properties: {} } },
   { name: 'get_status', description: 'Fetch a task by id.', parameters: { type: 'object', properties: { task_id: { type: 'string' } }, required: ['task_id'] } },
   { name: 'delete_messages', description: 'Delete recent messages for this agent. Use when asked to clean up, clear, or delete messages.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of recent messages to delete (default 10)' } } } },
@@ -173,7 +173,6 @@ async function createTask(args = {}, clientId) {
   const titleText = args.title.trim();
   const newTask = { id: crypto.randomUUID(), title: titleText, text: titleText, description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
   if (args.agent_identity !== undefined) newTask.agent_identity = args.agent_identity;
-  if (args.project_id !== undefined) newTask.project_id = args.project_id;
   // Set project_path (slug) so the pipeline can load the right CONTEXT.md
   if (args.project) newTask.project_path = args.project;
   if (args.agent_identity && !newTask.agent_identity) newTask.agent_identity = args.agent_identity;
@@ -712,7 +711,8 @@ ${BASE_INSTRUCTION}`;
           if (name === 'create_task') {
             const taskAgent = args.agent || agentSlug || null;
             const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
-            if (resolvedProjectId && !argsWithAgent.project_id) argsWithAgent.project_id = resolvedProjectId;
+            // Auto-fill project slug from project chat context so tasks route correctly
+            if (projectSlug && !argsWithAgent.project) argsWithAgent.project = projectSlug;
             // Pass project slug through so pipeline gets it as project_path
             if (args.project && !argsWithAgent.project) argsWithAgent.project = args.project;
             result = await createTask(argsWithAgent, clientId);
