@@ -968,7 +968,11 @@ function TasksPanel({ queued, rightNow, done }) {
                     <div style={{ color: C.yellow, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                      {t.project_id && (() => {
+                        const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
+                        return proj ? <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
+                      })()}
                       {t.agent_identity || t.agentIdentity ? (
                         <span style={{ color: '#475569', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {t.agent_identity || t.agentIdentity}
@@ -1112,7 +1116,11 @@ function TasksPanel({ queued, rightNow, done }) {
                     <div style={{ fontSize: 16, fontWeight: 800, color: isFailed ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                      {t.project_id && (() => {
+                        const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
+                        return proj ? <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
+                      })()}
                       {agent && (
                         <span style={{ fontSize: 9, fontWeight: 700, color: isFailed ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {agent}
