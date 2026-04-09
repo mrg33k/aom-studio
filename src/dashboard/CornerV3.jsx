@@ -1343,21 +1343,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
     return projects.find(p => String(p.id) === String(projectId)) || null
   }, [projectId, projects, inlineProject])
 
-  // Fetch latest message per agent that's missing from inboxItems
+  // Fetch latest message per agent (comprehensive -- covers all agents, not just missing from inboxItems)
   const [agentPreviews, setAgentPreviews] = useState({})
   useEffect(() => {
     if (!supabase || !worldId || !agents?.length) return
-    const inboxSlugs = new Set((inboxItems || []).map(i => i.agent))
-    const missing = agents.filter(a => a.slug && !inboxSlugs.has(a.slug))
-    if (missing.length === 0) return
+    const slugs = agents.filter(a => a.slug).map(a => a.slug)
+    if (slugs.length === 0) return
 
-    // Fetch latest message for each missing agent
-    Promise.all(missing.map(a =>
+    // Fetch latest message for every agent to ensure fresh baseline
+    Promise.all(slugs.map(slug =>
       supabase
         .from('messages')
         .select('agent, text, timestamp, id, role')
         .eq('client_id', worldId)
-        .eq('agent', a.slug)
+        .eq('agent', slug)
         .order('timestamp', { ascending: false })
         .limit(1)
         .then(({ data }) => data?.[0] || null)
@@ -1370,20 +1369,59 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
             text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
             timestamp: msg.timestamp,
             id: msg.id,
-            isUnread: false,
+            isUnread: msg.role !== 'user',
           }
         }
       }
       setAgentPreviews(previews)
     })
-  }, [agents, inboxItems, worldId])
+  }, [agents, worldId])
+
+  // Realtime: update agent previews when any new message arrives
+  useEffect(() => {
+    if (!supabase || !worldId) return
+    const channel = supabase
+      .channel(`cv3-previews-${worldId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        (payload) => {
+          const msg = payload.new
+          if (!msg?.agent) return
+          const preview = {
+            agent: msg.agent,
+            text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
+            timestamp: msg.timestamp,
+            id: msg.id,
+            isUnread: msg.role !== 'user',
+          }
+          setAgentPreviews(prev => {
+            const existing = prev[msg.agent]
+            // Only update if this message is newer
+            if (existing && existing.timestamp > msg.timestamp) return prev
+            return { ...prev, [msg.agent]: preview }
+          })
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [worldId])
 
   // Build unread map: agent slug -> inbox item (last message preview)
-  // Merges inboxItems (from useDataPipe) with individually fetched previews
+  // Merges inboxItems (from useDataPipe) with agentPreviews, preferring newest timestamp
   const unreadMap = useMemo(() => {
-    const m = { ...agentPreviews }
+    const m = {}
+    // Start with agentPreviews (fresh fetch + realtime updates)
+    for (const [slug, preview] of Object.entries(agentPreviews)) {
+      m[slug] = preview
+    }
+    // Merge inboxItems, but only if they have a newer timestamp
     for (const item of (inboxItems || [])) {
-      if (item.agent) m[item.agent] = item
+      if (!item.agent) continue
+      const existing = m[item.agent]
+      if (!existing || (item.timestamp && item.timestamp > existing.timestamp)) {
+        m[item.agent] = item
+      }
     }
     return m
   }, [inboxItems, agentPreviews])
@@ -1505,15 +1543,29 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
     setSending(true)
 
     // Optimistic user message
+    const now = new Date().toISOString()
     const tempUserId = `temp-user-${Date.now()}`
     setMessages(prev => [...prev, {
       id: tempUserId,
       role: 'user',
       agent: selectedAgent.slug,
       text,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       source: 'corner-dashboard',
     }])
+
+    // Optimistic preview update so agent list shows "You: ..." immediately
+    const previewText = 'You: ' + (text.length > 70 ? text.slice(0, 70) + '...' : text)
+    setAgentPreviews(prev => ({
+      ...prev,
+      [selectedAgent.slug]: {
+        agent: selectedAgent.slug,
+        text: previewText,
+        timestamp: now,
+        id: tempUserId,
+        isUnread: false,
+      },
+    }))
 
     // Build Gemini-format history from the last 20 messages for context
     const history = messagesRef.current.slice(-20).map(m => ({
@@ -1557,15 +1609,28 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
       // Append AI response
       if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
         const reply = geminiResult.value.reply
+        const replyTime = new Date().toISOString()
         const tempAgentId = `temp-agent-${Date.now()}`
         setMessages(prev => [...prev, {
           id: tempAgentId,
           role: 'agent',
           agent: selectedAgent.slug,
           text: reply,
-          timestamp: new Date().toISOString(),
+          timestamp: replyTime,
           source: 'gemini',
         }])
+        // Update preview with AI reply so agent list is current
+        const replyPreview = (reply.length > 80 ? reply.slice(0, 80) + '...' : reply)
+        setAgentPreviews(prev => ({
+          ...prev,
+          [selectedAgent.slug]: {
+            agent: selectedAgent.slug,
+            text: replyPreview,
+            timestamp: replyTime,
+            id: tempAgentId,
+            isUnread: false,
+          },
+        }))
         // Persist AI response; swap temp id for real one when saved
         fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
