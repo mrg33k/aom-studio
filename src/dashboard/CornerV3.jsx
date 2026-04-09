@@ -864,10 +864,6 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
         console.error('[task-maker] API error:', err)
       } else {
         setTaskInput('')
-        if (taskInputRef.current) {
-          taskInputRef.current.style.height = 'auto'
-          taskInputRef.current.style.height = '36px'
-        }
         // Refresh tasks to pick up the new one immediately
         if (refreshTasks) refreshTasks()
       }
@@ -1062,84 +1058,6 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                 fontFamily: "'Inter', sans-serif",
               }}
             >+</button>
-          </div>
-        </div>
-
-        {/* ── Instant task maker input bar ────────────────────────────────── */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: 8,
-            background: C.s1,
-            border: '1px solid ' + (taskInputFocused ? 'rgba(16,185,129,0.15)' : C.border),
-            borderRadius: 12,
-            padding: '6px 8px',
-            transition: 'border-color 0.2s',
-          }}>
-            <textarea
-              ref={taskInputRef}
-              value={taskInput}
-              onChange={e => {
-                setTaskInput(e.target.value)
-                e.target.style.height = 'auto'
-                e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
-              }}
-              onKeyDown={handleTaskInputKeyDown}
-              onFocus={() => setTaskInputFocused(true)}
-              onBlur={() => setTaskInputFocused(false)}
-              placeholder="Add a task..."
-              rows={1}
-              style={{
-                flex: 1,
-                padding: '8px 10px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 10,
-                color: C.text,
-                fontSize: 13,
-                fontFamily: "'Inter', sans-serif",
-                outline: 'none',
-                resize: 'none',
-                lineHeight: 1.5,
-                minHeight: 36,
-                maxHeight: 100,
-                overflowY: 'auto',
-              }}
-            />
-            <button
-              onClick={handleTaskSubmit}
-              disabled={!taskInput.trim() || taskSubmitting}
-              style={{
-                width: 36, height: 36, flexShrink: 0,
-                borderRadius: 10,
-                background: taskInput.trim() && !taskSubmitting
-                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                  : 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                cursor: taskInput.trim() && !taskSubmitting ? 'pointer' : 'default',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background 150ms ease',
-              }}
-            >
-              {taskSubmitting ? (
-                <div style={{
-                  width: 14, height: 14,
-                  border: '2px solid rgba(255,255,255,0.15)',
-                  borderTopColor: C.accent,
-                  borderRadius: '50%',
-                  animation: 'spin 0.7s linear infinite',
-                }} />
-              ) : (
-                <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
-                  stroke={taskInput.trim() ? '#fff' : C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              )}
-            </button>
-          </div>
-          <div style={{ fontSize: 10, color: C.dim, marginTop: 5, paddingLeft: 4, fontFamily: "'Inter', sans-serif" }}>
-            Rex will figure out who handles this
           </div>
         </div>
 
@@ -1402,6 +1320,78 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
             <span style={{ fontSize: 13 }}>{searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'No tasks'}</span>
           </div>
         )}
+      </div>
+
+      {/* ── Task creation input bar (bottom-pinned, matches chat input style) ── */}
+      <div style={{
+        flexShrink: 0,
+        padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
+        background: C.bg,
+        borderTop: '1px solid ' + C.border,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          background: C.s1,
+          border: '1.5px solid ' + (taskInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
+          borderRadius: 26,
+          padding: '5px 5px 5px 16px',
+          maxWidth: 560,
+          margin: '0 auto',
+          boxShadow: taskInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+          transition: 'border-color 0.25s, box-shadow 0.25s',
+        }}>
+          <input
+            ref={taskInputRef}
+            type="text"
+            placeholder="Add a task"
+            value={taskInput}
+            onChange={e => setTaskInput(e.target.value)}
+            onFocus={() => setTaskInputFocused(true)}
+            onBlur={() => setTaskInputFocused(false)}
+            onKeyDown={handleTaskInputKeyDown}
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: C.text,
+              fontSize: 15,
+              fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
+            }}
+          />
+          {taskInput.trim() && (
+            <button
+              title="Create task"
+              onClick={handleTaskSubmit}
+              disabled={taskSubmitting}
+              style={{
+                width: 42, height: 42, borderRadius: '50%',
+                background: C.accent, border: 'none',
+                color: '#000', cursor: taskSubmitting ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                opacity: taskSubmitting ? 0.6 : 1,
+                transition: 'transform 0.15s',
+              }}
+            >
+              {taskSubmitting ? (
+                <div style={{
+                  width: 14, height: 14,
+                  border: '2px solid rgba(255,255,255,0.15)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Create Project Modal */}
@@ -3756,7 +3746,7 @@ export default function CornerV3() {
         padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
         background: C.bg,
         borderTop: '1px solid ' + C.border,
-        display: (tab === 'chat' || rootVoiceActive) ? 'none' : undefined,
+        display: (tab === 'chat' || tab === 'tasks' || rootVoiceActive) ? 'none' : undefined,
       }}>
         <div style={{
           display: 'flex',
