@@ -20,6 +20,7 @@ import {
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useProjects } from './hooks/useProjects'
+import { formatRelativeTime } from './timeUtils'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
 // ProjectCard import removed -- projects now render as inline cards matching agent card style
@@ -1497,7 +1498,7 @@ function SwipeCard({ children, actions, style }) {
   )
 }
 
-function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack }) {
+function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
@@ -1516,6 +1517,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const fileInputRef   = useRef(null)
   const voiceChatRef   = useRef(null)
   const [inlineProject, setInlineProject] = useState(null)
+
+  // ── Greeting rotation + last login ────────────────────────────────────────
+  const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
+  useEffect(() => {
+    const timer = setInterval(() => setGreetingIdx(prev => (prev + 1) % GREETINGS.length), 4000)
+    return () => clearInterval(timer)
+  }, [])
+  const displayName =
+    currentUser?.user_metadata?.full_name?.split(' ')[0] ||
+    currentUser?.email?.split('@')[0] ||
+    'there'
+  const lastLoginText = formatRelativeTime(currentUser?.last_sign_in_at)
 
   // ── Collapsible section states (Favorites=open, Agents=closed, Projects=closed) ──
   const [sectionStates, setSectionStates] = useState(() => {
@@ -2234,6 +2247,32 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         padding: '16px 20px',
         fontFamily: "'Inter', sans-serif",
       }}>
+        {/* ── Greeting hero ──────────────────────────────────────────────── */}
+        <div style={{ paddingBottom: 16 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 12, fontWeight: 500, color: C.muted, marginBottom: 6,
+          }}>
+            <div style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: C.accent,
+              boxShadow: `0 0 6px ${C.accent}`,
+            }} />
+            {lastLoginText ? `Last login: ${lastLoginText}` : 'Online now'}
+          </div>
+          <h1 style={{
+            fontSize: 'clamp(26px, 5.5vw, 40px)',
+            fontWeight: 800,
+            lineHeight: 1.08,
+            letterSpacing: '-0.04em',
+            color: C.text,
+            margin: 0,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            {GREETINGS[greetingIdx](displayName)}
+          </h1>
+        </div>
+
         {/* ── Favorites section (pinned agents + projects) ────────────────── */}
         {favorites.length > 0 && (
           <>
@@ -3502,7 +3541,7 @@ export default function CornerV3() {
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
