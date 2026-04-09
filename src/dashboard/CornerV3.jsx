@@ -1924,6 +1924,31 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     })
   }, [projects, topProjectSlugs, searchQuery, projectPreviews])
 
+  // Search-filtered pinned items
+  const filteredPinnedItems = useMemo(() => {
+    if (!searchQuery) return pinnedItems
+    const q = searchQuery.toLowerCase()
+    return pinnedItems.filter(item => {
+      if (item.type === 'agent') {
+        const a = item.data
+        if ((a.name || '').toLowerCase().includes(q)) return true
+        if ((a.role || '').toLowerCase().includes(q)) return true
+        const preview = unreadMap[a.slug]
+        if (preview?.text?.toLowerCase().includes(q)) return true
+        return false
+      }
+      if (item.type === 'project') {
+        const p = item.data
+        if ((p.name || '').toLowerCase().includes(q)) return true
+        if ((p.slug || '').toLowerCase().includes(q)) return true
+        const preview = projectPreviews[`project:${p.slug}`]
+        if (preview?.text?.toLowerCase().includes(q)) return true
+        return false
+      }
+      return false
+    })
+  }, [pinnedItems, searchQuery, unreadMap, projectPreviews])
+
   // Load message history when agent selected
   useEffect(() => {
     if (!selectedAgent || !supabase || !worldId) return
@@ -2608,7 +2633,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         </div>
 
         {/* ── Pins section ─────────────────────────────────────── */}
-        {pinnedItems.length > 0 && (
+        {filteredPinnedItems.length > 0 && (
           <>
             <div
               onClick={() => toggleSection('favorites')}
@@ -2619,11 +2644,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 cursor: 'pointer', userSelect: 'none',
               }}
             >
-              <span>Pins <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{pinnedItems.length}</span></span>
+              <span>Pins <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{filteredPinnedItems.length}</span></span>
               <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.favorites ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
             <div style={{ maxHeight: sectionStates.favorites ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease', marginBottom: sectionStates.favorites ? 16 : 0 }}>
-              {pinnedItems.map(item => {
+              {filteredPinnedItems.map(item => {
                 if (item.type === 'agent') {
                   const agent = item.data
                   const lastMsg    = unreadMap[agent.slug]
