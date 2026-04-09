@@ -20,7 +20,6 @@ import {
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useProjects } from './hooks/useProjects'
-import { useSearchIndex } from './hooks/useSearchIndex'
 import { formatRelativeTime } from './timeUtils'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
@@ -1628,7 +1627,7 @@ function SwipeCard({ children, actions, style }) {
   )
 }
 
-function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser }) {
+function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [] }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
@@ -1784,6 +1783,26 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     return () => { supabase.removeChannel(channel) }
   }, [worldId])
 
+  // Fetch latest message per project (stored under agent key "project:{slug}") for search filtering
+  const [projectPreviews, setProjectPreviews] = useState({})
+  useEffect(() => {
+    if (!supabase || !worldId || !projects?.length) return
+    const slugs = projects.filter(p => p.slug).map(p => p.slug)
+    if (!slugs.length) return
+    Promise.all(slugs.map(slug =>
+      supabase.from('messages').select('agent, text, timestamp')
+        .eq('client_id', worldId).eq('agent', `project:${slug}`)
+        .order('timestamp', { ascending: false }).limit(1)
+        .then(({ data }) => data?.[0] || null)
+    )).then(results => {
+      const previews = {}
+      for (const msg of results) {
+        if (msg?.agent) previews[msg.agent] = { text: (msg.text || '').slice(0, 80), timestamp: msg.timestamp }
+      }
+      setProjectPreviews(previews)
+    })
+  }, [projects, worldId])
+
   // Build unread map: agent slug -> inbox item (last message preview)
   // Merges inboxItems (from useDataPipe) with agentPreviews, preferring newest timestamp
   const unreadMap = useMemo(() => {
@@ -1855,6 +1874,55 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const topProjectSlugs = useMemo(() => new Set(
     pinnedItems.filter(i => i.type === 'project').map(i => i.data.slug)
   ), [pinnedItems])
+
+  // Agent-project association map from tasks (agent slug → Set of project IDs they've worked on)
+  const agentProjectIds = useMemo(() => {
+    const map = {}
+    for (const task of (allTasks || [])) {
+      const slug = task.agent_identity || task.agentIdentity
+      if (!slug) continue
+      if (!map[slug]) map[slug] = new Set()
+      if (task.project_id) map[slug].add(String(task.project_id))
+    }
+    return map
+  }, [allTasks])
+
+  // Search-filtered agent list (excludes pinned)
+  const filteredVisibleAgents = useMemo(() => {
+    const base = chattableAgents.filter(a => !topAgentSlugs.has(a.slug))
+    if (!searchQuery) return base
+    const q = searchQuery.toLowerCase()
+    const matchingProjectIds = new Set(
+      (projects || []).filter(p => (p.name || '').toLowerCase().includes(q)).map(p => String(p.id))
+    )
+    return base.filter(a => {
+      if ((a.name || '').toLowerCase().includes(q)) return true
+      if ((a.role || '').toLowerCase().includes(q)) return true
+      const preview = unreadMap[a.slug]
+      if (preview?.text?.toLowerCase().includes(q)) return true
+      if (matchingProjectIds.size > 0) {
+        const agentProjs = agentProjectIds[a.slug]
+        if (agentProjs) {
+          for (const pid of matchingProjectIds) { if (agentProjs.has(pid)) return true }
+        }
+      }
+      return false
+    })
+  }, [chattableAgents, topAgentSlugs, searchQuery, unreadMap, projects, agentProjectIds])
+
+  // Search-filtered project list (excludes pinned)
+  const filteredVisibleProjects = useMemo(() => {
+    const base = (projects || []).filter(p => !topProjectSlugs.has(p.slug))
+    if (!searchQuery) return base
+    const q = searchQuery.toLowerCase()
+    return base.filter(p => {
+      if ((p.name || '').toLowerCase().includes(q)) return true
+      if ((p.slug || '').toLowerCase().includes(q)) return true
+      const preview = projectPreviews[`project:${p.slug}`]
+      if (preview?.text?.toLowerCase().includes(q)) return true
+      return false
+    })
+  }, [projects, topProjectSlugs, searchQuery, projectPreviews])
 
   // Load message history when agent selected
   useEffect(() => {
@@ -2699,12 +2767,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             cursor: 'pointer', userSelect: 'none',
           }}
         >
-          <span>Agents{chattableAgents.filter(a => !topAgentSlugs.has(a.slug)).length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{chattableAgents.filter(a => !topAgentSlugs.has(a.slug)).length}</span>}</span>
+          <span>Agents{filteredVisibleAgents.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{filteredVisibleAgents.length}</span>}</span>
           <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.agents ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
         </div>
 
         <div style={{ maxHeight: sectionStates.agents ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
-        {chattableAgents.filter(a => !topAgentSlugs.has(a.slug)).length === 0 ? (
+        {filteredVisibleAgents.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', paddingTop: 60, gap: 8, color: C.muted,
@@ -2716,7 +2784,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             <span style={{ fontSize: 13 }}>No agents available</span>
           </div>
         ) : (
-          chattableAgents.filter(a => !topAgentSlugs.has(a.slug)).map(agent => {
+          filteredVisibleAgents.map(agent => {
             const lastMsg    = unreadMap[agent.slug]
             const hasUnread  = !!lastMsg
             const unreadCount = unreadCounts[agent.slug] || 0
@@ -2825,11 +2893,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 cursor: 'pointer', userSelect: 'none',
               }}
             >
-              <span>Projects{projects.filter(p => !topProjectSlugs.has(p.slug)).length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{projects.filter(p => !topProjectSlugs.has(p.slug)).length}</span>}</span>
+              <span>Projects{filteredVisibleProjects.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{filteredVisibleProjects.length}</span>}</span>
               <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.projects ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
             </div>
             <div style={{ maxHeight: sectionStates.projects ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
-            {projects.filter(p => !topProjectSlugs.has(p.slug)).map(project => {
+            {filteredVisibleProjects.map(project => {
               const pColor = project.color || '#6B8AB0'
               const pinned = isFav('project', project.slug)
               return (
@@ -3605,7 +3673,7 @@ export default function CornerV3() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const { queued, rightNow, done, refresh: refreshTasks } = useTasks()
+  const { queued, rightNow, done, allTasks, refresh: refreshTasks } = useTasks()
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {
@@ -3627,17 +3695,6 @@ export default function CornerV3() {
   }, [done])
   // useDataPipe provides agents (with realtime status), inboxItems, and projectDefs
   const { agents, inboxItems, projectDefs } = useDataPipe(null)
-  // Top-level projects for search index (ChatPanel has its own useProjects call for chat UI)
-  const { projects: rootProjects } = useProjects()
-  // Global search index: agents + projects + recent message previews
-  const searchIndex = useSearchIndex({ agents, projects: rootProjects, inboxItems })
-  // Verification: log first 5 entries whenever the index updates (confirms { id, text, type } shape)
-  useEffect(() => {
-    if (searchIndex.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('[SearchIndex] built', searchIndex.length, 'entries. First 5:', searchIndex.slice(0, 5))
-    }
-  }, [searchIndex])
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
@@ -3931,7 +3988,7 @@ export default function CornerV3() {
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
