@@ -1317,13 +1317,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
   const inputRef       = useRef(null)
   const fileInputRef   = useRef(null)
   const voiceChatRef   = useRef(null)
+  const [inlineProject, setInlineProject] = useState(null)
 
   const { isLoading: projectsLoading, isError: projectsError, projects } = useProjects()
 
   const selectedProject = useMemo(() => {
+    if (inlineProject) return inlineProject
     if (!projectId || !projects?.length) return null
     return projects.find(p => String(p.id) === String(projectId)) || null
-  }, [projectId, projects])
+  }, [projectId, projects, inlineProject])
 
   // Fetch latest message per agent that's missing from inboxItems
   const [agentPreviews, setAgentPreviews] = useState({})
