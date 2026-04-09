@@ -1625,9 +1625,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [sectionStates, setSectionStates] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('aom_section_states'))
-      if (saved && typeof saved === 'object') return { favorites: true, agents: false, projects: false, ...saved }
+      // Force agents/projects open (v2 default change). Old localStorage may have false.
+      if (saved && typeof saved === 'object') return { ...saved, favorites: true, agents: true, projects: true }
     } catch {}
-    return { favorites: true, agents: false, projects: false }
+    return { favorites: true, agents: true, projects: true }
   })
   const toggleSection = useCallback((key) => {
     setSectionStates(prev => {
@@ -1762,14 +1763,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     return m
   }, [inboxItems, agentPreviews])
 
-  // Agents sorted: unread first, then active, then idle
+  // Agents sorted: most recent message first (like iMessage), then active, then idle
   const chattableAgents = useMemo(() => {
     return (agents || [])
       .filter(a => a.slug && a.name)
       .sort((a, b) => {
-        const aU = unreadMap[a.slug] ? 0 : 1
-        const bU = unreadMap[b.slug] ? 0 : 1
-        if (aU !== bU) return aU - bU
+        const aMsg = unreadMap[a.slug]
+        const bMsg = unreadMap[b.slug]
+        const aTime = aMsg?.timestamp || ''
+        const bTime = bMsg?.timestamp || ''
+        // Sort by most recent message timestamp (descending)
+        if (aTime && bTime) return bTime > aTime ? 1 : bTime < aTime ? -1 : 0
+        if (aTime && !bTime) return -1
+        if (!aTime && bTime) return 1
+        // No messages: active first
         const aAct = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
         const bAct = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
         return aAct - bAct
