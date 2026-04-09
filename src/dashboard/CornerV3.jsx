@@ -2458,16 +2458,21 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
         {messages.map(msg => {
           const isUser = msg.role === 'user'
 
-          // Inline task card for task-runner completion notifications
+          // Inline task card for task-runner lifecycle notifications
           if (msg.source === 'task-runner') {
             const qaMatch = msg.text?.match(/QA:\s*(\d+(?:\.\d+)?)/i)
             const qaScore = qaMatch ? parseFloat(qaMatch[1]) : null
             const isFailed = /fail/i.test(msg.text || '')
+            const isStarted = /^task started/i.test(msg.text || '')
             // Extract clean title: first non-empty line
             const taskLines = (msg.text || '').split('\n').filter(l => l.trim())
             const rawTitle = taskLines[0] || ''
-            const taskTitle = rawTitle.replace(/^(task\s+(complete|failed|done)[:\s]*)/i, '').trim() || rawTitle
+            const taskTitle = rawTitle.replace(/^(task\s+(started|complete[d]?|failed|done)[:\s]*)/i, '').trim() || rawTitle
             const taskDesc = taskLines.slice(1).join(' ').trim()
+            const headColor = isFailed ? C.red : isStarted ? C.blue : C.accent
+            const headBg = isStarted ? 'rgba(96,165,250,0.08)' : C.accentBg
+            const headIcon = isFailed ? '!' : isStarted ? '▶' : '✓'
+            const headLabel = isFailed ? 'Task Failed' : isStarted ? 'Task Started' : 'Task Complete'
             return (
               <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <div style={{
@@ -2481,16 +2486,16 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                     <div style={{
                       width: 18, height: 18, borderRadius: 6,
-                      background: C.accentBg,
+                      background: headBg,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, color: isFailed ? C.red : C.accent, fontWeight: 800,
-                    }}>{isFailed ? '!' : '✓'}</div>
+                      fontSize: 10, color: headColor, fontWeight: 800,
+                    }}>{headIcon}</div>
                     <span style={{
                       fontSize: 10, fontWeight: 700,
-                      color: isFailed ? C.red : C.accent,
+                      color: headColor,
                       textTransform: 'uppercase', letterSpacing: '0.06em',
                       fontFamily: "'JetBrains Mono', monospace",
-                    }}>{isFailed ? 'Task Failed' : 'Task Complete'}</span>
+                    }}>{headLabel}</span>
                   </div>
                   {/* mt-title */}
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{taskTitle}</div>
@@ -2511,9 +2516,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent }) {
                       <span style={{
                         fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
                         fontFamily: "'JetBrains Mono', monospace",
-                        background: isFailed ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
-                        color: isFailed ? C.red : C.green,
-                      }}>{isFailed ? 'Failed' : 'Done'}</span>
+                        background: isFailed ? 'rgba(239,68,68,0.12)' : isStarted ? 'rgba(96,165,250,0.12)' : 'rgba(34,197,94,0.12)',
+                        color: isFailed ? C.red : isStarted ? C.blue : C.green,
+                      }}>{isFailed ? 'Failed' : isStarted ? 'Building' : 'Done'}</span>
                     )}
                     <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>
                       {msg.agent || selectedAgent?.name}
