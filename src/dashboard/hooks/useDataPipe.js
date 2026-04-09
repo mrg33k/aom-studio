@@ -217,6 +217,34 @@ function deriveProjectProgress(punchData) {
   return progress
 }
 
+// ---- BUILD INBOX ITEMS from a newest-first messages array -------------------
+// Expects msgs sorted by timestamp DESC (newest first).
+// Returns one entry per agent: the most recent message with unread flag.
+function buildInboxItems(msgsNewestFirst) {
+  const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
+  const latestPerAgent = {} // agent -> latest inbox entry
+  for (const msg of msgsNewestFirst) {
+    if (msg.role === 'user' && msg.source === 'corner-dashboard' && !agentLastSeen[msg.agent]) {
+      agentLastSeen[msg.agent] = msg.timestamp
+    }
+  }
+  for (const msg of msgsNewestFirst) {
+    if (msg.agent && !latestPerAgent[msg.agent]) {
+      const text = msg.text || ''
+      const preview = text.slice(0, 80) + (text.length > 80 ? '...' : '')
+      const lastSeen = agentLastSeen[msg.agent]
+      latestPerAgent[msg.agent] = {
+        agent: msg.agent,
+        text: preview,
+        timestamp: msg.timestamp,
+        id: msg.id,
+        isUnread: msg.role === 'assistant' && (!lastSeen || msg.timestamp > lastSeen),
+      }
+    }
+  }
+  return Object.values(latestPerAgent)
+}
+
 // =============================================================================
 // useDataPipe -- THE hook. One poll. All data. Every 3 seconds.
 //
@@ -330,28 +358,9 @@ export function useDataPipe(parsePunchList) {
             }
 
             // Build inbox: latest message per agent (for card previews) -- all sources, no filter
+            // sbData.messages is oldest-first (API reverses timestamp.desc fetch)
             if (sbData.messages && sbData.messages.length > 0) {
-              const agentLastSeen = {}
-              const latestPerAgent = {}
-              for (const msg of sbData.messages) {
-                if (msg.role === 'user' && msg.source === 'corner-dashboard') {
-                  agentLastSeen[msg.agent] = msg.timestamp
-                }
-              }
-              for (const msg of [...sbData.messages].reverse()) {
-                if (msg.agent && !latestPerAgent[msg.agent]) {
-                  const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
-                  const lastSeen = agentLastSeen[msg.agent]
-                  latestPerAgent[msg.agent] = {
-                    agent: msg.agent,
-                    text: preview,
-                    timestamp: msg.timestamp,
-                    id: msg.id,
-                    isUnread: msg.role === 'assistant' && (!lastSeen || msg.timestamp > lastSeen),
-                  }
-                }
-              }
-              setInboxItems(Object.values(latestPerAgent))
+              setInboxItems(buildInboxItems([...sbData.messages].reverse()))
             }
           }
         } catch {
@@ -464,29 +473,25 @@ export function useDataPipe(parsePunchList) {
         }
 
         // Build inbox: latest message per agent (for card previews) + unread counts
-        if (data.messages) {
-          const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
-          const latestPerAgent = {} // agent -> most recent message (any role)
-          for (const msg of data.messages) {
-            if (msg.role === 'user' && msg.source === 'corner-dashboard') {
-              agentLastSeen[msg.agent] = msg.timestamp
-            }
+        // Use direct Supabase query (newest-first) so we get the absolute latest per agent,
+        // not constrained by the 500-message batch limit from supabase-status which can
+        // miss agents whose last message falls outside the top 500 global messages.
+        if (supabase) {
+          const { data: inboxMsgs } = await supabase
+            .from('messages')
+            .select('id, agent, text, timestamp, role, source')
+            .eq('client_id', clientId)
+            .order('timestamp', { ascending: false })
+            .limit(300)
+          if (inboxMsgs && inboxMsgs.length > 0) {
+            setInboxItems(buildInboxItems(inboxMsgs)) // already newest-first
+          } else if (data.messages) {
+            // Fallback: use supabase-status batch (oldest-first -> reverse)
+            setInboxItems(buildInboxItems([...data.messages].reverse()))
           }
-          // Walk newest-first to find latest message per agent (for preview)
-          for (const msg of [...data.messages].reverse()) {
-            if (msg.agent && !latestPerAgent[msg.agent]) {
-              const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
-              const lastSeen = agentLastSeen[msg.agent]
-              latestPerAgent[msg.agent] = {
-                agent: msg.agent,
-                text: preview,
-                timestamp: msg.timestamp,
-                id: msg.id,
-                isUnread: msg.role === 'assistant' && (!lastSeen || msg.timestamp > lastSeen),
-              }
-            }
-          }
-          setInboxItems(Object.values(latestPerAgent))
+        } else if (data.messages) {
+          // No supabase client (env vars not set) -- fall back to batch
+          setInboxItems(buildInboxItems([...data.messages].reverse()))
         }
 
         // Build punchData from Supabase tasks so pills render on production.
@@ -626,11 +631,28 @@ export function useDataPipe(parsePunchList) {
         })
         .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
 
-      // messages table: INSERT triggers refresh (new chat messages update throughput + unread)
+      // messages table: INSERT triggers immediate inboxItems update + full refresh
       messagesChannel = supabase
         .channel(`messages-inserts-${cid}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${clientId}` }, () => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${clientId}` }, (event) => {
           console.log('[Corner Realtime] messages INSERT')
+          // Immediately update inboxItems from event payload -- no round-trip wait.
+          // This ensures the inbox shows the new message the instant it's inserted.
+          const newMsg = event.new
+          if (newMsg?.agent) {
+            const text = newMsg.text || ''
+            const preview = text.slice(0, 80) + (text.length > 80 ? '...' : '')
+            setInboxItems(prev => {
+              const filtered = prev.filter(item => item.agent !== newMsg.agent)
+              return [{
+                agent: newMsg.agent,
+                text: preview,
+                timestamp: newMsg.timestamp || new Date().toISOString(),
+                id: newMsg.id,
+                isUnread: newMsg.role === 'assistant',
+              }, ...filtered]
+            })
+          }
           fetchAll()
         })
         .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
