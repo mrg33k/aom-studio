@@ -133,6 +133,8 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'read_file', description: 'Read a source file from the codebase. Use this BEFORE creating tasks to see what code already exists in a file. Returns the file contents. Paths are relative to the repo root (e.g. "src/dashboard/CornerV3.jsx").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to repo root' }, start_line: { type: 'number', description: 'Start line (1-indexed, default 1)' }, end_line: { type: 'number', description: 'End line (default: start+100)' } }, required: ['path'] } },
   { name: 'list_files', description: 'List files in a directory. Use this to verify file paths and see the actual directory structure instead of guessing. Returns file names in the directory.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path relative to repo root (e.g. "src/dashboard")' } }, required: ['path'] } },
   { name: 'update_context', description: 'Update a section of a project CONTEXT.md document. Use when the operator asks to record decisions, update project status, add constraints, or note architectural choices for a project. Only works within a project conversation (requires project_slug).', parameters: { type: 'object', properties: { project_slug: { type: 'string', description: 'The project slug to update context for' }, section: { type: 'string', enum: ['overview', 'status', 'decisions', 'constraints', 'architecture', 'notes'], description: 'Which section of the CONTEXT.md to update' }, content: { type: 'string', description: 'The content to write into the section' }, action: { type: 'string', enum: ['replace', 'append'], description: 'Whether to replace the section content or append to it (default: replace)' } }, required: ['project_slug', 'section', 'content'] } },
+  { name: 'read_project_file', description: 'Read a file from the project folder (plans, rankings, specs, briefs). Use this when CONTEXT.md references a file you need to read. Path is relative to the project folder (e.g. "tiktok-respin-rankings.md").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to the project folder (e.g. "tiktok-respin-rankings.md", "respin-001-freezer-repair.md")' } }, required: ['path'] } },
+  { name: 'list_project_files', description: 'List files in the project folder. Use to discover what files are available (plans, specs, briefs, rankings, etc.).', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Subdirectory to list (optional, default lists project root)' } } } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -800,6 +802,28 @@ ${BASE_INSTRUCTION}`;
             const items = await ghResp.json();
             if (!Array.isArray(items)) throw new Error(`Not a directory: ${dirPath}`);
             result = { path: dirPath || '/', files: items.map(i => ({ name: i.name, type: i.type, size: i.size })) };
+          }
+          else if (name === 'read_project_file') {
+            const slug = projectSlug || args.project_slug;
+            if (!slug) throw new Error('No project context -- this tool only works in project chats');
+            const filePath = (args.path || '').trim();
+            if (!filePath) throw new Error('path required');
+            const ragResp = await fetch(`${RAG_URL}/read-project-file?slug=${encodeURIComponent(slug)}&path=${encodeURIComponent(filePath)}`, {
+              signal: AbortSignal.timeout(10000),
+            });
+            const ragData = await ragResp.json();
+            if (!ragResp.ok) throw new Error(ragData.error || `Failed to read file: ${filePath}`);
+            result = { path: filePath, content: ragData.content, truncated: ragData.truncated || false };
+          }
+          else if (name === 'list_project_files') {
+            const slug = projectSlug || args.project_slug;
+            if (!slug) throw new Error('No project context -- this tool only works in project chats');
+            const subdir = (args.path || '').trim();
+            const url = `${RAG_URL}/list-project-files?slug=${encodeURIComponent(slug)}${subdir ? `&path=${encodeURIComponent(subdir)}` : ''}`;
+            const ragResp = await fetch(url, { signal: AbortSignal.timeout(10000) });
+            const ragData = await ragResp.json();
+            if (!ragResp.ok) throw new Error(ragData.error || 'Failed to list files');
+            result = { path: ragData.path, files: ragData.files };
           }
           else if (name === 'update_context') {
             // Auto-fill project_slug from request context if not provided by Gemini
