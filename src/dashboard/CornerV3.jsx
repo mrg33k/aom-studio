@@ -907,7 +907,8 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
   }
 
   const filteredActive    = filterTasks(active)
-  const filteredCompleted = filterTasks(completed)
+  const filteredFailed    = filterTasks(completed.filter(t => t.status === 'failed'))
+  const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed'))
 
   // Weekly stats derived from completed tasks
   const withQA    = completed.filter(t => t.qa_score || t.qaScore)
@@ -1226,6 +1227,76 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
             </div>
           </div>
         </div>
+
+        {/* Failed tasks -- separate from shipped, with dismiss */}
+        {filteredFailed.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 6px' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+                Failed
+              </span>
+              <button
+                onClick={async () => {
+                  const ids = filteredFailed.map(t => t.id)
+                  for (const id of ids) {
+                    await supabase.from('tasks').update({ status: 'superseded' }).eq('id', id)
+                  }
+                }}
+                style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+              >
+                Dismiss all
+              </button>
+            </div>
+            {filteredFailed.map((t) => {
+              const qa = t.qa_score || t.qaScore
+              const agent = t.agent_identity || t.agentIdentity
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    padding: '14px 16px',
+                    marginBottom: 8,
+                    borderRadius: 14,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.15)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'rgba(240,244,255,0.7)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.title || t.text || 'Untitled task'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                      {agent && <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,244,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{agent}</span>}
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Failed</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    {qa && <span style={{ fontSize: 16, fontWeight: 800, color: '#EF4444', fontFamily: "'JetBrains Mono', monospace" }}>{qa}</span>}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        await supabase.from('tasks').update({ status: 'superseded' }).eq('id', t.id)
+                      }}
+                      style={{ fontSize: 9, fontWeight: 700, color: C.muted, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Shipped tasks */}
         {filteredCompleted.length > 0 && (
