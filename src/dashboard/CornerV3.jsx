@@ -530,7 +530,7 @@ const agentColors = {
   jacob:   '#FACC15',
 }
 
-function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCustomize }) {
+function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCustomize, isPinned, isMuted, onTogglePin, onToggleMute, onRename }) {
   const [hovered, setHovered] = useState(false)
   const [ctxMenu, setCtxMenu] = useState(null)
   const bgColor = agent.color || agentColors[agent.slug] || '#60A5FA'
@@ -620,26 +620,28 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
           }}
         >
           {[
-            { label: 'Change photo', icon: '📷', action: () => { setCtxMenu(null); onCustomize?.(agent, 'photo') } },
-            { label: 'Change color', icon: '🎨', action: () => { setCtxMenu(null); onCustomize?.(agent, 'color') } },
-          ].map(item => (
-            <button
-              key={item.label}
-              onClick={item.action}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                width: '100%', padding: '8px 10px',
-                background: 'transparent', border: 'none', borderRadius: 8,
-                cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                color: C.text2, fontFamily: "'Inter', sans-serif",
-                textAlign: 'left', transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = C.s2}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <span style={{ fontSize: 14 }}>{item.icon}</span>
-              {item.label}
-            </button>
+            { label: 'Rename', action: () => { setCtxMenu(null); onRename?.(agent) } },
+            { label: isPinned ? 'Unpin' : 'Pin to top', action: () => { setCtxMenu(null); onTogglePin?.(agent) } },
+            { label: isMuted ? 'Unmute' : 'Mute', action: () => { setCtxMenu(null); onToggleMute?.(agent) } },
+            null,
+            { label: 'Change photo', action: () => { setCtxMenu(null); onCustomize?.(agent, 'photo') } },
+            { label: 'Change color', action: () => { setCtxMenu(null); onCustomize?.(agent, 'color') } },
+            null,
+            { label: 'Archive', action: () => { setCtxMenu(null); onCustomize?.(agent, 'archive') } },
+          ].map((item, idx) => !item ? (
+            <div key={`d${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
+          ) : (
+            <button key={item.label} onClick={item.action} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              width: '100%', padding: '7px 10px',
+              background: 'transparent', border: 'none', borderRadius: 6,
+              cursor: 'pointer', fontSize: 13, fontWeight: 500,
+              color: C.text2, fontFamily: "'Inter', sans-serif",
+              textAlign: 'left', transition: 'background 0.1s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >{item.label}</button>
           ))}
         </div>
       )}
@@ -978,12 +980,25 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
                 unreadCount={unreadCounts[agent.slug] || 0}
                 onClick={onSelectAgent}
                 isSelected={agent.slug === selectedAgentSlug}
+                isPinned={isFav('agent', agent.slug)}
+                isMuted={isMuted(agent.slug)}
+                onTogglePin={(a) => toggleFav('agent', a.slug)}
+                onToggleMute={(a) => toggleMute(a.slug)}
+                onRename={(a) => { setSelectedAgent(a); onSelectAgent?.(a); setTimeout(() => setSettingsOpen(true), 100) }}
                 onCustomize={(a, type) => {
                   if (type === 'photo') {
                     setCustomizeTarget({ agent: a, type: 'photo' })
                     setTimeout(() => customizeFileRef.current?.click(), 100)
                   } else if (type === 'color') {
                     setCustomizeTarget({ agent: a, type: 'color' })
+                  } else if (type === 'archive') {
+                    // Archive = hide by adding to a hidden list (localStorage)
+                    const hidden = JSON.parse(localStorage.getItem('corner-hidden-slugs') || '[]')
+                    if (!hidden.includes(a.slug)) {
+                      hidden.push(a.slug)
+                      localStorage.setItem('corner-hidden-slugs', JSON.stringify(hidden))
+                      window.location.reload()
+                    }
                   }
                 }}
               />
