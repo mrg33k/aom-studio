@@ -3017,35 +3017,78 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
 
   const handleFileSelection = useCallback(async (e) => {
     const files = Array.from(e.target.files || [])
-    if (!files.length || !selectedAgent || !supabase || !worldId) return
-    // Reset input so the same file can be re-selected later
+    if (!files.length || !worldId) return
+    const agentKey = selectedAgent ? selectedAgent.slug : (selectedProject ? `project:${selectedProject.slug}` : null)
+    if (!agentKey) return
+    const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
     setUploading(true)
     for (const file of files) {
       try {
-        const filePath = `attachments/${worldId}/${Date.now()}-${file.name}`
-        const { error: uploadError } = await supabase.storage
-          .from('attachments')
-          .upload(filePath, file, { upsert: false })
-        if (uploadError) {
-          console.error('[ChatPanel] upload error:', uploadError)
+        // Compress images client-side (max 1200px, 0.7 quality)
+        let dataBase64, mimeType = file.type
+        if (file.type.startsWith('image/')) {
+          dataBase64 = await new Promise(resolve => {
+            const img = new Image()
+            const reader = new FileReader()
+            reader.onload = () => {
+              img.onload = () => {
+                const maxDim = 1200
+                let w = img.width, h = img.height
+                if (w > maxDim || h > maxDim) {
+                  const scale = maxDim / Math.max(w, h)
+                  w = Math.round(w * scale)
+                  h = Math.round(h * scale)
+                }
+                const canvas = document.createElement('canvas')
+                canvas.width = w
+                canvas.height = h
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+                resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1])
+              }
+              img.src = reader.result
+            }
+            reader.readAsDataURL(file)
+          })
+          mimeType = 'image/jpeg'
+        } else {
+          // Non-image: read as base64
+          dataBase64 = await new Promise(resolve => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result.split(',')[1])
+            reader.readAsDataURL(file)
+          })
+        }
+
+        // Upload to local Mac via RAG server
+        const uploadRes = await fetch('/api/dashboard/file-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            world: clientId,
+            filename: file.name,
+            data_base64: dataBase64,
+            mime_type: mimeType,
+          }),
+        })
+        const uploadData = await uploadRes.json()
+        if (!uploadRes.ok) {
+          console.error('[ChatPanel] upload error:', uploadData.error)
           continue
         }
-        const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(filePath)
-        const publicUrl = urlData?.publicUrl
-        if (!publicUrl) continue
+        const publicUrl = uploadData.full_url
 
         // Optimistic message
         const tempId = `temp-attach-${Date.now()}`
         setMessages(prev => [...prev, {
           id: tempId,
           role: 'user',
-          agent: selectedAgent.slug,
+          agent: agentKey,
           text: `Attached file: ${file.name}`,
           timestamp: new Date().toISOString(),
           source: 'corner-dashboard',
           attachment_url: publicUrl,
-          file_mime_type: file.type,
+          file_mime_type: mimeType,
           file_size: file.size,
         }])
 
@@ -3054,14 +3097,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            agent: selectedAgent.slug,
+            agent: agentKey,
             text: `Attached file: ${file.name}`,
             role: 'user',
             source: 'corner-dashboard',
-            client_id: worldId,
+            client_id: clientId,
             ...userIdentity,
             attachment_url: publicUrl,
-            file_mime_type: file.type,
+            file_mime_type: mimeType,
             file_size: file.size,
           }),
         })
