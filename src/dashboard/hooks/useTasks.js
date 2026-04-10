@@ -34,7 +34,8 @@ const QUEUED_STATUSES = new Set(['queued', 'classifying', 'planning'])
 const DONE_STATUSES = new Set(['done', 'failed'])
 
 // Max tasks to fetch (guard against runaway queries)
-const MAX_TASKS = 200
+// Must be high enough to cover all active + recent done tasks
+const MAX_TASKS = 500
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
