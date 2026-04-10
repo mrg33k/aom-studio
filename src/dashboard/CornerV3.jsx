@@ -612,8 +612,10 @@ const agentColors = {
 function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCustomize, isPinned, isMuted, onTogglePin, onToggleMute, onRename }) {
   const [hovered, setHovered] = useState(false)
   const [ctxMenu, setCtxMenu] = useState(null)
+  const cardRef = useRef(null)
   const longPressTimer = useRef(null)
   const longPressTriggered = useRef(false)
+  const touchStartPos = useRef({ x: 0, y: 0 })
   const bgColor = agent.color || agentColors[agent.slug] || '#60A5FA'
   const agentPhoto = agent.sprite_path && agent.sprite_path.startsWith('http') ? agent.sprite_path : null
   const initial = (agent.name || '?')[0].toUpperCase()
@@ -622,16 +624,66 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
   const statusLabel = statusUpper === 'IDLE' ? 'Idle' : statusUpper === 'BUILDING' ? 'Building' : 'Online'
   const statusGlow = statusUpper === 'BUILDING' ? '0 0 6px rgba(234,179,8,0.5)' : 'none'
 
-  // Close context menu on outside click
+  // Close context menu on outside click / touch
   useEffect(() => {
     if (!ctxMenu) return
-    const handler = () => setCtxMenu(null)
+    const handler = (e) => {
+      if (cardRef.current && !cardRef.current.contains(e.target)) setCtxMenu(null)
+    }
     document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
+    document.addEventListener('touchstart', handler)
+    return () => { document.removeEventListener('click', handler); document.removeEventListener('touchstart', handler) }
   }, [ctxMenu])
+
+  // Native touch event listeners -- these can preventDefault to block iOS text selection
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+
+    const onTouchStart = (e) => {
+      longPressTriggered.current = false
+      const touch = e.touches[0]
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY }
+      longPressTimer.current = setTimeout(() => {
+        longPressTriggered.current = true
+        // Clear any text selection iOS started
+        window.getSelection()?.removeAllRanges()
+        if (navigator.vibrate) navigator.vibrate(10)
+        setCtxMenu({ x: touch.clientX, y: touch.clientY })
+      }, 400)
+    }
+
+    const onTouchEnd = (e) => {
+      clearTimeout(longPressTimer.current)
+      if (longPressTriggered.current) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
+    const onTouchMove = (e) => {
+      if (!longPressTimer.current) return
+      const touch = e.touches[0]
+      const dx = Math.abs(touch.clientX - touchStartPos.current.x)
+      const dy = Math.abs(touch.clientY - touchStartPos.current.y)
+      if (dx > 10 || dy > 10) clearTimeout(longPressTimer.current)
+    }
+
+    // passive: false lets us preventDefault on touchend
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchend', onTouchEnd, { passive: false })
+    el.addEventListener('touchmove', onTouchMove, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchmove', onTouchMove)
+      clearTimeout(longPressTimer.current)
+    }
+  }, [])
 
   return (
     <div
+      ref={cardRef}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => { if (!longPressTriggered.current) onClick?.(agent) }}
@@ -639,22 +691,6 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
         e.preventDefault()
         setCtxMenu({ x: e.clientX, y: e.clientY })
       }}
-      onTouchStart={(e) => {
-        longPressTriggered.current = false
-        const touch = e.touches[0]
-        longPressTimer.current = setTimeout(() => {
-          longPressTriggered.current = true
-          // Prevent iOS default actions
-          e.target?.closest?.('[data-agent-card]')?.style?.setProperty?.('user-select', 'none')
-          if (navigator.vibrate) navigator.vibrate(10)
-          setCtxMenu({ x: touch.clientX, y: touch.clientY })
-        }, 400)
-      }}
-      onTouchEnd={(e) => {
-        clearTimeout(longPressTimer.current)
-        if (longPressTriggered.current) e.preventDefault()
-      }}
-      onTouchMove={() => { clearTimeout(longPressTimer.current) }}
       data-agent-card
       style={{
         display: 'flex',
@@ -1000,7 +1036,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
     <div style={{ flex: 1, overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Pulse keyframe (injected once) ─────────────────────────────────── */}
-      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } } @keyframes telephonePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } } @keyframes recDot { 0%,100% { opacity:1 } 50% { opacity:0.3 } } [data-agent-card] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y; }`}</style>
+      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } } @keyframes telephonePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } } @keyframes recDot { 0%,100% { opacity:1 } 50% { opacity:0.3 } } [data-agent-card], [data-agent-card] * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; } [data-agent-card] { touch-action: pan-y; }`}</style>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <div style={{ padding: isMobile ? '20px 14px 10px' : '28px 20px 12px', position: 'relative' }}>
