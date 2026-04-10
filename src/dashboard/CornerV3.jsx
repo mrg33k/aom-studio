@@ -2100,6 +2100,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [voiceVolume, setVoiceVolume]     = useState(0)
   const [voiceTranscriptText, setVoiceTranscriptText] = useState('')
   const [voiceMuted, setVoiceMuted]       = useState(false)
+
+  // User profile cache for shared chat avatars: { [user_id]: { avatar_url, display_name } }
+  const [userProfiles, setUserProfiles]   = useState({})
+  const fetchedProfileIds = useRef(new Set())
   const messagesEndRef = useRef(null)
   const inputRef       = useRef(null)
   const fileInputRef   = useRef(null)
@@ -2641,6 +2645,22 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // Keep a ref so handleSend can read current messages without stale closure
   const messagesRef = useRef(messages)
   useEffect(() => { messagesRef.current = messages }, [messages])
+
+  // Fetch user profiles for avatars in shared chats
+  useEffect(() => {
+    const newIds = messages
+      .filter(m => m.user_id && !fetchedProfileIds.current.has(m.user_id) && m.user_id !== currentUser?.id)
+      .map(m => m.user_id)
+    const unique = [...new Set(newIds)]
+    if (!unique.length) return
+    unique.forEach(id => fetchedProfileIds.current.add(id))
+    fetch(`/api/dashboard/avatar?user_ids=${unique.join(',')}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.avatars) setUserProfiles(prev => ({ ...prev, ...data.avatars }))
+      })
+      .catch(() => {})
+  }, [messages, currentUser?.id])
 
   const handleSend = useCallback(async () => {
     const text = input.trim()
@@ -3190,7 +3210,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             const isUser = msg.role === 'user'
             const senderName = msg.user_name || (isUser ? displayName : null)
             const senderInitial = senderName ? senderName[0].toUpperCase() : 'U'
-            const senderColor = isUser ? (msg.user_name && msg.user_name !== displayName ? '#7C3AED' : '#2563EB') : projColor
+            const isOtherUser = isUser && msg.user_name && msg.user_name !== displayName
+            const senderColor = isUser ? (isOtherUser ? '#7C3AED' : '#2563EB') : projColor
+            const senderProfile = msg.user_id ? (msg.user_id === currentUser?.id ? { avatar_url: currentUser?.user_metadata?.avatar_url } : userProfiles[msg.user_id]) : null
+            const senderAvatar = senderProfile?.avatar_url || null
             return (
               <div
                 key={msg.id}
@@ -3213,7 +3236,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   </div>
                 )}
                 <div style={{ maxWidth: '75%', minWidth: 0 }}>
-                  {isUser && msg.user_name && msg.user_name !== displayName && (
+                  {isUser && isOtherUser && (
                     <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
                       {msg.user_name}
                     </div>
@@ -3251,10 +3274,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 {isUser && (
                   <div title={senderName || 'User'} style={{
                     width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                    background: senderColor,
+                    background: senderAvatar ? 'transparent' : senderColor,
+                    border: senderAvatar ? '1px solid rgba(255,255,255,0.1)' : 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden',
                   }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{senderInitial}</span>
+                    {senderAvatar
+                      ? <img src={senderAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{senderInitial}</span>
+                    }
                   </div>
                 )}
               </div>
@@ -4295,7 +4323,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           const isUser = msg.role === 'user'
           const agSenderName = msg.user_name || (isUser ? displayName : null)
           const agSenderInitial = agSenderName ? agSenderName[0].toUpperCase() : 'U'
-          const agSenderColor = isUser ? (msg.user_name && msg.user_name !== displayName ? '#7C3AED' : '#2563EB') : selectedAgent?.color || '#3B82F6'
+          const agIsOtherUser = isUser && msg.user_name && msg.user_name !== displayName
+          const agSenderColor = isUser ? (agIsOtherUser ? '#7C3AED' : '#2563EB') : selectedAgent?.color || '#3B82F6'
+          const agProfile = msg.user_id ? (msg.user_id === currentUser?.id ? { avatar_url: currentUser?.user_metadata?.avatar_url } : userProfiles[msg.user_id]) : null
+          const agAvatar = agProfile?.avatar_url || null
 
           // Checkpoint: agent needs human input (amber card)
           if (msg.source === 'checkpoint') {
@@ -4609,10 +4640,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               {isUser && (
                 <div title={agSenderName || 'User'} style={{
                   width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  background: agSenderColor,
+                  background: agAvatar ? 'transparent' : agSenderColor,
+                  border: agAvatar ? '1px solid rgba(255,255,255,0.1)' : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden',
                 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>{agSenderInitial}</span>
+                  {agAvatar
+                    ? <img src={agAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>{agSenderInitial}</span>
+                  }
                 </div>
               )}
             </div>
