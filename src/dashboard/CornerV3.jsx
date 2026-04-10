@@ -842,8 +842,32 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
   const [taskInput,              setTaskInput]              = useState('')
   const [taskInputFocused,       setTaskInputFocused]       = useState(false)
   const [taskSubmitting,         setTaskSubmitting]         = useState(false)
+  const [expandedTask,           setExpandedTask]           = useState(null)
+  const [taskThread,             setTaskThread]             = useState([])
+  const [threadLoading,          setThreadLoading]          = useState(false)
   const taskInputRef = useRef(null)
   const runnerSignaledRef = useRef(false)
+
+  // Fetch task thread messages when a task is expanded
+  const toggleTaskExpand = useCallback(async (taskId) => {
+    if (expandedTask === taskId) {
+      setExpandedTask(null)
+      setTaskThread([])
+      return
+    }
+    setExpandedTask(taskId)
+    setThreadLoading(true)
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('text,timestamp,role,source')
+        .eq('agent', `task:${taskId}`)
+        .order('timestamp', { ascending: true })
+        .limit(30)
+      setTaskThread(data || [])
+    } catch { setTaskThread([]) }
+    setThreadLoading(false)
+  }, [expandedTask])
   const { projects: taskProjects } = useProjects()
 
   // Auto-start runner when Tasks tab opens and there are queued tasks
@@ -1107,6 +1131,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
               return (
               <div
                 key={t.id}
+                onClick={() => toggleTaskExpand(t.id)}
                 style={{
                   padding: '14px 16px',
                   marginBottom: 8,
@@ -1116,7 +1141,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
                   overflow: 'hidden',
                   transition: 'transform 0.15s, box-shadow 0.15s',
                   background: '#1A2035',
-                  border: `1px solid ${cardBorder}`,
+                  border: `1px solid ${expandedTask === t.id ? 'rgba(255,255,255,0.15)' : cardBorder}`,
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-2px)'
@@ -1153,7 +1178,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                   {/* Left: title + tags */}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ color: cardColor, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ color: cardColor, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
@@ -1171,6 +1196,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
                           Attempt {t.attempt_count}
                         </span>
                       ) : null}
+                      <span style={{ color: C.dim, fontSize: 9 }}>{expandedTask === t.id ? '▾' : '▸'}</span>
                     </div>
                   </div>
                   {/* Right: score + label */}
@@ -1183,6 +1209,27 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
                     </div>
                   </div>
                 </div>
+                {/* Expandable thread */}
+                {expandedTask === t.id && (
+                  <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+                    {threadLoading ? (
+                      <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
+                    ) : taskThread.length === 0 ? (
+                      <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events yet.</div>
+                    ) : taskThread.map((m, idx) => (
+                      <div key={idx} style={{
+                        fontSize: 11, color: C.text2, lineHeight: 1.4,
+                        padding: '3px 0',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        borderBottom: idx < taskThread.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                      }}>
+                        <span style={{ color: C.dim, fontSize: 9 }}>{(m.timestamp || '').slice(11, 19)}</span>
+                        {' '}
+                        <span>{m.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )})}
 
@@ -1379,50 +1426,72 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
               return (
                 <div
                   key={t.id}
+                  onClick={() => toggleTaskExpand(t.id)}
                   style={{
                     padding: '14px 16px',
                     marginBottom: 8,
                     borderRadius: 14,
                     position: 'relative',
                     overflow: 'hidden',
+                    cursor: 'pointer',
                     background: 'rgba(239,68,68,0.08)',
-                    border: '1px solid rgba(239,68,68,0.12)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 10,
+                    border: expandedTask === t.id ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(239,68,68,0.12)',
                   }}
                 >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'rgba(240,244,255,0.6)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {t.title || t.text || 'Untitled task'}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: 'rgba(240,244,255,0.6)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap' }}>
+                        {t.title || t.text || 'Untitled task'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                        {agent && <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,244,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{agent}</span>}
+                        {qa && <span style={{ fontSize: 9, fontWeight: 700, color: '#EF4444', letterSpacing: '0.06em' }}>QA {qa}/10</span>}
+                        <span style={{ color: C.dim, fontSize: 9 }}>{expandedTask === t.id ? '▾' : '▸'}</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                      {agent && <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,244,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{agent}</span>}
-                      {qa && <span style={{ fontSize: 9, fontWeight: 700, color: '#EF4444', letterSpacing: '0.06em' }}>QA {qa}/10</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'requeue', taskId: t.id }) })
+                        }}
+                        style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
+                      >
+                        Requeue
+                      </button>
+                      <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
+                        }}
+                        style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
+                      >
+                        Dismiss
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'requeue', taskId: t.id }) })
-                      }}
-                      style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
-                    >
-                      Requeue
-                    </button>
-                    <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
-                      }}
-                      style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
+                  {/* Expandable thread */}
+                  {expandedTask === t.id && (
+                    <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+                      {threadLoading ? (
+                        <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
+                      ) : taskThread.length === 0 ? (
+                        <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events.</div>
+                      ) : taskThread.map((m, idx) => (
+                        <div key={idx} style={{
+                          fontSize: 11, color: C.text2, lineHeight: 1.4,
+                          padding: '3px 0',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          borderBottom: idx < taskThread.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                        }}>
+                          <span style={{ color: C.dim, fontSize: 9 }}>{(m.timestamp || '').slice(11, 19)}</span>
+                          {' '}
+                          <span>{m.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -1450,6 +1519,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
               return (
                 <div
                   key={t.id}
+                  onClick={() => toggleTaskExpand(t.id)}
                   style={{
                     padding: '14px 16px',
                     marginBottom: 8,
@@ -1460,10 +1530,6 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
                     transition: 'transform 0.15s, box-shadow 0.15s',
                     backgroundColor: isFailed ? 'rgba(239,68,68,0.15)' : cardColor,
                     opacity: 1,
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    gap: 10,
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.transform = 'translateY(-2px)'
@@ -1474,42 +1540,65 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
                     e.currentTarget.style.boxShadow = ''
                   }}
                 >
-                  {/* Left: title + tags */}
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
-                      {t.title || t.text || 'Untitled task'}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                    {/* Left: title + tags */}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap', textDecoration: 'none' }}>
+                        {t.title || t.text || 'Untitled task'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                        {t.project_id && (() => {
+                          const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
+                          return proj ? <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
+                        })()}
+                        {agent && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {agent}
+                          </span>
+                        )}
+                        {project && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {project}
+                          </span>
+                        )}
+                        {!agent && !project && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {isFailed ? 'Failed' : 'Shipped'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
-                      {t.project_id && (() => {
-                        const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
-                        return proj ? <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
-                      })()}
-                      {agent && (
-                        <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {agent}
-                        </span>
-                      )}
-                      {project && (
-                        <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {project}
-                        </span>
-                      )}
-                      {!agent && !project && (
-                        <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {isFailed ? 'Failed' : 'Shipped'}
-                        </span>
-                      )}
-                    </div>
+                    {/* Right: QA score + label */}
+                    {qa && (
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : 'rgba(0,0,0,0.55)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                          {qa}
+                        </div>
+                        <div style={{ fontSize: 8, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.3)' : 'rgba(0,0,0,0.3)', textTransform: 'uppercase', textAlign: 'right', marginTop: 2 }}>
+                          QA
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {/* Right: QA score + label */}
-                  {qa && (
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : 'rgba(0,0,0,0.55)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
-                        {qa}
-                      </div>
-                      <div style={{ fontSize: 8, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.3)' : 'rgba(0,0,0,0.3)', textTransform: 'uppercase', textAlign: 'right', marginTop: 2 }}>
-                        QA
-                      </div>
+                  {/* Expandable thread */}
+                  {expandedTask === t.id && (
+                    <div style={{ marginTop: 10, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`, paddingTop: 8 }}>
+                      {threadLoading ? (
+                        <div style={{ fontSize: 11, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
+                      ) : taskThread.length === 0 ? (
+                        <div style={{ fontSize: 11, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events.</div>
+                      ) : taskThread.map((m, idx) => (
+                        <div key={idx} style={{
+                          fontSize: 11, color: isDark ? C.text2 : 'rgba(0,0,0,0.5)', lineHeight: 1.4,
+                          padding: '3px 0',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          borderBottom: idx < taskThread.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)'}` : 'none',
+                        }}>
+                          <span style={{ color: isDark ? C.dim : 'rgba(0,0,0,0.25)', fontSize: 9 }}>{(m.timestamp || '').slice(11, 19)}</span>
+                          {' '}
+                          <span>{m.text}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -3183,6 +3272,81 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             )}
           </div>
         </div>}
+        {/* Chat settings full-screen overlay */}
+        {settingsOpen && (
+          <div
+            onClick={() => setSettingsOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: 380,
+                maxWidth: '90vw',
+                maxHeight: '80vh',
+                background: C.s1,
+                border: '1px solid ' + C.border2,
+                borderRadius: 16,
+                boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1px solid ' + C.border,
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+                  Chat Settings
+                </span>
+                <button
+                  onClick={() => setSettingsOpen(false)}
+                  style={{
+                    width: 28, height: 28,
+                    borderRadius: 8,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid ' + C.border,
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: C.text2,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+              <div style={{
+                padding: 24,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                overflowY: 'auto',
+                flex: 1,
+              }}>
+                <span style={{ fontSize: 13, color: C.text2, fontFamily: "'Inter', sans-serif" }}>
+                  Settings options will appear here.
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

@@ -261,7 +261,61 @@ export default async function handler(req, res) {
       }
 
       case 'requeue': {
-        const result = await supabasePatch(filter, { status: 'queued', qa_score: null });
+        // Fetch existing task to build fix suggestions from QA notes/errors
+        const requeueResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}&select=description,qa_notes,error,metadata,title`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        });
+        const requeueRows = await requeueResp.json();
+        const requeueTask = Array.isArray(requeueRows) && requeueRows[0] ? requeueRows[0] : {};
+
+        // Build retry context from previous failure
+        const prevNotes = requeueTask.qa_notes || '';
+        const prevError = requeueTask.error || '';
+        const prevMeta = requeueTask.metadata || {};
+        let retryHint = '';
+        if (prevNotes) retryHint += `Previous QA notes: ${prevNotes}\n`;
+        if (prevError) retryHint += `Previous error: ${prevError}\n`;
+        if (retryHint) retryHint = `\n\n--- RETRY CONTEXT (fix these issues) ---\n${retryHint}`;
+
+        const updates = {
+          status: 'queued',
+          qa_score: null,
+          error: null,
+          worker_id: null,
+          locked_at: null,
+          lease_expires_at: null,
+        };
+        // Append retry context to description if there are fix suggestions
+        if (retryHint && requeueTask.description) {
+          updates.description = requeueTask.description.replace(/\n\n--- RETRY CONTEXT.*$/s, '') + retryHint;
+        }
+        // Track requeue count in metadata
+        prevMeta.requeue_count = (prevMeta.requeue_count || 0) + 1;
+        updates.metadata = prevMeta;
+
+        const result = await supabasePatch(filter, updates);
+
+        // Fire runner_start_requested event
+        try {
+          const crypto = await import('crypto');
+          await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({
+              id: crypto.randomUUID(),
+              agent: 'system',
+              event_type: 'runner_start_requested',
+              payload: { source: 'requeue', task_id: taskId, requested_at: new Date().toISOString() },
+              timestamp: new Date().toISOString(),
+            }),
+          });
+        } catch {}
+
         return res.status(200).json({ ok: true, action: 'requeue', result });
       }
 
