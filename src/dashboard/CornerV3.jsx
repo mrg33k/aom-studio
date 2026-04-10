@@ -530,21 +530,34 @@ const agentColors = {
   jacob:   '#FACC15',
 }
 
-function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
+function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCustomize }) {
   const [hovered, setHovered] = useState(false)
-  const bgColor = agentColors[agent.slug] || '#60A5FA'
+  const [ctxMenu, setCtxMenu] = useState(null)
+  const bgColor = agent.color || agentColors[agent.slug] || '#60A5FA'
+  const agentPhoto = agent.sprite_path && agent.sprite_path.startsWith('http') ? agent.sprite_path : null
   const initial = (agent.name || '?')[0].toUpperCase()
-  // cv3.html 3-state status model: on (accent) | busy/building (yellow) | off (dim)
   const statusUpper = agent.status?.toUpperCase()
   const statusColor = statusUpper === 'IDLE' ? C.dim : statusUpper === 'BUILDING' ? C.yellow : C.accent
   const statusLabel = statusUpper === 'IDLE' ? 'Idle' : statusUpper === 'BUILDING' ? 'Building' : 'Online'
   const statusGlow = statusUpper === 'BUILDING' ? '0 0 6px rgba(234,179,8,0.5)' : 'none'
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!ctxMenu) return
+    const handler = () => setCtxMenu(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [ctxMenu])
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => onClick?.(agent)}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        setCtxMenu({ x: e.clientX, y: e.clientY })
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -555,23 +568,24 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
         border: `1px solid ${hovered ? C.border2 : isSelected ? 'rgba(16,185,129,0.15)' : C.border}`,
         cursor: 'pointer',
         position: 'relative',
-        overflow: 'hidden',
+        overflow: 'visible',
         transition: 'background 150ms ease, border-color 150ms ease, transform 120ms ease, box-shadow 120ms ease',
         transform: hovered ? 'translateY(-1px)' : 'none',
         boxShadow: hovered ? '0 6px 20px rgba(0,0,0,0.25)' : 'none',
       }}
     >
-      {/* Active accent left bar -- shown for currently selected chat agent */}
+      {/* Active accent left bar */}
       {isSelected && (
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />
       )}
 
-      {/* 38px circle avatar */}
+      {/* 38px circle avatar -- shows photo or color initial */}
       <div style={{
         width: 38,
         height: 38,
         borderRadius: '50%',
-        background: bgColor,
+        background: agentPhoto ? 'transparent' : bgColor,
+        border: agentPhoto ? '1px solid rgba(255,255,255,0.1)' : 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -580,7 +594,55 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected }) {
         fontSize: 15,
         color: '#000',
         fontFamily: "'Inter', sans-serif",
-      }}>{initial}</div>
+        overflow: 'hidden',
+      }}>
+        {agentPhoto
+          ? <img src={agentPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : initial
+        }
+      </div>
+
+      {/* Right-click context menu */}
+      {ctxMenu && (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            top: ctxMenu.y,
+            left: ctxMenu.x,
+            background: C.s1,
+            border: `1px solid ${C.border2}`,
+            borderRadius: 10,
+            padding: 4,
+            zIndex: 99999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            minWidth: 160,
+          }}
+        >
+          {[
+            { label: 'Change photo', icon: '📷', action: () => { setCtxMenu(null); onCustomize?.(agent, 'photo') } },
+            { label: 'Change color', icon: '🎨', action: () => { setCtxMenu(null); onCustomize?.(agent, 'color') } },
+          ].map(item => (
+            <button
+              key={item.label}
+              onClick={item.action}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: '100%', padding: '8px 10px',
+                background: 'transparent', border: 'none', borderRadius: 8,
+                cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                color: C.text2, fontFamily: "'Inter', sans-serif",
+                textAlign: 'left', transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = C.s2}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <span style={{ fontSize: 14 }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Info: name + preview */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -916,6 +978,14 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
                 unreadCount={unreadCounts[agent.slug] || 0}
                 onClick={onSelectAgent}
                 isSelected={agent.slug === selectedAgentSlug}
+                onCustomize={(a, type) => {
+                  if (type === 'photo') {
+                    setCustomizeTarget({ agent: a, type: 'photo' })
+                    setTimeout(() => customizeFileRef.current?.click(), 100)
+                  } else if (type === 'color') {
+                    setCustomizeTarget({ agent: a, type: 'color' })
+                  }
+                }}
               />
             </Reorder.Item>
           ))}
@@ -923,6 +993,73 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
       )}
 
       <div style={{ height: 20 }} />
+
+      {/* Hidden file input for agent photo upload */}
+      <input
+        ref={customizeFileRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0]
+          if (!file || !customizeTarget?.agent) return
+          const base64 = await compressAvatar(file)
+          fetch('/api/dashboard/agent-customize', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slug: customizeTarget.agent.slug,
+              client_id: worldId,
+              image_base64: base64,
+            }),
+          }).then(() => window.location.reload()).catch(() => {})
+          setCustomizeTarget(null)
+          if (customizeFileRef.current) customizeFileRef.current.value = ''
+        }}
+      />
+
+      {/* Color picker modal */}
+      {customizeTarget?.type === 'color' && (
+        <div
+          onClick={() => setCustomizeTarget(null)}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', zIndex: 99999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{
+            background: C.s1, border: `1px solid ${C.border2}`, borderRadius: 14,
+            padding: 20, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', width: 260,
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 14, fontFamily: "'Inter', sans-serif" }}>
+              Pick color for {customizeTarget.agent.name}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {['#10B981', '#EAB308', '#A78BFA', '#F472B6', '#60A5FA', '#FB923C', '#22C55E', '#EF4444', '#E91E90', '#3B82F6', '#2DD4BF', '#F59E0B'].map(c => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    fetch('/api/dashboard/agent-customize', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ slug: customizeTarget.agent.slug, client_id: worldId, color: c }),
+                    }).then(() => window.location.reload()).catch(() => {})
+                    setCustomizeTarget(null)
+                  }}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: c, border: '2px solid transparent',
+                    cursor: 'pointer', transition: 'transform 0.1s, border-color 0.1s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'transparent' }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -2125,6 +2262,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteMsg, setInviteMsg] = useState(null)
   const [collaborators, setCollaborators] = useState([])
+  const [customizeTarget, setCustomizeTarget] = useState(null) // { agent, type: 'photo'|'color' }
+  const customizeFileRef = useRef(null)
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
