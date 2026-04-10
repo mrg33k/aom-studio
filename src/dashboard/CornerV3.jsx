@@ -2216,14 +2216,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [projectPreviews, setProjectPreviews] = useState({})
   useEffect(() => {
     if (!supabase || !worldId || !projects?.length) return
-    const slugs = projects.filter(p => p.slug).map(p => p.slug)
-    if (!slugs.length) return
-    Promise.all(slugs.map(slug =>
-      supabase.from('messages').select('agent, text, timestamp')
-        .eq('client_id', worldId).eq('agent', `project:${slug}`)
+    const projList = projects.filter(p => p.slug)
+    if (!projList.length) return
+    Promise.all(projList.map(p => {
+      const cid = p.isShared ? `shared:${p.slug}` : worldId
+      return supabase.from('messages').select('agent, text, timestamp')
+        .eq('client_id', cid).eq('agent', `project:${p.slug}`)
         .order('timestamp', { ascending: false }).limit(1)
         .then(({ data }) => data?.[0] || null)
-    )).then(results => {
+    })).then(results => {
       const previews = {}
       for (const msg of results) {
         if (msg?.agent) previews[msg.agent] = { text: (msg.text || '').slice(0, 80), timestamp: msg.timestamp }
@@ -2469,7 +2470,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     supabase
       .from('messages')
       .select('*')
-      .eq('client_id', worldId)
+      .eq('client_id', selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId)
       .eq('agent', `project:${selectedProject.slug}`)
       .order('timestamp', { ascending: true })
       .limit(100)
@@ -2482,11 +2483,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // Realtime subscription for project messages
   useEffect(() => {
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
+    const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
     const channel = supabase
-      .channel(`cv3-project-${worldId}-${selectedProject.slug}`)
+      .channel(`cv3-project-${projCid}-${selectedProject.slug}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
         (payload) => {
           const msg = payload.new
           if (msg.agent === `project:${selectedProject.slug}`) {
@@ -2801,6 +2803,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (!text?.trim() || !selectedProject || !worldId) return
     setSending(true)
     const agentKey = `project:${selectedProject.slug}`
+    const projectClientId = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
     const now = new Date().toISOString()
     const tempUserId = `temp-proj-${Date.now()}`
     setMessages(prev => [...prev, {
@@ -2824,7 +2827,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
+          body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: projectClientId, ...userIdentity }),
         }).then(r => r.json()),
         fetch('/api/dashboard/v2-gemini-chat', {
           method: 'POST',
@@ -2833,7 +2836,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             message: text,
             project_slug: selectedProject.slug,
             project_id: selectedProject.id || null,
-            client_id: worldId,
+            client_id: projectClientId,
             history,
             ...userIdentity,
           }),
@@ -2867,7 +2870,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             text: reply,
             role: 'agent',
             source: 'gemini',
-            client_id: worldId,
+            client_id: projectClientId,
           }),
         })
           .then(r => r.json())
