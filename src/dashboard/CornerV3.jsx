@@ -1087,8 +1087,8 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
             </div>
             {filteredActive.map((t, i) => {
               const isBuilding = t.status === 'building' || t.status === 'qa'
-              const cardColor = isBuilding ? '#22C55E' : '#506480'
-              const cardBorder = isBuilding ? 'rgba(34,197,94,0.15)' : 'rgba(80,100,128,0.15)'
+              const cardColor = isBuilding ? '#22C55E' : '#EAB308'
+              const cardBorder = isBuilding ? 'rgba(34,197,94,0.15)' : 'rgba(234,179,8,0.1)'
               const statusLabel = t.status === 'building' ? 'Building' : t.status === 'qa' ? 'QA' : t.status === 'planning' ? 'Planning' : t.status === 'classifying' ? 'Classifying' : 'Queued'
               return (
               <div
@@ -1123,16 +1123,16 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                   animation: 'bld 5s ease-in-out infinite',
                   borderRadius: '14px 14px 0 0',
                 }} />}
-                {/* Static thin bar for queued */}
+                {/* Animated yellow bar for queued */}
                 {!isBuilding && <div style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  width: '100%',
                   height: 2,
                   background: cardColor,
-                  opacity: 0.3,
+                  animation: 'bld 8s ease-in-out infinite',
                   borderRadius: '14px 14px 0 0',
+                  opacity: 0.6,
                 }} />}
 
                 {/* Card content row */}
