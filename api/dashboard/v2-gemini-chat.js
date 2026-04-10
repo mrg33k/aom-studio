@@ -203,7 +203,13 @@ async function getQueue(clientId) {
 async function getStatus(taskId, clientId) {
   const params = [`id=eq.${encodeURIComponent(taskId)}`];
   if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
-  return sbFetch(`/rest/v1/tasks?${params.join('&')}`);
+  const task = await sbFetch(`/rest/v1/tasks?${params.join('&')}`);
+  // Also fetch task thread messages (QA notes, build status, errors)
+  const thread = await sbFetch(`/rest/v1/messages?agent=eq.task:${encodeURIComponent(taskId)}&select=text,role&limit=20`);
+  if (Array.isArray(task) && task.length > 0) {
+    task[0].thread = Array.isArray(thread) ? thread.map(m => m.text) : [];
+  }
+  return task;
 }
 
 async function deleteMessages(agentSlug, clientId, count = 10) {
@@ -272,9 +278,18 @@ async function registerProject(args = {}) {
   }
   const existingList = projects.map(p => `${p.name} (${p.slug})`).join(', ');
   const crypto = await import('crypto');
-  const newProject = { id: crypto.randomUUID(), slug: inputSlug, name: args.name || inputSlug, color: '#6B7280', icon: 'folder', type: 'internal', is_active: true, ...patch };
+  const newProject = { id: crypto.randomUUID(), slug: inputSlug, name: args.name || inputSlug, color: '#6B7280', icon: 'project', type: 'project', is_active: true, ...patch };
   await sbFetch('/rest/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(newProject) });
-  return { action: 'created', slug: inputSlug, fields: Object.keys(patch), note: `Created new project. Existing projects were: ${existingList}` };
+  // Create disk folder + CONTEXT.md via RAG server
+  const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
+  try {
+    await fetch(`${RAG_URL}/create-project`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: inputSlug, name: args.name || inputSlug, description: args.repo_description || '' }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (e) { /* RAG server may not have this endpoint yet -- Supabase row is enough for now */ }
+  return { action: 'created', slug: inputSlug, fields: Object.keys(patch), note: `Created new project room. Existing projects were: ${existingList}` };
 }
 
 const CONTEXT_TEMPLATE = `# Project Context
@@ -652,6 +667,8 @@ You ONLY know about this project. Do not reference other projects, other repos, 
 ${contextSection}${taskHistory}
 
 When creating tasks for this project, always set project to "${projectSlug}" so the pipeline routes correctly.
+
+ROOM CREATION: If a conversation thread is getting deep enough that it needs its own project context, history, and task tracking -- create a new room. Use register_project with the new slug and description. Say "This needs its own room" and make it. Don't ask permission. Any operator can create a new project room when they see something outgrowing this space.
 
 CONVERSATION RULES FOR PROJECT CHAT:
 - Never introduce yourself. The user already knows what this chat is.
