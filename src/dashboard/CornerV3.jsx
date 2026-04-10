@@ -543,9 +543,11 @@ const GREETINGS = [
 ]
 
 const VOICE_OPTIONS = [
-  { id: 'aom-male',    label: 'AOM v3 Male',    desc: 'Deep, confident tone' },
-  { id: 'aom-female',  label: 'AOM v3 Female',  desc: 'Clear, articulate tone' },
-  { id: 'aom-neutral', label: 'AOM v3 Neutral', desc: 'Balanced, androgynous tone' },
+  { id: 'kore',   label: 'Kore',   desc: 'Clear, professional' },
+  { id: 'puck',   label: 'Puck',   desc: 'Warm, conversational' },
+  { id: 'charon', label: 'Charon', desc: 'Deep, confident' },
+  { id: 'aoede',  label: 'Aoede',  desc: 'Bright, articulate' },
+  { id: 'fenrir', label: 'Fenrir', desc: 'Bold, direct' },
 ]
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
@@ -1784,7 +1786,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [agentVoices, setAgentVoices] = useState({})
+  const [agentVoices, setAgentVoices] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('aom_agent_voices')) || {} } catch { return {} }
+  })
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -1858,10 +1862,22 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
 
   // ── Per-chat voice selection ──────────────────────────────────────────────
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
-  const currentVoice = currentChatKey ? (agentVoices[currentChatKey] || 'aom-male') : 'aom-male'
+  const currentVoice = currentChatKey ? (agentVoices[currentChatKey] || 'kore') : 'kore'
   const selectVoice = useCallback((voice) => {
     if (!currentChatKey) return
-    setAgentVoices(prev => ({ ...prev, [currentChatKey]: voice }))
+    setAgentVoices(prev => {
+      const next = { ...prev, [currentChatKey]: voice }
+      try { localStorage.setItem('aom_agent_voices', JSON.stringify(next)) } catch {}
+      return next
+    })
+    // Write to VoiceChat's per-agent key so the next voice session uses this voice
+    const agentSlug = currentChatKey.startsWith('project:')
+      ? currentChatKey.replace('project:', '')
+      : currentChatKey
+    try {
+      const existing = JSON.parse(localStorage.getItem(`corner-voice-settings-${agentSlug}`) || '{}')
+      localStorage.setItem(`corner-voice-settings-${agentSlug}`, JSON.stringify({ ...existing, voice }))
+    } catch {}
   }, [currentChatKey])
 
   // Fetch latest message per agent (comprehensive -- covers all agents, not just missing from inboxItems)
