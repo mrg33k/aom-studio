@@ -5181,8 +5181,9 @@ export default function CornerV3() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Wait for auth to resolve before rendering (prevents data fetching with wrong client_id)
-  if (!authReady) {
+  // Wait for auth to resolve AND world to be set before rendering
+  // This prevents hooks from fetching with the wrong client_id (e.g. 'aom' default)
+  if (!authReady || (!currentUser && typeof window !== 'undefined')) {
     return (
       <div style={{ width: '100%', height: '100dvh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: C.muted, fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
