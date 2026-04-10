@@ -39,20 +39,38 @@ export function useProjects() {
     }
 
     const clientId = getClientId()
-    supabase
-      .from('projects')
-      .select('id, slug, name, color, is_active')
-      .eq('is_active', true)
-      .eq('client_id', clientId)
-      .order('name')
-      .then(({ data: rows, error }) => {
+
+    // Fetch owned projects + shared projects (via project_access) in parallel
+    Promise.all([
+      supabase
+        .from('projects')
+        .select('id, slug, name, color, is_active')
+        .eq('is_active', true)
+        .eq('client_id', clientId)
+        .order('name'),
+      supabase
+        .from('project_access')
+        .select('project_id, projects(id, slug, name, color, is_active)')
+        .eq('client_id', clientId),
+    ]).then(([ownedResult, sharedResult]) => {
         if (cancelled) return
-        if (error) {
+        if (ownedResult.error && sharedResult.error) {
           setIsError(true)
           setIsLoading(false)
           return
         }
-        setProjects((rows || []).map(mapRow))
+        const owned = (ownedResult.data || [])
+        const shared = (sharedResult.data || [])
+          .map(r => r.projects)
+          .filter(p => p && p.is_active)
+        // Deduplicate by id (a project could be both owned and shared)
+        const seen = new Set()
+        const all = []
+        for (const p of [...owned, ...shared]) {
+          if (!seen.has(p.id)) { seen.add(p.id); all.push(p) }
+        }
+        all.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        setProjects(all.map(mapRow))
         setIsLoading(false)
       })
 
