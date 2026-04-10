@@ -3456,15 +3456,36 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               onVoiceChange={selectVoice}
               onTranscript={(text, role) => {
                 setVoiceTranscriptText(text)
+                const msgRole = role === 'model' ? 'agent' : 'user'
+                const agentKey = `project:${selectedProject?.slug}`
+                const projCid = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
+                const tempId = `voice-${role}-${Date.now()}`
                 setMessages(prev => [...prev, {
-                  id: `voice-${role}-${Date.now()}`,
-                  role: role === 'model' ? 'agent' : 'user',
-                  agent: `project:${selectedProject?.slug}`,
+                  id: tempId,
+                  role: msgRole,
+                  agent: agentKey,
                   text,
                   timestamp: new Date().toISOString(),
                   source: 'voice',
                 }])
-              }}
+                // Persist voice transcript to DB
+                fetch('/api/dashboard/supabase-messages', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    agent: agentKey,
+                    text,
+                    role: msgRole,
+                    source: 'voice',
+                    client_id: projCid,
+                    ...(msgRole === 'user' ? userIdentity : {}),
+                  }),
+                }).then(r => r.json()).then(data => {
+                  if (data?.message?.id) {
+                    setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
+                  }
+                }).catch(() => {})
+              }
               onStatusChange={(s) => {
                 setVoiceStatus(s)
                 if (s === 'idle') {
@@ -4566,15 +4587,34 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             onVoiceChange={selectVoice}
             onTranscript={(text, role) => {
               setVoiceTranscriptText(text)
+              const msgRole = role === 'model' ? 'agent' : 'user'
+              const tempId = `voice-${role}-${Date.now()}`
               setMessages(prev => [...prev, {
-                id: `voice-${role}-${Date.now()}`,
-                role: role === 'model' ? 'agent' : 'user',
+                id: tempId,
+                role: msgRole,
                 agent: selectedAgent.slug,
                 text,
                 timestamp: new Date().toISOString(),
                 source: 'voice',
               }])
-            }}
+              // Persist voice transcript to DB
+              fetch('/api/dashboard/supabase-messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  agent: selectedAgent.slug,
+                  text,
+                  role: msgRole,
+                  source: 'voice',
+                  client_id: worldId,
+                  ...(msgRole === 'user' ? userIdentity : {}),
+                }),
+              }).then(r => r.json()).then(data => {
+                if (data?.message?.id) {
+                  setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
+                }
+              }).catch(() => {})
+            }
             onStatusChange={(s) => {
               setVoiceStatus(s)
               if (s === 'idle') {

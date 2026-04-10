@@ -450,7 +450,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 if (text) {
                   setTranscript(prev => [...prev, { role: 'user', text, id: Date.now() + Math.random() }])
                   onTranscript?.(text, 'user')
-                  saveTranscript('user', text)
+                  // Persistence handled by parent onTranscript callback
                 }
               }
             }
@@ -464,7 +464,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 if (text) {
                   setTranscript(prev => [...prev, { role: 'model-text', text, id: Date.now() + Math.random() }])
                   onTranscript?.(text, 'model')
-                  saveTranscript('agent', text)
+                  // Persistence handled by parent onTranscript callback
                 }
               }
             }
@@ -477,7 +477,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 inputAccRef.current = ''
                 setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
                 onTranscript?.(pendingInput, 'user')
-                saveTranscript('user', pendingInput)
               }
               // Flush pending model output transcript
               const pending = outputAccRef.current.trim()
@@ -485,7 +484,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 outputAccRef.current = ''
                 setTranscript(prev => [...prev, { role: 'model-text', text: pending, id: Date.now() + Math.random() }])
                 onTranscript?.(pending, 'model')
-                saveTranscript('agent', pending)
               }
               if (playQueueRef.current.length === 0 && !isPlayingRef.current) {
                 updateStatus('listening')
