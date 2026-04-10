@@ -897,7 +897,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
   const [taskThread,             setTaskThread]             = useState([])
   const [threadLoading,          setThreadLoading]          = useState(false)
   const taskInputRef = useRef(null)
-  const runnerSignaledRef = useRef(false)
+  // (runnerSignaledRef removed -- runner now signals on every Tasks tab mount)
 
   // Fetch task thread messages when a task is expanded
   const toggleTaskExpand = useCallback(async (taskId) => {
@@ -921,18 +921,15 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
   }, [expandedTask])
   const { projects: taskProjects } = useProjects()
 
-  // Auto-start runner when Tasks tab opens and there are queued tasks
+  // Auto-start runner every time Tasks tab mounts (component remounts on tab switch).
+  // Signals the watcher to ensure runners are alive and processing.
   useEffect(() => {
-    if (runnerSignaledRef.current) return
-    if (queued?.length > 0 || rightNow?.length > 0) {
-      runnerSignaledRef.current = true
-      fetch('/api/dashboard/task-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'startRunner' }),
-      }).catch(() => {})
-    }
-  }, [queued, rightNow])
+    fetch('/api/dashboard/task-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'startRunner' }),
+    }).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Instant task maker: submit handler ──────────────────────────────────────
   const handleTaskSubmit = useCallback(async () => {
