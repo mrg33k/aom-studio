@@ -3124,10 +3124,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     }))
 
     // Build Gemini-format history from the last 20 messages for context
-    const history = messagesRef.current.slice(-20).map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text || '' }],
-    }))
+    // Include attachment URLs so the AI knows about uploaded files
+    const history = messagesRef.current.slice(-20).map(m => {
+      let text = m.text || ''
+      if (m.attachment_url) text += `\n[Uploaded file: ${m.attachment_url}]`
+      return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text }] }
+    })
 
     try {
       // Run in parallel: persist user message + get AI response
@@ -3417,10 +3419,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     }])
 
     // Build Gemini-format history from the last 20 messages for context
-    const history = messagesRef.current.slice(-20).map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text || '' }],
-    }))
+    // Include attachment URLs so the AI knows about uploaded files
+    const history = messagesRef.current.slice(-20).map(m => {
+      let text = m.text || ''
+      if (m.attachment_url) text += `\n[Uploaded file: ${m.attachment_url}]`
+      return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text }] }
+    })
 
     try {
       // Run in parallel: persist user message + get AI response

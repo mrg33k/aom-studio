@@ -669,9 +669,13 @@ export default async function handler(req, res) {
           recentContext = '';
         } else {
           try {
-            const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp`);
+            const recentMsgs = await sbFetch(`/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp,attachment_url`);
             if (Array.isArray(recentMsgs) && recentMsgs.length > 0) {
-              recentContext = '\n\nRecent conversation (you were part of this):\n' + recentMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`).join('\n');
+              recentContext = '\n\nRecent conversation (you were part of this):\n' + recentMsgs.reverse().map(m => {
+                let line = `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`;
+                if (m.attachment_url) line += ` [Uploaded file: ${m.attachment_url}]`;
+                return line;
+              }).join('\n');
             }
           } catch (e) { /* silent */ }
         }
@@ -735,7 +739,7 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
           sbFetch(`/rest/v1/tasks?project_path=eq.${encodeURIComponent(projectSlug)}&order=completed_at.desc.nullslast,created_at.desc&limit=15&select=id,title,text,status,agent,agent_identity,qa_score,error,completed_at,created_at`),
           baseHistory.length >= 4
             ? Promise.resolve([])
-            : sbFetch(`/rest/v1/messages?agent=eq.project:${encodeURIComponent(projectSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp`),
+            : sbFetch(`/rest/v1/messages?agent=eq.project:${encodeURIComponent(projectSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp,attachment_url`),
           getCachedSystemState(),
         ]);
         const contextResult = ctxSettled.status === 'fulfilled' ? ctxSettled.value : null;
@@ -768,7 +772,11 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
         // Build recent conversation context (only if client didn't send enough history)
         let recentContext = '';
         if (Array.isArray(recentProjectMsgs) && recentProjectMsgs.length > 0) {
-          recentContext = '\n\nRecent project conversation:\n' + recentProjectMsgs.reverse().map(m => `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`).join('\n');
+          recentContext = '\n\nRecent project conversation:\n' + recentProjectMsgs.reverse().map(m => {
+            let line = `[${(m.timestamp || '').slice(0, 16)}] (${m.role}) ${(m.text || '').slice(0, 400)}`;
+            if (m.attachment_url) line += ` [Uploaded file: ${m.attachment_url}]`;
+            return line;
+          }).join('\n');
         }
 
         const projectName = project?.name || projectSlug;
