@@ -746,7 +746,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
     <div style={{ flex: 1, overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Pulse keyframe (injected once) ─────────────────────────────────── */}
-      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } } @keyframes telephonePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } } @keyframes recDot { 0%,100% { opacity:1 } 50% { opacity:0.3 } }`}</style>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <div style={{ padding: isMobile ? '20px 14px 10px' : '28px 20px 12px', position: 'relative' }}>
@@ -2925,10 +2925,23 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleProjectSend() }
   }, [handleProjectSend])
 
+  // Telephone mode: long-form record -> transcribe -> send as message.
+  // Works for both agent and project chat -- routes to whichever is active.
+  const [recordingStartTime, setRecordingStartTime] = useState(null)
+  const [recordingElapsed, setRecordingElapsed] = useState(0)
+
+  // Tick the recording timer every second
+  useEffect(() => {
+    if (!recordingStartTime) { setRecordingElapsed(0); return }
+    const iv = setInterval(() => setRecordingElapsed(Math.floor((Date.now() - recordingStartTime) / 1000)), 1000)
+    return () => clearInterval(iv)
+  }, [recordingStartTime])
+
   const handleMicToggle = useCallback(async () => {
     if (isRecording) {
       mediaRecorderRef.current?.stop()
       setIsRecording(false)
+      setRecordingStartTime(null)
     } else {
       setMicError(null)
       try {
@@ -2950,13 +2963,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             if (data.text?.trim()) {
-              await sendProjectTextRef.current?.(data.text.trim())
+              // Route to whichever chat is active
+              if (selectedAgent && sendAgentTextRef.current) {
+                await sendAgentTextRef.current(data.text.trim())
+              } else if (selectedProject && sendProjectTextRef.current) {
+                await sendProjectTextRef.current(data.text.trim())
+              }
             } else {
               setMicError('No speech detected. Try again.')
             }
           } catch (err) {
-            console.error('[ChatPanel] transcription error:', err)
-            setMicError('Failed to transcribe audio. Check your connection.')
+            console.error('[Telephone] transcription error:', err)
+            setMicError('Failed to transcribe. Check your connection.')
           } finally {
             setIsTranscribing(false)
           }
@@ -2964,12 +2982,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         recorder.start()
         mediaRecorderRef.current = recorder
         setIsRecording(true)
+        setRecordingStartTime(Date.now())
       } catch (err) {
         console.error('Microphone access denied:', err)
         setMicError('Microphone access denied. Allow mic in browser settings.')
       }
     }
-  }, [isRecording])
+  }, [isRecording, selectedAgent, selectedProject])
 
   // ── Project view ─────────────────────────────────────────────────────────────
 
@@ -3273,6 +3292,35 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         )}
 
         {/* Project chat input -- CV3 pill design, hidden when voice active */}
+        {/* Recording status bar */}
+        {(isRecording || isTranscribing) && (
+          <div style={{
+            flexShrink: 0, padding: '8px 16px',
+            background: 'rgba(239,68,68,0.06)',
+            borderTop: '1px solid rgba(239,68,68,0.15)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: isTranscribing ? '#F59E0B' : '#EF4444',
+              animation: isTranscribing ? 'none' : 'recDot 1s ease-in-out infinite',
+              flexShrink: 0,
+            }} />
+            <span style={{ fontSize: 13, color: '#F1F5F9', fontWeight: 500 }}>
+              {isTranscribing ? 'Transcribing...' : `Recording ${Math.floor(recordingElapsed / 60)}:${String(recordingElapsed % 60).padStart(2, '0')}`}
+            </span>
+            {isRecording && (
+              <button onClick={handleMicToggle} style={{
+                marginLeft: 'auto', fontSize: 12, fontWeight: 600,
+                color: '#EF4444', background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6,
+                padding: '4px 10px', cursor: 'pointer',
+              }}>Stop</button>
+            )}
+            {micError && <span style={{ fontSize: 12, color: '#F87171', marginLeft: 'auto' }}>{micError}</span>}
+          </div>
+        )}
         {!isVoiceActive && <div style={{
           flexShrink: 0,
           padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
@@ -3354,23 +3402,30 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             </div>
             {!input.trim() && (
               <button
-                title={isVoiceActive ? 'End call' : 'Start call'}
-                onClick={() => setIsVoiceActive(true)}
+                title={isRecording ? 'Stop recording' : 'Record voice message'}
+                onClick={handleMicToggle}
                 style={{
                   width: 42, height: 42, borderRadius: '50%',
-                  background: C.accent,
+                  background: isRecording ? '#EF4444' : C.accent,
                   border: 'none',
-                  color: '#000', cursor: 'pointer',
+                  color: isRecording ? '#fff' : '#000', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                   transition: 'transform 0.15s, background 0.2s',
+                  animation: isRecording ? 'telephonePulse 1.5s ease-in-out infinite' : 'none',
                 }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="#000"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-                </svg>
+                {isTranscribing ? (
+                  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                ) : isRecording ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#000"
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                  </svg>
+                )}
               </button>
             )}
             {input.trim() && (
@@ -4051,29 +4106,24 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         </div>
         {/* Telephone button in header -- long-form recording mode */}
         <button
-          onClick={() => {
-            if (isVoiceActive) {
-              voiceChatRef.current?.stop()
-              setIsVoiceActive(false)
-              setVoiceMuted(false)
-              setVoiceTranscriptText('')
-            } else {
-              setIsVoiceActive(true)
-            }
-          }}
-          title={isVoiceActive ? 'End call' : 'Start call'}
+          onClick={handleMicToggle}
+          title={isRecording ? 'Stop recording' : 'Record voice message'}
           style={{
             width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            background: isVoiceActive ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
-            border: isVoiceActive ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+            background: isRecording ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
+            border: isRecording ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: isVoiceActive ? '#EF4444' : C.muted,
+            color: isRecording ? '#EF4444' : C.muted,
             transition: 'all 0.15s',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-          </svg>
+          {isRecording ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+            </svg>
+          )}
         </button>
         {/* Settings button */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -4577,6 +4627,35 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         </div>
       )}
 
+      {/* Recording status bar (agent chat) */}
+      {(isRecording || isTranscribing) && (
+        <div style={{
+          flexShrink: 0, padding: '8px 16px',
+          background: 'rgba(239,68,68,0.06)',
+          borderTop: '1px solid rgba(239,68,68,0.15)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          <div style={{
+            width: 10, height: 10, borderRadius: '50%',
+            background: isTranscribing ? '#F59E0B' : '#EF4444',
+            animation: isTranscribing ? 'none' : 'recDot 1s ease-in-out infinite',
+            flexShrink: 0,
+          }} />
+          <span style={{ fontSize: 13, color: '#F1F5F9', fontWeight: 500 }}>
+            {isTranscribing ? 'Transcribing...' : `Recording ${Math.floor(recordingElapsed / 60)}:${String(recordingElapsed % 60).padStart(2, '0')}`}
+          </span>
+          {isRecording && (
+            <button onClick={handleMicToggle} style={{
+              marginLeft: 'auto', fontSize: 12, fontWeight: 600,
+              color: '#EF4444', background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6,
+              padding: '4px 10px', cursor: 'pointer',
+            }}>Stop</button>
+          )}
+          {micError && <span style={{ fontSize: 12, color: '#F87171', marginLeft: 'auto' }}>{micError}</span>}
+        </div>
+      )}
       {/* Input area -- CV3 pill design, hidden when voice is active */}
       {!isVoiceActive && <div style={{
         flexShrink: 0,
@@ -4661,37 +4740,33 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               </svg>
             </button>
           </div>
-          {/* Voice button (hidden when text present) -- triggers Gemini Live voice */}
+          {/* Telephone button (hidden when text present) -- long-form record, transcribe, send */}
           {!input.trim() && (
             <button
-              title={isVoiceActive ? 'End voice' : 'Start voice'}
-              onClick={() => {
-                if (isVoiceActive) {
-                  voiceChatRef.current?.stop()
-                  setIsVoiceActive(false)
-                  setVoiceMuted(false)
-                  setVoiceTranscriptText('')
-                } else {
-                  setIsVoiceActive(true)
-                }
-              }}
+              title={isRecording ? 'Stop recording' : 'Record voice message'}
+              onClick={handleMicToggle}
               style={{
                 width: 42, height: 42, borderRadius: '50%',
-                background: isVoiceActive ? 'rgba(16,185,129,0.15)' : C.accent,
-                border: isVoiceActive ? '2px solid rgba(16,185,129,0.4)' : 'none',
-                color: isVoiceActive ? C.accent : '#000', cursor: 'pointer',
+                background: isRecording ? '#EF4444' : C.accent,
+                border: 'none',
+                color: isRecording ? '#fff' : '#000', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
                 transition: 'transform 0.15s, background 0.2s',
+                animation: isRecording ? 'telephonePulse 1.5s ease-in-out infinite' : 'none',
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5" strokeLinecap="round">
-                <rect x="9" y="2" width="6" height="12" rx="3"/>
-                <path d="M5 10a7 7 0 0014 0"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
-              </svg>
+              {isTranscribing ? (
+                <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+              ) : isRecording ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="#000"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+              )}
             </button>
           )}
           {/* Send button (shown when text present) */}
