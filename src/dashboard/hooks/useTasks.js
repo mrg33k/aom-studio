@@ -74,15 +74,21 @@ function toRightNowPill(task) {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useTasks(worldId) {
+export function useTasks(worldId, sharedSlugs = []) {
   const [allTasks, setAllTasks]   = useState([])
   const [loading,  setLoading]    = useState(true)
   const [error,    setError]      = useState(null)
 
   // Stable ref for the realtime channel so cleanup doesn't re-render
   const channelRef = useRef(null)
+  // Refs for shared realtime channels
+  const sharedChannelsRef = useRef([])
   // Unique channel name per hook instance (avoid name collisions when mounted multiple times)
   const channelIdRef = useRef(`tasks-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
+
+  // Stable ref for sharedSlugs to use in fetch without causing re-renders
+  const sharedSlugsRef = useRef(sharedSlugs)
+  sharedSlugsRef.current = sharedSlugs
 
   const fetchTasks = useCallback(async ({ silent = false } = {}) => {
     if (!supabase) {
@@ -93,10 +99,15 @@ export function useTasks(worldId) {
 
     try {
       const clientId = getClientId()
+      // Build list of client_ids to fetch: own world + shared project slugs
+      const clientIds = [clientId]
+      for (const slug of sharedSlugsRef.current) {
+        clientIds.push(`shared:${slug}`)
+      }
       const { data, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
-        .eq('client_id', clientId)
+        .in('client_id', clientIds)
         .order('priority',   { ascending: false })
         .order('sort_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
@@ -183,6 +194,22 @@ export function useTasks(worldId) {
 
     channelRef.current = channel
 
+    // Also subscribe to shared project task changes
+    const sharedChannels = []
+    for (const slug of sharedSlugsRef.current) {
+      const sharedCid = `shared:${slug}`
+      const sharedCh = supabase
+        .channel(`tasks-${sharedCid}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${sharedCid}` },
+          handleRealtimeChange,
+        )
+        .subscribe()
+      sharedChannels.push(sharedCh)
+    }
+    sharedChannelsRef.current = sharedChannels
+
     // Safari/iPad kills WebSockets when tab backgrounds.
     // Refetch when user returns to the tab.
     const handleVisibility = () => {
@@ -202,6 +229,10 @@ export function useTasks(worldId) {
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
+      for (const ch of sharedChannelsRef.current) {
+        supabase.removeChannel(ch)
+      }
+      sharedChannelsRef.current = []
       document.removeEventListener('visibilitychange', handleVisibility)
       clearInterval(pollInterval)
     }

@@ -5072,7 +5072,12 @@ export default function CornerV3() {
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
   }), [currentUser?.id])
 
-  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks(worldId)
+  // Collect shared project slugs so useTasks can also fetch shared:slug tasks
+  const sharedSlugs = useMemo(() =>
+    (projects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
+    [projects]
+  )
+  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks(worldId, sharedSlugs)
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {
