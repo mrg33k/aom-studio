@@ -17,6 +17,7 @@ function mapRow(row) {
     slug:      row.slug,
     is_active: row.is_active,
     color:     row.color || '#6B8AB0',
+    isShared:  row.isShared || false,
     // Fields not stored in DB — provide safe defaults
     section:   'general',
     tasks:     [],
@@ -40,7 +41,9 @@ export function useProjects() {
 
     const clientId = getClientId()
 
-    // Fetch owned projects + shared projects (via project_access) in parallel
+    // Fetch owned projects + shared projects (via project_access) in parallel.
+    // Also fetch ALL project_access rows for owned projects so we know which
+    // owned projects are shared with other worlds (messages use shared:{slug}).
     Promise.all([
       supabase
         .from('projects')
@@ -52,17 +55,29 @@ export function useProjects() {
         .from('project_access')
         .select('project_id, projects(id, slug, name, color, is_active)')
         .eq('client_id', clientId),
-    ]).then(([ownedResult, sharedResult]) => {
+      // Which of our owned projects are shared with anyone?
+      supabase
+        .from('project_access')
+        .select('project_id'),
+    ]).then(([ownedResult, sharedResult, allAccessResult]) => {
         if (cancelled) return
         if (ownedResult.error && sharedResult.error) {
           setIsError(true)
           setIsLoading(false)
           return
         }
-        const owned = (ownedResult.data || [])
+        // Build set of project IDs that appear in project_access (shared with someone)
+        const sharedProjectIds = new Set(
+          (allAccessResult.data || []).map(r => r.project_id)
+        )
+        const owned = (ownedResult.data || []).map(p => ({
+          ...p,
+          isShared: sharedProjectIds.has(p.id),
+        }))
         const shared = (sharedResult.data || [])
           .map(r => r.projects)
           .filter(p => p && p.is_active)
+          .map(p => ({ ...p, isShared: true }))
         // Deduplicate by id (a project could be both owned and shared)
         const seen = new Set()
         const all = []
