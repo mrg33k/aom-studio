@@ -447,8 +447,17 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
               }
             }
 
-            // Turn complete -- flush any pending model transcription (fallback if finished never fires)
+            // Turn complete -- flush any pending transcriptions (fallback if finished never fires)
             if (sc.turnComplete) {
+              // Flush pending user input transcript
+              const pendingInput = inputAccRef.current.trim()
+              if (pendingInput) {
+                inputAccRef.current = ''
+                setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
+                onTranscript?.(pendingInput, 'user')
+                saveTranscript('user', pendingInput)
+              }
+              // Flush pending model output transcript
               const pending = outputAccRef.current.trim()
               if (pending) {
                 outputAccRef.current = ''
