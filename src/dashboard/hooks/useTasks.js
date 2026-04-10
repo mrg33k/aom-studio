@@ -80,9 +80,9 @@ export function useTasks() {
   // Unique channel name per hook instance (avoid name collisions when mounted multiple times)
   const channelIdRef = useRef(`tasks-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async ({ silent = false } = {}) => {
     if (!supabase) {
-      setError('Supabase not configured')
+      if (!silent) setError('Supabase not configured')
       setLoading(false)
       return
     }
@@ -99,15 +99,24 @@ export function useTasks() {
         .limit(MAX_TASKS)
 
       if (fetchError) {
-        setError(fetchError.message)
+        // On silent refetch (reconnect), don't wipe existing state
+        if (!silent) setError(fetchError.message)
         setLoading(false)
         return
       }
 
-      setAllTasks(sortTasks(data || []))
-      setError(null)
+      // Only update if we got data -- never wipe existing tasks with empty response
+      if (data && data.length > 0) {
+        setAllTasks(sortTasks(data))
+        setError(null)
+      } else if (!silent) {
+        // Initial load can legitimately be empty
+        setAllTasks([])
+        setError(null)
+      }
     } catch (err) {
-      setError(err?.message || 'Unknown error fetching tasks')
+      // On silent refetch, preserve existing state
+      if (!silent) setError(err?.message || 'Unknown error fetching tasks')
     } finally {
       setLoading(false)
     }
@@ -117,16 +126,19 @@ export function useTasks() {
   const handleRealtimeChange = useCallback((payload) => {
     const { eventType, new: newRow, old: oldRow } = payload
 
+    // Guard against malformed payloads (Safari can send weird things on reconnect)
+    if (!eventType) return
+
     setAllTasks(prev => {
       let updated
 
-      if (eventType === 'INSERT') {
-        // Add new task, avoid duplicates
+      if (eventType === 'INSERT' && newRow?.id) {
         const exists = prev.some(t => t.id === newRow.id)
         updated = exists ? prev : [...prev, newRow]
-      } else if (eventType === 'UPDATE') {
-        updated = prev.map(t => t.id === newRow.id ? newRow : t)
-      } else if (eventType === 'DELETE') {
+      } else if (eventType === 'UPDATE' && newRow?.id) {
+        const exists = prev.some(t => t.id === newRow.id)
+        updated = exists ? prev.map(t => t.id === newRow.id ? newRow : t) : [...prev, newRow]
+      } else if (eventType === 'DELETE' && oldRow?.id) {
         updated = prev.filter(t => t.id !== oldRow.id)
       } else {
         return prev
@@ -153,8 +165,8 @@ export function useTasks() {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          // Refetch on reconnect to close any gap during offline period
-          fetchTasks()
+          // Refetch on reconnect -- silent mode so we don't wipe existing data on failure
+          fetchTasks({ silent: true })
         }
       })
 

@@ -1069,7 +1069,12 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                 {filteredActive.length}
               </span>
             </div>
-            {filteredActive.map((t, i) => (
+            {filteredActive.map((t, i) => {
+              const isBuilding = t.status === 'building' || t.status === 'qa'
+              const cardColor = isBuilding ? '#22C55E' : '#506480'
+              const cardBorder = isBuilding ? 'rgba(34,197,94,0.15)' : 'rgba(80,100,128,0.15)'
+              const statusLabel = t.status === 'building' ? 'Building' : t.status === 'qa' ? 'QA' : t.status === 'planning' ? 'Planning' : t.status === 'classifying' ? 'Classifying' : 'Queued'
+              return (
               <div
                 key={t.id}
                 style={{
@@ -1081,7 +1086,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                   overflow: 'hidden',
                   transition: 'transform 0.15s, box-shadow 0.15s',
                   background: '#1A2035',
-                  border: '1px solid rgba(234,179,8,0.1)',
+                  border: `1px solid ${cardBorder}`,
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-2px)'
@@ -1092,22 +1097,33 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                   e.currentTarget.style.boxShadow = ''
                 }}
               >
-                {/* Animated top progress bar */}
-                <div style={{
+                {/* Animated top progress bar -- only for actively building/qa */}
+                {isBuilding && <div style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
                   height: 2,
-                  background: C.yellow,
+                  background: cardColor,
                   animation: 'bld 5s ease-in-out infinite',
                   borderRadius: '14px 14px 0 0',
-                }} />
+                }} />}
+                {/* Static thin bar for queued */}
+                {!isBuilding && <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: 2,
+                  background: cardColor,
+                  opacity: 0.3,
+                  borderRadius: '14px 14px 0 0',
+                }} />}
 
                 {/* Card content row */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                   {/* Left: title + tags */}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ color: C.yellow, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ color: cardColor, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
@@ -1129,16 +1145,17 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                   </div>
                   {/* Right: score + label */}
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ color: C.yellow, fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div style={{ color: cardColor, fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
                       {t.qa_score || t.qaScore || '...'}
                     </div>
                     <div style={{ color: C.muted, fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
-                      {t.status === 'right_now' ? 'Building' : 'Queued'}
+                      {statusLabel}
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
+
           </div>
         )}
 
