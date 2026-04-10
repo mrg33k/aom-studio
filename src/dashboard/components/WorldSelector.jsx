@@ -61,6 +61,13 @@ export default function WorldSelector({
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const [focusIdx, setFocusIdx] = useState(-1)
   const [hoveredItem, setHoveredItem] = useState(null)
+  // Create world modal
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createName, setCreateName] = useState('')
+  const [createEmail, setCreateEmail] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [createResult, setCreateResult] = useState(null)
+  const [createError, setCreateError] = useState(null)
 
   const btnRef = useRef(null)
   const wrapperRef = useRef(null)
@@ -428,9 +435,178 @@ export default function WorldSelector({
                   )
                 })}
               </div>}
+
+              {/* Create World button (admin only) */}
+              {showFullWorldList && (
+                <button
+                  onClick={() => { setOpen(false); setCreateOpen(true); setCreateName(''); setCreateEmail(''); setCreateResult(null); setCreateError(null) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    width: '100%', padding: '10px 10px',
+                    borderTop: `1px solid ${C.border}`,
+                    background: 'transparent', border: 'none', borderRadius: 0,
+                    cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                    color: C.accent, fontFamily: "'Inter', sans-serif",
+                    textAlign: 'left', transition: 'background 0.15s',
+                    marginTop: 4,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth={2.5} strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Create World
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Create World Modal */}
+      {createOpen && createPortal(
+        <div
+          onClick={() => { if (!creating) setCreateOpen(false) }}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{
+            width: 380, maxWidth: '90vw', background: C.s1,
+            border: `1px solid ${C.border2}`, borderRadius: 16,
+            boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+            padding: 24,
+          }}>
+            {!createResult ? (
+              <>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#F1F5F9', marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>
+                  Create a new world
+                </div>
+                <div style={{ fontSize: 13, color: C.muted, marginBottom: 20, fontFamily: "'Inter', sans-serif" }}>
+                  They'll get an EA agent ready to onboard them.
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>Name</div>
+                  <input
+                    autoFocus
+                    value={createName}
+                    onChange={e => { setCreateName(e.target.value); setCreateError(null) }}
+                    placeholder="Their name or company"
+                    style={{
+                      width: '100%', boxSizing: 'border-box', padding: '10px 12px',
+                      fontSize: 14, fontFamily: "'Inter', sans-serif", color: '#F1F5F9',
+                      background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border2}`,
+                      borderRadius: 8, outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'Inter', sans-serif" }}>Email</div>
+                  <input
+                    type="email"
+                    value={createEmail}
+                    onChange={e => { setCreateEmail(e.target.value); setCreateError(null) }}
+                    onKeyDown={e => { if (e.key === 'Enter' && createName.trim() && createEmail.trim() && !creating) handleCreate() }}
+                    placeholder="their@email.com"
+                    style={{
+                      width: '100%', boxSizing: 'border-box', padding: '10px 12px',
+                      fontSize: 14, fontFamily: "'Inter', sans-serif", color: '#F1F5F9',
+                      background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border2}`,
+                      borderRadius: 8, outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {createError && (
+                  <div style={{ fontSize: 12, color: '#F87171', marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
+                    {createError}
+                  </div>
+                )}
+
+                <button
+                  disabled={creating || !createName.trim() || !createEmail.trim()}
+                  onClick={async () => {
+                    setCreating(true)
+                    setCreateError(null)
+                    try {
+                      const r = await fetch('/api/dashboard/create-world', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: createName.trim(), email: createEmail.trim() }),
+                      })
+                      const data = await r.json()
+                      if (data.ok) {
+                        setCreateResult(data)
+                      } else {
+                        setCreateError(data.error || 'Failed to create world')
+                      }
+                    } catch (err) {
+                      setCreateError(err.message)
+                    }
+                    setCreating(false)
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', fontSize: 14, fontWeight: 600,
+                    fontFamily: "'Inter', sans-serif", color: '#fff',
+                    background: creating || !createName.trim() || !createEmail.trim()
+                      ? C.muted : 'linear-gradient(135deg, #10B981, #059669)',
+                    border: 'none', borderRadius: 10, cursor: creating ? 'default' : 'pointer',
+                    boxShadow: creating ? 'none' : '0 4px 16px rgba(16,185,129,0.2)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {creating ? 'Creating...' : 'Create World'}
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 17, fontWeight: 700, color: C.accent, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
+                  World created
+                </div>
+                <div style={{
+                  background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.border2}`,
+                  borderRadius: 10, padding: 16, marginBottom: 16,
+                  fontFamily: "'SF Mono', 'JetBrains Mono', monospace", fontSize: 12.5,
+                  color: '#CBD5E1', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                }}>
+                  {createResult.invite_text}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(createResult.invite_text)
+                    }}
+                    style={{
+                      flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 600,
+                      fontFamily: "'Inter', sans-serif", color: '#fff',
+                      background: C.accent, border: 'none', borderRadius: 8,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Copy invite
+                  </button>
+                  <button
+                    onClick={() => { setCreateOpen(false); setCreateResult(null); fetchWorlds() }}
+                    style={{
+                      flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 600,
+                      fontFamily: "'Inter', sans-serif", color: C.text2,
+                      background: 'rgba(255,255,255,0.06)', border: `1px solid ${C.border2}`,
+                      borderRadius: 8, cursor: 'pointer',
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
         document.body
       )}
     </div>
