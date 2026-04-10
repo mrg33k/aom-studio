@@ -2328,6 +2328,21 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           if (msg.agent === `project:${selectedProject.slug}`) {
             setMessages(prev => {
               if (prev.some(m => m.id === msg.id)) return prev
+              // Voice messages: replace temp voice entry to prevent duplicates
+              if (msg.source === 'voice') {
+                const tempRole = msg.role === 'user' ? 'user' : 'agent'
+                const tempIdx = prev.findIndex(m =>
+                  m.source === 'voice' &&
+                  m.text === msg.text &&
+                  m.role === tempRole &&
+                  typeof m.id === 'string' && m.id.startsWith('voice-')
+                )
+                if (tempIdx !== -1) {
+                  const next = [...prev]
+                  next[tempIdx] = msg
+                  return next
+                }
+              }
               return [...prev, msg]
             })
           }
@@ -2943,7 +2958,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           <div style={{ display: 'none' }}>
             <VoiceChat
               ref={voiceChatRef}
-              agentSlug={selectedProject?.slug || 'rex'}
+              agentSlug={`project:${selectedProject?.slug || 'rex'}`}
               agentColor={projColor}
               clientId={worldId}
               autoStart={true}
