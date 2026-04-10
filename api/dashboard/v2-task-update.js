@@ -10,8 +10,70 @@ const TRANSITIONS = {
   planning: ['building'],
   building: ['qa'],
   qa: ['done', 'building'],
-  failed: ['queued'],
+  failed: ['queued', 'superseded'],
 };
+
+// ── Auto-supersede failed duplicates ────────────────────────────────────────
+// When a task completes successfully, find failed tasks with similar titles
+// (≥50% keyword overlap) and mark them as superseded. Fully non-fatal.
+
+const STOP_WORDS = new Set([
+  'the','and','for','with','from','that','this','not','are','was','has','have',
+  'been','will','task','fix','feat','add','all','show','must','code','change',
+]);
+
+function extractKeywords(title) {
+  return (title || '').split(/\s+/)
+    .map(w => w.toLowerCase().replace(/[^a-z0-9]/g, ''))
+    .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
+}
+
+async function supersedeFailedDuplicates(taskId, taskTitle) {
+  try {
+    const keywords = extractKeywords(taskTitle);
+    if (keywords.length === 0) return;
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/tasks?status=eq.failed&order=created_at.desc&limit=30&select=id,title`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+      }
+    );
+    if (!resp.ok) return;
+    const failedTasks = await resp.json();
+
+    let count = 0;
+    for (const ft of failedTasks) {
+      if (ft.id === taskId) continue;
+      const ftTitle = (ft.title || '').toLowerCase();
+      const matches = keywords.filter(w => ftTitle.includes(w)).length;
+      const ratio = matches / keywords.length;
+      if (ratio >= 0.5) {
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(ft.id)}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: 'superseded' }),
+          }
+        );
+        count++;
+      }
+    }
+    if (count > 0) {
+      console.log(`[v2-task-update] Superseded ${count} failed task(s) matching "${taskTitle}"`);
+    }
+  } catch (err) {
+    console.error('[v2-task-update] Supersede check failed (non-fatal):', err.message);
+  }
+}
 
 async function supabaseGetTask(taskId) {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&limit=1`, {
@@ -150,6 +212,12 @@ export default async function handler(req, res) {
 
     const result = await supabasePatchTask(taskId, updateBody);
     const updated = Array.isArray(result) ? result[0] : result;
+
+    // Fire-and-forget: supersede failed duplicates when a task completes
+    if (updateBody.status === 'done') {
+      supersedeFailedDuplicates(taskId, current.title).catch(() => {});
+    }
+
     return res.status(200).json(updated || null);
   } catch (err) {
     console.error('[v2-task-update] Error:', err.message);

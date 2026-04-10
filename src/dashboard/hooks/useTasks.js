@@ -9,7 +9,7 @@
 // Returns:
 //   queued        -- tasks with status 'queued' | 'classifying' | 'planning'
 //   rightNow      -- tasks with status 'building' | 'qa'  (ONLY these, hard rule)
-//   done          -- tasks with status 'done' | 'failed'
+//   done          -- tasks with status 'done' | 'failed' | 'superseded'
 //   allTasks      -- raw sorted array
 //   loading       -- boolean
 //   error         -- error string or null
@@ -31,7 +31,7 @@ const RIGHT_NOW_STATUSES = new Set(['building', 'qa'])
 const QUEUED_STATUSES = new Set(['queued', 'classifying', 'planning'])
 
 // Terminal statuses (completed section)
-const DONE_STATUSES = new Set(['done', 'failed'])
+const DONE_STATUSES = new Set(['done', 'failed', 'superseded'])
 
 // Max tasks to fetch (guard against runaway queries)
 const MAX_TASKS = 200
