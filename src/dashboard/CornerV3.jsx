@@ -2713,47 +2713,6 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
               </svg>
             </button>
-            {settingsOpen && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, marginTop: 6,
-                width: 180, borderRadius: 10,
-                background: 'rgba(18,24,40,0.98)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                zIndex: 100,
-                padding: '8px 0',
-              }}>
-                <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Voice Options
-                </div>
-                {VOICE_OPTIONS.map(voice => {
-                  const isActive = currentVoice === voice.id
-                  return (
-                    <button
-                      key={voice.id}
-                      onClick={() => selectVoice(voice.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        width: '100%', padding: '7px 12px',
-                        background: isActive ? 'rgba(16,185,129,0.08)' : 'transparent',
-                        border: 'none', borderLeft: isActive ? '2px solid #10B981' : '2px solid transparent',
-                        cursor: 'pointer', textAlign: 'left',
-                        color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
-                        fontSize: 13,
-                      }}
-                    >
-                      <span style={{ width: 10, flexShrink: 0, color: '#10B981' }}>
-                        {isActive && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 5l3 3 5-6"/></svg>}
-                      </span>
-                      <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <span>{voice.label}</span>
-                        <span style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)' }}>{voice.desc}</span>
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
           </div>
         </div>
 
@@ -3627,47 +3586,6 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
             </svg>
           </button>
-          {settingsOpen && (
-            <div style={{
-              position: 'absolute', top: '100%', right: 0, marginTop: 6,
-              width: 180, borderRadius: 10,
-              background: 'rgba(18,24,40,0.98)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-              zIndex: 100,
-              padding: '8px 0',
-            }}>
-              <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Voice Options
-              </div>
-              {VOICE_OPTIONS.map(voice => {
-                const isActive = currentVoice === voice.id
-                return (
-                  <button
-                    key={voice.id}
-                    onClick={() => selectVoice(voice.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      width: '100%', padding: '7px 12px',
-                      background: isActive ? 'rgba(16,185,129,0.08)' : 'transparent',
-                      border: 'none', borderLeft: isActive ? '2px solid #10B981' : '2px solid transparent',
-                      cursor: 'pointer', textAlign: 'left',
-                      color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
-                      fontSize: 13,
-                    }}
-                  >
-                    <span style={{ width: 10, flexShrink: 0, color: '#10B981' }}>
-                      {isActive && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 5l3 3 5-6"/></svg>}
-                    </span>
-                    <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <span>{voice.label}</span>
-                      <span style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)' }}>{voice.desc}</span>
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
         </div>
       </div>
 
@@ -4256,6 +4174,84 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           )}
         </div>
       </div>}
+
+      {/* Chat settings full-screen overlay */}
+      {settingsOpen && (
+        <div
+          onClick={() => setSettingsOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: 380,
+              maxWidth: '90vw',
+              maxHeight: '80vh',
+              background: C.s1,
+              border: '1px solid ' + C.border2,
+              borderRadius: 16,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderBottom: '1px solid ' + C.border,
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+                Chat Settings
+              </span>
+              <button
+                onClick={() => setSettingsOpen(false)}
+                style={{
+                  width: 28, height: 28,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid ' + C.border,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: C.text2,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            {/* Modal body */}
+            <div style={{
+              padding: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+              overflowY: 'auto',
+              flex: 1,
+            }}>
+              <span style={{ fontSize: 13, color: C.text2, fontFamily: "'Inter', sans-serif" }}>
+                Settings options will appear here.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
