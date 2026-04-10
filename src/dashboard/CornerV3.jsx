@@ -4832,6 +4832,132 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           })
         )
         })()}
+
+        {/* Agent context menu (conversation list) */}
+        {customizeTarget?.type === 'menu' && (
+          <div
+            onClick={() => setCustomizeTarget(null)}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                position: 'fixed',
+                top: customizeTarget.y,
+                left: Math.max(8, Math.min(customizeTarget.x, window.innerWidth - 180)),
+                background: C.s1, border: `1px solid ${C.border2}`, borderRadius: 10,
+                padding: 4, zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', minWidth: 160,
+              }}
+            >
+              {[
+                { label: 'Open chat', action: () => { setCustomizeTarget(null); setSelectedAgent(customizeTarget.agent); onSelectAgent?.(customizeTarget.agent) } },
+                { label: isFav('agent', customizeTarget.agent?.slug) ? 'Unpin' : 'Pin to top', action: () => { setCustomizeTarget(null); toggleFav('agent', customizeTarget.agent.slug) } },
+                { label: isMuted(customizeTarget.agent?.slug) ? 'Unmute' : 'Mute', action: () => { setCustomizeTarget(null); toggleMute(customizeTarget.agent.slug) } },
+                null,
+                { label: 'Change color', action: () => { setCustomizeTarget({ ...customizeTarget, type: 'color' }) } },
+                null,
+                { label: 'Archive', action: () => { setCustomizeTarget(null); const hidden = JSON.parse(localStorage.getItem('corner-hidden-slugs') || '[]'); if (!hidden.includes(customizeTarget.agent.slug)) { hidden.push(customizeTarget.agent.slug); localStorage.setItem('corner-hidden-slugs', JSON.stringify(hidden)); window.location.reload() } } },
+              ].map((item, idx) => !item ? (
+                <div key={`d${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
+              ) : (
+                <button key={item.label} onClick={item.action} style={{
+                  display: 'flex', alignItems: 'center', width: '100%', padding: '7px 10px',
+                  background: 'transparent', border: 'none', borderRadius: 6,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                  color: C.text2, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >{item.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Project context menu (conversation list) */}
+        {customizeTarget?.type === 'project-menu' && (
+          <div
+            onClick={() => setCustomizeTarget(null)}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                position: 'fixed',
+                top: customizeTarget.y,
+                left: Math.max(8, Math.min(customizeTarget.x, window.innerWidth - 180)),
+                background: C.s1, border: `1px solid ${C.border2}`, borderRadius: 10,
+                padding: 4, zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', minWidth: 160,
+              }}
+            >
+              {[
+                { label: isFav('project', customizeTarget.agent?.slug) ? 'Unpin' : 'Pin to top', action: () => { setCustomizeTarget(null); toggleFav('project', customizeTarget.agent.slug) } },
+                { label: 'Settings', action: () => { const p = customizeTarget.agent; setCustomizeTarget(null); setInlineProject(p); setMessages([]); setSelectedAgent(null); onSelectProject?.(p); setTimeout(() => setSettingsOpen(true), 200) } },
+                null,
+                { label: 'Change color', action: () => { setCustomizeTarget({ ...customizeTarget, type: 'color' }) } },
+                null,
+                { label: 'Archive', action: () => setCustomizeTarget(null) },
+              ].map((item, idx) => !item ? (
+                <div key={`pd${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
+              ) : (
+                <button key={item.label} onClick={item.action} style={{
+                  display: 'flex', alignItems: 'center', width: '100%', padding: '7px 10px',
+                  background: 'transparent', border: 'none', borderRadius: 6,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                  color: C.text2, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >{item.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Color picker (conversation list) */}
+        {customizeTarget?.type === 'color' && (
+          <div
+            onClick={() => setCustomizeTarget(null)}
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.5)', zIndex: 99999,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{
+              background: C.s1, border: `1px solid ${C.border2}`, borderRadius: 14,
+              padding: 20, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', width: 260,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 14, fontFamily: "'Inter', sans-serif" }}>
+                Pick color for {customizeTarget.agent?.name}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['#10B981', '#EAB308', '#A78BFA', '#F472B6', '#60A5FA', '#FB923C', '#22C55E', '#EF4444', '#E91E90', '#3B82F6', '#2DD4BF', '#F59E0B'].map(c => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      fetch('/api/dashboard/agent-customize', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ slug: customizeTarget.agent.slug, client_id: worldId, color: c }),
+                      }).then(() => window.location.reload()).catch(() => {})
+                      setCustomizeTarget(null)
+                    }}
+                    style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: c, border: '2px solid transparent',
+                      cursor: 'pointer', transition: 'transform 0.1s, border-color 0.1s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'transparent' }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
