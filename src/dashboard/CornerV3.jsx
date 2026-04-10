@@ -543,9 +543,9 @@ const GREETINGS = [
 ]
 
 const VOICE_OPTIONS = [
-  { id: 'aom-male',    label: 'AOM v3 Male' },
-  { id: 'aom-female',  label: 'AOM v3 Female' },
-  { id: 'aom-neutral', label: 'AOM v3 Neutral' },
+  { id: 'aom-male',    label: 'AOM v3 Male',    desc: 'Deep, confident tone' },
+  { id: 'aom-female',  label: 'AOM v3 Female',  desc: 'Clear, articulate tone' },
+  { id: 'aom-neutral', label: 'AOM v3 Neutral', desc: 'Balanced, androgynous tone' },
 ]
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
@@ -2735,17 +2735,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         width: '100%', padding: '7px 12px',
-                        background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
-                        border: 'none', cursor: 'pointer', textAlign: 'left',
+                        background: isActive ? 'rgba(16,185,129,0.08)' : 'transparent',
+                        border: 'none', borderLeft: isActive ? '2px solid #10B981' : '2px solid transparent',
+                        cursor: 'pointer', textAlign: 'left',
                         color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
                         fontSize: 13,
                       }}
                     >
-                      {isActive
-                        ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M1 5l3 3 5-6"/></svg>
-                        : <span style={{ width: 10, flexShrink: 0 }}/>
-                      }
-                      {voice.label}
+                      <span style={{ width: 10, flexShrink: 0, color: '#10B981' }}>
+                        {isActive && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 5l3 3 5-6"/></svg>}
+                      </span>
+                      <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <span>{voice.label}</span>
+                        <span style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)' }}>{voice.desc}</span>
+                      </span>
                     </button>
                   )
                 })}
@@ -3533,17 +3536,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       width: '100%', padding: '7px 12px',
-                      background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
-                      border: 'none', cursor: 'pointer', textAlign: 'left',
+                      background: isActive ? 'rgba(16,185,129,0.08)' : 'transparent',
+                      border: 'none', borderLeft: isActive ? '2px solid #10B981' : '2px solid transparent',
+                      cursor: 'pointer', textAlign: 'left',
                       color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
                       fontSize: 13,
                     }}
                   >
-                    {isActive
-                      ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M1 5l3 3 5-6"/></svg>
-                      : <span style={{ width: 10, flexShrink: 0 }}/>
-                    }
-                    {voice.label}
+                    <span style={{ width: 10, flexShrink: 0, color: '#10B981' }}>
+                      {isActive && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 5l3 3 5-6"/></svg>}
+                    </span>
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <span>{voice.label}</span>
+                      <span style={{ fontSize: 10, color: isActive ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)' }}>{voice.desc}</span>
+                    </span>
                   </button>
                 )
               })}
