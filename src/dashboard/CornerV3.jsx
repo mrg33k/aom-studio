@@ -5069,10 +5069,11 @@ export default function CornerV3() {
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
   }), [currentUser?.id])
 
-  // Collect shared project slugs so useTasks can also fetch shared:slug tasks
+  // Fetch projects at the top level so we can derive shared slugs for useTasks
+  const { projects: topLevelProjects } = useProjects()
   const sharedSlugs = useMemo(() =>
-    (taskProjects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
-    [taskProjects]
+    (topLevelProjects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
+    [topLevelProjects]
   )
   const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks(worldId, sharedSlugs)
 
