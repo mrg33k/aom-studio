@@ -2552,10 +2552,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // ── Favorites + muted state (persisted to Supabase + localStorage) ──────
   const savePref = useCallback((key, value) => {
     localStorage.setItem(key, JSON.stringify(value))
+    const cid = worldId || getClientId() || 'aom'
     fetch('/api/dashboard/preferences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, client_id: worldId, value }),
+      body: JSON.stringify({ key, client_id: cid, value }),
     }).catch(() => {})
   }, [worldId])
 
@@ -2568,12 +2569,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
 
   // Load from Supabase on mount (overrides stale localStorage)
   useEffect(() => {
+    const cid = worldId || getClientId()
+    if (!cid) return
     const loadPrefs = async () => {
       try {
         const [favRes, mutedRes, hiddenRes] = await Promise.all([
-          fetch(`/api/dashboard/preferences?key=aom_favorites&client=${worldId}`).then(r => r.json()),
-          fetch(`/api/dashboard/preferences?key=aom_muted&client=${worldId}`).then(r => r.json()),
-          fetch(`/api/dashboard/preferences?key=corner-hidden-slugs&client=${worldId}`).then(r => r.json()),
+          fetch(`/api/dashboard/preferences?key=aom_favorites&client=${cid}`).then(r => r.json()),
+          fetch(`/api/dashboard/preferences?key=aom_muted&client=${cid}`).then(r => r.json()),
+          fetch(`/api/dashboard/preferences?key=corner-hidden-slugs&client=${cid}`).then(r => r.json()),
         ])
         if (favRes.value) {
           setFavorites(favRes.value)
