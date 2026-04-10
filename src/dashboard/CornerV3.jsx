@@ -4922,6 +4922,7 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
 
 export default function CornerV3() {
   const [currentUser, setCurrentUser]   = useState(null)
+  const [authReady, setAuthReady]       = useState(false)
   const [worldId, setWorldId]           = useState(getClientId())
   const [tab, setTab]                   = useState('chat')
   const [unreadChat, setUnreadChat]     = useState(0)
@@ -5012,6 +5013,7 @@ export default function CornerV3() {
         setClientIdFromUser(user)
         setWorldId(getClientId())
       }
+      setAuthReady(true)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -5178,6 +5180,15 @@ export default function CornerV3() {
   const NAV_H  = ROW1_H + ROW2_H
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  // Wait for auth to resolve before rendering (prevents data fetching with wrong client_id)
+  if (!authReady) {
+    return (
+      <div style={{ width: '100%', height: '100dvh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: C.muted, fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div style={{
