@@ -3363,7 +3363,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           id: tempId,
           role: 'user',
           agent: agentKey,
-          text: `Attached file: ${file.name}`,
+          text: `Attached file: ${file.name}\n${publicUrl}`,
           timestamp: new Date().toISOString(),
           source: 'corner-dashboard',
           attachment_url: publicUrl,
@@ -3371,20 +3371,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           file_size: file.size,
         }])
 
-        // Persist to DB
+        // Persist to DB -- include the URL in text since the messages table
+        // doesn't have an attachment_url column. This ensures Gemini sees the
+        // file reference in conversation history.
+        const attachText = `Attached file: ${file.name}\n${publicUrl}`
         fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agent: agentKey,
-            text: `Attached file: ${file.name}`,
+            text: attachText,
             role: 'user',
             source: 'corner-dashboard',
             client_id: clientId,
             ...userIdentity,
-            attachment_url: publicUrl,
-            file_mime_type: mimeType,
-            file_size: file.size,
           }),
         })
           .then(r => r.json())
