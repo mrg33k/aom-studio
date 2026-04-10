@@ -644,11 +644,18 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
         const touch = e.touches[0]
         longPressTimer.current = setTimeout(() => {
           longPressTriggered.current = true
+          // Prevent iOS default actions
+          e.target?.closest?.('[data-agent-card]')?.style?.setProperty?.('user-select', 'none')
+          if (navigator.vibrate) navigator.vibrate(10)
           setCtxMenu({ x: touch.clientX, y: touch.clientY })
-        }, 500)
+        }, 400)
       }}
-      onTouchEnd={() => { clearTimeout(longPressTimer.current) }}
+      onTouchEnd={(e) => {
+        clearTimeout(longPressTimer.current)
+        if (longPressTriggered.current) e.preventDefault()
+      }}
       onTouchMove={() => { clearTimeout(longPressTimer.current) }}
+      data-agent-card
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -993,7 +1000,7 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
     <div style={{ flex: 1, overflowY: 'auto', fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Pulse keyframe (injected once) ─────────────────────────────────── */}
-      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } } @keyframes telephonePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } } @keyframes recDot { 0%,100% { opacity:1 } 50% { opacity:0.3 } }`}</style>
+      <style>{`@keyframes cvPulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } } @keyframes spin { to { transform: rotate(360deg) } } @keyframes telephonePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } } @keyframes recDot { 0%,100% { opacity:1 } 50% { opacity:0.3 } } [data-agent-card] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-y; }`}</style>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <div style={{ padding: isMobile ? '20px 14px 10px' : '28px 20px 12px', position: 'relative' }}>
