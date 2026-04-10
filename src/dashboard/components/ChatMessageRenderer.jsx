@@ -5,7 +5,13 @@
 import React from 'react'
 import { marked } from 'marked'
 
-marked.setOptions({ breaks: true, gfm: true })
+const renderer = new marked.Renderer()
+// All links open in new tab
+renderer.link = function(href, title, text) {
+  const t = title ? ` title="${title}"` : ''
+  return `<a href="${href}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`
+}
+marked.setOptions({ breaks: true, gfm: true, renderer })
 
 const IMAGE_URL_RE = /\.(png|jpg|jpeg|gif|webp|svg)(\?[^\s]*)?$/i
 
@@ -83,7 +89,14 @@ const listStyles = `
   .cmr-content a, .message-content a {
     color: #60a5fa;
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(96,165,250,0.3);
+    transition: color 0.15s, text-decoration-color 0.15s;
+    word-break: break-all;
+  }
+  .cmr-content a:hover, .message-content a:hover {
+    color: #93bbfc;
+    text-decoration-color: rgba(96,165,250,0.6);
   }
   .cmr-content hr, .message-content hr {
     border: none;

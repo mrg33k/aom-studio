@@ -2213,6 +2213,18 @@ function SwipeCard({ children, actions, style }) {
   )
 }
 
+// Linkify URLs in user messages (plain text -> clickable links)
+function LinkifyText({ text }) {
+  if (!text) return null
+  const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g
+  const parts = text.split(urlRegex)
+  return parts.map((part, i) =>
+    urlRegex.test(part)
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#93bbfc', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'rgba(147,187,252,0.3)', wordBreak: 'break-all' }}>{part}</a>
+      : part
+  )
+}
+
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -3451,7 +3463,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
                   }}>
                     {isUser
-                      ? msg.text
+                      ? <LinkifyText text={msg.text} />
                       : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.55, color: C.text }} />
                     }
                   </div>
@@ -4903,7 +4915,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
                   }}>
                     {isUser
-                      ? msg.text
+                      ? <LinkifyText text={msg.text} />
                       : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.55, color: C.text }} />
                     }
                   </div>
