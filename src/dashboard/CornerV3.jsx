@@ -1203,6 +1203,47 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
         </div>
       )}
 
+      {/* Project context menu */}
+      {customizeTarget?.type === 'project-menu' && (
+        <div
+          onClick={() => setCustomizeTarget(null)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: customizeTarget.y,
+              left: Math.max(8, Math.min(customizeTarget.x, window.innerWidth - 180)),
+              background: C.s1, border: `1px solid ${C.border2}`, borderRadius: 10,
+              padding: 4, zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', minWidth: 160,
+            }}
+          >
+            {[
+              { label: isFav('project', customizeTarget.agent?.slug) ? 'Unpin' : 'Pin to top', action: () => { setCustomizeTarget(null); toggleFav('project', customizeTarget.agent.slug) } },
+              { label: 'Settings', action: () => { const p = customizeTarget.agent; setCustomizeTarget(null); setInlineProject(p); setMessages([]); setSelectedAgent(null); onSelectProject?.(p); setTimeout(() => setSettingsOpen(true), 200) } },
+              null,
+              { label: 'Change color', action: () => { setCustomizeTarget({ ...customizeTarget, type: 'color' }) } },
+              null,
+              { label: 'Archive', action: () => setCustomizeTarget(null) },
+            ].map((item, idx) => !item ? (
+              <div key={`pd${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
+            ) : (
+              <button key={item.label} onClick={item.action} style={{
+                display: 'flex', alignItems: 'center', width: '100%', padding: '7px 10px',
+                background: 'transparent', border: 'none', borderRadius: 6,
+                cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                color: C.text2, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                transition: 'background 0.1s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >{item.label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Color picker modal */}
       {customizeTarget?.type === 'color' && (
         <div
@@ -4718,8 +4759,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={2} strokeLinecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>,
                   onAction: () => {} },
               ]}>
-                <button
-                  onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null); onSelectProject?.(project) }}
+                <div
+                  onClick={(e) => {
+                    if (e.target.closest('[data-kebab]')) return
+                    setInlineProject(project); setMessages([]); setSelectedAgent(null); onSelectProject?.(project)
+                  }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     width: '100%', padding: '12px 14px',
@@ -4728,9 +4772,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     border: `1px solid ${C.border}`,
                     cursor: 'pointer', textAlign: 'left',
                     transition: 'all 200ms ease',
+                    position: 'relative', overflow: 'visible',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    setCustomizeTarget({ agent: { ...project, slug: project.slug, name: project.name, color: pColor }, type: 'project-menu', x: e.clientX, y: e.clientY })
+                  }}
                 >
                   <div style={{
                     width: 38, height: 38, borderRadius: 10, flexShrink: 0,
@@ -4755,8 +4804,29 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       {pPreview?.text || 'No messages yet'}
                     </div>
                   </div>
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(80,100,128,0.4)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
+                  {/* Kebab menu for project */}
+                  <button
+                    data-kebab
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setCustomizeTarget({ agent: { ...project, slug: project.slug, name: project.name, color: pColor }, type: 'project-menu', x: rect.left - 100, y: rect.bottom + 4 })
+                    }}
+                    style={{
+                      width: 24, height: 28, flexShrink: 0,
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0.5, transition: 'opacity 0.15s',
+                      padding: 0, WebkitTapHighlightColor: 'transparent',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={C.muted}>
+                      <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                    </svg>
+                  </button>
+                </div>
               </SwipeCard>
             )
           })
