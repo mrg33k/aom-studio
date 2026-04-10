@@ -30,6 +30,9 @@ const RIGHT_NOW_STATUSES = new Set(['building', 'qa'])
 // Queued pipeline statuses (not yet building)
 const QUEUED_STATUSES = new Set(['queued', 'classifying', 'planning'])
 
+// Waiting for human input (skill tasks paused for direction)
+const WAITING_STATUSES = new Set(['waiting'])
+
 // Terminal statuses (completed section)
 const DONE_STATUSES = new Set(['done', 'failed'])
 
@@ -206,6 +209,9 @@ export function useTasks() {
   // Task queue: not yet building
   const queued = allTasks.filter(t => QUEUED_STATUSES.has(t.status))
 
+  // Waiting for human input (skill tasks needing direction)
+  const waiting = allTasks.filter(t => WAITING_STATUSES.has(t.status))
+
   // Completed section: done or failed (most recent first)
   const done = allTasks
     .filter(t => DONE_STATUSES.has(t.status))
@@ -215,6 +221,7 @@ export function useTasks() {
     allTasks,
     rightNow,
     queued,
+    waiting,
     done,
     loading,
     error,

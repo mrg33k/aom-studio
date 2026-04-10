@@ -92,7 +92,7 @@ const VOICE_OPTIONS = [
   { id: 'zephyr', label: 'Zephyr', desc: 'Fresh & expressive' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange, autoStart = false }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -105,8 +105,9 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   const [settings, setSettings] = useState(() => {
     try {
       const saved = localStorage.getItem(`corner-voice-settings-${agentSlug}`)
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS
-    } catch { return DEFAULT_SETTINGS }
+      const base = saved ? JSON.parse(saved) : {}
+      return { ...DEFAULT_SETTINGS, ...base, voice: initialVoice }
+    } catch { return { ...DEFAULT_SETTINGS, voice: initialVoice } }
   })
   const [availableVoices, setAvailableVoices] = useState([])
 
@@ -166,18 +167,19 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     onStatusChange?.(s)
   }, [onStatusChange])
 
-  // Load voice settings from agent-specific key when agentSlug changes
+  // Load voice settings from agent-specific key when agentSlug or initialVoice changes
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`corner-voice-settings-${agentSlug}`)
-      setSettings(saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS)
-    } catch { setSettings(DEFAULT_SETTINGS) }
-  }, [agentSlug])
+      const base = saved ? JSON.parse(saved) : {}
+      setSettings({ ...DEFAULT_SETTINGS, ...base, voice: initialVoice })
+    } catch { setSettings({ ...DEFAULT_SETTINGS, voice: initialVoice }) }
+  }, [agentSlug, initialVoice])
 
-  // Save settings to localStorage when they change (keyed per agent)
+  // Save temperature to localStorage when it changes (voice is persisted server-side)
   useEffect(() => {
-    try { localStorage.setItem(`corner-voice-settings-${agentSlug}`, JSON.stringify(settings)) } catch {}
-  }, [settings, agentSlug])
+    try { localStorage.setItem(`corner-voice-settings-${agentSlug}`, JSON.stringify({ temperature: settings.temperature })) } catch {}
+  }, [settings.temperature, agentSlug])
 
   // Sequential audio playback (uses separate 24kHz playback context)
   const playNextChunk = useCallback(() => {
@@ -692,7 +694,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 return (
                   <button
                     key={id}
-                    onClick={() => setSettings(s => ({ ...s, voice: id }))}
+                    onClick={() => { setSettings(s => ({ ...s, voice: id })); onVoiceChange?.(id) }}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '7px 10px', borderRadius: 7, cursor: 'pointer', transition: 'all 0.15s',

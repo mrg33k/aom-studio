@@ -265,6 +265,55 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, action: 'requeue', result });
       }
 
+      case 'resume': {
+        // Human replied to a waiting task -- store answer, requeue for runner
+        // payload = { answer: "Use the DJI audio track" }
+        const answer = typeof payload === 'string' ? payload : payload?.answer;
+        if (!answer) return res.status(400).json({ error: 'resume requires an answer in payload' });
+
+        // Fetch existing task to merge metadata
+        const taskResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}&select=metadata`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        });
+        const taskRows = await taskResp.json();
+        const existingMeta = (Array.isArray(taskRows) && taskRows[0]?.metadata) || {};
+        const checkpoint = existingMeta.checkpoint || {};
+        checkpoint.answer = answer;
+        checkpoint.answered_at = new Date().toISOString();
+        existingMeta.checkpoint = checkpoint;
+
+        const result = await supabasePatch(filter, {
+          status: 'queued',
+          worker_id: null,
+          locked_at: null,
+          lease_expires_at: null,
+          metadata: existingMeta,
+        });
+
+        // Fire runner_start_requested event so the runner wakes up
+        try {
+          const crypto = await import('crypto');
+          await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({
+              id: crypto.randomUUID(),
+              agent: 'system',
+              event_type: 'runner_start_requested',
+              payload: { source: 'checkpoint-resume', task_id: taskId, requested_at: new Date().toISOString() },
+              timestamp: new Date().toISOString(),
+            }),
+          });
+        } catch {}
+
+        return res.status(200).json({ ok: true, action: 'resume', result });
+      }
+
       default:
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }

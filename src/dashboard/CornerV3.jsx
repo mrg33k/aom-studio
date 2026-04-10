@@ -912,6 +912,11 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
 
   const active    = [...(rightNow || []), ...(queued || [])]
   const completed = done || []
+  const waitingTasks = waiting || []
+
+  // Reply input state for waiting tasks
+  const [waitingReply, setWaitingReply] = useState({})
+  const [waitingReplySending, setWaitingReplySending] = useState({})
 
   // Project pills from Supabase projects table
   const projectPills = ['All', ...projectNames]
@@ -1251,6 +1256,102 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
             </div>
           </div>
         </div>
+
+        {/* Waiting for input -- skill tasks that need human direction */}
+        {waitingTasks.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ padding: '12px 0 6px' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+                Needs Input
+              </span>
+            </div>
+            {waitingTasks.map((t) => {
+              const agent = t.agent_identity || t.agentIdentity || 'agent'
+              const question = t.metadata?.checkpoint?.question || 'Waiting for your input...'
+              const replyText = waitingReply[t.id] || ''
+              const sending = waitingReplySending[t.id] || false
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    padding: '14px 16px',
+                    marginBottom: 8,
+                    borderRadius: 14,
+                    background: 'rgba(245,158,11,0.08)',
+                    border: '1px solid rgba(245,158,11,0.15)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{agent}</span>
+                    <span style={{ fontSize: 9, color: C.dim }}>needs input</span>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'rgba(240,244,255,0.7)', lineHeight: 1.2, marginBottom: 8 }}>
+                    {t.title || t.text || 'Untitled task'}
+                  </div>
+                  <div style={{
+                    fontSize: 13, color: '#F59E0B', lineHeight: 1.4,
+                    padding: '8px 12px', borderRadius: 10,
+                    background: 'rgba(245,158,11,0.06)',
+                    border: '1px solid rgba(245,158,11,0.1)',
+                    marginBottom: 10,
+                  }}>
+                    {question}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="text"
+                      value={replyText}
+                      onChange={e => setWaitingReply(prev => ({ ...prev, [t.id]: e.target.value }))}
+                      onKeyDown={async e => {
+                        if (e.key === 'Enter' && replyText.trim() && !sending) {
+                          setWaitingReplySending(prev => ({ ...prev, [t.id]: true }))
+                          await fetch('/api/dashboard/task-action', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'resume', taskId: t.id, payload: { answer: replyText.trim() } }),
+                          })
+                          setWaitingReply(prev => ({ ...prev, [t.id]: '' }))
+                          setWaitingReplySending(prev => ({ ...prev, [t.id]: false }))
+                        }
+                      }}
+                      placeholder="Reply..."
+                      style={{
+                        flex: 1, padding: '8px 12px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 10, color: C.text,
+                        fontSize: 13, fontFamily: "'Inter', sans-serif",
+                        outline: 'none',
+                      }}
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!replyText.trim() || sending) return
+                        setWaitingReplySending(prev => ({ ...prev, [t.id]: true }))
+                        await fetch('/api/dashboard/task-action', {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action: 'resume', taskId: t.id, payload: { answer: replyText.trim() } }),
+                        })
+                        setWaitingReply(prev => ({ ...prev, [t.id]: '' }))
+                        setWaitingReplySending(prev => ({ ...prev, [t.id]: false }))
+                      }}
+                      disabled={!replyText.trim() || sending}
+                      style={{
+                        padding: '8px 14px', borderRadius: 10,
+                        background: replyText.trim() && !sending ? '#F59E0B' : 'rgba(255,255,255,0.05)',
+                        border: 'none', cursor: replyText.trim() && !sending ? 'pointer' : 'default',
+                        color: replyText.trim() && !sending ? '#000' : C.muted,
+                        fontSize: 12, fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {sending ? '...' : 'Reply'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Failed tasks -- requeue or dismiss */}
         {filteredFailed.length > 0 && (
@@ -1786,9 +1887,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [agentVoices, setAgentVoices] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aom_agent_voices')) || {} } catch { return {} }
-  })
+  const [agentVoices, setAgentVoices] = useState({})
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -1863,22 +1962,27 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // ── Per-chat voice selection ──────────────────────────────────────────────
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
   const currentVoice = currentChatKey ? (agentVoices[currentChatKey] || 'kore') : 'kore'
+
+  // Load agent voices from DB on worldId change
+  useEffect(() => {
+    if (!worldId) return
+    fetch(`/api/dashboard/agent-voice?client=${encodeURIComponent(worldId)}`)
+      .then(r => r.ok ? r.json() : { voices: {} })
+      .then(({ voices }) => { if (voices) setAgentVoices(voices) })
+      .catch(() => {})
+  }, [worldId])
+
   const selectVoice = useCallback((voice) => {
     if (!currentChatKey) return
-    setAgentVoices(prev => {
-      const next = { ...prev, [currentChatKey]: voice }
-      try { localStorage.setItem('aom_agent_voices', JSON.stringify(next)) } catch {}
-      return next
-    })
-    // Write to VoiceChat's per-agent key so the next voice session uses this voice
-    const agentSlug = currentChatKey.startsWith('project:')
-      ? currentChatKey.replace('project:', '')
-      : currentChatKey
-    try {
-      const existing = JSON.parse(localStorage.getItem(`corner-voice-settings-${agentSlug}`) || '{}')
-      localStorage.setItem(`corner-voice-settings-${agentSlug}`, JSON.stringify({ ...existing, voice }))
-    } catch {}
-  }, [currentChatKey])
+    setAgentVoices(prev => ({ ...prev, [currentChatKey]: voice }))
+    const agentSlug = currentChatKey.startsWith('project:') ? null : currentChatKey
+    if (!agentSlug) return
+    fetch('/api/dashboard/agent-voice', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: agentSlug, voice, client_id: worldId }),
+    }).catch(() => {})
+  }, [currentChatKey, worldId])
 
   // Fetch latest message per agent (comprehensive -- covers all agents, not just missing from inboxItems)
   const [agentPreviews, setAgentPreviews] = useState({})
@@ -2843,6 +2947,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               agentColor={projColor}
               clientId={worldId}
               autoStart={true}
+              initialVoice={currentVoice}
+              onVoiceChange={selectVoice}
               onTranscript={(text, role) => {
                 setVoiceTranscriptText(text)
                 setMessages(prev => [...prev, {
@@ -3616,6 +3722,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             agentColor={selectedAgent.color}
             clientId={worldId}
             autoStart={true}
+            initialVoice={currentVoice}
+            onVoiceChange={selectVoice}
             onTranscript={(text, role) => {
               setVoiceTranscriptText(text)
               setMessages(prev => [...prev, {
@@ -3669,6 +3777,33 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
 
         {messages.map(msg => {
           const isUser = msg.role === 'user'
+
+          // Checkpoint: agent needs human input (amber card)
+          if (msg.source === 'checkpoint') {
+            return (
+              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{
+                  background: 'rgba(245,158,11,0.08)',
+                  border: '1px solid rgba(245,158,11,0.15)',
+                  borderRadius: 14,
+                  padding: '12px 16px',
+                  maxWidth: '85%', minWidth: 200,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      Needs Input
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+                    {msg.text}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.dim, marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                    {formatChatTime(msg.timestamp)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
 
           // Inline task card for task-runner lifecycle notifications
           if (msg.source === 'task-runner') {
@@ -4263,9 +4398,37 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               overflowY: 'auto',
               flex: 1,
             }}>
-              <span style={{ fontSize: 13, color: C.text2, fontFamily: "'Inter', sans-serif" }}>
-                Settings options will appear here.
-              </span>
+              {currentChatKey && !currentChatKey.startsWith('project:') && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Voice
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {VOICE_OPTIONS.map(({ id, label, desc }) => (
+                      <button
+                        key={id}
+                        onClick={() => selectVoice(id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
+                          background: currentVoice === id ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${currentVoice === id ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                        }}
+                      >
+                        <div style={{ textAlign: 'left' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: currentVoice === id ? '#60A5FA' : C.text1, fontFamily: "'Inter', sans-serif" }}>{label}</div>
+                          <div style={{ fontSize: 11, color: C.text2, marginTop: 1, fontFamily: "'Inter', sans-serif" }}>{desc}</div>
+                        </div>
+                        {currentVoice === id && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -4350,7 +4513,7 @@ export default function CornerV3() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const { queued, rightNow, done, allTasks, refresh: refreshTasks } = useTasks()
+  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks()
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {

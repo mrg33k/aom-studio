@@ -52,6 +52,7 @@ TASK CREATION RULES:
 - Keep task scope small. One clear change per task. "Add X to Y" not "Redesign the Z system".
 - The pipeline auto-decomposes complex tasks into subtasks. You don't need to manually break things into 2-5 tasks. Just describe the full feature -- if it's too big, the pipeline handles it.
 - AFTER CREATING: If Patrik follows up with changes, cancel the old task and create a corrected one.
+- WAITING TASKS: When a skill task (video, design, etc.) needs human input, it pauses with status "waiting". If Patrik answers a question from an agent, use reply_to_task to send the answer back. Check get_queue for waiting tasks.
 
 WHAT TO INCLUDE IN TASK DESCRIPTIONS (the builder reads ONLY your description):
 - WHICH PROJECT: Always reference this project by name. The builder routes to the correct repo based on keywords.
@@ -130,6 +131,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'lookup_context', description: 'Search the codebase for relevant files, scripts, components, and architecture. Use this BEFORE creating tasks to check what already exists. Also use when Patrik asks about how something works or where something lives in the code.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for (e.g. "voice chat", "onboarding", "task runner", "auth")' } }, required: ['query'] } },
   { name: 'update_task', description: 'Update a task status, QA score, or error. Use when Patrik asks to fix task scores, mark tasks done, requeue failed tasks, or correct task metadata.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to update' }, status: { type: 'string', description: 'New status: queued, done, failed, cancelled' }, qa_score: { type: 'number', description: 'QA score 1-10' }, qa_notes: { type: 'string', description: 'QA notes explaining the score' }, error: { type: 'string', description: 'Error message (set to empty string to clear)' } }, required: ['task_id'] } },
   { name: 'cancel_task', description: 'Cancel a queued task. Use when you created a task with wrong details and need to clean it up before the runner picks it up.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to cancel' } }, required: ['task_id'] } },
+  { name: 'reply_to_task', description: 'Reply to a skill task that is waiting for human input. Use when Patrik answers a question from an agent (like Cleo or Steffen) working on a skill task. The task will resume with the answer.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The waiting task ID' }, answer: { type: 'string', description: 'The human reply/direction to give the agent' } }, required: ['task_id', 'answer'] } },
   { name: 'read_file', description: 'Read a source file from the codebase. Use this BEFORE creating tasks to see what code already exists in a file. Returns the file contents. Paths are relative to the repo root (e.g. "src/dashboard/CornerV3.jsx").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to repo root' }, start_line: { type: 'number', description: 'Start line (1-indexed, default 1)' }, end_line: { type: 'number', description: 'End line (default: start+100)' } }, required: ['path'] } },
   { name: 'list_files', description: 'List files in a directory. Use this to verify file paths and see the actual directory structure instead of guessing. Returns file names in the directory.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path relative to repo root (e.g. "src/dashboard")' } }, required: ['path'] } },
   { name: 'update_context', description: 'Update a section of a project CONTEXT.md document. Use when the operator asks to record decisions, update project status, add constraints, or note architectural choices for a project. Only works within a project conversation (requires project_slug).', parameters: { type: 'object', properties: { project_slug: { type: 'string', description: 'The project slug to update context for' }, section: { type: 'string', enum: ['overview', 'status', 'decisions', 'constraints', 'architecture', 'notes'], description: 'Which section of the CONTEXT.md to update' }, content: { type: 'string', description: 'The content to write into the section' }, action: { type: 'string', enum: ['replace', 'append'], description: 'Whether to replace the section content or append to it (default: replace)' } }, required: ['project_slug', 'section', 'content'] } },
@@ -793,6 +795,37 @@ ${BASE_INSTRUCTION}`;
             if (!resp.ok) throw new Error(`Cancel failed: ${resp.status}`);
             const cancelled = await resp.json();
             result = Array.isArray(cancelled) && cancelled.length > 0 ? { cancelled: true, id: taskId } : { cancelled: false, reason: 'Task not found or already picked up' };
+          }
+          else if (name === 'reply_to_task') {
+            const taskId = (args.task_id || '').trim();
+            const answer = (args.answer || '').trim();
+            if (!taskId) throw new Error('task_id required');
+            if (!answer) throw new Error('answer required');
+            // Call task-action resume endpoint
+            const resumeResp = await fetch(`${req.headers.origin || 'https://aheadofmarket.com'}/api/dashboard/task-action`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'resume', taskId, payload: { answer }, clientId }),
+            });
+            if (!resumeResp.ok) {
+              const errText = await resumeResp.text();
+              throw new Error(`Resume failed: ${errText}`);
+            }
+            // Also post the answer to the task thread for context
+            const { randomUUID } = await import('crypto');
+            await sbFetch('/rest/v1/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+              body: JSON.stringify({
+                id: randomUUID(),
+                agent: `task:${taskId}`,
+                role: 'user',
+                text: answer,
+                source: 'checkpoint-reply',
+                client_id: clientId,
+              }),
+            });
+            result = { resumed: true, task_id: taskId };
           }
           else if (name === 'read_file') {
             const filePath = (args.path || '').trim().replace(/^\//, '');
