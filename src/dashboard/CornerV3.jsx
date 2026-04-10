@@ -3402,30 +3402,25 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             </div>
             {!input.trim() && (
               <button
-                title={isRecording ? 'Stop recording' : 'Record voice message'}
-                onClick={handleMicToggle}
+                title={isVoiceActive ? 'End voice' : 'Start voice'}
+                onClick={() => setIsVoiceActive(true)}
                 style={{
                   width: 42, height: 42, borderRadius: '50%',
-                  background: isRecording ? '#EF4444' : C.accent,
+                  background: C.accent,
                   border: 'none',
-                  color: isRecording ? '#fff' : '#000', cursor: 'pointer',
+                  color: '#000', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                   transition: 'transform 0.15s, background 0.2s',
-                  animation: isRecording ? 'telephonePulse 1.5s ease-in-out infinite' : 'none',
                 }}
               >
-                {isTranscribing ? (
-                  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                ) : isRecording ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="#000"
-                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-                  </svg>
-                )}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="#000"
+                  strokeWidth="2.5" strokeLinecap="round">
+                  <rect x="9" y="2" width="6" height="12" rx="3"/>
+                  <path d="M5 10a7 7 0 0014 0"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
               </button>
             )}
             {input.trim() && (
@@ -4740,33 +4735,37 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               </svg>
             </button>
           </div>
-          {/* Telephone button (hidden when text present) -- long-form record, transcribe, send */}
+          {/* Mic button (hidden when text present) -- triggers Gemini Live voice chat */}
           {!input.trim() && (
             <button
-              title={isRecording ? 'Stop recording' : 'Record voice message'}
-              onClick={handleMicToggle}
+              title={isVoiceActive ? 'End voice' : 'Start voice'}
+              onClick={() => {
+                if (isVoiceActive) {
+                  voiceChatRef.current?.stop()
+                  setIsVoiceActive(false)
+                  setVoiceMuted(false)
+                  setVoiceTranscriptText('')
+                } else {
+                  setIsVoiceActive(true)
+                }
+              }}
               style={{
                 width: 42, height: 42, borderRadius: '50%',
-                background: isRecording ? '#EF4444' : C.accent,
-                border: 'none',
-                color: isRecording ? '#fff' : '#000', cursor: 'pointer',
+                background: isVoiceActive ? 'rgba(16,185,129,0.15)' : C.accent,
+                border: isVoiceActive ? '2px solid rgba(16,185,129,0.4)' : 'none',
+                color: isVoiceActive ? C.accent : '#000', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
                 transition: 'transform 0.15s, background 0.2s',
-                animation: isRecording ? 'telephonePulse 1.5s ease-in-out infinite' : 'none',
               }}
             >
-              {isTranscribing ? (
-                <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-              ) : isRecording ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                  stroke="#000"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-                </svg>
-              )}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10a7 7 0 0014 0"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
             </button>
           )}
           {/* Send button (shown when text present) */}
