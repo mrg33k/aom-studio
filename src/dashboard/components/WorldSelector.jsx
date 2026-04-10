@@ -13,6 +13,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { isSuperAdmin, isAdminOverride } from '../lib/clientConfig'
 
 // Color palette matching cv3.html / CornerV3.jsx
 const C = {
@@ -124,6 +125,9 @@ export default function WorldSelector({
   }, [open])
 
   const handleToggle = () => {
+    // Non-admin users can't open the dropdown (they only have one world)
+    if (!isAdmin) return
+    // Admin viewing another world: clicking opens dropdown with just "Return" option
     const next = !open
     setOpen(next)
     setFocusIdx(-1)
@@ -143,10 +147,16 @@ export default function WorldSelector({
 
   const myWorld = currentUser?.user_metadata?.world || 'aom'
   const isOverriding = currentWorldId && currentWorldId !== myWorld
+  const isAdmin = isSuperAdmin(currentUser?.id)
+  const viewingOtherWorld = isAdmin && isAdminOverride()
   const activeWorld = worlds.find(w => w.world === currentWorldId)
   const activeLabel = activeWorld?.name
     || (currentWorldId === 'q' ? 'QA' : (currentWorldId || 'AOM').toUpperCase())
   const activeInitial = activeLabel[0]?.toUpperCase() || 'A'
+
+  // Non-admin: show static badge only (no dropdown)
+  // Admin viewing another world: show badge + return option only (no world list)
+  const showFullWorldList = isAdmin && !viewingOtherWorld
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', flexShrink: 0 }}>
@@ -162,7 +172,7 @@ export default function WorldSelector({
           background: open ? C.s2 : C.s1,
           border: `1px solid ${open ? C.border2 : C.border}`,
           borderRadius: 10,
-          cursor: 'pointer',
+          cursor: isAdmin ? 'pointer' : 'default',
           transition: 'all 0.15s',
         }}
         onMouseEnter={e => {
@@ -221,18 +231,20 @@ export default function WorldSelector({
             textTransform: 'uppercase',
           }}>VIEW</span>
         )}
-        {/* ws-arrow */}
-        <span style={{
-          fontSize: 10,
-          color: C.dim,
-          marginLeft: 2,
-          display: 'inline-block',
-          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-          transition: 'transform 200ms ease',
-          lineHeight: 1,
-        }}>
-          ▾
-        </span>
+        {/* ws-arrow (only for admin) */}
+        {isAdmin && (
+          <span style={{
+            fontSize: 10,
+            color: C.dim,
+            marginLeft: 2,
+            display: 'inline-block',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 200ms ease',
+            lineHeight: 1,
+          }}>
+            ▾
+          </span>
+        )}
       </button>
 
       {/* Dropdown -- rendered via portal to escape overflow:hidden */}
@@ -314,8 +326,8 @@ export default function WorldSelector({
                 </button>
               )}
 
-              {/* World list */}
-              <div style={{ maxHeight: 280, overflowY: 'auto' }} role="presentation">
+              {/* World list (only when admin is in own world) */}
+              {showFullWorldList && <div style={{ maxHeight: 280, overflowY: 'auto' }} role="presentation">
                 {loading && (
                   <div style={{
                     padding: '10px 10px',
@@ -415,7 +427,7 @@ export default function WorldSelector({
                     </div>
                   )
                 })}
-              </div>
+              </div>}
             </motion.div>
           )}
         </AnimatePresence>,
