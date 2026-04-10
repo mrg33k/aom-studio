@@ -142,12 +142,56 @@ export default function ChatMessageRenderer({ content, className = '', style = {
     const title             = meta?.title             || message.title             || ''
     const status            = meta?.status            || message.status            || ''
     const assignedAgentName = meta?.assigned_agent_name || message.assigned_agent_name || ''
-    const taskId            = meta?.task_id           || message.task_id           || ''
-    const text = `Task '${title}' created, status: ${status}, assigned to: ${assignedAgentName} (ID: ${taskId})`
+    const description       = meta?.description       || message.description       || ''
+
+    const statusLower = (status || '').toLowerCase()
+    let pillStyle
+    if (statusLower === 'queued' || statusLower === 'pending') {
+      pillStyle = { background: 'rgba(234,179,8,0.12)', color: '#EAB308' }
+    } else if (statusLower === 'done' || statusLower === 'shipped' || statusLower === 'completed') {
+      pillStyle = { background: 'rgba(34,197,94,0.12)', color: '#22C55E' }
+    } else {
+      pillStyle = { background: 'rgba(16,185,129,0.12)', color: '#10B981' }
+    }
+    const statusLabel = status ? status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ') : 'Queued'
+
     return (
       <div className="chat-message-container">
-        <div className={`cmr-content message-content ${className}`} style={{ whiteSpace: 'normal', ...style }}>
-          {text}
+        <div style={{
+          alignSelf: 'flex-start',
+          background: '#111827',
+          border: '1px solid rgba(255,255,255,0.04)',
+          borderRadius: 14,
+          padding: '12px 16px',
+          maxWidth: '88%',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: 6,
+              background: 'rgba(16,185,129,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, color: '#10B981', fontWeight: 800,
+            }}>+</div>
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: '#10B981',
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>Task Created</span>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#F1F5F9' }}>{title}</div>
+          {description ? (
+            <div style={{ fontSize: 12, color: '#475569', marginTop: 3, lineHeight: 1.4 }}>{description}</div>
+          ) : null}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+              fontFamily: "'JetBrains Mono', monospace",
+              ...pillStyle,
+            }}>{statusLabel}</span>
+            {assignedAgentName ? (
+              <span style={{ fontSize: 10, color: '#475569', fontWeight: 600 }}>{assignedAgentName}</span>
+            ) : null}
+          </div>
         </div>
       </div>
     )
