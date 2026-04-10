@@ -1777,6 +1777,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -2206,9 +2207,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Focus input when thread opens
+  // Focus input when thread opens; close settings menu on navigation
   useEffect(() => {
     if (selectedAgent) setTimeout(() => inputRef.current?.focus(), 100)
+    setSettingsOpen(false)
   }, [selectedAgent])
 
   // Keep a ref so handleSend can read current messages without stale closure
@@ -2678,6 +2680,35 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             }}>
               {selectedProject?.name || 'Project'}
             </span>
+          </div>
+          {/* Settings button */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => setSettingsOpen(o => !o)}
+              title="Settings"
+              style={{
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                background: settingsOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'rgba(255,255,255,0.5)',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+              </svg>
+            </button>
+            {settingsOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: 6,
+                width: 180, borderRadius: 10,
+                background: 'rgba(18,24,40,0.98)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                zIndex: 100,
+                padding: '8px 0',
+              }} />
+            )}
           </div>
         </div>
 
@@ -3433,6 +3464,35 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             <line x1="12" y1="19" x2="12" y2="22"/>
           </svg>
         </button>
+        {/* Settings button */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={() => setSettingsOpen(o => !o)}
+            title="Settings"
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: settingsOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+            </svg>
+          </button>
+          {settingsOpen && (
+            <div style={{
+              position: 'absolute', top: '100%', right: 0, marginTop: 6,
+              width: 180, borderRadius: 10,
+              background: 'rgba(18,24,40,0.98)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              zIndex: 100,
+              padding: '8px 0',
+            }} />
+          )}
+        </div>
       </div>
 
       {/* Hidden VoiceChat for audio logic -- mounts when voice is active */}
