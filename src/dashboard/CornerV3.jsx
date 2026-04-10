@@ -1149,7 +1149,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                     <div style={{ color: cardColor, fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
                       {t.qa_score || t.qaScore || '...'}
                     </div>
-                    <div style={{ color: C.muted, fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
+                    <div style={{ color: t.status === 'building' ? cardColor : t.status === 'queued' ? C.dim : C.muted, fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
                       {statusLabel}
                     </div>
                   </div>
