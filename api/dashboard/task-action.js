@@ -98,6 +98,33 @@ export default async function handler(req, res) {
   const { action, taskText, taskId, agent, payload, clientId = 'aom' } = req.body || {};
 
   if (!action) return res.status(400).json({ error: 'action required' });
+
+  // startRunner doesn't need a task reference
+  if (action === 'startRunner') {
+    try {
+      const crypto = await import('crypto');
+      await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          agent: 'system',
+          event_type: 'runner_start_requested',
+          payload: { source: 'tasks-tab', requested_at: new Date().toISOString() },
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      return res.status(200).json({ ok: true, action: 'startRunner' });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (!taskText && !taskId) return res.status(400).json({ error: 'taskText or taskId required' });
 
   try {

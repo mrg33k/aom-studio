@@ -834,7 +834,21 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
   const [taskInputFocused,       setTaskInputFocused]       = useState(false)
   const [taskSubmitting,         setTaskSubmitting]         = useState(false)
   const taskInputRef = useRef(null)
+  const runnerSignaledRef = useRef(false)
   const { projects: taskProjects } = useProjects()
+
+  // Auto-start runner when Tasks tab opens and there are queued tasks
+  useEffect(() => {
+    if (runnerSignaledRef.current) return
+    if (queued?.length > 0 || rightNow?.length > 0) {
+      runnerSignaledRef.current = true
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'startRunner' }),
+      }).catch(() => {})
+    }
+  }, [queued, rightNow])
 
   // ── Instant task maker: submit handler ──────────────────────────────────────
   const handleTaskSubmit = useCallback(async () => {
