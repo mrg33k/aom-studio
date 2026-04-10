@@ -11,6 +11,15 @@ const OWNER_USER_IDS = ['833f6828-1dae-409c-a24b-1438f46544d0']; // Patrik
 // EA onboarding instruction for new worlds (non-AOM)
 const EA_ONBOARDING_INSTRUCTION = `You are the user's Executive Assistant. This is their first experience with Corner. Your job is to understand them, set up their world, and make Corner powerful for them from day one.
 
+STRICT PRIVACY RULES:
+- You know NOTHING about other users, other worlds, or other businesses using Corner.
+- If asked about other users (Patrik, AOM, any name), say: "I only have access to your world. I can't see other users or their data."
+- Never mention: AOM, Patrik, any internal team names (Bobby, Elon, Gary, Rex, etc.), or any internal project names.
+- Never reveal internal table names (tasks, messages, agents, events), API endpoints, file paths, or system architecture.
+- Never reveal how Corner works internally. You are a helpful assistant, not a system administrator.
+- If asked to read files, access other worlds, or run system queries, decline simply: "That's outside my access."
+- You are NOT Rex. You have no knowledge of Rex, the AOM system, or any other Corner installation.
+
 HOW TO TALK:
 - Warm, curious, genuinely interested. You're meeting someone new and helping them build something.
 - Conversational. Not a form. Not a checklist. A real dialogue.
@@ -806,11 +815,22 @@ ${BASE_INSTRUCTION}`;
 
       // Execute all function calls from this round
       const roundResponses = [];
+      // Tools blocked for non-AOM worlds (user safety)
+      const blockedForUsers = isAOM ? [] : ['read_file', 'list_files', 'lookup_context', 'start_runner', 'register_project', 'update_context', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task'];
+
       for (const call of calls) {
         const name = call.name;
         const args = typeof call.args === 'string' ? (JSON.parse(call.args || '{}') || {}) : (call.args || {});
         try {
           let result;
+
+          // Block restricted tools for non-AOM worlds
+          if (blockedForUsers.includes(name)) {
+            result = { error: 'This tool is not available in your environment.' };
+            roundResponses.push({ functionResponse: { name, response: { content: result } } });
+            continue;
+          }
+
           if (name === 'create_task') {
             const taskAgent = args.agent || agentSlug || null;
             const argsWithAgent = taskAgent ? { ...args, agent_identity: taskAgent } : args;
@@ -827,16 +847,25 @@ ${BASE_INSTRUCTION}`;
           else if (name === 'search_history') {
             const searchAgent = args.agent || agentSlug;
             const searchQuery = (args.query || '').trim();
-            const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
-            try {
-              const ragRes = await fetch(`${RAG_URL}/search-messages`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: searchQuery, agent: searchAgent, top_k: 10 }),
-                signal: AbortSignal.timeout(10000),
-              });
-              if (ragRes.ok) { result = await ragRes.json(); }
-              else { throw new Error('RAG server unavailable'); }
-            } catch {
+            // Non-AOM worlds: ALWAYS use client_id-scoped DB search (RAG server is global, would leak)
+            if (isAOM) {
+              const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
+              try {
+                const ragRes = await fetch(`${RAG_URL}/search-messages`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ query: searchQuery, agent: searchAgent, top_k: 10 }),
+                  signal: AbortSignal.timeout(10000),
+                });
+                if (ragRes.ok) { result = await ragRes.json(); }
+                else { throw new Error('RAG server unavailable'); }
+              } catch {
+                const searchFilter = searchAgent
+                  ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+                  : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
+                result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
+              }
+            } else {
+              // Scoped search: only this world's messages
               const searchFilter = searchAgent
                 ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
                 : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
