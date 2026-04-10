@@ -114,6 +114,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   const analyserRef = useRef(null)
   const rafRef = useRef(null)
   const volumeLevelRef = useRef(0)
+  const inputAccRef = useRef('')   // accumulates user transcription chunks per turn
+  const outputAccRef = useRef('')  // accumulates model transcription chunks per turn
 
   const addSystemMessage = useCallback((text) => {
     setTranscript(prev => [...prev, { role: 'system', text, id: Date.now() + Math.random() }])
@@ -218,6 +220,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     if (status !== 'idle') return
     setErrorMsg('')
     setTranscript([])
+    inputAccRef.current = ''
+    outputAccRef.current = ''
     sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     updateStatus('connecting')
 
@@ -393,27 +397,43 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
               }
             }
 
-            // Input transcription (what the user said)
+            // Input transcription (what the user said) -- accumulate chunks, save full turn on finished
             if (sc.inputTranscription?.text) {
-              const text = sc.inputTranscription.text
+              inputAccRef.current += sc.inputTranscription.text
               if (sc.inputTranscription.finished) {
-                setTranscript(prev => [...prev, { role: 'user', text, id: Date.now() + Math.random() }])
-                onTranscript?.(text, 'user')
-                saveTranscript('user', text)
+                const text = inputAccRef.current.trim()
+                inputAccRef.current = ''
+                if (text) {
+                  setTranscript(prev => [...prev, { role: 'user', text, id: Date.now() + Math.random() }])
+                  onTranscript?.(text, 'user')
+                  saveTranscript('user', text)
+                }
               }
             }
 
-            // Output transcription (what the model said)
+            // Output transcription (what the model said) -- accumulate chunks, save full turn on finished
             if (sc.outputTranscription?.text) {
-              const text = sc.outputTranscription.text
+              outputAccRef.current += sc.outputTranscription.text
               if (sc.outputTranscription.finished) {
-                setTranscript(prev => [...prev, { role: 'model-text', text, id: Date.now() + Math.random() }])
-                saveTranscript('assistant', text)
+                const text = outputAccRef.current.trim()
+                outputAccRef.current = ''
+                if (text) {
+                  setTranscript(prev => [...prev, { role: 'model-text', text, id: Date.now() + Math.random() }])
+                  onTranscript?.(text, 'model')
+                  saveTranscript('agent', text)
+                }
               }
             }
 
-            // Turn complete
+            // Turn complete -- flush any pending model transcription (fallback if finished never fires)
             if (sc.turnComplete) {
+              const pending = outputAccRef.current.trim()
+              if (pending) {
+                outputAccRef.current = ''
+                setTranscript(prev => [...prev, { role: 'model-text', text: pending, id: Date.now() + Math.random() }])
+                onTranscript?.(pending, 'model')
+                saveTranscript('agent', pending)
+              }
               if (playQueueRef.current.length === 0 && !isPlayingRef.current) {
                 updateStatus('listening')
               }

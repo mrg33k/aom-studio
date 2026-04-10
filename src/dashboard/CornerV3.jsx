@@ -2102,9 +2102,25 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         (payload) => {
           const msg = payload.new
           if (msg.agent === selectedAgent.slug) {
-            // Deduplicate: skip if we already have this id (from optimistic insert)
             setMessages(prev => {
+              // Deduplicate: skip if we already have this id (from optimistic insert)
               if (prev.some(m => m.id === msg.id)) return prev
+              // Voice messages: replace temp voice entry (voice-user-* / voice-model-*) with the
+              // real DB row so we don't show the same utterance twice.
+              if (msg.source === 'voice') {
+                const tempRole = msg.role === 'user' ? 'user' : 'agent'
+                const tempIdx = prev.findIndex(m =>
+                  m.source === 'voice' &&
+                  m.text === msg.text &&
+                  m.role === tempRole &&
+                  typeof m.id === 'string' && m.id.startsWith('voice-')
+                )
+                if (tempIdx !== -1) {
+                  const next = [...prev]
+                  next[tempIdx] = msg
+                  return next
+                }
+              }
               return [...prev, msg]
             })
           }
