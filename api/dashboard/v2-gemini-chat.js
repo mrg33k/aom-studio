@@ -295,17 +295,21 @@ async function deleteMessages(agentSlug, clientId, count = 10) {
   return { deleted: ids.length };
 }
 
-async function runQuery(table, filters, select) {
-  const allowed = ['messages', 'tasks', 'agents', 'events', 'projects', 'agent_status'];
+async function runQuery(table, filters, select, clientId) {
+  const allowed = ['messages', 'tasks', 'events', 'projects', 'agent_status'];
   if (!allowed.includes(table)) throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
-  const qs = [filters || 'limit=10', `select=${select || '*'}`].join('&');
+  // MANDATORY: inject client_id filter to prevent cross-world data leaks
+  const clientFilter = `client_id=eq.${encodeURIComponent(clientId || 'aom')}`;
+  const userFilters = (filters || 'limit=10').replace(/client_id=eq\.[^&]*/g, ''); // strip any user-supplied client_id override
+  const qs = [clientFilter, userFilters, `select=${select || '*'}`].filter(Boolean).join('&');
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
-async function registerProject(args = {}) {
+async function registerProject(args = {}, clientId) {
   if (!args.slug) throw new Error('slug required');
   const inputSlug = args.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const allProjects = await sbFetch('/rest/v1/projects?select=id,slug,name,repo_path,repo_description&is_active=eq.true&order=name');
+  const cid = encodeURIComponent(clientId || 'aom');
+  const allProjects = await sbFetch(`/rest/v1/projects?select=id,slug,name,repo_path,repo_description&is_active=eq.true&client_id=eq.${cid}&order=name`);
   const projects = Array.isArray(allProjects) ? allProjects : [];
   const input = inputSlug.toLowerCase();
   const inputWords = input.split('-').filter(Boolean);
@@ -610,6 +614,7 @@ export default async function handler(req, res) {
   const resolvedUserName = (user_name && String(user_name).trim()) || null;
   const resolvedUserId = (user_id && String(user_id).trim()) || null;
   const isOwner = OWNER_USER_IDS.includes(resolvedUserId);
+  const isAOM = clientId === 'aom';
   const baseHistory = Array.isArray(history) ? history : [];
   const contents = [...baseHistory, { role: 'user', parts: [{ text: message }] }];
 
@@ -617,7 +622,7 @@ export default async function handler(req, res) {
     await setAgentStatus(agentSlug, 'working');
     // Resolved project UUID: from request body or looked up from project_slug below
     let resolvedProjectId = (project_id && String(project_id).trim()) || null;
-    let systemInstruction = SYSTEM_INSTRUCTION;
+    let systemInstruction = isAOM ? SYSTEM_INSTRUCTION : EA_ONBOARDING_INSTRUCTION;
     if (agentSlug) {
       try {
         // Cached agent identity (refreshes every 60s)
@@ -760,10 +765,10 @@ CONVERSATION RULES FOR PROJECT CHAT:
 - Before recommending work, use list_project_files and read_project_file to check what already exists. Don't recommend redoing completed work.
 - When referencing files from CONTEXT.md, use read_project_file to pull the actual data instead of summarizing from memory.
 
-THE TEAM (agents you can assign work to, NOT your identity):
-Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI agents in the AOM system.
+${isAOM ? `THE TEAM (agents you can assign work to, NOT your identity):
+Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI agents in the AOM system.` : 'You operate within this user\'s project space. Only reference agents and data within their world.'}
 
-${BASE_INSTRUCTION}${systemState}${recentContext}`;
+${BASE_INSTRUCTION}${isAOM ? systemState : ''}${recentContext}`;
       } catch (err) {
         console.error('[v2-gemini-chat] Project context lookup failed:', err.message);
         // NEVER fall back to Rex identity for project chats -- use a minimal project operator instruction
@@ -818,7 +823,7 @@ ${BASE_INSTRUCTION}`;
           else if (name === 'get_queue') result = await getQueue(clientId);
           else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
           else if (name === 'delete_messages') result = await deleteMessages(agentSlug, clientId, args.count || 10);
-          else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select);
+          else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select, clientId);
           else if (name === 'search_history') {
             const searchAgent = args.agent || agentSlug;
             const searchQuery = (args.query || '').trim();
@@ -839,7 +844,7 @@ ${BASE_INSTRUCTION}`;
             }
           }
           else if (name === 'start_runner') result = await startRunner();
-          else if (name === 'register_project') result = await registerProject(args);
+          else if (name === 'register_project') result = await registerProject(args, clientId);
           else if (name === 'lookup_context') {
             const query = (args.query || '').trim();
             if (!query) throw new Error('query required');
