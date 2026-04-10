@@ -3428,8 +3428,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   display: 'flex',
                   justifyContent: isUser ? 'flex-end' : 'flex-start',
                   alignItems: 'flex-end',
-                  gap: 8,
-                  marginBottom: 2,
+                  gap: 10,
+                  marginBottom: isUser ? 4 : 12,
                 }}
               >
                 {!isUser && (
@@ -3438,25 +3438,24 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     background: `linear-gradient(135deg, ${projColor}33, ${projColor}18)`,
                     border: `1px solid ${projColor}44`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    alignSelf: 'flex-start', marginTop: 2,
                   }}>
                     <div style={{ width: 10, height: 10, borderRadius: 3, background: projColor }} />
                   </div>
                 )}
-                <div style={{ maxWidth: '75%', minWidth: 0 }}>
+                <div style={{ maxWidth: isUser ? '75%' : '85%', minWidth: 0 }}>
                   {isUser && isOtherUser && (
                     <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
                       {msg.user_name}
                     </div>
                   )}
                   <div style={{
-                    padding: '10px 16px',
-                    borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    fontSize: 14, lineHeight: 1.55,
-                    color: isUser ? '#fff' : C.text,
-                    background: isUser
-                      ? senderColor
-                      : 'rgba(255,255,255,0.05)',
-                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                    padding: isUser ? '10px 16px' : '2px 0',
+                    borderRadius: isUser ? '18px 18px 4px 18px' : 0,
+                    fontSize: 14, lineHeight: 1.6,
+                    color: isUser ? '#fff' : '#E2E8F0',
+                    background: isUser ? senderColor : 'transparent',
+                    border: 'none',
                     wordBreak: 'break-word',
                     fontFamily: "'Inter', sans-serif",
                     letterSpacing: '-0.01em',
@@ -3464,11 +3463,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   }}>
                     {isUser
                       ? <LinkifyText text={msg.text} />
-                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.55, color: C.text }} />
+                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
                     }
                   </div>
                   <div style={{
-                    fontSize: 11, color: 'rgba(120,140,165,0.5)',
+                    fontSize: 11, color: 'rgba(120,140,165,0.4)',
                     marginTop: 4,
                     textAlign: isUser ? 'right' : 'left',
                     paddingRight: isUser ? 2 : 0,
@@ -4890,25 +4889,25 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 display: 'flex',
                 justifyContent: isUser ? 'flex-end' : 'flex-start',
                 alignItems: 'flex-end',
-                gap: 8,
-                marginBottom: 2,
+                gap: 10,
+                marginBottom: isUser ? 4 : 12,
               }}
             >
               {!isUser && (
-                <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={28} />
+                <div style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+                  <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={28} />
+                </div>
               )}
-              <div style={{ maxWidth: '75%', minWidth: 0 }}>
+              <div style={{ maxWidth: isUser ? '75%' : '85%', minWidth: 0 }}>
                 {/* Text bubble -- hidden when text is only the attachment label */}
                 {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (
                   <div style={{
-                    padding: '10px 16px',
-                    borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    fontSize: 14, lineHeight: 1.55,
-                    color: isUser ? '#fff' : C.text,
-                    background: isUser
-                      ? agSenderColor
-                      : 'rgba(255,255,255,0.05)',
-                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                    padding: isUser ? '10px 16px' : '2px 0',
+                    borderRadius: isUser ? '18px 18px 4px 18px' : 0,
+                    fontSize: 14, lineHeight: 1.6,
+                    color: isUser ? '#fff' : '#E2E8F0',
+                    background: isUser ? agSenderColor : 'transparent',
+                    border: 'none',
                     wordBreak: 'break-word',
                     fontFamily: "'Inter', sans-serif",
                     letterSpacing: '-0.01em',
@@ -4916,7 +4915,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   }}>
                     {isUser
                       ? <LinkifyText text={msg.text} />
-                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.55, color: C.text }} />
+                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
                     }
                   </div>
                 )}

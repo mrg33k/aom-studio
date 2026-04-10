@@ -104,23 +104,29 @@ const listStyles = `
     margin: 0.75rem 0;
   }
   .cmr-content code, .message-content code {
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 0.85em;
-    background: rgba(255,255,255,0.08);
-    border-radius: 3px;
-    padding: 1px 4px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    padding: 2px 6px;
+    color: #e2e8f0;
   }
   .cmr-content pre, .message-content pre {
-    background: rgba(0,0,0,0.3);
-    border-radius: 6px;
-    padding: 10px 12px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
     overflow-x: auto;
-    margin: 6px 0;
+    margin: 8px 0;
   }
   .cmr-content pre code, .message-content pre code {
     background: none;
+    border: none;
     padding: 0;
-    font-size: 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #cbd5e1;
   }
   .cmr-content img, .message-content img {
     max-width: 100%;
