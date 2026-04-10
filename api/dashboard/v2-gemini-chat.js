@@ -854,8 +854,11 @@ ${BASE_INSTRUCTION}`;
 
       // Execute all function calls from this round
       const roundResponses = [];
-      // Tools blocked for non-AOM worlds (user safety)
-      const blockedForUsers = isAOM ? [] : ['read_file', 'list_files', 'lookup_context', 'start_runner', 'register_project', 'update_context', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task'];
+      // Tools blocked for non-AOM worlds (user safety).
+      // Project chats: operator needs read/list/lookup to help the user, so only block admin tools.
+      const blockedForUsers = isAOM ? [] : (projectSlug
+        ? ['start_runner', 'register_project', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task']
+        : ['read_file', 'list_files', 'lookup_context', 'start_runner', 'register_project', 'update_context', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task']);
 
       for (const call of calls) {
         const name = call.name;
@@ -866,7 +869,7 @@ ${BASE_INSTRUCTION}`;
           // Block restricted tools for non-AOM worlds
           if (blockedForUsers.includes(name)) {
             result = { error: 'This tool is not available in your environment.' };
-            roundResponses.push({ functionResponse: { name, response: { content: result } } });
+            roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: { content: result } } }] });
             continue;
           }
 
