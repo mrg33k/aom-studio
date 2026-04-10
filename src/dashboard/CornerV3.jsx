@@ -1159,6 +1159,50 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
         }}
       />
 
+      {/* Conversation context menu */}
+      {customizeTarget?.type === 'menu' && (
+        <div
+          onClick={() => setCustomizeTarget(null)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: customizeTarget.y,
+              left: Math.max(8, Math.min(customizeTarget.x, window.innerWidth - 180)),
+              background: C.s1, border: `1px solid ${C.border2}`, borderRadius: 10,
+              padding: 4, zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', minWidth: 160,
+            }}
+          >
+            {[
+              { label: 'Rename', action: () => { setCustomizeTarget(null); const a = customizeTarget.agent; setSelectedAgent(a); onSelectAgent?.(a); setTimeout(() => setSettingsOpen(true), 100) } },
+              { label: isFav('agent', customizeTarget.agent?.slug) ? 'Unpin' : 'Pin to top', action: () => { setCustomizeTarget(null); toggleFav('agent', customizeTarget.agent.slug) } },
+              { label: isMuted(customizeTarget.agent?.slug) ? 'Unmute' : 'Mute', action: () => { setCustomizeTarget(null); toggleMute(customizeTarget.agent.slug) } },
+              null,
+              { label: 'Change photo', action: () => { const a = customizeTarget.agent; setCustomizeTarget({ agent: a, type: 'photo' }); setTimeout(() => customizeFileRef.current?.click(), 100) } },
+              { label: 'Generate avatar', action: async () => { const a = customizeTarget.agent; setCustomizeTarget(null); const b64 = generateAvatar(a.slug + Date.now()); await fetch('/api/dashboard/agent-customize', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: a.slug, client_id: worldId, image_base64: b64 }) }); window.location.reload() } },
+              { label: 'Change color', action: () => { setCustomizeTarget({ ...customizeTarget, type: 'color' }) } },
+              null,
+              { label: 'Archive', action: () => { setCustomizeTarget(null); const hidden = JSON.parse(localStorage.getItem('corner-hidden-slugs') || '[]'); if (!hidden.includes(customizeTarget.agent.slug)) { hidden.push(customizeTarget.agent.slug); localStorage.setItem('corner-hidden-slugs', JSON.stringify(hidden)); window.location.reload() } } },
+            ].map((item, idx) => !item ? (
+              <div key={`d${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
+            ) : (
+              <button key={item.label} onClick={item.action} style={{
+                display: 'flex', alignItems: 'center', width: '100%', padding: '7px 10px',
+                background: 'transparent', border: 'none', borderRadius: 6,
+                cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                color: C.text2, fontFamily: "'Inter', sans-serif", textAlign: 'left',
+                transition: 'background 0.1s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >{item.label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Color picker modal */}
       {customizeTarget?.type === 'color' && (
         <div
@@ -4546,7 +4590,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2} strokeLinecap="round"><path d={muted ? "M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" : "M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"}/></svg>,
                     onAction: () => toggleMute(agent.slug) },
                 ]}>
-                  <button
+                  <div
                     onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12,
@@ -4556,10 +4600,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       border: `1px solid ${isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
                       cursor: 'pointer', textAlign: 'left',
                       transition: 'all 200ms ease',
-                      position: 'relative', overflow: 'hidden',
+                      position: 'relative', overflow: 'visible',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = isActive ? 'rgba(16,185,129,0.15)' : C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setCustomizeTarget({ agent, type: 'menu', x: e.clientX, y: e.clientY })
+                    }}
                   >
                     {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />}
                     <div style={{
@@ -4610,18 +4658,39 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                         }}>{unreadCount}</span>
                       )}
                     </div>
-                  </button>
+                    {/* Kebab menu */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        setCustomizeTarget({ agent, type: 'menu', x: rect.left - 100, y: rect.bottom + 4 })
+                      }}
+                      style={{
+                        width: 24, height: 28, flexShrink: 0,
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        opacity: 0.4, transition: 'opacity 0.15s',
+                        padding: 0, WebkitTapHighlightColor: 'transparent',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.4' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={C.muted}>
+                        <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                      </svg>
+                    </button>
+                  </div>
                 </SwipeCard>
               )
             }
             // Project item
             const project = item.data
             const pColor = project.color || '#6B8AB0'
-            const pinned = isFav('project', project.slug)
+            const pinned2 = isFav('project', project.slug)
             const pPreview = projectPreviews[`project:${project.slug}`]
             return (
               <SwipeCard key={`conv-${project.id || project.slug}`} actions={[
-                { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
+                { label: pinned2 ? 'Unpin' : 'Pin', bg: pinned2 ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
                   icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
                   onAction: () => toggleFav('project', project.slug) },
                 { label: 'Archive', bg: 'rgba(239,68,68,0.15)', color: C.red,
