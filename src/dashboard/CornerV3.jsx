@@ -111,23 +111,50 @@ function BellIcon({ hasNew = false }) {
 
 // ── User avatar with profile name edit popover ───────────────────────────────
 
+// Compress image to tiny JPEG for avatar (64x64, low quality = ~2-4KB)
+function compressAvatar(file) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const reader = new FileReader()
+    reader.onload = () => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = 64
+        canvas.height = 64
+        const ctx = canvas.getContext('2d')
+        // Center crop to square
+        const size = Math.min(img.width, img.height)
+        const sx = (img.width - size) / 2
+        const sy = (img.height - size) / 2
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 64, 64)
+        // Export as low-quality JPEG (~2-4KB)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+        const base64 = dataUrl.split(',')[1]
+        resolve(base64)
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
 function UserAvatar({ user, onUserUpdate }) {
-  const initial = user?.email?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || 'U'
+  const initial = user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
   const avatarUrl = user?.user_metadata?.avatar_url
 
   const [open, setOpen] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const popoverRef = useRef(null)
+  const fileRef = useRef(null)
 
-  // Sync input when popover opens
   useEffect(() => {
     if (open) {
       setNameInput(user?.user_metadata?.full_name || user?.email?.split('@')[0] || '')
     }
   }, [open])
 
-  // Close on click outside
   useEffect(() => {
     if (!open) return
     const handler = (e) => {
@@ -147,6 +174,30 @@ function UserAvatar({ user, onUserUpdate }) {
       setOpen(false)
     } catch (_) { /* silent */ }
     setSaving(false)
+  }
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.id) return
+    setUploading(true)
+    try {
+      const base64 = await compressAvatar(file)
+      const res = await fetch('/api/dashboard/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, image_base64: base64, mime_type: 'image/jpeg' }),
+      })
+      const data = await res.json()
+      if (data.avatar_url) {
+        // Update local user state with new avatar
+        const { data: refreshed } = await supabase.auth.refreshSession()
+        if (refreshed?.user && onUserUpdate) onUserUpdate(refreshed.user)
+      }
+    } catch (err) {
+      console.error('[Avatar] upload error:', err)
+    }
+    setUploading(false)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   return (
@@ -178,7 +229,7 @@ function UserAvatar({ user, onUserUpdate }) {
           position: 'absolute',
           top: 36,
           right: 0,
-          width: 240,
+          width: 260,
           background: C.s1,
           border: `1px solid ${C.border2}`,
           borderRadius: 12,
@@ -186,7 +237,47 @@ function UserAvatar({ user, onUserUpdate }) {
           zIndex: 9999,
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
-          <div style={{ fontSize: 12, color: C.text2, marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
+          {/* Avatar upload */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div
+              onClick={() => fileRef.current?.click()}
+              style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                background: avatarUrl ? 'transparent' : `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
+                border: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden', cursor: 'pointer', position: 'relative',
+              }}
+            >
+              {uploading ? (
+                <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+              ) : avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{initial}</span>
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+              </div>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                style={{
+                  fontSize: 11, fontWeight: 600, color: C.accent, background: 'none',
+                  border: 'none', padding: 0, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                  marginTop: 2,
+                }}
+              >
+                {uploading ? 'Uploading...' : avatarUrl ? 'Change photo' : 'Add photo'}
+              </button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
+          </div>
+
+          {/* Display name */}
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Display name
           </div>
           <input
@@ -225,10 +316,10 @@ function UserAvatar({ user, onUserUpdate }) {
               transition: 'background 0.15s',
             }}
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? 'Saving...' : 'Save'}
           </button>
           <div style={{ borderTop: `1px solid ${C.border2}`, marginTop: 12, paddingTop: 10 }}>
-            <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>
+            <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
               {user?.email}
             </div>
             <button
