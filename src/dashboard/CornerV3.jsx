@@ -4686,11 +4686,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             // Project item
             const project = item.data
             const pColor = project.color || '#6B8AB0'
-            const pinned2 = isFav('project', project.slug)
+            const pinned = isFav('project', project.slug)
             const pPreview = projectPreviews[`project:${project.slug}`]
             return (
               <SwipeCard key={`conv-${project.id || project.slug}`} actions={[
-                { label: pinned2 ? 'Unpin' : 'Pin', bg: pinned2 ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
+                { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
                   icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
                   onAction: () => toggleFav('project', project.slug) },
                 { label: 'Archive', bg: 'rgba(239,68,68,0.15)', color: C.red,
