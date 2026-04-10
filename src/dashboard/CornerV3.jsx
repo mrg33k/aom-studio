@@ -2549,30 +2549,65 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     return counts
   }, [inboxItems])
 
-  // ── Favorites + muted state ──────────────────────────────────────────────
+  // ── Favorites + muted state (persisted to Supabase + localStorage) ──────
+  const savePref = useCallback((key, value) => {
+    localStorage.setItem(key, JSON.stringify(value))
+    fetch('/api/dashboard/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, client_id: worldId, value }),
+    }).catch(() => {})
+  }, [worldId])
+
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('aom_favorites')) || [] } catch { return [] }
   })
   const [mutedSlugs, setMutedSlugs] = useState(() => {
     try { return JSON.parse(localStorage.getItem('aom_muted')) || [] } catch { return [] }
   })
+
+  // Load from Supabase on mount (overrides stale localStorage)
+  useEffect(() => {
+    const loadPrefs = async () => {
+      try {
+        const [favRes, mutedRes, hiddenRes] = await Promise.all([
+          fetch(`/api/dashboard/preferences?key=aom_favorites&client=${worldId}`).then(r => r.json()),
+          fetch(`/api/dashboard/preferences?key=aom_muted&client=${worldId}`).then(r => r.json()),
+          fetch(`/api/dashboard/preferences?key=corner-hidden-slugs&client=${worldId}`).then(r => r.json()),
+        ])
+        if (favRes.value) {
+          setFavorites(favRes.value)
+          localStorage.setItem('aom_favorites', JSON.stringify(favRes.value))
+        }
+        if (mutedRes.value) {
+          setMutedSlugs(mutedRes.value)
+          localStorage.setItem('aom_muted', JSON.stringify(mutedRes.value))
+        }
+        if (hiddenRes.value) {
+          localStorage.setItem('corner-hidden-slugs', JSON.stringify(hiddenRes.value))
+        }
+      } catch {}
+    }
+    loadPrefs()
+  }, [worldId])
+
   const isFav = useCallback((type, slug) => favorites.some(f => f.type === type && f.slug === slug), [favorites])
   const isMuted = useCallback((slug) => mutedSlugs.includes(slug), [mutedSlugs])
   const toggleFav = useCallback((type, slug) => {
     setFavorites(prev => {
       const exists = prev.some(f => f.type === type && f.slug === slug)
       const next = exists ? prev.filter(f => !(f.type === type && f.slug === slug)) : [...prev, { type, slug }]
-      localStorage.setItem('aom_favorites', JSON.stringify(next))
+      savePref('aom_favorites', next)
       return next
     })
-  }, [])
+  }, [savePref])
   const toggleMute = useCallback((slug) => {
     setMutedSlugs(prev => {
       const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
-      localStorage.setItem('aom_muted', JSON.stringify(next))
+      savePref('aom_muted', next)
       return next
     })
-  }, [])
+  }, [savePref])
 
   const { isLoading: projectsLoading, isError: projectsError, projects } = useProjects()
 
@@ -4856,7 +4891,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 null,
                 { label: 'Change color', action: () => { setCustomizeTarget({ ...customizeTarget, type: 'color' }) } },
                 null,
-                { label: 'Archive', action: () => { setCustomizeTarget(null); const hidden = JSON.parse(localStorage.getItem('corner-hidden-slugs') || '[]'); if (!hidden.includes(customizeTarget.agent.slug)) { hidden.push(customizeTarget.agent.slug); localStorage.setItem('corner-hidden-slugs', JSON.stringify(hidden)); window.location.reload() } } },
+                { label: 'Archive', action: () => { setCustomizeTarget(null); const hidden = JSON.parse(localStorage.getItem('corner-hidden-slugs') || '[]'); if (!hidden.includes(customizeTarget.agent.slug)) { hidden.push(customizeTarget.agent.slug); savePref('corner-hidden-slugs', hidden); window.location.reload() } } },
               ].map((item, idx) => !item ? (
                 <div key={`d${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
               ) : (
