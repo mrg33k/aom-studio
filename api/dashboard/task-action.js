@@ -99,10 +99,13 @@ export default async function handler(req, res) {
 
   if (!action) return res.status(400).json({ error: 'action required' });
 
-  // startRunner doesn't need a task reference
+  // startRunner: signal watcher + reclaim stale tasks
   if (action === 'startRunner') {
     try {
       const crypto = await import('crypto');
+      const now = new Date().toISOString();
+
+      // 1. Signal the runner watcher
       await fetch(`${SUPABASE_URL}/rest/v1/events`, {
         method: 'POST',
         headers: {
@@ -115,11 +118,48 @@ export default async function handler(req, res) {
           id: crypto.randomUUID(),
           agent: 'system',
           event_type: 'runner_start_requested',
-          payload: { source: 'tasks-tab', requested_at: new Date().toISOString() },
-          timestamp: new Date().toISOString(),
+          payload: { source: 'tasks-tab', requested_at: now },
+          timestamp: now,
         }),
       });
-      return res.status(200).json({ ok: true, action: 'startRunner' });
+
+      // 2. Reclaim stale tasks: stuck in building/qa/classifying/planning for >10 minutes
+      //    Reset them to queued so the runner picks them up again.
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const staleResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/tasks?status=in.(building,qa,classifying,planning)&updated_at=lt.${tenMinAgo}&select=id,title,status`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+        }
+      );
+      let reclaimed = 0;
+      if (staleResp.ok) {
+        const staleTasks = await staleResp.json();
+        if (staleTasks.length > 0) {
+          const ids = staleTasks.map(t => t.id).join(',');
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/tasks?id=in.(${ids})`,
+            {
+              method: 'PATCH',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({ status: 'queued', updated_at: now }),
+            }
+          );
+          reclaimed = staleTasks.length;
+        }
+      }
+
+      return res.status(200).json({ ok: true, action: 'startRunner', reclaimed });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
