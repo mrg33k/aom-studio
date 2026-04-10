@@ -131,8 +131,28 @@ function injectStyles() {
   stylesInjected = true
 }
 
-export default function ChatMessageRenderer({ content, className = '', style = {} }) {
+export default function ChatMessageRenderer({ content, className = '', style = {}, message = null }) {
   injectStyles()
+
+  if (message?.type === 'task_created_notification') {
+    let meta = message.metadata
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta) } catch { meta = {} }
+    }
+    const title             = meta?.title             || message.title             || ''
+    const status            = meta?.status            || message.status            || ''
+    const assignedAgentName = meta?.assigned_agent_name || message.assigned_agent_name || ''
+    const taskId            = meta?.task_id           || message.task_id           || ''
+    const text = `Task '${title}' created, status: ${status}, assigned to: ${assignedAgentName} (ID: ${taskId})`
+    return (
+      <div className="chat-message-container">
+        <div className={`cmr-content message-content ${className}`} style={{ whiteSpace: 'normal', ...style }}>
+          {text}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="chat-message-container">
       <div
