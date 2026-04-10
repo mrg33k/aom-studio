@@ -792,30 +792,31 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
             {unreadCount > 9 ? '9+' : unreadCount}
           </div>
         )}
-        {/* Meatball menu button -- visible on hover (desktop) + always on touch */}
-        <button
-          ref={menuBtnRef}
-          onClick={(e) => {
-            e.stopPropagation()
-            const rect = e.currentTarget.getBoundingClientRect()
-            openMenu(rect.left, rect.bottom + 4)
-          }}
-          style={{
-            width: 24, height: 24, borderRadius: 6,
-            background: ctxMenu ? 'rgba(255,255,255,0.1)' : 'transparent',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: hovered || ctxMenu ? 1 : 0.3,
-            transition: 'opacity 0.15s, background 0.1s',
-            padding: 0, marginTop: 2,
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={C.muted}>
-            <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-          </svg>
-        </button>
       </div>
+
+      {/* ⋯ menu button -- always visible, right edge */}
+      <button
+        ref={menuBtnRef}
+        onClick={(e) => {
+          e.stopPropagation()
+          const rect = e.currentTarget.getBoundingClientRect()
+          openMenu(rect.left - 120, rect.bottom + 4)
+        }}
+        style={{
+          width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+          background: ctxMenu ? 'rgba(255,255,255,0.08)' : 'transparent',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: hovered || ctxMenu ? 1 : 0.5,
+          transition: 'opacity 0.15s, background 0.1s',
+          padding: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2">
+          <circle cx="12" cy="5" r="1.5" fill={C.muted}/><circle cx="12" cy="12" r="1.5" fill={C.muted}/><circle cx="12" cy="19" r="1.5" fill={C.muted}/>
+        </svg>
+      </button>
     </div>
   )
 }
