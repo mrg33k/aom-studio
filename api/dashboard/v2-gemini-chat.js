@@ -359,7 +359,7 @@ async function registerProject(args = {}, clientId) {
   }
   const existingList = projects.map(p => `${p.name} (${p.slug})`).join(', ');
   const crypto = await import('crypto');
-  const newProject = { id: crypto.randomUUID(), slug: inputSlug, name: args.name || inputSlug, color: '#6B7280', icon: 'project', type: 'project', is_active: true, ...patch };
+  const newProject = { id: crypto.randomUUID(), slug: inputSlug, name: args.name || inputSlug, color: '#6B7280', icon: 'project', type: 'project', is_active: true, client_id: clientId, ...patch };
   await sbFetch('/rest/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(newProject) });
   // Create disk folder + CONTEXT.md via RAG server
   const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
