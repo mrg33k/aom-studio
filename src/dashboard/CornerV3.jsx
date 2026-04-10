@@ -2549,9 +2549,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     return counts
   }, [inboxItems])
 
-  // ── Favorites + muted state (persisted to Supabase + localStorage) ──────
+  // ── Favorites + muted + hidden state (Supabase only) ────────────────────
+  const [favorites, setFavorites] = useState([])
+  const [mutedSlugs, setMutedSlugs] = useState([])
+  const [hiddenSlugs, setHiddenSlugs] = useState([])
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+
   const savePref = useCallback((key, value) => {
-    localStorage.setItem(key, JSON.stringify(value))
     const cid = worldId || getClientId() || 'aom'
     fetch('/api/dashboard/preferences', {
       method: 'POST',
@@ -2560,14 +2564,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     }).catch(() => {})
   }, [worldId])
 
-  const [favorites, setFavorites] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aom_favorites')) || [] } catch { return [] }
-  })
-  const [mutedSlugs, setMutedSlugs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aom_muted')) || [] } catch { return [] }
-  })
-
-  // Load from Supabase on mount (overrides stale localStorage)
+  // Load all prefs from Supabase on mount
   useEffect(() => {
     const cid = worldId || getClientId()
     if (!cid) return
@@ -2578,24 +2575,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           fetch(`/api/dashboard/preferences?key=aom_muted&client=${cid}`).then(r => r.json()),
           fetch(`/api/dashboard/preferences?key=corner-hidden-slugs&client=${cid}`).then(r => r.json()),
         ])
-        if (favRes.value) {
-          setFavorites(favRes.value)
-          localStorage.setItem('aom_favorites', JSON.stringify(favRes.value))
-        }
-        if (mutedRes.value) {
-          setMutedSlugs(mutedRes.value)
-          localStorage.setItem('aom_muted', JSON.stringify(mutedRes.value))
-        }
-        if (hiddenRes.value) {
-          localStorage.setItem('corner-hidden-slugs', JSON.stringify(hiddenRes.value))
-        }
+        if (favRes.value) setFavorites(favRes.value)
+        if (mutedRes.value) setMutedSlugs(mutedRes.value)
+        if (hiddenRes.value) setHiddenSlugs(hiddenRes.value)
       } catch {}
+      setPrefsLoaded(true)
     }
     loadPrefs()
   }, [worldId])
 
   const isFav = useCallback((type, slug) => favorites.some(f => f.type === type && f.slug === slug), [favorites])
   const isMuted = useCallback((slug) => mutedSlugs.includes(slug), [mutedSlugs])
+  const isHidden = useCallback((slug) => hiddenSlugs.includes(slug), [hiddenSlugs])
   const toggleFav = useCallback((type, slug) => {
     setFavorites(prev => {
       const exists = prev.some(f => f.type === type && f.slug === slug)
@@ -2608,6 +2599,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     setMutedSlugs(prev => {
       const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
       savePref('aom_muted', next)
+      return next
+    })
+  }, [savePref])
+  const toggleHidden = useCallback((slug) => {
+    setHiddenSlugs(prev => {
+      const next = prev.includes(slug) ? prev : [...prev, slug]
+      savePref('corner-hidden-slugs', next)
       return next
     })
   }, [savePref])
@@ -2778,7 +2776,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // Agents sorted: most recent message first (like iMessage), then active, then idle
   const chattableAgents = useMemo(() => {
     return (agents || [])
-      .filter(a => a.slug && a.name)
+      .filter(a => a.slug && a.name && !isHidden(a.slug))
       .sort((a, b) => {
         const aMsg = unreadMap[a.slug]
         const bMsg = unreadMap[b.slug]
@@ -2793,7 +2791,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         const bAct = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
         return aAct - bAct
       })
-  }, [agents, unreadMap])
+  }, [agents, unreadMap, isHidden])
 
   // Pins section: only explicitly pinned agents + projects, sorted by most recent message, max 5
   const pinnedItems = useMemo(() => {
@@ -4894,7 +4892,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 null,
                 { label: 'Change color', action: () => { setCustomizeTarget({ ...customizeTarget, type: 'color' }) } },
                 null,
-                { label: 'Archive', action: () => { setCustomizeTarget(null); const hidden = JSON.parse(localStorage.getItem('corner-hidden-slugs') || '[]'); if (!hidden.includes(customizeTarget.agent.slug)) { hidden.push(customizeTarget.agent.slug); savePref('corner-hidden-slugs', hidden); window.location.reload() } } },
+                { label: 'Archive', action: () => { setCustomizeTarget(null); toggleHidden(customizeTarget.agent.slug) } },
               ].map((item, idx) => !item ? (
                 <div key={`d${idx}`} style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
               ) : (
