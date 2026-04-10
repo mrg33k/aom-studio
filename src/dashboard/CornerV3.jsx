@@ -3492,6 +3492,52 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     ))}
                   </div>
                 </div>
+                {/* Google Integration */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Google Integration
+                  </div>
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 10,
+                    marginBottom: 10,
+                  }}>
+                    <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>
+                      Connect Google Calendar and Gmail so agents can schedule events and send emails on behalf of this world.
+                    </div>
+                  </div>
+                  <a
+                    href={`/api/google-oauth/authorize?world_id=${encodeURIComponent(worldId)}&scope=both`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '9px 0',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#fff',
+                      background: 'rgba(66,133,244,0.85)',
+                      border: '1px solid rgba(66,133,244,0.5)',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                      <polyline points="10 17 15 12 10 7"/>
+                      <line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                    Connect Google Calendar + Gmail
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -4769,6 +4815,52 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   ))}
                 </div>
               </div>
+              {/* Google Integration */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Google Integration
+                </div>
+                <div style={{
+                  padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 10,
+                  marginBottom: 10,
+                }}>
+                  <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>
+                    Connect Google Calendar and Gmail so agents can schedule events and send emails on behalf of this world.
+                  </div>
+                </div>
+                <a
+                  href={`/api/google-oauth/authorize?world_id=${encodeURIComponent(worldId)}&scope=both`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '9px 0',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#fff',
+                    background: 'rgba(66,133,244,0.85)',
+                    border: '1px solid rgba(66,133,244,0.5)',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    boxSizing: 'border-box',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                  </svg>
+                  Connect Google Calendar + Gmail
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -4851,6 +4943,25 @@ export default function CornerV3() {
     const handleResize = () => setIsMobile(window.innerWidth <= 480)
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // ── Google OAuth callback toast ────────────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const oauthStatus = params.get('google_oauth')
+    if (oauthStatus === 'success') {
+      setToast({ visible: true, message: 'Google Calendar + Gmail connected.' })
+      params.delete('google_oauth')
+      params.delete('world_id')
+      const newSearch = params.toString()
+      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname)
+    } else if (oauthStatus === 'denied') {
+      setToast({ visible: true, message: 'Google authorization was cancelled.' })
+      params.delete('google_oauth')
+      params.delete('error')
+      const newSearch = params.toString()
+      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname)
+    }
   }, [])
 
   // User identity for multi-user message tracking (parent scope)
