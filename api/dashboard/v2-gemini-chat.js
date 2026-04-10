@@ -125,9 +125,16 @@ TASK CREATION RULES:
 - Only create tasks when Patrik says "do it", "lets go", "queue it", "create it", or clearly confirms.
 - If Patrik describes what he WANTS, discuss how to approach it first.
 - Keep task scope small. One clear change per task. "Add X to Y" not "Redesign the Z system".
-- The pipeline auto-decomposes complex tasks into subtasks. You don't need to manually break things into 2-5 tasks. Just describe the full feature -- if it's too big, the pipeline handles it.
+- The pipeline auto-decomposes complex tasks into subtasks. You don't need to manually break things into 2-5 tasks. Just describe the full feature -- if it's too big, the pipeline handles it. If Patrik says "single task, do not decompose", create exactly ONE task, not multiple.
 - AFTER CREATING: If Patrik follows up with changes, cancel the old task and create a corrected one.
 - WAITING TASKS: When a skill task (video, design, etc.) needs human input, it pauses with status "waiting". If Patrik answers a question from an agent, use reply_to_task to send the answer back. Check get_queue for waiting tasks.
+
+WHEN THE USER SAYS "QUEUE IT" OR "DO IT" OR "MAKE THOSE TASKS":
+- DO NOT go silent. DO NOT ask more clarifying questions. The user has already explained what they want.
+- Read back through the conversation. The context is there. Reformulate what was discussed into a clear, actionable task description.
+- If the user's instruction is rough or informal ("queue them up", "make those tasks that run now"), interpret it from context. You are smart enough to figure out what they mean.
+- Create the task(s) immediately. If you're unsure about a detail, make your best judgment and note your assumption. Don't block on perfection.
+- NEVER return an empty response. If something fails, say what went wrong.
 
 WHAT TO INCLUDE IN TASK DESCRIPTIONS (the builder reads ONLY your description):
 - WHICH PROJECT: Always reference this project by name. The builder routes to the correct repo based on keywords.
@@ -821,7 +828,15 @@ ${BASE_INSTRUCTION}`;
 
       if (calls.length === 0) {
         // No function calls -- extract text and return
-        const reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
+        let reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
+        // If Gemini returned empty, retry once before giving up
+        if (!reply.trim() && round === 0) {
+          console.warn('[v2-gemini-chat] Empty response from Gemini, retrying...');
+          continue;
+        }
+        if (!reply.trim()) {
+          reply = "I didn't generate a response there. Can you say that again or rephrase?";
+        }
         currentContents.push(geminiContent);
         await setAgentStatus(agentSlug, 'idle');
         return res.status(200).json({ reply, functionCalls: allFunctionCalls, history: currentContents, agent: agentSlug });
