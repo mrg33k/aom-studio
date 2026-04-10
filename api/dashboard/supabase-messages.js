@@ -88,6 +88,8 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const {
       agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id,
+      // User identity (multi-user support)
+      user_id, user_name,
       // Attachment fields (optional)
       attachment_url, file_mime_type, file_size,
     } = req.body || {}
@@ -109,6 +111,9 @@ export default async function handler(req, res) {
       // These fields are optional -- only present when admin is overriding world context.
       ...(sender_role ? { sender_role } : {}),
       ...(world_id ? { world_id } : {}),
+      // User identity (multi-user support)
+      ...(user_id ? { user_id } : {}),
+      ...(user_name ? { user_name } : {}),
       // File attachment fields (optional)
       ...(attachment_url ? { attachment_url } : {}),
       ...(file_mime_type ? { file_mime_type } : {}),

@@ -6,7 +6,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Universal conversation style + tools. Used by both agent chat (Rex) and project chat.
-const BASE_INSTRUCTION = `You talk to Patrik directly. You know him. You work with him every day. This is a real conversation, not a support ticket.
+const OWNER_USER_IDS = ['833f6828-1dae-409c-a24b-1438f46544d0']; // Patrik
+
+const BASE_INSTRUCTION = `You know who you're talking to. This is a real conversation, not a support ticket.
 
 HOW TO TALK:
 - This should feel like the best terminal session you've ever had. Smart, fast, natural.
@@ -535,12 +537,15 @@ export default async function handler(req, res) {
   if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const { message, history, client_id, agent, project_id, project_slug } = req.body || {};
+  const { message, history, client_id, agent, project_id, project_slug, user_id, user_name } = req.body || {};
   if (!message || typeof message !== 'string') return res.status(400).json({ error: 'message required' });
 
   const clientId = (client_id && String(client_id).trim()) || 'aom';
   const agentSlug = (agent && String(agent).trim()) || null;
   const projectSlug = (project_slug && String(project_slug).trim()) || null;
+  const resolvedUserName = (user_name && String(user_name).trim()) || null;
+  const resolvedUserId = (user_id && String(user_id).trim()) || null;
+  const isOwner = OWNER_USER_IDS.includes(resolvedUserId);
   const baseHistory = Array.isArray(history) ? history : [];
   const contents = [...baseHistory, { role: 'user', parts: [{ text: message }] }];
 
@@ -591,11 +596,17 @@ export default async function handler(req, res) {
             ? `\n\nRELEVANT HISTORY (from conversation archive, matched to this message):\n${ragResults}`
             : '';
 
+          // User identity context
+          const userSection = resolvedUserName
+            ? `\nCURRENT USER: ${resolvedUserName}${isOwner ? ' (owner)' : ' (team member)'}. Address them by name.`
+            + (!isOwner ? `\n\nTEAM MEMBER PROTOCOL: When ${resolvedUserName} makes a request, FIRST check if similar work is already in progress, completed, or queued by searching recent tasks and conversations. If you find overlap, tell ${resolvedUserName} what exists and help them build on it rather than starting fresh. If no overlap, queue the work immediately.` : '')
+            : '';
+
           systemInstruction = `You are ${agentName}. ${agentDescription}
 
 Personality: ${agentPersonality || 'Direct, real, gets things done.'}
 Voice: ${voiceStyle || 'Natural, human, direct.'}
-${tapeSection}${ragSection}
+${tapeSection}${ragSection}${userSection}
 
 ${SYSTEM_INSTRUCTION}${systemState}${recentContext}`;
         }

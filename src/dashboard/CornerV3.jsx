@@ -2015,6 +2015,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   , [currentUser?.id])
   const lastLoginText = formatRelativeTime(currentUser?.last_sign_in_at)
 
+  // ── User identity for multi-user message tracking ──────────────────────────
+  const userIdentity = useMemo(() => ({
+    user_id: currentUser?.id || null,
+    user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
+  }), [currentUser?.id])
+
   // ── Collapsible section states (Favorites=open, Agents=closed, Projects=closed) ──
   const [sectionStates, setSectionStates] = useState(() => {
     try {
@@ -2549,6 +2555,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             role: 'user',
             source: 'corner-dashboard',
             client_id: worldId,
+            ...userIdentity,
           }),
         }).then(r => r.json()),
         fetch('/api/dashboard/v2-gemini-chat', {
@@ -2559,6 +2566,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             agent: selectedAgent.slug,
             client_id: worldId,
             history,
+            ...userIdentity,
             project_id: selectedProject?.id || null,
           }),
         }).then(r => r.json()),
@@ -2653,12 +2661,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId }),
+          body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
         }).then(r => r.json()),
         fetch('/api/dashboard/v2-gemini-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, agent: selectedAgent.slug, client_id: worldId, history, project_id: selectedProject?.id || null }),
+          body: JSON.stringify({ message: text, agent: selectedAgent.slug, client_id: worldId, history, project_id: selectedProject?.id || null, ...userIdentity }),
         }).then(r => r.json()),
       ])
       if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
@@ -2742,6 +2750,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             role: 'user',
             source: 'corner-dashboard',
             client_id: worldId,
+            ...userIdentity,
             attachment_url: publicUrl,
             file_mime_type: file.type,
             file_size: file.size,
@@ -2789,7 +2798,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: worldId }),
+          body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
         }).then(r => r.json()),
         fetch('/api/dashboard/v2-gemini-chat', {
           method: 'POST',
@@ -2800,6 +2809,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             project_id: selectedProject.id || null,
             client_id: worldId,
             history,
+            ...userIdentity,
           }),
         }).then(r => r.json()),
       ])
@@ -3021,6 +3031,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           )}
           {messages.map(msg => {
             const isUser = msg.role === 'user'
+            const senderName = msg.user_name || (isUser ? displayName : null)
+            const senderInitial = senderName ? senderName[0].toUpperCase() : 'U'
+            const senderColor = isUser ? (msg.user_name && msg.user_name !== displayName ? '#7C3AED' : '#2563EB') : projColor
             return (
               <div
                 key={msg.id}
@@ -3042,13 +3055,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   </div>
                 )}
                 <div style={{ maxWidth: '78%', minWidth: 0 }}>
+                  {isUser && msg.user_name && msg.user_name !== displayName && (
+                    <div style={{ fontSize: 10, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 2, fontFamily: "'Inter', sans-serif" }}>
+                      {msg.user_name}
+                    </div>
+                  )}
                   <div style={{
                     padding: '9px 13px',
                     borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                     fontSize: 13, lineHeight: 1.5,
                     color: isUser ? '#fff' : C.text,
                     background: isUser
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                      ? `linear-gradient(135deg, ${senderColor} 0%, ${senderColor}dd 100%)`
                       : 'rgba(255,255,255,0.06)',
                     border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
                     wordBreak: 'break-word',
@@ -3071,12 +3089,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   </div>
                 </div>
                 {isUser && (
-                  <div style={{
+                  <div title={senderName || 'User'} style={{
                     width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                    background: `linear-gradient(135deg, ${senderColor} 0%, ${senderColor}cc 100%)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>P</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>{senderInitial}</span>
                   </div>
                 )}
               </div>
@@ -4046,6 +4064,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
 
         {messages.map(msg => {
           const isUser = msg.role === 'user'
+          const agSenderName = msg.user_name || (isUser ? displayName : null)
+          const agSenderInitial = agSenderName ? agSenderName[0].toUpperCase() : 'U'
+          const agSenderColor = isUser ? (msg.user_name && msg.user_name !== displayName ? '#7C3AED' : '#2563EB') : selectedAgent?.color || '#3B82F6'
 
           // Checkpoint: agent needs human input (amber card)
           if (msg.source === 'checkpoint') {
@@ -4233,7 +4254,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     fontSize: 13, lineHeight: 1.5,
                     color: isUser ? '#fff' : C.text,
                     background: isUser
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                      ? `linear-gradient(135deg, ${agSenderColor} 0%, ${agSenderColor}dd 100%)`
                       : 'rgba(255,255,255,0.06)',
                     border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
                     wordBreak: 'break-word',
@@ -4243,6 +4264,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       ? msg.text
                       : <ChatMessageRenderer content={msg.text} style={{ fontSize: 13, lineHeight: 1.5, color: C.text }} />
                     }
+                  </div>
+                )}
+                {isUser && msg.user_name && msg.user_name !== displayName && (
+                  <div style={{ fontSize: 10, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 2, marginTop: -2, fontFamily: "'Inter', sans-serif" }}>
+                    {msg.user_name}
                   </div>
                 )}
                 {/* Attachments -- rendered outside bubble using Steffen's styles */}
@@ -4351,10 +4377,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               {isUser && (
                 <div style={{
                   width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                  background: `linear-gradient(135deg, ${agSenderColor} 0%, ${agSenderColor}cc 100%)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>P</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>{agSenderInitial}</span>
                 </div>
               )}
             </div>
@@ -4801,6 +4827,12 @@ export default function CornerV3() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // User identity for multi-user message tracking (parent scope)
+  const parentUserIdentity = useMemo(() => ({
+    user_id: currentUser?.id || null,
+    user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
+  }), [currentUser?.id])
+
   const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks()
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
@@ -4979,6 +5011,7 @@ export default function CornerV3() {
             role: 'user',
             source: 'corner-dashboard',
             client_id: worldId,
+            ...parentUserIdentity,
           }),
         }).then(r => r.json()),
         fetch('/api/dashboard/v2-gemini-chat', {
@@ -4990,6 +5023,7 @@ export default function CornerV3() {
             client_id: worldId,
             history: [],
             project_id: selectedProject?.id || null,
+            ...parentUserIdentity,
           }),
         }).then(r => r.json()),
       ])
