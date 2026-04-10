@@ -80,6 +80,18 @@ function pcmToAudioBuffer(audioCtx, rawBuffer, sampleRate = GEMINI_OUTPUT_RATE) 
 // Default settings
 const DEFAULT_SETTINGS = { voice: 'kore', temperature: 0.8 }
 
+// Voice options with descriptive labels
+const VOICE_OPTIONS = [
+  { id: 'aoede',  label: 'Aoede',  desc: 'Bright & energetic' },
+  { id: 'charon', label: 'Charon', desc: 'Deep & resonant' },
+  { id: 'fenrir', label: 'Fenrir', desc: 'Bold & authoritative' },
+  { id: 'kore',   label: 'Kore',   desc: 'Warm & clear' },
+  { id: 'puck',   label: 'Puck',   desc: 'Light & playful' },
+  { id: 'orus',   label: 'Orus',   desc: 'Smooth & professional' },
+  { id: 'vale',   label: 'Vale',   desc: 'Soft & gentle' },
+  { id: 'zephyr', label: 'Zephyr', desc: 'Fresh & expressive' },
+]
+
 const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange, autoStart = false }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
@@ -672,23 +684,27 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
               Voice Selection
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {(availableVoices.length > 0 ? availableVoices : ['aoede', 'charon', 'fenrir', 'kore', 'puck', 'orus', 'vale', 'zephyr']).map(v => {
-                const isSelected = settings.voice === v
+              {(availableVoices.length > 0
+                ? availableVoices.map(id => VOICE_OPTIONS.find(o => o.id === id) || { id, label: id, desc: '' })
+                : VOICE_OPTIONS
+              ).map(({ id, label, desc }) => {
+                const isSelected = settings.voice === id
                 return (
                   <button
-                    key={v}
-                    onClick={() => setSettings(s => ({ ...s, voice: v }))}
+                    key={id}
+                    onClick={() => setSettings(s => ({ ...s, voice: id }))}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '7px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
-                      fontFamily: "'Inter', sans-serif", cursor: 'pointer', transition: 'all 0.15s',
+                      padding: '7px 10px', borderRadius: 7, cursor: 'pointer', transition: 'all 0.15s',
                       background: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
                       border: isSelected ? '1px solid rgba(96,165,250,0.45)' : '1px solid rgba(255,255,255,0.06)',
-                      color: isSelected ? '#60A5FA' : 'rgba(148,168,200,0.65)',
-                      textTransform: 'capitalize', outline: 'none', width: '100%', textAlign: 'left',
+                      outline: 'none', width: '100%', textAlign: 'left',
                     }}
                   >
-                    <span>{v}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'Inter', sans-serif", color: isSelected ? '#60A5FA' : 'rgba(148,168,200,0.85)', textTransform: 'capitalize' }}>{label}</span>
+                      {desc && <span style={{ fontSize: 9, fontWeight: 500, fontFamily: "'Inter', sans-serif", color: isSelected ? 'rgba(96,165,250,0.65)' : 'rgba(100,130,180,0.4)', letterSpacing: '0.03em' }}>{desc}</span>}
+                    </div>
                     {isSelected && (
                       <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="2,6 5,9 10,3" />
@@ -726,20 +742,38 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
         alignItems: 'center', justifyContent: 'center',
         gap: 24, padding: '28px 20px', position: 'relative',
       }}>
-        {/* Settings gear (top right) */}
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          style={{
-            position: 'absolute', top: 8, right: 8,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: showSettings ? '#60A5FA' : 'rgba(100,130,180,0.4)',
-            padding: 4, transition: 'color 0.15s',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-        </button>
+        {/* Settings gear + current voice indicator (top right) */}
+        <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+          {!showSettings && (
+            <button
+              onClick={() => setShowSettings(true)}
+              style={{
+                background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)',
+                borderRadius: 5, padding: '2px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+              }}
+              title="Change voice"
+            >
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              </svg>
+              <span style={{ fontSize: 9, fontWeight: 700, fontFamily: "'Inter', sans-serif", color: '#60A5FA', textTransform: 'capitalize', letterSpacing: '0.04em' }}>
+                {(VOICE_OPTIONS.find(o => o.id === settings.voice) || { label: settings.voice }).label}
+              </span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: showSettings ? '#60A5FA' : 'rgba(100,130,180,0.4)',
+              padding: 4, transition: 'color 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          </button>
+        </div>
 
         {/* Ambient glow */}
         {isActive && (
