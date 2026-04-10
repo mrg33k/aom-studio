@@ -1757,6 +1757,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const inputRef       = useRef(null)
   const fileInputRef   = useRef(null)
   const voiceChatRef   = useRef(null)
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef   = useRef([])
+  const [isRecording, setIsRecording] = useState(false)
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
@@ -2487,6 +2490,30 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleProjectSend() }
   }, [handleProjectSend])
 
+  const handleMicToggle = useCallback(async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop()
+      setIsRecording(false)
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        audioChunksRef.current = []
+        const recorder = new MediaRecorder(stream)
+        recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
+        recorder.onstop = () => {
+          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          console.log('Audio blob generated', blob)
+          stream.getTracks().forEach(t => t.stop())
+        }
+        recorder.start()
+        mediaRecorderRef.current = recorder
+        setIsRecording(true)
+      } catch (err) {
+        console.error('Microphone access denied:', err)
+      }
+    }
+  }, [isRecording])
+
   // ── Project view ─────────────────────────────────────────────────────────────
 
   if ((projectId || inlineProject) && !selectedAgent) {
@@ -2646,6 +2673,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           background: 'rgba(8,14,28,0.95)',
           flexShrink: 0,
         }}>
+          <style>{`@keyframes recblink { 0%,100% { opacity:1 } 50% { opacity:0.3 } }`}</style>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
             <textarea
               ref={inputRef}
@@ -2706,6 +2734,43 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
               )}
+            </button>
+            {/* Mic recording button */}
+            <button
+              title={isRecording ? 'Stop recording' : 'Record audio'}
+              onClick={handleMicToggle}
+              style={{
+                width: 36, height: 36, flexShrink: 0,
+                borderRadius: 10,
+                background: isRecording
+                  ? 'rgba(239,68,68,0.18)'
+                  : 'rgba(255,255,255,0.05)',
+                border: isRecording
+                  ? '1px solid rgba(239,68,68,0.4)'
+                  : '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'background 150ms ease, border-color 150ms ease',
+                position: 'relative',
+              }}
+            >
+              {isRecording && (
+                <span style={{
+                  position: 'absolute', top: -18,
+                  left: '50%', transform: 'translateX(-50%)',
+                  fontSize: 9, fontWeight: 700, color: '#F87171',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  whiteSpace: 'nowrap',
+                  animation: 'recblink 1s ease-in-out infinite',
+                }}>REC</span>
+              )}
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+                stroke={isRecording ? '#F87171' : C.muted}
+                strokeWidth={2} strokeLinecap="round">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10a7 7 0 0014 0"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
             </button>
           </div>
         </div>
@@ -3580,6 +3645,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         }}>
           <style>{`
             @keyframes vw { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
+            @keyframes recblink { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
           `}</style>
           {/* Waveform bars */}
           <div style={{
@@ -3743,14 +3809,34 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           </div>
           {/* Mic button (hidden when text present) */}
           {!input.trim() && (
-            <button title="Voice" onClick={() => setIsVoiceActive(true)} style={{
-              width: 42, height: 42, borderRadius: '50%',
-              background: C.accent, border: 'none',
-              color: '#000', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, transition: 'transform 0.15s, box-shadow 0.2s',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <button
+              title={isRecording ? 'Stop recording' : 'Record audio'}
+              onClick={handleMicToggle}
+              style={{
+                width: 42, height: 42, borderRadius: '50%',
+                background: isRecording ? 'rgba(239,68,68,0.9)' : C.accent,
+                border: 'none',
+                color: '#000', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'transform 0.15s, background 0.2s',
+                boxShadow: isRecording ? '0 0 0 4px rgba(239,68,68,0.25)' : 'none',
+                position: 'relative',
+              }}
+            >
+              {isRecording && (
+                <span style={{
+                  position: 'absolute', top: -20,
+                  left: '50%', transform: 'translateX(-50%)',
+                  fontSize: 9, fontWeight: 700, color: '#F87171',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  whiteSpace: 'nowrap',
+                  animation: 'recblink 1s ease-in-out infinite',
+                }}>REC</span>
+              )}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke={isRecording ? '#fff' : '#000'}
+                strokeWidth="2.5" strokeLinecap="round">
                 <rect x="9" y="2" width="6" height="12" rx="3"/>
                 <path d="M5 10a7 7 0 0014 0"/>
                 <line x1="12" y1="19" x2="12" y2="22"/>
