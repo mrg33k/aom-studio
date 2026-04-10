@@ -658,28 +658,37 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
             </button>
           </div>
 
-          {/* Voice selector */}
+          {/* Voice Selection */}
           <div>
-            <label style={{ color: 'rgba(148,168,200,0.7)', fontSize: 10, fontWeight: 600, fontFamily: "'Inter', sans-serif", display: 'block', marginBottom: 4 }}>
-              Voice
+            <label style={{ color: 'rgba(148,168,200,0.7)', fontSize: 10, fontWeight: 600, fontFamily: "'Inter', sans-serif", display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Voice Selection
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {(availableVoices.length > 0 ? availableVoices : ['aoede', 'charon', 'fenrir', 'kore', 'puck', 'orus', 'vale', 'zephyr']).map(v => (
-                <button
-                  key={v}
-                  onClick={() => setSettings(s => ({ ...s, voice: v }))}
-                  style={{
-                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    fontFamily: "'Inter', sans-serif", cursor: 'pointer', transition: 'all 0.15s',
-                    background: settings.voice === v ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
-                    border: settings.voice === v ? '1px solid rgba(96,165,250,0.4)' : '1px solid rgba(255,255,255,0.06)',
-                    color: settings.voice === v ? '#60A5FA' : 'rgba(148,168,200,0.7)',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {v}
-                </button>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {(availableVoices.length > 0 ? availableVoices : ['aoede', 'charon', 'fenrir', 'kore', 'puck', 'orus', 'vale', 'zephyr']).map(v => {
+                const isSelected = settings.voice === v
+                return (
+                  <button
+                    key={v}
+                    onClick={() => setSettings(s => ({ ...s, voice: v }))}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '7px 10px', borderRadius: 7, fontSize: 11, fontWeight: 600,
+                      fontFamily: "'Inter', sans-serif", cursor: 'pointer', transition: 'all 0.15s',
+                      background: isSelected ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
+                      border: isSelected ? '1px solid rgba(96,165,250,0.45)' : '1px solid rgba(255,255,255,0.06)',
+                      color: isSelected ? '#60A5FA' : 'rgba(148,168,200,0.65)',
+                      textTransform: 'capitalize', outline: 'none', width: '100%', textAlign: 'left',
+                    }}
+                  >
+                    <span>{v}</span>
+                    {isSelected && (
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="2,6 5,9 10,3" />
+                      </svg>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
