@@ -4971,7 +4971,7 @@ export default function CornerV3() {
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
   }), [currentUser?.id])
 
-  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks()
+  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks(worldId)
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {

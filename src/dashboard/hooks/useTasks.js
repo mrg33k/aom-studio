@@ -74,7 +74,7 @@ function toRightNowPill(task) {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useTasks() {
+export function useTasks(worldId) {
   const [allTasks, setAllTasks]   = useState([])
   const [loading,  setLoading]    = useState(true)
   const [error,    setError]      = useState(null)
@@ -155,13 +155,19 @@ export function useTasks() {
   useEffect(() => {
     if (!supabase) return
 
+    // Clear stale data from previous world on world switch
+    setAllTasks([])
+    setLoading(true)
+
     // Initial fetch
     fetchTasks()
 
     // Subscribe to realtime changes on the tasks table (scoped by client_id)
     const clientId = getClientId()
+    // Fresh channel name on every world switch to avoid stale subscriptions
+    const channelName = `tasks-${clientId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     const channel = supabase
-      .channel(channelIdRef.current)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${clientId}` },
@@ -197,7 +203,7 @@ export function useTasks() {
       document.removeEventListener('visibilitychange', handleVisibility)
       clearInterval(pollInterval)
     }
-  }, [fetchTasks, handleRealtimeChange])
+  }, [fetchTasks, handleRealtimeChange, worldId])
 
   // ── Derived views ───────────────────────────────────────────────────────────
 
