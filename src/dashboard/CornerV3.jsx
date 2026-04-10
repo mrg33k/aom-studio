@@ -1648,6 +1648,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const voiceChatRef   = useRef(null)
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [conversationFilter, setConversationFilter] = useState('all')
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -2819,9 +2820,36 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           }}
         >
           <span>Conversations{conversationItems.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{conversationItems.length}</span>}</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {['all', 'agents', 'projects'].map(f => (
+              <button
+                key={f}
+                onClick={() => setConversationFilter(f)}
+                style={{
+                  padding: '2px 10px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  fontFamily: "'Inter', sans-serif",
+                  letterSpacing: '0.04em',
+                  textTransform: 'capitalize',
+                  borderRadius: 9999,
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                  background: conversationFilter === f ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: conversationFilter === f ? C.accent : C.muted,
+                }}
+              >
+                {f === 'all' ? 'All' : f === 'agents' ? 'Agents' : 'Projects'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {conversationItems.length === 0 ? (
+        {(() => {
+          const filtered = conversationFilter === 'all' ? conversationItems
+            : conversationItems.filter(i => conversationFilter === 'agents' ? i.type === 'agent' : i.type === 'project')
+          return filtered.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', paddingTop: 60, gap: 8, color: C.muted,
@@ -2833,7 +2861,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             <span style={{ fontSize: 13 }}>No conversations yet</span>
           </div>
         ) : (
-          conversationItems.map(item => {
+          filtered.map(item => {
             if (item.type === 'agent') {
               const agent = item.data
               const lastMsg    = unreadMap[agent.slug]
@@ -2976,7 +3004,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               </SwipeCard>
             )
           })
-        )}
+        )
+        })()}
       </div>
     )
   }
