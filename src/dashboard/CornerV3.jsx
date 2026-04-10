@@ -979,7 +979,7 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
   // Load project names from Supabase on mount
   useEffect(() => {
     if (!supabase) return
-    supabase.from('projects').select('name,slug').eq('is_active', true).order('name')
+    supabase.from('projects').select('name,slug').eq('is_active', true).eq('client_id', worldId).order('name')
       .then(({ data }) => {
         if (data) setProjectNames(data.map(p => p.name))
       })

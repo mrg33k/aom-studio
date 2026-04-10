@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { getClientId } from '../lib/clientConfig'
 
 function mapRow(row) {
   return {
@@ -37,10 +38,12 @@ export function useProjects() {
       return
     }
 
+    const clientId = getClientId()
     supabase
       .from('projects')
       .select('id, slug, name, color, is_active')
       .eq('is_active', true)
+      .eq('client_id', clientId)
       .order('name')
       .then(({ data: rows, error }) => {
         if (cancelled) return

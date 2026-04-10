@@ -202,10 +202,12 @@ export default function TaskContextMenu({
   const [projectsFromSupabase, setProjectsFromSupabase] = useState(null)
   useEffect(() => {
     if (!supabase) return
+    const clientId = typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom'
     supabase
       .from('projects')
       .select('slug,name,color')
       .eq('is_active', true)
+      .eq('client_id', clientId)
       .order('recency_weight', { ascending: false })
       .then(({ data, error }) => {
         if (!error && data && data.length > 0) {

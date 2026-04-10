@@ -436,10 +436,12 @@ export function useRecencyWeights() {
     if (!supabase) return
     const fetchWeights = async () => {
       try {
+        const _clientId = typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom'
         const { data, error } = await supabase
           .from('projects')
           .select('slug, recency_weight')
           .eq('is_active', true)
+          .eq('client_id', _clientId)
         if (error || !data || data.length === 0) return
         const supabaseWeights = {}
         for (const row of data) {
