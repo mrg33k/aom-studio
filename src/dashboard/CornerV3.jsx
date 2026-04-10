@@ -4923,7 +4923,7 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
 export default function CornerV3() {
   const [currentUser, setCurrentUser]   = useState(null)
   const [authReady, setAuthReady]       = useState(false)
-  const [worldId, setWorldId]           = useState(getClientId())
+  const [worldId, setWorldId]           = useState(null)
   const [tab, setTab]                   = useState('chat')
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
@@ -4992,7 +4992,7 @@ export default function CornerV3() {
     prevDoneIdsRef.current = new Set(done.map(t => t.id))
   }, [done])
   // useDataPipe provides agents (with realtime status), inboxItems, and projectDefs
-  const { agents, inboxItems, projectDefs } = useDataPipe(null)
+  const { agents, inboxItems, projectDefs } = useDataPipe(null, worldId)
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 

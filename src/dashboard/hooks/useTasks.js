@@ -154,6 +154,8 @@ export function useTasks(worldId) {
 
   useEffect(() => {
     if (!supabase) return
+    // Don't fetch until worldId is explicitly provided (prevents fetching with default 'aom')
+    if (!worldId) return
 
     // Clear stale data from previous world on world switch
     setAllTasks([])

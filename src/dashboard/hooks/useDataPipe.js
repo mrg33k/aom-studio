@@ -256,7 +256,7 @@ function buildInboxItems(msgsNewestFirst) {
 // Returns: { rightNow, completedFeed, yourTodos, finishThese, schedule, projectProgress,
 //            pillCounts, isAutoChecked, punchData, punchLoading, lastUpdated, refetch }
 // =============================================================================
-export function useDataPipe(parsePunchList) {
+export function useDataPipe(parsePunchList, worldId) {
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
@@ -608,6 +608,9 @@ export function useDataPipe(parsePunchList) {
   }, [])
 
   useEffect(() => {
+    // Don't fetch until worldId is set (prevents fetching with default 'aom' before auth)
+    if (!worldId) return
+
     fetchAll()
     const timer = setInterval(fetchAll, 10000) // 10s for faster status + RNB updates
 
@@ -617,7 +620,7 @@ export function useDataPipe(parsePunchList) {
     let tasksChannel = null
     let messagesChannel = null
     if (supabase) {
-      const cid = channelIdRef.current
+      const cid = `${channelIdRef.current}-${worldId}`
       const clientId = getClientId()
       console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages... id:', cid, 'client:', clientId)
 
@@ -675,7 +678,7 @@ export function useDataPipe(parsePunchList) {
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)
     }
-  }, [fetchAll])
+  }, [fetchAll, worldId])
 
   // Stable isAutoChecked function -- reads from ref, never causes re-renders
   const isAutoChecked = useCallback((taskText) => {
