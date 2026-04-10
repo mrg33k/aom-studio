@@ -1949,6 +1949,32 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     })
   }, [pinnedItems, searchQuery, unreadMap, projectPreviews])
 
+  // ── Unified Conversations list: agents + projects sorted by most recent message ──
+  const conversationItems = useMemo(() => {
+    const items = []
+    // Add non-pinned agents
+    for (const agent of filteredVisibleAgents) {
+      const lastMsg = unreadMap[agent.slug]
+      items.push({ type: 'agent', data: agent, timestamp: lastMsg?.timestamp || '' })
+    }
+    // Add non-pinned projects
+    for (const project of filteredVisibleProjects) {
+      const preview = projectPreviews[`project:${project.slug}`]
+      items.push({ type: 'project', data: project, timestamp: preview?.timestamp || '' })
+    }
+    // Sort by most recent message timestamp descending, then alphabetically
+    items.sort((a, b) => {
+      if (a.timestamp && b.timestamp) return a.timestamp < b.timestamp ? 1 : a.timestamp > b.timestamp ? -1 : 0
+      if (a.timestamp && !b.timestamp) return -1
+      if (!a.timestamp && b.timestamp) return 1
+      // No messages: sort alphabetically by name
+      const aName = (a.data.name || '').toLowerCase()
+      const bName = (b.data.name || '').toLowerCase()
+      return aName < bName ? -1 : aName > bName ? 1 : 0
+    })
+    return items
+  }, [filteredVisibleAgents, filteredVisibleProjects, unreadMap, projectPreviews])
+
   // Load message history when agent selected
   useEffect(() => {
     if (!selectedAgent || !supabase || !worldId) return
@@ -2783,21 +2809,19 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           </>
         )}
 
+        {/* ── Conversations section (unified agents + projects) ──────────── */}
         <div
-          onClick={() => toggleSection('agents')}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             fontSize: 11, fontWeight: 700, color: C.muted,
-            letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: sectionStates.agents ? 12 : 4,
-            cursor: 'pointer', userSelect: 'none',
+            letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12,
+            userSelect: 'none',
           }}
         >
-          <span>Agents{filteredVisibleAgents.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{filteredVisibleAgents.length}</span>}</span>
-          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.agents ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
+          <span>Conversations{conversationItems.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{conversationItems.length}</span>}</span>
         </div>
 
-        <div style={{ maxHeight: sectionStates.agents ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
-        {filteredVisibleAgents.length === 0 ? (
+        {conversationItems.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', paddingTop: 60, gap: 8, color: C.muted,
@@ -2806,61 +2830,137 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span style={{ fontSize: 13 }}>No agents available</span>
+            <span style={{ fontSize: 13 }}>No conversations yet</span>
           </div>
         ) : (
-          filteredVisibleAgents.map(agent => {
-            const lastMsg    = unreadMap[agent.slug]
-            const hasUnread  = !!lastMsg
-            const unreadCount = unreadCounts[agent.slug] || 0
-            const isActive   = agent.status?.toUpperCase() !== 'IDLE'
-            const pinned     = isFav('agent', agent.slug)
-            const muted      = isMuted(agent.slug)
-            const statusInfo = getStatusColor(agent.status)
-            const statusLabel = agent.status === 'building' ? 'Building' : agent.status === 'qa' ? 'QA' : agent.status === 'queued' ? 'Queued' : isActive ? 'Online' : 'Idle'
+          conversationItems.map(item => {
+            if (item.type === 'agent') {
+              const agent = item.data
+              const lastMsg    = unreadMap[agent.slug]
+              const unreadCount = unreadCounts[agent.slug] || 0
+              const isActive   = agent.status?.toUpperCase() !== 'IDLE'
+              const pinned     = isFav('agent', agent.slug)
+              const muted      = isMuted(agent.slug)
+              const statusInfo = getStatusColor(agent.status)
+              const statusLabel = agent.status === 'building' ? 'Building' : agent.status === 'qa' ? 'QA' : agent.status === 'queued' ? 'Queued' : isActive ? 'Online' : 'Idle'
+              return (
+                <SwipeCard key={`conv-${agent.slug}`} actions={[
+                  { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
+                    icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+                    onAction: () => toggleFav('agent', agent.slug) },
+                  { label: muted ? 'Unmute' : 'Mute', bg: 'rgba(255,255,255,0.06)', color: C.muted,
+                    icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2} strokeLinecap="round"><path d={muted ? "M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" : "M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"}/></svg>,
+                    onAction: () => toggleMute(agent.slug) },
+                ]}>
+                  <button
+                    onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      width: '100%', padding: '12px 14px',
+                      borderRadius: 14,
+                      background: C.s1,
+                      border: `1px solid ${isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
+                      cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 200ms ease',
+                      position: 'relative', overflow: 'hidden',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = isActive ? 'rgba(16,185,129,0.15)' : C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                  >
+                    {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />}
+                    <div style={{
+                      width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                      background: agent.color || C.accent,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, fontSize: 15, color: '#000',
+                    }}>
+                      {(agent.name || '?')[0].toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>{agent.name}</span>
+                        <span style={{ fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                          {lastMsg?.timestamp ? formatChatTime(lastMsg.timestamp) : ''}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: 12, color: C.muted, marginTop: 2,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        fontFamily: "'Inter', sans-serif",
+                      }}>
+                        {lastMsg?.text || 'No messages yet'}
+                      </div>
+                    </div>
+                    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 3,
+                        fontSize: 9, fontWeight: 600,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: isActive ? C.accent : agent.status === 'building' ? C.yellow : C.dim,
+                      }}>
+                        <div style={{
+                          width: 5, height: 5, borderRadius: '50%',
+                          background: statusInfo.dot,
+                          boxShadow: statusInfo.glow,
+                        }} />
+                        {statusLabel}
+                      </div>
+                      {unreadCount > 0 && (
+                        <span style={{
+                          minWidth: 18, height: 18, borderRadius: 9,
+                          background: C.accent, color: '#000',
+                          fontSize: 9, fontWeight: 800,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          padding: '0 4px',
+                        }}>{unreadCount}</span>
+                      )}
+                    </div>
+                  </button>
+                </SwipeCard>
+              )
+            }
+            // Project item
+            const project = item.data
+            const pColor = project.color || '#6B8AB0'
+            const pinned = isFav('project', project.slug)
+            const pPreview = projectPreviews[`project:${project.slug}`]
             return (
-              <SwipeCard key={agent.slug} actions={[
+              <SwipeCard key={`conv-${project.id || project.slug}`} actions={[
                 { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
                   icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
-                  onAction: () => toggleFav('agent', agent.slug) },
-                { label: muted ? 'Unmute' : 'Mute', bg: 'rgba(255,255,255,0.06)', color: C.muted,
-                  icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2} strokeLinecap="round"><path d={muted ? "M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" : "M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"}/></svg>,
-                  onAction: () => toggleMute(agent.slug) },
+                  onAction: () => toggleFav('project', project.slug) },
+                { label: 'Archive', bg: 'rgba(239,68,68,0.15)', color: C.red,
+                  icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={2} strokeLinecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>,
+                  onAction: () => {} },
               ]}>
                 <button
-                  onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }}
+                  onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null); onSelectProject?.(project) }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     width: '100%', padding: '12px 14px',
                     borderRadius: 14,
                     background: C.s1,
-                    border: `1px solid ${isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
+                    border: `1px solid ${C.border}`,
                     cursor: 'pointer', textAlign: 'left',
                     transition: 'all 200ms ease',
-                    position: 'relative', overflow: 'hidden',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = isActive ? 'rgba(16,185,129,0.15)' : C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
                 >
-                  {/* Active left accent */}
-                  {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: C.accent }} />}
-
-                  {/* Avatar */}
                   <div style={{
-                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-                    background: agent.color || C.accent,
+                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                    background: `linear-gradient(135deg, ${pColor}44, ${pColor}22)`,
+                    border: `1px solid ${pColor}33`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 800, fontSize: 15, color: '#000',
                   }}>
-                    {(agent.name || '?')[0].toUpperCase()}
+                    <div style={{ width: 14, height: 14, borderRadius: 4, background: pColor, boxShadow: `0 0 8px ${pColor}55` }} />
                   </div>
-
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>{agent.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
                       <span style={{ fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
-                        {lastMsg?.timestamp ? formatChatTime(lastMsg.timestamp) : ''}
+                        {pPreview?.timestamp ? formatChatTime(pPreview.timestamp) : ''}
                       </span>
                     </div>
                     <div style={{
@@ -2868,104 +2968,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       fontFamily: "'Inter', sans-serif",
                     }}>
-                      {lastMsg?.text || 'No messages yet'}
+                      {pPreview?.text || 'No messages yet'}
                     </div>
                   </div>
-
-                  {/* Right: status + unread badge */}
-                  <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 3,
-                      fontSize: 9, fontWeight: 600,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      color: isActive ? C.accent : agent.status === 'building' ? C.yellow : C.dim,
-                    }}>
-                      <div style={{
-                        width: 5, height: 5, borderRadius: '50%',
-                        background: statusInfo.dot,
-                        boxShadow: statusInfo.glow,
-                      }} />
-                      {statusLabel}
-                    </div>
-                    {unreadCount > 0 && (
-                      <span style={{
-                        minWidth: 18, height: 18, borderRadius: 9,
-                        background: C.accent, color: '#000',
-                        fontSize: 9, fontWeight: 800,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: "'JetBrains Mono', monospace",
-                        padding: '0 4px',
-                      }}>{unreadCount}</span>
-                    )}
-                  </div>
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(80,100,128,0.4)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               </SwipeCard>
             )
           })
-        )}
-        </div>
-
-        {/* ── Projects section ──────────────────────────────────────────────── */}
-        {!projectsLoading && !projectsError && projects?.filter(p => !topProjectSlugs.has(p.slug)).length > 0 && (
-          <>
-            <div
-              onClick={() => toggleSection('projects')}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                fontSize: 11, fontWeight: 700, color: C.muted,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                marginTop: 20, marginBottom: sectionStates.projects ? 12 : 4,
-                cursor: 'pointer', userSelect: 'none',
-              }}
-            >
-              <span>Projects{filteredVisibleProjects.length > 0 && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: C.muted, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '1px 6px', letterSpacing: '0.02em' }}>{filteredVisibleProjects.length}</span>}</span>
-              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ transform: sectionStates.projects ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-            <div style={{ maxHeight: sectionStates.projects ? 9999 : 0, overflow: 'hidden', transition: 'max-height 300ms ease' }}>
-            {filteredVisibleProjects.map(project => {
-              const pColor = project.color || '#6B8AB0'
-              const pinned = isFav('project', project.slug)
-              return (
-                <SwipeCard key={project.id || project.slug} actions={[
-                  { label: pinned ? 'Unpin' : 'Pin', bg: pinned ? C.s2 : 'rgba(16,185,129,0.2)', color: C.accent,
-                    icon: <svg width={16} height={16} viewBox="0 0 24 24" fill={pinned ? C.accent : 'none'} stroke={C.accent} strokeWidth={2}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
-                    onAction: () => toggleFav('project', project.slug) },
-                  { label: 'Archive', bg: 'rgba(239,68,68,0.15)', color: C.red,
-                    icon: <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={2} strokeLinecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>,
-                    onAction: () => {} },
-                ]}>
-                  <button
-                    onClick={() => { setInlineProject(project); setMessages([]); setSelectedAgent(null); onSelectProject?.(project) }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      width: '100%', padding: '12px 14px',
-                      borderRadius: 14,
-                      background: C.s1,
-                      border: `1px solid ${C.border}`,
-                      cursor: 'pointer', textAlign: 'left',
-                      transition: 'all 200ms ease',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = C.s2; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = C.s1; e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
-                  >
-                    <div style={{
-                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                      background: `linear-gradient(135deg, ${pColor}44, ${pColor}22)`,
-                      border: `1px solid ${pColor}33`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <div style={{ width: 14, height: 14, borderRadius: 4, background: pColor, boxShadow: `0 0 8px ${pColor}55` }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{project.name}</span>
-                    </div>
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(80,100,128,0.4)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </SwipeCard>
-              )
-            })}
-            </div>
-          </>
         )}
       </div>
     )
