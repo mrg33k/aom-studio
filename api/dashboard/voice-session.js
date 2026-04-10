@@ -46,7 +46,7 @@ You have a create_task tool. Use it when Patrik lands on a plan and says to do i
 - After creating, confirm what you created: "I created 3 tasks for Bobby. First one is..."
 - You can check task status with get_task_status when Patrik asks how things are going.`;
 
-// Available Gemini Live voices
+// Available Gemini Live voices (all 30)
 const VOICES = {
   aoede: 'Aoede',
   charon: 'Charon',
@@ -54,8 +54,30 @@ const VOICES = {
   kore: 'Kore',
   puck: 'Puck',
   orus: 'Orus',
-  vale: 'Vale',
   zephyr: 'Zephyr',
+  leda: 'Leda',
+  callirrhoe: 'Callirrhoe',
+  autonoe: 'Autonoe',
+  enceladus: 'Enceladus',
+  iapetus: 'Iapetus',
+  umbriel: 'Umbriel',
+  algieba: 'Algieba',
+  despina: 'Despina',
+  erinome: 'Erinome',
+  algenib: 'Algenib',
+  rasalgethi: 'Rasalgethi',
+  laomedeia: 'Laomedeia',
+  achernar: 'Achernar',
+  alnilam: 'Alnilam',
+  schedar: 'Schedar',
+  gacrux: 'Gacrux',
+  pulcherrima: 'Pulcherrima',
+  achird: 'Achird',
+  zubenelgenubi: 'Zubenelgenubi',
+  vindemiatrix: 'Vindemiatrix',
+  sadachbia: 'Sadachbia',
+  sadaltager: 'Sadaltager',
+  sulafat: 'Sulafat',
 };
 
 const supaHeaders = () => ({

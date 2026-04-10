@@ -543,11 +543,36 @@ const GREETINGS = [
 ]
 
 const VOICE_OPTIONS = [
-  { id: 'kore',   label: 'Kore',   desc: 'Clear, professional' },
-  { id: 'puck',   label: 'Puck',   desc: 'Warm, conversational' },
-  { id: 'charon', label: 'Charon', desc: 'Deep, confident' },
-  { id: 'aoede',  label: 'Aoede',  desc: 'Bright, articulate' },
-  { id: 'fenrir', label: 'Fenrir', desc: 'Bold, direct' },
+  { id: 'kore',          label: 'Kore',          desc: 'Firm' },
+  { id: 'puck',          label: 'Puck',          desc: 'Upbeat' },
+  { id: 'charon',        label: 'Charon',        desc: 'Informative' },
+  { id: 'aoede',         label: 'Aoede',         desc: 'Breezy' },
+  { id: 'fenrir',        label: 'Fenrir',        desc: 'Excitable' },
+  { id: 'orus',          label: 'Orus',          desc: 'Firm' },
+  { id: 'zephyr',        label: 'Zephyr',        desc: 'Bright' },
+  { id: 'leda',          label: 'Leda',          desc: 'Youthful' },
+  { id: 'callirrhoe',    label: 'Callirrhoe',    desc: 'Easy-going' },
+  { id: 'autonoe',       label: 'Autonoe',       desc: 'Bright' },
+  { id: 'enceladus',     label: 'Enceladus',     desc: 'Breathy' },
+  { id: 'iapetus',       label: 'Iapetus',       desc: 'Clear' },
+  { id: 'umbriel',       label: 'Umbriel',       desc: 'Easy-going' },
+  { id: 'algieba',       label: 'Algieba',       desc: 'Smooth' },
+  { id: 'despina',       label: 'Despina',       desc: 'Smooth' },
+  { id: 'erinome',       label: 'Erinome',       desc: 'Clear' },
+  { id: 'algenib',       label: 'Algenib',       desc: 'Gravelly' },
+  { id: 'rasalgethi',    label: 'Rasalgethi',    desc: 'Informative' },
+  { id: 'laomedeia',     label: 'Laomedeia',     desc: 'Upbeat' },
+  { id: 'achernar',      label: 'Achernar',      desc: 'Soft' },
+  { id: 'alnilam',       label: 'Alnilam',       desc: 'Firm' },
+  { id: 'schedar',       label: 'Schedar',       desc: 'Even' },
+  { id: 'gacrux',        label: 'Gacrux',        desc: 'Mature' },
+  { id: 'pulcherrima',   label: 'Pulcherrima',   desc: 'Forward' },
+  { id: 'achird',        label: 'Achird',        desc: 'Friendly' },
+  { id: 'zubenelgenubi', label: 'Zubenelgenubi', desc: 'Casual' },
+  { id: 'vindemiatrix',  label: 'Vindemiatrix',  desc: 'Gentle' },
+  { id: 'sadachbia',     label: 'Sadachbia',     desc: 'Lively' },
+  { id: 'sadaltager',    label: 'Sadaltager',    desc: 'Knowledgeable' },
+  { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
@@ -1977,6 +2002,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [agentVoices, setAgentVoices] = useState({})
+  const [chatNameInput, setChatNameInput] = useState('')
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -2064,12 +2090,29 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const selectVoice = useCallback((voice) => {
     if (!currentChatKey) return
     setAgentVoices(prev => ({ ...prev, [currentChatKey]: voice }))
-    const agentSlug = currentChatKey.startsWith('project:') ? null : currentChatKey
-    if (!agentSlug) return
     fetch('/api/dashboard/agent-voice', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: agentSlug, voice, client_id: worldId }),
+      body: JSON.stringify({ slug: currentChatKey, voice, client_id: worldId }),
+    }).catch(() => {})
+  }, [currentChatKey, worldId])
+
+  // Initialise rename input when modal opens
+  useEffect(() => {
+    if (settingsOpen) {
+      const name = selectedAgent ? selectedAgent.name : (selectedProject?.name || '')
+      setChatNameInput(name)
+    }
+  }, [settingsOpen, selectedAgent, selectedProject])
+
+  const saveRoomName = useCallback((name) => {
+    const trimmed = name.trim()
+    if (!trimmed || !currentChatKey) return
+    const slug = currentChatKey.startsWith('project:')
+      ? currentChatKey.replace('project:', '')
+      : currentChatKey
+    fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(slug)}&name=${encodeURIComponent(trimmed)}&client_id=${encodeURIComponent(worldId)}`, {
+      method: 'PATCH',
     }).catch(() => {})
   }, [currentChatKey, worldId])
 
@@ -3351,13 +3394,60 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 padding: 24,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 16,
+                gap: 20,
                 overflowY: 'auto',
                 flex: 1,
               }}>
-                <span style={{ fontSize: 13, color: C.text2, fontFamily: "'Inter', sans-serif" }}>
-                  Settings options will appear here.
-                </span>
+                {/* Room rename */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Room Name
+                  </div>
+                  <input
+                    value={chatNameInput}
+                    onChange={e => setChatNameInput(e.target.value)}
+                    onBlur={e => saveRoomName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { saveRoomName(e.target.value); e.target.blur() } }}
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 8, padding: '8px 12px',
+                      color: C.text, fontSize: 13,
+                      fontFamily: "'Inter', sans-serif", outline: 'none',
+                    }}
+                  />
+                </div>
+                {/* Voice selection */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Voice
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {VOICE_OPTIONS.map(({ id, label, desc }) => (
+                      <button
+                        key={id}
+                        onClick={() => selectVoice(id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
+                          background: currentVoice === id ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${currentVoice === id ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                        }}
+                      >
+                        <div style={{ textAlign: 'left' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: currentVoice === id ? '#60A5FA' : C.text1, fontFamily: "'Inter', sans-serif" }}>{label}</div>
+                          <div style={{ fontSize: 11, color: C.text2, marginTop: 1, fontFamily: "'Inter', sans-serif" }}>{desc}</div>
+                        </div>
+                        {currentVoice === id && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -4573,41 +4663,60 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               padding: 24,
               display: 'flex',
               flexDirection: 'column',
-              gap: 16,
+              gap: 20,
               overflowY: 'auto',
               flex: 1,
             }}>
-              {currentChatKey && !currentChatKey.startsWith('project:') && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                    Voice
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {VOICE_OPTIONS.map(({ id, label, desc }) => (
-                      <button
-                        key={id}
-                        onClick={() => selectVoice(id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '8px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
-                          background: currentVoice === id ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${currentVoice === id ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                        }}
-                      >
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: currentVoice === id ? '#60A5FA' : C.text1, fontFamily: "'Inter', sans-serif" }}>{label}</div>
-                          <div style={{ fontSize: 11, color: C.text2, marginTop: 1, fontFamily: "'Inter', sans-serif" }}>{desc}</div>
-                        </div>
-                        {currentVoice === id && (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+              {/* Room rename */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Room Name
                 </div>
-              )}
+                <input
+                  value={chatNameInput}
+                  onChange={e => setChatNameInput(e.target.value)}
+                  onBlur={e => saveRoomName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { saveRoomName(e.target.value); e.target.blur() } }}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 8, padding: '8px 12px',
+                    color: C.text, fontSize: 13,
+                    fontFamily: "'Inter', sans-serif", outline: 'none',
+                  }}
+                />
+              </div>
+              {/* Voice selection */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Voice
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {VOICE_OPTIONS.map(({ id, label, desc }) => (
+                    <button
+                      key={id}
+                      onClick={() => selectVoice(id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '8px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
+                        background: currentVoice === id ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${currentVoice === id ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                      }}
+                    >
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: currentVoice === id ? '#60A5FA' : C.text1, fontFamily: "'Inter', sans-serif" }}>{label}</div>
+                        <div style={{ fontSize: 11, color: C.text2, marginTop: 1, fontFamily: "'Inter', sans-serif" }}>{desc}</div>
+                      </div>
+                      {currentVoice === id && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
