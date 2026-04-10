@@ -92,7 +92,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(() => {
     try {
-      const saved = localStorage.getItem('corner-voice-settings')
+      const saved = localStorage.getItem(`corner-voice-settings-${agentSlug}`)
       return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS
     } catch { return DEFAULT_SETTINGS }
   })
@@ -154,10 +154,18 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     onStatusChange?.(s)
   }, [onStatusChange])
 
-  // Save settings to localStorage when they change
+  // Load voice settings from agent-specific key when agentSlug changes
   useEffect(() => {
-    try { localStorage.setItem('corner-voice-settings', JSON.stringify(settings)) } catch {}
-  }, [settings])
+    try {
+      const saved = localStorage.getItem(`corner-voice-settings-${agentSlug}`)
+      setSettings(saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS)
+    } catch { setSettings(DEFAULT_SETTINGS) }
+  }, [agentSlug])
+
+  // Save settings to localStorage when they change (keyed per agent)
+  useEffect(() => {
+    try { localStorage.setItem(`corner-voice-settings-${agentSlug}`, JSON.stringify(settings)) } catch {}
+  }, [settings, agentSlug])
 
   // Sequential audio playback (uses separate 24kHz playback context)
   const playNextChunk = useCallback(() => {
