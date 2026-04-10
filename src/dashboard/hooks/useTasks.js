@@ -31,7 +31,7 @@ const RIGHT_NOW_STATUSES = new Set(['building', 'qa'])
 const QUEUED_STATUSES = new Set(['queued', 'classifying', 'planning'])
 
 // Terminal statuses (completed section)
-const DONE_STATUSES = new Set(['done', 'failed', 'superseded'])
+const DONE_STATUSES = new Set(['done', 'failed'])
 
 // Max tasks to fetch (guard against runaway queries)
 const MAX_TASKS = 200

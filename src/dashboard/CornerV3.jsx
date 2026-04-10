@@ -907,8 +907,9 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
   }
 
   const filteredActive    = filterTasks(active)
-  const filteredFailed    = filterTasks(completed.filter(t => t.status === 'failed'))
-  const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed'))
+  const isDismissed       = t => t.metadata?.dismissed === true
+  const filteredFailed    = filterTasks(completed.filter(t => t.status === 'failed' && !isDismissed(t)))
+  const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed' && !isDismissed(t)))
 
   // Weekly stats derived from completed tasks
   const withQA    = completed.filter(t => t.qa_score || t.qaScore)
@@ -1238,7 +1239,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
               <button
                 onClick={async () => {
                   for (const t of filteredFailed) {
-                    await supabase.from('tasks').update({ status: 'superseded' }).eq('id', t.id)
+                    await supabase.from('tasks').update({ status: 'done', metadata: { ...(t.metadata || {}), dismissed: true } }).eq('id', t.id)
                   }
                 }}
                 style={{ fontSize: 10, fontWeight: 600, color: C.dim, cursor: 'pointer', letterSpacing: '0.02em', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
@@ -1291,7 +1292,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation()
-                        await supabase.from('tasks').update({ status: 'superseded' }).eq('id', t.id)
+                        await supabase.from('tasks').update({ status: 'done', metadata: { ...(t.metadata || {}), dismissed: true } }).eq('id', t.id)
                       }}
                       style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                     >
@@ -1321,8 +1322,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
               const agent     = t.agent_identity || t.agentIdentity
               const project   = t.project_name || t.projectName
               const isFailed     = t.status === 'failed'
-              const isSuperseded = t.status === 'superseded'
-              const isDark       = isFailed || isSuperseded
+              const isDark       = isFailed
               return (
                 <div
                   key={t.id}
@@ -1334,8 +1334,8 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                     position: 'relative',
                     overflow: 'hidden',
                     transition: 'transform 0.15s, box-shadow 0.15s',
-                    backgroundColor: isSuperseded ? 'rgba(120,120,140,0.12)' : isFailed ? 'rgba(239,68,68,0.15)' : cardColor,
-                    opacity: isSuperseded ? 0.6 : 1,
+                    backgroundColor: isFailed ? 'rgba(239,68,68,0.15)' : cardColor,
+                    opacity: 1,
                     display: 'flex',
                     alignItems: 'flex-start',
                     justifyContent: 'space-between',
@@ -1352,7 +1352,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                 >
                   {/* Left: title + tags */}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: isSuperseded ? 'line-through' : 'none' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
@@ -1372,7 +1372,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                       )}
                       {!agent && !project && (
                         <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {isSuperseded ? 'Superseded' : isFailed ? 'Failed' : 'Shipped'}
+                          {isFailed ? 'Failed' : 'Shipped'}
                         </span>
                       )}
                     </div>
@@ -1380,7 +1380,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                   {/* Right: QA score + label */}
                   {qa && (
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: isSuperseded ? 'rgba(240,244,255,0.4)' : isFailed ? '#EF4444' : 'rgba(0,0,0,0.55)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : 'rgba(0,0,0,0.55)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
                         {qa}
                       </div>
                       <div style={{ fontSize: 8, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.3)' : 'rgba(0,0,0,0.3)', textTransform: 'uppercase', textAlign: 'right', marginTop: 2 }}>
