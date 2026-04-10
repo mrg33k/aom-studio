@@ -2121,6 +2121,10 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [agentVoices, setAgentVoices] = useState({})
   const [chatNameInput, setChatNameInput] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [inviteMsg, setInviteMsg] = useState(null)
+  const [collaborators, setCollaborators] = useState([])
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -2226,6 +2230,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (settingsOpen) {
       const name = selectedAgent ? selectedAgent.name : (selectedProject?.name || '')
       setChatNameInput(name)
+      // Fetch collaborators when project settings opens
+      if (selectedProject?.id) {
+        setInviteEmail('')
+        setInviteMsg(null)
+        fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
+          .then(r => r.json())
+          .then(data => { if (data.collaborators) setCollaborators(data.collaborators) })
+          .catch(() => {})
+      }
     }
   }, [settingsOpen, selectedAgent, selectedProject])
 
@@ -3683,6 +3696,150 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     ))}
                   </div>
                 </div>
+                {/* Collaborators -- only show for projects */}
+                {selectedProject && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                      Collaborators
+                    </div>
+                    {/* Current collaborators */}
+                    {collaborators.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                        {collaborators.map(c => (
+                          <div key={c.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 10px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            borderRadius: 8,
+                          }}>
+                            <div style={{
+                              width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                              background: c.avatar_url ? 'transparent' : `linear-gradient(135deg, ${C.purple}, ${C.pink})`,
+                              border: c.avatar_url ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              overflow: 'hidden',
+                            }}>
+                              {c.avatar_url
+                                ? <img src={c.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{(c.display_name || c.email || c.client_id)[0].toUpperCase()}</span>
+                              }
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {c.display_name || c.client_id}
+                              </div>
+                              {c.email && <div style={{ fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif" }}>{c.email}</div>}
+                            </div>
+                            <span style={{ fontSize: 10, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              {c.role}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {collaborators.length === 0 && (
+                      <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", marginBottom: 10 }}>
+                        No collaborators yet
+                      </div>
+                    )}
+                    {/* Invite input */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={e => { setInviteEmail(e.target.value); setInviteMsg(null) }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && inviteEmail.trim() && !inviteLoading) {
+                            setInviteLoading(true)
+                            setInviteMsg(null)
+                            fetch('/api/dashboard/project-invite', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ project_id: selectedProject.id, email: inviteEmail.trim() }),
+                            })
+                              .then(r => r.json())
+                              .then(data => {
+                                if (data.ok) {
+                                  setInviteMsg({ type: 'ok', text: `Invited ${data.invited.display_name || data.invited.email}` })
+                                  setInviteEmail('')
+                                  // Refresh collaborators
+                                  fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
+                                    .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
+                                } else {
+                                  setInviteMsg({ type: 'err', text: data.error })
+                                }
+                              })
+                              .catch(() => setInviteMsg({ type: 'err', text: 'Failed to invite' }))
+                              .finally(() => setInviteLoading(false))
+                          }
+                        }}
+                        placeholder="Invite by email..."
+                        style={{
+                          flex: 1,
+                          padding: '8px 10px',
+                          fontSize: 13,
+                          fontFamily: "'Inter', sans-serif",
+                          color: C.text,
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: 8,
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                      <button
+                        disabled={inviteLoading || !inviteEmail.trim()}
+                        onClick={() => {
+                          if (!inviteEmail.trim() || inviteLoading) return
+                          setInviteLoading(true)
+                          setInviteMsg(null)
+                          fetch('/api/dashboard/project-invite', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ project_id: selectedProject.id, email: inviteEmail.trim() }),
+                          })
+                            .then(r => r.json())
+                            .then(data => {
+                              if (data.ok) {
+                                setInviteMsg({ type: 'ok', text: `Invited ${data.invited.display_name || data.invited.email}` })
+                                setInviteEmail('')
+                                fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
+                                  .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
+                              } else {
+                                setInviteMsg({ type: 'err', text: data.error })
+                              }
+                            })
+                            .catch(() => setInviteMsg({ type: 'err', text: 'Failed to invite' }))
+                            .finally(() => setInviteLoading(false))
+                        }}
+                        style={{
+                          padding: '8px 14px',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          fontFamily: "'Inter', sans-serif",
+                          color: '#fff',
+                          background: inviteLoading || !inviteEmail.trim() ? C.muted : C.accent,
+                          border: 'none',
+                          borderRadius: 8,
+                          cursor: inviteLoading || !inviteEmail.trim() ? 'default' : 'pointer',
+                          transition: 'background 0.15s',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {inviteLoading ? '...' : 'Invite'}
+                      </button>
+                    </div>
+                    {inviteMsg && (
+                      <div style={{
+                        marginTop: 6, fontSize: 12, fontFamily: "'Inter', sans-serif",
+                        color: inviteMsg.type === 'ok' ? C.accent : '#F87171',
+                      }}>
+                        {inviteMsg.text}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {/* Google Integration */}
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
