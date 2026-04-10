@@ -278,13 +278,27 @@ async function getQueue(clientId) {
 }
 
 async function getStatus(taskId, clientId) {
-  const params = [`id=eq.${encodeURIComponent(taskId)}`];
+  // Allow querying by task ID or by status filters
+  let params;
+  if (taskId === 'recent' || taskId === 'failed' || taskId === 'done') {
+    // Special: get recent tasks by status
+    const statusFilter = taskId === 'failed' ? 'status=eq.failed' : taskId === 'done' ? 'status=in.(done,failed)' : 'status=in.(queued,classifying,planning,building,qa,done,failed)';
+    params = [statusFilter, 'order=created_at.desc', 'limit=10'];
+    if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
+    // Also include shared project tasks
+    const tasks = await sbFetch(`/rest/v1/tasks?${params.join('&')}&select=id,title,status,qa_score,qa_notes,error,agent_identity,project_path,created_at,completed_at`);
+    return tasks;
+  }
+  params = [`id=eq.${encodeURIComponent(taskId)}`];
   if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
   const task = await sbFetch(`/rest/v1/tasks?${params.join('&')}`);
   // Also fetch task thread messages (QA notes, build status, errors)
-  const thread = await sbFetch(`/rest/v1/messages?agent=eq.task:${encodeURIComponent(taskId)}&select=text,role&limit=20`);
+  const thread = await sbFetch(`/rest/v1/messages?agent=eq.task:${encodeURIComponent(taskId)}&select=text,role,timestamp&order=timestamp.asc&limit=20`);
   if (Array.isArray(task) && task.length > 0) {
-    task[0].thread = Array.isArray(thread) ? thread.map(m => m.text) : [];
+    const t = task[0];
+    t.thread = Array.isArray(thread) ? thread.map(m => m.text) : [];
+    // Build a human-readable summary
+    t.summary = `${t.title} -- ${t.status}${t.qa_score ? ` (QA: ${t.qa_score}/10)` : ''}${t.qa_notes ? `\nQA Notes: ${t.qa_notes}` : ''}${t.error ? `\nError: ${t.error}` : ''}${t.thread.length ? `\nThread:\n${t.thread.join('\n')}` : ''}`;
   }
   return task;
 }
