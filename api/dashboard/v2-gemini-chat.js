@@ -727,6 +727,8 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
         const project = Array.isArray(projects) ? projects[0] : null;
 
         if (project?.id) resolvedProjectId = project.id;
+        // Store repo_path so read_file/list_files can target the right repo
+        var projectRepoPath = project?.repo_path || null;
 
         // Parallel fetch: project context (from disk via RAG server) + tasks + messages
         // Use Promise.allSettled so one failure doesn't kill the whole project chat
@@ -915,8 +917,23 @@ ${BASE_INSTRUCTION}`;
           else if (name === 'lookup_context') {
             const query = (args.query || '').trim();
             if (!query) throw new Error('query required');
-            const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
-            result = await ctxResp.json();
+            // Project chats: search the project's repo via RAG server grep
+            if (typeof projectRepoPath === 'string' && projectRepoPath) {
+              const ragResp = await fetch(`${RAG_URL}/list-repo-files?repo_path=${encodeURIComponent(projectRepoPath)}&path=`, { signal: AbortSignal.timeout(5000) });
+              const topLevel = await ragResp.json();
+              // Grep the project repo for the query term
+              const grepResp = await fetch(`${RAG_URL}/search-repo?repo_path=${encodeURIComponent(projectRepoPath)}&query=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) }).catch(() => null);
+              const grepResult = grepResp?.ok ? await grepResp.json() : null;
+              result = {
+                repo: projectRepoPath.split('/').pop(),
+                top_level: topLevel?.files?.map(f => f.name) || [],
+                search_results: grepResult?.matches || [],
+                note: `Searched ${projectRepoPath.split('/').pop()} codebase for "${query}"`
+              };
+            } else {
+              const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
+              result = await ctxResp.json();
+            }
           }
           else if (name === 'update_task') {
             const taskId = (args.task_id || '').trim();
@@ -981,30 +998,49 @@ ${BASE_INSTRUCTION}`;
           else if (name === 'read_file') {
             const filePath = (args.path || '').trim().replace(/^\//, '');
             if (!filePath) throw new Error('path required');
-            const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
             const startLine = args.start_line || 1;
             const endLine = args.end_line || startLine + 100;
-            const ghResp = await fetch(`https://api.github.com/repos/mrg33k/aom-studio/contents/${encodeURIComponent(filePath)}?ref=main`, {
-              headers: { Accept: 'application/vnd.github.v3.raw', ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}) },
-              signal: AbortSignal.timeout(10000),
-            });
-            if (!ghResp.ok) throw new Error(`File not found: ${filePath} (${ghResp.status})`);
-            const content = await ghResp.text();
-            const lines = content.split('\n');
-            const slice = lines.slice(startLine - 1, endLine).map((l, i) => `${startLine + i}: ${l}`).join('\n');
-            result = { path: filePath, lines: `${startLine}-${Math.min(endLine, lines.length)}`, total_lines: lines.length, content: slice };
+            // Project chats: read from the project's repo via RAG server (local filesystem)
+            // Default: read from aom-studio via GitHub API
+            if (typeof projectRepoPath === 'string' && projectRepoPath) {
+              const ragResp = await fetch(`${RAG_URL}/read-repo-file?repo_path=${encodeURIComponent(projectRepoPath)}&path=${encodeURIComponent(filePath)}&start_line=${startLine}&end_line=${endLine}`, {
+                signal: AbortSignal.timeout(10000),
+              });
+              result = await ragResp.json();
+              if (!ragResp.ok) throw new Error(result.error || `File not found: ${filePath}`);
+            } else {
+              const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+              const ghResp = await fetch(`https://api.github.com/repos/mrg33k/aom-studio/contents/${encodeURIComponent(filePath)}?ref=main`, {
+                headers: { Accept: 'application/vnd.github.v3.raw', ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}) },
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!ghResp.ok) throw new Error(`File not found: ${filePath} (${ghResp.status})`);
+              const content = await ghResp.text();
+              const lines = content.split('\n');
+              const slice = lines.slice(startLine - 1, endLine).map((l, i) => `${startLine + i}: ${l}`).join('\n');
+              result = { path: filePath, lines: `${startLine}-${Math.min(endLine, lines.length)}`, total_lines: lines.length, content: slice };
+            }
           }
           else if (name === 'list_files') {
             const dirPath = (args.path || '').trim().replace(/^\//, '').replace(/\/$/, '');
-            const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-            const ghResp = await fetch(`https://api.github.com/repos/mrg33k/aom-studio/contents/${dirPath ? encodeURIComponent(dirPath) : ''}?ref=main`, {
-              headers: { Accept: 'application/vnd.github.v3+json', ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}) },
-              signal: AbortSignal.timeout(10000),
-            });
-            if (!ghResp.ok) throw new Error(`Directory not found: ${dirPath} (${ghResp.status})`);
-            const items = await ghResp.json();
-            if (!Array.isArray(items)) throw new Error(`Not a directory: ${dirPath}`);
-            result = { path: dirPath || '/', files: items.map(i => ({ name: i.name, type: i.type, size: i.size })) };
+            // Project chats: list from the project's repo via RAG server
+            if (typeof projectRepoPath === 'string' && projectRepoPath) {
+              const ragResp = await fetch(`${RAG_URL}/list-repo-files?repo_path=${encodeURIComponent(projectRepoPath)}&path=${encodeURIComponent(dirPath)}`, {
+                signal: AbortSignal.timeout(10000),
+              });
+              result = await ragResp.json();
+              if (!ragResp.ok) throw new Error(result.error || `Directory not found: ${dirPath}`);
+            } else {
+              const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+              const ghResp = await fetch(`https://api.github.com/repos/mrg33k/aom-studio/contents/${dirPath ? encodeURIComponent(dirPath) : ''}?ref=main`, {
+                headers: { Accept: 'application/vnd.github.v3+json', ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {}) },
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!ghResp.ok) throw new Error(`Directory not found: ${dirPath} (${ghResp.status})`);
+              const items = await ghResp.json();
+              if (!Array.isArray(items)) throw new Error(`Not a directory: ${dirPath}`);
+              result = { path: dirPath || '/', files: items.map(i => ({ name: i.name, type: i.type, size: i.size })) };
+            }
           }
           else if (name === 'read_project_file') {
             const slug = projectSlug || args.project_slug;
