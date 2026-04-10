@@ -2857,146 +2857,134 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Project chat input */}
+        {/* Project chat input -- CV3 pill design */}
         <div style={{
-          padding: '10px 14px calc(14px + env(safe-area-inset-bottom, 0px))',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(8,14,28,0.95)',
           flexShrink: 0,
+          padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
+          background: C.bg,
+          borderTop: '1px solid ' + C.border,
         }}>
-          <style>{`@keyframes recblink { 0%,100% { opacity:1 } 50% { opacity:0.3 } }`}</style>
-          {/* Voice error banner */}
-          {micError && (
-            <div style={{
-              marginBottom: 8,
-              padding: '7px 10px',
-              background: 'rgba(239,68,68,0.12)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8,
-              color: '#FCA5A5',
-              fontSize: 12,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-            }}>
-              <span>{micError}</span>
-              <button
-                onClick={() => setMicError(null)}
-                style={{ background: 'none', border: 'none', color: '#FCA5A5', cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}
-              >×</button>
-            </div>
-          )}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-            <textarea
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            style={{ display: 'none' }}
+            onChange={handleFileSelection}
+          />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: C.s1,
+            border: '1.5px solid ' + (chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
+            borderRadius: 26,
+            padding: '5px 5px 5px 16px',
+            maxWidth: 560,
+            margin: '0 auto',
+            boxShadow: chatInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+            transition: 'border-color 0.25s, box-shadow 0.25s',
+          }}>
+            <input
               ref={inputRef}
+              type="text"
               value={input}
-              onChange={e => {
-                setInput(e.target.value)
-                e.target.style.height = 'auto'
-                e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
-              }}
+              onChange={e => setInput(e.target.value)}
               onKeyDown={handleProjectKeyDown}
-              placeholder={isTranscribing ? 'Transcribing…' : `Message ${selectedProject?.name || 'project'}…`}
-              rows={1}
+              onFocus={() => setChatInputFocused(true)}
+              onBlur={() => setChatInputFocused(false)}
+              placeholder={`Message ${selectedProject?.name || 'project'}...`}
               style={{
                 flex: 1,
-                padding: '9px 12px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 10,
-                color: C.text,
-                fontSize: 13,
-                fontFamily: "'Inter', sans-serif",
+                background: 'none',
+                border: 'none',
                 outline: 'none',
-                resize: 'none',
-                lineHeight: 1.5,
-                minHeight: 36,
-                maxHeight: 100,
-                overflowY: 'auto',
+                color: C.text,
+                fontSize: 15,
+                fontWeight: 500,
+                fontFamily: "'Inter', sans-serif",
               }}
             />
-            <button
-              onClick={handleProjectSend}
-              disabled={!input.trim() || sending}
-              style={{
-                width: 36, height: 36, flexShrink: 0,
-                borderRadius: 10,
-                background: input.trim() && !sending
-                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                  : 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                cursor: input.trim() && !sending ? 'pointer' : 'default',
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <button
+                title="Attach"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'none', border: 'none',
+                  color: uploading ? C.accent : C.muted, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'all 0.15s',
+                }}
+              >
+                {uploading ? (
+                  <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.15)', borderTopColor: C.accent, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                ) : (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                )}
+              </button>
+              <button title="Commands" onClick={() => {}} style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background 150ms ease',
-              }}
-            >
-              {sending ? (
-                <div style={{
-                  width: 14, height: 14,
-                  border: '2px solid rgba(255,255,255,0.2)',
-                  borderTopColor: C.muted,
-                  borderRadius: '50%',
-                  animation: 'spin 0.7s linear infinite',
-                }} />
-              ) : (
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-                  stroke={input.trim() ? '#fff' : C.muted}
-                  strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                flexShrink: 0, transition: 'all 0.15s',
+              }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
                 </svg>
-              )}
-            </button>
-            {/* Mic recording button */}
-            <button
-              title={isTranscribing ? 'Transcribing…' : isRecording ? 'Stop recording' : 'Record audio'}
-              onClick={isTranscribing ? undefined : handleMicToggle}
-              disabled={isTranscribing}
-              style={{
-                width: 36, height: 36, flexShrink: 0,
-                borderRadius: 10,
-                background: isRecording
-                  ? 'rgba(239,68,68,0.18)'
-                  : isTranscribing
-                  ? 'rgba(99,102,241,0.18)'
-                  : 'rgba(255,255,255,0.05)',
-                border: isRecording
-                  ? '1px solid rgba(239,68,68,0.4)'
-                  : isTranscribing
-                  ? '1px solid rgba(99,102,241,0.4)'
-                  : '1px solid rgba(255,255,255,0.08)',
-                cursor: isTranscribing ? 'default' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background 150ms ease, border-color 150ms ease',
-                position: 'relative',
-              }}
-            >
-              {isRecording && (
-                <span style={{
-                  position: 'absolute', top: -18,
-                  left: '50%', transform: 'translateX(-50%)',
-                  fontSize: 9, fontWeight: 700, color: '#F87171',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  whiteSpace: 'nowrap',
-                  animation: 'recblink 1s ease-in-out infinite',
-                }}>REC</span>
-              )}
-              {isTranscribing ? (
-                <div style={{
-                  width: 12, height: 12,
-                  border: '2px solid rgba(99,102,241,0.3)',
-                  borderTopColor: '#818CF8',
-                  borderRadius: '50%',
-                  animation: 'spin 0.7s linear infinite',
-                }} />
-              ) : (
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-                  stroke={isRecording ? '#F87171' : C.muted}
-                  strokeWidth={2} strokeLinecap="round">
+              </button>
+            </div>
+            {!input.trim() && (
+              <button
+                title="Start voice"
+                onClick={handleMicToggle}
+                style={{
+                  width: 42, height: 42, borderRadius: '50%',
+                  background: isRecording ? 'rgba(239,68,68,0.9)' : C.accent,
+                  border: 'none',
+                  color: '#000', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'transform 0.15s, background 0.2s',
+                  boxShadow: isRecording ? '0 0 0 4px rgba(239,68,68,0.25)' : 'none',
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke={isRecording ? '#fff' : '#000'}
+                  strokeWidth="2.5" strokeLinecap="round">
                   <rect x="9" y="2" width="6" height="12" rx="3"/>
                   <path d="M5 10a7 7 0 0014 0"/>
                   <line x1="12" y1="19" x2="12" y2="22"/>
                 </svg>
-              )}
-            </button>
+              </button>
+            )}
+            {input.trim() && (
+              <button
+                title="Send"
+                onClick={handleProjectSend}
+                disabled={sending}
+                style={{
+                  width: 42, height: 42, borderRadius: '50%',
+                  background: C.accent, border: 'none',
+                  color: '#000', cursor: sending ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, opacity: sending ? 0.6 : 1,
+                  transition: 'transform 0.15s',
+                }}
+              >
+                {sending ? (
+                  <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.15)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -4091,35 +4079,32 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               </svg>
             </button>
           </div>
-          {/* Mic button (hidden when text present) */}
+          {/* Voice button (hidden when text present) -- triggers Gemini Live voice */}
           {!input.trim() && (
             <button
-              title={isRecording ? 'Stop recording' : 'Record audio'}
-              onClick={handleMicToggle}
+              title={isVoiceActive ? 'End voice' : 'Start voice'}
+              onClick={() => {
+                if (isVoiceActive) {
+                  voiceChatRef.current?.stop()
+                  setIsVoiceActive(false)
+                  setVoiceMuted(false)
+                  setVoiceTranscriptText('')
+                } else {
+                  setIsVoiceActive(true)
+                }
+              }}
               style={{
                 width: 42, height: 42, borderRadius: '50%',
-                background: isRecording ? 'rgba(239,68,68,0.9)' : C.accent,
-                border: 'none',
-                color: '#000', cursor: 'pointer',
+                background: isVoiceActive ? 'rgba(16,185,129,0.15)' : C.accent,
+                border: isVoiceActive ? '2px solid rgba(16,185,129,0.4)' : 'none',
+                color: isVoiceActive ? C.accent : '#000', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
                 transition: 'transform 0.15s, background 0.2s',
-                boxShadow: isRecording ? '0 0 0 4px rgba(239,68,68,0.25)' : 'none',
-                position: 'relative',
               }}
             >
-              {isRecording && (
-                <span style={{
-                  position: 'absolute', top: -20,
-                  left: '50%', transform: 'translateX(-50%)',
-                  fontSize: 9, fontWeight: 700, color: '#F87171',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  whiteSpace: 'nowrap',
-                  animation: 'recblink 1s ease-in-out infinite',
-                }}>REC</span>
-              )}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke={isRecording ? '#fff' : '#000'}
+                stroke="currentColor"
                 strokeWidth="2.5" strokeLinecap="round">
                 <rect x="9" y="2" width="6" height="12" rx="3"/>
                 <path d="M5 10a7 7 0 0014 0"/>
