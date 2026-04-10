@@ -3067,48 +3067,51 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   display: 'flex',
                   justifyContent: isUser ? 'flex-end' : 'flex-start',
                   alignItems: 'flex-end',
-                  gap: 6,
+                  gap: 8,
+                  marginBottom: 2,
                 }}
               >
                 {!isUser && (
                   <div style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
-                    border: `1px solid ${projColor}55`,
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                    background: `linear-gradient(135deg, ${projColor}33, ${projColor}18)`,
+                    border: `1px solid ${projColor}44`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <div style={{ width: 8, height: 8, borderRadius: 2, background: projColor }} />
+                    <div style={{ width: 10, height: 10, borderRadius: 3, background: projColor }} />
                   </div>
                 )}
-                <div style={{ maxWidth: '78%', minWidth: 0 }}>
+                <div style={{ maxWidth: '75%', minWidth: 0 }}>
                   {isUser && msg.user_name && msg.user_name !== displayName && (
-                    <div style={{ fontSize: 10, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 2, fontFamily: "'Inter', sans-serif" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
                       {msg.user_name}
                     </div>
                   )}
                   <div style={{
-                    padding: '9px 13px',
-                    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    fontSize: 13, lineHeight: 1.5,
+                    padding: '10px 16px',
+                    borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    fontSize: 14, lineHeight: 1.55,
                     color: isUser ? '#fff' : C.text,
                     background: isUser
-                      ? `linear-gradient(135deg, ${senderColor} 0%, ${senderColor}dd 100%)`
-                      : 'rgba(255,255,255,0.06)',
-                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                      ? senderColor
+                      : 'rgba(255,255,255,0.05)',
+                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.07)',
                     wordBreak: 'break-word',
+                    fontFamily: "'Inter', sans-serif",
+                    letterSpacing: '-0.01em',
                     ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
                   }}>
                     {isUser
                       ? msg.text
-                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 13, lineHeight: 1.5, color: C.text }} />
+                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.55, color: C.text }} />
                     }
                   </div>
                   <div style={{
-                    fontSize: 10, color: 'rgba(80,100,128,0.55)',
-                    marginTop: 3,
+                    fontSize: 11, color: 'rgba(120,140,165,0.5)',
+                    marginTop: 4,
                     textAlign: isUser ? 'right' : 'left',
-                    paddingRight: isUser ? 4 : 0,
-                    paddingLeft: isUser ? 0 : 4,
+                    paddingRight: isUser ? 2 : 0,
+                    paddingLeft: isUser ? 0 : 2,
                     fontFamily: "'Inter', sans-serif",
                   }}>
                     {formatChatTime(msg.timestamp)}
@@ -3116,11 +3119,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 </div>
                 {isUser && (
                   <div title={senderName || 'User'} style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    background: `linear-gradient(135deg, ${senderColor} 0%, ${senderColor}cc 100%)`,
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                    background: senderColor,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>{senderInitial}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{senderInitial}</span>
                   </div>
                 )}
               </div>
@@ -3327,7 +3330,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             </div>
             {!input.trim() && (
               <button
-                title={isVoiceActive ? 'End voice' : 'Start voice'}
+                title={isVoiceActive ? 'End call' : 'Start call'}
                 onClick={() => setIsVoiceActive(true)}
                 style={{
                   width: 42, height: 42, borderRadius: '50%',
@@ -3341,10 +3344,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                   stroke="#000"
-                  strokeWidth="2.5" strokeLinecap="round">
-                  <rect x="9" y="2" width="6" height="12" rx="3"/>
-                  <path d="M5 10a7 7 0 0014 0"/>
-                  <line x1="12" y1="19" x2="12" y2="22"/>
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
                 </svg>
               </button>
             )}
@@ -4024,7 +4025,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             <span style={{ fontSize: 11, color: C.muted, lineHeight: 1 }}>Online</span>
           </div>
         </div>
-        {/* Mic button in header */}
+        {/* Telephone button in header -- long-form recording mode */}
         <button
           onClick={() => {
             if (isVoiceActive) {
@@ -4036,19 +4037,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               setIsVoiceActive(true)
             }
           }}
-          title={isVoiceActive ? 'End voice' : 'Start voice'}
+          title={isVoiceActive ? 'End call' : 'Start call'}
           style={{
             width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            background: isVoiceActive ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
-            border: isVoiceActive ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+            background: isVoiceActive ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
+            border: isVoiceActive ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: isVoiceActive ? C.accent : C.muted,
+            color: isVoiceActive ? '#EF4444' : C.muted,
+            transition: 'all 0.15s',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <rect x="9" y="2" width="6" height="12" rx="3"/>
-            <path d="M5 10a7 7 0 0014 0"/>
-            <line x1="12" y1="19" x2="12" y2="22"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
           </svg>
         </button>
         {/* Settings button */}
@@ -4311,35 +4311,38 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 display: 'flex',
                 justifyContent: isUser ? 'flex-end' : 'flex-start',
                 alignItems: 'flex-end',
-                gap: 6,
+                gap: 8,
+                marginBottom: 2,
               }}
             >
               {!isUser && (
-                <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={22} />
+                <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={28} />
               )}
-              <div style={{ maxWidth: '78%', minWidth: 0 }}>
+              <div style={{ maxWidth: '75%', minWidth: 0 }}>
                 {/* Text bubble -- hidden when text is only the attachment label */}
                 {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (
                   <div style={{
-                    padding: '9px 13px',
-                    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    fontSize: 13, lineHeight: 1.5,
+                    padding: '10px 16px',
+                    borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    fontSize: 14, lineHeight: 1.55,
                     color: isUser ? '#fff' : C.text,
                     background: isUser
-                      ? `linear-gradient(135deg, ${agSenderColor} 0%, ${agSenderColor}dd 100%)`
-                      : 'rgba(255,255,255,0.06)',
-                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                      ? agSenderColor
+                      : 'rgba(255,255,255,0.05)',
+                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.07)',
                     wordBreak: 'break-word',
+                    fontFamily: "'Inter', sans-serif",
+                    letterSpacing: '-0.01em',
                     ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
                   }}>
                     {isUser
                       ? msg.text
-                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 13, lineHeight: 1.5, color: C.text }} />
+                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.55, color: C.text }} />
                     }
                   </div>
                 )}
                 {isUser && msg.user_name && msg.user_name !== displayName && (
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 2, marginTop: -2, fontFamily: "'Inter', sans-serif" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, marginTop: -2, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
                     {msg.user_name}
                   </div>
                 )}
@@ -4436,20 +4439,20 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   return <div style={{ marginTop: hasText ? 6 : 0 }}>{items}</div>
                 })()}
                 <div style={{
-                  fontSize: 10, color: 'rgba(80,100,128,0.55)',
-                  marginTop: 3,
+                  fontSize: 11, color: 'rgba(120,140,165,0.5)',
+                  marginTop: 4,
                   textAlign: isUser ? 'right' : 'left',
-                  paddingRight: isUser ? 4 : 0,
-                  paddingLeft: isUser ? 0 : 4,
+                  paddingRight: isUser ? 2 : 0,
+                  paddingLeft: isUser ? 0 : 2,
                   fontFamily: "'Inter', sans-serif",
                 }}>
                   {formatChatTime(msg.timestamp)}
                 </div>
               </div>
               {isUser && (
-                <div style={{
-                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                  background: `linear-gradient(135deg, ${agSenderColor} 0%, ${agSenderColor}cc 100%)`,
+                <div title={agSenderName || 'User'} style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: agSenderColor,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#fff' }}>{agSenderInitial}</span>
