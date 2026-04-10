@@ -1239,7 +1239,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
               <button
                 onClick={async () => {
                   for (const t of filteredFailed) {
-                    await supabase.from('tasks').update({ status: 'done', metadata: { ...(t.metadata || {}), dismissed: true } }).eq('id', t.id)
+                    await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
                   }
                 }}
                 style={{ fontSize: 10, fontWeight: 600, color: C.dim, cursor: 'pointer', letterSpacing: '0.02em', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
@@ -1282,7 +1282,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation()
-                        await supabase.from('tasks').update({ status: 'queued', qa_score: null }).eq('id', t.id)
+                        await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'requeue', taskId: t.id }) })
                       }}
                       style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                     >
@@ -1292,7 +1292,7 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                     <button
                       onClick={async (e) => {
                         e.stopPropagation()
-                        await supabase.from('tasks').update({ status: 'done', metadata: { ...(t.metadata || {}), dismissed: true } }).eq('id', t.id)
+                        await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
                       }}
                       style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                     >

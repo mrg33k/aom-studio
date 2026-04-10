@@ -228,6 +228,16 @@ export default async function handler(req, res) {
         }
       }
 
+      case 'dismiss': {
+        const result = await supabasePatch(filter, { status: 'done', metadata: { dismissed: true } });
+        return res.status(200).json({ ok: true, action: 'dismiss', result });
+      }
+
+      case 'requeue': {
+        const result = await supabasePatch(filter, { status: 'queued', qa_score: null });
+        return res.status(200).json({ ok: true, action: 'requeue', result });
+      }
+
       default:
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }
