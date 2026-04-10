@@ -1739,6 +1739,15 @@ function SwipeCard({ children, actions, style }) {
   )
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
 function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [] }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -1760,7 +1769,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const voiceChatRef   = useRef(null)
   const mediaRecorderRef = useRef(null)
   const audioChunksRef   = useRef([])
+  const sendProjectTextRef = useRef(null)
+  const sendAgentTextRef = useRef(null)
   const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [micError, setMicError] = useState(null)
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
@@ -2326,6 +2339,74 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     }
   }, [input, sending, selectedAgent, worldId])
 
+  // Core send logic for agent chat -- accepts text directly so voice transcription can call it
+  const sendAgentText = useCallback(async (text) => {
+    if (!text?.trim() || !selectedAgent || !worldId) return
+    setInput('')
+    if (inputRef.current) inputRef.current.style.height = 'auto'
+    setSending(true)
+    const now = new Date().toISOString()
+    const tempUserId = `temp-user-${Date.now()}`
+    setMessages(prev => [...prev, {
+      id: tempUserId,
+      role: 'user',
+      agent: selectedAgent.slug,
+      text,
+      timestamp: now,
+      source: 'corner-dashboard',
+    }])
+    const previewText = 'You: ' + (text.length > 70 ? text.slice(0, 70) + '...' : text)
+    setAgentPreviews(prev => ({
+      ...prev,
+      [selectedAgent.slug]: { agent: selectedAgent.slug, text: previewText, timestamp: now, id: tempUserId, isUnread: false },
+    }))
+    const history = messagesRef.current.slice(-20).map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text || '' }],
+    }))
+    try {
+      const [saveResult, geminiResult] = await Promise.allSettled([
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId }),
+        }).then(r => r.json()),
+        fetch('/api/dashboard/v2-gemini-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, agent: selectedAgent.slug, client_id: worldId, history, project_id: selectedProject?.id || null }),
+        }).then(r => r.json()),
+      ])
+      if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
+        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.value.message } : m))
+      }
+      if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
+        const reply = geminiResult.value.reply
+        const replyTime = new Date().toISOString()
+        const tempAgentId = `temp-agent-${Date.now()}`
+        setMessages(prev => [...prev, { id: tempAgentId, role: 'agent', agent: selectedAgent.slug, text: reply, timestamp: replyTime, source: 'gemini' }])
+        setAgentPreviews(prev => ({
+          ...prev,
+          [selectedAgent.slug]: { agent: selectedAgent.slug, text: reply.length > 80 ? reply.slice(0, 80) + '...' : reply, timestamp: replyTime, id: tempAgentId, isUnread: false },
+        }))
+        fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: selectedAgent.slug, text: reply, role: 'agent', source: 'gemini', client_id: worldId }),
+        }).then(r => r.json()).then(data => {
+          if (data?.message?.id) setMessages(prev => prev.map(m => m.id === tempAgentId ? { ...data.message } : m))
+        }).catch(() => {})
+      }
+    } catch (err) {
+      console.error('[ChatPanel] agent send error:', err)
+    } finally {
+      setSending(false)
+      inputRef.current?.focus()
+    }
+  }, [selectedAgent, worldId, selectedProject])
+
+  useEffect(() => { sendAgentTextRef.current = sendAgentText }, [sendAgentText])
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -2396,11 +2477,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     setUploading(false)
   }, [selectedAgent, worldId])
 
-  const handleProjectSend = useCallback(async () => {
-    if (!input.trim() || sending || !selectedProject || !worldId) return
-    const text = input.trim()
-    setInput('')
-    if (inputRef.current) inputRef.current.style.height = 'auto'
+  // Core send logic shared by typed input and voice transcription
+  const sendProjectText = useCallback(async (text) => {
+    if (!text?.trim() || !selectedProject || !worldId) return
     setSending(true)
     const agentKey = `project:${selectedProject.slug}`
     const now = new Date().toISOString()
@@ -2485,7 +2564,18 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       setSending(false)
       inputRef.current?.focus()
     }
-  }, [input, sending, selectedProject, worldId])
+  }, [sending, selectedProject, worldId])
+
+  // Keep a stable ref so the recorder onstop callback (set at record-start) always reaches the latest sendProjectText
+  useEffect(() => { sendProjectTextRef.current = sendProjectText }, [sendProjectText])
+
+  const handleProjectSend = useCallback(async () => {
+    if (!input.trim() || sending) return
+    const text = input.trim()
+    setInput('')
+    if (inputRef.current) inputRef.current.style.height = 'auto'
+    await sendProjectText(text)
+  }, [input, sending, sendProjectText])
 
   const handleProjectKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleProjectSend() }
@@ -2496,21 +2586,43 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       mediaRecorderRef.current?.stop()
       setIsRecording(false)
     } else {
+      setMicError(null)
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         audioChunksRef.current = []
         const recorder = new MediaRecorder(stream)
         recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
           const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-          console.log('Audio blob generated', blob)
           stream.getTracks().forEach(t => t.stop())
+          setIsTranscribing(true)
+          try {
+            const base64 = await blobToBase64(blob)
+            const res = await fetch('/api/dashboard/v2-transcribe-audio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audio_base64: base64, mime_type: 'audio/webm' }),
+            })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+            if (data.text?.trim()) {
+              await sendProjectTextRef.current?.(data.text.trim())
+            } else {
+              setMicError('No speech detected. Try again.')
+            }
+          } catch (err) {
+            console.error('[ChatPanel] transcription error:', err)
+            setMicError('Failed to transcribe audio. Check your connection.')
+          } finally {
+            setIsTranscribing(false)
+          }
         }
         recorder.start()
         mediaRecorderRef.current = recorder
         setIsRecording(true)
       } catch (err) {
         console.error('Microphone access denied:', err)
+        setMicError('Microphone access denied. Allow mic in browser settings.')
       }
     }
   }, [isRecording])
@@ -2678,6 +2790,25 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           flexShrink: 0,
         }}>
           <style>{`@keyframes recblink { 0%,100% { opacity:1 } 50% { opacity:0.3 } }`}</style>
+          {/* Voice error banner */}
+          {micError && (
+            <div style={{
+              marginBottom: 8,
+              padding: '7px 10px',
+              background: 'rgba(239,68,68,0.12)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 8,
+              color: '#FCA5A5',
+              fontSize: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            }}>
+              <span>{micError}</span>
+              <button
+                onClick={() => setMicError(null)}
+                style={{ background: 'none', border: 'none', color: '#FCA5A5', cursor: 'pointer', padding: 0, fontSize: 14, lineHeight: 1 }}
+              >×</button>
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
             <textarea
               ref={inputRef}
@@ -2688,7 +2819,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'
               }}
               onKeyDown={handleProjectKeyDown}
-              placeholder={`Message ${selectedProject?.name || 'project'}…`}
+              placeholder={isTranscribing ? 'Transcribing…' : `Message ${selectedProject?.name || 'project'}…`}
               rows={1}
               style={{
                 flex: 1,
@@ -2741,18 +2872,23 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             </button>
             {/* Mic recording button */}
             <button
-              title={isRecording ? 'Stop recording' : 'Record audio'}
-              onClick={handleMicToggle}
+              title={isTranscribing ? 'Transcribing…' : isRecording ? 'Stop recording' : 'Record audio'}
+              onClick={isTranscribing ? undefined : handleMicToggle}
+              disabled={isTranscribing}
               style={{
                 width: 36, height: 36, flexShrink: 0,
                 borderRadius: 10,
                 background: isRecording
                   ? 'rgba(239,68,68,0.18)'
+                  : isTranscribing
+                  ? 'rgba(99,102,241,0.18)'
                   : 'rgba(255,255,255,0.05)',
                 border: isRecording
                   ? '1px solid rgba(239,68,68,0.4)'
+                  : isTranscribing
+                  ? '1px solid rgba(99,102,241,0.4)'
                   : '1px solid rgba(255,255,255,0.08)',
-                cursor: 'pointer',
+                cursor: isTranscribing ? 'default' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 150ms ease, border-color 150ms ease',
                 position: 'relative',
@@ -2768,13 +2904,23 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   animation: 'recblink 1s ease-in-out infinite',
                 }}>REC</span>
               )}
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-                stroke={isRecording ? '#F87171' : C.muted}
-                strokeWidth={2} strokeLinecap="round">
-                <rect x="9" y="2" width="6" height="12" rx="3"/>
-                <path d="M5 10a7 7 0 0014 0"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
-              </svg>
+              {isTranscribing ? (
+                <div style={{
+                  width: 12, height: 12,
+                  border: '2px solid rgba(99,102,241,0.3)',
+                  borderTopColor: '#818CF8',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              ) : (
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+                  stroke={isRecording ? '#F87171' : C.muted}
+                  strokeWidth={2} strokeLinecap="round">
+                  <rect x="9" y="2" width="6" height="12" rx="3"/>
+                  <path d="M5 10a7 7 0 0014 0"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+              )}
             </button>
           </div>
         </div>
