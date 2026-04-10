@@ -5288,8 +5288,15 @@ export default function CornerV3() {
   // This prevents hooks from fetching with the wrong client_id (e.g. 'aom' default)
   if (!authReady || (!currentUser && typeof window !== 'undefined')) {
     return (
-      <div style={{ width: '100%', height: '100dvh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: C.muted, fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
+      <div style={{ width: '100%', height: '100dvh', background: '#060A14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
+        <style>{`@keyframes cvLoaderBar { 0% { width: 0%; } 100% { width: 100%; } } @keyframes cvSpin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ fontSize: 28, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.02em', marginBottom: 32 }}>
+          Corner<span style={{ color: '#10B981' }}>.</span>
+        </div>
+        <div style={{ width: 200, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ height: '100%', background: 'linear-gradient(90deg, #10B981, #34D399)', borderRadius: 2, animation: 'cvLoaderBar 2s ease-in-out infinite' }} />
+        </div>
+        <div style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>Loading your workspace...</div>
       </div>
     )
   }
