@@ -542,6 +542,14 @@ const GREETINGS = [
   (name) => `Good ${_timeOfDay()}, ${name}. Let's go.`,
 ]
 
+const VOICE_OPTIONS = [
+  { id: 'alloy',   label: 'Alloy' },
+  { id: 'fable',   label: 'Fable' },
+  { id: 'onyx',    label: 'Onyx' },
+  { id: 'nova',    label: 'Nova' },
+  { id: 'shimmer', label: 'Shimmer' },
+]
+
 // ── Home panel with agent cards ────────────────────────────────────────────────
 
 function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug }) {
@@ -1778,6 +1786,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [agentVoices, setAgentVoices] = useState({})
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -1848,6 +1857,14 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (!projectId || !projects?.length) return null
     return projects.find(p => String(p.id) === String(projectId)) || null
   }, [projectId, projects, inlineProject])
+
+  // ── Per-chat voice selection ──────────────────────────────────────────────
+  const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
+  const currentVoice = currentChatKey ? (agentVoices[currentChatKey] || 'alloy') : 'alloy'
+  const selectVoice = useCallback((voice) => {
+    if (!currentChatKey) return
+    setAgentVoices(prev => ({ ...prev, [currentChatKey]: voice }))
+  }, [currentChatKey])
 
   // Fetch latest message per agent (comprehensive -- covers all agents, not just missing from inboxItems)
   const [agentPreviews, setAgentPreviews] = useState({})
@@ -2707,7 +2724,34 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                 zIndex: 100,
                 padding: '8px 0',
-              }} />
+              }}>
+                <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Voice
+                </div>
+                {VOICE_OPTIONS.map(voice => {
+                  const isActive = currentVoice === voice.id
+                  return (
+                    <button
+                      key={voice.id}
+                      onClick={() => selectVoice(voice.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        width: '100%', padding: '7px 12px',
+                        background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
+                        border: 'none', cursor: 'pointer', textAlign: 'left',
+                        color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+                        fontSize: 13,
+                      }}
+                    >
+                      {isActive
+                        ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M1 5l3 3 5-6"/></svg>
+                        : <span style={{ width: 10, flexShrink: 0 }}/>
+                      }
+                      {voice.label}
+                    </button>
+                  )
+                })}
+              </div>
             )}
           </div>
         </div>
@@ -3490,7 +3534,34 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
               zIndex: 100,
               padding: '8px 0',
-            }} />
+            }}>
+              <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Voice
+              </div>
+              {VOICE_OPTIONS.map(voice => {
+                const isActive = currentVoice === voice.id
+                return (
+                  <button
+                    key={voice.id}
+                    onClick={() => selectVoice(voice.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      width: '100%', padding: '7px 12px',
+                      background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
+                      border: 'none', cursor: 'pointer', textAlign: 'left',
+                      color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+                      fontSize: 13,
+                    }}
+                  >
+                    {isActive
+                      ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M1 5l3 3 5-6"/></svg>
+                      : <span style={{ width: 10, flexShrink: 0 }}/>
+                    }
+                    {voice.label}
+                  </button>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
