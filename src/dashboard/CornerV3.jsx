@@ -227,6 +227,32 @@ function UserAvatar({ user, onUserUpdate }) {
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
+          <div style={{ borderTop: `1px solid ${C.border2}`, marginTop: 12, paddingTop: 10 }}>
+            <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>
+              {user?.email}
+            </div>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut()
+                window.location.href = '/login'
+              }}
+              style={{
+                width: '100%',
+                padding: '7px 0',
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "'Inter', sans-serif",
+                color: '#EF4444',
+                background: 'transparent',
+                border: `1px solid rgba(239,68,68,0.3)`,
+                borderRadius: 8,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       )}
     </div>
