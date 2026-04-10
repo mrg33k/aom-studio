@@ -23,6 +23,7 @@ import { useProjects } from './hooks/useProjects'
 import { formatRelativeTime } from './timeUtils'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
+import ChatMessageRenderer from './components/ChatMessageRenderer.jsx'
 // ProjectCard import removed -- projects now render as inline cards matching agent card style
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
@@ -2635,10 +2636,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
                       : 'rgba(255,255,255,0.06)',
                     border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
+                    ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
                   }}>
-                    {msg.text}
+                    {isUser
+                      ? msg.text
+                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 13, lineHeight: 1.5, color: C.text }} />
+                    }
                   </div>
                   <div style={{
                     fontSize: 10, color: 'rgba(80,100,128,0.55)',
@@ -3510,10 +3514,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
                       : 'rgba(255,255,255,0.06)',
                     border: isUser ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
+                    ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
                   }}>
-                    {msg.text}
+                    {isUser
+                      ? msg.text
+                      : <ChatMessageRenderer content={msg.text} style={{ fontSize: 13, lineHeight: 1.5, color: C.text }} />
+                    }
                   </div>
                 )}
                 {/* Attachments -- rendered outside bubble using Steffen's styles */}
