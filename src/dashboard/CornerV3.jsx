@@ -1235,18 +1235,18 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
               <span style={{ fontSize: 10, fontWeight: 700, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
                 Failed
               </span>
-              <span
+              <button
                 onClick={async () => {
                   for (const t of filteredFailed) {
                     await supabase.from('tasks').update({ status: 'superseded' }).eq('id', t.id)
                   }
                 }}
-                style={{ fontSize: 10, fontWeight: 600, color: C.dim, cursor: 'pointer', letterSpacing: '0.02em' }}
+                style={{ fontSize: 10, fontWeight: 600, color: C.dim, cursor: 'pointer', letterSpacing: '0.02em', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
                 onMouseEnter={e => { e.currentTarget.style.color = C.muted }}
                 onMouseLeave={e => { e.currentTarget.style.color = C.dim }}
               >
                 Clear all
-              </span>
+              </button>
             </div>
             {filteredFailed.map((t) => {
               const qa = t.qa_score || t.qaScore
@@ -1278,29 +1278,25 @@ function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <span
+                    <button
                       onClick={async (e) => {
                         e.stopPropagation()
                         await supabase.from('tasks').update({ status: 'queued', qa_score: null }).eq('id', t.id)
                       }}
-                      style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 0' }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '0.7' }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+                      style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                     >
                       Requeue
-                    </span>
+                    </button>
                     <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
-                    <span
+                    <button
                       onClick={async (e) => {
                         e.stopPropagation()
                         await supabase.from('tasks').update({ status: 'superseded' }).eq('id', t.id)
                       }}
-                      style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 0' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = C.muted }}
-                      onMouseLeave={e => { e.currentTarget.style.color = C.dim }}
+                      style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                     >
                       Dismiss
-                    </span>
+                    </button>
                   </div>
                 </div>
               )
