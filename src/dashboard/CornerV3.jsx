@@ -3397,7 +3397,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       }
     }
     setUploading(false)
-  }, [selectedAgent, worldId])
+  }, [selectedAgent, selectedProject, worldId])
 
   // Core send logic shared by typed input and voice transcription
   const sendProjectText = useCallback(async (text) => {
