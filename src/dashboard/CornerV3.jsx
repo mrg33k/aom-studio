@@ -5071,8 +5071,8 @@ export default function CornerV3() {
 
   // Collect shared project slugs so useTasks can also fetch shared:slug tasks
   const sharedSlugs = useMemo(() =>
-    (projects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
-    [projects]
+    (taskProjects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
+    [taskProjects]
   )
   const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks(worldId, sharedSlugs)
 
