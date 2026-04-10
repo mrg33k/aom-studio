@@ -3545,6 +3545,27 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               {selectedProject?.name || 'Project'}
             </span>
           </div>
+          {/* Telephone button in project header */}
+          <button
+            onClick={handleMicToggle}
+            title={isRecording ? 'Stop recording' : 'Record voice message'}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: isRecording ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
+              border: isRecording ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: isRecording ? '#EF4444' : C.muted,
+              transition: 'all 0.15s',
+            }}
+          >
+            {isRecording ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+              </svg>
+            )}
+          </button>
           {/* Settings button */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
