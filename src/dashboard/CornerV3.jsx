@@ -2437,19 +2437,29 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             setMessages(prev => {
               // Deduplicate: skip if we already have this id (from optimistic insert)
               if (prev.some(m => m.id === msg.id)) return prev
-              // Voice messages: replace temp voice entry (voice-user-* / voice-model-*) with the
-              // real DB row so we don't show the same utterance twice.
+              // Replace temp optimistic message with real DB row (temp ids start with "temp-")
+              const tempIdx = prev.findIndex(m =>
+                typeof m.id === 'string' && m.id.startsWith('temp-') &&
+                m.role === msg.role &&
+                m.text === msg.text
+              )
+              if (tempIdx !== -1) {
+                const next = [...prev]
+                next[tempIdx] = msg
+                return next
+              }
+              // Voice messages: replace temp voice entry
               if (msg.source === 'voice') {
                 const tempRole = msg.role === 'user' ? 'user' : 'agent'
-                const tempIdx = prev.findIndex(m =>
+                const voiceIdx = prev.findIndex(m =>
                   m.source === 'voice' &&
                   m.text === msg.text &&
                   m.role === tempRole &&
                   typeof m.id === 'string' && m.id.startsWith('voice-')
                 )
-                if (tempIdx !== -1) {
+                if (voiceIdx !== -1) {
                   const next = [...prev]
-                  next[tempIdx] = msg
+                  next[voiceIdx] = msg
                   return next
                 }
               }
@@ -2494,18 +2504,29 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           if (msg.agent === `project:${selectedProject.slug}`) {
             setMessages(prev => {
               if (prev.some(m => m.id === msg.id)) return prev
-              // Voice messages: replace temp voice entry to prevent duplicates
+              // Replace temp optimistic message with real DB row
+              const tempIdx = prev.findIndex(m =>
+                typeof m.id === 'string' && m.id.startsWith('temp-') &&
+                m.role === msg.role &&
+                m.text === msg.text
+              )
+              if (tempIdx !== -1) {
+                const next = [...prev]
+                next[tempIdx] = msg
+                return next
+              }
+              // Voice messages: replace temp voice entry
               if (msg.source === 'voice') {
                 const tempRole = msg.role === 'user' ? 'user' : 'agent'
-                const tempIdx = prev.findIndex(m =>
+                const voiceIdx = prev.findIndex(m =>
                   m.source === 'voice' &&
                   m.text === msg.text &&
                   m.role === tempRole &&
                   typeof m.id === 'string' && m.id.startsWith('voice-')
                 )
-                if (tempIdx !== -1) {
+                if (voiceIdx !== -1) {
                   const next = [...prev]
-                  next[tempIdx] = msg
+                  next[voiceIdx] = msg
                   return next
                 }
               }
