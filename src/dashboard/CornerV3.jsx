@@ -111,6 +111,55 @@ function BellIcon({ hasNew = false }) {
 
 // ── User avatar with profile name edit popover ───────────────────────────────
 
+// Generate a unique geometric avatar from a seed string (name/slug).
+// Returns base64 JPEG. Deterministic: same seed = same avatar.
+function generateAvatar(seed) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const ctx = canvas.getContext('2d')
+  // Hash seed to numbers
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0
+  const hue1 = Math.abs(hash % 360)
+  const hue2 = (hue1 + 40 + Math.abs((hash >> 8) % 60)) % 360
+  // Gradient background
+  const grad = ctx.createLinearGradient(0, 0, 64, 64)
+  grad.addColorStop(0, `hsl(${hue1}, 70%, 45%)`)
+  grad.addColorStop(1, `hsl(${hue2}, 65%, 35%)`)
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, 64, 64)
+  // Geometric shapes based on hash
+  const shapes = Math.abs((hash >> 4) % 4) + 3
+  for (let i = 0; i < shapes; i++) {
+    const x = Math.abs((hash >> (i * 3)) % 64)
+    const y = Math.abs((hash >> (i * 3 + 1)) % 64)
+    const r = 8 + Math.abs((hash >> (i * 3 + 2)) % 16)
+    const alpha = 0.15 + (i % 3) * 0.1
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`
+    ctx.beginPath()
+    if (i % 3 === 0) {
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+    } else if (i % 3 === 1) {
+      ctx.rect(x - r/2, y - r/2, r, r)
+    } else {
+      ctx.moveTo(x, y - r)
+      ctx.lineTo(x + r, y + r)
+      ctx.lineTo(x - r, y + r)
+      ctx.closePath()
+    }
+    ctx.fill()
+  }
+  // Initial letter
+  const initial = seed[0]?.toUpperCase() || '?'
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.font = 'bold 28px Inter, system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(initial, 32, 34)
+  return canvas.toDataURL('image/jpeg', 0.7).split(',')[1]
+}
+
 // Compress image to tiny JPEG for avatar (64x64, low quality = ~2-4KB)
 function compressAvatar(file) {
   return new Promise((resolve) => {
@@ -261,17 +310,47 @@ function UserAvatar({ user, onUserUpdate }) {
               <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: "'Inter', sans-serif" }}>
                 {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
               </div>
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                style={{
-                  fontSize: 11, fontWeight: 600, color: C.accent, background: 'none',
-                  border: 'none', padding: 0, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-                  marginTop: 2,
-                }}
-              >
-                {uploading ? 'Uploading...' : avatarUrl ? 'Change photo' : 'Add photo'}
-              </button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  style={{
+                    fontSize: 11, fontWeight: 600, color: C.accent, background: 'none',
+                    border: 'none', padding: 0, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  {uploading ? 'Uploading...' : avatarUrl ? 'Change' : 'Upload'}
+                </button>
+                <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
+                <button
+                  onClick={async () => {
+                    if (!user?.id) return
+                    setUploading(true)
+                    const name = user?.user_metadata?.full_name || user?.email || 'User'
+                    const base64 = generateAvatar(name + Date.now())
+                    try {
+                      const res = await fetch('/api/dashboard/avatar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: user.id, image_base64: base64, mime_type: 'image/jpeg' }),
+                      })
+                      const data = await res.json()
+                      if (data.avatar_url) {
+                        const { data: refreshed } = await supabase.auth.refreshSession()
+                        if (refreshed?.user && onUserUpdate) onUserUpdate(refreshed.user)
+                      }
+                    } catch {}
+                    setUploading(false)
+                  }}
+                  disabled={uploading}
+                  style={{
+                    fontSize: 11, fontWeight: 600, color: C.text2, background: 'none',
+                    border: 'none', padding: 0, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  Generate
+                </button>
+              </div>
             </div>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
           </div>
@@ -533,6 +612,8 @@ const agentColors = {
 function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCustomize, isPinned, isMuted, onTogglePin, onToggleMute, onRename }) {
   const [hovered, setHovered] = useState(false)
   const [ctxMenu, setCtxMenu] = useState(null)
+  const longPressTimer = useRef(null)
+  const longPressTriggered = useRef(false)
   const bgColor = agent.color || agentColors[agent.slug] || '#60A5FA'
   const agentPhoto = agent.sprite_path && agent.sprite_path.startsWith('http') ? agent.sprite_path : null
   const initial = (agent.name || '?')[0].toUpperCase()
@@ -553,11 +634,21 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => onClick?.(agent)}
+      onClick={() => { if (!longPressTriggered.current) onClick?.(agent) }}
       onContextMenu={(e) => {
         e.preventDefault()
         setCtxMenu({ x: e.clientX, y: e.clientY })
       }}
+      onTouchStart={(e) => {
+        longPressTriggered.current = false
+        const touch = e.touches[0]
+        longPressTimer.current = setTimeout(() => {
+          longPressTriggered.current = true
+          setCtxMenu({ x: touch.clientX, y: touch.clientY })
+        }, 500)
+      }}
+      onTouchEnd={() => { clearTimeout(longPressTimer.current) }}
+      onTouchMove={() => { clearTimeout(longPressTimer.current) }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -625,6 +716,7 @@ function AgentCard({ agent, lastMessage, unreadCount, onClick, isSelected, onCus
             { label: isMuted ? 'Unmute' : 'Mute', action: () => { setCtxMenu(null); onToggleMute?.(agent) } },
             null,
             { label: 'Change photo', action: () => { setCtxMenu(null); onCustomize?.(agent, 'photo') } },
+            { label: 'Generate avatar', action: () => { setCtxMenu(null); onCustomize?.(agent, 'generate') } },
             { label: 'Change color', action: () => { setCtxMenu(null); onCustomize?.(agent, 'color') } },
             null,
             { label: 'Archive', action: () => { setCtxMenu(null); onCustomize?.(agent, 'archive') } },
@@ -985,10 +1077,18 @@ function HomePanel({ user, agents, inboxItems, onSelectAgent, selectedAgentSlug 
                 onTogglePin={(a) => toggleFav('agent', a.slug)}
                 onToggleMute={(a) => toggleMute(a.slug)}
                 onRename={(a) => { setSelectedAgent(a); onSelectAgent?.(a); setTimeout(() => setSettingsOpen(true), 100) }}
-                onCustomize={(a, type) => {
+                onCustomize={async (a, type) => {
                   if (type === 'photo') {
                     setCustomizeTarget({ agent: a, type: 'photo' })
                     setTimeout(() => customizeFileRef.current?.click(), 100)
+                  } else if (type === 'generate') {
+                    const base64 = generateAvatar(a.slug + Date.now())
+                    await fetch('/api/dashboard/agent-customize', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ slug: a.slug, client_id: worldId, image_base64: base64 }),
+                    })
+                    window.location.reload()
                   } else if (type === 'color') {
                     setCustomizeTarget({ agent: a, type: 'color' })
                   } else if (type === 'archive') {
