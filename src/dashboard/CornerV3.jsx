@@ -830,7 +830,7 @@ function getShippedCardColor(task, index) {
 
 // ── Project filter pills (loaded from Supabase projects table) ────────────────
 
-function TasksPanel({ queued, rightNow, done, worldId, refreshTasks }) {
+function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) {
   const [searchQuery,   setSearchQuery]   = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
@@ -4827,7 +4827,7 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
+        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} />}
       </div>
 
