@@ -838,7 +838,10 @@ ${BASE_INSTRUCTION}`;
             if (projectSlug && !argsWithAgent.project) argsWithAgent.project = projectSlug;
             // Pass project slug through so pipeline gets it as project_path
             if (args.project && !argsWithAgent.project) argsWithAgent.project = args.project;
-            result = await createTask(argsWithAgent, clientId);
+            // Tasks always go to 'aom' for shared projects (pipeline is AOM infrastructure).
+            // Both worlds see task results via shared project chat notifications.
+            const taskClientId = clientId.startsWith('shared:') ? 'aom' : clientId;
+            result = await createTask(argsWithAgent, taskClientId);
           }
           else if (name === 'get_queue') result = await getQueue(clientId);
           else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
