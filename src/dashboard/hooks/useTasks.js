@@ -165,18 +165,33 @@ export function useTasks() {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          // Refetch on reconnect -- silent mode so we don't wipe existing data on failure
           fetchTasks({ silent: true })
         }
       })
 
     channelRef.current = channel
 
+    // Safari/iPad kills WebSockets when tab backgrounds.
+    // Refetch when user returns to the tab.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTasks({ silent: true })
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    // Fallback poll every 30s -- catches gaps from dropped realtime connections
+    const pollInterval = setInterval(() => {
+      fetchTasks({ silent: true })
+    }, 30000)
+
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
       }
+      document.removeEventListener('visibilitychange', handleVisibility)
+      clearInterval(pollInterval)
     }
   }, [fetchTasks, handleRealtimeChange])
 
