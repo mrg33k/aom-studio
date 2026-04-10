@@ -3485,7 +3485,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
                   }
                 }).catch(() => {})
-              }
+              }}
               onStatusChange={(s) => {
                 setVoiceStatus(s)
                 if (s === 'idle') {
@@ -4614,7 +4614,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
                 }
               }).catch(() => {})
-            }
+            }}
             onStatusChange={(s) => {
               setVoiceStatus(s)
               if (s === 'idle') {
