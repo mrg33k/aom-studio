@@ -543,11 +543,9 @@ const GREETINGS = [
 ]
 
 const VOICE_OPTIONS = [
-  { id: 'alloy',   label: 'Alloy' },
-  { id: 'fable',   label: 'Fable' },
-  { id: 'onyx',    label: 'Onyx' },
-  { id: 'nova',    label: 'Nova' },
-  { id: 'shimmer', label: 'Shimmer' },
+  { id: 'aom-male',    label: 'AOM v3 Male' },
+  { id: 'aom-female',  label: 'AOM v3 Female' },
+  { id: 'aom-neutral', label: 'AOM v3 Neutral' },
 ]
 
 // ── Home panel with agent cards ────────────────────────────────────────────────
@@ -1860,7 +1858,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
 
   // ── Per-chat voice selection ──────────────────────────────────────────────
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
-  const currentVoice = currentChatKey ? (agentVoices[currentChatKey] || 'alloy') : 'alloy'
+  const currentVoice = currentChatKey ? (agentVoices[currentChatKey] || 'aom-male') : 'aom-male'
   const selectVoice = useCallback((voice) => {
     if (!currentChatKey) return
     setAgentVoices(prev => ({ ...prev, [currentChatKey]: voice }))
@@ -2726,7 +2724,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 padding: '8px 0',
               }}>
                 <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Voice
+                  Voice Options
                 </div>
                 {VOICE_OPTIONS.map(voice => {
                   const isActive = currentVoice === voice.id
@@ -3524,7 +3522,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               padding: '8px 0',
             }}>
               <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Voice
+                Voice Options
               </div>
               {VOICE_OPTIONS.map(voice => {
                 const isActive = currentVoice === voice.id
