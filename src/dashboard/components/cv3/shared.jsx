@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { C, getStatusCfg } from '../../lib/cv3Colors.js'
 
-export function Badge({ count }) {
+export function Badge({ count, color }) {
   if (!count || count <= 0) return null
   return (
     <span style={{
@@ -12,7 +12,7 @@ export function Badge({ count }) {
       minWidth: 14,
       height: 14,
       borderRadius: 7,
-      background: C.accent,
+      background: color || C.accent,
       color: '#000',
       fontSize: 8,
       fontWeight: 800,

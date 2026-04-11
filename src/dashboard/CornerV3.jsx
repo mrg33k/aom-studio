@@ -447,7 +447,7 @@ export default function CornerV3() {
               icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
               active={tab === 'tasks'}
               onClick={() => handleTabChange('tasks')}
-              badge={<Badge count={activeTaskCount} />}
+              badge={<Badge count={activeTaskCount} color={C.yellow} />}
             />
           </div>
 
