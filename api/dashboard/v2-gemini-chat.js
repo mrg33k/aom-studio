@@ -808,7 +808,7 @@ CONVERSATION RULES FOR PROJECT CHAT:
 ${isAOM ? `THE TEAM (agents you can assign work to, NOT your identity):
 Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI agents in the AOM system.` : 'You operate within this user\'s project space. Only reference agents and data within their world.'}
 
-${BASE_INSTRUCTION}${isAOM ? systemState : ''}${recentContext}`;
+${BASE_INSTRUCTION}${recentContext}`;
       } catch (err) {
         console.error('[v2-gemini-chat] Project context lookup failed:', err.message);
         // NEVER fall back to Rex identity for project chats -- use a minimal project operator instruction
