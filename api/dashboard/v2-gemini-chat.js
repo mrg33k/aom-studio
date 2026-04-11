@@ -266,6 +266,9 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'git_recent', description: 'Show recent git commits for this project repo. Use when asked "what changed?", "what shipped recently?", "show me recent commits", or when you need to understand what code was modified. Returns commit hash, author, time, message, and files changed.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of commits to show (default 10, max 30)' } } } },
   { name: 'search_code', description: 'Search the project codebase for an exact string or pattern. Returns file paths, line numbers, and matching code. Use this for precise lookups like finding a function definition, variable usage, or specific string. More precise than lookup_context (which is semantic/fuzzy).', parameters: { type: 'object', properties: { pattern: { type: 'string', description: 'The string or pattern to search for (e.g. "loadEnvVars", "settingsOpen", "use_integration")' } }, required: ['pattern'] } },
   { name: 'escalate', description: 'Escalate a hard problem to the terminal expert (Claude Code). Use this when you cannot solve a problem yourself -- complex debugging, architecture questions, multi-file issues, or anything that requires deep reasoning. Creates a terminal task that Claude Code will pick up, solve, and report back. Include what you tried and why you are stuck.', parameters: { type: 'object', properties: { problem: { type: 'string', description: 'Clear description of the problem the user is facing' }, what_i_tried: { type: 'string', description: 'What you already tried or investigated' }, relevant_files: { type: 'string', description: 'Comma-separated list of files related to the problem' } }, required: ['problem'] } },
+  { name: 'get_task_logs', description: 'Fetch runner logs and QA feedback for a task. Use when asked "why did this task fail?", "what went wrong?", "show me the logs", or to debug a failed/completed task. Returns runner log excerpts and QA notes.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'Task ID to look up' }, query: { type: 'string', description: 'Search term if task_id unknown (e.g. task title)' } } } },
+  { name: 'get_task_diff', description: 'Fetch the code diff from a completed task. Use when asked "what did this task change?", "show me the code changes", "what was modified?". Returns the git diff with file stats and actual code changes.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'Task ID to look up' }, title: { type: 'string', description: 'Task title to search for in commit messages' } } } },
+  { name: 'get_task_progress', description: 'Show real-time pipeline progress. Use when asked "what\'s building right now?", "pipeline status", "what are the agents doing?", or to check if tasks are running. Returns active agents, their current step, and progress.', parameters: { type: 'object', properties: {} } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -785,6 +788,7 @@ const PROJECT_TOOL_NAMES = new Set([
   'read_file', 'list_files', 'lookup_context', 'search_code', 'git_recent',
   'escalate', 'update_context', 'read_project_file', 'list_project_files',
   'write_data', 'use_integration',
+  'get_task_logs', 'get_task_diff', 'get_task_progress',
 ]);
 const PROJECT_TOOLS = [{ functionDeclarations: TOOLS[0].functionDeclarations.filter(t => PROJECT_TOOL_NAMES.has(t.name)) }];
 
@@ -1045,6 +1049,21 @@ ${PROJECT_BASE_INSTRUCTION}`;
               }
               if (f.name === 'search_code' && f.result.matches) {
                 return f.result.matches.map(m => `- \`${m.file}:${m.line}\`: ${m.text}`).join('\n');
+              }
+              if (f.name === 'get_task_logs') {
+                const parts = [];
+                if (f.result.task) parts.push(`**${f.result.task.title}** (${f.result.task.status}, QA: ${f.result.task.qa_score || '?'}/10)\n${f.result.task.qa_notes || f.result.task.error || 'No notes'}`);
+                if (f.result.logs?.length) parts.push(f.result.logs.map(l => `**${l.file}:**\n\`\`\`\n${l.excerpt.slice(0, 1000)}\n\`\`\``).join('\n'));
+                return parts.join('\n\n') || 'No logs found for this task.';
+              }
+              if (f.name === 'get_task_diff' && f.result.commits) {
+                return f.result.commits.map(c => `**${c.hash}** (${c.when}): ${c.message}\n\`\`\`\n${c.stat}\n\`\`\`\n\`\`\`diff\n${c.diff.slice(0, 2000)}\n\`\`\``).join('\n\n') || 'No matching commits found.';
+              }
+              if (f.name === 'get_task_progress') {
+                const parts = [];
+                if (f.result.active_tasks?.length) parts.push('**Active tasks:**\n' + f.result.active_tasks.map(t => `- ${t.title} (${t.status}, agent: ${t.agent || '?'})`).join('\n'));
+                if (f.result.agents?.length) parts.push('**Agent checkpoints:**\n' + f.result.agents.map(a => `- ${a.agent}: ${a.task} ${a.progress} -- ${a.step}`).join('\n'));
+                return parts.join('\n\n') || 'Pipeline is idle. No active tasks.';
               }
               return `**${f.name}**: ${JSON.stringify(f.result).slice(0, 500)}`;
             }).join('\n\n');
@@ -1407,6 +1426,66 @@ ${PROJECT_BASE_INSTRUCTION}`;
               }),
             });
             result = { ok: true, message: 'Escalated to terminal expert. A specialist will pick this up, solve it, and report back to this chat.' };
+          }
+          else if (name === 'get_task_logs') {
+            const taskId = args.task_id || '';
+            const query = args.query || '';
+            if (!taskId && !query) throw new Error('task_id or query required');
+            // Fetch QA notes from tasks table
+            let taskData = null;
+            if (taskId) {
+              try {
+                const rows = await sbFetch(`/rest/v1/tasks?id=eq.${taskId}&select=id,title,status,qa_score,qa_notes,error,metadata`);
+                if (rows.length > 0) taskData = rows[0];
+              } catch (e) { /* non-fatal */ }
+            }
+            // Fetch runner logs from RAG server
+            const params = new URLSearchParams();
+            if (taskId) params.set('task_id', taskId);
+            if (query) params.set('query', query);
+            const r = await fetch(`${RAG_URL}/task-logs?${params}`, { signal: AbortSignal.timeout(10000) });
+            const logData = await r.json();
+            result = {
+              task: taskData ? { id: taskData.id, title: taskData.title, status: taskData.status, qa_score: taskData.qa_score, qa_notes: taskData.qa_notes, error: taskData.error } : null,
+              logs: logData.logs || [],
+              log_count: logData.log_count || 0,
+            };
+          }
+          else if (name === 'get_task_diff') {
+            const taskId = args.task_id || '';
+            const title = args.title || '';
+            if (!taskId && !title) throw new Error('task_id or title required');
+            // If we have task_id but no title, look up the title first
+            let searchTitle = title;
+            if (taskId && !title) {
+              try {
+                const rows = await sbFetch(`/rest/v1/tasks?id=eq.${taskId}&select=title`);
+                if (rows.length > 0) searchTitle = rows[0].title;
+              } catch (e) { /* use task_id as search term */ }
+            }
+            const params = new URLSearchParams();
+            if (taskId) params.set('task_id', taskId);
+            if (searchTitle) params.set('title', searchTitle);
+            const repoPath = projectRepoPath || '';
+            if (repoPath) params.set('repo_path', repoPath);
+            const r = await fetch(`${RAG_URL}/task-diff?${params}`, { signal: AbortSignal.timeout(15000) });
+            result = await r.json();
+            if (!r.ok) throw new Error(result.error || 'diff lookup failed');
+          }
+          else if (name === 'get_task_progress') {
+            // Fetch from RAG server (reads local checkpoints)
+            const r = await fetch(`${RAG_URL}/task-progress`, { signal: AbortSignal.timeout(10000) });
+            const progressData = await r.json();
+            // Also fetch building/planning tasks from Supabase for full picture
+            let activeTasks = [];
+            try {
+              activeTasks = await sbFetch(`/rest/v1/tasks?status=in.(building,planning)&select=id,title,status,agent_identity,project_path,updated_at&order=updated_at.desc&limit=10`);
+            } catch (e) { /* non-fatal */ }
+            result = {
+              agents: progressData.agents || [],
+              active_tasks: activeTasks.map(t => ({ id: t.id, title: t.title, status: t.status, agent: t.agent_identity, project: t.project_path, updated: t.updated_at })),
+              watcher: progressData.watcher_last_lines || [],
+            };
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
