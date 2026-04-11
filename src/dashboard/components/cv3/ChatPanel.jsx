@@ -106,6 +106,8 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('Keys')
   const [filesOpen, setFilesOpen] = useState(false)
+  const [projectFiles, setProjectFiles] = useState([])
+  const [projectFilesLoading, setProjectFilesLoading] = useState(false)
   const [agentVoices, setAgentVoices] = useState({})
   const [chatNameInput, setChatNameInput] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
