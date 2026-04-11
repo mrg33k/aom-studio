@@ -2503,6 +2503,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteMsg, setInviteMsg] = useState(null)
   const [collaborators, setCollaborators] = useState([])
+  const [envKeys, setEnvKeys] = useState({ user: [], project: [] })
+  const [envKeysLoading, setEnvKeysLoading] = useState(false)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [newKeyValue, setNewKeyValue] = useState('')
+  const [newKeyScope, setNewKeyScope] = useState('user')
+  const [keySaveMsg, setKeySaveMsg] = useState(null)
   const [customizeTarget, setCustomizeTarget] = useState(null) // { agent, type: 'photo'|'color' }
   const customizeFileRef = useRef(null)
 
@@ -2655,6 +2661,36 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           .then(data => { if (data.collaborators) setCollaborators(data.collaborators) })
           .catch(() => {})
       }
+      // Fetch env_vars keys
+      setEnvKeysLoading(true)
+      setNewKeyName('')
+      setNewKeyValue('')
+      setKeySaveMsg(null)
+      const cid = worldId || 'aom'
+      const fetches = []
+      // User keys
+      if (currentUser?.id) {
+        fetches.push(
+          fetch(`/api/dashboard/env-vars?scope=user&scope_id=${encodeURIComponent(currentUser.id)}&client=${encodeURIComponent(cid)}`)
+            .then(r => r.json()).then(d => d.keys || []).catch(() => [])
+        )
+      } else {
+        fetches.push(Promise.resolve([]))
+      }
+      // Project keys (only when in a project chat)
+      const projSlug = selectedProject?.slug
+      if (projSlug) {
+        fetches.push(
+          fetch(`/api/dashboard/env-vars?scope=project&scope_id=${encodeURIComponent(projSlug)}&client=${encodeURIComponent(cid)}`)
+            .then(r => r.json()).then(d => d.keys || []).catch(() => [])
+        )
+      } else {
+        fetches.push(Promise.resolve([]))
+      }
+      Promise.all(fetches).then(([userKeys, projectKeys]) => {
+        setEnvKeys({ user: userKeys, project: projectKeys })
+        setEnvKeysLoading(false)
+      })
     }
   }, [settingsOpen, selectedAgent, selectedProject])
 
@@ -2668,6 +2704,53 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       method: 'PATCH',
     }).catch(() => {})
   }, [currentChatKey, worldId])
+
+  const saveEnvKey = useCallback(async () => {
+    if (!newKeyName.trim() || !newKeyValue.trim()) return
+    const cid = worldId || 'aom'
+    const scopeId = newKeyScope === 'project'
+      ? (selectedProject?.slug || '')
+      : (currentUser?.id || '')
+    if (!scopeId) { setKeySaveMsg({ type: 'err', text: 'No scope target' }); return }
+    try {
+      const r = await fetch('/api/dashboard/env-vars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: newKeyScope, scope_id: scopeId, key: newKeyName.trim().toUpperCase(), value: newKeyValue.trim(), client_id: cid }),
+      })
+      const data = await r.json()
+      if (data.ok) {
+        setKeySaveMsg({ type: 'ok', text: 'Saved' })
+        setNewKeyName('')
+        setNewKeyValue('')
+        // Refresh keys list
+        const listR = await fetch(`/api/dashboard/env-vars?scope=${newKeyScope}&scope_id=${encodeURIComponent(scopeId)}&client=${encodeURIComponent(cid)}`)
+        const listD = await listR.json()
+        setEnvKeys(prev => ({ ...prev, [newKeyScope]: listD.keys || [] }))
+      } else {
+        setKeySaveMsg({ type: 'err', text: data.error || 'Save failed' })
+      }
+    } catch { setKeySaveMsg({ type: 'err', text: 'Network error' }) }
+  }, [newKeyName, newKeyValue, newKeyScope, worldId, selectedProject, currentUser])
+
+  const deleteEnvKey = useCallback(async (scope, key) => {
+    const cid = worldId || 'aom'
+    const scopeId = scope === 'project'
+      ? (selectedProject?.slug || '')
+      : (currentUser?.id || '')
+    if (!scopeId) return
+    try {
+      await fetch('/api/dashboard/env-vars', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope, scope_id: scopeId, key, client_id: cid }),
+      })
+      // Refresh
+      const listR = await fetch(`/api/dashboard/env-vars?scope=${scope}&scope_id=${encodeURIComponent(scopeId)}&client=${encodeURIComponent(cid)}`)
+      const listD = await listR.json()
+      setEnvKeys(prev => ({ ...prev, [scope]: listD.keys || [] }))
+    } catch {}
+  }, [worldId, selectedProject, currentUser])
 
   // Fetch latest message per agent (comprehensive -- covers all agents, not just missing from inboxItems)
   const [agentPreviews, setAgentPreviews] = useState({})
@@ -4400,6 +4483,151 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     Connect Google Calendar + Gmail
                   </a>
                 </div>
+                {/* Keys (env_vars keychain) */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    {selectedProject ? 'Keys' : 'My Keys'}
+                  </div>
+                  {envKeysLoading ? (
+                    <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
+                  ) : (
+                    <>
+                      {/* User keys */}
+                      {envKeys.user.length > 0 && (
+                        <div style={{ marginBottom: selectedProject ? 10 : 0 }}>
+                          {selectedProject && (
+                            <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Personal</div>
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {envKeys.user.map(k => (
+                              <div key={k.key} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '6px 10px',
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                                borderRadius: 8,
+                              }}>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
+                                <button
+                                  onClick={() => deleteEnvKey('user', k.key)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Project keys */}
+                      {selectedProject && envKeys.project.length > 0 && (
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Project</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {envKeys.project.map(k => (
+                              <div key={k.key} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '6px 10px',
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                                borderRadius: 8,
+                              }}>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
+                                <button
+                                  onClick={() => deleteEnvKey('project', k.key)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {envKeys.user.length === 0 && envKeys.project.length === 0 && (
+                        <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", marginBottom: 8 }}>
+                          No keys configured yet
+                        </div>
+                      )}
+                      {/* Add key form */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                        {selectedProject && (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {['user', 'project'].map(s => (
+                              <button
+                                key={s}
+                                onClick={() => setNewKeyScope(s)}
+                                style={{
+                                  flex: 1,
+                                  padding: '5px 0',
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  fontFamily: "'Inter', sans-serif",
+                                  color: newKeyScope === s ? '#60A5FA' : C.muted,
+                                  background: newKeyScope === s ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
+                                  border: `1px solid ${newKeyScope === s ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  textTransform: 'capitalize',
+                                }}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <input
+                          value={newKeyName}
+                          onChange={e => { setNewKeyName(e.target.value); setKeySaveMsg(null) }}
+                          placeholder="Key name (e.g. GMAIL_API_KEY)"
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            padding: '7px 10px', fontSize: 12,
+                            fontFamily: "'SF Mono', 'Fira Code', monospace",
+                            color: C.text,
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: 8, outline: 'none',
+                          }}
+                        />
+                        <input
+                          type="password"
+                          value={newKeyValue}
+                          onChange={e => { setNewKeyValue(e.target.value); setKeySaveMsg(null) }}
+                          placeholder="Value"
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            padding: '7px 10px', fontSize: 12,
+                            fontFamily: "'SF Mono', 'Fira Code', monospace",
+                            color: C.text,
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: 8, outline: 'none',
+                          }}
+                        />
+                        <button
+                          disabled={!newKeyName.trim() || !newKeyValue.trim()}
+                          onClick={saveEnvKey}
+                          style={{
+                            padding: '7px 0', fontSize: 12, fontWeight: 600,
+                            fontFamily: "'Inter', sans-serif",
+                            color: '#fff',
+                            background: (!newKeyName.trim() || !newKeyValue.trim()) ? C.muted : C.accent,
+                            border: 'none', borderRadius: 8,
+                            cursor: (!newKeyName.trim() || !newKeyValue.trim()) ? 'default' : 'pointer',
+                          }}
+                        >
+                          Save Key
+                        </button>
+                        {keySaveMsg && (
+                          <div style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: keySaveMsg.type === 'ok' ? C.accent : '#F87171' }}>
+                            {keySaveMsg.text}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -5955,6 +6183,97 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   </svg>
                   Connect Google Calendar + Gmail
                 </a>
+              </div>
+              {/* Keys (env_vars keychain) */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  {selectedProject ? 'Keys' : 'My Keys'}
+                </div>
+                {envKeysLoading ? (
+                  <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
+                ) : (
+                  <>
+                    {envKeys.user.length > 0 && (
+                      <div style={{ marginBottom: selectedProject ? 10 : 0 }}>
+                        {selectedProject && (
+                          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Personal</div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {envKeys.user.map(k => (
+                            <div key={k.key} style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '6px 10px',
+                              background: 'rgba(255,255,255,0.03)',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              borderRadius: 8,
+                            }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
+                              <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedProject && envKeys.project.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Project</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {envKeys.project.map(k => (
+                            <div key={k.key} style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '6px 10px',
+                              background: 'rgba(255,255,255,0.03)',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              borderRadius: 8,
+                            }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
+                              <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {envKeys.user.length === 0 && envKeys.project.length === 0 && (
+                      <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", marginBottom: 8 }}>No keys configured yet</div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                      {selectedProject && (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {['user', 'project'].map(s => (
+                            <button key={s} onClick={() => setNewKeyScope(s)} style={{
+                              flex: 1, padding: '5px 0', fontSize: 11, fontWeight: 600,
+                              fontFamily: "'Inter', sans-serif",
+                              color: newKeyScope === s ? '#60A5FA' : C.muted,
+                              background: newKeyScope === s ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${newKeyScope === s ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                              borderRadius: 6, cursor: 'pointer', textTransform: 'capitalize',
+                            }}>{s}</button>
+                          ))}
+                        </div>
+                      )}
+                      <input value={newKeyName} onChange={e => { setNewKeyName(e.target.value); setKeySaveMsg(null) }} placeholder="Key name (e.g. GMAIL_API_KEY)" style={{
+                        width: '100%', boxSizing: 'border-box', padding: '7px 10px', fontSize: 12,
+                        fontFamily: "'SF Mono', 'Fira Code', monospace", color: C.text,
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 8, outline: 'none',
+                      }} />
+                      <input type="password" value={newKeyValue} onChange={e => { setNewKeyValue(e.target.value); setKeySaveMsg(null) }} placeholder="Value" style={{
+                        width: '100%', boxSizing: 'border-box', padding: '7px 10px', fontSize: 12,
+                        fontFamily: "'SF Mono', 'Fira Code', monospace", color: C.text,
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 8, outline: 'none',
+                      }} />
+                      <button disabled={!newKeyName.trim() || !newKeyValue.trim()} onClick={saveEnvKey} style={{
+                        padding: '7px 0', fontSize: 12, fontWeight: 600, fontFamily: "'Inter', sans-serif",
+                        color: '#fff', background: (!newKeyName.trim() || !newKeyValue.trim()) ? C.muted : C.accent,
+                        border: 'none', borderRadius: 8, cursor: (!newKeyName.trim() || !newKeyValue.trim()) ? 'default' : 'pointer',
+                      }}>Save Key</button>
+                      {keySaveMsg && (
+                        <div style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: keySaveMsg.type === 'ok' ? C.accent : '#F87171' }}>{keySaveMsg.text}</div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

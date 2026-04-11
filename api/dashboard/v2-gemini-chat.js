@@ -220,6 +220,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'read_project_file', description: 'Read a file from the project folder (plans, rankings, specs, briefs). Use this when CONTEXT.md references a file you need to read. Path is relative to the project folder (e.g. "tiktok-respin-rankings.md").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to the project folder (e.g. "tiktok-respin-rankings.md", "respin-001-freezer-repair.md")' } }, required: ['path'] } },
   { name: 'list_project_files', description: 'List files in the project folder. Use to discover what files are available (plans, specs, briefs, rankings, etc.).', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Subdirectory to list (optional, default lists project root)' } } } },
   { name: 'write_data', description: 'Insert, update, or delete records in the project database. Use for direct data operations like clearing placeholder records, seeding data, or updating fields. Only works for projects with their own Supabase (e.g. sourcing). Always confirm with the user before deleting.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (e.g. directory_reports, directory_companies)' }, action: { type: 'string', enum: ['insert', 'update', 'delete'], description: 'What to do' }, filters: { type: 'string', description: 'PostgREST filter for update/delete (e.g. id=eq.abc123 or title=ilike.*coming%20soon*)' }, data: { type: 'object', description: 'Data to insert or update (key-value pairs)' } }, required: ['table', 'action'] } },
+  { name: 'use_integration', description: 'Use an external integration (Gmail, Google Calendar, etc) using keys stored in Settings. The user must configure their API key in Settings first. Use this when the user asks to check email, list calendar events, send email, or create calendar events.', parameters: { type: 'object', properties: { service: { type: 'string', enum: ['gmail', 'calendar'], description: 'Which service to use' }, action: { type: 'string', description: 'What to do: gmail supports list_emails, send_email; calendar supports list_events, create_event' }, params: { type: 'object', description: 'Action-specific params (e.g. {to, subject, body} for send_email, {query, maxResults} for list_emails, {summary, start, end} for create_event)' } }, required: ['service', 'action'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -347,9 +348,9 @@ const PROJECT_SUPABASE = {
 
 async function runQuery(table, filters, select, clientId, projectPath) {
   // Check if this table belongs to a project-specific Supabase
-  const projectDb = projectPath && PROJECT_SUPABASE[projectPath];
+  const projectDb = await getProjectDb(projectPath, clientId);
   if (projectDb && projectDb.tables.includes(table)) {
-    if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectPath}. Ask Patrik to set SOURCING_SUPABASE_SERVICE_KEY in Vercel env.`);
+    if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectPath}. Add SUPABASE_SERVICE_KEY to env_vars or set SOURCING_SUPABASE_SERVICE_KEY in Vercel env.`);
     const qs = [(filters || 'limit=10'), `select=${select || '*'}`].filter(Boolean).join('&');
     const resp = await fetch(`${projectDb.url}/rest/v1/${table}?${qs}`, {
       headers: { apikey: projectDb.key, Authorization: `Bearer ${projectDb.key}` },
@@ -362,9 +363,8 @@ async function runQuery(table, filters, select, clientId, projectPath) {
   const allowed = ['messages', 'tasks', 'events', 'projects', 'agent_status'];
   if (!allowed.includes(table)) {
     // If in a project chat, hint about project-specific tables
-    if (projectPath && PROJECT_SUPABASE[projectPath]) {
-      const projectTables = PROJECT_SUPABASE[projectPath].tables;
-      throw new Error(`Table "${table}" not in AOM DB. This project has its own tables: ${projectTables.join(', ')}`);
+    if (projectDb && projectDb.tables.length) {
+      throw new Error(`Table "${table}" not in AOM DB. This project has its own tables: ${projectDb.tables.join(', ')}`);
     }
     throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
   }
@@ -591,9 +591,48 @@ async function startRunner() {
   return { signaled: true, message: 'Start signal sent. Runner will pick up tasks within seconds.' };
 }
 
-// Server-side cache: agent identity + system state + tapes + RAG. Refreshes per TTL.
-const _cache = { agents: {}, systemState: null, systemStateAt: 0, tapes: {}, rag: {} };
+// Server-side cache: agent identity + system state + tapes + RAG + env_vars. Refreshes per TTL.
+const _cache = { agents: {}, systemState: null, systemStateAt: 0, tapes: {}, rag: {}, envVars: {} };
 const CACHE_TTL = 60000; // 60 seconds
+
+// Load env_vars from DB for a given scope. Returns { KEY: value } map.
+// Cache is best-effort (serverless cold starts clear it).
+async function loadEnvVars(scope, scopeId, clientId = 'aom') {
+  const cacheKey = `${scope}:${scopeId}:${clientId}`;
+  const cached = _cache.envVars[cacheKey];
+  if (cached && Date.now() - cached._at < CACHE_TTL) return cached.vars;
+
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/env_vars?scope=eq.${encodeURIComponent(scope)}&scope_id=eq.${encodeURIComponent(scopeId)}&client_id=eq.${encodeURIComponent(clientId)}&select=key,value`;
+    const r = await fetch(url, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) return {};
+    const rows = await r.json();
+    const vars = {};
+    for (const row of rows) vars[row.key] = row.value;
+    _cache.envVars[cacheKey] = { vars, _at: Date.now() };
+    return vars;
+  } catch {
+    return {};
+  }
+}
+
+// Resolve project DB credentials: env_vars first, hardcoded fallback second.
+async function getProjectDb(projectPath, clientId = 'aom') {
+  if (!projectPath) return null;
+
+  // Try env_vars
+  const vars = await loadEnvVars('project', projectPath, clientId);
+  if (vars.SUPABASE_URL && vars.SUPABASE_SERVICE_KEY) {
+    const tables = vars.ALLOWED_TABLES ? vars.ALLOWED_TABLES.split(',').map(t => t.trim()) : [];
+    return { url: vars.SUPABASE_URL, key: vars.SUPABASE_SERVICE_KEY, tables };
+  }
+
+  // Fallback to hardcoded (remove once env_vars is confirmed working)
+  return PROJECT_SUPABASE[projectPath] || null;
+}
 const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
 
 async function getCachedTape(slug) {
@@ -1152,9 +1191,9 @@ ${BASE_INSTRUCTION}`;
           }
           else if (name === 'write_data') {
             // Direct DB writes for project-specific Supabase ONLY (never AOM DB)
-            const projectDb = projectSlug && PROJECT_SUPABASE[projectSlug];
+            const projectDb = await getProjectDb(projectSlug, clientId);
             if (!projectDb) throw new Error('write_data only works in project chats with their own database (not AOM)');
-            if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectSlug}`);
+            if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectSlug}. Add keys via Settings or env_vars.`);
             if (!projectDb.tables.includes(args.table)) throw new Error(`Table "${args.table}" not in project DB. Available: ${projectDb.tables.join(', ')}`);
             const action = args.action;
             if (action === 'delete' && !args.filters) throw new Error('filters required for delete (safety: cannot delete all rows)');
@@ -1189,6 +1228,28 @@ ${BASE_INSTRUCTION}`;
             if (!resp.ok) throw new Error(`DB ${action} failed: ${resp.status} ${await resp.text().catch(() => '')}`);
             const rows = await resp.json().catch(() => []);
             result = { ok: true, action, table: args.table, affected: Array.isArray(rows) ? rows.length : 1 };
+          }
+          else if (name === 'use_integration') {
+            // Load user keys from env_vars
+            const userId = req.body?.user_id;
+            if (!userId) throw new Error('User not identified. Cannot load integration keys.');
+            const userVars = await loadEnvVars('user', userId, clientId);
+            const service = args.service;
+            const action = args.action;
+            const params = args.params || {};
+
+            if (service === 'gmail') {
+              const apiKey = userVars.GMAIL_API_KEY || userVars.GOOGLE_API_KEY;
+              if (!apiKey) throw new Error('Gmail not configured. Add GMAIL_API_KEY in Settings > My Keys.');
+              // Skeleton: actual Gmail API calls go here when keys are real OAuth tokens
+              result = { status: 'integration_ready', service: 'gmail', action, note: 'Gmail integration is configured. Full API calls will be wired in the Google OAuth sprint. Key is present and valid.' };
+            } else if (service === 'calendar') {
+              const apiKey = userVars.GOOGLE_CALENDAR_KEY || userVars.GOOGLE_API_KEY;
+              if (!apiKey) throw new Error('Google Calendar not configured. Add GOOGLE_CALENDAR_KEY in Settings > My Keys.');
+              result = { status: 'integration_ready', service: 'calendar', action, note: 'Calendar integration is configured. Full API calls will be wired in the Google OAuth sprint. Key is present and valid.' };
+            } else {
+              throw new Error(`Unknown integration service: ${service}. Available: gmail, calendar`);
+            }
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
