@@ -1,7 +1,7 @@
 // ProjectChatView -- project conversation thread
 // Extracted from ChatPanel.jsx. Receives all state via ctx prop.
 import { C } from '../../lib/cv3Colors.js'
-import { LinkifyText } from './shared.jsx'
+import { LinkifyText, formatChatTime } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../TypingIndicatorV2.jsx'
