@@ -901,12 +901,13 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
     } else if (projectSlug) {
       try {
         // Fetch project details, context, and task history in parallel
-        const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,slug,name,repo_description,repo_path`);
+        const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&limit=1&select=id,slug,name,repo_description,repo_path,scan_dirs`);
         const project = Array.isArray(projects) ? projects[0] : null;
 
         if (project?.id) resolvedProjectId = project.id;
         // Store repo_path so read_file/list_files can target the right repo
         var projectRepoPath = project?.repo_path || null;
+        var projectScanDirs = Array.isArray(project?.scan_dirs) ? project.scan_dirs : [];
 
         // Parallel fetch: project context (from disk via RAG server) + tasks + messages
         // Use Promise.allSettled so one failure doesn't kill the whole project chat
@@ -1011,7 +1012,8 @@ ${PROJECT_BASE_INSTRUCTION}`;
     let currentContents = [...contents];
     const allFunctionCalls = [];
     // Project chats get lean tools (16 vs 25) and use Gemini Pro for reliable tool calling
-    const activeTools = projectSlug ? PROJECT_TOOLS : TOOLS;
+    // AOM project = master room, gets full toolset like Rex. Other projects get scoped tools.
+    const activeTools = (projectSlug && projectSlug !== 'aom') ? PROJECT_TOOLS : TOOLS;
     const activeModel = projectSlug ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
@@ -1370,7 +1372,9 @@ ${PROJECT_BASE_INSTRUCTION}`;
           else if (name === 'git_recent') {
             const repoPath = projectRepoPath || `${process.cwd()}`;
             const count = Math.min(args.count || 10, 30);
-            const r = await fetch(`${RAG_URL}/git-log?repo_path=${encodeURIComponent(repoPath)}&count=${count}`, {
+            // Scope commits to project's scan_dirs so shared repos only show relevant commits
+            const pathsParam = (typeof projectScanDirs !== 'undefined' && projectScanDirs.length > 0) ? `&paths=${encodeURIComponent(projectScanDirs.join(','))}` : '';
+            const r = await fetch(`${RAG_URL}/git-log?repo_path=${encodeURIComponent(repoPath)}&count=${count}${pathsParam}`, {
               signal: AbortSignal.timeout(10000),
             });
             result = await r.json();
