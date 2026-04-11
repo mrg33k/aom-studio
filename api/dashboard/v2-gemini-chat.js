@@ -888,6 +888,8 @@ export default async function handler(req, res) {
 
   const { message, history, client_id, agent, project_id, project_slug, user_id, user_name } = req.body || {};
   if (!message || typeof message !== 'string') return res.status(400).json({ error: 'message required' });
+  const handlerStart = Date.now();
+  console.log(`[v2-gemini-chat] START agent=${agent||'none'} project=${project_slug||'none'} msg=${(message||'').slice(0,80)}`);
 
   const clientId = (client_id && String(client_id).trim()) || 'aom';
   const agentSlug = (agent && String(agent).trim()) || null;
@@ -1100,7 +1102,10 @@ ${PROJECT_BASE_INSTRUCTION}`;
     const MAX_ROUNDS = 5;
     let retried = false;
     // Enrich contents with inline image data so Gemini can actually see uploaded images
+    const enrichStart = Date.now();
     let currentContents = await enrichContentsWithImages(contents);
+    const enrichMs = Date.now() - enrichStart;
+    if (enrichMs > 2000) console.warn(`[v2-gemini-chat] Image enrichment took ${enrichMs}ms`);
     const allFunctionCalls = [];
     // Agent chats + home base get full tools. Project chats get scoped tools.
     // Home base (aom-website) is a project chat but gets full power.
@@ -1113,7 +1118,9 @@ ${PROJECT_BASE_INSTRUCTION}`;
       // Retry the API call up to 2 times if Gemini returns completely empty (no text, no tools)
       let geminiResult, candidate, finishReason, geminiContent, geminiParts, calls;
       for (let attempt = 0; attempt < 3; attempt++) {
+        const roundStart = Date.now();
         geminiResult = await callGemini(currentContents, systemInstruction, activeTools, activeModel);
+        console.log(`[v2-gemini-chat] Round ${round} attempt ${attempt} took ${Date.now()-roundStart}ms, elapsed ${Date.now()-handlerStart}ms`);
         candidate = geminiResult?.candidates?.[0] || {};
         finishReason = candidate.finishReason || 'UNKNOWN';
         geminiContent = candidate.content || { role: 'model', parts: [] };
@@ -1592,9 +1599,11 @@ ${PROJECT_BASE_INSTRUCTION}`;
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
+          console.log(`[v2-gemini-chat] Tool ${name} OK (${Date.now()-handlerStart}ms elapsed)`);
           const wrappedResult = Array.isArray(result) ? { items: result } : (result && typeof result === 'object' ? result : { value: result });
           roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: wrappedResult } }] });
         } catch (err) {
+          console.error(`[v2-gemini-chat] Tool ${name} failed:`, err.message);
           const errorResult = { error: err.message };
           allFunctionCalls.push({ name, args, result: errorResult });
           roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: errorResult } }] });
