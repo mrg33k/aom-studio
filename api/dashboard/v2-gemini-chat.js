@@ -758,10 +758,19 @@ async function setAgentStatus(slug, status) {
   } catch (_) { /* fire-and-forget */ }
 }
 
-async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION) {
+// Project chats: lean tool set to reduce token overhead. Admin/internal tools excluded.
+const PROJECT_TOOL_NAMES = new Set([
+  'create_task', 'get_queue', 'get_status', 'run_query', 'search_history',
+  'read_file', 'list_files', 'lookup_context', 'search_code', 'git_recent',
+  'escalate', 'update_context', 'read_project_file', 'list_project_files',
+  'write_data', 'use_integration',
+]);
+const PROJECT_TOOLS = [{ functionDeclarations: TOOLS[0].functionDeclarations.filter(t => PROJECT_TOOL_NAMES.has(t.name)) }];
+
+async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION, tools = TOOLS) {
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }, contents, tools: TOOLS }) }
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }, contents, tools }) }
   );
   const data = await resp.json();
   if (!resp.ok) throw new Error(`Gemini ${resp.status}: ${data?.error?.message || JSON.stringify(data)}`);
@@ -894,7 +903,7 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
         const systemState = stateSettled.status === 'fulfilled' ? stateSettled.value : '';
 
         // Use RAG server result (disk), fall back to events table (Supabase), fall back to empty
-        let contextMd = contextResult?.context_md || '';
+        let contextMd = (contextResult?.context_md || '').slice(0, 8000); // Cap at 8KB to keep Gemini Flash responsive
         if (!contextMd && project?.slug) {
           try {
             const ctxRows = await sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(project.slug)}&order=timestamp.desc&limit=1&select=payload`);
@@ -969,15 +978,13 @@ ${PROJECT_BASE_INSTRUCTION}`;
     // Max 5 rounds to prevent infinite loops.
     const MAX_ROUNDS = 5;
     let retried = false;
-    // Cold start fix: Gemini Flash chokes on first message when system instruction + 25 tools + CONTEXT.md
-    // is too much context. Inject a warm-up exchange so the model has something to anchor to.
-    let currentContents = baseHistory.length === 0
-      ? [{ role: 'user', parts: [{ text: 'hi' }] }, { role: 'model', parts: [{ text: 'Hey! How can I help with this project today?' }] }, ...contents]
-      : [...contents];
+    let currentContents = [...contents];
     const allFunctionCalls = [];
+    // Project chats get lean tools (16 vs 25) to reduce token overhead and prevent cold start failures
+    const activeTools = projectSlug ? PROJECT_TOOLS : TOOLS;
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
-      const geminiResult = await callGemini(currentContents, systemInstruction);
+      const geminiResult = await callGemini(currentContents, systemInstruction, activeTools);
       const candidate = geminiResult?.candidates?.[0] || {};
       const finishReason = candidate.finishReason || 'UNKNOWN';
       const geminiContent = candidate.content || { role: 'model', parts: [] };
@@ -1387,7 +1394,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
     }
 
     // Max rounds reached -- return whatever text we have
-    const finalResult = await callGemini(currentContents, systemInstruction);
+    const finalResult = await callGemini(currentContents, systemInstruction, activeTools);
     const finalContent = finalResult?.candidates?.[0]?.content || { role: 'model', parts: [] };
     const reply = (finalContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '';
     await setAgentStatus(agentSlug, 'idle');
