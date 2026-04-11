@@ -105,6 +105,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('Keys')
+  const [filesOpen, setFilesOpen] = useState(false)
   const [agentVoices, setAgentVoices] = useState({})
   const [chatNameInput, setChatNameInput] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
@@ -1346,6 +1347,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     searchPerformSearch,
     // Settings
     settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
+    filesOpen, setFilesOpen,
     chatNameInput, setChatNameInput,
     inviteEmail, setInviteEmail, inviteLoading, setInviteLoading,
     inviteMsg, setInviteMsg, collaborators, setCollaborators,
