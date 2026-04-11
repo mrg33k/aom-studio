@@ -2576,6 +2576,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState('General')
   const [agentVoices, setAgentVoices] = useState({})
   const [chatNameInput, setChatNameInput] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
@@ -2729,6 +2730,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // Initialise rename input when modal opens
   useEffect(() => {
     if (settingsOpen) {
+      setSettingsTab('General')
       const name = selectedAgent ? selectedAgent.name : (selectedProject?.name || '')
       setChatNameInput(name)
       // Fetch collaborators when project settings opens
@@ -4269,39 +4271,49 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         {/* Chat settings full-screen overlay */}
         {settingsOpen && (
           <div
-            onClick={() => setSettingsOpen(false)}
             style={{
               position: 'fixed',
               top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.6)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
+              background: 'rgba(0,0,0,0.85)',
               zIndex: 9999,
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
           >
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{
-                width: 380,
-                maxWidth: '90vw',
-                maxHeight: '80vh',
-                background: C.s1,
-                border: '1px solid ' + C.border2,
-                borderRadius: 16,
-                boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
+            {/* Left pane */}
+            <div style={{
+              width: 220,
+              flexShrink: 0,
+              background: C.bg2,
+              borderRight: '1px solid ' + C.border2,
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid ' + C.border }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>Settings</span>
+              </div>
+              <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {['General', 'Voice', ...(selectedProject ? ['Collaborators'] : []), 'Google', 'Keys'].map(item => (
+                  <button
+                    key={item}
+                    onClick={() => setSettingsTab(item)}
+                    style={{
+                      padding: '7px 12px', fontSize: 13,
+                      color: settingsTab === item ? C.text : C.text2,
+                      fontFamily: "'Inter', sans-serif", borderRadius: 6,
+                      background: settingsTab === item ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                    }}
+                  >{item}</button>
+                ))}
+              </div>
+            </div>
+            {/* Right pane */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.s1, overflow: 'hidden' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '16px 20px',
+                padding: '16px 24px',
                 borderBottom: '1px solid ' + C.border,
                 flexShrink: 0,
               }}>
@@ -6130,40 +6142,49 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       {/* Chat settings full-screen overlay */}
       {settingsOpen && (
         <div
-          onClick={() => setSettingsOpen(false)}
           style={{
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
+            background: 'rgba(0,0,0,0.85)',
             zIndex: 9999,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
           }}
         >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              width: 380,
-              maxWidth: '90vw',
-              maxHeight: '80vh',
-              background: C.s1,
-              border: '1px solid ' + C.border2,
-              borderRadius: 16,
-              boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Modal header */}
+          {/* Left pane */}
+          <div style={{
+            width: 220,
+            flexShrink: 0,
+            background: C.bg2,
+            borderRight: '1px solid ' + C.border2,
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid ' + C.border }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>Settings</span>
+            </div>
+            <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {['General', 'Voice', 'Google', 'Keys'].map(item => (
+                <button
+                  key={item}
+                  onClick={() => setSettingsTab(item)}
+                  style={{
+                    padding: '7px 12px', fontSize: 13,
+                    color: settingsTab === item ? C.text : C.text2,
+                    fontFamily: "'Inter', sans-serif", borderRadius: 6,
+                    background: settingsTab === item ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                  }}
+                >{item}</button>
+              ))}
+            </div>
+          </div>
+          {/* Right pane */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.s1, overflow: 'hidden' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '16px 20px',
+              padding: '16px 24px',
               borderBottom: '1px solid ' + C.border,
               flexShrink: 0,
             }}>
