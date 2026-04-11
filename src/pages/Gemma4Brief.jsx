@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Cpu, Zap, DollarSign, Brain, Mic2, Rocket, CheckCircle2, XCircle, BarChart3, Clock, Users, Shield } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Cpu, Zap, DollarSign, Brain, Mic2, Rocket, CheckCircle2, XCircle, BarChart3, Clock, Users, Shield } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 import SiteFooter from '../components/SiteFooter';
 
@@ -516,7 +516,7 @@ export default function Gemma4Brief() {
                   </li>
                   <li className="flex items-start">
                     <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                    <span className="text-[#57534E"><strong>Competitive moat</strong> – competitors paying API costs can't match our economics</span>
+                    <span className="text-[#57534E]"><strong>Competitive moat</strong> – competitors paying API costs can't match our economics</span>
                   </li>
                 </ul>
               </div>
