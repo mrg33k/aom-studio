@@ -1364,7 +1364,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     // Project
     inlineProject, setInlineProject, selectedProject,
     // User
-    userProfiles, displayName, userIdentity,
+    userProfiles, displayName, userIdentity, lastLoginText,
     isMobile, greetingIdx, GREETINGS, VOICE_OPTIONS,
     // Conversations
     searchQuery, setSearchQuery, conversationFilter, setConversationFilter,
@@ -1374,10 +1374,11 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     filteredVisibleAgents, filteredVisibleProjects,
     // orderedSlugs, handleReorder not used (HomePanel was removed)
     // Customize
-    setCustomizeTarget, customizeFileRef,
+    customizeTarget, setCustomizeTarget, customizeFileRef,
     // Handlers
     handleProjectSend, handleProjectKeyDown,
     handleFileSelection,
+    sendProjectText, sendAgentText,
     sendProjectTextRef, sendAgentTextRef,
   }
 
