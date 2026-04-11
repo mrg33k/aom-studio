@@ -219,6 +219,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'update_context', description: 'Update a section of a project CONTEXT.md document. Use when the operator asks to record decisions, update project status, add constraints, or note architectural choices for a project. Only works within a project conversation (requires project_slug).', parameters: { type: 'object', properties: { project_slug: { type: 'string', description: 'The project slug to update context for' }, section: { type: 'string', enum: ['overview', 'status', 'decisions', 'constraints', 'architecture', 'notes'], description: 'Which section of the CONTEXT.md to update' }, content: { type: 'string', description: 'The content to write into the section' }, action: { type: 'string', enum: ['replace', 'append'], description: 'Whether to replace the section content or append to it (default: replace)' } }, required: ['project_slug', 'section', 'content'] } },
   { name: 'read_project_file', description: 'Read a file from the project folder (plans, rankings, specs, briefs). Use this when CONTEXT.md references a file you need to read. Path is relative to the project folder (e.g. "tiktok-respin-rankings.md").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to the project folder (e.g. "tiktok-respin-rankings.md", "respin-001-freezer-repair.md")' } }, required: ['path'] } },
   { name: 'list_project_files', description: 'List files in the project folder. Use to discover what files are available (plans, specs, briefs, rankings, etc.).', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Subdirectory to list (optional, default lists project root)' } } } },
+  { name: 'write_data', description: 'Insert, update, or delete records in the project database. Use for direct data operations like clearing placeholder records, seeding data, or updating fields. Only works for projects with their own Supabase (e.g. sourcing). Always confirm with the user before deleting.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (e.g. directory_reports, directory_companies)' }, action: { type: 'string', enum: ['insert', 'update', 'delete'], description: 'What to do' }, filters: { type: 'string', description: 'PostgREST filter for update/delete (e.g. id=eq.abc123 or title=ilike.*coming%20soon*)' }, data: { type: 'object', description: 'Data to insert or update (key-value pairs)' } }, required: ['table', 'action'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -416,7 +417,9 @@ async function registerProject(args = {}, clientId) {
     await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${match.id}`, {
       method: 'PATCH', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(patch),
     });
-    return { action: 'updated', slug: match.slug, matched_name: match.name, fields: Object.keys(patch) };
+    const updateResult = { action: 'updated', slug: match.slug, matched_name: match.name, fields: Object.keys(patch) };
+    updateResult.isolation_warnings = await validateProjectIsolation(match.slug, patch.repo_path || match.repo_path);
+    return updateResult;
   }
   if (scored.length > 0 && scored[0]._score >= 20) {
     const candidates = scored.slice(0, 3).map(p => `${p.name} (slug: ${p.slug}${p.repo_path ? ', path: ' + p.repo_path : ''})`);
@@ -435,7 +438,29 @@ async function registerProject(args = {}, clientId) {
       signal: AbortSignal.timeout(5000),
     });
   } catch (e) { /* RAG server may not have this endpoint yet -- Supabase row is enough for now */ }
-  return { action: 'created', slug: inputSlug, fields: Object.keys(patch), note: `Created new project room. Existing projects were: ${existingList}` };
+  const createResult = { action: 'created', slug: inputSlug, fields: Object.keys(patch), note: `Created new project room. Existing projects were: ${existingList}` };
+  // Validate isolation checklist
+  createResult.isolation_warnings = await validateProjectIsolation(inputSlug, patch.repo_path);
+  return createResult;
+}
+
+async function validateProjectIsolation(slug, repoPath) {
+  const warnings = [];
+  const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
+  // Check CONTEXT.md exists
+  try {
+    const ctxResp = await fetch(`${RAG_URL}/project-context?slug=${encodeURIComponent(slug)}`, { signal: AbortSignal.timeout(3000) });
+    const ctx = await ctxResp.json();
+    if (!ctx?.context_md) warnings.push(`Missing CONTEXT.md at projects/${slug}/CONTEXT.md -- operator will have no project knowledge`);
+  } catch { warnings.push(`Could not check CONTEXT.md (RAG server unreachable)`); }
+  // Check repo_path
+  if (!repoPath) warnings.push('No repo_path set -- read_file/list_files will fall back to aom-studio (wrong codebase)');
+  // Check PHONEBOOK.md
+  try {
+    const pbResp = await fetch(`${RAG_URL}/read-project-file?slug=${encodeURIComponent(slug)}&path=PHONEBOOK.md`, { signal: AbortSignal.timeout(3000) });
+    if (!pbResp.ok) warnings.push(`Missing PHONEBOOK.md at projects/${slug}/PHONEBOOK.md -- planner won't know where files are`);
+  } catch { /* silent */ }
+  return warnings.length > 0 ? warnings : null;
 }
 
 const CONTEXT_TEMPLATE = `# Project Context
@@ -1123,6 +1148,30 @@ ${BASE_INSTRUCTION}`;
             // Auto-fill project_slug from request context if not provided by Gemini
             if (!args.project_slug && projectSlug) args.project_slug = projectSlug;
             result = await updateContext(args, clientId);
+          }
+          else if (name === 'write_data') {
+            // Direct DB writes for project-specific Supabase only
+            const projectDb = projectSlug && PROJECT_SUPABASE[projectSlug];
+            if (!projectDb) throw new Error('write_data only works in project chats with their own database');
+            if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectSlug}`);
+            if (!projectDb.tables.includes(args.table)) throw new Error(`Table "${args.table}" not in project DB. Available: ${projectDb.tables.join(', ')}`);
+            const action = args.action;
+            if (action === 'delete' && !args.filters) throw new Error('filters required for delete (safety: cannot delete all rows)');
+            if (action === 'update' && !args.filters) throw new Error('filters required for update');
+            const headers = { apikey: projectDb.key, Authorization: `Bearer ${projectDb.key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+            let resp;
+            if (action === 'insert') {
+              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}`, { method: 'POST', headers, body: JSON.stringify(args.data || {}) });
+            } else if (action === 'update') {
+              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}`, { method: 'PATCH', headers, body: JSON.stringify(args.data || {}) });
+            } else if (action === 'delete') {
+              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}`, { method: 'DELETE', headers });
+            } else {
+              throw new Error(`Unknown action: ${action}`);
+            }
+            if (!resp.ok) throw new Error(`DB ${action} failed: ${resp.status} ${await resp.text().catch(() => '')}`);
+            const rows = await resp.json().catch(() => []);
+            result = { ok: true, action, table: args.table, affected: Array.isArray(rows) ? rows.length : 1 };
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });

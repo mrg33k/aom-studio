@@ -3399,6 +3399,16 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       }
     }
     setUploading(false)
+
+    // Auto-trigger the operator to acknowledge uploaded files
+    // Uses sendProjectTextRef to avoid circular dependency (sendProjectText defined later)
+    if (files.length > 0 && selectedProject && sendProjectTextRef.current) {
+      const names = files.map(f => f.name).join(', ')
+      const autoMsg = files.length === 1
+        ? `I just uploaded ${names}. Can you confirm you got it?`
+        : `I just uploaded ${files.length} files: ${names}. Can you confirm you got them?`
+      setTimeout(() => sendProjectTextRef.current?.(autoMsg), 500)
+    }
   }, [selectedAgent, selectedProject, worldId])
 
   // Core send logic shared by typed input and voice transcription
