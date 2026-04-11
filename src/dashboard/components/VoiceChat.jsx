@@ -609,6 +609,41 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 } catch (err) {
                   result = { error: err.message }
                 }
+              } else if (call.name === 'update_context') {
+                try {
+                  // Extract project slug from agentSlug (format: "project:corner")
+                  const projSlug = agentSlug?.startsWith('project:') ? agentSlug.slice(8) : ''
+                  if (!projSlug) {
+                    result = { error: 'update_context only works in project chats' }
+                  } else {
+                    const resp = await fetch('/api/dashboard/v2-gemini-chat', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        message: `__tool_call__update_context`,
+                        agent: `project:${projSlug}`,
+                        project_slug: projSlug,
+                        client_id: clientId,
+                        tool_call: { name: 'update_context', args: { ...args, project_slug: projSlug } },
+                      }),
+                    })
+                    // Simpler: call RAG server directly
+                    const ragResp = await fetch(`${window.location.protocol}//${window.location.host}/api/dashboard/voice-context-update`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ slug: projSlug, section: args.section, content: args.content, action: args.action || 'append' }),
+                    }).catch(() => null)
+
+                    if (ragResp?.ok) {
+                      result = { updated: true, section: args.section, message: `Context updated: ${args.section}` }
+                      addSystemMessage(`Updated project context: ${args.section}`)
+                    } else {
+                      result = { updated: false, error: 'Failed to update context' }
+                    }
+                  }
+                } catch (err) {
+                  result = { error: err.message }
+                }
               } else {
                 result = { error: `Unknown function: ${call.name}` }
               }
