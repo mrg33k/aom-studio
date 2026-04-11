@@ -4394,41 +4394,75 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             style={{
               position: 'fixed',
               top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.85)',
+              background: isMobile ? C.s1 : 'rgba(0,0,0,0.85)',
               zIndex: 9999,
               display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
             }}
           >
-            {/* Left pane */}
+            {/* Left pane -- horizontal scroll on mobile, vertical sidebar on desktop */}
             <div style={{
-              width: 220,
-              flexShrink: 0,
-              background: C.bg2,
-              borderRight: '1px solid ' + C.border2,
-              display: 'flex',
-              flexDirection: 'column',
+              ...(isMobile
+                ? { flexShrink: 0, background: C.bg2, borderBottom: '1px solid ' + C.border2 }
+                : { width: 220, flexShrink: 0, background: C.bg2, borderRight: '1px solid ' + C.border2, display: 'flex', flexDirection: 'column' }
+              ),
             }}>
-              <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid ' + C.border }}>
+              <div style={{
+                padding: isMobile ? '12px 16px 0' : '28px 20px 20px',
+                ...(!isMobile && { borderBottom: '1px solid ' + C.border }),
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>Settings</span>
+                {isMobile && (
+                  <button
+                    onClick={() => setSettingsOpen(false)}
+                    style={{
+                      width: 44, height: 44,
+                      borderRadius: 10,
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid ' + C.border,
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: C.text2, flexShrink: 0,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                      <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                )}
               </div>
-              <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{
+                padding: isMobile ? '8px 12px 12px' : '12px 8px',
+                display: 'flex',
+                flexDirection: isMobile ? 'row' : 'column',
+                gap: isMobile ? 6 : 2,
+                ...(isMobile && { overflowX: 'auto', WebkitOverflowScrolling: 'touch' }),
+              }}>
                 {['General', 'Voice', ...(selectedProject ? ['Collaborators'] : []), 'Google', 'Keys'].map(item => (
                   <button
                     key={item}
                     onClick={() => setSettingsTab(item)}
                     style={{
-                      padding: '7px 12px', fontSize: 13,
+                      padding: isMobile ? '8px 16px' : '7px 12px',
+                      fontSize: 13,
                       color: settingsTab === item ? C.text : C.text2,
                       fontFamily: "'Inter', sans-serif", borderRadius: 6,
                       background: settingsTab === item ? 'rgba(255,255,255,0.08)' : 'transparent',
-                      border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                      border: 'none', cursor: 'pointer',
+                      textAlign: 'left',
+                      whiteSpace: isMobile ? 'nowrap' : 'normal',
+                      width: isMobile ? 'auto' : '100%',
+                      flexShrink: 0,
                     }}
                   >{item}</button>
                 ))}
               </div>
             </div>
             {/* Right pane */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.s1, overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.s1, overflow: 'hidden', minHeight: 0 }}>
+              {!isMobile && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -4443,8 +4477,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 <button
                   onClick={() => setSettingsOpen(false)}
                   style={{
-                    width: 28, height: 28,
-                    borderRadius: 8,
+                    width: 44, height: 44,
+                    borderRadius: 10,
                     background: 'rgba(255,255,255,0.06)',
                     border: '1px solid ' + C.border,
                     cursor: 'pointer',
@@ -4452,19 +4486,21 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     color: C.text2,
                   }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                 </button>
               </div>
+              )}
               <div style={{
-                padding: 24,
+                padding: isMobile ? '16px 16px' : '24px 24px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 20,
+                gap: isMobile ? 16 : 20,
                 overflowY: 'auto',
                 flex: 1,
+                WebkitOverflowScrolling: 'touch',
               }}>
                 {/* Room rename */}
                 {settingsTab === 'General' && (
