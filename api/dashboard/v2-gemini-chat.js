@@ -768,9 +768,9 @@ const PROJECT_TOOL_NAMES = new Set([
 ]);
 const PROJECT_TOOLS = [{ functionDeclarations: TOOLS[0].functionDeclarations.filter(t => PROJECT_TOOL_NAMES.has(t.name)) }];
 
-async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION, tools = TOOLS) {
+async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION, tools = TOOLS, model = 'gemini-2.5-flash') {
   const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: { role: 'system', parts: [{ text: systemInstruction }] }, contents, tools }) }
   );
   const data = await resp.json();
@@ -981,14 +981,15 @@ ${PROJECT_BASE_INSTRUCTION}`;
     let retried = false;
     let currentContents = [...contents];
     const allFunctionCalls = [];
-    // Project chats get lean tools (16 vs 25) to reduce token overhead and prevent cold start failures
+    // Project chats get lean tools (16 vs 25) and use Gemini Pro for reliable tool calling
     const activeTools = projectSlug ? PROJECT_TOOLS : TOOLS;
+    const activeModel = projectSlug ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
       // Retry the API call up to 2 times if Gemini returns completely empty (no text, no tools)
       let geminiResult, candidate, finishReason, geminiContent, geminiParts, calls;
       for (let attempt = 0; attempt < 3; attempt++) {
-        geminiResult = await callGemini(currentContents, systemInstruction, activeTools);
+        geminiResult = await callGemini(currentContents, systemInstruction, activeTools, activeModel);
         candidate = geminiResult?.candidates?.[0] || {};
         finishReason = candidate.finishReason || 'UNKNOWN';
         geminiContent = candidate.content || { role: 'model', parts: [] };
@@ -1398,7 +1399,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
     }
 
     // Max rounds reached -- return whatever text we have
-    const finalResult = await callGemini(currentContents, systemInstruction, activeTools);
+    const finalResult = await callGemini(currentContents, systemInstruction, activeTools, activeModel);
     const finalContent = finalResult?.candidates?.[0]?.content || { role: 'model', parts: [] };
     const reply = (finalContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '';
     await setAgentStatus(agentSlug, 'idle');
