@@ -3,7 +3,7 @@
 import { Reorder } from 'framer-motion'
 import { C, agentColors } from '../../lib/cv3Colors.js'
 import AgentCard from './AgentCard.jsx'
-import { Badge, formatChatTime, getStatusColor } from './shared.jsx'
+import { Badge, formatChatTime, getStatusColor, SwipeCard } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 
 export default function ConversationsView(ctx) {
