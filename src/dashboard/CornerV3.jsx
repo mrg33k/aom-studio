@@ -2582,6 +2582,48 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [customizeTarget, setCustomizeTarget] = useState(null) // { agent, type: 'photo'|'color' }
   const customizeFileRef = useRef(null)
 
+  // In-chat history search
+  const [chatSearchOpen, setChatSearchOpen] = useState(false)
+  const [chatSearchQuery, setChatSearchQuery] = useState('')
+  const [chatSearchResults, setChatSearchResults] = useState(null)
+  const [chatSearchLoading, setChatSearchLoading] = useState(false)
+  const chatSearchRef = useRef(null)
+
+  const handleChatSearch = useCallback(async (query) => {
+    if (!query || query.length < 2) { setChatSearchResults(null); return }
+    const agent = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
+    if (!agent) return
+    setChatSearchLoading(true)
+    try {
+      const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : (worldId || 'aom')
+      const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agent)}&client=${encodeURIComponent(clientId)}&search=${encodeURIComponent(query)}&limit=500`)
+      if (res.ok) {
+        const data = await res.json()
+        setChatSearchResults(data.messages || [])
+      }
+    } catch { setChatSearchResults([]) }
+    setChatSearchLoading(false)
+  }, [selectedAgent, selectedProject, worldId])
+
+  // Debounced search
+  useEffect(() => {
+    if (!chatSearchOpen) return
+    const timer = setTimeout(() => handleChatSearch(chatSearchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [chatSearchQuery, chatSearchOpen, handleChatSearch])
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (chatSearchOpen && chatSearchRef.current) chatSearchRef.current.focus()
+  }, [chatSearchOpen])
+
+  // Close search when switching chats
+  useEffect(() => {
+    setChatSearchOpen(false)
+    setChatSearchQuery('')
+    setChatSearchResults(null)
+  }, [selectedAgent, selectedProject])
+
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
   // Memoize on user ID so the displayed name stays stable during tab switches
@@ -3811,6 +3853,23 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               </svg>
             )}
           </button>
+          {/* Search button */}
+          <button
+            onClick={() => { setChatSearchOpen(o => !o); setChatSearchQuery(''); setChatSearchResults(null) }}
+            title="Search chat history"
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: chatSearchOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: chatSearchOpen ? C.text : C.muted,
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </button>
           {/* Settings button */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
@@ -3832,11 +3891,68 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           </div>
         </div>
 
-        {/* Messages scroll area */}
+        {/* Chat search bar */}
+        {chatSearchOpen && (
+          <div style={{
+            padding: '8px 14px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(8,14,28,0.95)',
+          }}>
+            <input
+              ref={chatSearchRef}
+              type="text"
+              placeholder="Search all messages..."
+              value={chatSearchQuery}
+              onChange={e => setChatSearchQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') { setChatSearchOpen(false); setChatSearchQuery(''); setChatSearchResults(null) } }}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: C.text, fontSize: 13,
+                outline: 'none',
+              }}
+            />
+            {chatSearchLoading && <span style={{ fontSize: 11, color: C.muted, marginTop: 4, display: 'block' }}>Searching...</span>}
+            {chatSearchResults && !chatSearchLoading && (
+              <span style={{ fontSize: 11, color: C.muted, marginTop: 4, display: 'block' }}>
+                {chatSearchResults.length} result{chatSearchResults.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Search results overlay */}
+        {chatSearchOpen && chatSearchResults && chatSearchResults.length > 0 && (
+          <div style={{
+            flex: 1, overflowY: 'auto',
+            padding: '12px 14px',
+            display: 'flex', flexDirection: 'column', gap: 4,
+          }}>
+            {chatSearchResults.map((msg, i) => (
+              <div key={msg.id || i} style={{
+                padding: '8px 10px', borderRadius: 8,
+                background: msg.role === 'user' ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}>
+                <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>
+                  {msg.role === 'user' ? 'You' : (msg.source || 'Agent')} {' '}
+                  {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}
+                </div>
+                <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                  {(msg.text || '').substring(0, 300)}{(msg.text || '').length > 300 ? '...' : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Messages scroll area (hidden when search results showing) */}
         <div style={{
           flex: 1, overflowY: 'auto',
           padding: '12px 14px',
-          display: 'flex', flexDirection: 'column', gap: 6,
+          display: (chatSearchOpen && chatSearchResults && chatSearchResults.length > 0) ? 'none' : 'flex',
+          flexDirection: 'column', gap: 6,
         }}>
           {loadingMsgs && (
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>

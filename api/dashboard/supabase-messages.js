@@ -50,9 +50,14 @@ export default async function handler(req, res) {
     // Supabase silently ignores unknown column filters -- safe to include always.
     const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`
 
+    // ?search=keyword: full-text search across ALL messages for this agent (no limit cap)
+    const searchQuery = req.query.search ? req.query.search.trim() : ''
+
     // ?all=true: fetch ALL messages across all agents (for AOM Team Room aggregate view)
     const agentFilter = (all === 'true' || all === '1') ? '' : `&agent=eq.${encodeURIComponent(agent)}`
-    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${clientFilter}&order=timestamp.desc&limit=${limit}`
+    const searchFilter = searchQuery ? `&text=ilike.*${encodeURIComponent(searchQuery)}*` : ''
+    const searchLimit = searchQuery ? 500 : limit  // search returns more results
+    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
