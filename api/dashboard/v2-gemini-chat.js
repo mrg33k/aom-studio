@@ -939,6 +939,7 @@ ${BASE_INSTRUCTION}`;
     // Multi-round function calling loop: keeps calling Gemini until it returns pure text (no function calls).
     // Max 5 rounds to prevent infinite loops.
     const MAX_ROUNDS = 5;
+    let retried = false;
     let currentContents = [...contents];
     const allFunctionCalls = [];
 
@@ -951,13 +952,20 @@ ${BASE_INSTRUCTION}`;
       if (calls.length === 0) {
         // No function calls -- extract text and return
         let reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
-        // If Gemini returned empty, retry once before giving up
-        if (!reply.trim() && round === 0) {
-          console.warn('[v2-gemini-chat] Empty response from Gemini, retrying...');
+        // If Gemini returned empty, retry once (any round, not just first)
+        if (!reply.trim() && !retried) {
+          console.warn(`[v2-gemini-chat] Empty response on round ${round}, retrying...`);
+          retried = true;
           continue;
         }
         if (!reply.trim()) {
-          reply = "I didn't generate a response there. Can you say that again or rephrase?";
+          // Last resort: summarize what tools returned instead of dead-ending
+          const toolResults = allFunctionCalls.filter(f => f.result && !f.result.error).map(f => `${f.name}: returned ${JSON.stringify(f.result).slice(0, 200)}`);
+          if (toolResults.length > 0) {
+            reply = `I got results from my tools but had trouble formatting a response. Here's the raw data:\n\n${toolResults.join('\n\n')}\n\nCan you ask me a more specific follow-up?`;
+          } else {
+            reply = "Something went wrong on my end. I'll try harder next time -- can you rephrase what you need?";
+          }
         }
         currentContents.push(geminiContent);
         await setAgentStatus(agentSlug, 'idle');
