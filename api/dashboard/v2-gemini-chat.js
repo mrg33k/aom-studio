@@ -29,17 +29,41 @@ async function extractImageParts(text) {
   return parts.filter(Boolean);
 }
 
-// Convert history entries: if a message contains image URLs, add inline_data parts so Gemini can see them
+// Enrich contents with inline image data. Only processes user messages to avoid
+// duplicating images that appear in multiple history entries. Limits to last 3
+// user messages to keep payload reasonable.
 async function enrichContentsWithImages(contents) {
-  const enriched = [];
-  for (const entry of contents) {
+  const enriched = [...contents];
+  // Find user messages (process last 3 at most to avoid huge payloads)
+  const userIndices = [];
+  for (let i = enriched.length - 1; i >= 0 && userIndices.length < 3; i--) {
+    if (enriched[i].role === 'user') userIndices.push(i);
+  }
+  // Track URLs we've already inlined to avoid duplicates
+  const inlinedUrls = new Set();
+  for (const idx of userIndices) {
+    const entry = enriched[idx];
     const textParts = (entry.parts || []).filter(p => p.text);
     const fullText = textParts.map(p => p.text).join(' ');
-    const imageParts = await extractImageParts(fullText);
-    if (imageParts.length > 0) {
-      enriched.push({ role: entry.role, parts: [...textParts, ...imageParts] });
-    } else {
-      enriched.push(entry);
+    const urlPattern = /https?:\/\/[^\s\])"']+/g;
+    const urls = (fullText.match(urlPattern) || []).filter(url => {
+      const ext = url.split('.').pop().split('?')[0].toLowerCase();
+      return IMAGE_EXTENSIONS.has(ext) && !inlinedUrls.has(url);
+    });
+    if (!urls.length) continue;
+    const imageParts = await Promise.all(urls.map(async (url) => {
+      try {
+        const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!resp.ok) return null;
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const ext = url.split('.').pop().split('?')[0].toLowerCase();
+        inlinedUrls.add(url);
+        return { inlineData: { mimeType: IMAGE_MIME[ext] || 'image/jpeg', data: buf.toString('base64') } };
+      } catch { return null; }
+    }));
+    const validParts = imageParts.filter(Boolean);
+    if (validParts.length > 0) {
+      enriched[idx] = { role: entry.role, parts: [...textParts, ...validParts] };
     }
   }
   return enriched;
@@ -1135,6 +1159,9 @@ ${PROJECT_BASE_INSTRUCTION}`;
                 if (f.result.active_tasks?.length) parts.push('**Active tasks:**\n' + f.result.active_tasks.map(t => `- ${t.title} (${t.status}, agent: ${t.agent || '?'})`).join('\n'));
                 if (f.result.agents?.length) parts.push('**Agent checkpoints:**\n' + f.result.agents.map(a => `- ${a.agent}: ${a.task} ${a.progress} -- ${a.step}`).join('\n'));
                 return parts.join('\n\n') || 'Pipeline is idle. No active tasks.';
+              }
+              if (f.name === 'create_task' && f.result?.title) {
+                return `Task queued: **${f.result.title}**${f.result.project_path ? ` (${f.result.project_path})` : ''}${f.result.agent_identity ? ` for ${f.result.agent_identity}` : ''}. Status: ${f.result.status || 'queued'}.`;
               }
               return `**${f.name}**: ${JSON.stringify(f.result).slice(0, 500)}`;
             }).join('\n\n');
