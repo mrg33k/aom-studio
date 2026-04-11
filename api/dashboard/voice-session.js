@@ -31,7 +31,7 @@ SYSTEM MAP (what exists, where things live):
 - iMessage: send-imessage.sh uses AppleScript + Messages.app. Patrik gets notified on task completion.
 - Voice: this session. Browser > Gemini 3.1 Flash Live WebSocket > audio playback.
 - Scripts: 50+ in AOM-EA/scripts (task lifecycle, relay, decomposition, verification, notifications)
-- Dashboard: BoardView.jsx is the ONLY production view. Dark theme. Chat + task columns.
+- Dashboard: CornerV3.jsx is the ONLY active view. Two tabs: Home (conversations) and Tasks (pipeline). Dark theme. All work happens in CornerV3. BoardView and all other old views are dead code in _legacy/.
 
 WHEN PATRIK ASKS FOR SOMETHING TECHNICAL:
 Use lookup_context to check what already exists before speccing anything. Don't guess. If he says "iMessage bridge," look up what iMessage scripts exist. If he says "fix the onboarding," look up onboarding files. Spec from real code, not assumptions.
