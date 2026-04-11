@@ -4771,7 +4771,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                                   />
                                   <button
                                     onClick={() => deleteEnvKey('user', k.key)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}
+                                    style={{
+                                      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                                      borderRadius: 6, cursor: 'pointer', color: '#F87171', fontSize: TYPE.sm,
+                                      fontWeight: 600, fontFamily: "'Inter', sans-serif", padding: '5px 10px', flexShrink: 0,
+                                    }}
                                   >
                                     Remove
                                   </button>
@@ -4821,7 +4825,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                                   />
                                   <button
                                     onClick={() => deleteEnvKey('project', k.key)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}
+                                    style={{
+                                      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                                      borderRadius: 6, cursor: 'pointer', color: '#F87171', fontSize: TYPE.sm,
+                                      fontWeight: 600, fontFamily: "'Inter', sans-serif", padding: '5px 10px', flexShrink: 0,
+                                    }}
                                   >
                                     Remove
                                   </button>
@@ -4846,12 +4854,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                                 onClick={() => setNewKeyScope(s)}
                                 style={{
                                   flex: 1,
-                                  padding: '6px 0',
-                                  fontSize: TYPE.xs, fontWeight: 600,
+                                  padding: '7px 0',
+                                  fontSize: TYPE.sm, fontWeight: newKeyScope === s ? 700 : 500,
                                   fontFamily: "'Inter', sans-serif",
-                                  color: newKeyScope === s ? '#60A5FA' : C.muted,
-                                  background: newKeyScope === s ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
-                                  border: `1px solid ${newKeyScope === s ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                  color: newKeyScope === s ? '#fff' : C.muted,
+                                  background: newKeyScope === s ? 'rgba(96,165,250,0.22)' : 'rgba(255,255,255,0.03)',
+                                  border: `1px solid ${newKeyScope === s ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
                                   borderRadius: 6,
                                   cursor: 'pointer',
                                   textTransform: 'capitalize',
@@ -6606,7 +6614,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                                     borderRadius: 6, outline: 'none',
                                   }}
                                 />
-                                <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}>Remove</button>
+                                <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', color: '#F87171', fontSize: TYPE.sm, fontWeight: 600, fontFamily: "'Inter', sans-serif", padding: '5px 10px', flexShrink: 0 }}>Remove</button>
                               </div>
                             </div>
                           ))}
@@ -6650,7 +6658,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                                     borderRadius: 6, outline: 'none',
                                   }}
                                 />
-                                <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}>Remove</button>
+                                <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', color: '#F87171', fontSize: TYPE.sm, fontWeight: 600, fontFamily: "'Inter', sans-serif", padding: '5px 10px', flexShrink: 0 }}>Remove</button>
                               </div>
                             </div>
                           ))}
@@ -6665,11 +6673,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                         <div style={{ display: 'flex', gap: 6 }}>
                           {['user', 'project'].map(s => (
                             <button key={s} onClick={() => setNewKeyScope(s)} style={{
-                              flex: 1, padding: '6px 0', fontSize: TYPE.xs, fontWeight: 600,
+                              flex: 1, padding: '7px 0', fontSize: TYPE.sm, fontWeight: newKeyScope === s ? 700 : 500,
                               fontFamily: "'Inter', sans-serif",
-                              color: newKeyScope === s ? '#60A5FA' : C.muted,
-                              background: newKeyScope === s ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
-                              border: `1px solid ${newKeyScope === s ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                              color: newKeyScope === s ? '#fff' : C.muted,
+                              background: newKeyScope === s ? 'rgba(96,165,250,0.22)' : 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${newKeyScope === s ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
                               borderRadius: 6, cursor: 'pointer', textTransform: 'capitalize',
                             }}>{s}</button>
                           ))}
