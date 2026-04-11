@@ -940,7 +940,11 @@ ${BASE_INSTRUCTION}`;
     // Max 5 rounds to prevent infinite loops.
     const MAX_ROUNDS = 5;
     let retried = false;
-    let currentContents = [...contents];
+    // Cold start fix: Gemini Flash chokes on first message when system instruction + 25 tools + CONTEXT.md
+    // is too much context. Inject a warm-up exchange so the model has something to anchor to.
+    let currentContents = baseHistory.length === 0
+      ? [{ role: 'user', parts: [{ text: 'hi' }] }, { role: 'model', parts: [{ text: 'Hey! How can I help with this project today?' }] }, ...contents]
+      : [...contents];
     const allFunctionCalls = [];
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
