@@ -234,6 +234,20 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   }, [playNextChunk])
 
   const stopSession = useCallback(() => {
+    // Flush any pending transcripts BEFORE tearing down (prevents message loss)
+    const pendingInput = inputAccRef.current?.trim()
+    if (pendingInput) {
+      inputAccRef.current = ''
+      setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
+      onTranscript?.(pendingInput, 'user')
+    }
+    const pendingOutput = outputAccRef.current?.trim()
+    if (pendingOutput) {
+      outputAccRef.current = ''
+      setTranscript(prev => [...prev, { role: 'model-text', text: pendingOutput, id: Date.now() + Math.random() }])
+      onTranscript?.(pendingOutput, 'model')
+    }
+
     if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
     if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null }
     if (sessionTimerRef.current) { clearInterval(sessionTimerRef.current); sessionTimerRef.current = null }
@@ -258,7 +272,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     volumeLevelRef.current = 0
     setVolumeLevel(0)
     updateStatus('idle')
-  }, [updateStatus])
+  }, [updateStatus, onTranscript])
 
   const startSession = useCallback(async () => {
     if (status !== 'idle') return
@@ -630,6 +644,20 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       }
 
       ws.onclose = (event) => {
+        // Flush any pending transcripts on unexpected close (network drop, timeout)
+        const pendingInput = inputAccRef.current?.trim()
+        if (pendingInput) {
+          inputAccRef.current = ''
+          setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
+          onTranscript?.(pendingInput, 'user')
+        }
+        const pendingOutput = outputAccRef.current?.trim()
+        if (pendingOutput) {
+          outputAccRef.current = ''
+          setTranscript(prev => [...prev, { role: 'model-text', text: pendingOutput, id: Date.now() + Math.random() }])
+          onTranscript?.(pendingOutput, 'model')
+        }
+
         if (statusRef.current !== 'idle') {
           if (event.code !== 1000) {
             const reason = event.reason || `closed (code ${event.code})`

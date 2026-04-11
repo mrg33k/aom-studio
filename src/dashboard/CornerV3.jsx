@@ -3935,6 +3935,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   setIsVoiceActive(false)
                   setVoiceMuted(false)
                   setVoiceTranscriptText('')
+                  // Voice session ended -- ask operator to summarize and create follow-ups
+                  const voiceMsgs = messagesRef.current?.filter(m => m.source === 'voice') || []
+                  if (voiceMsgs.length >= 4) {
+                    setTimeout(() => {
+                      sendProjectText('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
+                    }, 1500)
+                  }
                 }
               }}
               onVolumeChange={setVoiceVolume}
@@ -5389,6 +5396,13 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 setIsVoiceActive(false)
                 setVoiceMuted(false)
                 setVoiceTranscriptText('')
+                // Voice session ended -- ask agent to summarize and create follow-ups
+                const voiceMsgs = messagesRef.current?.filter(m => m.source === 'voice') || []
+                if (voiceMsgs.length >= 4) {
+                  setTimeout(() => {
+                    sendAgentText('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
+                  }, 1500)
+                }
               }
             }}
             onVolumeChange={setVoiceVolume}
