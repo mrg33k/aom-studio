@@ -18,6 +18,7 @@ import {
   getUserWorld,
 } from './lib/clientConfig.js'
 import { useTasks } from './hooks/useTasks'
+import { createTaskWithRex } from './lib/rexTaskClient.js'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useProjects } from './hooks/useProjects'
 import { formatRelativeTime } from './timeUtils'
@@ -1336,7 +1337,7 @@ function getShippedCardColor(task, index) {
 
 // ── Project filter pills (loaded from Supabase projects table) ────────────────
 
-function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) {
+function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks, addOptimisticTask, showToast, currentUser }) {
   const [searchQuery,   setSearchQuery]   = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
@@ -1398,33 +1399,22 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
 
     setTaskSubmitting(true)
     try {
-      const clientId = worldId || getClientId()
-      const res = await fetch('/api/dashboard/v2-task-create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: text,
-          description: text,
-          status: 'queued',
-          priority: 0,
-          client_id: clientId,
-          created_by: 'dashboard',
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        console.error('[task-maker] API error:', err)
+      const userId   = currentUser?.id || null
+      const userName = currentUser?.user_metadata?.full_name || null
+      const result = await createTaskWithRex(text, userId, userName)
+      setTaskInput('')
+      if (result.task) {
+        if (addOptimisticTask) addOptimisticTask(result.task)
       } else {
-        setTaskInput('')
-        // Refresh tasks to pick up the new one immediately
+        // Rex responded but didn't create a task -- refresh so realtime picks it up
         if (refreshTasks) refreshTasks()
       }
     } catch (err) {
-      console.error('[task-maker] Network error:', err)
+      if (showToast) showToast(err.message || 'Failed to create task')
     } finally {
       setTaskSubmitting(false)
     }
-  }, [taskInput, taskSubmitting, worldId, refreshTasks])
+  }, [taskInput, taskSubmitting, currentUser, addOptimisticTask, refreshTasks, showToast])
 
   const handleTaskInputKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -6498,6 +6488,7 @@ export default function CornerV3() {
   const rootVoiceChatRef = useRef(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
   const [toast, setToast] = useState({ visible: false, message: '' })
+  const showToast = useCallback((message) => setToast({ visible: true, message }), [])
   const prevDoneIdsRef = useRef(null)
 
   useEffect(() => {
@@ -6537,7 +6528,7 @@ export default function CornerV3() {
     (topLevelProjects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
     [topLevelProjects]
   )
-  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks } = useTasks(worldId, sharedSlugs)
+  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks, addOptimisticTask } = useTasks(worldId, sharedSlugs)
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {
@@ -6871,7 +6862,7 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} />}
+        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} addOptimisticTask={addOptimisticTask} showToast={showToast} currentUser={currentUser} />}
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} />}
       </div>
 

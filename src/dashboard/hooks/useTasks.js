@@ -137,6 +137,16 @@ export function useTasks(worldId, sharedSlugs = []) {
     }
   }, [])
 
+  // Optimistic add: immediately inject a task into local state without waiting for realtime
+  const addOptimisticTask = useCallback((task) => {
+    if (!task) return
+    setAllTasks(prev => {
+      const exists = prev.some(t => t.id === task.id)
+      if (exists) return prev
+      return sortTasks([...prev, task])
+    })
+  }, [])
+
   // Realtime update handler: merge incoming row change into local state
   const handleRealtimeChange = useCallback((payload) => {
     const { eventType, new: newRow, old: oldRow } = payload
@@ -265,6 +275,7 @@ export function useTasks(worldId, sharedSlugs = []) {
     loading,
     error,
     refresh: fetchTasks,
+    addOptimisticTask,
   }
 }
 
