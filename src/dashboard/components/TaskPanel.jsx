@@ -40,6 +40,34 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
   const tpProgressBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.06)'
   // Sprite agents: fetched from Supabase agent_status(has_sprite=true), falls back to static list
   const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
+  
+  // Mock file data for Files section
+  const mockFiles = [
+    { name: 'project-brief.pdf', size: 1250000, type: 'pdf' },
+    { name: 'design-specs.png', size: 850000, type: 'image' },
+    { name: 'meeting-notes.txt', size: 12000, type: 'text' },
+    { name: 'budget-spreadsheet.xlsx', size: 3200000, type: 'spreadsheet' },
+    { name: 'presentation-deck.pptx', size: 2800000, type: 'presentation' },
+  ]
+
+  // Helper function to format file size
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  // Helper function to get file icon based on type
+  const getFileIcon = (type) => {
+    switch (type) {
+      case 'pdf': return '📄'
+      case 'image': return '🖼️'
+      case 'text': return '📝'
+      case 'spreadsheet': return '📊'
+      case 'presentation': return '📽️'
+      default: return '📎'
+    }
+  }
   useEffect(() => {
     if (!supabase) return
     supabase
@@ -819,6 +847,98 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
             </motion.div>
           )
         })}
+      </div>
+
+      {/* Files section */}
+      <div style={{
+        borderTop: `1px solid ${tpDivider}`,
+        padding: '12px 16px',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}>
+          <span style={{
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 14,
+            fontWeight: 700,
+            color: tpTextPrimary,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}>
+            Files
+          </span>
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 11,
+            fontWeight: 600,
+            color: tpTextMuted,
+          }}>
+            {mockFiles.length} items
+          </span>
+        </div>
+        
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+        }}>
+          {mockFiles.map((file, index) => (
+            <div
+              key={index}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 10px',
+                borderRadius: 6,
+                background: isDaytime ? 'rgba(59,130,246,0.05)' : 'rgba(100,180,255,0.03)',
+                border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.08)'}`,
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.06)'
+                e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(100,180,255,0.15)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.05)' : 'rgba(100,180,255,0.03)'
+                e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.08)'
+              }}
+            >
+              <span style={{
+                fontSize: 18,
+                width: 24,
+                textAlign: 'center',
+                flexShrink: 0,
+              }}>
+                {getFileIcon(file.type)}
+              </span>
+              <span style={{
+                flex: 1,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 14,
+                fontWeight: 500,
+                color: tpTextPrimary,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {file.name}
+              </span>
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: 12,
+                fontWeight: 600,
+                color: tpTextMuted,
+                flexShrink: 0,
+              }}>
+                {formatFileSize(file.size)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
     </motion.div>
