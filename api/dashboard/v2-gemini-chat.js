@@ -5,6 +5,46 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Image extensions Gemini can process
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']);
+const IMAGE_MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp' };
+
+// Extract image URLs from message text and fetch as base64 for Gemini vision
+async function extractImageParts(text) {
+  const urlPattern = /https?:\/\/[^\s\])"']+/g;
+  const urls = (text.match(urlPattern) || []).filter(url => {
+    const ext = url.split('.').pop().split('?')[0].toLowerCase();
+    return IMAGE_EXTENSIONS.has(ext);
+  });
+  if (!urls.length) return [];
+  const parts = await Promise.all(urls.map(async (url) => {
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!resp.ok) return null;
+      const buf = Buffer.from(await resp.arrayBuffer());
+      const ext = url.split('.').pop().split('?')[0].toLowerCase();
+      return { inlineData: { mimeType: IMAGE_MIME[ext] || 'image/jpeg', data: buf.toString('base64') } };
+    } catch { return null; }
+  }));
+  return parts.filter(Boolean);
+}
+
+// Convert history entries: if a message contains image URLs, add inline_data parts so Gemini can see them
+async function enrichContentsWithImages(contents) {
+  const enriched = [];
+  for (const entry of contents) {
+    const textParts = (entry.parts || []).filter(p => p.text);
+    const fullText = textParts.map(p => p.text).join(' ');
+    const imageParts = await extractImageParts(fullText);
+    if (imageParts.length > 0) {
+      enriched.push({ role: entry.role, parts: [...textParts, ...imageParts] });
+    } else {
+      enriched.push(entry);
+    }
+  }
+  return enriched;
+}
+
 // Universal conversation style + tools. Used by both agent chat (Rex) and project chat.
 const OWNER_USER_IDS = ['833f6828-1dae-409c-a24b-1438f46544d0']; // Patrik
 
@@ -211,11 +251,12 @@ KEY CODEBASE FACTS (memorize these):
 - When you see a recently completed task that matches what Patrik is asking for, tell him it was already done.
 
 PROJECTS AND REPOS (where work lives):
-- Corner dashboard: aom-studio repo. CornerV3.jsx is the active build target.
-- Sourcing directory: sourcing-directory repo (SEPARATE from aom-studio). All sourcing, S3C, Space Rising, directory_tenants, membership work goes here.
+- Corner dashboard: aom-studio repo. CornerV3.jsx is the active build target. Project slug: "corner"
+- Sourcing directory: sourcing-directory repo (SEPARATE from aom-studio). Project slug: "sourcing"
+- AOM Website: aom-studio repo, public site pages. Project slug: "aom-website"
 - AOM-EA: agent system, pipeline scripts. Not a build target for frontend work.
-- Ambition: AMBITION repo. Separate from everything else.
-When creating tasks, ALWAYS mention which project/repo. The builder routes based on keywords like "sourcing", "Corner", "CornerV3", etc.
+- Ambition: AMBITION repo. Separate from everything else. Project slug: "ambition"
+You have FULL CROSS-PROJECT POWERS. You can create tasks for ANY project by setting the project field to the correct slug. Route work to wherever it belongs. If the conversation is about Corner, set project to "corner". If it's about Sourcing, use "sourcing". You own the whole system.
 
 HOW TO CREATE GOOD TASKS:
 - ALWAYS use read_file to see the current code before writing a task description. The builder needs to know what exists.
@@ -1034,12 +1075,15 @@ ${PROJECT_BASE_INSTRUCTION}`;
     // Max 5 rounds to prevent infinite loops.
     const MAX_ROUNDS = 5;
     let retried = false;
-    let currentContents = [...contents];
+    // Enrich contents with inline image data so Gemini can actually see uploaded images
+    let currentContents = await enrichContentsWithImages(contents);
     const allFunctionCalls = [];
-    // Project chats get lean tools (16 vs 25) and use Gemini Pro for reliable tool calling
-    // AOM project = master room, gets full toolset like Rex. Other projects get scoped tools.
-    const activeTools = (projectSlug && projectSlug !== 'aom') ? PROJECT_TOOLS : TOOLS;
-    const activeModel = projectSlug ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    // Agent chats + home base get full tools. Project chats get scoped tools.
+    // Home base (aom-website) is a project chat but gets full power.
+    const isHomeChat = projectSlug === 'aom-website';
+    const isAgentChat = !projectSlug || projectSlug === 'aom';
+    const activeTools = (isAgentChat || isHomeChat) ? TOOLS : PROJECT_TOOLS;
+    const activeModel = (isAgentChat || isHomeChat) ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
       // Retry the API call up to 2 times if Gemini returns completely empty (no text, no tools)
