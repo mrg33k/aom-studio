@@ -1069,17 +1069,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
               agentColor={color}
               clientId={getClientId()}
               onTranscript={handleTranscript}
-              onStatusChange={(s) => {
-                setLocalVoiceStatus(s)
-                if (s === 'idle') {
-                  const voiceMsgs = chat.messages?.filter(m => m.source === 'voice') || []
-                  if (voiceMsgs.length >= 4) {
-                    setTimeout(() => {
-                      chat.sendMessage('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
-                    }, 1500)
-                  }
-                }
-              }}
+              onStatusChange={setLocalVoiceStatus}
               onVolumeChange={setLocalVoiceVolume}
             />
           </div>
