@@ -1370,7 +1370,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     searchQuery, setSearchQuery, conversationFilter, setConversationFilter,
     pinnedItems, filteredPinnedItems, conversationItems,
     isFav, toggleFav, isMuted, toggleMute,
-    unreadMap, projectPreviews,
+    unreadMap, unreadCounts, projectPreviews,
     filteredVisibleAgents, filteredVisibleProjects,
     sectionStates, toggleSection, toggleHidden,
     projects, chattableAgents,

@@ -3,7 +3,7 @@
 import { Reorder } from 'framer-motion'
 import { C, agentColors } from '../../lib/cv3Colors.js'
 import AgentCard from './AgentCard.jsx'
-import { Badge, formatChatTime } from './shared.jsx'
+import { Badge, formatChatTime, getStatusColor } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 
 export default function ConversationsView(ctx) {
@@ -19,7 +19,7 @@ export default function ConversationsView(ctx) {
     displayName, greetingIdx, GREETINGS, lastLoginText,
     pinnedItems, filteredPinnedItems, conversationItems,
     isFav, toggleFav, isMuted, toggleMute,
-    unreadMap, projectPreviews,
+    unreadMap, unreadCounts, projectPreviews,
     filteredVisibleAgents, filteredVisibleProjects,
     sectionStates, toggleSection, toggleHidden,
     projects, chattableAgents,
