@@ -98,12 +98,6 @@ HOW TO TALK:
 - Reference real things: what you've been working on, what's going on in the system, what happened recently.
 - If you don't know something, say so. Or look it up with your tools. Don't guess.
 
-ABOUT AOM:
-AOM (Ahead of Market) is a creative studio. Patrik is building Corner, an AI-powered dashboard where clients get a team of AI agents that do real work. The system runs on Supabase, Gemini, Claude, and Vercel.
-
-THE TEAM (AI agents you can assign work to via create_task):
-Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI agents, not humans. You route work to them.
-
 YOUR TOOLS (use naturally, only when the conversation calls for it):
 - read_file: READ THE ACTUAL CODE before writing task descriptions. See what exists before telling an agent what to change.
 - list_files: Check directory structure. Never guess file paths -- verify them.
@@ -150,6 +144,12 @@ IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out 
 
 // Rex-specific identity + Corner codebase knowledge. Only used for Rex/agent chats, never for project chats.
 const SYSTEM_INSTRUCTION = `${BASE_INSTRUCTION}
+
+ABOUT AOM:
+AOM (Ahead of Market) is a creative studio. Patrik is building Corner, an AI-powered dashboard where clients get a team of AI agents that do real work. The system runs on Supabase, Gemini, Claude, and Vercel.
+
+THE TEAM (AI agents you can assign work to via create_task):
+Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI agents, not humans. You route work to them.
 
 You are Rex: sharp, efficient, slightly no-nonsense. You keep the system running and you know it.
 
@@ -278,26 +278,35 @@ async function createTask(args = {}, clientId) {
   return result;
 }
 
-async function getQueue(clientId) {
+async function getQueue(clientId, projectPath) {
   const params = ['status=in.(queued,classifying,planning,building,qa)', 'order=priority.desc'];
-  if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
+  // Project chats: scope by project_path (pipeline tasks have client_id=aom, not the user's client_id)
+  if (projectPath) {
+    params.push(`project_path=eq.${encodeURIComponent(projectPath)}`);
+  } else if (clientId) {
+    params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
+  }
   return sbFetch(`/rest/v1/tasks?${params.join('&')}`);
 }
 
-async function getStatus(taskId, clientId) {
+async function getStatus(taskId, clientId, projectPath) {
   // Allow querying by task ID or by status filters
   let params;
   if (taskId === 'recent' || taskId === 'failed' || taskId === 'done') {
     // Special: get recent tasks by status
     const statusFilter = taskId === 'failed' ? 'status=eq.failed' : taskId === 'done' ? 'status=in.(done,failed)' : 'status=in.(queued,classifying,planning,building,qa,done,failed)';
     params = [statusFilter, 'order=created_at.desc', 'limit=10'];
-    if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
-    // Also include shared project tasks
+    // Project chats: scope by project_path so we see pipeline-created tasks
+    if (projectPath) {
+      params.push(`project_path=eq.${encodeURIComponent(projectPath)}`);
+    } else if (clientId) {
+      params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
+    }
     const tasks = await sbFetch(`/rest/v1/tasks?${params.join('&')}&select=id,title,status,qa_score,qa_notes,error,agent_identity,project_path,created_at,completed_at`);
     return tasks;
   }
+  // Single task lookup by ID -- no client/project filter needed (ID is unique)
   params = [`id=eq.${encodeURIComponent(taskId)}`];
-  if (clientId) params.push(`client_id=eq.${encodeURIComponent(clientId)}`);
   const task = await sbFetch(`/rest/v1/tasks?${params.join('&')}`);
   // Also fetch task thread messages (QA notes, build status, errors)
   const thread = await sbFetch(`/rest/v1/messages?agent=eq.task:${encodeURIComponent(taskId)}&select=text,role,timestamp&order=timestamp.asc&limit=20`);
@@ -325,13 +334,48 @@ async function deleteMessages(agentSlug, clientId, count = 10) {
   return { deleted: ids.length };
 }
 
-async function runQuery(table, filters, select, clientId) {
+// Project-specific Supabase credentials (projects with their own DB)
+const PROJECT_SUPABASE = {
+  sourcing: {
+    url: 'https://kzzvjtthknsozktmpvak.supabase.co',
+    key: process.env.SOURCING_SUPABASE_SERVICE_KEY,
+    tables: ['directory_companies', 'directory_members', 'directory_certifications', 'directory_tenants',
+             'directory_reports', 'directory_listings', 'directory_organizations', 'user_notification_preferences'],
+  },
+};
+
+async function runQuery(table, filters, select, clientId, projectPath) {
+  // Check if this table belongs to a project-specific Supabase
+  const projectDb = projectPath && PROJECT_SUPABASE[projectPath];
+  if (projectDb && projectDb.tables.includes(table)) {
+    if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectPath}. Ask Patrik to set SOURCING_SUPABASE_SERVICE_KEY in Vercel env.`);
+    const qs = [(filters || 'limit=10'), `select=${select || '*'}`].filter(Boolean).join('&');
+    const resp = await fetch(`${projectDb.url}/rest/v1/${table}?${qs}`, {
+      headers: { apikey: projectDb.key, Authorization: `Bearer ${projectDb.key}` },
+    });
+    if (!resp.ok) throw new Error(`Project DB query failed: ${resp.status}`);
+    return resp.json();
+  }
+
+  // Default AOM Supabase
   const allowed = ['messages', 'tasks', 'events', 'projects', 'agent_status'];
-  if (!allowed.includes(table)) throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
-  // MANDATORY: inject client_id filter to prevent cross-world data leaks
-  const clientFilter = `client_id=eq.${encodeURIComponent(clientId || 'aom')}`;
-  const userFilters = (filters || 'limit=10').replace(/client_id=eq\.[^&]*/g, ''); // strip any user-supplied client_id override
-  const qs = [clientFilter, userFilters, `select=${select || '*'}`].filter(Boolean).join('&');
+  if (!allowed.includes(table)) {
+    // If in a project chat, hint about project-specific tables
+    if (projectPath && PROJECT_SUPABASE[projectPath]) {
+      const projectTables = PROJECT_SUPABASE[projectPath].tables;
+      throw new Error(`Table "${table}" not in AOM DB. This project has its own tables: ${projectTables.join(', ')}`);
+    }
+    throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
+  }
+  // MANDATORY: scope by project_path for tasks, client_id for everything else
+  let scopeFilter;
+  if (projectPath && table === 'tasks') {
+    scopeFilter = `project_path=eq.${encodeURIComponent(projectPath)}`;
+  } else {
+    scopeFilter = `client_id=eq.${encodeURIComponent(clientId || 'aom')}`;
+  }
+  const userFilters = (filters || 'limit=10').replace(/client_id=eq\.[^&]*/g, '');
+  const qs = [scopeFilter, userFilters, `select=${select || '*'}`].filter(Boolean).join('&');
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
 
@@ -883,15 +927,16 @@ ${BASE_INSTRUCTION}`;
             // Shared project tasks keep their shared: client_id so both worlds can see them.
             result = await createTask(argsWithAgent, clientId);
           }
-          else if (name === 'get_queue') result = await getQueue(clientId);
-          else if (name === 'get_status') result = await getStatus(args.task_id, clientId);
+          else if (name === 'get_queue') result = await getQueue(clientId, projectSlug);
+          else if (name === 'get_status') result = await getStatus(args.task_id, clientId, projectSlug);
           else if (name === 'delete_messages') result = await deleteMessages(agentSlug, clientId, args.count || 10);
-          else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select, clientId);
+          else if (name === 'run_query') result = await runQuery(args.table, args.filters, args.select, clientId, projectSlug);
           else if (name === 'search_history') {
-            const searchAgent = args.agent || agentSlug;
+            // Project chats: always scope to this project's conversation
+            const searchAgent = projectSlug ? `project:${projectSlug}` : (args.agent || agentSlug);
             const searchQuery = (args.query || '').trim();
-            // Non-AOM worlds: ALWAYS use client_id-scoped DB search (RAG server is global, would leak)
-            if (isAOM) {
+            if (isAOM && !projectSlug) {
+              // AOM agent chats: use RAG for global search
               const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
               try {
                 const ragRes = await fetch(`${RAG_URL}/search-messages`, {
@@ -903,14 +948,14 @@ ${BASE_INSTRUCTION}`;
                 else { throw new Error('RAG server unavailable'); }
               } catch {
                 const searchFilter = searchAgent
-                  ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+                  ? `agent=eq.${encodeURIComponent(searchAgent)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
                   : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
                 result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
               }
             } else {
-              // Scoped search: only this world's messages
+              // Project chats + non-AOM: scoped DB search only
               const searchFilter = searchAgent
-                ? `agent=eq.${encodeURIComponent(searchAgent)}&client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
+                ? `agent=eq.${encodeURIComponent(searchAgent)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`
                 : `client_id=eq.${encodeURIComponent(clientId)}&text=ilike.*${encodeURIComponent(searchQuery)}*&order=timestamp.desc&limit=15`;
               result = await sbFetch(`/rest/v1/messages?${searchFilter}&select=agent,role,text,timestamp`);
             }
