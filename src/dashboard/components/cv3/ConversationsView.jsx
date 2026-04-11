@@ -17,12 +17,14 @@ export default function ConversationsView(ctx) {
     setSettingsOpen, customizeTarget, setCustomizeTarget, customizeFileRef,
     searchQuery, setSearchQuery, conversationFilter, setConversationFilter,
     displayName, greetingIdx, GREETINGS, lastLoginText,
-    pinnedItems, conversationItems,
+    pinnedItems, filteredPinnedItems, conversationItems,
     isFav, toggleFav, isMuted, toggleMute,
     unreadMap, projectPreviews,
     filteredVisibleAgents, filteredVisibleProjects,
-    orderedSlugs, setOrderedSlugs, handleReorder,
+    sectionStates, toggleSection, toggleHidden,
+    projects, chattableAgents,
     handleMicToggle, isRecording, sendAgentTextRef,
+    setVoiceMinimized,
     allTasks,
   } = ctx
 

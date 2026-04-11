@@ -1368,11 +1368,12 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     isMobile, greetingIdx, GREETINGS, VOICE_OPTIONS,
     // Conversations
     searchQuery, setSearchQuery, conversationFilter, setConversationFilter,
-    pinnedItems, conversationItems,
+    pinnedItems, filteredPinnedItems, conversationItems,
     isFav, toggleFav, isMuted, toggleMute,
     unreadMap, projectPreviews,
     filteredVisibleAgents, filteredVisibleProjects,
-    // orderedSlugs, handleReorder not used (HomePanel was removed)
+    sectionStates, toggleSection, toggleHidden,
+    projects, chattableAgents,
     // Customize
     customizeTarget, setCustomizeTarget, customizeFileRef,
     // Handlers
