@@ -1,6 +1,8 @@
 // ThreadView -- agent conversation thread with message list and input
 // Extracted from ChatPanel.jsx. Receives all state via ctx props.
 import { C } from '../../lib/cv3Colors.js'
+import { TYPE, LH, LS } from '../../lib/typeScale.js'
+import { supabase } from '../../lib/supabase.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
