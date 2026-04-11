@@ -2587,47 +2587,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [voiceMinimized, setVoiceMinimized] = useState(false)
   const voiceMinimizedAgent = useRef(null)  // { type: 'agent'|'project', data: agent/project }
 
-  // In-chat history search
+  // In-chat history search (state only -- logic after selectedProject is declared)
   const [chatSearchOpen, setChatSearchOpen] = useState(false)
   const [chatSearchQuery, setChatSearchQuery] = useState('')
   const [chatSearchResults, setChatSearchResults] = useState(null)
   const [chatSearchLoading, setChatSearchLoading] = useState(false)
   const chatSearchRef = useRef(null)
-
-  const handleChatSearch = useCallback(async (query) => {
-    if (!query || query.length < 2) { setChatSearchResults(null); return }
-    const agent = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
-    if (!agent) return
-    setChatSearchLoading(true)
-    try {
-      const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : (worldId || 'aom')
-      const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agent)}&client=${encodeURIComponent(clientId)}&search=${encodeURIComponent(query)}&limit=500`)
-      if (res.ok) {
-        const data = await res.json()
-        setChatSearchResults(data.messages || [])
-      }
-    } catch { setChatSearchResults([]) }
-    setChatSearchLoading(false)
-  }, [selectedAgent, selectedProject, worldId])
-
-  // Debounced search
-  useEffect(() => {
-    if (!chatSearchOpen) return
-    const timer = setTimeout(() => handleChatSearch(chatSearchQuery), 400)
-    return () => clearTimeout(timer)
-  }, [chatSearchQuery, chatSearchOpen, handleChatSearch])
-
-  // Focus search input when opened
-  useEffect(() => {
-    if (chatSearchOpen && chatSearchRef.current) chatSearchRef.current.focus()
-  }, [chatSearchOpen])
-
-  // Close search when switching chats
-  useEffect(() => {
-    setChatSearchOpen(false)
-    setChatSearchQuery('')
-    setChatSearchResults(null)
-  }, [selectedAgent, selectedProject])
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -2740,6 +2705,39 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
     if (!projectId || !projects?.length) return null
     return projects.find(p => String(p.id) === String(projectId)) || null
   }, [projectId, projects, inlineProject])
+
+  // ── Chat history search logic (must be after selectedProject declaration) ──
+  const handleChatSearch = useCallback(async (query) => {
+    if (!query || query.length < 2) { setChatSearchResults(null); return }
+    const agent = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
+    if (!agent) return
+    setChatSearchLoading(true)
+    try {
+      const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : (worldId || 'aom')
+      const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agent)}&client=${encodeURIComponent(clientId)}&search=${encodeURIComponent(query)}&limit=500`)
+      if (res.ok) {
+        const data = await res.json()
+        setChatSearchResults(data.messages || [])
+      }
+    } catch { setChatSearchResults([]) }
+    setChatSearchLoading(false)
+  }, [selectedAgent, selectedProject, worldId])
+
+  useEffect(() => {
+    if (!chatSearchOpen) return
+    const timer = setTimeout(() => handleChatSearch(chatSearchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [chatSearchQuery, chatSearchOpen, handleChatSearch])
+
+  useEffect(() => {
+    if (chatSearchOpen && chatSearchRef.current) chatSearchRef.current.focus()
+  }, [chatSearchOpen])
+
+  useEffect(() => {
+    setChatSearchOpen(false)
+    setChatSearchQuery('')
+    setChatSearchResults(null)
+  }, [selectedAgent, selectedProject])
 
   // ── Per-chat voice selection ──────────────────────────────────────────────
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
