@@ -1352,6 +1352,11 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
   const [taskThread,             setTaskThread]             = useState([])
   const [threadLoading,          setThreadLoading]          = useState(false)
   const taskInputRef = useRef(null)
+  const [isRecording,  setIsRecording]  = useState(false)
+  const [recordedBlob, setRecordedBlob] = useState(null) // eslint-disable-line no-unused-vars
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef   = useRef([])
+  const micStreamRef     = useRef(null)
   // (runnerSignaledRef removed -- runner now signals on every Tasks tab mount)
 
   // Fetch task thread messages when a task is expanded
@@ -1427,6 +1432,40 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
       handleTaskSubmit()
     }
   }, [handleTaskSubmit])
+
+  const toggleVoiceRecording = useCallback(async () => {
+    if (isRecording) {
+      // Stop recording -- onstop will fire, create the blob, and setIsRecording(false)
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      return
+    }
+    // Start recording
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      micStreamRef.current = stream
+      audioChunksRef.current = []
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        setRecordedBlob(blob)
+        console.log('[voice-task] Captured audio blob:', blob, 'size:', blob.size, 'bytes')
+        // Release mic
+        micStreamRef.current?.getTracks().forEach(t => t.stop())
+        micStreamRef.current = null
+        setIsRecording(false)
+      }
+      mediaRecorder.start()
+      setIsRecording(true)
+    } catch (err) {
+      console.error('[voice-task] Mic access error:', err)
+    }
+  }, [isRecording])
 
   // Load project names from Supabase on mount
   useEffect(() => {
@@ -1515,6 +1554,8 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
           100% { width: 90% }
         }
         @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes rec-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5) } 60% { box-shadow: 0 0 0 8px rgba(239,68,68,0) } }
+        @keyframes rec-dot { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
       `}</style>
 
       {/* Scrollable content */}
@@ -2142,79 +2183,116 @@ function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks }) 
         background: C.bg,
         borderTop: '1px solid ' + C.border,
       }}>
+        {/* Recording indicator */}
+        {isRecording && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            marginBottom: 6,
+          }}>
+            <div style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: '#EF4444',
+              animation: 'rec-dot 1s ease-in-out infinite',
+              flexShrink: 0,
+            }} />
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: '#EF4444',
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '0.04em',
+            }}>Recording...</span>
+          </div>
+        )}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          background: C.s1,
-          border: '1.5px solid ' + (taskInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
+          background: isRecording ? 'rgba(239,68,68,0.06)' : C.s1,
+          border: '1.5px solid ' + (isRecording ? 'rgba(239,68,68,0.3)' : taskInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
           borderRadius: 26,
           padding: '5px 5px 5px 16px',
           maxWidth: 560,
           margin: '0 auto',
-          boxShadow: taskInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
-          transition: 'border-color 0.25s, box-shadow 0.25s',
+          boxShadow: isRecording ? '0 0 0 4px rgba(239,68,68,0.06)' : taskInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+          transition: 'border-color 0.25s, box-shadow 0.25s, background 0.25s',
         }}>
           <input
             ref={taskInputRef}
             type="text"
-            placeholder="Add a task..."
+            placeholder={isRecording ? 'Listening...' : 'Add a task...'}
             value={taskInput}
             onChange={e => setTaskInput(e.target.value)}
             onFocus={() => setTaskInputFocused(true)}
             onBlur={() => setTaskInputFocused(false)}
             onKeyDown={handleTaskInputKeyDown}
+            disabled={isRecording}
             style={{
               flex: 1,
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: C.text,
+              color: isRecording ? 'rgba(239,68,68,0.5)' : C.text,
               fontSize: 15,
               fontWeight: 500,
               fontFamily: "'Inter', sans-serif",
             }}
           />
-          {/* Action buttons inside pill */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* Attach */}
-            <button title="Attach" onClick={() => {}} style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'none', border: 'none',
-              color: C.muted, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, transition: 'all 0.15s',
-            }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-              </svg>
-            </button>
-            {/* Commands */}
-            <button title="Commands" onClick={() => {}} style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'none', border: 'none',
-              color: C.muted, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, transition: 'all 0.15s',
-            }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
-              </svg>
-            </button>
-          </div>
-          {/* Mic button (hidden when text present) */}
-          {!taskInput.trim() && (
-            <button title="Voice" onClick={() => {}} style={{
-              width: 42, height: 42, borderRadius: '50%',
-              background: C.accent, border: 'none',
-              color: '#000', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, transition: 'transform 0.15s, box-shadow 0.2s',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <rect x="9" y="2" width="6" height="12" rx="3"/>
-                <path d="M5 10a7 7 0 0014 0"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
-              </svg>
+          {/* Action buttons inside pill -- hidden while recording */}
+          {!isRecording && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Attach */}
+              <button title="Attach" onClick={() => {}} style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'all 0.15s',
+              }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
+              {/* Commands */}
+              <button title="Commands" onClick={() => {}} style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'all 0.15s',
+              }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+                </svg>
+              </button>
+            </div>
+          )}
+          {/* Mic / stop button (hidden when text present and not recording) */}
+          {(!taskInput.trim() || isRecording) && (
+            <button
+              title={isRecording ? 'Stop recording' : 'Voice'}
+              onClick={toggleVoiceRecording}
+              style={{
+                width: 42, height: 42, borderRadius: '50%',
+                background: isRecording ? '#EF4444' : C.accent,
+                border: 'none',
+                color: '#000', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                animation: isRecording ? 'rec-pulse 1.2s ease-in-out infinite' : 'none',
+                transition: 'background 0.2s',
+              }}
+            >
+              {isRecording ? (
+                // Stop icon (square)
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <rect x="4" y="4" width="16" height="16" rx="2"/>
+                </svg>
+              ) : (
+                // Mic icon
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <rect x="9" y="2" width="6" height="12" rx="3"/>
+                  <path d="M5 10a7 7 0 0014 0"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+              )}
             </button>
           )}
           {/* Send button (shown when text present) */}
