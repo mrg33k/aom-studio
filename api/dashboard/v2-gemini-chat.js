@@ -1150,22 +1150,38 @@ ${BASE_INSTRUCTION}`;
             result = await updateContext(args, clientId);
           }
           else if (name === 'write_data') {
-            // Direct DB writes for project-specific Supabase only
+            // Direct DB writes for project-specific Supabase ONLY (never AOM DB)
             const projectDb = projectSlug && PROJECT_SUPABASE[projectSlug];
-            if (!projectDb) throw new Error('write_data only works in project chats with their own database');
+            if (!projectDb) throw new Error('write_data only works in project chats with their own database (not AOM)');
             if (!projectDb.key) throw new Error(`Project DB key not configured for ${projectSlug}`);
             if (!projectDb.tables.includes(args.table)) throw new Error(`Table "${args.table}" not in project DB. Available: ${projectDb.tables.join(', ')}`);
             const action = args.action;
             if (action === 'delete' && !args.filters) throw new Error('filters required for delete (safety: cannot delete all rows)');
             if (action === 'update' && !args.filters) throw new Error('filters required for update');
-            const headers = { apikey: projectDb.key, Authorization: `Bearer ${projectDb.key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+            const readHeaders = { apikey: projectDb.key, Authorization: `Bearer ${projectDb.key}` };
+            const writeHeaders = { ...readHeaders, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+
+            // SAFETY: for delete/update, count affected rows FIRST
+            if (action === 'delete' || action === 'update') {
+              const countResp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}&select=id`, { headers: { ...readHeaders, Prefer: 'count=exact', Range: '0-0' } });
+              const countHeader = countResp.headers.get('content-range') || '';
+              const total = parseInt((countHeader.split('/')[1] || '0'), 10);
+              if (total > 50) throw new Error(`Safety: ${action} would affect ${total} rows (limit 50). Use more specific filters.`);
+              if (total === 0) {
+                result = { ok: true, action, table: args.table, affected: 0, note: 'No matching rows found' };
+                allFunctionCalls.push({ name, args, result });
+                roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: result } }] });
+                continue;
+              }
+            }
+
             let resp;
             if (action === 'insert') {
-              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}`, { method: 'POST', headers, body: JSON.stringify(args.data || {}) });
+              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}`, { method: 'POST', headers: writeHeaders, body: JSON.stringify(args.data || {}) });
             } else if (action === 'update') {
-              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}`, { method: 'PATCH', headers, body: JSON.stringify(args.data || {}) });
+              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}`, { method: 'PATCH', headers: writeHeaders, body: JSON.stringify(args.data || {}) });
             } else if (action === 'delete') {
-              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}`, { method: 'DELETE', headers });
+              resp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}`, { method: 'DELETE', headers: writeHeaders });
             } else {
               throw new Error(`Unknown action: ${action}`);
             }
