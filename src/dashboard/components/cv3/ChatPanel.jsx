@@ -1343,7 +1343,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     // Search
     chatSearchOpen, setChatSearchOpen, chatSearchQuery, setChatSearchQuery,
     chatSearchResults, setChatSearchResults, chatSearchLoading, chatSearchRef,
-    searchPerformSearch,
+    handleChatSearch,
     // Settings
     settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
     chatNameInput, setChatNameInput,

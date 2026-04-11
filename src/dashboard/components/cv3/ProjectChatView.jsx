@@ -34,7 +34,7 @@ export default function ProjectChatView(ctx) {
     userProfiles, isShared, sendProjectTextRef,
     parentUserIdentity, userIdentity,
     voiceMinimized, handleReturnToCall,
-    searchPerformSearch, voiceMsgs, displayName,
+    handleChatSearch, voiceMsgs, displayName,
   } = ctx
   const projColor = selectedProject?.color || '#6B8AB0'
 

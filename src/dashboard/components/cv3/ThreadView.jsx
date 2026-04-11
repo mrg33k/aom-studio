@@ -30,7 +30,7 @@ export default function ThreadView(ctx) {
     userProfiles, displayName, sendAgentTextRef,
     parentUserIdentity, userIdentity,
     voiceMinimized, handleReturnToCall, voiceMsgs,
-    searchPerformSearch, selectedProject, inlineProject,
+    handleChatSearch, selectedProject, inlineProject,
     allTasks,
   } = ctx
 
