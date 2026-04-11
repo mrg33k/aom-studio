@@ -221,6 +221,9 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'list_project_files', description: 'List files in the project folder. Use to discover what files are available (plans, specs, briefs, rankings, etc.).', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Subdirectory to list (optional, default lists project root)' } } } },
   { name: 'write_data', description: 'Insert, update, or delete records in the project database. Use for direct data operations like clearing placeholder records, seeding data, or updating fields. Only works for projects with their own Supabase (e.g. sourcing). Always confirm with the user before deleting.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (e.g. directory_reports, directory_companies)' }, action: { type: 'string', enum: ['insert', 'update', 'delete'], description: 'What to do' }, filters: { type: 'string', description: 'PostgREST filter for update/delete (e.g. id=eq.abc123 or title=ilike.*coming%20soon*)' }, data: { type: 'object', description: 'Data to insert or update (key-value pairs)' } }, required: ['table', 'action'] } },
   { name: 'use_integration', description: 'Use an external integration (Gmail, Google Calendar, etc) using keys stored in Settings. The user must configure their API key in Settings first. Use this when the user asks to check email, list calendar events, send email, or create calendar events.', parameters: { type: 'object', properties: { service: { type: 'string', enum: ['gmail', 'calendar'], description: 'Which service to use' }, action: { type: 'string', description: 'What to do: gmail supports list_emails, send_email; calendar supports list_events, create_event' }, params: { type: 'object', description: 'Action-specific params (e.g. {to, subject, body} for send_email, {query, maxResults} for list_emails, {summary, start, end} for create_event)' } }, required: ['service', 'action'] } },
+  { name: 'git_recent', description: 'Show recent git commits for this project repo. Use when asked "what changed?", "what shipped recently?", "show me recent commits", or when you need to understand what code was modified. Returns commit hash, author, time, message, and files changed.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of commits to show (default 10, max 30)' } } } },
+  { name: 'search_code', description: 'Search the project codebase for an exact string or pattern. Returns file paths, line numbers, and matching code. Use this for precise lookups like finding a function definition, variable usage, or specific string. More precise than lookup_context (which is semantic/fuzzy).', parameters: { type: 'object', properties: { pattern: { type: 'string', description: 'The string or pattern to search for (e.g. "loadEnvVars", "settingsOpen", "use_integration")' } }, required: ['pattern'] } },
+  { name: 'escalate', description: 'Escalate a hard problem to the terminal expert (Claude Code). Use this when you cannot solve a problem yourself -- complex debugging, architecture questions, multi-file issues, or anything that requires deep reasoning. Creates a terminal task that Claude Code will pick up, solve, and report back. Include what you tried and why you are stuck.', parameters: { type: 'object', properties: { problem: { type: 'string', description: 'Clear description of the problem the user is facing' }, what_i_tried: { type: 'string', description: 'What you already tried or investigated' }, relevant_files: { type: 'string', description: 'Comma-separated list of files related to the problem' } }, required: ['problem'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -1250,6 +1253,66 @@ ${BASE_INSTRUCTION}`;
             } else {
               throw new Error(`Unknown integration service: ${service}. Available: gmail, calendar`);
             }
+          }
+          else if (name === 'git_recent') {
+            const repoPath = projectRepoPath || `${process.cwd()}`;
+            const count = Math.min(args.count || 10, 30);
+            const r = await fetch(`${RAG_URL}/git-log?repo_path=${encodeURIComponent(repoPath)}&count=${count}`, {
+              signal: AbortSignal.timeout(10000),
+            });
+            result = await r.json();
+            if (!r.ok) throw new Error(result.error || 'git log failed');
+          }
+          else if (name === 'search_code') {
+            if (!args.pattern) throw new Error('pattern required');
+            const repoPath = projectRepoPath || `${process.cwd()}`;
+            const r = await fetch(`${RAG_URL}/search-code?repo_path=${encodeURIComponent(repoPath)}&pattern=${encodeURIComponent(args.pattern)}`, {
+              signal: AbortSignal.timeout(10000),
+            });
+            result = await r.json();
+            if (!r.ok) throw new Error(result.error || 'search failed');
+          }
+          else if (name === 'escalate') {
+            if (!args.problem) throw new Error('problem description required');
+            // Build conversation context from recent messages
+            const recentMsgs = (baseHistory || []).slice(-6).map(m => {
+              const role = m.role === 'user' ? 'User' : 'Operator';
+              const text = (m.parts || []).map(p => p.text || '').join('').slice(0, 300);
+              return `${role}: ${text}`;
+            }).join('\n');
+            const terminalDesc = [
+              `ESCALATED FROM PROJECT CHAT: ${projectSlug || 'corner'}`,
+              `USER: ${resolvedUserName || 'unknown'} (${resolvedUserId || 'no-id'})`,
+              '',
+              'PROBLEM:',
+              args.problem,
+              '',
+              args.what_i_tried ? `WHAT OPERATOR TRIED:\n${args.what_i_tried}` : '',
+              args.relevant_files ? `RELEVANT FILES: ${args.relevant_files}` : '',
+              '',
+              'RECENT CONVERSATION:',
+              recentMsgs,
+            ].filter(Boolean).join('\n');
+
+            // Create a terminal task via the tasks table
+            const crypto = await import('crypto');
+            const taskId = crypto.randomUUID().slice(0, 8);
+            const sort_order = (await getMaxSortOrder(clientId)) + 100;
+            await sbFetch('/rest/v1/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                title: `[Terminal] ${args.problem.slice(0, 80)}`,
+                description: terminalDesc,
+                status: 'queued',
+                agent_identity: 'terminal',
+                project_path: projectSlug || 'corner',
+                client_id: clientId,
+                sort_order,
+                metadata: { type: 'terminal', escalated_by: 'gemini', user_id: resolvedUserId },
+              }),
+            });
+            result = { ok: true, message: 'Escalated to terminal expert. A specialist will pick this up, solve it, and report back to this chat.' };
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
