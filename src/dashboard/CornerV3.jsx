@@ -24,6 +24,7 @@ import { formatRelativeTime } from './timeUtils'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
 import ChatMessageRenderer from './components/ChatMessageRenderer.jsx'
+import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 // ProjectCard import removed -- projects now render as inline cards matching agent card style
 
 // ── Color palette (dark-first) ────────────────────────────────────────────────
@@ -3877,6 +3878,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               </div>
             )
           })}
+          {sending && (
+            <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+              <TypingIndicatorV2 streaming={true} agentColor={projColor} compact={false} />
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -5752,6 +5758,17 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
             </div>
           )
         })}
+        {sending && (
+          <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+            <TypingIndicatorV2
+              streaming={true}
+              agentColor={selectedAgent?.color || '#3B82F6'}
+              agentName={selectedAgent?.name}
+              agentSlug={selectedAgent?.slug}
+              compact={false}
+            />
+          </div>
+        )}
 
         <div ref={messagesEndRef} />
       </div>
