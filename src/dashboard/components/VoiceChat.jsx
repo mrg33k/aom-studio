@@ -121,6 +121,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   const [sessionSecs, setSessionSecs] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(0)
+  const [lastUserTranscript, setLastUserTranscript] = useState('')
   const isMutedRef = useRef(false)
   const sessionIdRef = useRef(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -240,6 +241,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       inputAccRef.current = ''
       setTranscript(prev => [...prev, { role: 'user', text: pendingInput, id: Date.now() + Math.random() }])
       onTranscript?.(pendingInput, 'user')
+      console.log('[VoiceChat] Final user transcript:', pendingInput)
+      setLastUserTranscript(pendingInput)
     }
     const pendingOutput = outputAccRef.current?.trim()
     if (pendingOutput) {
@@ -278,6 +281,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     if (status !== 'idle') return
     setErrorMsg('')
     setTranscript([])
+    setLastUserTranscript('')
     inputAccRef.current = ''
     outputAccRef.current = ''
     sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -464,6 +468,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 if (text) {
                   setTranscript(prev => [...prev, { role: 'user', text, id: Date.now() + Math.random() }])
                   onTranscript?.(text, 'user')
+                  console.log('[VoiceChat] User said:', text)
+                  setLastUserTranscript(text)
                   // Persistence handled by parent onTranscript callback
                 }
               }
@@ -879,6 +885,21 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
             <MicIcon size={34} color={isActive ? statusColor : '#4B6080'} muted={status === 'idle' || status === 'error' || isMuted} />
           )}
         </button>
+
+        {/* Last user transcription -- shown below mic button after speech is captured */}
+        {lastUserTranscript ? (
+          <p style={{
+            margin: 0, padding: '8px 12px',
+            background: 'rgba(59,130,246,0.08)',
+            border: '1px solid rgba(59,130,246,0.18)',
+            borderRadius: 8, maxWidth: 260,
+            color: 'rgba(180,200,230,0.85)',
+            fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif",
+            lineHeight: 1.5, textAlign: 'center',
+          }}>
+            {lastUserTranscript}
+          </p>
+        ) : null}
 
         {/* Mute/Done button (visible when active) */}
         {isActive && (
