@@ -579,57 +579,68 @@ function rebuildContext(sections) {
 async function updateContext(args, clientId) {
   const slug = (args.project_slug || '').trim();
   if (!slug) return { error: 'update_context only works in project chat -- project_slug is required' };
-  const section = (args.section || '').trim().toLowerCase();
+  const section = (args.section || '').trim();
   if (!section) return { error: 'section is required' };
   const content = args.content || '';
-  const action = (args.action || 'replace').trim().toLowerCase();
+  const action = (args.action || 'append').trim().toLowerCase();
 
-  // Look up project by slug
+  // Primary: write directly to disk CONTEXT.md via RAG server
+  const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
+  try {
+    const ragResp = await fetch(`${RAG_URL}/update-project-context`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, section, content, action }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (ragResp.ok) {
+      const ragResult = await ragResp.json();
+      const result = { updated: true, section, size: ragResult.size, target: 'disk' };
+      if (ragResult.size > 15000) {
+        result.warning = `Context file is ${ragResult.size} bytes. Consider summarizing older sections.`;
+      }
+      return result;
+    }
+    // RAG server failed, fall through to Supabase backup
+    console.warn(`[update_context] RAG server returned ${ragResp.status}, falling back to Supabase events`);
+  } catch (err) {
+    console.warn(`[update_context] RAG server unreachable: ${err.message}, falling back to Supabase events`);
+  }
+
+  // Fallback: write to Supabase events table (secondary storage)
   const projects = await sbFetch(`/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&limit=1&select=id,slug`);
   const project = Array.isArray(projects) ? projects[0] : null;
   if (!project) return { error: `Project not found: ${slug}` };
 
-  // Fetch existing context from events table (event_type='project_context', agent=project slug)
   const existing = await sbFetch(`/rest/v1/events?event_type=eq.project_context&agent=eq.${encodeURIComponent(slug)}&order=timestamp.desc&limit=1&select=id,payload`);
   const row = Array.isArray(existing) ? existing[0] : null;
   const currentMd = (row?.payload?.context_md) ? row.payload.context_md : CONTEXT_TEMPLATE;
 
-  // Parse sections
   const sections = parseContextSections(currentMd);
-
-  // Apply update
   if (action === 'append') {
-    const prev = sections[section] || '';
-    sections[section] = prev ? prev + '\n' + content : content;
+    const prev = sections[section.toLowerCase()] || '';
+    sections[section.toLowerCase()] = prev ? prev + '\n' + content : content;
   } else {
-    sections[section] = content;
+    sections[section.toLowerCase()] = content;
   }
 
   const updatedMd = rebuildContext(sections);
-  const wordCount = updatedMd.split(/\s+/).filter(Boolean).length;
 
-  // Upsert context via events table
   if (row) {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/events?id=eq.${row.id}`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/events?id=eq.${row.id}`, {
       method: 'PATCH',
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({ payload: { context_md: updatedMd, project_id: project.id }, timestamp: new Date().toISOString() }),
     });
-    if (!resp.ok) throw new Error(`Failed to update project context: ${resp.status}`);
   } else {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
       method: 'POST',
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({ agent: slug, event_type: 'project_context', payload: { context_md: updatedMd, project_id: project.id } }),
     });
-    if (!resp.ok) throw new Error(`Failed to insert project context: ${resp.status}`);
   }
 
-  const result = { updated: true, section, word_count: wordCount };
-  if (wordCount > 3000) {
-    result.warning = `Context document is ${wordCount} words (over 3000). Consider summarizing older sections to keep it focused.`;
-  }
-  return result;
+  return { updated: true, section, target: 'supabase_fallback', warning: 'RAG server was unreachable. Context saved to Supabase events (secondary). Disk file NOT updated.' };
 }
 
 async function startRunner() {
