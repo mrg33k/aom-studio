@@ -405,14 +405,24 @@ async function runQuery(table, filters, select, clientId, projectPath) {
     }
     throw new Error(`Table not allowed: ${table}. Use: ${allowed.join(', ')}`);
   }
-  // MANDATORY: scope by project_path for tasks, client_id for everything else
+  // MANDATORY: scope queries to prevent cross-project data leakage
+  // In project chats: tasks scoped by project_path, messages by agent prefix, everything else by client_id
   let scopeFilter;
-  if (projectPath && table === 'tasks') {
-    scopeFilter = `project_path=eq.${encodeURIComponent(projectPath)}`;
+  if (projectPath) {
+    if (table === 'tasks') {
+      scopeFilter = `project_path=eq.${encodeURIComponent(projectPath)}`;
+    } else if (table === 'messages') {
+      scopeFilter = `agent=eq.project:${encodeURIComponent(projectPath)}`;
+    } else if (table === 'events') {
+      scopeFilter = `agent=eq.${encodeURIComponent(projectPath)}`;
+    } else {
+      scopeFilter = `client_id=eq.${encodeURIComponent(clientId || 'aom')}`;
+    }
   } else {
     scopeFilter = `client_id=eq.${encodeURIComponent(clientId || 'aom')}`;
   }
-  const userFilters = (filters || 'limit=10').replace(/client_id=eq\.[^&]*/g, '');
+  // Strip any user-supplied client_id or project_path overrides (prevent scope escape)
+  const userFilters = (filters || 'limit=10').replace(/client_id=eq\.[^&]*/g, '').replace(/project_path=eq\.[^&]*/g, '');
   const qs = [scopeFilter, userFilters, `select=${select || '*'}`].filter(Boolean).join('&');
   return sbFetch(`/rest/v1/${table}?${qs}`);
 }
@@ -889,7 +899,7 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
         // Parallel fetch: project context (from disk via RAG server) + tasks + messages
         // Use Promise.allSettled so one failure doesn't kill the whole project chat
         const RAG_URL = process.env.RAG_SERVER_URL || 'https://rag.aheadofmarket.com';
-        const [ctxSettled, tasksSettled, msgsSettled, stateSettled] = await Promise.allSettled([
+        const [ctxSettled, tasksSettled, msgsSettled, stateSettled, phonebookSettled] = await Promise.allSettled([
           // Primary: read CONTEXT.md from disk via RAG server (source of truth)
           fetch(`${RAG_URL}/project-context?slug=${encodeURIComponent(projectSlug)}`, {
             signal: AbortSignal.timeout(5000),
@@ -899,11 +909,16 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
             ? Promise.resolve([])
             : sbFetch(`/rest/v1/messages?agent=eq.project:${encodeURIComponent(projectSlug)}&order=timestamp.desc&limit=15&select=role,text,timestamp,attachment_url`),
           getCachedSystemState(),
+          // Platform phonebook: how the system actually works (prevents hallucination)
+          fetch(`${RAG_URL}/platform-phonebook`, {
+            signal: AbortSignal.timeout(3000),
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
         const contextResult = ctxSettled.status === 'fulfilled' ? ctxSettled.value : null;
         const recentTasks = tasksSettled.status === 'fulfilled' ? tasksSettled.value : [];
         const recentProjectMsgs = msgsSettled.status === 'fulfilled' ? msgsSettled.value : [];
         const systemState = stateSettled.status === 'fulfilled' ? stateSettled.value : '';
+        const phonebook = (phonebookSettled.status === 'fulfilled' && phonebookSettled.value?.content) ? phonebookSettled.value.content : '';
 
         // Use RAG server result (disk), fall back to events table (Supabase), fall back to empty
         let contextMd = (contextResult?.context_md || '').slice(0, 8000); // Cap at 8KB to keep Gemini Flash responsive
@@ -965,7 +980,7 @@ PROJECT SCOPE:
 ${isAOM ? `THE TEAM (agents you can assign work to, NOT your identity):
 Elon (system architect), Bobby (web dev), Gary (operations), Steffen (brand/design), Cleo (video/content), Steve (sales), Elmo (QA), Mom (chief of staff), Jacob (outreach), Tony (production). All AI agents in the AOM system.` : ''}
 
-${PROJECT_BASE_INSTRUCTION}${recentContext}`;
+${PROJECT_BASE_INSTRUCTION}${phonebook ? `\n\nSYSTEM REFERENCE (how the platform actually works -- check this before answering system questions):\n${phonebook}` : ''}${recentContext}`;
       } catch (err) {
         console.error('[v2-gemini-chat] Project context lookup failed:', err.message);
         // NEVER fall back to Rex identity for project chats -- use a minimal project operator instruction
