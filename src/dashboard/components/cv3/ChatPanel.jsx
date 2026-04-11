@@ -1380,9 +1380,13 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     customizeTarget, setCustomizeTarget, customizeFileRef,
     // Handlers
     handleProjectSend, handleProjectKeyDown,
+    handleSend, handleKeyDown,
     handleFileSelection,
     sendProjectText, sendAgentText,
     sendProjectTextRef, sendAgentTextRef,
+    // Settings helpers
+    currentVoice, selectVoice, saveRoomName,
+    saveEnvKey, deleteEnvKey,
   }
 
   // ── Project view ─────────────────────────────────────────────────────────────
