@@ -984,24 +984,27 @@ ${PROJECT_BASE_INSTRUCTION}`;
     const activeTools = projectSlug ? PROJECT_TOOLS : TOOLS;
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
-      const geminiResult = await callGemini(currentContents, systemInstruction, activeTools);
-      const candidate = geminiResult?.candidates?.[0] || {};
-      const finishReason = candidate.finishReason || 'UNKNOWN';
-      const geminiContent = candidate.content || { role: 'model', parts: [] };
-      const geminiParts = Array.isArray(geminiContent.parts) ? geminiContent.parts : [];
-      const calls = geminiParts.filter(p => p.functionCall).map(p => p.functionCall);
+      // Retry the API call up to 2 times if Gemini returns completely empty (no text, no tools)
+      let geminiResult, candidate, finishReason, geminiContent, geminiParts, calls;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        geminiResult = await callGemini(currentContents, systemInstruction, activeTools);
+        candidate = geminiResult?.candidates?.[0] || {};
+        finishReason = candidate.finishReason || 'UNKNOWN';
+        geminiContent = candidate.content || { role: 'model', parts: [] };
+        geminiParts = Array.isArray(geminiContent.parts) ? geminiContent.parts : [];
+        calls = geminiParts.filter(p => p.functionCall).map(p => p.functionCall);
+        const hasText = geminiParts.some(p => p.text && p.text.trim());
+        if (calls.length > 0 || hasText) break; // Got something useful
+        console.warn(`[v2-gemini-chat] Empty attempt ${attempt + 1}/3, round ${round}, finishReason: ${finishReason}`);
+      }
 
       if (calls.length === 0) {
         // No function calls -- extract text and return
         let reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
-        // If Gemini returned empty, retry with a nudge
-        if (!reply.trim() && !retried) {
-          console.warn(`[v2-gemini-chat] Empty response on round ${round}, finishReason: ${finishReason}, retrying with nudge...`);
+        // If still empty after 3 attempts and we have prior tool results, try to format them
+        if (!reply.trim() && allFunctionCalls.length > 0 && !retried) {
           retried = true;
-          // Add a nudge so Gemini doesn't repeat the same empty response
-          if (allFunctionCalls.length > 0) {
-            currentContents.push({ role: 'user', parts: [{ text: 'Please summarize the results from your tool calls above in a clear, helpful response.' }] });
-          }
+          currentContents.push({ role: 'user', parts: [{ text: 'Please summarize the results from your tool calls above in a clear, helpful response.' }] });
           continue;
         }
         if (!reply.trim()) {
