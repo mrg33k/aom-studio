@@ -4741,22 +4741,41 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                               marginBottom: 8,
                             }}>Personal</div>
                           )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {envKeys.user.map(k => (
                               <div key={k.key} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '8px 12px',
+                                display: 'flex', flexDirection: 'column', gap: 8,
+                                padding: '10px 12px',
                                 background: 'rgba(255,255,255,0.03)',
                                 border: '1px solid rgba(255,255,255,0.06)',
                                 borderRadius: 8,
                               }}>
-                                <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
-                                <button
-                                  onClick={() => deleteEnvKey('user', k.key)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}
-                                >
-                                  Remove
-                                </button>
+                                <label style={{
+                                  fontSize: TYPE.xs, fontWeight: 600, color: C.muted,
+                                  fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                  textTransform: 'uppercase', letterSpacing: LS.wide,
+                                  lineHeight: LH.tight,
+                                }}>{k.key}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <input
+                                    type="password"
+                                    placeholder="Enter new value to update"
+                                    style={{
+                                      flex: 1, padding: '6px 10px', fontSize: TYPE.sm,
+                                      fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                      color: C.text, lineHeight: LH.body,
+                                      background: 'rgba(255,255,255,0.06)',
+                                      border: '1px solid rgba(255,255,255,0.1)',
+                                      borderRadius: 6, outline: 'none',
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => deleteEnvKey('user', k.key)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -4772,22 +4791,41 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                             lineHeight: LH.tight,
                             marginBottom: 8,
                           }}>Project</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {envKeys.project.map(k => (
                               <div key={k.key} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '8px 12px',
+                                display: 'flex', flexDirection: 'column', gap: 8,
+                                padding: '10px 12px',
                                 background: 'rgba(255,255,255,0.03)',
                                 border: '1px solid rgba(255,255,255,0.06)',
                                 borderRadius: 8,
                               }}>
-                                <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
-                                <button
-                                  onClick={() => deleteEnvKey('project', k.key)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}
-                                >
-                                  Remove
-                                </button>
+                                <label style={{
+                                  fontSize: TYPE.xs, fontWeight: 600, color: C.muted,
+                                  fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                  textTransform: 'uppercase', letterSpacing: LS.wide,
+                                  lineHeight: LH.tight,
+                                }}>{k.key}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <input
+                                    type="password"
+                                    placeholder="Enter new value to update"
+                                    style={{
+                                      flex: 1, padding: '6px 10px', fontSize: TYPE.sm,
+                                      fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                      color: C.text, lineHeight: LH.body,
+                                      background: 'rgba(255,255,255,0.06)',
+                                      border: '1px solid rgba(255,255,255,0.1)',
+                                      borderRadius: 6, outline: 'none',
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => deleteEnvKey('project', k.key)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -6540,17 +6578,36 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                             marginBottom: 8,
                           }}>Personal</div>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {envKeys.user.map(k => (
                             <div key={k.key} style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '8px 12px',
+                              display: 'flex', flexDirection: 'column', gap: 8,
+                              padding: '10px 12px',
                               background: 'rgba(255,255,255,0.03)',
                               border: '1px solid rgba(255,255,255,0.06)',
                               borderRadius: 8,
                             }}>
-                              <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
-                              <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}>Remove</button>
+                              <label style={{
+                                fontSize: TYPE.xs, fontWeight: 600, color: C.muted,
+                                fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                textTransform: 'uppercase', letterSpacing: LS.wide,
+                                lineHeight: LH.tight,
+                              }}>{k.key}</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <input
+                                  type="password"
+                                  placeholder="Enter new value to update"
+                                  style={{
+                                    flex: 1, padding: '6px 10px', fontSize: TYPE.sm,
+                                    fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                    color: C.text, lineHeight: LH.body,
+                                    background: 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 6, outline: 'none',
+                                  }}
+                                />
+                                <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}>Remove</button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -6565,17 +6622,36 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                           lineHeight: LH.tight,
                           marginBottom: 8,
                         }}>Project</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {envKeys.project.map(k => (
                             <div key={k.key} style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '8px 12px',
+                              display: 'flex', flexDirection: 'column', gap: 8,
+                              padding: '10px 12px',
                               background: 'rgba(255,255,255,0.03)',
                               border: '1px solid rgba(255,255,255,0.06)',
                               borderRadius: 8,
                             }}>
-                              <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
-                              <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}>Remove</button>
+                              <label style={{
+                                fontSize: TYPE.xs, fontWeight: 600, color: C.muted,
+                                fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                textTransform: 'uppercase', letterSpacing: LS.wide,
+                                lineHeight: LH.tight,
+                              }}>{k.key}</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <input
+                                  type="password"
+                                  placeholder="Enter new value to update"
+                                  style={{
+                                    flex: 1, padding: '6px 10px', fontSize: TYPE.sm,
+                                    fontFamily: "'SF Mono', 'Fira Code', monospace",
+                                    color: C.text, lineHeight: LH.body,
+                                    background: 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 6, outline: 'none',
+                                  }}
+                                />
+                                <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px', flexShrink: 0 }}>Remove</button>
+                              </div>
                             </div>
                           ))}
                         </div>
