@@ -979,8 +979,15 @@ ${BASE_INSTRUCTION}`;
                 note: `Searched ${projectRepoPath.split('/').pop()} codebase for "${query}"`
               };
             } else {
-              const ctxResp = await fetch(`https://www.aheadofmarket.com/api/dashboard/voice-context-lookup?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
-              result = await ctxResp.json();
+              // Default (Rex/agent chats): search aom-studio via RAG server
+              const defaultRepo = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio';
+              const ragResp = await fetch(`${RAG_URL}/search-repo?repo_path=${encodeURIComponent(defaultRepo)}&query=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) }).catch(() => null);
+              const grepResult = ragResp?.ok ? await ragResp.json() : null;
+              result = {
+                repo: 'aom-studio',
+                search_results: grepResult?.matches || [],
+                note: `Searched aom-studio codebase for "${query}"`
+              };
             }
           }
           else if (name === 'update_task') {
