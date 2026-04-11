@@ -5910,11 +5910,32 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
     }
   }, [agentSlug]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Voice status change -- drives the agent room sprite animation
+  // Voice status change -- drives the agent room sprite animation + auto-summary
   const handleVoiceStatus = useCallback((vs) => {
     const active = vs === 'listening' || vs === 'speaking'
     onSpeaking?.(agentSlug, active)
-  }, [agentSlug, onSpeaking])
+    // Voice session ended -- trigger auto-summary
+    if (vs === 'idle') {
+      const msgs = messagesMap.current?.[agentSlug] || []
+      const voiceMsgs = msgs.filter(m => m.source === 'voice')
+      if (voiceMsgs.length >= 4) {
+        const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+        const summaryText = '[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.'
+        setTimeout(() => {
+          updateMessages(agentSlug, prev => [...prev, { role: 'user', content: summaryText, time: new Date().toISOString(), source: 'voice-summary' }])
+          fetch('/api/dashboard/v2-gemini-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: summaryText, agent: agentSlug, client_id: clientId, history: [] }),
+          }).then(r => r.json()).then(data => {
+            if (data?.reply) {
+              updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: data.reply, time: new Date().toISOString() }])
+            }
+          }).catch(() => {})
+        }, 1500)
+      }
+    }
+  }, [agentSlug, onSpeaking]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Format timestamp for display
   const formatTime = (dateStr) => {

@@ -6779,6 +6779,19 @@ export default function CornerV3() {
                   setRootVoiceActive(false)
                   setRootVoiceMuted(false)
                   setRootVoiceTranscript('')
+                  // Voice ended from root -- navigate to Rex and send summary request
+                  const rex = agents?.find(a => a.slug === 'rex') || agents?.[0]
+                  if (rex) {
+                    setSelectedAgent(rex)
+                    setSelectedProject(null)
+                    setConversationTarget({ name: rex.name, type: 'agent' })
+                    setTab('chat')
+                    setTimeout(() => {
+                      if (sendAgentTextRef.current) {
+                        sendAgentTextRef.current('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
+                      }
+                    }, 2000)
+                  }
                 }
               }}
             />
