@@ -2582,6 +2582,11 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [customizeTarget, setCustomizeTarget] = useState(null) // { agent, type: 'photo'|'color' }
   const customizeFileRef = useRef(null)
 
+  // Voice call persistence: when voice is active and user navigates away,
+  // keep the call alive and show a "return to call" banner
+  const [voiceMinimized, setVoiceMinimized] = useState(false)
+  const voiceMinimizedAgent = useRef(null)  // { type: 'agent'|'project', data: agent/project }
+
   // In-chat history search
   const [chatSearchOpen, setChatSearchOpen] = useState(false)
   const [chatSearchQuery, setChatSearchQuery] = useState('')
@@ -3798,7 +3803,17 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
           flexShrink: 0,
         }}>
           <button
-            onClick={() => { setMessages([]); setInlineProject(null); onBack?.(); if (projectId) navigate('/dashboard') }}
+            onClick={() => {
+              if (isVoiceActive) {
+                // Minimize call instead of killing it
+                setVoiceMinimized(true)
+                voiceMinimizedAgent.current = { type: 'project', data: selectedProject }
+                onBack?.()
+                if (projectId) navigate('/dashboard')
+              } else {
+                setMessages([]); setInlineProject(null); onBack?.(); if (projectId) navigate('/dashboard')
+              }
+            }}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
               background: 'rgba(255,255,255,0.05)',
@@ -4863,6 +4878,44 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         padding: '16px 20px',
         fontFamily: "'Inter', sans-serif",
       }}>
+        {/* ── Call in progress banner ──────────────────────────────────── */}
+        {voiceMinimized && isVoiceActive && voiceMinimizedAgent.current && (
+          <button
+            onClick={() => {
+              const saved = voiceMinimizedAgent.current
+              if (saved?.type === 'project') {
+                setInlineProject(saved.data)
+                onSelectProject?.(saved.data)
+              } else if (saved?.type === 'agent') {
+                setSelectedAgent(saved.data)
+                onSelectAgent?.(saved.data)
+              }
+              setVoiceMinimized(false)
+            }}
+            style={{
+              width: '100%', padding: '10px 14px', marginBottom: 12,
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.08))',
+              border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: 10, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10,
+              color: '#10B981',
+            }}
+          >
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: '#10B981',
+              animation: 'pulse 1.5s ease-in-out infinite',
+              boxShadow: '0 0 8px rgba(16,185,129,0.5)',
+            }} />
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
+              Call in progress with {voiceMinimizedAgent.current?.data?.name || 'agent'}
+            </span>
+            <span style={{ fontSize: 12, color: 'rgba(16,185,129,0.7)', marginLeft: 'auto' }}>
+              Tap to return
+            </span>
+          </button>
+        )}
+
         {/* ── Greeting hero ──────────────────────────────────────────────── */}
         <div style={{ paddingBottom: 16 }}>
           <div style={{
@@ -5474,7 +5527,15 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
         flexShrink: 0,
       }}>
         <button
-          onClick={() => { setSelectedAgent(null); setMessages([]); setIsVoiceActive(false); onBack?.() }}
+          onClick={() => {
+            if (isVoiceActive) {
+              setVoiceMinimized(true)
+              voiceMinimizedAgent.current = { type: 'agent', data: selectedAgent }
+              setSelectedAgent(null); setMessages([]); onBack?.()
+            } else {
+              setSelectedAgent(null); setMessages([]); setIsVoiceActive(false); onBack?.()
+            }
+          }}
           style={{
             width: 30, height: 30, borderRadius: 8, flexShrink: 0,
             background: 'rgba(255,255,255,0.05)',
