@@ -105,6 +105,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('Keys')
+  const [filesOpen, setFilesOpen] = useState(false)
   const [agentVoices, setAgentVoices] = useState({})
   const [chatNameInput, setChatNameInput] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
@@ -131,6 +132,12 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   const [chatSearchResults, setChatSearchResults] = useState(null)
   const [chatSearchLoading, setChatSearchLoading] = useState(false)
   const chatSearchRef = useRef(null)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 480)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // ── Greeting + last login ─────────────────────────────────────────────────
   const [greetingIdx, setGreetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
@@ -1346,6 +1353,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     handleChatSearch,
     // Settings
     settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
+    filesOpen, setFilesOpen,
     chatNameInput, setChatNameInput,
     inviteEmail, setInviteEmail, inviteLoading, setInviteLoading,
     inviteMsg, setInviteMsg, collaborators, setCollaborators,
