@@ -29,6 +29,12 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const audioChunksRef   = useRef([])
   const micStreamRef     = useRef(null)
 
+  // Project files state
+  const [showProjectFiles, setShowProjectFiles] = useState(false)
+  const [projectFiles, setProjectFiles] = useState([])
+  const [filesLoading, setFilesLoading] = useState(false)
+  const [selectedProject, setSelectedProject] = useState('corner') // Default to 'corner' project
+
   // Fetch task thread messages when a task is expanded
   const toggleTaskExpand = useCallback(async (taskId) => {
     if (expandedTask === taskId) {
