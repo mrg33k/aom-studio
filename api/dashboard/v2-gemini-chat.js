@@ -945,26 +945,42 @@ ${BASE_INSTRUCTION}`;
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const geminiResult = await callGemini(currentContents, systemInstruction);
-      const geminiContent = geminiResult?.candidates?.[0]?.content || { role: 'model', parts: [] };
+      const candidate = geminiResult?.candidates?.[0] || {};
+      const finishReason = candidate.finishReason || 'UNKNOWN';
+      const geminiContent = candidate.content || { role: 'model', parts: [] };
       const geminiParts = Array.isArray(geminiContent.parts) ? geminiContent.parts : [];
       const calls = geminiParts.filter(p => p.functionCall).map(p => p.functionCall);
 
       if (calls.length === 0) {
         // No function calls -- extract text and return
         let reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
-        // If Gemini returned empty, retry once (any round, not just first)
+        // If Gemini returned empty, retry with a nudge
         if (!reply.trim() && !retried) {
-          console.warn(`[v2-gemini-chat] Empty response on round ${round}, retrying...`);
+          console.warn(`[v2-gemini-chat] Empty response on round ${round}, finishReason: ${finishReason}, retrying with nudge...`);
           retried = true;
+          // Add a nudge so Gemini doesn't repeat the same empty response
+          if (allFunctionCalls.length > 0) {
+            currentContents.push({ role: 'user', parts: [{ text: 'Please summarize the results from your tool calls above in a clear, helpful response.' }] });
+          }
           continue;
         }
         if (!reply.trim()) {
-          // Last resort: summarize what tools returned instead of dead-ending
-          const toolResults = allFunctionCalls.filter(f => f.result && !f.result.error).map(f => `${f.name}: returned ${JSON.stringify(f.result).slice(0, 200)}`);
-          if (toolResults.length > 0) {
-            reply = `I got results from my tools but had trouble formatting a response. Here's the raw data:\n\n${toolResults.join('\n\n')}\n\nCan you ask me a more specific follow-up?`;
+          console.warn(`[v2-gemini-chat] Still empty after retry, finishReason: ${finishReason}, using fallback`);
+          // Format tool results ourselves
+          const successfulCalls = allFunctionCalls.filter(f => f.result && !f.result.error);
+          if (successfulCalls.length > 0) {
+            const formatted = successfulCalls.map(f => {
+              if (f.name === 'git_recent' && f.result.commits) {
+                return f.result.commits.map(c => `- **${c.hash}** (${c.when}): ${c.message}`).join('\n');
+              }
+              if (f.name === 'search_code' && f.result.matches) {
+                return f.result.matches.map(m => `- \`${m.file}:${m.line}\`: ${m.text}`).join('\n');
+              }
+              return `**${f.name}**: ${JSON.stringify(f.result).slice(0, 500)}`;
+            }).join('\n\n');
+            reply = `Here's what I found:\n\n${formatted}`;
           } else {
-            reply = "Something went wrong on my end. I'll try harder next time -- can you rephrase what you need?";
+            reply = "I ran into a processing issue. Let me know what you need and I'll try a different approach.";
           }
         }
         currentContents.push(geminiContent);
