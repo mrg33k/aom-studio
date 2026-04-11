@@ -1348,10 +1348,13 @@ ${PROJECT_BASE_INSTRUCTION}`;
             result = { ok: true, action, table: args.table, affected: Array.isArray(rows) ? rows.length : 1 };
           }
           else if (name === 'use_integration') {
-            // Load user keys from env_vars
+            // Load keys: project-scoped first (shared by all room members), then user-scoped (personal, overrides project).
+            // This way: you set APOLLO_API_KEY on the project, Ben can use it in that room without needing his own key.
             const userId = req.body?.user_id;
             if (!userId) throw new Error('User not identified. Cannot load integration keys.');
-            const userVars = await loadEnvVars('user', userId, clientId);
+            const projectVars = projectSlug ? await loadEnvVars('project', projectSlug, clientId) : {};
+            const personalVars = await loadEnvVars('user', userId, clientId);
+            const userVars = { ...projectVars, ...personalVars };
             const service = args.service;
             const action = args.action;
             const params = args.params || {};
