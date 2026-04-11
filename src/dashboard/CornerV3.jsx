@@ -22,6 +22,7 @@ import { createTaskWithRex } from './lib/rexTaskClient.js'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useProjects } from './hooks/useProjects'
 import { formatRelativeTime } from './timeUtils'
+import { TYPE, LH, LS } from './lib/typeScale.js'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
 import ChatMessageRenderer from './components/ChatMessageRenderer.jsx'
@@ -4713,33 +4714,46 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 )}
                 {/* Keys (env_vars keychain) */}
                 {settingsTab === 'Keys' && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                <div style={{ padding: '4px 0 8px' }}>
+                  {/* Main "KEYS" heading */}
+                  <div style={{
+                    fontSize: TYPE.xl, fontWeight: 700, color: C.text,
+                    fontFamily: "'Inter', sans-serif",
+                    textTransform: 'uppercase', letterSpacing: LS.caps,
+                    lineHeight: LH.tight,
+                    marginBottom: 20,
+                  }}>
                     {selectedProject ? 'Keys' : 'My Keys'}
                   </div>
                   {envKeysLoading ? (
-                    <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
+                    <div style={{ fontSize: TYPE.base, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: LH.body }}>Loading...</div>
                   ) : (
                     <>
                       {/* User keys */}
                       {envKeys.user.length > 0 && (
-                        <div style={{ marginBottom: selectedProject ? 10 : 0 }}>
+                        <div style={{ marginBottom: selectedProject ? 20 : 0 }}>
                           {selectedProject && (
-                            <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Personal</div>
+                            <div style={{
+                              fontSize: TYPE.sm, fontWeight: 600, color: C.muted,
+                              fontFamily: "'Inter', sans-serif",
+                              textTransform: 'uppercase', letterSpacing: LS.wide,
+                              lineHeight: LH.tight,
+                              marginBottom: 8,
+                            }}>Personal</div>
                           )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {envKeys.user.map(k => (
                               <div key={k.key} style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '6px 10px',
+                                padding: '8px 12px',
                                 background: 'rgba(255,255,255,0.03)',
                                 border: '1px solid rgba(255,255,255,0.06)',
                                 borderRadius: 8,
                               }}>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
+                                <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
                                 <button
                                   onClick={() => deleteEnvKey('user', k.key)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}
                                 >
                                   Remove
                                 </button>
@@ -4750,21 +4764,27 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                       )}
                       {/* Project keys */}
                       {selectedProject && envKeys.project.length > 0 && (
-                        <div style={{ marginBottom: 10 }}>
-                          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Project</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{
+                            fontSize: TYPE.sm, fontWeight: 600, color: C.muted,
+                            fontFamily: "'Inter', sans-serif",
+                            textTransform: 'uppercase', letterSpacing: LS.wide,
+                            lineHeight: LH.tight,
+                            marginBottom: 8,
+                          }}>Project</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {envKeys.project.map(k => (
                               <div key={k.key} style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '6px 10px',
+                                padding: '8px 12px',
                                 background: 'rgba(255,255,255,0.03)',
                                 border: '1px solid rgba(255,255,255,0.06)',
                                 borderRadius: 8,
                               }}>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
+                                <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
                                 <button
                                   onClick={() => deleteEnvKey('project', k.key)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}
                                 >
                                   Remove
                                 </button>
@@ -4774,12 +4794,12 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                         </div>
                       )}
                       {envKeys.user.length === 0 && envKeys.project.length === 0 && (
-                        <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", marginBottom: 8 }}>
+                        <div style={{ fontSize: TYPE.base, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: LH.body, marginBottom: 16 }}>
                           No keys configured yet
                         </div>
                       )}
                       {/* Add key form */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
                         {selectedProject && (
                           <div style={{ display: 'flex', gap: 6 }}>
                             {['user', 'project'].map(s => (
@@ -4788,9 +4808,8 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                                 onClick={() => setNewKeyScope(s)}
                                 style={{
                                   flex: 1,
-                                  padding: '5px 0',
-                                  fontSize: 11,
-                                  fontWeight: 600,
+                                  padding: '6px 0',
+                                  fontSize: TYPE.xs, fontWeight: 600,
                                   fontFamily: "'Inter', sans-serif",
                                   color: newKeyScope === s ? '#60A5FA' : C.muted,
                                   background: newKeyScope === s ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
@@ -4811,9 +4830,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                           placeholder="Key name (e.g. GMAIL_API_KEY)"
                           style={{
                             width: '100%', boxSizing: 'border-box',
-                            padding: '7px 10px', fontSize: 12,
+                            padding: '8px 12px', fontSize: TYPE.sm,
                             fontFamily: "'SF Mono', 'Fira Code', monospace",
-                            color: C.text,
+                            color: C.text, lineHeight: LH.body,
                             background: 'rgba(255,255,255,0.06)',
                             border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: 8, outline: 'none',
@@ -4826,9 +4845,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                           placeholder="Value"
                           style={{
                             width: '100%', boxSizing: 'border-box',
-                            padding: '7px 10px', fontSize: 12,
+                            padding: '8px 12px', fontSize: TYPE.sm,
                             fontFamily: "'SF Mono', 'Fira Code', monospace",
-                            color: C.text,
+                            color: C.text, lineHeight: LH.body,
                             background: 'rgba(255,255,255,0.06)',
                             border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: 8, outline: 'none',
@@ -4838,9 +4857,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                           disabled={!newKeyName.trim() || !newKeyValue.trim()}
                           onClick={saveEnvKey}
                           style={{
-                            padding: '7px 0', fontSize: 12, fontWeight: 600,
+                            padding: '8px 0', fontSize: TYPE.sm, fontWeight: 600,
                             fontFamily: "'Inter', sans-serif",
-                            color: '#fff',
+                            color: '#fff', lineHeight: LH.tight,
                             background: (!newKeyName.trim() || !newKeyValue.trim()) ? C.muted : C.accent,
                             border: 'none', borderRadius: 8,
                             cursor: (!newKeyName.trim() || !newKeyValue.trim()) ? 'default' : 'pointer',
@@ -4849,7 +4868,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                           Save Key
                         </button>
                         {keySaveMsg && (
-                          <div style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: keySaveMsg.type === 'ok' ? C.accent : '#F87171' }}>
+                          <div style={{ fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", lineHeight: LH.body, color: keySaveMsg.type === 'ok' ? C.accent : '#F87171' }}>
                             {keySaveMsg.text}
                           </div>
                         )}
@@ -6495,63 +6514,82 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               )}
               {/* Keys (env_vars keychain) */}
               {settingsTab === 'Keys' && (
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              <div style={{ padding: '4px 0 8px' }}>
+                {/* Main "KEYS" heading */}
+                <div style={{
+                  fontSize: TYPE.xl, fontWeight: 700, color: C.text,
+                  fontFamily: "'Inter', sans-serif",
+                  textTransform: 'uppercase', letterSpacing: LS.caps,
+                  lineHeight: LH.tight,
+                  marginBottom: 20,
+                }}>
                   {selectedProject ? 'Keys' : 'My Keys'}
                 </div>
                 {envKeysLoading ? (
-                  <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif" }}>Loading...</div>
+                  <div style={{ fontSize: TYPE.base, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: LH.body }}>Loading...</div>
                 ) : (
                   <>
                     {envKeys.user.length > 0 && (
-                      <div style={{ marginBottom: selectedProject ? 10 : 0 }}>
+                      <div style={{ marginBottom: selectedProject ? 20 : 0 }}>
                         {selectedProject && (
-                          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Personal</div>
+                          <div style={{
+                            fontSize: TYPE.sm, fontWeight: 600, color: C.muted,
+                            fontFamily: "'Inter', sans-serif",
+                            textTransform: 'uppercase', letterSpacing: LS.wide,
+                            lineHeight: LH.tight,
+                            marginBottom: 8,
+                          }}>Personal</div>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {envKeys.user.map(k => (
                             <div key={k.key} style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '6px 10px',
+                              padding: '8px 12px',
                               background: 'rgba(255,255,255,0.03)',
                               border: '1px solid rgba(255,255,255,0.06)',
                               borderRadius: 8,
                             }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
-                              <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}>Remove</button>
+                              <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
+                              <button onClick={() => deleteEnvKey('user', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}>Remove</button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                     {selectedProject && envKeys.project.length > 0 && (
-                      <div style={{ marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Project</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{
+                          fontSize: TYPE.sm, fontWeight: 600, color: C.muted,
+                          fontFamily: "'Inter', sans-serif",
+                          textTransform: 'uppercase', letterSpacing: LS.wide,
+                          lineHeight: LH.tight,
+                          marginBottom: 8,
+                        }}>Project</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {envKeys.project.map(k => (
                             <div key={k.key} style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '6px 10px',
+                              padding: '8px 12px',
                               background: 'rgba(255,255,255,0.03)',
                               border: '1px solid rgba(255,255,255,0.06)',
                               borderRadius: 8,
                             }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{k.key}</span>
-                              <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 11, padding: '2px 6px' }}>Remove</button>
+                              <span style={{ fontSize: TYPE.sm, fontWeight: 600, color: C.text, fontFamily: "'SF Mono', 'Fira Code', monospace", lineHeight: LH.body }}>{k.key}</span>
+                              <button onClick={() => deleteEnvKey('project', k.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", padding: '2px 6px' }}>Remove</button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                     {envKeys.user.length === 0 && envKeys.project.length === 0 && (
-                      <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", marginBottom: 8 }}>No keys configured yet</div>
+                      <div style={{ fontSize: TYPE.base, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: LH.body, marginBottom: 16 }}>No keys configured yet</div>
                     )}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
                       {selectedProject && (
                         <div style={{ display: 'flex', gap: 6 }}>
                           {['user', 'project'].map(s => (
                             <button key={s} onClick={() => setNewKeyScope(s)} style={{
-                              flex: 1, padding: '5px 0', fontSize: 11, fontWeight: 600,
+                              flex: 1, padding: '6px 0', fontSize: TYPE.xs, fontWeight: 600,
                               fontFamily: "'Inter', sans-serif",
                               color: newKeyScope === s ? '#60A5FA' : C.muted,
                               background: newKeyScope === s ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)',
@@ -6562,24 +6600,25 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                         </div>
                       )}
                       <input value={newKeyName} onChange={e => { setNewKeyName(e.target.value); setKeySaveMsg(null) }} placeholder="Key name (e.g. GMAIL_API_KEY)" style={{
-                        width: '100%', boxSizing: 'border-box', padding: '7px 10px', fontSize: 12,
-                        fontFamily: "'SF Mono', 'Fira Code', monospace", color: C.text,
+                        width: '100%', boxSizing: 'border-box', padding: '8px 12px', fontSize: TYPE.sm,
+                        fontFamily: "'SF Mono', 'Fira Code', monospace", color: C.text, lineHeight: LH.body,
                         background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
                         borderRadius: 8, outline: 'none',
                       }} />
                       <input type="password" value={newKeyValue} onChange={e => { setNewKeyValue(e.target.value); setKeySaveMsg(null) }} placeholder="Value" style={{
-                        width: '100%', boxSizing: 'border-box', padding: '7px 10px', fontSize: 12,
-                        fontFamily: "'SF Mono', 'Fira Code', monospace", color: C.text,
+                        width: '100%', boxSizing: 'border-box', padding: '8px 12px', fontSize: TYPE.sm,
+                        fontFamily: "'SF Mono', 'Fira Code', monospace", color: C.text, lineHeight: LH.body,
                         background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
                         borderRadius: 8, outline: 'none',
                       }} />
                       <button disabled={!newKeyName.trim() || !newKeyValue.trim()} onClick={saveEnvKey} style={{
-                        padding: '7px 0', fontSize: 12, fontWeight: 600, fontFamily: "'Inter', sans-serif",
-                        color: '#fff', background: (!newKeyName.trim() || !newKeyValue.trim()) ? C.muted : C.accent,
+                        padding: '8px 0', fontSize: TYPE.sm, fontWeight: 600, fontFamily: "'Inter', sans-serif",
+                        color: '#fff', lineHeight: LH.tight,
+                        background: (!newKeyName.trim() || !newKeyValue.trim()) ? C.muted : C.accent,
                         border: 'none', borderRadius: 8, cursor: (!newKeyName.trim() || !newKeyValue.trim()) ? 'default' : 'pointer',
                       }}>Save Key</button>
                       {keySaveMsg && (
-                        <div style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: keySaveMsg.type === 'ok' ? C.accent : '#F87171' }}>{keySaveMsg.text}</div>
+                        <div style={{ fontSize: TYPE.xs, fontFamily: "'Inter', sans-serif", lineHeight: LH.body, color: keySaveMsg.type === 'ok' ? C.accent : '#F87171' }}>{keySaveMsg.text}</div>
                       )}
                     </div>
                   </>
