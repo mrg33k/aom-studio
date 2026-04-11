@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
-import ArchitectChat from '../dashboard/ArchitectChat.jsx'
+import ArchitectChat from '../dashboard/_legacy/ArchitectChat.jsx'
 
 function toSlug(str) {
   return str.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'my-world'

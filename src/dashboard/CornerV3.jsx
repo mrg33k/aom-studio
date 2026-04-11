@@ -2576,7 +2576,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   const [searchQuery, setSearchQuery] = useState('')
   const [conversationFilter, setConversationFilter] = useState('all')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState('General')
+  const [settingsTab, setSettingsTab] = useState('Keys')
   const [agentVoices, setAgentVoices] = useState({})
   const [chatNameInput, setChatNameInput] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
@@ -2730,7 +2730,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
   // Initialise rename input when modal opens
   useEffect(() => {
     if (settingsOpen) {
-      setSettingsTab('General')
+      setSettingsTab('Keys')
       const name = selectedAgent ? selectedAgent.name : (selectedProject?.name || '')
       setChatNameInput(name)
       // Fetch collaborators when project settings opens
@@ -4347,6 +4347,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 flex: 1,
               }}>
                 {/* Room rename */}
+                {settingsTab === 'General' && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                     Room Name
@@ -4366,7 +4367,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     }}
                   />
                 </div>
+                )}
                 {/* Voice selection */}
+                {settingsTab === 'Voice' && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                     Voice
@@ -4396,8 +4399,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     ))}
                   </div>
                 </div>
+                )}
                 {/* Collaborators -- only show for projects */}
-                {selectedProject && (
+                {selectedProject && settingsTab === 'Collaborators' && (
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                       Collaborators
@@ -4541,6 +4545,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   </div>
                 )}
                 {/* Google Integration */}
+                {settingsTab === 'Google' && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                     Google Integration
@@ -4586,7 +4591,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     Connect Google Calendar + Gmail
                   </a>
                 </div>
+                )}
                 {/* Keys (env_vars keychain) */}
+                {settingsTab === 'Keys' && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                     {selectedProject ? 'Keys' : 'My Keys'}
@@ -4731,6 +4738,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                     </>
                   )}
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -6219,6 +6227,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               flex: 1,
             }}>
               {/* Room rename */}
+              {settingsTab === 'General' && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                   Room Name
@@ -6238,7 +6247,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   }}
                 />
               </div>
+              )}
               {/* Voice selection */}
+              {settingsTab === 'Voice' && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                   Voice
@@ -6268,7 +6279,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   ))}
                 </div>
               </div>
+              )}
               {/* Google Integration */}
+              {settingsTab === 'Google' && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                   Google Integration
@@ -6314,7 +6327,9 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   Connect Google Calendar + Gmail
                 </a>
               </div>
+              )}
               {/* Keys (env_vars keychain) */}
+              {settingsTab === 'Keys' && (
               <div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
                   {selectedProject ? 'Keys' : 'My Keys'}
@@ -6405,6 +6420,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                   </>
                 )}
               </div>
+              )}
             </div>
           </div>
         </div>

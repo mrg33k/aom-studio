@@ -82,8 +82,7 @@ const SourcingAbout = lazy(() => import('./pages/SourcingAbout.jsx'))
 const SourcingGrants = lazy(() => import('./pages/SourcingGrants.jsx'))
 import './index.css'
 
-const GameDashboard = lazy(() => import('./dashboard/GameDashboard.jsx'))
-const AgentInfoPage = lazy(() => import('./dashboard/AgentInfoPage.jsx'))
+// Legacy views moved to src/dashboard/_legacy/. Do not import.
 
 function ConstructionRedirect() {
   const navigate = useNavigate()
@@ -290,12 +289,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
-          <Route path="/dashboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
-          <Route path="/dashboard/agent/:slug/info" element={<AuthGuard><AgentInfoPage /></AuthGuard>} />
-          <Route path="/dashboard/checklist" element={<AuthGuard><GameDashboard /></AuthGuard>} />
-          <Route path="/dashboard/checklist/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
-          <Route path="/dashboard/megaboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
-          <Route path="/dashboard/megaboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
         </Routes>
       </Suspense>
