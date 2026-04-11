@@ -3101,7 +3101,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       .eq('client_id', worldId)
       .eq('agent', selectedAgent.slug)
       .order('timestamp', { ascending: false })
-      .limit(60)
+      .limit(200)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
         if (!error && data) setMessages(data.reverse())
@@ -3168,7 +3168,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
       .eq('client_id', selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId)
       .eq('agent', `project:${selectedProject.slug}`)
       .order('timestamp', { ascending: true })
-      .limit(100)
+      .limit(200)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
         if (!error && data) setMessages(data)
@@ -4318,7 +4318,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
                 flexShrink: 0,
               }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
-                  Chat Settings
+                  {settingsTab}
                 </span>
                 <button
                   onClick={() => setSettingsOpen(false)}
@@ -6197,7 +6197,7 @@ function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, o
               flexShrink: 0,
             }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
-                Chat Settings
+                {settingsTab}
               </span>
               <button
                 onClick={() => setSettingsOpen(false)}
