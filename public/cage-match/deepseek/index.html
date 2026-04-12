@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corner · AI Operations Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">⟁</span>
+                    <span class="logo-text">Corner</span>
+                </div>
+                <button class="sidebar-toggle" aria-label="Toggle sidebar">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <nav class="nav-main">
+                <div class="nav-section">
+                    <div class="nav-section-label">Workspaces</div>
+                    <div class="workspace-switcher">
+                        <div class="workspace active">
+                            <div class="workspace-avatar" style="background: linear-gradient(135deg, #10B981, #3B82F6);">A</div>
+                            <div class="workspace-info">
+                                <div class="workspace-name">AOM</div>
+                                <div class="workspace-type">Creative Studio</div>
+                            </div>
+                            <div class="workspace-status"></div>
+                        </div>
+                        <div class="workspace">
+                            <div class="workspace-avatar" style="background: linear-gradient(135deg, #F59E0B, #EF4444);">M</div>
+                            <div class="workspace-info">
+                                <div class="workspace-name">Ambition</div>
+                                <div class="workspace-type">HVAC Client</div>
+                            </div>
+                        </div>
+                        <div class="workspace">
+                            <div class="workspace-avatar" style="background: linear-gradient(135deg, #8B5CF6, #EC4899);">I</div>
+                            <div class="workspace-info">
+                                <div class="workspace-name">ISA Energy</div>
+                                <div class="workspace-type">Solar Client</div>
+                            </div>
+                        </div>
+                        <button class="workspace-add">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Workspace</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-label">Navigation</div>
+                    <a href="#" class="nav-link active">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                        <span class="nav-badge">6</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                        <span class="nav-badge warn">2</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-comments"></i>
+                        <span>Chat</span>
+                        <span class="nav-badge">3</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-label">Quick Actions</div>
+                    <button class="action-btn voice-action">
+                        <i class="fas fa-microphone"></i>
+                        <span>Voice Command</span>
+                    </button>
+                    <button class="action-btn">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>New Task</span>
+                    </button>
+                    <button class="action-btn">
+                        <i class="fas fa-robot"></i>
+                        <span>Deploy Agent</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">P</div>
+                    <div class="user-info">
+                        <div class="user-name">Patrik</div>
+                        <div class="user-role">AI Operations Lead</div>
+                    </div>
+                    <button class="notifications-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-dot"></span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <h1 class="page-title">AI Operations Dashboard</h1>
+                    <div class="header-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Active Agents</div>
+                            <div class="stat-value">3/6</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tasks Today</div>
+                            <div class="stat-value">14</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Completion Rate</div>
+                            <div class="stat-value">92%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search agents, tasks, or commands...">
+                        <button class="search-voice" aria-label="Voice search">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                    </div>
+                    <div class="time-display">
+                        <div class="time">14:32</div>
+                        <div class="date">Wed, Mar 12</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Agent Status Grid -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Your AI Team</h2>
+                        <div class="section-actions">
+                            <button class="btn-icon">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <button class="btn-icon">
+                                <i class="fas fa-filter"></i>
+                                <span>Filter</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="agents-grid">
+                        <!-- Agent 1: Rex (Online) -->
+                        <div class="agent-card active">
+                            <div class="agent-header">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, #10B981, #34D399);">
+                                    <span>R</span>
+                                    <div class="agent-status online"></div>
+                                </div>
+                                <div class="agent-info">
+                                    <h3 class="agent-name">Rex</h3>
+                                    <div class="agent-role">Executive Assistant</div>
+                                </div>
+                                <div class="agent-actions">
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-phone"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-body">
+                                <div class="agent-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">8</div>
+                                        <div class="metric-label">Tasks Today</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">100%</div>
+                                        <div class="metric-label">Success Rate</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">2m</div>
+                                        <div class="metric-label">Last Active</div>
+                                    </div>
+                                </div>
+                                <div class="agent-preview">
+                                    <p>Queue is clear. 8 shipped today, all 8+/10 QA.</p>
+                                </div>
+                            </div>
+                            <div class="agent-footer">
+                                <div class="agent-tags">
+                                    <span class="tag">Available</span>
+                                    <span class="tag">High Priority</span>
+                                </div>
+                                <div class="unread-count">3</div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 2: Bobby (Building) -->
+                        <div class="agent-card">
+                            <div class="agent-header">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, #EAB308, #FBBF24);">
+                                    <span>B</span>
+                                    <div class="agent-status building">
+                                        <div class="pulse"></div>
+                                    </div>
+                                </div>
+                                <div class="agent-info">
+                                    <h3 class="agent-name">Bobby</h3>
+                                    <div class="agent-role">Web Developer</div>
+                                </div>
+                                <div class="agent-actions">
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-body">
+                                <div class="agent-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">2</div>
+                                        <div class="metric-label">Active Tasks</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">65%</div>
+                                        <div class="metric-label">Progress</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">15m</div>
+                                        <div class="metric-label">ETA</div>
+                                    </div>
+                                </div>
+                                <div class="agent-preview">
+                                    <p>Voice button animation shipped. 10/10 quality score.</p>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 65%"></div>
+                                </div>
+                            </div>
+                            <div class="agent-footer">
+                                <div class="agent-tags">
+                                    <span class="tag building">Building</span>
+                                    <span class="tag">Corner Project</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 3: Steffen (Offline) -->
+                        <div class="agent-card">
+                            <div class="agent-header">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);">
+                                    <span>S</span>
+                                    <div class="agent-status offline"></div>
+                                </div>
+                                <div class="agent-info">
+                                    <h3 class="agent-name">Steffen</h3>
+                                    <div class="agent-role">Designer</div>
+                                </div>
+                                <div class="agent-actions">
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-body">
+                                <div class="agent-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">5</div>
+                                        <div class="metric-label">Ready for Review</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">-</div>
+                                        <div class="metric-label">Active</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">2h</div>
+                                        <div class="metric-label">Offline</div>
+                                    </div>
+                                </div>
+                                <div class="agent-preview">
+                                    <p>Sprite sheets ready for review. Awaiting feedback.</p>
+                                </div>
+                            </div>
+                            <div class="agent-footer">
+                                <div class="agent-tags">
+                                    <span class="tag offline">Offline</span>
+                                    <span class="tag">Design Assets</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 4: Cleo (Offline) -->
+                        <div class="agent-card">
+                            <div class="agent-header">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, #EC4899, #F472B6);">
+                                    <span>C</span>
+                                    <div class="agent-status offline"></div>
+                                </div>
+                                <div class="agent-info">
+                                    <h3 class="agent-name">Cleo</h3>
+                                    <div class="agent-role">Video Producer</div>
+                                </div>
+                                <div class="agent-actions">
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-body">
+                                <div class="agent-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">1</div>
+                                        <div class="metric-label">Package Ready</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">-</div>
+                                        <div class="metric-label">Active</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">45m</div>
+                                        <div class="metric-label">Offline</div>
+                                    </div>
+                                </div>
+                                <div class="agent-preview">
+                                    <p>B-roll package for Ambition ready. 4K footage processed.</p>
+                                </div>
+                            </div>
+                            <div class="agent-footer">
+                                <div class="agent-tags">
+                                    <span class="tag offline">Offline</span>
+                                    <span class="tag">Video Production</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 5: Elon (Offline) -->
+                        <div class="agent-card">
+                            <div class="agent-header">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, #3B82F6, #60A5FA);">
+                                    <span>E</span>
+                                    <div class="agent-status offline"></div>
+                                </div>
+                                <div class="agent-info">
+                                    <h3 class="agent-name">Elon</h3>
+                                    <div class="agent-role">Pipeline Engineer</div>
+                                </div>
+                                <div class="agent-actions">
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-body">
+                                <div class="agent-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">23</div>
+                                        <div class="metric-label">Tasks This Week</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">100%</div>
+                                        <div class="metric-label">Uptime</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">30m</div>
+                                        <div class="metric-label">Offline</div>
+                                    </div>
+                                </div>
+                                <div class="agent-preview">
+                                    <p>Pipeline running stable. 23 tasks completed this week.</p>
+                                </div>
+                            </div>
+                            <div class="agent-footer">
+                                <div class="agent-tags">
+                                    <span class="tag offline">Offline</span>
+                                    <span class="tag">Infrastructure</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 6: Gary (Offline) -->
+                        <div class="agent-card">
+                            <div class="agent-header">
+                                <div class="agent-avatar" style="background: linear-gradient(135deg, #F97316, #FB923C);">
+                                    <span>G</span>
+                                    <div class="agent-status offline"></div>
+                                </div>
+                                <div class="agent-info">
+                                    <h3 class="agent-name">Gary</h3>
+                                    <div class="agent-role">Content Manager</div>
+                                </div>
+                                <div class="agent-actions">
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-comment"></i>
+                                    </button>
+                                    <button class="btn-icon small">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-body">
+                                <div class="agent-metrics">
+                                    <div class="metric">
+                                        <div class="metric-value">33</div>
+                                        <div class="metric-label">Drafts Waiting</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">-</div>
+                                        <div class="metric-label">Active</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-value">1h</div>
+                                        <div class="metric-label">Offline</div>
+                                    </div>
+                                </div>
+                                <div class="agent-preview">
+                                    <p>SOPs updated. 33 email drafts waiting for approval.</p>
+                                </div>
+                            </div>
+                            <div class="agent-footer">
+                                <div class="agent-tags">
+                                    <span class="tag offline">Offline</span>
+                                    <span class="tag">Content</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Task Overview & Analytics -->
+                <div class="dashboard-columns">
+                    <!-- Left Column: Active Tasks -->
+                    <div class="column">
+                        <section class="dashboard-section">
+                            <div class="section-header">
+                                <h2>Active Tasks</h2>
+                                <button class="btn-text">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Task</span>
+                                </button>
+                            </div>
+                            
+                            <div class="tasks-list">
+                                <div class="task-item building">
+                                    <div class="task-icon">
+                                        <i class="fas fa-code"></i>
+                                    </div>
+                                    <div class="task-content">
+                                        <div class="task-header">
+                                            <h4 class="task-title">Move VoiceChat into ChatPanel</h4>
+                                            <div class="task-priority high">High</div>
+                                        </div>
+                                        <div class="task-meta">
+                                            <span class="task-agent">
+                                                <i class="fas fa-robot"></i>
+                                                Bobby
+                                            </span>
+                                            <span class="task-project">
+                                                <i class="fas fa-folder"></i>
+                                                Corner
+                                            </span>
+                                            <span class="task-time">
+                                                <i class="fas fa-clock"></i>
+                                                12m ago
+                                            </span>
+                                        </div>
+                                        <div class="progress-bar small">
+                                            <div class="progress-fill" style="width: 75%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="task-actions">
+                                        <button class="btn-icon small">
+                                            <i class="fas fa-pause"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="task-item queued">
+                                    <div class="task-icon">
+                                        <i class="fas fa-palette"></i>
+                                    </div>
+                                    <div class="task-content">
+                                        <div class="task-header">
+                                            <h4 class="task-title">Audit Dark Theme Colors</h4>
+                                            <div class="task-priority medium">Medium</div>
+                                        </div>
+                                        <div class="task-meta">
+                                            <span class="task-agent">
+                                                <i class="fas fa-robot"></i>
+                                                Bobby
+                                            </span>
+                                            <span class="task-project">
+                                                <i class="fas fa-folder"></i>
+                                                Corner
+                                            </span>
+                                            <span class="task-time">
+                                                <i class="fas fa-clock"></i>
+                                                Queued
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="task-actions">
+                                        <button class="btn-icon small">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="task-item completed">
+                                    <div class="task-icon">
+                                        <i class="fas fa-video"></i>
+                                    </div>
+                                    <div class="task-content">
+                                        <div class="task-header">
+                                            <h4 class="task-title">Process B-roll Footage</h4>
+                                            <div class="task-priority low">Low</div>
+                                        </div>
+                                        <div class="task-meta">
+                                            <span class="task-agent">
+                                                <i class="fas fa-robot"></i>
+                                                Cleo
+                                            </span>
+                                            <span class="task-project">
+                                                <i class="fas fa-folder"></i>
+                                                Ambition
+                                            </span>
+                                            <span class="task-time">
+                                                <i class="fas fa-check-circle"></i>
+                                                Completed
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="task-actions">
+                                        <button class="btn-icon small">
+                                            <i class="fas fa-redo"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section-footer">
+                                <a href="#" class="link">
+                                    <span>View all tasks</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </section>
+
+                        <!-- Voice Command Panel -->
+                        <section class="dashboard-section voice-section">
+                            <div class="section-header">
+                                <h2>Voice Command</h2>
+                                <div class="voice-status listening">
+                                    <i class="fas fa-microphone"></i>
+                                    <span>Listening</span>
+                                </div>
+                            </div>
+                            <div class="voice-input">
+                                <div class="voice-visualizer">
+                                    <div class="voice-bar"></div>
+                                    <div class="voice-bar"></div>
+                                    <div class="voice-bar"></div>
+                                    <div class="voice-bar"></div>
+                                    <div class="voice-bar"></div>
+                                </div>
+                                <p class="voice-prompt">Say "Hey Corner" followed by your command</p>
+                                <div class="voice-examples">
+                                    <span class="voice-example">"Assign task to Rex"</span>
+                                    <span class="voice-example">"Show completed tasks"</span>
+                                    <span class="voice-example">"Deploy Steffen"</span>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Right Column: Analytics & Activity -->
+                    <div class="column">
+                        <!-- Performance Chart -->
+                        <section class="dashboard-section">
+                            <div class="section-header">
+                                <h2>Performance This Week</h2>
+                                <div class="time-filter">
+                                    <button class="filter-btn active">Week</button>
+                                    <button class="filter-btn">Month</button>
+                                    <button class="filter-btn">Quarter</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <div class="chart">
+                                    <div class="chart-bars">
+                                        <div class="chart-bar" style="height: 30%">
+                                            <div class="bar-value">12</div>
+                                            <div class="bar-label">Mon</div>
+                                        </div>
+                                        <div class="chart-bar" style="height: 45%">
+                                            <div class="bar-value">18</div>
+                                            <div class="bar-label">Tue</div>
+                                        </div>
+                                        <div class="chart-bar" style="height: 65%">
+                                            <div class="bar-value">26</div>
+                                            <div class="bar-label">Wed</div>
+                                        </div>
+                                        <div class="chart-bar" style="height: 40%">
+                                            <div class="bar-value">16</div>
+                                            <div class="bar-label">Thu</div>
+                                        </div>
+                                        <div class="chart-bar" style="height: 35%">
+                                            <div class="bar-value">14</div>
+                                            <div class="bar-label">Fri</div>
+                                        </div>
+                                        <div class="chart-bar" style="height: 20%">
+                                            <div class="bar-value">8</div>
+                                            <div class="bar-label">Sat</div>
+                                        </div>
+                                        <div class="chart-bar" style="height: 15%">
+                                            <div class="bar-value">6</div>
+                                            <div class="bar-label">Sun</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="chart-legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background: #10B981;"></div>
+                                        <span>Completed</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background: #3B82F6;"></div>
+                                        <span>In Progress</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Recent Activity -->
+                        <section class="dashboard-section">
+                            <div class="section-header">
+                                <h2>Recent Activity</h2>
+                                <button class="btn-icon">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                            </div>
+                            <div class="activity-feed">
+                                <div class="activity-item">
+                                    <div class="activity-icon success">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <p><strong>Rex</strong> completed task "Update quarterly report"</p>
+                                        <span class="activity-time">2 minutes ago</span>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon warning">
+                                        <i class="fas fa-exclamation"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <p><strong>Bobby</strong> started building "VoiceChat integration"</p>
+                                        <span class="activity-time">15 minutes ago</span>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon info">
+                                        <i class="fas fa-info"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <p><strong>Steffen</strong> uploaded design assets for review</p>
+                                        <span class="activity-time">1 hour ago</span>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        <i class="fas fa-comment"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <p><strong>Gary</strong> requested approval for email drafts</p>
+                                        <span class="activity-time">2 hours ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Voice Command Modal (Hidden by default) -->
+    <div class="voice-modal" id="voiceModal" style="display: none;">
+        <div class="voice-modal-content">
+            <div class="voice-modal-header">
+                <h3>Voice Command Active</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="voice-modal-body">
+                <div class="voice-animation">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <p class="listening-text">Listening for your command...</p>
+                <div class="command-examples">
+                    <p>Try saying:</p>
+                    <ul>
+                        <li>"Show me tasks for today"</li>
+                        <li>"Assign design review to Steffen"</li>
+                        <li>"What's Bobby working on?"</li>
+                        <li>"Create a new project"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple interactions for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle sidebar
+            const sidebarToggle = document.querySelector('.sidebar-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    const icon = this.querySelector('i');
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.className = 'fas fa-chevron-right';
+                    } else {
+                        icon.className = 'fas fa-chevron-left';
+                    }
+                });
+            }
+
+            // Voice command buttons
+            const voiceButtons = document.querySelectorAll('.voice-action, .search-voice');
+            const voiceModal = document.getElementById('voiceModal');
+            const closeModal = document.querySelector('.close-modal');
+            
+            voiceButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    voiceModal.style.display = 'flex';
+                });
+            });
+            
+            if (closeModal) {
+                closeModal.addEventListener('click', function() {
+                    voiceModal.style.display = 'none';
+                });
+            }
+            
+            // Close modal when clicking outside
+            voiceModal.addEventListener('click', function(e) {
+                if (e.target === voiceModal) {
+                    voiceModal.style.display = 'none';
+                }
+            });
+
+            // Agent card click for chat (simulated)
+            const agentCards = document.querySelectorAll('.agent-card');
+            agentCards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.closest('.btn-icon')) {
+                        const agentName = this.querySelector('.agent-name').textContent;
+                        console.log(`Opening chat with ${agentName}`);
+                        // In a real app, this would open a chat panel
+                    }
+                });
+            });
+
+            // Update time every minute
+            function updateTime() {
+                const now = new Date();
+                const timeEl = document.querySelector('.time');
+                const dateEl = document.querySelector('.date');
+                
+                if (timeEl) {
+                    timeEl.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
+                
+                if (dateEl) {
+                    const options = { weekday: 'short', month: 'short', day: 'numeric' };
+                    dateEl.textContent = now.toLocaleDateString('en-US', options);
+                }
+            }
+            
+            updateTime();
+            setInterval(updateTime, 60000);
+        });
+    </script>
+</body>
+</html>
