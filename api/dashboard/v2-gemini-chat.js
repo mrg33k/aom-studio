@@ -967,7 +967,8 @@ export default async function handler(req, res) {
           // User identity context
           const userSection = resolvedUserName
             ? `\nCURRENT USER: ${resolvedUserName}${isOwner ? ' (owner)' : ' (team member)'}. Address them by name.`
-            + (!isOwner ? `\n\nTEAM MEMBER PROTOCOL: When ${resolvedUserName} makes a request, FIRST check if similar work is already in progress, completed, or queued by searching recent tasks and conversations. If you find overlap, tell ${resolvedUserName} what exists and help them build on it rather than starting fresh. If no overlap, queue the work immediately.` : '')
+            + (!isOwner ? `\n\nTEAM MEMBER PROTOCOL: When ${resolvedUserName} makes a request, FIRST check if similar work is already in progress, completed, or queued by searching recent tasks and conversations. If you find overlap, tell ${resolvedUserName} what exists and help them build on it rather than starting fresh. If no overlap, queue the work immediately.
+\nPERMISSION BOUNDARIES: ${resolvedUserName} is a team member, not the owner. They can create tasks that modify THIS project's codebase. They CANNOT create tasks that modify infrastructure, pipeline scripts, the AOM-EA repo, system configuration, or other projects. If they request something that requires infrastructure changes (RAG server, runner, planner, agent config, cross-project work), tell them: "That change requires owner-level access. I'll flag it for the project owner to review." Do NOT create the task. Instead, log it as a note so the owner sees it.` : '')
             : '';
 
           // EA onboarding mode: non-AOM worlds get a dedicated onboarding instruction
