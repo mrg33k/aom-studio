@@ -333,6 +333,7 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'get_task_logs', description: 'Fetch runner logs and QA feedback for a task. Use when asked "why did this task fail?", "what went wrong?", "show me the logs", or to debug a failed/completed task. Returns runner log excerpts and QA notes.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'Task ID to look up' }, query: { type: 'string', description: 'Search term if task_id unknown (e.g. task title)' } } } },
   { name: 'get_task_diff', description: 'Fetch the code diff from a completed task. Use when asked "what did this task change?", "show me the code changes", "what was modified?". Returns the git diff with file stats and actual code changes.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'Task ID to look up' }, title: { type: 'string', description: 'Task title to search for in commit messages' } } } },
   { name: 'get_task_progress', description: 'Show real-time pipeline progress. Use when asked "what\'s building right now?", "pipeline status", "what are the agents doing?", or to check if tasks are running. Returns active agents, their current step, and progress.', parameters: { type: 'object', properties: {} } },
+  { name: 'web_search', description: 'Search the web for current information. Use when asked about recent news, model releases, pricing, competitor info, or anything that requires up-to-date web data. Returns search-grounded results from Google.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for on the web' } }, required: ['query'] } },
 ]}];
 
 async function sbFetch(path, options = {}) {
@@ -1607,6 +1608,26 @@ ${PROJECT_BASE_INSTRUCTION}`;
               active_tasks: activeTasks.map(t => ({ id: t.id, title: t.title, status: t.status, agent: t.agent_identity, project: t.project_path, updated: t.updated_at })),
               watcher: progressData.watcher_last_lines || [],
             };
+          }
+          else if (name === 'web_search') {
+            // Make a separate Gemini call with ONLY google_search (can't combine with function calling)
+            const searchQuery = (args.query || '').trim();
+            if (!searchQuery) throw new Error('query required');
+            const searchResp = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+              { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ role: 'user', parts: [{ text: `Search the web and give me current, factual information about: ${searchQuery}. Include specific numbers, dates, and sources.` }] }],
+                  tools: [{ google_search: {} }],
+                }),
+                signal: AbortSignal.timeout(30000),
+              }
+            );
+            const searchData = await searchResp.json();
+            if (searchData.error) throw new Error(searchData.error.message);
+            const searchText = (searchData.candidates?.[0]?.content?.parts || [])
+              .filter(p => p.text).map(p => p.text).join('');
+            result = { query: searchQuery, results: searchText || 'No results found.' };
           }
           else throw new Error(`Unknown function: ${name}`);
           allFunctionCalls.push({ name, args, result });
