@@ -92,7 +92,7 @@ export default async function handler(req, res) {
   // ---- POST: write a new message (user send from dashboard) ---------------
   if (req.method === 'POST') {
     const {
-      agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id,
+      agent, text, role = 'user', source = 'corner-dashboard', client_id, sender_role, world_id, project,
       // User identity (multi-user support)
       user_id, user_name,
       // Attachment fields (optional)
@@ -105,6 +105,10 @@ export default async function handler(req, res) {
       ? client_id.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
 
+    const resolvedProject = source === 'corner-dashboard'
+      ? 'corner'
+      : ((project && project.trim()) ? project.trim() : null)
+
     const payload = {
       id: crypto.randomUUID(),
       agent,
@@ -112,6 +116,7 @@ export default async function handler(req, res) {
       text: text.trim(),
       source,
       client_id: resolvedClientId,  // always include -- multi-tenant isolation
+      ...(resolvedProject ? { project: resolvedProject } : {}),
       // Admin context: sender_role ('admin') + world_id when super-admin is in a client world.
       // These fields are optional -- only present when admin is overriding world context.
       ...(sender_role ? { sender_role } : {}),
