@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Corner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- HEADER NAVIGATION -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="header-left">
+          <h1 class="app-logo">Corner<span class="logo-accent">.</span></h1>
+          <div class="world-selector" data-element="world-selector">
+            <button class="world-btn" data-action="toggle-world">
+              <span class="world-icon">A</span>
+              <span class="world-name">AOM</span>
+              <span class="world-arrow">▾</span>
+            </button>
+            <div class="world-dropdown" id="world-dropdown" data-element="world-dropdown">
+              <button class="world-option world-option-active" data-world="aom">
+                <span class="world-option-icon">A</span>
+                <div class="world-option-text">
+                  <div class="world-option-title">AOM</div>
+                  <div class="world-option-type">Creative Studio</div>
+                </div>
+              </button>
+              <button class="world-option" data-world="ambition">
+                <span class="world-option-icon">M</span>
+                <div class="world-option-text">
+                  <div class="world-option-title">Ambition Mechanical</div>
+                  <div class="world-option-type">HVAC Client</div>
+                </div>
+              </button>
+              <button class="world-option" data-world="isa">
+                <span class="world-option-icon">I</span>
+                <div class="world-option-text">
+                  <div class="world-option-title">ISA Energy</div>
+                  <div class="world-option-type">Solar Client</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button class="header-icon-btn" data-action="notifications" title="Notifications">
+            <span class="icon-bell">🔔</span>
+            <span class="notification-dot"></span>
+          </button>
+          <button class="header-avatar" title="Profile"></button>
+        </div>
+      </div>
+
+      <div class="header-tabs">
+        <nav class="tab-nav">
+          <button class="tab-btn tab-active" data-view="home">
+            Home
+          </button>
+          <button class="tab-btn" data-view="tasks">
+            Tasks
+            <span class="tab-badge tab-badge-warn">2</span>
+          </button>
+          <button class="tab-btn" id="tab-chat-btn" data-view="chat" style="display: none;">
+            Chat
+          </button>
+        </nav>
+
+        <div class="header-stats">
+          <div class="stat-item">
+            <span class="stat-dot stat-dot-building"></span>
+            <span class="stat-label"><strong>2</strong> building</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-dot stat-dot-done"></span>
+            <span class="stat-label"><strong>8</strong> done</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="app-main">
+      <!-- HOME VIEW -->
+      <section class="view view-home view-active" id="view-home" data-element="view">
+        <div class="view-scroll">
+          <div class="home-hero">
+            <div class="hero-status">
+              <span class="status-indicator status-online"></span>
+              <span class="status-text">Rex is online</span>
+            </div>
+            <h2 class="hero-greeting">Hey Patrik,<br>what are we<br>working on?</h2>
+          </div>
+
+          <div class="section-label">YOUR TEAM</div>
+
+          <div class="agents-list">
+            <button class="agent-item agent-item-active" data-agent="rex" data-action="open-chat">
+              <div class="agent-avatar">R</div>
+              <div class="agent-content">
+                <div class="agent-header">
+                  <span class="agent-name">Rex</span>
+                  <span class="agent-time">2m</span>
+                </div>
+                <p class="agent-preview">Queue is clear. 8 shipped today, all 8+/10 QA.</p>
+              </div>
+              <div class="agent-meta">
+                <span class="agent-status agent-status-online">
+                  <span class="status-dot"></span>
+                  Online
+                </span>
+                <span class="agent-unread-count">3</span>
+              </div>
+            </button>
+
+            <button class="agent-item" data-agent="bobby" data-action="open-chat">
+              <div class="agent-avatar agent-avatar-bobby">B</div>
+              <div class="agent-content">
+                <div class="agent-header">
+                  <span class="agent-name">Bobby</span>
+                  <span class="agent-time">15m</span>
+                </div>
+                <p class="agent-preview">Voice button animation shipped. 10/10.</p>
+              </div>
+              <div class="agent-meta">
+                <span class="agent-status agent-status-building">
+                  <span class="status-dot"></span>
+                  Building
+                </span>
+              </div>
+            </button>
+
+            <button class="agent-item" data-agent="steffen" data-action="open-chat">
+              <div class="agent-avatar agent-avatar-steffen">S</div>
+              <div class="agent-content">
+                <div class="agent-header">
+                  <span class="agent-name">Steffen</span>
+                  <span class="agent-time">2d</span>
+                </div>
+                <p class="agent-preview">Sprite sheets ready for review.</p>
+              </div>
+              <div class="agent-meta">
+                <span class="agent-status agent-status-idle">
+                  <span class="status-dot"></span>
+                  Idle
+                </span>
+              </div>
+            </button>
+
+            <button class="agent-item" data-agent="cleo" data-action="open-chat">
+              <div class="agent-avatar agent-avatar-cleo">C</div>
+              <div class="agent-content">
+                <div class="agent-header">
+                  <span class="agent-name">Cleo</span>
+                  <span class="agent-time">3d</span>
+                </div>
+                <p class="agent-preview">B-roll package for Ambition ready.</p>
+              </div>
+              <div class="agent-meta">
+                <span class="agent-status agent-status-idle">
+                  <span class="status-dot"></span>
+                  Idle
+                </span>
+              </div>
+            </button>
+
+            <button class="agent-item" data-agent="elon" data-action="open-chat">
+              <div class="agent-avatar agent-avatar-elon">E</div>
+              <div class="agent-content">
+                <div class="agent-header">
+                  <span class="agent-name">Elon</span>
+                  <span class="agent-time">1d</span>
+                </div>
+                <p class="agent-preview">Pipeline running stable. 23 tasks this week.</p>
+              </div>
+              <div class="agent-meta">
+                <span class="agent-status agent-status-idle">
+                  <span class="status-dot"></span>
+                  Idle
+                </span>
+              </div>
+            </button>
+
+            <button class="agent-item" data-agent="gary" data-action="open-chat">
+              <div class="agent-avatar agent-avatar-gary">G</div>
+              <div class="agent-content">
+                <div class="agent-header">
+                  <span class="agent-name">Gary</span>
+                  <span class="agent-time">4d</span>
+                </div>
+                <p class="agent-preview">SOPs updated. 33 email drafts waiting.</p>
+              </div>
+              <div class="agent-meta">
+                <span class="agent-status agent-status-idle">
+                  <span class="status-dot"></span>
+                  Idle
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TASKS VIEW -->
+      <section class="view view-tasks" id="view-tasks" data-element="view">
+        <div class="tasks-header">
+          <div class="search-container">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="search-input" placeholder="Search tasks...">
+          </div>
+          <div class="filter-tabs">
+            <button class="filter-btn filter-btn-active">All</button>
+            <button class="filter-btn">Corner</button>
+            <button class="filter-btn">AOM Website</button>
+            <button class="filter-btn">Ambition</button>
+            <button class="filter-btn">ISA Energy</button>
+            <button class="filter-btn">Sourcing</button>
+          </div>
+        </div>
+
+        <div class="view-scroll">
+          <div class="tasks-section">
+            <div class="section-header">
+              <h3 class="section-title">Building Now</h3>
+            </div>
+            <div class="task-items">
+              <div class="task-card task-card-building">
+                <div class="task-progress"></div>
+                <div class="task-content">
+                  <h4 class="task-title">Move VoiceChat into ChatPanel</h4>
+                  <div class="task-meta">
+                    <span class="task-tag">Bobby</span>
+                    <span class="task-tag">Corner</span>
+                  </div>
+                </div>
+                <div class="task-status">
+                  <span class="status-indicator">⋯</span>
+                  <span class="status-label">Building</span>
+                </div>
+              </div>
+
+              <div class="task-card task-card-building">
+                <div class="task-progress"></div>
+                <div class="task-content">
+                  <h4 class="task-title">Audit Dark Theme Colors</h4>
+                  <div class="task-meta">
+                    <span class="task-tag">Bobby</span>
+                    <span class="task-tag">Corner</span>
+                  </div>
+                </div>
+                <div class="task-status">
+                  <span class="status-indicator">—</span>
+                  <span class="status-label">Queued</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tasks-metrics">
+            <div class="metrics-title">This Week</div>
+            <div class="metrics-chart">
+              <div class="chart-bar" style="height: 15%;"></div>
+              <div class="chart-bar" style="height: 25%;"></div>
+              <div class="chart-bar" style="height: 40%;"></div>
+              <div class="chart-bar" style="height: 30%;"></div>
+              <div class="chart-bar" style="height: 55%;"></div>
+              <div class="chart-bar" style="height: 70%;"></div>
+              <div class="chart-bar" style="height: 100%;"></div>
+            </div>
+            <div class="metrics-labels">
+              <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+            </div>
+            <div class="metrics-stats">
+              <div class="metric-stat">
+                <div class="metric-value">23</div>
+                <div class="metric-label">Tasks</div>
+              </div>
+              <div class="metric-stat">
+                <div class="metric-value">87%</div>
+                <div class="metric-label">Pass Rate</div>
+              </div>
+              <div class="metric-stat">
+                <div class="metric-value">9.1</div>
+                <div class="metric-label">Avg QA</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tasks-section">
+            <div class="section-header">
+              <h3 class="section-title">Shipped Today</h3>
+            </div>
+            <div class="task-items">
+              <div class="task-card task-card-done task-card-yellow">
+                <div class="task-badge">10</div>
+                <div class="task-content">
+                  <h4 class="task-title">Auto-Scroll to Bottom</h4>
+                  <div class="task-meta">
+                    <span class="task-tag">Bobby</span>
+                    <span class="task-tag">Corner</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-card task-card-done task-card-green">
+                <div class="task-badge">10</div>
+                <div class="task-content">
+                  <h4 class="task-title">Voice Button Animation</h4>
+                  <div class="task-meta">
+                    <span class="task-tag">Bobby</span>
+                    <span class="task-tag">Corner</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-card task-card-done task-card-purple">
+                <div class="task-badge">9</div>
+                <div class="task-content">
+                  <h4 class="task-title">Agent in Right Now Bar</h4>
+                  <div class="task-meta">
+                    <span class="task-tag">Bobby</span>
+                    <span class="task-tag">Corner</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-card task-card-done task-card-teal">
+                <div class="task-badge">10</div>
+                <div class="task-content">
+                  <h4 class="task-title">Enter / Shift+Enter</h4>
+                  <div class="task-meta">
+                    <span class="task-tag">Bobby</span>
+                    <span class="task-tag">Corner</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAT VIEW -->
+      <section class="view view-chat" id="view-chat" data-element="view">
+        <div class="chat-header">
+          <button class="chat-back-btn" data-action="back">←</button>
+          <div class="chat-agent-info">
+            <div class="chat-avatar" id="chat-avatar">R</div>
+            <div class="chat-agent-text">
+              <h3 class="chat-agent-name" id="chat-agent-name">Rex</h3>
+              <p class="chat-agent-status">Online</p>
+            </div>
+          </div>
+          <div class="chat-actions">
+            <button class="chat-action-btn" data-action="toggle-voice" title="Voice">🎤</button>
+            <button class="chat-action-btn" title="Info">ℹ</button>
+          </div>
+        </div>
+
+        <div class="messages-container" id="messages-container">
+          <div class="message message-agent">
+            <div class="message-bubble">Hey Patrik. Queue is clear, Bobby just finished the voice button animation. 10/10 QA. What's next?</div>
+            <div class="message-time">2m ago</div>
+          </div>
+
+          <div class="message message-user">
+            <div class="message-bubble">I want to redo the dashboard layout. Bold cards, dark, clean.</div>
+            <div class="message-checks">✓✓</div>
+            <div class="message-time">1m ago</div>
+          </div>
+
+          <div class="message message-agent">
+            <div class="message-bubble">Got it. That's a significant redesign. Before I create anything, what does "done" look like? Are we replacing the multi-column BoardView entirely?</div>
+            <div class="message-time">1m ago</div>
+          </div>
+
+          <div class="message message-user">
+            <div class="message-bubble">Yeah. Home screen with agent cards, tap to chat. Tasks in a separate tab with project filters.</div>
+            <div class="message-checks">✓✓</div>
+            <div class="message-time">just now</div>
+          </div>
+
+          <div class="message message-agent">
+            <div class="message-bubble">I see the vibe. Bold type, color cards, dark bg. Let me spec this properly.</div>
+            <div class="message-time">just now</div>
+          </div>
+
+          <div class="message message-agent">
+            <div class="message-typing">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="voice-panel" id="voice-panel">
+          <div class="voice-visualizer">
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+          </div>
+          <div class="voice-status">Listening...</div>
+          <div class="voice-transcript">I want the cards to be more colorful</div>
+          <div class="voice-controls">
+            <button class="voice-btn voice-btn-mute">M</button>
+            <button class="voice-btn voice-btn-end" data-action="toggle-voice">×</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- INPUT BAR -->
+    <footer class="app-input-bar">
+      <div class="input-wrapper">
+        <input
+          type="text"
+          class="input-field"
+          id="main-input"
+          placeholder="Start typing or speaking..."
+          data-element="main-input"
+        >
+        <div class="input-actions">
+          <button class="input-action-btn" data-action="attach" title="Attach">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+            </svg>
+          </button>
+          <button class="input-action-btn" data-action="commands" title="Commands">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4 17l6-6-6-6"></path>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+          </button>
+        </div>
+        <button class="input-mic-btn" id="mic-btn" data-action="toggle-voice" title="Voice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+            <path d="M5 10a7 7 0 0014 0"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+        </button>
+        <button class="input-send-btn" id="send-btn" data-action="send" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </footer>
+
+    <!-- NOTIFICATIONS -->
+    <div class="notification-toast" id="notification-toast">
+      <span class="toast-dot"></span>
+      <span class="toast-text">Voice button animation shipped. QA 10/10.</span>
+    </div>
+  </div>
+
+  <script>
+    // Simple event delegation for navigation
+    document.addEventListener('click', (e) => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      const view = e.target.closest('[data-view]')?.dataset.view;
+
+      if (action === 'toggle-world') {
+        document.getElementById('world-dropdown').classList.toggle('show');
+      }
+
+      if (action === 'open-chat') {
+        const agent = e.target.closest('[data-agent]').dataset.agent;
+        switchToChat(agent);
+      }
+
+      if (view) {
+        switchView(view);
+      }
+
+      if (action === 'back') {
+        switchView('home');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.world-selector')) {
+        document.getElementById('world-dropdown').classList.remove('show');
+      }
+    });
+
+    const input = document.getElementById('main-input');
+    input.addEventListener('input', () => {
+      const hasText = input.value.trim().length > 0;
+      document.getElementById('mic-btn').style.display = hasText ? 'none' : 'flex';
+      document.getElementById('send-btn').classList.toggle('show', hasText);
+    });
+
+    function switchView(viewName) {
+      document.querySelectorAll('[data-element="view"]').forEach(v => v.classList.remove('view-active'));
+      document.getElementById('view-' + viewName).classList.add('view-active');
+
+      document.querySelectorAll('.tab-btn').forEach(t => {
+        t.classList.toggle('tab-active', t.dataset.view === viewName);
+      });
+
+      document.getElementById('tab-chat-btn').style.display = viewName === 'chat' ? 'block' : 'none';
+      document.getElementById('voice-panel').classList.remove('show');
+    }
+
+    function switchToChat(agentSlug) {
+      const agents = {
+        rex: { name: 'Rex', color: '#10B981' },
+        bobby: { name: 'Bobby', color: '#EAB308' },
+        steffen: { name: 'Steffen', color: '#A78BFA' },
+        cleo: { name: 'Cleo', color: '#F472B6' },
+        elon: { name: 'Elon', color: '#60A5FA' },
+        gary: { name: 'Gary', color: '#FB923C' }
+      };
+
+      const agent = agents[agentSlug];
+      if (agent) {
+        document.getElementById('chat-avatar').textContent = agent.name[0];
+        document.getElementById('chat-avatar').style.background = agent.color;
+        document.getElementById('chat-agent-name').textContent = agent.name;
+        switchView('chat');
+      }
+    }
+
+    // Show notification
+    setTimeout(() => {
+      document.getElementById('notification-toast').classList.add('show');
+      setTimeout(() => {
+        document.getElementById('notification-toast').classList.remove('show');
+      }, 4000);
+    }, 3000);
+  </script>
+</body>
+</html>
