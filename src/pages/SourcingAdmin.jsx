@@ -447,6 +447,11 @@ function SourcingAdminInner() {
   const [listingFilter, setListingFilter] = useState('all');
   const [pendingMembers, setPendingMembers] = useState([]);
   const [memberCompanyMap, setMemberCompanyMap] = useState({});
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [memberEditCompanyQuery, setMemberEditCompanyQuery] = useState('');
+  const [memberEditCompanyId, setMemberEditCompanyId] = useState('');
+  const [memberEditCompanyOpen, setMemberEditCompanyOpen] = useState(false);
+  const [memberEditStatus, setMemberEditStatus] = useState('');
   const [pendingArticles, setPendingArticles] = useState([]);
   const [articleCompanyMap, setArticleCompanyMap] = useState({});
 
@@ -776,20 +781,47 @@ function SourcingAdminInner() {
     await fetchData();
   };
 
+  const handleEditMember = (member) => {
+    setEditingMemberId(member.id);
+    setMemberEditCompanyId(member.company_id || '');
+    setMemberEditCompanyQuery(memberCompanyMap[member.id]?.name || '');
+    setMemberEditCompanyOpen(false);
+    setMemberEditStatus('');
+  };
+
+  const handleSaveMemberCompany = async (memberId) => {
+    if (!adminSupabase) return;
+    setMemberEditStatus('Saving...');
+    try {
+      const updates = { company_id: memberEditCompanyId || null };
+      const { error } = await adminSupabase.from('directory_members').update(updates).eq('id', memberId);
+      if (error) throw error;
+      setMemberEditStatus('Saved.');
+      setEditingMemberId(null);
+      setMemberEditCompanyOpen(false);
+      await fetchData();
+    } catch (err) {
+      console.error('Member company save error:', err);
+      setMemberEditStatus(err.message || 'Failed to save.');
+    }
+  };
+
   const handleMemberAction = async (memberId, action) => {
     if (!adminSupabase) return;
     try {
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
-      await adminSupabase.from('directory_members').update({ status: newStatus }).eq('id', memberId);
+      const member = pendingMembers.find(m => m.id === memberId);
+      const companyIdToUse = editingMemberId === memberId ? (memberEditCompanyId || null) : (member?.company_id || null);
+      await adminSupabase.from('directory_members').update({ status: newStatus, company_id: companyIdToUse }).eq('id', memberId);
 
       // If approving, also activate their company
-      if (action === 'approve') {
-        const member = pendingMembers.find(m => m.id === memberId);
-        if (member?.company_id) {
-          await adminSupabase.from('directory_companies').update({ status: 'active' }).eq('id', member.company_id);
-        }
+      if (action === 'approve' && companyIdToUse) {
+        await adminSupabase.from('directory_companies').update({ status: 'active' }).eq('id', companyIdToUse);
       }
 
+      setEditingMemberId(null);
+      setMemberEditCompanyOpen(false);
+      setMemberEditStatus('');
       await fetchData();
     } catch (err) {
       console.error('Member action error:', err);
@@ -1569,6 +1601,18 @@ function SourcingAdminInner() {
                 </div>
                 {pendingMembers.map(member => {
                   const memberCompany = memberCompanyMap[member.id];
+                  const isEditingMember = editingMemberId === member.id;
+                  const companyQuery = isEditingMember ? memberEditCompanyQuery : '';
+                  const filteredCompanies = companies
+                    .filter(c => c.status !== 'pending')
+                    .filter(c => !selectedTenantId || c.tenant_id === selectedTenantId)
+                    .filter(c => {
+                      if (!companyQuery.trim()) return true;
+                      const query = companyQuery.trim().toLowerCase();
+                      return (c.name || '').toLowerCase().includes(query);
+                    })
+                    .slice(0, 8);
+                  const selectedCompany = companies.find(c => c.id === memberEditCompanyId);
                   return (
                     <div key={member.id} style={{
                       display: 'grid', gridTemplateColumns: '1fr 1fr 80px 140px',
@@ -1584,7 +1628,94 @@ function SourcingAdminInner() {
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        {memberCompany ? (
+                        {isEditingMember ? (
+                          <div style={{ position: 'relative' }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, fontFamily: V.mono, color: V.dim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                              Company
+                            </label>
+                            <input
+                              value={memberEditCompanyQuery}
+                              onChange={(e) => {
+                                setMemberEditCompanyQuery(e.target.value);
+                                setMemberEditCompanyId('');
+                                setMemberEditCompanyOpen(true);
+                                setMemberEditStatus('');
+                              }}
+                              onFocus={() => setMemberEditCompanyOpen(true)}
+                              placeholder="Search companies..."
+                              style={{
+                                width: '100%', background: V.bg, border: `1px solid ${V.border}`,
+                                borderRadius: 6, padding: '9px 10px', color: V.text, fontSize: 13,
+                                fontFamily: V.space, outline: 'none', boxSizing: 'border-box',
+                              }}
+                            />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 6 }}>
+                              <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                                {selectedCompany ? `Selected: ${selectedCompany.name}` : 'No company selected'}
+                              </div>
+                              {memberEditCompanyId ? (
+                                <button
+                                  onClick={() => {
+                                    setMemberEditCompanyId('');
+                                    setMemberEditCompanyQuery('');
+                                    setMemberEditCompanyOpen(false);
+                                    setMemberEditStatus('');
+                                  }}
+                                  style={{
+                                    background: 'transparent', border: 'none', color: V.accent, cursor: 'pointer',
+                                    fontSize: 11, fontWeight: 700, fontFamily: V.space, padding: 0,
+                                  }}
+                                >
+                                  Clear
+                                </button>
+                              ) : null}
+                            </div>
+                            {memberEditCompanyOpen && filteredCompanies.length > 0 && (
+                              <div style={{
+                                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6,
+                                background: V.card2, border: `1px solid ${V.border}`, borderRadius: 8,
+                                overflow: 'hidden', zIndex: 5, boxShadow: '0 12px 28px rgba(0,0,0,0.28)',
+                              }}>
+                                {filteredCompanies.map(company => (
+                                  <button
+                                    key={company.id}
+                                    onClick={() => {
+                                      setMemberEditCompanyId(company.id);
+                                      setMemberEditCompanyQuery(company.name || '');
+                                      setMemberEditCompanyOpen(false);
+                                      setMemberEditStatus('');
+                                    }}
+                                    style={{
+                                      width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+                                      borderBottom: `1px solid ${V.border}`, padding: '10px 12px', cursor: 'pointer',
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 13, fontWeight: 600, fontFamily: V.space, color: V.text }}>
+                                      {company.name}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: V.dim, fontFamily: V.mono }}>
+                                      {company.vertical || 'company'}{company.city ? ` · ${company.city}` : ''}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {memberEditCompanyOpen && filteredCompanies.length === 0 && (
+                              <div style={{
+                                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6,
+                                background: V.card2, border: `1px solid ${V.border}`, borderRadius: 8,
+                                padding: '10px 12px', zIndex: 5,
+                              }}>
+                                <div style={{ fontSize: 12, color: V.dim, fontFamily: V.space }}>No matching companies</div>
+                              </div>
+                            )}
+                            {memberEditStatus ? (
+                              <div style={{ fontSize: 11, color: memberEditStatus === 'Saved.' ? '#86EFAC' : V.dim, fontFamily: V.mono, marginTop: 8 }}>
+                                {memberEditStatus}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : memberCompany ? (
                           <>
                             <div style={{ fontSize: 13, fontWeight: 600, fontFamily: V.space, color: V.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {memberCompany.name}
@@ -1607,7 +1738,33 @@ function SourcingAdminInner() {
                           pending
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {isEditingMember ? (
+                          <>
+                            <button onClick={() => handleSaveMemberCompany(member.id)} style={{
+                              background: 'rgba(59,130,246,0.14)', border: '1px solid rgba(59,130,246,0.35)',
+                              color: '#93C5FD', borderRadius: 5, padding: '4px 10px', fontSize: 11,
+                              fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                            }}>
+                              Save
+                            </button>
+                            <button onClick={() => { setEditingMemberId(null); setMemberEditCompanyOpen(false); setMemberEditStatus(''); }} style={{
+                              background: 'rgba(255,255,255,0.06)', border: `1px solid ${V.border}`,
+                              color: V.dim, borderRadius: 5, padding: '4px 10px', fontSize: 11,
+                              fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                            }}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button onClick={() => handleEditMember(member)} style={{
+                            background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.35)',
+                            color: '#FDBA74', borderRadius: 5, padding: '4px 10px', fontSize: 11,
+                            fontWeight: 700, fontFamily: V.space, cursor: 'pointer',
+                          }}>
+                            Edit
+                          </button>
+                        )}
                         <button onClick={() => handleMemberAction(member.id, 'approve')} style={{
                           background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)',
                           color: '#86EFAC', borderRadius: 5, padding: '4px 10px', fontSize: 11,
