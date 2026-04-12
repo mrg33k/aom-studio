@@ -446,19 +446,21 @@ export default function CornerV3() {
         }}>
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 2 }}>
-            <Tab
-              label="Home"
-              icon={<HomeIcon color={tab === 'chat' && !conversationTarget ? C.text : C.muted} />}
-              active={tab === 'chat' && !conversationTarget}
-              onClick={() => handleTabChange('chat')}
-              badge={<Badge count={unreadChat} />}
-            />
-            {conversationTarget && (
+            {conversationTarget ? (
               <Tab
-                label={conversationTarget.name}
+                label="Chat"
                 icon={<ChatIcon color={tab === 'chat' && conversationTarget ? C.text : C.muted} />}
                 active={tab === 'chat' && !!conversationTarget}
                 onClick={() => { setTab('chat'); setUnreadChat(0) }}
+                badge={<Badge count={unreadChat} />}
+              />
+            ) : (
+              <Tab
+                label="Home"
+                icon={<HomeIcon color={tab === 'chat' && !conversationTarget ? C.text : C.muted} />}
+                active={tab === 'chat' && !conversationTarget}
+                onClick={() => handleTabChange('chat')}
+                badge={<Badge count={unreadChat} />}
               />
             )}
             <Tab
