@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Corner — AI Operations Cockpit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block panel">
+        <div class="brand-mark">C</div>
+        <div>
+          <div class="eyebrow">Corner</div>
+          <div class="brand-subtitle">AI operations cockpit</div>
+        </div>
+      </div>
+
+      <div class="world-switcher panel">
+        <div class="section-kicker">Active World</div>
+        <div class="world-card">
+          <div>
+            <div class="world-title">AOM</div>
+            <div class="world-meta">6 agents · 34 active tasks</div>
+          </div>
+          <div class="world-badge">Live</div>
+        </div>
+        <div class="world-list">
+          <button class="world-pill is-active">AOM</button>
+          <button class="world-pill">Ambition</button>
+          <button class="world-pill">ISA Energy</button>
+        </div>
+      </div>
+
+      <nav class="nav panel">
+        <a class="nav-link is-active" href="#">
+          <span>Home</span>
+          <strong>01</strong>
+        </a>
+        <a class="nav-link" href="#">
+          <span>Tasks</span>
+          <strong>34</strong>
+        </a>
+        <a class="nav-link" href="#">
+          <span>Chat</span>
+          <strong>08</strong>
+        </a>
+        <a class="nav-link" href="#">
+          <span>Approvals</span>
+          <strong>05</strong>
+        </a>
+      </nav>
+
+      <div class="status-board panel">
+        <div class="section-kicker">System Pulse</div>
+        <div class="status-metric">
+          <span>Building</span>
+          <strong>12</strong>
+        </div>
+        <div class="status-metric">
+          <span>Queued</span>
+          <strong>22</strong>
+        </div>
+        <div class="status-metric">
+          <span>Done today</span>
+          <strong>08</strong>
+        </div>
+        <div class="status-metric">
+          <span>Needs input</span>
+          <strong class="danger">03</strong>
+        </div>
+      </div>
+
+      <div class="identity-card panel">
+        <div class="avatar-ring">P</div>
+        <div>
+          <div class="identity-name">Patrik</div>
+          <div class="identity-meta">Operator · Voice linked</div>
+        </div>
+        <button class="ghost-button">Settings</button>
+      </div>
+    </aside>
+
+    <main class="main-stage">
+      <header class="topbar panel">
+        <div>
+          <div class="hero-status"><span class="live-dot"></span> Rex is online · Bobby is rendering the voice module</div>
+          <h1>Run your AI team like a <span>high-trust control room.</span></h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button">⌘K</button>
+          <button class="icon-button">🔔<span class="alert-count">4</span></button>
+          <button class="primary-button">New mission</button>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <article class="hero-card panel panel-glow">
+          <div class="hero-copy">
+            <div class="section-kicker">Voice-first command</div>
+            <h2>What are we shipping next?</h2>
+            <p>Brief agents by voice or text, push approvals, and keep every project moving without digging through clutter.</p>
+          </div>
+          <div class="voice-console">
+            <div class="voice-orb"></div>
+            <div class="voice-readout">Listening for your next instruction</div>
+            <div class="voice-transcript">“Rex, rework the dashboard. More color, stronger hierarchy, faster approvals.”</div>
+            <div class="voice-actions">
+              <button class="ghost-button">Mute</button>
+              <button class="ghost-button">Attach brief</button>
+              <button class="primary-button">Dispatch to team</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="radar-card panel">
+          <div class="section-kicker">Today</div>
+          <div class="radar-grid">
+            <div>
+              <div class="big-number">87%</div>
+              <div class="radar-label">Pass rate</div>
+            </div>
+            <div>
+              <div class="big-number">9.1</div>
+              <div class="radar-label">Avg QA</div>
+            </div>
+            <div>
+              <div class="big-number">23</div>
+              <div class="radar-label">Shipped this week</div>
+            </div>
+            <div>
+              <div class="big-number danger">3</div>
+              <div class="radar-label">Awaiting your input</div>
+            </div>
+          </div>
+          <div class="mini-chart">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <section class="team-section panel">
+          <div class="section-heading-row">
+            <div>
+              <div class="section-kicker">Your Team</div>
+              <h3>Agents in the field</h3>
+            </div>
+            <button class="ghost-button">Open roster</button>
+          </div>
+
+          <div class="agent-grid">
+            <article class="agent-card rex">
+              <div class="agent-card-head">
+                <div class="agent-avatar">R</div>
+                <div>
+                  <div class="agent-name">Rex</div>
+                  <div class="agent-time">2m ago</div>
+                </div>
+                <div class="agent-chip online">Online</div>
+              </div>
+              <p>Queue is clear. 8 shipped today, all above 8/10 QA. Ready to route new work.</p>
+              <div class="agent-footer"><span>Ops Lead</span><strong>Focus: Dispatch</strong></div>
+            </article>
+
+            <article class="agent-card bobby">
+              <div class="agent-card-head">
+                <div class="agent-avatar">B</div>
+                <div>
+                  <div class="agent-name">Bobby</div>
+                  <div class="agent-time">15m ago</div>
+                </div>
+                <div class="agent-chip building">Building</div>
+              </div>
+              <p>Voice button animation shipped. Final polish render is running for dashboard V2.</p>
+              <div class="agent-footer"><span>Product Builder</span><strong>ETA: 18 min</strong></div>
+            </article>
+
+            <article class="agent-card steffen">
+              <div class="agent-card-head">
+                <div class="agent-avatar">S</div>
+                <div>
+                  <div class="agent-name">Steffen</div>
+                  <div class="agent-time">2d ago</div>
+                </div>
+                <div class="agent-chip idle">Idle</div>
+              </div>
+              <p>Sprite sheets and UI motion studies are staged and ready for visual review.</p>
+              <div class="agent-footer"><span>Creative Systems</span><strong>2 assets ready</strong></div>
+            </article>
+
+            <article class="agent-card cleo">
+              <div class="agent-card-head">
+                <div class="agent-avatar">C</div>
+                <div>
+                  <div class="agent-name">Cleo</div>
+                  <div class="agent-time">3d ago</div>
+                </div>
+                <div class="agent-chip idle">Idle</div>
+              </div>
+              <p>B-roll package for Ambition is delivered. Awaiting approval before export batch.</p>
+              <div class="agent-footer"><span>Media Agent</span><strong>1 approval blocked</strong></div>
+            </article>
+
+            <article class="agent-card elon">
+              <div class="agent-card-head">
+                <div class="agent-avatar">E</div>
+                <div>
+                  <div class="agent-name">Elon</div>
+                  <div class="agent-time">1d ago</div>
+                </div>
+                <div class="agent-chip idle">Idle</div>
+              </div>
+              <p>Pipeline is stable across all worlds. 23 tasks completed this week with no incidents.</p>
+              <div class="agent-footer"><span>Automation</span><strong>99.98% uptime</strong></div>
+            </article>
+
+            <article class="agent-card gary">
+              <div class="agent-card-head">
+                <div class="agent-avatar">G</div>
+                <div>
+                  <div class="agent-name">Gary</div>
+                  <div class="agent-time">4d ago</div>
+                </div>
+                <div class="agent-chip idle">Idle</div>
+              </div>
+              <p>SOPs are updated. 33 email drafts are waiting for prioritization and send approval.</p>
+              <div class="agent-footer"><span>Operations Admin</span><strong>Queue: 33 drafts</strong></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="queue-section panel">
+          <div class="section-heading-row">
+            <div>
+              <div class="section-kicker">Task Queue</div>
+              <h3>Building, queued, done, failed</h3>
+            </div>
+            <div class="filter-pills">
+              <button class="filter-pill is-active">All</button>
+              <button class="filter-pill">Corner</button>
+              <button class="filter-pill">AOM Website</button>
+              <button class="filter-pill">Ambition</button>
+            </div>
+          </div>
+
+          <div class="task-list">
+            <article class="task-row">
+              <div class="task-status building"></div>
+              <div class="task-main">
+                <div class="task-title">Redesign dashboard: home view with agent cards</div>
+                <div class="task-meta">Assigned to Bobby · Corner · Started 12m ago</div>
+              </div>
+              <div class="task-pill building">Building</div>
+            </article>
+            <article class="task-row">
+              <div class="task-status queued"></div>
+              <div class="task-main">
+                <div class="task-title">Review B-roll package for Ambition launch sprint</div>
+                <div class="task-meta">Assigned to Cleo · Ambition · Needs your approval</div>
+              </div>
+              <div class="task-pill queued">Needs input</div>
+            </article>
+            <article class="task-row">
+              <div class="task-status done"></div>
+              <div class="task-main">
+                <div class="task-title">Voice button animation shipped and QA approved</div>
+                <div class="task-meta">Completed by Bobby · Score 10/10 · 28m ago</div>
+              </div>
+              <div class="task-pill done">Done</div>
+            </article>
+            <article class="task-row">
+              <div class="task-status failed"></div>
+              <div class="task-main">
+                <div class="task-title">ISA energy scraper retry failed on auth refresh</div>
+                <div class="task-meta">Assigned to Elon · Failure on step 3 · Escalated</div>
+              </div>
+              <div class="task-pill failed">Failed</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="chat-section panel">
+          <div class="chat-header">
+            <div>
+              <div class="section-kicker">Live Chat</div>
+              <h3>Rex</h3>
+              <div class="chat-presence">Online · coordinating queue</div>
+            </div>
+            <button class="ghost-button">Open thread</button>
+          </div>
+
+          <div class="chat-thread">
+            <div class="message agent-message">Hey Patrik. Queue is clear, Bobby just finished the voice button animation. What’s next?</div>
+            <div class="message-meta">2m ago</div>
+            <div class="message user-message">I want to redo the dashboard layout. Bold cards, dark, clean, more alive.</div>
+            <div class="message-meta">1m ago</div>
+            <div class="message agent-message">Got it. I’m routing UI exploration to Bobby and visual references to Steffen. Define what “done” looks like and I’ll convert it into tasks.</div>
+            <div class="message-meta">just now</div>
+            <div class="message task-message">
+              <div class="task-message-label">Task Created</div>
+              <strong>Redesign dashboard: home view with agent cards</strong>
+              <span>Queued for Bobby with dark UI direction and stronger hierarchy.</span>
+            </div>
+          </div>
+
+          <div class="chat-composer">
+            <div class="composer-field">Message Rex or press to speak…</div>
+            <div class="composer-actions">
+              <button class="icon-button">＋</button>
+              <button class="icon-button">🎙</button>
+              <button class="primary-button">Send</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="signals-section panel">
+          <div class="section-heading-row">
+            <div>
+              <div class="section-kicker">Signals</div>
+              <h3>What needs attention</h3>
+            </div>
+          </div>
+
+          <div class="signal-list">
+            <article class="signal-card warning">
+              <div class="signal-title">3 approvals waiting</div>
+              <p>Cleo, Gary, and Bobby are blocked by final operator confirmation.</p>
+            </article>
+            <article class="signal-card success">
+              <div class="signal-title">8 tasks shipped today</div>
+              <p>Quality is holding above target with a 9.1 average score this week.</p>
+            </article>
+            <article class="signal-card info">
+              <div class="signal-title">World switch ready</div>
+              <p>Ambition sprint has 2 critical notifications and 6 queued tasks.</p>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
