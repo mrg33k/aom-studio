@@ -490,6 +490,9 @@ export default function CornerV3() {
           </div>
         </div>
 
+        {/* Date label */}
+        <div style={{ fontSize: 11, color: '#888', marginTop: 2, paddingLeft: 16 }}>04/12/2026</div>
+
       </nav>
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
