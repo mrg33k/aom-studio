@@ -869,7 +869,7 @@ const PROJECT_TOOLS = [{ functionDeclarations: TOOLS[0].functionDeclarations.fil
 
 // Add Google Search grounding to tools (agent and home chats only)
 function addSearchGrounding(tools) {
-  return [...tools, { google_search_retrieval: {} }];
+  return [...tools, { google_search: {} }];
 }
 
 async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION, tools = TOOLS, model = 'gemini-2.5-flash') {
