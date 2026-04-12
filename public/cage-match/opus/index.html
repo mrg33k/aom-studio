@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corner • Command Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-area">
+          <div class="logo">Corner</div>
+          <div class="logo-dot">.</div>
+        </div>
+        <button class="sidebar-close" id="sidebar-close">✕</button>
+      </div>
+
+      <!-- World Selector -->
+      <div class="world-selector">
+        <button class="world-btn" id="world-btn">
+          <span class="world-icon">A</span>
+          <span class="world-text">AOM Studio</span>
+        </button>
+        <div class="world-menu" id="world-menu">
+          <button class="world-option active" data-world="aom">
+            <span class="world-icon" style="background: linear-gradient(135deg, #10B981, #34D399);">A</span>
+            <div>
+              <div class="world-name">AOM Studio</div>
+              <div class="world-desc">Creative Studio</div>
+            </div>
+          </button>
+          <button class="world-option" data-world="ambition">
+            <span class="world-icon" style="background: linear-gradient(135deg, #FB923C, #FBBF24);">M</span>
+            <div>
+              <div class="world-name">Ambition Mechanical</div>
+              <div class="world-desc">HVAC Services</div>
+            </div>
+          </button>
+          <button class="world-option" data-world="isa">
+            <span class="world-icon" style="background: linear-gradient(135deg, #A78BFA, #D8B4FE);">I</span>
+            <div>
+              <div class="world-name">ISA Energy</div>
+              <div class="world-desc">Solar Provider</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Summary -->
+      <div class="status-summary">
+        <div class="status-item online-count">
+          <div class="status-dot online"></div>
+          <span id="online-count">3</span> Online
+        </div>
+        <div class="status-item building-count">
+          <div class="status-dot building"></div>
+          <span id="building-count">2</span> Building
+        </div>
+        <div class="status-item done-count">
+          <div class="status-dot done"></div>
+          <span id="done-count">8</span> Done
+        </div>
+      </div>
+
+      <!-- Agent List -->
+      <div class="agent-list">
+        <div class="agent-list-header">Your Team</div>
+
+        <div class="agent-group" id="agents-online">
+          <div class="group-label">Online Now</div>
+          <div class="agents-column"></div>
+        </div>
+
+        <div class="agent-group" id="agents-building">
+          <div class="group-label">Building</div>
+          <div class="agents-column"></div>
+        </div>
+
+        <div class="agent-group" id="agents-idle">
+          <div class="group-label">Idle</div>
+          <div class="agents-column"></div>
+        </div>
+      </div>
+
+      <!-- Nav Tabs -->
+      <div class="sidebar-nav">
+        <button class="nav-tab active" data-view="dashboard" id="tab-dashboard">
+          <span class="nav-icon">◆</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-tab" data-view="tasks" id="tab-tasks">
+          <span class="nav-icon">☐</span>
+          <span class="nav-label">Tasks</span>
+          <span class="nav-badge" id="task-badge"></span>
+        </button>
+        <button class="nav-tab" data-view="projects" id="tab-projects">
+          <span class="nav-icon">▦</span>
+          <span class="nav-label">Projects</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <main class="main-area">
+      <!-- MOBILE HEADER -->
+      <header class="mobile-header">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <div class="header-title" id="header-title">Dashboard</div>
+        <button class="header-icon">🔔</button>
+      </header>
+
+      <!-- ═══ DASHBOARD VIEW ═══ -->
+      <div class="view" id="dashboard-view">
+        <div class="view-scroll">
+          <!-- Hero Section -->
+          <section class="hero-section">
+            <div class="hero-content">
+              <div class="hero-badge">
+                <span class="online-indicator"></span>
+                Rex is online
+              </div>
+              <h1 class="hero-title">Hey Patrik,<br>what are we<br>building?</h1>
+              <p class="hero-time" id="current-time"></p>
+            </div>
+          </section>
+
+          <!-- Quick Stats -->
+          <section class="quick-stats">
+            <div class="stat-card">
+              <div class="stat-number" id="stat-tasks">12</div>
+              <div class="stat-label">Tasks Queued</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="stat-shipped">23</div>
+              <div class="stat-label">Shipped This Week</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="stat-avg">9.1</div>
+              <div class="stat-label">Avg QA Score</div>
+            </div>
+          </section>
+
+          <!-- Agents Overview (Right Now) -->
+          <section class="section-group">
+            <div class="section-header">
+              <h2>Right Now</h2>
+              <div class="section-meta" id="online-agents-meta">3 online</div>
+            </div>
+            <div class="agents-grid" id="agents-overview">
+              <!-- Agent cards populated by JS -->
+            </div>
+          </section>
+
+          <!-- Recent Activity -->
+          <section class="section-group">
+            <div class="section-header">
+              <h2>Recent Shipping</h2>
+            </div>
+            <div class="recent-list" id="recent-activity">
+              <!-- Recent items populated by JS -->
+            </div>
+          </section>
+
+          <div style="height: 40px;"></div>
+        </div>
+      </div>
+
+      <!-- ═══ TASKS VIEW ═══ -->
+      <div class="view hidden" id="tasks-view">
+        <div class="view-scroll">
+          <section class="view-section">
+            <div class="section-controls">
+              <div class="search-input-group">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" class="search-input" placeholder="Search tasks..." id="task-search">
+              </div>
+              <div class="filter-chips" id="filter-chips">
+                <button class="chip active" data-project="all">All</button>
+                <button class="chip" data-project="corner">Corner</button>
+                <button class="chip" data-project="aom-web">AOM Website</button>
+                <button class="chip" data-project="ambition">Ambition</button>
+                <button class="chip" data-project="isa">ISA</button>
+              </div>
+            </div>
+
+            <div class="tasks-sections">
+              <div class="task-section" id="building-tasks">
+                <div class="task-section-header">
+                  <h3>Building Now</h3>
+                  <span class="count">2</span>
+                </div>
+                <div class="task-items">
+                  <!-- Task items populated by JS -->
+                </div>
+              </div>
+
+              <div class="task-section" id="queued-tasks">
+                <div class="task-section-header">
+                  <h3>Queued</h3>
+                  <span class="count">5</span>
+                </div>
+                <div class="task-items">
+                  <!-- Task items populated by JS -->
+                </div>
+              </div>
+
+              <div class="task-section" id="shipped-tasks">
+                <div class="task-section-header">
+                  <h3>Shipped Today</h3>
+                  <span class="count">8</span>
+                </div>
+                <div class="task-items">
+                  <!-- Task items populated by JS -->
+                </div>
+              </div>
+
+              <div class="week-stats">
+                <div class="stats-header">This Week</div>
+                <div class="bars-chart" id="weekly-chart">
+                  <!-- Chart bars populated by JS -->
+                </div>
+                <div class="stats-row">
+                  <div class="stat">
+                    <div class="stat-big">23</div>
+                    <div class="stat-small">Tasks</div>
+                  </div>
+                  <div class="stat">
+                    <div class="stat-big">87%</div>
+                    <div class="stat-small">Pass Rate</div>
+                  </div>
+                  <div class="stat">
+                    <div class="stat-big">9.1</div>
+                    <div class="stat-small">Avg QA</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <div style="height: 40px;"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PROJECTS VIEW ═══ -->
+      <div class="view hidden" id="projects-view">
+        <div class="view-scroll">
+          <section class="view-section">
+            <div class="section-header">
+              <h2>All Projects</h2>
+            </div>
+            <div class="projects-grid" id="projects-grid">
+              <!-- Projects populated by JS -->
+            </div>
+          </section>
+          <div style="height: 40px;"></div>
+        </div>
+      </div>
+
+      <!-- ═══ CHAT OVERLAY ═══ -->
+      <div class="chat-overlay hidden" id="chat-overlay">
+        <div class="chat-panel">
+          <div class="chat-header">
+            <button class="chat-close" id="chat-close">←</button>
+            <div class="chat-agent-info">
+              <div class="chat-avatar" id="chat-avatar">R</div>
+              <div class="chat-details">
+                <div class="chat-name" id="chat-name">Rex</div>
+                <div class="chat-status" id="chat-status">Online</div>
+              </div>
+            </div>
+            <div class="chat-actions">
+              <button class="chat-action-btn" id="voice-toggle" title="Voice">🎤</button>
+              <button class="chat-action-btn" title="Info">ⓘ</button>
+            </div>
+          </div>
+
+          <div class="messages" id="messages-area">
+            <!-- Messages populated by JS -->
+          </div>
+
+          <div class="voice-widget hidden" id="voice-widget">
+            <div class="voice-bars">
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+            </div>
+            <div class="voice-status">Listening...</div>
+            <div class="voice-transcript" id="voice-text">No text yet</div>
+            <div class="voice-controls">
+              <button class="voice-btn mute" id="voice-mute">M</button>
+              <button class="voice-btn end" id="voice-end">×</button>
+            </div>
+          </div>
+
+          <div class="chat-input">
+            <textarea class="chat-input-field" id="chat-input" placeholder="Type or press mic..."></textarea>
+            <div class="chat-input-actions">
+              <button class="chat-input-btn" title="Attach">📎</button>
+              <button class="chat-input-btn" title="Commands">/</button>
+            </div>
+            <button class="chat-send" id="chat-send">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script>
+    // Data Model
+    const state = {
+      currentWorld: 'aom',
+      currentView: 'dashboard',
+      selectedAgent: null,
+      agents: [
+        {
+          id: 'rex',
+          name: 'Rex',
+          role: 'EA',
+          status: 'online',
+          color: '#10B981',
+          lastMessage: 'Queue is clear. 8 shipped today, all 8+/10 QA.',
+          unread: 3,
+          timeAgo: '2m'
+        },
+        {
+          id: 'bobby',
+          name: 'Bobby',
+          role: 'Web Dev',
+          status: 'building',
+          color: '#EAB308',
+          lastMessage: 'Voice button animation shipped. 10/10.',
+          unread: 0,
+          timeAgo: '15m'
+        },
+        {
+          id: 'steffen',
+          name: 'Steffen',
+          role: 'Design',
+          status: 'idle',
+          color: '#A78BFA',
+          lastMessage: 'Sprite sheets ready for review.',
+          unread: 0,
+          timeAgo: '2d'
+        },
+        {
+          id: 'cleo',
+          name: 'Cleo',
+          role: 'Content',
+          status: 'idle',
+          color: '#F472B6',
+          lastMessage: 'B-roll package for Ambition ready.',
+          unread: 0,
+          timeAgo: '3d'
+        },
+        {
+          id: 'elon',
+          name: 'Elon',
+          role: 'Architect',
+          status: 'idle',
+          color: '#60A5FA',
+          lastMessage: 'Pipeline running stable. 23 tasks this week.',
+          unread: 0,
+          timeAgo: '1d'
+        },
+        {
+          id: 'gary',
+          name: 'Gary',
+          role: 'Ops',
+          status: 'idle',
+          color: '#FB923C',
+          lastMessage: 'SOPs updated. 33 email drafts waiting.',
+          unread: 0,
+          timeAgo: '4d'
+        }
+      ],
+      tasks: [
+        {
+          id: 1,
+          title: 'Move VoiceChat into ChatPanel',
+          agent: 'Bobby',
+          project: 'corner',
+          status: 'building',
+          qa: null,
+          color: '#EAB308'
+        },
+        {
+          id: 2,
+          title: 'Audit Dark Theme Colors',
+          agent: 'Bobby',
+          project: 'corner',
+          status: 'building',
+          qa: null,
+          color: '#A78BFA'
+        },
+        {
+          id: 3,
+          title: 'Auto-Scroll to Bottom',
+          agent: 'Bobby',
+          project: 'corner',
+          status: 'shipped',
+          qa: 10,
+          color: '#EAB308'
+        },
+        {
+          id: 4,
+          title: 'Voice Button Animation',
+          agent: 'Bobby',
+          project: 'corner',
+          status: 'shipped',
+          qa: 10,
+          color: '#22C55E'
+        },
+        {
+          id: 5,
+          title: 'Agent in Right Now Bar',
+          agent: 'Bobby',
+          project: 'corner',
+          status: 'shipped',
+          qa: 9,
+          color: '#A78BFA'
+        }
+      ]
+    };
+
+    // UI Helpers
+    function renderAgents() {
+      const agentsOverview = document.getElementById('agents-overview');
+      agentsOverview.innerHTML = state.agents
+        .filter(a => a.status === 'online' || a.status === 'building')
+        .map(agent => `
+          <div class="agent-card" data-agent-id="${agent.id}" onclick="openChat('${agent.id}', '${agent.name}', '${agent.role}', '${agent.color}')">
+            <div class="agent-card-header">
+              <div class="agent-avatar" style="background: ${agent.color};">${agent.name[0]}</div>
+              <div class="agent-meta">
+                <div class="agent-name">${agent.name}</div>
+                <div class="agent-role">${agent.role}</div>
+              </div>
+              <div class="agent-status-badge ${agent.status}">
+                <span class="status-dot"></span>
+                ${agent.status === 'building' ? 'Building' : 'Online'}
+              </div>
+            </div>
+            <div class="agent-card-message">${agent.lastMessage}</div>
+            ${agent.unread > 0 ? `<div class="unread-badge">${agent.unread}</div>` : ''}
+          </div>
+        `)
+        .join('');
+    }
+
+    function renderTasks() {
+      const buildingTasks = document.querySelector('#building-tasks .task-items');
+      const queuedTasks = document.querySelector('#queued-tasks .task-items');
+      const shippedTasks = document.querySelector('#shipped-tasks .task-items');
+
+      buildingTasks.innerHTML = state.tasks
+        .filter(t => t.status === 'building')
+        .map(task => `
+          <div class="task-item building">
+            <div class="task-color" style="background: ${task.color};"></div>
+            <div class="task-content">
+              <div class="task-title">${task.title}</div>
+              <div class="task-meta">${task.agent} • ${task.project}</div>
+            </div>
+            <div class="task-status">Building...</div>
+          </div>
+        `)
+        .join('');
+
+      shippedTasks.innerHTML = state.tasks
+        .filter(t => t.status === 'shipped')
+        .map(task => `
+          <div class="task-item shipped">
+            <div class="task-color" style="background: ${task.color};"></div>
+            <div class="task-content">
+              <div class="task-title">${task.title}</div>
+              <div class="task-meta">${task.agent} • ${task.project}</div>
+            </div>
+            <div class="task-qa">${task.qa}/10</div>
+          </div>
+        `)
+        .join('');
+    }
+
+    function openChat(agentId, name, role, color) {
+      state.selectedAgent = agentId;
+      document.getElementById('chat-avatar').style.background = color;
+      document.getElementById('chat-avatar').textContent = name[0];
+      document.getElementById('chat-name').textContent = name;
+      document.getElementById('chat-status').textContent = 'Online';
+      document.getElementById('chat-overlay').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeChat() {
+      state.selectedAgent = null;
+      document.getElementById('chat-overlay').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function switchView(viewName) {
+      // Hide all views
+      document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+      // Show selected view
+      document.getElementById(viewName + '-view').classList.remove('hidden');
+      // Update header
+      document.getElementById('header-title').textContent =
+        viewName === 'dashboard' ? 'Dashboard' :
+        viewName === 'tasks' ? 'Tasks' :
+        'Projects';
+      // Update nav tabs
+      document.querySelectorAll('.nav-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.view === viewName);
+      });
+      state.currentView = viewName;
+      closeSidebar();
+    }
+
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+    }
+
+    // Event Listeners
+    document.getElementById('menu-toggle').addEventListener('click', openSidebar);
+    document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+    document.getElementById('chat-close').addEventListener('click', closeChat);
+
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchView(tab.dataset.view));
+    });
+
+    document.getElementById('world-btn').addEventListener('click', () => {
+      document.getElementById('world-menu').classList.toggle('active');
+    });
+
+    document.querySelectorAll('.world-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.world-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        state.currentWorld = opt.dataset.world;
+        document.getElementById('world-menu').classList.remove('active');
+      });
+    });
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.world-selector')) {
+        document.getElementById('world-menu').classList.remove('active');
+      }
+    });
+
+    // Voice toggle
+    document.getElementById('voice-toggle').addEventListener('click', () => {
+      document.getElementById('voice-widget').classList.toggle('hidden');
+    });
+
+    document.getElementById('voice-end').addEventListener('click', () => {
+      document.getElementById('voice-widget').classList.add('hidden');
+    });
+
+    // Initialize
+    renderAgents();
+    renderTasks();
+
+    // Update time
+    function updateTime() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      document.getElementById('current-time').textContent = time;
+    }
+    updateTime();
+    setInterval(updateTime, 60000);
+
+    // Chat input
+    document.getElementById('chat-send').addEventListener('click', () => {
+      const msg = document.getElementById('chat-input').value.trim();
+      if (msg) {
+        document.getElementById('chat-input').value = '';
+      }
+    });
+
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('chat-send').click();
+      }
+    });
+  </script>
+</body>
+</html>
