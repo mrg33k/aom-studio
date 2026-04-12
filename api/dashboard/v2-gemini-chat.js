@@ -918,7 +918,7 @@ export default async function handler(req, res) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: `You are a quick-response assistant. The user sent this message to a Claude Code terminal session that will take 10-30 seconds to fully process. Give a brief, natural 1-sentence acknowledgment that shows you understood what they asked. If it's a simple factual question you can answer immediately, answer it directly. Do not mention Claude or the terminal. Just be natural and brief.\n\nUser message: ${message}` }] }],
-            generationConfig: { maxOutputTokens: 100 },
+            generationConfig: { maxOutputTokens: 200 },
           }),
         }
       );
@@ -934,7 +934,9 @@ export default async function handler(req, res) {
         })});
       }
     } catch (e) { /* Flash ack is best-effort, don't block */ }
-    return res.json({ reply: quickReply, functionCalls: [], agent: 'studio', relay: true });
+    // Return null reply -- Flash ack is already posted directly to Supabase above.
+    // Returning a reply here would cause the frontend to save a duplicate.
+    return res.json({ reply: null, functionCalls: [], agent: 'studio', relay: true });
   }
 
   const clientId = (client_id && String(client_id).trim()) || 'aom';
