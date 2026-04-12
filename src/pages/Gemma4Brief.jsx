@@ -190,13 +190,13 @@ export default function Gemma4Brief() {
               <span className="text-[#E85D26]">for the Corner Pipeline</span>
             </h1>
             <p className="text-xl text-[#57534E] max-w-3xl leading-relaxed mb-8">
-              How Google's free 27B model can reduce Gemini Flash costs by 70%+ while maintaining quality across chat, planning, and QA stages.
+              How Google's 4-model family (E2B to 31B) can reduce Gemini Flash costs by 70%+ while maintaining quality across chat, planning, and QA stages.
             </p>
             <div className="flex flex-wrap gap-4 mb-12">
-              <div className="px-4 py-2 bg-[#F5F0EB] rounded-full font-mono text-sm text-[#0C0C0C]">27B Parameters</div>
+              <div className="px-4 py-2 bg-[#F5F0EB] rounded-full font-mono text-sm text-[#0C0C0C]">4-Model Family</div>
               <div className="px-4 py-2 bg-[#F5F0EB] rounded-full font-mono text-sm text-[#0C0C0C]">Apache 2.0 License</div>
               <div className="px-4 py-2 bg-[#F5F0EB] rounded-full font-mono text-sm text-[#0C0C0C]">128K Context</div>
-              <div className="px-4 py-2 bg-[#F5F0EB] rounded-full font-mono text-sm text-[#0C0C0C]">June 2025 Release</div>
+              <div className="px-4 py-2 bg-[#F5F0EB] rounded-full font-mono text-sm text-[#0C0C0C]">April 2, 2026 Release</div>
             </div>
           </motion.div>
 
@@ -213,7 +213,7 @@ export default function Gemma4Brief() {
                 <Cpu className="text-[#3B82F6]" size={24} />
               </div>
               <h3 className="font-headline text-xl font-bold text-[#0C0C0C] mb-2">On-Device Potential</h3>
-              <p className="text-[#57534E]">27B model quantized to 4-bit runs on M3 Mac Studio, enabling zero-cost inference for local users.</p>
+              <p className="text-[#57534E]">E2B model runs on Raspberry Pi 5 with &lt;1.5GB RAM, enabling zero-cost inference on edge devices.</p>
             </div>
             <div className="p-6 bg-[#FAFAF9] rounded-2xl border border-[#E7E5E4]">
               <div className="w-12 h-12 rounded-lg bg-[#E85D26]/10 flex items-center justify-center mb-4">
@@ -235,7 +235,7 @@ export default function Gemma4Brief() {
             <div className="grid md:grid-cols-2 gap-12">
               <div>
                 <p className="text-lg text-[#57534E] mb-6 leading-relaxed">
-                  Gemma 4 is Google's latest open-weight language model, released in June 2025. At 27 billion parameters, it represents a sweet spot in the performance/cost curve—large enough for sophisticated reasoning but small enough to run efficiently on consumer hardware.
+                  Gemma 4 is Google's latest open-weight language model family, released on April 2, 2026. It consists of four variants (E2B, E4B, 26B MoE, 31B Dense) covering the full spectrum from edge devices to high-performance servers—each optimized for specific hardware and use cases.
                 </p>
                 <p className="text-lg text-[#57534E] mb-6 leading-relaxed">
                   Unlike Gemini which is only available via API, Gemma 4 weights are freely downloadable under Apache 2.0 license. This means zero per-token costs, complete data privacy, and the ability to run inference on-premises or in your own cloud.
@@ -245,7 +245,7 @@ export default function Gemma4Brief() {
                   <ul className="space-y-3">
                     <li className="flex items-start">
                       <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                      <span className="text-[#57534E]"><strong>27B parameters</strong> – Optimized architecture balances capability with efficiency</span>
+                      <span className="text-[#57534E]"><strong>4-model family</strong> – E2B (2B), E4B (4B), 26B MoE, 31B Dense variants for different use cases</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
@@ -253,11 +253,11 @@ export default function Gemma4Brief() {
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                      <span className="text-[#57534E]"><strong>Tool use capability</strong> – Basic function calling for structured outputs</span>
+                      <span className="text-[#57534E]"><strong>Enhanced function calling</strong> – Improved tool use for complex automation tasks</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                      <span className="text-[#57534E]"><strong>Multilingual</strong> – Strong performance across 100+ languages</span>
+                      <span className="text-[#57534E]"><strong>140+ languages</strong> – Expanded multilingual support including audio/video modalities</span>
                     </li>
                   </ul>
                 </div>
