@@ -108,6 +108,36 @@ async function supabasePatchTask(taskId, body) {
   return resp.json();
 }
 
+async function postInvestigationTrigger(taskId, taskRow) {
+  if (!taskId) return;
+  try {
+    const crypto = await import('crypto');
+    const logSourceUrl = `/api/dashboard/v2-task-list?taskId=${encodeURIComponent(taskId)}&include=thread`;
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        id: crypto.randomUUID(),
+        agent: (taskRow && taskRow.agent_identity) || 'system',
+        client_id: (taskRow && taskRow.client_id) || 'aom',
+        event_type: 'investigation_trigger',
+        payload: {
+          task_id: String(taskId),
+          log_source_url: logSourceUrl,
+        },
+        timestamp: new Date().toISOString(),
+      }),
+    });
+  } catch (err) {
+    console.error('[v2-task-update] Failed to emit investigation_trigger (non-fatal):', err.message);
+  }
+}
+
 function hasField(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
@@ -212,6 +242,10 @@ export default async function handler(req, res) {
 
     const result = await supabasePatchTask(taskId, updateBody);
     const updated = Array.isArray(result) ? result[0] : result;
+
+    if (updateBody.status === 'failed' && current.status !== 'failed') {
+      postInvestigationTrigger(taskId, updated || current).catch(() => {});
+    }
 
     // Fire-and-forget: supersede failed duplicates when a task completes
     if (updateBody.status === 'done') {
