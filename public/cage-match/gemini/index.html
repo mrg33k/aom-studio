@@ -10,9 +10,27 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Mobile menu backdrop -->
+  <div class="sidebar-backdrop"></div>
+
   <div class="app-container">
+    <!-- Mobile menu hamburger button -->
+    <button class="mobile-menu-btn" aria-label="Open menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
     <!-- SIDEBAR: Navigation & Agents -->
     <aside class="sidebar">
+      <button class="mobile-menu-close" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
       <div class="sidebar-header">
         <div class="logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -432,6 +450,35 @@
   </div>
 
   <script>
+    // Mobile menu toggle
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const mobileMenuClose = document.querySelector('.mobile-menu-close');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarBackdrop = document.querySelector('.sidebar-backdrop');
+
+    function toggleMobileMenu() {
+      sidebar.classList.toggle('mobile-open');
+      sidebarBackdrop.classList.toggle('mobile-open');
+    }
+
+    function closeMobileMenu() {
+      sidebar.classList.remove('mobile-open');
+      sidebarBackdrop.classList.remove('mobile-open');
+    }
+
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    mobileMenuClose.addEventListener('click', closeMobileMenu);
+    sidebarBackdrop.addEventListener('click', closeMobileMenu);
+
+    // Close menu when agent is selected on mobile
+    document.querySelectorAll('.agent-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth < 1024) {
+          closeMobileMenu();
+        }
+      });
+    });
+
     // Simple interactions for demonstration
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -444,12 +491,12 @@
       item.addEventListener('click', (e) => {
         document.querySelectorAll('.agent-item').forEach(i => i.classList.remove('active'));
         e.currentTarget.classList.add('active');
-        
+
         // Update chat header
         const name = e.currentTarget.querySelector('.agent-name').innerText;
         const color = e.currentTarget.querySelector('.agent-avatar').style.getPropertyValue('--agent-color');
         const initial = e.currentTarget.querySelector('.agent-avatar').innerText;
-        
+
         document.querySelector('.chat-target-name').innerText = name;
         document.querySelector('.chat-avatar').innerText = initial;
         document.querySelector('.chat-avatar').style.background = color;
