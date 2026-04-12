@@ -43,6 +43,8 @@ import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
 import AI from './pages/AI.jsx'
 import Gemma4Brief from './pages/Gemma4Brief.jsx'
+import Gemma4BriefGemini from './pages/Gemma4BriefGemini.jsx'
+import Gemma4BriefDeepseek from './pages/Gemma4BriefDeepseek.jsx'
 import AmbitionPerformance from './pages/AmbitionPerformance.jsx'
 import AmbitionPerformanceV2 from './pages/AmbitionPerformanceV2.jsx'
 import Corner from './pages/Corner.jsx'
@@ -253,6 +255,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/case-study" element={<CaseStudy />} />
           <Route path="/ai" element={<AI />} />
           <Route path="/ai/gemma-4" element={<Gemma4Brief />} />
+          <Route path="/ai/gemma-4/gemini" element={<Gemma4BriefGemini />} />
+          <Route path="/ai/gemma-4/deepseek" element={<Gemma4BriefDeepseek />} />
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
           <Route path="/skills" element={<Skills />} />
