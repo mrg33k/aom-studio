@@ -61,6 +61,17 @@ export default function SiteFooter({ variant = 'compact' }) {
           <p className="font-mono text-xs text-[#8A847C]/60 uppercase tracking-[0.15em]">
             &copy; {new Date().getFullYear()} Ahead of Market (AOM)
           </p>
+          <p
+            style={{
+              paddingTop: '20px',
+              paddingBottom: '20px',
+              fontSize: '12px',
+              color: '#666',
+              textAlign: 'center',
+            }}
+          >
+            (c) 2026 Ahead of Market. All rights reserved.
+          </p>
         </div>
       )}
     </footer>
