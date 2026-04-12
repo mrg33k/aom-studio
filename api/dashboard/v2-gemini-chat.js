@@ -867,6 +867,11 @@ const PROJECT_TOOL_NAMES = new Set([
 ]);
 const PROJECT_TOOLS = [{ functionDeclarations: TOOLS[0].functionDeclarations.filter(t => PROJECT_TOOL_NAMES.has(t.name)) }];
 
+// Add Google Search grounding to tools (agent and home chats only)
+function addSearchGrounding(tools) {
+  return [...tools, { google_search_retrieval: {} }];
+}
+
 async function callGemini(contents, systemInstruction = SYSTEM_INSTRUCTION, tools = TOOLS, model = 'gemini-2.5-flash') {
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
@@ -1113,7 +1118,9 @@ ${PROJECT_BASE_INSTRUCTION}`;
     // Home base (aom-website) is a project chat but gets full power.
     const isHomeChat = projectSlug === 'aom-website';
     const isAgentChat = !projectSlug || projectSlug === 'aom';
-    const activeTools = (isAgentChat || isHomeChat) ? TOOLS : PROJECT_TOOLS;
+    const baseTools = (isAgentChat || isHomeChat) ? TOOLS : PROJECT_TOOLS;
+    // Add Google Search grounding for agent and home chats
+    const activeTools = (isAgentChat || isHomeChat) ? addSearchGrounding(baseTools) : baseTools;
     const activeModel = (isAgentChat || isHomeChat) ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
