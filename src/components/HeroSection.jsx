@@ -171,6 +171,11 @@ export default function HeroSection({ openBrief }) {
           </h1>
         </motion.div>
 
+        {/* Trusted by founders */}
+        <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '8px', fontWeight: '500' }}>
+          Trusted by founders.
+        </div>
+
         {/* Subhead */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
