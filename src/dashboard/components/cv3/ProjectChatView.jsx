@@ -41,6 +41,7 @@ export default function ProjectChatView(ctx) {
     voiceMinimized, handleReturnToCall,
     handleChatSearch, voiceMsgs, displayName,
     filesOpen, setFilesOpen,
+    prefillMessage, setPrefillMessage,
   } = ctx
   const projColor = selectedProject?.color || '#6B8AB0'
   
@@ -111,6 +112,15 @@ export default function ProjectChatView(ctx) {
       setFilesLoading(false)
     }
   }, [filesOpen, selectedProject?.slug, uploading])
+
+  useEffect(() => {
+    if (!prefillMessage || !selectedProject) return
+    setInput(prefillMessage)
+    setPrefillMessage(null)
+    requestAnimationFrame(() => {
+      inputRef?.current?.focus()
+    })
+  }, [prefillMessage, selectedProject, setInput, setPrefillMessage, inputRef])
 
   return (
       <div style={{

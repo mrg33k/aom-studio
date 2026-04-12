@@ -89,6 +89,7 @@ export default function CornerV3() {
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
+  const [prefillMessage, setPrefillMessage] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
   const [inputBarSending, setInputBarSending] = useState(false)
   const [inputBarFocused, setInputBarFocused] = useState(false)
@@ -473,8 +474,8 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} addOptimisticTask={addOptimisticTask} showToast={showToast} currentUser={currentUser} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} />}
+        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} addOptimisticTask={addOptimisticTask} showToast={showToast} currentUser={currentUser} setActiveTab={setTab} setActiveConversation={handleSelectProject} setPrefillMessage={setPrefillMessage} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} prefillMessage={prefillMessage} setPrefillMessage={setPrefillMessage} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}

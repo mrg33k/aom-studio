@@ -70,7 +70,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [] }) {
+export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [], prefillMessage, setPrefillMessage }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
@@ -1365,6 +1365,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     agentVoices, setAgentVoices, currentChatKey,
     // Project
     inlineProject, setInlineProject, selectedProject,
+    prefillMessage, setPrefillMessage,
     // User
     userProfiles, displayName, userIdentity, lastLoginText,
     isMobile, greetingIdx, GREETINGS, VOICE_OPTIONS,

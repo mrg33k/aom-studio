@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase.js'
 import { createTaskWithRex } from '../../lib/rexTaskClient.js'
 import { useProjects } from '../../hooks/useProjects'
 
-export default function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks, addOptimisticTask, showToast, currentUser }) {
+export default function TasksPanel({ queued, rightNow, waiting, done, worldId, refreshTasks, addOptimisticTask, showToast, currentUser, setActiveTab, setActiveConversation, setPrefillMessage }) {
   const [searchQuery,   setSearchQuery]   = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
@@ -139,6 +139,19 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const active    = [...(rightNow || []), ...(queued || [])]
   const completed = done || []
   const waitingTasks = waiting || []
+
+  const getTaskProject = useCallback((task) => {
+    const projectPath = task?.project_path || task?.projectPath || ''
+    const normalizedPath = String(projectPath || '').toLowerCase()
+    const projectSlug = task?.project_slug || task?.projectSlug || (normalizedPath ? normalizedPath.split('/').filter(Boolean).pop() : '')
+    return taskProjects.find((project) => {
+      const slug = String(project?.slug || '').toLowerCase()
+      const name = String(project?.name || '').toLowerCase()
+      return (projectSlug && slug === String(projectSlug).toLowerCase())
+        || (normalizedPath && slug && normalizedPath.endsWith(`/${slug}`))
+        || (normalizedPath && name && normalizedPath.includes(name))
+    }) || null
+  }, [taskProjects])
 
   // Reply input state for waiting tasks
   const [waitingReply, setWaitingReply] = useState({})
@@ -653,10 +666,17 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.stopPropagation()
-                          await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'requeue', taskId: t.id }) })
-                          refreshTasks()
+                          const prompt = typeof t.result === 'string' ? t.result.trim() : ''
+                          const project = getTaskProject(t)
+                          if (!project || !prompt) {
+                            if (showToast) showToast('No linked project or prompt found for this failed task.')
+                            return
+                          }
+                          setPrefillMessage(prompt)
+                          setActiveConversation(project)
+                          setActiveTab('chat')
                         }}
                         style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                       >
