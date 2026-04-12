@@ -1227,6 +1227,12 @@ ${PROJECT_BASE_INSTRUCTION}`;
             if (projectSlug && !argsWithAgent.project) argsWithAgent.project = projectSlug;
             // Pass project slug through so pipeline gets it as project_path
             if (args.project && !argsWithAgent.project) argsWithAgent.project = args.project;
+            // Auto-detect EA repo targets: if task mentions EA infrastructure files, route to aom-internal
+            const taskText = `${argsWithAgent.title || ''} ${argsWithAgent.description || ''}`.toLowerCase();
+            const eaPatterns = ['rag-server', 'rag_server', 'aom-ea', 'aom_ea', 'v2-task-runner', 'v2-planner', 'v2-deep-planner', 'v2-notify', 'v2-cost-tracker', 'openai-builder', 'deepseek-builder', 'scripts/rag', 'scripts/v2-', 'scripts/spawn', 'scripts/relay', 'runner-watcher'];
+            if (isOwner && eaPatterns.some(p => taskText.includes(p))) {
+              argsWithAgent.project = 'aom-internal';
+            }
             // Shared project tasks keep their shared: client_id so both worlds can see them.
             result = await createTask(argsWithAgent, clientId, { isOwner, userId: resolvedUserId });
           }
