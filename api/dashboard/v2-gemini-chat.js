@@ -1119,8 +1119,10 @@ ${PROJECT_BASE_INSTRUCTION}`;
     const isHomeChat = projectSlug === 'aom-website';
     const isAgentChat = !projectSlug || projectSlug === 'aom';
     const baseTools = (isAgentChat || isHomeChat) ? TOOLS : PROJECT_TOOLS;
-    // Add Google Search grounding for agent and home chats
-    const activeTools = (isAgentChat || isHomeChat) ? addSearchGrounding(baseTools) : baseTools;
+    // NOTE: google_search CANNOT be combined with functionDeclarations in the same request.
+    // Search grounding must be done via a separate tool (web_fetch in the pipeline, or a
+    // dedicated search-only call). Do NOT add google_search to the tools array here.
+    const activeTools = baseTools;
     const activeModel = (isAgentChat || isHomeChat) ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
