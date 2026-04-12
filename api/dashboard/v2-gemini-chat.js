@@ -903,16 +903,38 @@ export default async function handler(req, res) {
   const handlerStart = Date.now();
   console.log(`[v2-gemini-chat] START agent=${agent||'none'} project=${project_slug||'none'} msg=${(message||'').slice(0,80)}`);
 
-  // Studio agent: messages are handled by the tmux relay, not Gemini.
-  // Save the user message to Supabase and return immediately.
+  // Studio/Terminal agent: messages are handled by the tmux relay, not Gemini.
+  // The frontend already saves the user message via supabase-messages.js.
+  // We just need to return quickly so the frontend doesn't wait for Gemini.
+  // Optionally: call Gemini Flash for an instant acknowledgment while Claude works.
   if (agent === 'studio') {
-    const crypto = await import('crypto');
-    await sbFetch('/rest/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({
-      id: crypto.randomUUID(), agent: 'studio', role: 'user', text: message,
-      source: 'corner-dashboard', client_id: client_id || 'aom',
-      user_id: user_id || null, user_name: user_name || null,
-    })});
-    return res.json({ reply: null, functionCalls: [], agent: 'studio', relay: true });
+    // Quick Flash response for real-time feel while Claude Code processes in background
+    let quickReply = null;
+    try {
+      const flashResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: `You are a quick-response assistant. The user sent this message to a Claude Code terminal session that will take 10-30 seconds to fully process. Give a brief, natural 1-sentence acknowledgment that shows you understood what they asked. If it's a simple factual question you can answer immediately, answer it directly. Do not mention Claude or the terminal. Just be natural and brief.\n\nUser message: ${message}` }] }],
+            generationConfig: { maxOutputTokens: 100 },
+          }),
+        }
+      );
+      const flashData = await flashResp.json();
+      const flashText = flashData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (flashText) {
+        quickReply = flashText;
+        // Post the quick reply to Supabase so it shows in the chat immediately
+        const crypto = await import('crypto');
+        await sbFetch('/rest/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({
+          id: crypto.randomUUID(), agent: 'studio', role: 'agent', text: quickReply,
+          source: 'flash-ack', client_id: client_id || 'aom',
+        })});
+      }
+    } catch (e) { /* Flash ack is best-effort, don't block */ }
+    return res.json({ reply: quickReply, functionCalls: [], agent: 'studio', relay: true });
   }
 
   const clientId = (client_id && String(client_id).trim()) || 'aom';
