@@ -178,14 +178,6 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const filteredFailed    = filterTasks(completed.filter(t => t.status === 'failed' && !isDismissed(t)))
   const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed' && !isDismissed(t)))
 
-  // Weekly stats derived from completed tasks
-  const withQA    = completed.filter(t => t.qa_score || t.qaScore)
-  const avgQA     = withQA.length > 0
-    ? (withQA.reduce((s, t) => s + Number(t.qa_score || t.qaScore || 0), 0) / withQA.length).toFixed(1)
-    : null
-  const passCount = withQA.filter(t => Number(t.qa_score || t.qaScore || 0) >= 8).length
-  const passRate  = withQA.length > 0 ? Math.round((passCount / withQA.length) * 100) : null
-
   // Per-day task counts for M-S bar chart
   const now         = new Date()
   const dayOfWeek   = now.getDay()
@@ -207,6 +199,21 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   }
   const maxDailyCount = Math.max(...dailyCounts, 1)
   const weekTotal     = dailyCounts.reduce((s, c) => s + c, 0)
+
+  // Weekly stats derived from completed tasks
+  const weekCompleted = completed.filter(t => {
+    const ts = t.completed_at || t.updated_at || t.created_at
+    if (!ts) return false
+    return new Date(ts) >= weekStart
+  })
+  const withQA    = weekCompleted.filter(t => t.qa_score || t.qaScore)
+  const avgQA     = withQA.length > 0
+    ? (withQA.reduce((s, t) => s + Number(t.qa_score || t.qaScore || 0), 0) / withQA.length).toFixed(1)
+    : null
+  const passCount = withQA.filter(t => Number(t.qa_score || t.qaScore || 0) >= 8).length
+  // Denominator = ALL completed this week. Tasks without QA score = unknown, not pass.
+  const passRate  = weekCompleted.length > 0 ? Math.round((passCount / weekCompleted.length) * 100) : null
+  const qaRatio   = `${withQA.length}/${weekCompleted.length}`
   const DAY_LABELS    = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
   const MIN_BAR_H     = 2
   const MAX_BAR_H     = 19
@@ -514,6 +521,10 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
             <div>
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
               <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Avg QA</div>
+            </div>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{qaRatio}</div>
+              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>QAd</div>
             </div>
           </div>
         </div>
