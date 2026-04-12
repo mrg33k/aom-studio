@@ -22,7 +22,7 @@ export default function ProjectChatView(ctx) {
     sending, input, setInput, inputRef, fileInputRef,
     messagesEndRef, messagesRef, loadingMsgs, uploading,
     isMobile, chatInputFocused, setChatInputFocused,
-    handleProjectSend, handleProjectKeyDown, handleFileSelection,
+    handleProjectSend, handleProjectKeyDown, handleFileSelection, sendProjectText,
     voiceChatRef, voiceStatus, setVoiceStatus,
     voiceVolume, setVoiceVolume, voiceTranscriptText, setVoiceTranscriptText,
     voiceMuted, setVoiceMuted, setIsVoiceActive,
@@ -688,7 +688,14 @@ export default function ProjectChatView(ctx) {
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={handleProjectKeyDown}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  if (!input.trim() || sending) return
+                  sendProjectText(input)
+                  setInput('')
+                }
+              }}
               onFocus={() => setChatInputFocused(true)}
               onBlur={() => setChatInputFocused(false)}
               placeholder={`Message ${selectedProject?.name || 'project'}...`}
@@ -762,7 +769,11 @@ export default function ProjectChatView(ctx) {
             {input.trim() && (
               <button
                 title="Send"
-                onClick={handleProjectSend}
+                onClick={() => {
+                  if (!input.trim() || sending) return
+                  sendProjectText(input)
+                  setInput('')
+                }}
                 disabled={sending}
                 style={{
                   width: 42, height: 42, borderRadius: '50%',
