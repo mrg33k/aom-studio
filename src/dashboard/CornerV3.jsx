@@ -30,7 +30,7 @@ import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
 import { formatRelativeTime } from './timeUtils.js'
 
-
+const BUILD_TIMESTAMP = new Date().getFullYear().toString() + '-' + (new Date().getMonth() + 1).toString().padStart(2, '0') + '-' + new Date().getDate().toString().padStart(2, '0') + ' ' + new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0')
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -722,6 +722,18 @@ export default function CornerV3() {
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
 
+      <div style={{
+        position: 'fixed',
+        right: 10,
+        bottom: 10,
+        zIndex: 100,
+        fontSize: '0.75rem',
+        color: 'rgba(255,255,255,0.4)',
+        fontFamily: "'JetBrains Mono', monospace",
+        pointerEvents: 'none',
+      }}>
+        Build: {BUILD_TIMESTAMP}
+      </div>
 
     </div>
   )
