@@ -47,12 +47,55 @@ export default function ProjectChatView(ctx) {
   // Project files state
   const [projectFiles, setProjectFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
+
+  const formatFileSize = (bytes) => {
+    const value = Number(bytes)
+    if (!Number.isFinite(value) || value <= 0) return '—'
+    if (value < 1024) return `${value} B`
+    if (value < 1024 * 1024) return `${(value / 1024).toFixed(value >= 1024 * 100 ? 0 : 1)} KB`
+    if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(value >= 1024 * 1024 * 100 ? 0 : 1)} MB`
+    return `${(value / (1024 * 1024 * 1024)).toFixed(1)} GB`
+  }
+
+  const getFileMeta = (file) => {
+    const rawName = file?.filename || file?.name || file?.path || 'Unnamed file'
+    const extension = rawName.includes('.') ? rawName.split('.').pop().toLowerCase() : ''
+    const mimeType = file?.mime_type || file?.file_mime_type || ''
+    const size = file?.size_bytes ?? file?.size ?? file?.metadata?.size ?? file?.file_size
+
+    if (mimeType.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'heic'].includes(extension)) {
+      return { name: rawName, size, icon: '🖼️' }
+    }
+    if (mimeType.includes('pdf') || extension === 'pdf') {
+      return { name: rawName, size, icon: '📕' }
+    }
+    if (mimeType.startsWith('video/') || ['mp4', 'mov', 'avi', 'webm', 'm4v'].includes(extension)) {
+      return { name: rawName, size, icon: '🎬' }
+    }
+    if (mimeType.startsWith('audio/') || ['mp3', 'wav', 'm4a', 'aac'].includes(extension)) {
+      return { name: rawName, size, icon: '🎵' }
+    }
+    if (['fig', 'sketch', 'xd', 'psd', 'ai'].includes(extension)) {
+      return { name: rawName, size, icon: '🎨' }
+    }
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
+      return { name: rawName, size, icon: '🗜️' }
+    }
+    if (['doc', 'docx', 'txt', 'md', 'rtf'].includes(extension)) {
+      return { name: rawName, size, icon: '📝' }
+    }
+    if (['xls', 'xlsx', 'csv'].includes(extension)) {
+      return { name: rawName, size, icon: '📊' }
+    }
+
+    return { name: rawName, size, icon: '📄' }
+  }
   
   // Fetch project files when files panel opens
   useEffect(() => {
     if (filesOpen && selectedProject?.slug) {
       setFilesLoading(true)
-      fetch(`/api/dashboard/files?client=${selectedProject.slug}`)
+      fetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(selectedProject.slug)}`)
         .then(res => res.json())
         .then(data => {
           setProjectFiles(data.files || [])
@@ -65,8 +108,9 @@ export default function ProjectChatView(ctx) {
         })
     } else {
       setProjectFiles([])
+      setFilesLoading(false)
     }
-  }, [filesOpen, selectedProject?.slug])
+  }, [filesOpen, selectedProject?.slug, uploading])
 
   return (
       <div style={{
@@ -214,29 +258,35 @@ export default function ProjectChatView(ctx) {
               Project Files
             </div>
             {filesLoading ? (
-              <div style={{ fontSize: 13, color: C.muted, padding: '8px 0' }}>Loading files...</div>
+              <div style={{ fontSize: 13, color: C.muted, padding: '18px 0', textAlign: 'center' }}>Loading files...</div>
             ) : projectFiles.length === 0 ? (
-              <div style={{ fontSize: 13, color: C.muted, padding: '8px 0' }}>No files found.</div>
+              <div style={{ fontSize: 13, color: C.muted, padding: '18px 0', textAlign: 'center' }}>No project files</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {projectFiles.map((file, i) => (
-                  <div
-                    key={file.id || i}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                    <span style={{ fontSize: 12, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                      {file.filename || file.name || 'Unnamed file'}
-                    </span>
-                  </div>
-                ))}
+                {projectFiles.map((file, i) => {
+                  const fileMeta = getFileMeta(file)
+                  return (
+                    <div
+                      key={file.id || file.path || fileMeta.name || i}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 10px', borderRadius: 8,
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <div style={{ width: 18, textAlign: 'center', flexShrink: 0, fontSize: 13, lineHeight: 1 }}>
+                        {fileMeta.icon}
+                      </div>
+                      <span style={{ fontSize: 12, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        {fileMeta.name}
+                      </span>
+                      <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>
+                        {formatFileSize(fileMeta.size)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
