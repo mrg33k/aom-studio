@@ -39,6 +39,9 @@ export default function ThreadView(ctx) {
     allTasks,
   } = ctx
 
+  const selectedAgentRecord = agents?.find((agent) => String(agent?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
+  const selectedAgentPrimarySkill = selectedAgentRecord?.primary_skill || selectedAgent?.primary_skill || 'AI Agent'
+
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -91,7 +94,18 @@ export default function ThreadView(ctx) {
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             display: 'block',
           }}>{selectedAgent.name}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+          <span style={{
+            fontSize: 11,
+            color: C.muted,
+            fontStyle: 'italic',
+            lineHeight: 1.3,
+            display: 'block',
+            marginTop: 2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{selectedAgentPrimarySkill}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
             <span style={{
               backgroundColor: 'green', borderRadius: '50%',
               width: 8, height: 8, display: 'inline-block', flexShrink: 0, verticalAlign: 'middle',
