@@ -70,28 +70,8 @@ function fmtArea(n) {
   return n.toFixed(1) + ' mi²';
 }
 
-function exportCSV(rows) {
-  const HEADERS = ['Name','State','Type','Population','Land Area (sqmi)','Latitude','Longitude','Status'];
-  const lines = [
-    HEADERS.join(','),
-    ...rows.map(r => [
-      `"${r.name}"`,
-      r.state_abbr,
-      r.type,
-      r.population_2020 ?? '',
-      r.land_area_sqmi?.toFixed(2) ?? '',
-      r.latitude ?? '',
-      r.longitude ?? '',
-      r.status ?? '',
-    ].join(','))
-  ];
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `arsenal-municipalities-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+function downloadTownManagersCsv() {
+  window.location.href = '/api/town-managers/export';
 }
 
 // ─── Type badge ───────────────────────────────────────────────────────────────
@@ -626,7 +606,7 @@ export default function MunicipalDirectory() {
               Stats
             </button>
             <button
-              onClick={() => exportCSV(filtered)}
+              onClick={downloadTownManagersCsv}
               style={{
                 background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.3)',
                 color: '#FDBA74', borderRadius: 6, padding: '7px 14px',
@@ -634,12 +614,7 @@ export default function MunicipalDirectory() {
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <span>↓</span> Export CSV
-              {filtered.length < data.length && (
-                <span style={{ color: V.dim, fontWeight: 400 }}>
-                  ({filtered.length.toLocaleString()})
-                </span>
-              )}
+              <span>↓</span> Download CSV
             </button>
           </div>
         </div>
