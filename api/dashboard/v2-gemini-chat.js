@@ -903,6 +903,18 @@ export default async function handler(req, res) {
   const handlerStart = Date.now();
   console.log(`[v2-gemini-chat] START agent=${agent||'none'} project=${project_slug||'none'} msg=${(message||'').slice(0,80)}`);
 
+  // Studio agent: messages are handled by the tmux relay, not Gemini.
+  // Save the user message to Supabase and return immediately.
+  if (agent === 'studio') {
+    const crypto = await import('crypto');
+    await sbFetch('/rest/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({
+      id: crypto.randomUUID(), agent: 'studio', role: 'user', text: message,
+      source: 'corner-dashboard', client_id: client_id || 'aom',
+      user_id: user_id || null, user_name: user_name || null,
+    })});
+    return res.json({ reply: null, functionCalls: [], agent: 'studio', relay: true });
+  }
+
   const clientId = (client_id && String(client_id).trim()) || 'aom';
   const agentSlug = (agent && String(agent).trim()) || null;
   const projectSlug = (project_slug && String(project_slug).trim()) || null;
