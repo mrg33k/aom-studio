@@ -379,18 +379,21 @@ export default function CornerV3() {
     }}>
 
       {/* ── NAV BAR ────────────────────────────────────────────────────────── */}
-      <nav style={{
-        width: '100%',
-        flexShrink: 0,
-        background: C.bg,
-        borderBottom: '1px solid ' + C.border,
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-      }}>
+      <nav
+        aria-label="Main navigation"
+        style={{
+          width: '100%',
+          flexShrink: 0,
+          background: C.bg,
+          borderBottom: '1px solid ' + C.border,
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
 
         {/* Row 1: Logo + World (left) | Bell + Avatar (right) */}
         <div style={{
