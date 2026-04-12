@@ -48,6 +48,7 @@ export default function SiteNav({ transparent = false }) {
           {/* Logo */}
           <a
             href="/"
+            title="Ahead of Market - We Make Companies Impossible to Ignore"
             className="text-2xl font-headline font-extrabold tracking-[-0.03em] text-[#F0ECE6] inline-flex items-center min-h-[44px] min-w-[44px]"
           >
             AOM<span className="text-[#E85D26]">.</span>
