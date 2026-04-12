@@ -104,6 +104,7 @@ export default function CornerV3() {
   const prevDoneIdsRef = useRef(null)
 
   useEffect(() => {
+    console.log('CornerV3 mounted')
     const handleResize = () => setIsMobile(window.innerWidth <= 480)
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
