@@ -68,6 +68,9 @@ export default function SiteNav({ transparent = false }) {
               <Phone size={14} />
               Talk to Us
             </button>
+            <span style={{ fontSize: 10, color: '#555', marginLeft: 8 }}>
+              v2.1
+            </span>
           </div>
 
           {/* Mobile */}
