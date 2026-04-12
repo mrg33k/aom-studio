@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, Phone } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 /**
  * SiteNav -- single source of truth for all page navigation.
@@ -22,6 +23,8 @@ export default function SiteNav({ transparent = false }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
+  const location = useLocation();
+  const showAiBadge = location.pathname === '/ai';
 
   useEffect(() => {
     if (!transparent) return;
@@ -61,6 +64,20 @@ export default function SiteNav({ transparent = false }) {
                 {link.label}
               </a>
             ))}
+            {showAiBadge && (
+              <span
+                style={{
+                  background: '#10b981',
+                  color: '#fff',
+                  fontSize: 10,
+                  padding: '2px 6px',
+                  borderRadius: 8,
+                  marginLeft: 6,
+                }}
+              >
+                AI
+              </span>
+            )}
             <button
               onClick={() => setPhoneOpen(true)}
               className="flex items-center gap-2 px-6 py-3 min-h-[44px] bg-white/5 text-[#8A847C] font-body font-bold text-base uppercase tracking-[0.15em] hover:text-[#F0ECE6] border border-white/10 hover:border-white/20 transition-all"
