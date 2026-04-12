@@ -13,9 +13,9 @@ function useSEO() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    setMeta('description', 'Technical brief on Google\'s Gemma 4 27B model: capabilities, cost analysis, and implementation strategy for reducing AI pipeline costs in Corner.');
+    setMeta('description', 'Technical brief on Google\'s Gemma 4 model family (E2B, E4B, 26B MoE, 31B Dense): how Corner can replace paid AI models with free self-hosted inference.');
     setMeta('og:title', 'Gemma 4: Open-Weight AI for Corner Pipeline', true);
-    setMeta('og:description', 'How AOM can use Google\'s free 27B model to reduce Gemini Flash costs by 70%+ while maintaining quality.', true);
+    setMeta('og:description', 'Corner already runs DeepSeek for plan/build/QA. Gemma 4 could eliminate the remaining paid models entirely.', true);
     setMeta('og:type', 'article', true);
     setMeta('og:url', 'https://aheadofmarket.com/ai/gemma-4', true);
   }, []);
@@ -38,126 +38,126 @@ function OrangeBar() {
 
 const comparisonData = [
   {
-    model: 'Gemma 4 27B',
-    provider: 'Google',
-    release: 'June 2025',
-    license: 'Open-weight (Apache 2.0)',
+    model: 'DeepSeek V3',
+    provider: 'DeepSeek',
+    release: '2025',
+    license: 'Open-weight (MIT)',
     context: '128K',
-    cost: 'Free (self-hosted)',
-    functionCalling: 'Limited (tool use)',
-    speed: 'Fast (27B optimized)',
-    bestFor: ['Planning', 'Code review', 'QA checks', 'Chat routing'],
-    color: '#10B981'
+    cost: '$0.27/1M input, $1.10/1M output',
+    functionCalling: 'Full (multi-round tool use)',
+    speed: 'Fast',
+    bestFor: ['Task planning', 'Code building', 'QA review', 'Web research'],
+    color: '#8B5CF6'
   },
   {
-    model: 'Gemini Flash 2.0',
+    model: 'Gemini Flash 2.5',
     provider: 'Google',
     release: 'Current',
     license: 'Proprietary',
     context: '1M',
     cost: '$0.15/1M tokens',
-    functionCalling: 'Full',
+    functionCalling: 'Full (25+ tools)',
     speed: 'Very Fast',
-    bestFor: ['Complex reasoning', 'Multi-step tasks', 'Final QA', 'Critical builds'],
+    bestFor: ['Chat routing', 'Task classification', 'User conversations', 'Function calling'],
     color: '#3B82F6'
   },
   {
-    model: 'DeepSeek V3',
-    provider: 'DeepSeek',
-    release: '2025',
-    license: 'Open-weight',
+    model: 'Gemma 4 Family',
+    provider: 'Google',
+    release: 'April 2, 2026',
+    license: 'Open-weight (Apache 2.0)',
     context: '128K',
     cost: 'Free (self-hosted)',
-    functionCalling: 'Basic',
-    speed: 'Medium',
-    bestFor: ['Research tasks', 'Document analysis', 'Backup model'],
-    color: '#8B5CF6'
+    functionCalling: 'Full (tool use)',
+    speed: 'E2B to 31B range',
+    bestFor: ['Edge inference', 'On-device chat', 'Cost elimination', 'Data privacy'],
+    color: '#10B981'
   }
 ];
 
 const pipelineStages = [
   {
-    stage: 'Chat Routing',
-    current: 'Gemini Flash 2.0',
-    proposed: 'Gemma 4 27B',
-    costReduction: '85%',
+    stage: 'Chat & Routing',
+    current: 'Gemini Flash 2.5',
+    proposed: 'Gemma 4 E4B',
+    costReduction: '95%',
     risk: 'Low',
-    implementation: 'Simple classifier',
-    notes: 'Basic intent detection, route to appropriate agent'
+    implementation: 'Self-hosted classifier',
+    notes: 'Intent detection, agent routing, function calling (25+ tools). Currently Gemini.'
   },
   {
     stage: 'Task Planning',
-    current: 'Gemini Flash 2.0',
-    proposed: 'Gemma 4 27B',
-    costReduction: '75%',
+    current: 'DeepSeek V3',
+    proposed: 'Gemma 4 26B MoE',
+    costReduction: '100%',
     risk: 'Medium',
     implementation: '5-section planner',
-    notes: 'Validate with small sample before full migration'
+    notes: 'Already migrated from Gemini to DeepSeek. Gemma 4 would eliminate API costs entirely.'
   },
   {
-    stage: 'Code Review/QA',
-    current: 'Gemini Flash 2.0',
-    proposed: 'Gemma 4 27B',
-    costReduction: '70%',
-    risk: 'Low',
-    implementation: 'Criteria checking',
-    notes: 'Binary pass/fail decisions work well with smaller models'
-  },
-  {
-    stage: 'Final Build QA',
-    current: 'Gemini Flash 2.0',
-    proposed: 'Gemini Flash 2.0',
-    costReduction: '0%',
-    risk: 'High',
-    implementation: 'Keep as-is',
-    notes: 'Critical quality gate - maintain highest accuracy'
-  },
-  {
-    stage: 'Research Tasks',
-    current: 'Gemini Flash 2.0',
+    stage: 'Code Building',
+    current: 'DeepSeek V3',
     proposed: 'DeepSeek V3',
-    costReduction: '90%',
-    risk: 'Medium',
-    implementation: 'Fallback model',
-    notes: 'Use for non-critical research, web search summarization'
+    costReduction: '0%',
+    risk: 'N/A',
+    implementation: 'Multi-round tool loop (8 tools)',
+    notes: 'Already on DeepSeek. Reads, edits, searches, builds, fetches web pages. Keep as-is.'
+  },
+  {
+    stage: 'QA Review',
+    current: 'DeepSeek V3',
+    proposed: 'Gemma 4 26B MoE',
+    costReduction: '100%',
+    risk: 'Low',
+    implementation: 'Criteria checking + scoring',
+    notes: 'Already migrated from Gemini to DeepSeek. Structured pass/fail works well with smaller models.'
+  },
+  {
+    stage: 'Task Classification',
+    current: 'Gemini Flash 2.5',
+    proposed: 'Gemma 4 E4B',
+    costReduction: '95%',
+    risk: 'Low',
+    implementation: 'Type + complexity check',
+    notes: 'Simple classification (build/skill/research/clarify). Ideal for small fast model.'
   }
 ];
 
 const recommendations = [
   {
     priority: 'P0',
-    title: 'Implement Gemma 4 for chat routing',
+    title: 'Replace Gemini Flash for classification',
     timeline: '1-2 weeks',
     effort: 'Low',
     impact: 'High',
-    description: 'Replace Gemini Flash for initial message classification and routing. Estimated 85% cost reduction on ~40% of tokens.',
+    description: 'Task type and complexity classification is simple structured output. Gemma 4 E4B can handle this at zero cost, eliminating the last Gemini dependency in the build pipeline.',
     owner: 'Elon'
   },
   {
     priority: 'P1',
-    title: 'Test Gemma 4 for task planning',
+    title: 'Test Gemma 4 26B MoE for QA',
     timeline: '2-3 weeks',
     effort: 'Medium',
     impact: 'High',
-    description: 'Run A/B test with 10% of tasks using Gemma 4 for 5-section planning. Compare quality vs cost savings.',
+    description: 'QA is already on DeepSeek. Run A/B test with Gemma 4 26B MoE on 10% of tasks. If quality holds, eliminates QA API costs entirely.',
     owner: 'Steve'
   },
   {
     priority: 'P2',
-    title: 'Set up model fallback system',
+    title: 'Gemma 4 for chat routing (replace Gemini)',
     timeline: '3-4 weeks',
-    effort: 'Medium',
-    impact: 'Medium',
-    description: 'Build pipeline to automatically fall back to Gemini Flash when Gemma 4 confidence is low.',
+    effort: 'High',
+    impact: 'Transformative',
+    description: 'Chat is the biggest remaining Gemini cost. Requires 25+ function declarations, multi-round tool calling, and conversation context. E4B or 26B MoE with fine-tuning.',
     owner: 'Elon'
   },
   {
     priority: 'P3',
-    title: 'Evaluate on-device inference',
+    title: 'E2B on Raspberry Pi 5 for edge inference',
     timeline: 'Q3 2026',
     effort: 'High',
     impact: 'Transformative',
-    description: 'Test Gemma 4 27B quantization on M3 Mac Studio. Could eliminate 90%+ of API costs for local users.',
+    description: 'Gemma 4 E2B runs with <1.5GB RAM. Could enable zero-cost, zero-latency inference for Corner users running locally. Complete data privacy.',
     owner: 'Patrik'
   }
 ];
@@ -220,7 +220,7 @@ export default function Gemma4Brief() {
                 <Zap className="text-[#E85D26]" size={24} />
               </div>
               <h3 className="font-headline text-xl font-bold text-[#0C0C0C] mb-2">Pipeline Optimization</h3>
-              <p className="text-[#57534E]">Intelligent routing: simple tasks to Gemma 4, complex reasoning to Gemini Flash, research to DeepSeek.</p>
+              <p className="text-[#57534E]">DeepSeek runs plan/build/QA. Gemini handles chat. Gemma 4 could replace both at zero API cost.</p>
             </div>
           </motion.div>
         </div>
@@ -253,7 +253,7 @@ export default function Gemma4Brief() {
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                      <span className="text-[#57534E]"><strong>Enhanced function calling</strong> – Improved tool use for complex automation tasks</span>
+                      <span className="text-[#57534E]"><strong>Full function calling</strong> – Native tool use across all variants, including multi-round conversations</span>
                     </li>
                     <li className="flex items-start">
                       <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
@@ -266,14 +266,14 @@ export default function Gemma4Brief() {
                 <div className="p-6 bg-white rounded-xl border border-[#E7E5E4]">
                   <h4 className="font-headline text-lg font-bold text-[#0C0C0C] mb-4">Why This Matters for Corner</h4>
                   <p className="text-[#57534E] mb-4">
-                    Corner's AI pipeline currently runs entirely on Gemini Flash 2.0. While excellent for quality, this creates significant operational costs that scale linearly with usage.
+                    Corner's pipeline already runs DeepSeek V3 for planning, building, and QA. Gemini Flash 2.5 still handles chat routing, task classification, and user conversations (25+ function tools).
                   </p>
                   <p className="text-[#57534E] mb-6">
-                    Gemma 4 offers a strategic lever: maintain Gemini Flash for critical reasoning tasks where quality is paramount, but offload appropriate subtasks to free/open models.
+                    Gemma 4 could eliminate the remaining Gemini dependency entirely: self-hosted, zero per-token cost, complete data privacy. The 26B MoE variant matches DeepSeek quality at zero API cost.
                   </p>
                   <div className="p-4 bg-[#FEF3C7] rounded-lg border border-[#F59E0B]/20">
                     <p className="text-sm text-[#92400E] font-medium">
-                      <strong>Cost Analysis:</strong> At current usage (~5M tokens/month), migrating 70% of tokens to Gemma 4 would save ~$525/month while maintaining 95%+ quality on migrated tasks.
+                      <strong>Current Pipeline:</strong> 10+ tasks shipped through DeepSeek builder (QA scores 9-10/10). Gemini handles chat only. Gemma 4 could replace both remaining paid models.
                     </p>
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export default function Gemma4Brief() {
               <div>
                 <h4 className="font-headline text-lg font-bold text-[#0C0C0C] mb-2">Strategic Insight</h4>
                 <p className="text-[#57534E]">
-                  No single model dominates. The winning strategy is <strong>intelligent routing</strong>: use Gemma 4 for predictable, structured tasks; Gemini Flash for complex reasoning and critical quality gates; DeepSeek for research-heavy work. This tri-model approach maximizes quality while minimizing costs.
+                  Corner already proved multi-model works: DeepSeek handles planning, building, and QA at ~$0.08/task. Gemini Flash handles chat and classification. Gemma 4 is the next step: <strong>replace both paid models with free self-hosted inference</strong>. The endgame is a fully open-weight pipeline with zero API costs.
                 </p>
               </div>
             </div>
@@ -414,23 +414,23 @@ export default function Gemma4Brief() {
           </motion.div>
 
           <motion.div {...fadeUp(0.3)} className="mt-12 p-6 bg-white rounded-xl border border-[#E7E5E4]">
-            <h4 className="font-headline text-lg font-bold text-[#0C0C0C] mb-4">Total Impact Projection</h4>
+            <h4 className="font-headline text-lg font-bold text-[#0C0C0C] mb-4">Current Pipeline Reality</h4>
             <div className="grid md:grid-cols-4 gap-6">
               <div className="text-center p-4 bg-[#FAFAF9] rounded-lg">
-                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">70-85%</div>
-                <div className="text-sm text-[#78716C]">Cost Reduction</div>
+                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">3/5</div>
+                <div className="text-sm text-[#78716C]">Stages on DeepSeek</div>
               </div>
               <div className="text-center p-4 bg-[#FAFAF9] rounded-lg">
-                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">95%+</div>
-                <div className="text-sm text-[#78716C]">Quality Maintained</div>
+                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">9-10</div>
+                <div className="text-sm text-[#78716C]">Avg QA Score</div>
               </div>
               <div className="text-center p-4 bg-[#FAFAF9] rounded-lg">
-                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">4-6</div>
-                <div className="text-sm text-[#78716C]">Weeks to Implement</div>
+                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">3</div>
+                <div className="text-sm text-[#78716C]">Parallel Runner Lanes</div>
               </div>
               <div className="text-center p-4 bg-[#FAFAF9] rounded-lg">
-                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">$525+/mo</div>
-                <div className="text-sm text-[#78716C]">Monthly Savings</div>
+                <div className="text-3xl font-bold text-[#0C0C0C] mb-2">~$0.08</div>
+                <div className="text-sm text-[#78716C]">Per Task (DeepSeek)</div>
               </div>
             </div>
           </motion.div>
@@ -499,24 +499,24 @@ export default function Gemma4Brief() {
               <div>
                 <h4 className="font-headline text-lg font-bold text-[#0C0C0C] mb-2">On-Device Inference: The Endgame</h4>
                 <p className="text-[#57534E] mb-4">
-                  The most transformative opportunity: running Gemma 4 27B quantized to 4-bit on M3 Mac Studio hardware. This would enable:
+                  Gemma 4 E2B runs on a Raspberry Pi 5 with less than 1.5GB RAM. The 26B MoE variant runs on any modern GPU. This means Corner users could run the entire pipeline locally:
                 </p>
                 <ul className="space-y-2">
                   <li className="flex items-start">
                     <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                    <span className="text-[#57534E]"><strong>Zero API costs</strong> for local inference (90%+ of current usage)</span>
+                    <span className="text-[#57534E]"><strong>Zero API costs</strong> -- self-hosted inference eliminates all per-token charges</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                    <span className="text-[#57534E]"><strong>Complete data privacy</strong> – no data leaves the local machine</span>
+                    <span className="text-[#57534E]"><strong>Complete data privacy</strong> -- code, conversations, and business data never leave the machine</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                    <span className="text-[#57534E]"><strong>Predictable latency</strong> – no network dependency for core tasks</span>
+                    <span className="text-[#57534E]"><strong>Edge-ready</strong> -- E2B at 2B params runs on phones, IoT, embedded devices</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle2 className="text-[#10B981] mr-3 mt-1 flex-shrink-0" size={18} />
-                    <span className="text-[#57534E]"><strong>Competitive moat</strong> – competitors paying API costs can't match our economics</span>
+                    <span className="text-[#57534E]"><strong>Competitive moat</strong> -- competitors paying API costs can't match zero-cost inference economics</span>
                   </li>
                 </ul>
               </div>
@@ -532,7 +532,7 @@ export default function Gemma4Brief() {
             <SectionKicker>Conclusion</SectionKicker>
             <h2 className="font-headline text-3xl md:text-4xl font-bold text-white mb-6">Strategic Imperative</h2>
             <p className="text-xl text-[#A8A29E] max-w-3xl mx-auto mb-10 leading-relaxed">
-              Gemma 4 isn't just another AI model—it's a cost structure breakthrough. By implementing intelligent model routing, Corner can maintain (and even improve) quality while reducing AI operational costs by 70%+ within 6 weeks.
+              Corner already runs 3 of 5 pipeline stages on DeepSeek at ~$0.08/task. Gemma 4 is the next step: replace the remaining paid models with free, self-hosted inference. The 4-model family covers everything from Raspberry Pi edge devices to server-grade reasoning.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
