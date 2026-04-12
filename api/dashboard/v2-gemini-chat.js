@@ -351,7 +351,7 @@ async function getMaxSortOrder(clientId) {
   return Number.isFinite(value) ? value : Number(value) || 0;
 }
 
-async function createTask(args = {}, clientId) {
+async function createTask(args = {}, clientId, { isOwner = false, userId = null } = {}) {
   if (!args.title || typeof args.title !== 'string' || !args.title.trim()) throw new Error('title required');
   // Pre-flight validation: warn if description is weak
   const desc = (args.description || '').trim();
@@ -371,6 +371,10 @@ async function createTask(args = {}, clientId) {
   const crypto = await import('crypto');
   const titleText = args.title.trim();
   const newTask = { id: crypto.randomUUID(), title: titleText, text: titleText, description: args.description, status: 'queued', sort_order, priority, created_by: 'system', client_id: clientId };
+  // Owner-created tasks get elevated permissions in the pipeline (EA repo write access)
+  if (isOwner) {
+    newTask.metadata = { ...(newTask.metadata || {}), created_by_role: 'owner', created_by_user: userId };
+  }
   if (args.agent_identity !== undefined) newTask.agent_identity = args.agent_identity;
   // Set project_path (slug) so the pipeline can load the right CONTEXT.md
   if (args.project) newTask.project_path = args.project;
@@ -1223,7 +1227,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
             // Pass project slug through so pipeline gets it as project_path
             if (args.project && !argsWithAgent.project) argsWithAgent.project = args.project;
             // Shared project tasks keep their shared: client_id so both worlds can see them.
-            result = await createTask(argsWithAgent, clientId);
+            result = await createTask(argsWithAgent, clientId, { isOwner, userId: resolvedUserId });
           }
           else if (name === 'get_queue') result = await getQueue(clientId, projectSlug);
           else if (name === 'get_status') result = await getStatus(args.task_id, clientId, projectSlug);
