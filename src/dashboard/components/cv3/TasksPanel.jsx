@@ -675,12 +675,24 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       </button>
                     </div>
                   </div>
-                  {/* Expandable thread */}
+                  {/* Expandable: result summary + thread */}
                   {expandedTask === t.id && (
                     <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+                      {/* Follow-up summary */}
+                      {t.result && (
+                        <div style={{
+                          fontSize: 12, color: 'rgba(240,244,255,0.7)', lineHeight: 1.5,
+                          padding: '8px 10px', marginBottom: 8,
+                          background: 'rgba(239,68,68,0.06)', borderRadius: 8,
+                          fontFamily: "'Inter', sans-serif",
+                          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        }}>
+                          {t.result}
+                        </div>
+                      )}
                       {threadLoading ? (
                         <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
-                      ) : taskThread.length === 0 ? (
+                      ) : taskThread.length === 0 && !t.result ? (
                         <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events.</div>
                       ) : taskThread.map((m, idx) => (
                         <div key={idx} style={{
@@ -782,12 +794,24 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       </div>
                     )}
                   </div>
-                  {/* Expandable thread */}
+                  {/* Expandable: result summary + thread */}
                   {expandedTask === t.id && (
                     <div style={{ marginTop: 10, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`, paddingTop: 8 }}>
+                      {/* Follow-up summary */}
+                      {t.result && (
+                        <div style={{
+                          fontSize: 12, color: isDark ? 'rgba(240,244,255,0.7)' : 'rgba(0,0,0,0.6)', lineHeight: 1.5,
+                          padding: '8px 10px', marginBottom: 8,
+                          background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', borderRadius: 8,
+                          fontFamily: "'Inter', sans-serif",
+                          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        }}>
+                          {t.result}
+                        </div>
+                      )}
                       {threadLoading ? (
                         <div style={{ fontSize: 11, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
-                      ) : taskThread.length === 0 ? (
+                      ) : taskThread.length === 0 && !t.result ? (
                         <div style={{ fontSize: 11, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events.</div>
                       ) : taskThread.map((m, idx) => (
                         <div key={idx} style={{
