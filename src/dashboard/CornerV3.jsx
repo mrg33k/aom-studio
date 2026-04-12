@@ -28,6 +28,7 @@ import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
+import { formatRelativeTime } from './timeUtils.js'
 
 
 
@@ -349,6 +350,7 @@ export default function CornerV3() {
   const ROW1_H = 44
   const ROW2_H = 36
   const NAV_H  = ROW1_H + ROW2_H
+  const lastLoginRelativeTime = formatRelativeTime(currentUser?.last_sign_in_at || currentUser?.user?.last_sign_in_at)
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -417,8 +419,19 @@ export default function CornerV3() {
             />
           </div>
 
-          {/* Right: Bell + Avatar */}
+          {/* Right: Last login + Bell + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!!lastLoginRelativeTime && (
+              <span style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: C.dim,
+                fontFamily: "'JetBrains Mono', monospace",
+                whiteSpace: 'nowrap',
+              }}>
+                Last login: <b style={{ color: C.text2 }}>{lastLoginRelativeTime}</b>
+              </span>
+            )}
             <BellIcon hasNew={unreadChat > 0} />
             <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
           </div>
