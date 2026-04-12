@@ -38,7 +38,6 @@ import FloatingActionButton from './components/FloatingActionButton.jsx'
 import BoardView from './BoardView.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 import briefsIndex from '../data/briefs-index.json'
-import { useTheme } from '../context/ThemeContext.jsx'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
 import FilesTab from './FilesTab.jsx'
@@ -50,8 +49,7 @@ import AgentInfoTab from './components/AgentInfoTab.jsx'
 import { getTypingPhrases } from './agentTypingPhrases.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import SupportChat from './SupportChat.jsx'
-import VoiceChat from './components/VoiceChat.jsx'
-import VoiceToggle from './components/VoiceToggle.jsx'
+import VoiceToggle from './VoiceToggle.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -3221,10 +3219,10 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
 //       NONE of those have overflow, transform, clip, or will-change. This is the real fix.
 function MobileFixedInput({
   chatInput, onChatInputChange, onSendMessage, streaming,
-  agentColor, agentName, isNightMode,
+  agentColor, agentName, agentSlug, isNightMode,
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown,
   powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
-  onInputFocus,
+  onInputFocus, onVoiceTranscript,
   // bottomOffset: pixels to raise input above the bottom edge (e.g. HUD height at full-snap).
   // Only applied when keyboard is NOT open (kbOffset=0). When keyboard is open, kbOffset alone.
   bottomOffset = 0,
@@ -3465,7 +3463,7 @@ function MobileFixedInput({
             background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.10)',
             border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.35)',
             borderRadius: 10,
-            padding: '10px 52px 10px 44px',
+            padding: '10px 90px 10px 44px',
             fontSize: 15, fontWeight: 400,
             fontFamily: "'Inter', system-ui, sans-serif",
             color: '#F1F5F9',
@@ -3494,6 +3492,10 @@ function MobileFixedInput({
           }}
         />
 
+        {/* Voice chat button */}
+        <div style={{ position: 'absolute', right: 47, bottom: 5, zIndex: 2 }}>
+          <VoiceToggle agentSlug={agentSlug} agentColor={color} onTranscript={onVoiceTranscript} />
+        </div>
         <button
           type="submit"
           disabled={false}
@@ -5133,8 +5135,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   </button>
                   <button
                     onClick={() => {
-                      // Open AOM team chat in sidebar
-                      if (onSelectAgent) onSelectAgent('aom')
+                      // Open team chat in sidebar (scoped to current client)
+                      if (onSelectAgent) onSelectAgent(getClientId())
                       setTeamOpen(false)
                     }}
                     style={{
@@ -5208,13 +5210,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     color: isNightMode ? '#334155' : '#4A6585',
                     fontFamily: "'Inter', sans-serif",
                   }}>
-                    {getClientId() === 'aom' ? AGENTS.length : agentStatuses.length}
+                    {agentStatuses.length}
                   </span>
                 </div>
 
-                {/* Agent list -- scoped per client. AOM uses full gridSpec, others use Supabase only */}
+                {/* Agent list -- sourced from Supabase agent_status, scoped to current client */}
                 <div style={{ maxHeight: 320, overflowY: 'auto', padding: '0' }}>
-                  {(getClientId() === 'aom' ? AGENTS : agentStatuses.map(a => ({ slug: a.slug, name: a.name || a.slug, color: a.color || '#60A5FA' }))).map(agent => {
+                  {agentStatuses.map(a => ({ slug: a.slug, name: a.name || a.slug, color: a.color || '#60A5FA' })).map(agent => {
                     const status = getAgentStatus(agent.slug)
                     const dotCol = statusDotColor[status] || '#6B7280'
                     const isSelected = selectedAgent === agent.slug
@@ -5834,7 +5836,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   const [messages, setMessages] = useState({}) // per-agent message history
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
-  const [voiceMode, setVoiceMode] = useState('chat') // 'chat' | 'voice'
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
@@ -5891,30 +5892,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   const updateMessages = (slug, updater) => {
     setMessages(prev => ({ ...prev, [slug]: updater(prev[slug] || []) }))
   }
-
-  // Voice transcript handler -- inserts voice messages into chat history
-  const handleVoiceTranscript = useCallback((text, role) => {
-    if (!text?.trim()) return
-    const time = new Date().toISOString()
-    updateMessages(agentSlug, prev => [
-      ...prev,
-      { role: role === 'model' ? 'assistant' : 'user', content: text, time, source: 'voice' },
-    ])
-    if (!IS_LOCAL) {
-      const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
-      fetch('/api/dashboard/supabase-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentSlug, text, role: role === 'model' ? 'assistant' : 'user', source: 'voice', client_id: clientId }),
-      }).catch(() => {})
-    }
-  }, [agentSlug]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Voice status change -- drives the agent room sprite animation
-  const handleVoiceStatus = useCallback((vs) => {
-    const active = vs === 'listening' || vs === 'speaking'
-    onSpeaking?.(agentSlug, active)
-  }, [agentSlug, onSpeaking])
 
   // Format timestamp for display
   const formatTime = (dateStr) => {
@@ -6064,94 +6041,43 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
       return
     }
 
-    // Production mode: write user message to Supabase, call Gemini, write response back
+    // Production mode: write to Supabase, poll for relay response
     try {
       const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
-      // 1. Persist user message to Supabase
-      fetch('/api/dashboard/supabase-messages', {
+      await fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: agentSlug, text, source: 'corner-dashboard', client_id: clientId }),
-      }).catch(() => {}) // fire-and-forget, Gemini call is what matters
-
-      // 2. Call Gemini with client-side history (skips server DB fetch for conversation)
-      const currentMsgs = messages[agentSlug] || []
-      const geminiHistory = currentMsgs
-        .filter(m => m.content && !m.streaming)
-        .slice(-20)
-        .map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }))
-      const geminiRes = await fetch('/api/dashboard/v2-gemini-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, agent: agentSlug, client_id: clientId, history: geminiHistory }),
       })
-
-      if (geminiRes.ok) {
-        const geminiData = await geminiRes.json()
-        const reply = geminiData.reply || ''
-
-        if (reply) {
-          // 3. Show response in UI immediately
-          const responseTime = new Date().toISOString()
-          updateMessages(agentSlug, prev => {
-            const updated = [...prev]
-            const lastMsg = updated[updated.length - 1]
-            if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
-              updated[updated.length - 1] = { ...lastMsg, content: reply, streaming: false, time: responseTime }
-            } else {
-              updated.push({ role: 'assistant', content: reply, streaming: false, time: responseTime })
-            }
-            return updated
-          })
-          setSpeaking(false)
-          clearChatTimeout()
-
-          // 4. Persist assistant response to Supabase (fire-and-forget)
-          fetch('/api/dashboard/supabase-messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent: agentSlug, text: reply, role: 'assistant', source: 'gemini', client_id: clientId }),
-          }).catch(() => {})
-        } else {
-          // Gemini returned empty response
-          updateMessages(agentSlug, prev => {
-            const updated = [...prev]
-            const last = updated[updated.length - 1]
-            if (last?.streaming) updated[updated.length - 1] = { ...last, content: 'No response from agent. Try again.', streaming: false }
-            return updated
-          })
-          setSpeaking(false)
-          clearChatTimeout()
-        }
-      } else {
-        // Gemini endpoint failed, fall back to poll (legacy relay or other responder)
-        if (relayPollRef.current) clearInterval(relayPollRef.current)
-        relayPollRef.current = setInterval(async () => {
-          try {
-            const pollRes = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(clientId)}`)
-            if (!pollRes.ok) return
-            const pollData = await pollRes.json()
-            const msgs = pollData.messages || []
-            const newResponses = msgs.filter(m => m.role === 'assistant' && m.timestamp > sentTime)
-            if (newResponses.length > 0) {
-              const latest = newResponses[newResponses.length - 1]
-              updateMessages(agentSlug, prev => {
-                const updated = [...prev]
-                const lastMsg = updated[updated.length - 1]
-                if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
-                  updated[updated.length - 1] = { ...lastMsg, content: latest.text, streaming: false, time: latest.timestamp }
-                } else {
-                  updated.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
-                }
-                return updated
-              })
-              setSpeaking(false)
-              clearChatTimeout()
-              if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
-            }
-          } catch {}
-        }, 1500)
-      }
+      // Poll Supabase for assistant response
+      if (relayPollRef.current) clearInterval(relayPollRef.current)
+      relayPollRef.current = setInterval(async () => {
+        try {
+          const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+          const pollRes = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(clientId)}`)
+          if (!pollRes.ok) return
+          const pollData = await pollRes.json()
+          const msgs = pollData.messages || []
+          // Find assistant messages after our sent time
+          const newResponses = msgs.filter(m => m.role === 'assistant' && m.timestamp > sentTime)
+          if (newResponses.length > 0) {
+            const latest = newResponses[newResponses.length - 1]
+            updateMessages(agentSlug, prev => {
+              const updated = [...prev]
+              const lastMsg = updated[updated.length - 1]
+              if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                updated[updated.length - 1] = { ...lastMsg, content: latest.text, streaming: false, time: latest.timestamp }
+              } else {
+                updated.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
+              }
+              return updated
+            })
+            setSpeaking(false)
+            clearChatTimeout()
+            if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
+          }
+        } catch {}
+      }, 1500)
     } catch (err) {
       updateMessages(agentSlug, prev => {
         const updated = [...prev]
@@ -6320,7 +6246,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <VoiceToggle mode={voiceMode} onChange={setVoiceMode} />
                 {!fullscreen && (
                   <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                     onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
@@ -6340,19 +6265,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               </div>
             </div>
 
-            {/* Voice mode panel */}
-            {voiceMode === 'voice' && (
-              <VoiceChat
-                agentSlug={agentSlug}
-                agentColor={agentColor}
-                clientId={typeof getClientId === 'function' ? getClientId() : 'aom'}
-                onTranscript={handleVoiceTranscript}
-                onStatusChange={handleVoiceStatus}
-              />
-            )}
-
-            {/* Messages area (hidden in voice mode) */}
-            {voiceMode !== 'voice' && <>
             {/* Messages area */}
             <div ref={messagesContainerRef} style={{
               flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px',
@@ -6492,7 +6404,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} style={{ marginLeft: 1 }} />}
               </button>
             </form>
-            </>}
           </motion.div>
         )}
       </AnimatePresence>
@@ -9315,7 +9226,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled, onPoke, pendingImage, onClearPendingImage }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled, onPoke, pendingImage, onClearPendingImage, onVoiceTranscript }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -11360,6 +11271,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
           </form>
+          {/* Voice chat button -- outside form, aligned to bottom of input */}
+          <VoiceToggle agentSlug={agentSlug} agentColor={agentColor} onTranscript={onVoiceTranscript} />
           </div>{/* end powerup + form flex row */}
         </div>
       )}
@@ -11499,8 +11412,6 @@ export default function GameDashboard() {
   const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
   const [agentAssets, setAgentAssets] = useState(AGENT_ASSETS_DEFAULT)
   const [roomsWithRenders, setRoomsWithRenders] = useState(ROOMS_WITH_RENDERS_FALLBACK)
-
-  const { theme } = useTheme()
 
   // Responsive breakpoints -- must be declared before any hooks that reference them
   const isMobile = useIsMobile()
@@ -11984,6 +11895,13 @@ export default function GameDashboard() {
       const current = prev[agentKey] || { _all: [] }
       const updated = typeof updater === 'function' ? updater(current) : updater
       return { ...prev, [agentKey]: updated }
+    })
+  }, [selectedRoom])
+  const handleVoiceTranscript = useCallback((msg) => {
+    setAgentChats(prev => {
+      const key = selectedRoom || '_default'
+      const current = prev[key] || { _all: [] }
+      return { ...prev, [key]: { ...current, _all: [...current._all, msg] } }
     })
   }, [selectedRoom])
   const [panelStreaming, setPanelStreaming] = useState(false)
@@ -12825,21 +12743,18 @@ export default function GameDashboard() {
     }
   }, [chatAgent, currentMode])
 
-  // Agent status lookup.
-  // Priority: pipeData.agents (Supabase realtime, source of truth) overlays data.agents
-  // (local /api/local/status, also Supabase-sourced now). pipeData wins for all fields.
+  // Agent status lookup
   const agentStatus = useMemo(() => {
     const map = {}
-    // Base: data.agents from /api/local/status (Supabase-backed, latestResult enriched)
+    // Primary: useDashboardData agents (local dev)
     if (data?.agents) {
       for (const a of data.agents) map[a.slug] = a
     }
-    // Override: pipeData.agents from Supabase realtime subscription (fresher, world-scoped)
+    // Overlay: pipeData agents have real-time status from Supabase (world-scoped)
     const pipeAgents = pipeData?.agents || []
     for (const a of pipeAgents) {
       if (!map[a.slug]) map[a.slug] = a
-      // pipeData wins on status, currentTask, and updatedAt (it's the realtime source)
-      else map[a.slug] = { ...map[a.slug], ...a, latestResult: map[a.slug].latestResult }
+      else map[a.slug] = { ...map[a.slug], status: a.status || map[a.slug].status, updatedAt: a.updatedAt || map[a.slug].updatedAt }
     }
     return map
   }, [data, pipeData?.agents])
@@ -13807,7 +13722,7 @@ export default function GameDashboard() {
       // Explicit height = visualViewport.height shrinks the container with the keyboard,
       // pushing the chat input above it instead of hiding behind it.
       height: boardKbHeight || undefined,
-      background: theme === 'light' ? '#E8F0FA' : (currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#141E30')),
+      background: currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#141E30'),
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
@@ -14088,6 +14003,7 @@ export default function GameDashboard() {
               onInputFocus={() => clearUnreadForRoom(selectedRoom)}
               focusTaskId={sidebarFocusTaskId}
               onFocusTaskHandled={() => setSidebarFocusTaskId(null)}
+              onVoiceTranscript={handleVoiceTranscript}
             />
           )}
       </div>}
@@ -14422,6 +14338,8 @@ export default function GameDashboard() {
             // keyboard actually opens. Snapping here first causes it to save 'full'
             // as the restore point, so the drawer never returns to half on keyboard close.
           }}
+          agentSlug={selectedRoom}
+          onVoiceTranscript={handleVoiceTranscript}
           // Raise input above the GameHUD bar + Now Bar when active.
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
           bottomOffset={hudBarHeight + 40}

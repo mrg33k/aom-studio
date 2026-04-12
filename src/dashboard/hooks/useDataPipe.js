@@ -1,4 +1,4 @@
-// Realtime subscriptions: agent_status, messages, tasks -- unique channel IDs per instance
+// Realtime subscriptions: agent_status, messages, events, tasks -- unique channel IDs per instance
 // useDataPipe -- ONE hook, ONE poll, ONE truth.
 // Bobby2: Replaces useRightNowLiveTasks, useCompletedFeed, useAutoCheckFromNotifications,
 // usePatrikTodos, useCheckingInTasks, and usePunchListData across GameHUD + ChecklistMode.
@@ -43,110 +43,6 @@ export function formatRelativeTime(dateStr) {
   } catch {
     return dateStr
   }
-}
-
-// Right Now is sourced exclusively from agent_status table (active-agents API).
-// No file-based parsing. No event derivation. agent_status is the only source of truth.
-
-// ---- PARSE COMPLETED FEED from notifications --------------------------------
-function parseCompletedFeed(notifContent) {
-  if (!notifContent) return []
-
-  const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
-  const completionLines = lines
-    .filter(l => {
-      if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
-      if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
-      if (/NEXT\s*WAVE/i.test(l)) return false
-      return /TASK\s*FINISHED|SHIPPED|DELIVERED|MILESTONE/i.test(l)
-    })
-    .slice(-8)
-    .reverse()
-
-  return completionLines.map((line) => {
-    const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
-    let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
-    if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
-    if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
-
-    let text = ''
-    const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-    const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
-    const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-    if (taskMatch) text = taskMatch[1].trim()
-    else if (milestoneMatch) text = milestoneMatch[1].trim()
-    else if (shippedMatch) text = shippedMatch[1].trim()
-    else {
-      const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
-      text = afterAgent ? afterAgent[1].trim() : ''
-    }
-
-    text = text.replace(/@\w+:?/g, '')
-      .replace(/\b[0-9a-f]{7,8}\b/g, '')
-      .replace(/projects\/\S+/g, '')
-      .replace(/\d+\s*commits?\s*pushed\s*\([^)]*\)/gi, '')
-      .replace(/\(\s*\d+\s*commits?\s*to\s*[\w-]+[^)]*\)/gi, '')
-      .replace(/\([^)]*commits?[^)]*\)/gi, '')
-      .replace(/\([\s,]*\)/g, '')
-      .replace(/REMAINING\s*TODOs?:.*$/i, '')
-      .replace(/\s{2,}/g, ' ')
-      .replace(/^\s*[-\u2013:,.\s]+/, '')
-      .replace(/[-\u2013:,.\s]+$/, '')
-      .trim()
-    if (text.length > 55) text = text.slice(0, 52) + '...'
-
-    const isoMatch = line.match(/\[(\d{4}-\d{2}-\d{2}T[^\]]+)\]/)
-    const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
-    const rawTimestamp = isoMatch ? isoMatch[1] : (dateMatch ? dateMatch[1] : '')
-    const relativeTime = formatRelativeTime(rawTimestamp)
-
-    return {
-      text,
-      agent: agentSlug,
-      timestamp: relativeTime,
-      rawTimestamp,
-      done: true,
-      isLive: false,
-    }
-  }).filter(t => t.text.length > 3 && t.agent)
-}
-
-// ---- BUILD AUTO-CHECK KEYWORDS from notifications ---------------------------
-function buildAutoCheckKeywords(notifContent) {
-  if (!notifContent) return new Set()
-
-  const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
-  const completionLines = lines.filter(l =>
-    /TASK\s*FINISHED|COMPLETE|DELIVERED|SHIPPED/i.test(l)
-  )
-
-  const completedDescriptions = []
-  for (const line of completionLines) {
-    const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-    const shippedMatch = line.match(/SHIPPED:\s*(?:\(\d+\)\s*)?(.+?)(?:,\s*\(\d+\)|\.\s|$)/i)
-    if (taskMatch) completedDescriptions.push(taskMatch[1].trim().toLowerCase())
-    if (shippedMatch) completedDescriptions.push(shippedMatch[1].trim().toLowerCase())
-    const numberedItems = line.matchAll(/\((\d+)\)\s*([^,(]+)/g)
-    for (const match of numberedItems) {
-      completedDescriptions.push(match[2].trim().toLowerCase())
-    }
-  }
-
-  const keywords = new Set()
-  for (const desc of completedDescriptions) {
-    const tokens = desc
-      .replace(/[*_`#\[\]()]/g, '')
-      .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
-      .split(/\s+/)
-      .filter(t => t.length > 3)
-    for (let i = 0; i < tokens.length; i++) {
-      keywords.add(tokens[i])
-      if (i + 1 < tokens.length) keywords.add(`${tokens[i]} ${tokens[i+1]}`)
-      if (i + 2 < tokens.length) keywords.add(`${tokens[i]} ${tokens[i+1]} ${tokens[i+2]}`)
-    }
-  }
-
-  return keywords
 }
 
 
@@ -217,34 +113,6 @@ function deriveProjectProgress(punchData) {
   return progress
 }
 
-// ---- BUILD INBOX ITEMS from a newest-first messages array -------------------
-// Expects msgs sorted by timestamp DESC (newest first).
-// Returns one entry per agent: the most recent message with unread flag.
-function buildInboxItems(msgsNewestFirst) {
-  const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
-  const latestPerAgent = {} // agent -> latest inbox entry
-  for (const msg of msgsNewestFirst) {
-    if (msg.role === 'user' && msg.source === 'corner-dashboard' && !agentLastSeen[msg.agent]) {
-      agentLastSeen[msg.agent] = msg.timestamp
-    }
-  }
-  for (const msg of msgsNewestFirst) {
-    if (msg.agent && !latestPerAgent[msg.agent]) {
-      const text = msg.text || ''
-      const preview = text.slice(0, 80) + (text.length > 80 ? '...' : '')
-      const lastSeen = agentLastSeen[msg.agent]
-      latestPerAgent[msg.agent] = {
-        agent: msg.agent,
-        text: preview,
-        timestamp: msg.timestamp,
-        id: msg.id,
-        isUnread: msg.role === 'assistant' && (!lastSeen || msg.timestamp > lastSeen),
-      }
-    }
-  }
-  return Object.values(latestPerAgent)
-}
-
 // =============================================================================
 // useDataPipe -- THE hook. One poll. All data. Every 3 seconds.
 //
@@ -256,7 +124,7 @@ function buildInboxItems(msgsNewestFirst) {
 // Returns: { rightNow, completedFeed, yourTodos, finishThese, schedule, projectProgress,
 //            pillCounts, isAutoChecked, punchData, punchLoading, lastUpdated, refetch }
 // =============================================================================
-export function useDataPipe(parsePunchList, worldId) {
+export function useDataPipe(parsePunchList) {
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
@@ -265,8 +133,6 @@ export function useDataPipe(parsePunchList, worldId) {
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
-  // Active projects from Supabase projects table (is_active=true, scoped by client_id)
-  const [projectDefs, setProjectDefs] = useState([])
   // Supabase-sourced agent list for the current world (replaces hardcoded ALL_AGENT_SLUGS)
   const [supabaseAgents, setSupabaseAgents] = useState([])
   // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
@@ -291,25 +157,14 @@ export function useDataPipe(parsePunchList, worldId) {
 
   const fetchAll = useCallback(async () => {
     if (IS_LOCAL) {
-      // LOCAL: read from filesystem APIs
+      // LOCAL: read from filesystem APIs (punch-list only -- status comes from Supabase)
       try {
-        const [notifRes, punchRes] = await Promise.all([
-          fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
-        ])
-
-        const notifContent = notifRes?.content || ''
+        const punchRes = await fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
         const punchContent = punchRes?.content || ''
 
-        // Right Now: tasks table is the source of truth. Same logic for both paths.
+        // Right Now: Supabase is the ONLY source of truth.
+        // task-status.jsonl, agent-notifications.md, active-missions.md are NOT read.
         const mergedTasks = []
-        const STAGE_LABELS = {
-          'queued': 'Queued',
-          'classifying': 'Classifying',
-          'planning': 'Planning',
-          'building': 'Building',
-          'qa': 'QA Review',
-        }
 
         try {
           const clientId = getClientId()
@@ -317,50 +172,71 @@ export function useDataPipe(parsePunchList, worldId) {
           if (sbRes.ok) {
             const sbData = await sbRes.json()
             if (sbData.tasks) {
-              // Build agent display name lookup from response data
-              const sbAgentNameMap = {}
-              if (sbData.agents) {
-                for (const a of sbData.agents) sbAgentNameMap[a.slug] = a.name
-              }
-
-              // Pipeline tasks -> Right Now
-              const pipelineTasks = sbData.tasks.filter(t => STAGE_LABELS[t.status])
-              for (const t of pipelineTasks) {
-                const agentSlug = t.agent || t.agent_identity || 'system'
-                mergedTasks.push({
-                  agent: agentSlug,
-                  agentDisplayName: sbAgentNameMap[agentSlug] || null,
-                  rawTitle: t.title || t.text || 'Task',
-                  text: `[${STAGE_LABELS[t.status]}] ${t.title || t.text || 'Task'}`,
-                  isLive: t.status !== 'queued',
-                  isQueued: t.status === 'queued',
-                  taskId: t.id,
-                  qa_score: t.qa_score || null,
-                  agent_identity: t.agent_identity || agentSlug,
-                  project: t.project || null,
-                })
-              }
-
+              // Done tasks awaiting approval
               const doneEntries = sbData.tasks
                 .filter(t => t.status === 'done' && t.agent !== 'patrik')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
               mergedTasks.push(...doneEntries)
 
+              // Todo tasks for To Do pill
               const todoEntries = sbData.tasks
                 .filter(t => t.status === 'todo' && t.agent !== 'patrik')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
               setTodoItems(todoEntries)
 
+              // Patrik's personal tasks
               const patrikEntries = sbData.tasks
                 .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
               setPersonalTodos(patrikEntries)
             }
 
-            // Build inbox: latest message per agent (for card previews) -- all sources, no filter
-            // sbData.messages is oldest-first (API reverses timestamp.desc fetch)
-            if (sbData.messages && sbData.messages.length > 0) {
-              setInboxItems(buildInboxItems([...sbData.messages].reverse()))
+            // Architecture v2: task-runner tasks (source of truth for Right Now bar).
+            // Right Now = ONLY status building or qa. Hard rule. Zero tolerance.
+            // Tasks clear on completion (status -> done/failed), NOT on timeout.
+            if (sbData.tasksV2 && sbData.tasksV2.length > 0) {
+              const v2RightNow = sbData.tasksV2.filter(t => t.status === 'building' || t.status === 'qa')
+              for (const t of v2RightNow) {
+                mergedTasks.push({
+                  agent:   t.agent_identity || 'system',
+                  text:    t.title || t.description || 'Working...',
+                  isLive:  t.status === 'building',
+                  isQA:    t.status === 'qa',
+                  isQueued: false,
+                  taskId:  t.id,
+                  fromTasksV2: true,
+                })
+              }
+            }
+
+            // Completed feed from Supabase tasks (same as production path)
+            {
+              const completed = []
+              if (sbData.tasks) {
+                completed.push(...sbData.tasks
+                  .filter(t => t.status === 'completed')
+                  .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false })))
+              }
+              if (sbData.tasksV2) {
+                completed.push(...sbData.tasksV2
+                  .filter(t => t.status === 'done')
+                  .map(t => ({
+                    agent:     t.agent_identity || 'system',
+                    text:      t.title || t.description || '',
+                    done:      true,
+                    isLive:    false,
+                    result:    t.result || null,
+                    qaScore:   t.qa_score || null,
+                    timestamp: t.completed_at || t.created_at,
+                    isV2Task:  true,
+                  })))
+              }
+              setCompletedFeed(completed)
+            }
+
+            // Supabase agents for status dots
+            if (sbData.agents && sbData.agents.length > 0) {
+              setSupabaseAgents(sbData.agents)
             }
           }
         } catch {
@@ -368,8 +244,6 @@ export function useDataPipe(parsePunchList, worldId) {
         }
 
         setRightNow(mergedTasks)
-        setCompletedFeed(parseCompletedFeed(notifContent))
-        keywordsRef.current = buildAutoCheckKeywords(notifContent)
 
         if (punchContent && parseFnRef.current) {
           setPunchData(parseFnRef.current(punchContent))
@@ -386,69 +260,68 @@ export function useDataPipe(parsePunchList, worldId) {
       try {
         const clientId = getClientId()
 
-        // cage-match A: fetch active_processes (PID-verified truth) in parallel with main status
-        // Both requests pass client (world slug) so RNB is scoped to the active world.
-        const [res, activeAgentsRes] = await Promise.all([
-          fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`),
-          fetch(`/api/dashboard/active-agents?client=${encodeURIComponent(clientId)}`).catch(() => null),
-        ])
+        // Primary source: agent_status table (status, current_task, status_source, status_set_at)
+        // Right Now = agent_status rows where status='working' AND current_task is non-empty.
+        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
         const data = await res.json()
-        const activeAgentsData = activeAgentsRes?.ok ? await activeAgentsRes.json() : null
+        const activeAgentsData = null // active_processes table dependency removed
 
-        // Right Now: tasks table is the source of truth. Period.
-        // Any task that is queued, classifying, planning, building, or in QA shows up.
-        // No events derivation. No agent_status. Just read the tasks table.
+        // Map Supabase data to Right Now format
+        // Primary source: agent_status table (status='working' + current_task non-empty).
+        // Tasks table status is NEVER used for Right Now (it drifts). Only used for
+        // queued/todo/done task pills.
         {
           const active = []
-          const STAGE_LABELS = {
-            'queued': 'Queued',
-            'classifying': 'Classifying',
-            'planning': 'Planning',
-            'building': 'Building',
-            'qa': 'QA Review',
+
+          // Queued tasks shown -- no events emitted for queued state.
+          if (data.tasks) {
+            const queuedEntries = data.tasks
+              .filter(t => t.status === 'queued')
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
+            active.push(...queuedEntries)
           }
 
+          // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
           if (data.tasks) {
-            // Build agent display name lookup from response data
-            const agentNameMap = {}
-            if (data.agents) {
-              for (const a of data.agents) agentNameMap[a.slug] = a.name
-            }
-
-            // Active pipeline tasks -> Right Now
-            const pipelineTasks = data.tasks.filter(t => STAGE_LABELS[t.status])
-            for (const t of pipelineTasks) {
-              const agentSlug = t.agent || t.agent_identity || 'system'
-              active.push({
-                agent: agentSlug,
-                agentDisplayName: agentNameMap[agentSlug] || null,
-                rawTitle: t.title || t.text || 'Task',
-                text: `[${STAGE_LABELS[t.status]}] ${t.title || t.text || 'Task'}`,
-                isLive: t.status !== 'queued',
-                isQueued: t.status === 'queued',
-                taskId: t.id,
-                qa_score: t.qa_score || null,
-                agent_identity: t.agent_identity || agentSlug,
-                project: t.project || null,
-              })
-            }
-
-            // Done tasks awaiting approval
             const doneEntries = data.tasks
               .filter(t => t.status === 'done' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
 
+            // Todo tasks for To Do pill (never shown in Right Now)
             const todoEntries = data.tasks
               .filter(t => t.status === 'todo' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
             setTodoItems(todoEntries)
 
+            // Patrik's personal tasks
             const patrikEntries = data.tasks
               .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
               .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
             setPersonalTodos(patrikEntries)
+          }
+
+          // Architecture v2: task-runner tasks (source of truth for Right Now bar).
+          // Right Now = ONLY status building or qa. Hard rule. Zero tolerance.
+          // Tasks clear on completion (status -> done/failed), NOT on timeout.
+          // Only add tasks not already present from events table (events take priority).
+          if (data.tasksV2 && data.tasksV2.length > 0) {
+            const v2RightNow = data.tasksV2.filter(t => t.status === 'building' || t.status === 'qa')
+            const alreadyInActive = new Set(active.map(t => t.taskId).filter(Boolean))
+            for (const t of v2RightNow) {
+              if (!alreadyInActive.has(t.id)) {
+                active.push({
+                  agent:   t.agent_identity || 'system',
+                  text:    t.title || t.description || 'Working...',
+                  isLive:  t.status === 'building',
+                  isQA:    t.status === 'qa',
+                  isQueued: false,
+                  taskId:  t.id,
+                  fromTasksV2: true,
+                })
+              }
+            }
           }
 
           setRightNow(active)
@@ -459,48 +332,61 @@ export function useDataPipe(parsePunchList, worldId) {
           setSupabaseAgents(data.agents)
         }
 
-        // Store active project definitions from projects table (is_active=true)
-        if (data.projectDefs) {
-          setProjectDefs(data.projectDefs)
-        }
-
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
-        if (data.tasks) {
-          const completed = data.tasks
-            .filter(t => t.status === 'completed')
-            .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
+        {
+          const completed = []
+          if (data.tasks) {
+            const legacyCompleted = data.tasks
+              .filter(t => t.status === 'completed')
+              .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
+            completed.push(...legacyCompleted)
+          }
+          // Architecture v2: add task-runner completed tasks to the feed
+          if (data.tasksV2) {
+            const v2Completed = data.tasksV2
+              .filter(t => t.status === 'done')
+              .map(t => ({
+                agent:     t.agent_identity || 'system',
+                text:      t.title || t.description || '',
+                done:      true,
+                isLive:    false,
+                result:    t.result || null,
+                qaScore:   t.qa_score || null,
+                timestamp: t.completed_at || t.created_at,
+                isV2Task:  true,
+              }))
+            completed.push(...v2Completed)
+          }
           setCompletedFeed(completed)
         }
 
-        // Build inbox: latest message per agent (for card previews)
-        // FIXED: Fetch latest message PER AGENT individually instead of a global
-        // limit(300) which gets drowned by high-volume agents (gary, system, task threads).
-        if (supabase) {
-          // Get all known agent slugs from the agents list
-          const agentSlugs = supabaseAgents.length > 0
-            ? supabaseAgents.map(a => a.slug).filter(Boolean)
-            : ['rex','bobby','elon','gary','steffen','alex','cleo','colton','jacob','mark','mom','paige','pixel','steve','tony']
-          if (agentSlugs.length > 0) {
-            const perAgentResults = await Promise.all(
-              agentSlugs.map(slug =>
-                supabase
-                  .from('messages')
-                  .select('id, agent, text, timestamp, role, source')
-                  .eq('client_id', clientId)
-                  .eq('agent', slug)
-                  .not('agent', 'like', 'task:%')
-                  .order('timestamp', { ascending: false })
-                  .limit(1)
-                  .then(({ data }) => data?.[0] || null)
-              )
-            )
-            const inboxMsgs = perAgentResults.filter(Boolean)
-            if (inboxMsgs.length > 0) {
-              setInboxItems(buildInboxItems(inboxMsgs))
+        // Compute unread inbox items: assistant messages newer than user's last message per agent
+        if (data.messages) {
+          // Messages arrive oldest-first (reversed in supabase-status.js)
+          const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
+          for (const msg of data.messages) {
+            if (msg.role === 'user' && msg.source === 'corner-dashboard') {
+              agentLastSeen[msg.agent] = msg.timestamp
             }
           }
-        } else if (data.messages) {
-          setInboxItems(buildInboxItems([...data.messages].reverse()))
+          const unread = []
+          const seenAgents = new Set() // one card per agent max
+          for (const msg of [...data.messages].reverse()) { // newest first
+            if (msg.role === 'assistant' && msg.agent && !seenAgents.has(msg.agent)) {
+              const lastSeen = agentLastSeen[msg.agent]
+              if (!lastSeen || msg.timestamp > lastSeen) {
+                seenAgents.add(msg.agent)
+                const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
+                unread.push({
+                  agent: msg.agent,
+                  text: preview,
+                  timestamp: msg.timestamp,
+                  id: msg.id,
+                })
+              }
+            }
+          }
+          setInboxItems(unread)
         }
 
         // Build punchData from Supabase tasks so pills render on production.
@@ -552,14 +438,48 @@ export function useDataPipe(parsePunchList, worldId) {
               projectSource: proj.name,
               projectSection: slug,
               projectColor: proj.color,
-              qa_score: task.qa_score || null,
-              agent_identity: task.agent_identity || task.agent || null,
             }
             proj.tasks.push(taskObj)
 
               if (slug === 'schedule' && !isDone) {
                 todayTasks.push({ ...taskObj, project: 'Schedule' })
               }
+            }
+          }
+
+          // Architecture v2: add task-runner tasks (queued pipeline) to project pills.
+          // These tasks use `title` + `agent_identity` (v2 schema) instead of `text` + `agent`.
+          // Only include non-terminal tasks: queued/classifying/planning/building/qa.
+          if (data.tasksV2 && data.tasksV2.length > 0) {
+            for (const task of data.tasksV2) {
+              if (task.status === 'done' || task.status === 'failed') continue
+              const projectKey = task.metadata?.project || 'queue'
+              const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+              if (!projectMap.has(slug)) {
+                projectMap.set(slug, {
+                  name: projectKey === 'queue' ? 'Task Queue' : (projectKey.charAt(0).toUpperCase() + projectKey.slice(1)),
+                  section: slug,
+                  color: getColor(slug),
+                  icon: 'project',
+                  tasks: [],
+                })
+              }
+              const proj = projectMap.get(slug)
+              const isDone = task.status === 'done' || task.status === 'failed'
+              proj.tasks.push({
+                id:             task.id || null,
+                text:           task.title || task.description || '',
+                done:           isDone,
+                agent:          task.agent_identity || null,
+                status:         task.status,
+                priority:       task.priority,
+                sort_order:     task.sort_order,
+                raw:            '',
+                projectSource:  proj.name,
+                projectSection: slug,
+                projectColor:   proj.color,
+                isV2Task:       true,
+              })
             }
           }
 
@@ -608,9 +528,6 @@ export function useDataPipe(parsePunchList, worldId) {
   }, [])
 
   useEffect(() => {
-    // Don't fetch until worldId is set (prevents fetching with default 'aom' before auth)
-    if (!worldId) return
-
     fetchAll()
     const timer = setInterval(fetchAll, 10000) // 10s for faster status + RNB updates
 
@@ -620,15 +537,13 @@ export function useDataPipe(parsePunchList, worldId) {
     let tasksChannel = null
     let messagesChannel = null
     if (supabase) {
-      const cid = `${channelIdRef.current}-${worldId}`
-      const clientId = getClientId()
-      console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages... id:', cid, 'client:', clientId)
+      const cid = channelIdRef.current
+      console.log('[Corner Realtime] Subscribing to agent_status, tasks, messages... id:', cid)
 
       // agent_status table: any change triggers full refresh (RNB, alive dots, agent status)
-      // Scoped by client_id for multi-tenant isolation
       agentStatusChannel = supabase
         .channel(`agent-status-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status', filter: `client_id=eq.${clientId}` }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
           console.log('[Corner Realtime] agent_status changed')
           fetchAll()
         })
@@ -637,34 +552,17 @@ export function useDataPipe(parsePunchList, worldId) {
       // tasks table: any change triggers refresh (new tasks, status changes -> pills + RNB)
       tasksChannel = supabase
         .channel(`tasks-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${clientId}` }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
           console.log('[Corner Realtime] tasks changed')
           fetchAll()
         })
         .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
 
-      // messages table: INSERT triggers immediate inboxItems update + full refresh
+      // messages table: INSERT triggers refresh (new chat messages update throughput + unread)
       messagesChannel = supabase
         .channel(`messages-inserts-${cid}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${clientId}` }, (event) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
           console.log('[Corner Realtime] messages INSERT')
-          // Immediately update inboxItems from event payload -- no round-trip wait.
-          // This ensures the inbox shows the new message the instant it's inserted.
-          const newMsg = event.new
-          if (newMsg?.agent) {
-            const text = newMsg.text || ''
-            const preview = text.slice(0, 80) + (text.length > 80 ? '...' : '')
-            setInboxItems(prev => {
-              const filtered = prev.filter(item => item.agent !== newMsg.agent)
-              return [{
-                agent: newMsg.agent,
-                text: preview,
-                timestamp: newMsg.timestamp || new Date().toISOString(),
-                id: newMsg.id,
-                isUnread: newMsg.role === 'assistant',
-              }, ...filtered]
-            })
-          }
           fetchAll()
         })
         .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
@@ -678,7 +576,7 @@ export function useDataPipe(parsePunchList, worldId) {
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)
     }
-  }, [fetchAll, worldId])
+  }, [fetchAll])
 
   // Stable isAutoChecked function -- reads from ref, never causes re-renders
   const isAutoChecked = useCallback((taskText) => {
@@ -718,13 +616,12 @@ export function useDataPipe(parsePunchList, worldId) {
   }
 
   // Build agents status map for CanvasOffice room states.
-  //
-  // Source of truth: Supabase agent_status table only.
-  // Set by: task_runner, gemini, or system safety net (30-min pg_cron clear).
-  // No event derivation. No time-based heuristics. No file-based fallbacks.
+  // Source of truth: agent_status table only (set by task_runner, gemini, or system).
+  // No events-derived status, no RNB-derived status. What's in the table is reality.
   //
   // WORLD ISOLATION: Non-AOM worlds use ONLY their Supabase agent_status rows.
   // AOM falls back to hardcoded list for backwards compatibility.
+  // REGISTRY_MIGRATED: was ['rex', 'elon', 'bobby', 'gary', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
   const AOM_AGENT_SLUGS = supabaseAgents.length > 0
     ? supabaseAgents.map(a => a.slug)
     : ['rex', 'elon', 'bobby', 'gary', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel'] // fallback
@@ -740,7 +637,6 @@ export function useDataPipe(parsePunchList, worldId) {
     agents = AOM_AGENT_SLUGS.map(slug => {
       const sb = sbMap[slug]
       const grid = gridMap[slug]
-      // Supabase agent_status is the ONLY source of truth.
       const status = sb?.status ? sb.status.toUpperCase() : 'IDLE'
       return {
         slug,
@@ -753,12 +649,10 @@ export function useDataPipe(parsePunchList, worldId) {
     })
   } else {
     // World-scoped: only agents from Supabase agent_status for this client_id
-    const source = supabaseAgents.length > 0 ? supabaseAgents : []
-    agents = source.map(a => ({
+    agents = (supabaseAgents.length > 0 ? supabaseAgents : []).map(a => ({
       slug: a.slug,
       name: a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1),
       role: a.role || '',
-      // Supabase agent_status is the ONLY source of truth.
       status: a.status ? a.status.toUpperCase() : 'IDLE',
       color: a.color || '#60A5FA',
       updatedAt: a.updatedAt || null,
@@ -781,7 +675,6 @@ export function useDataPipe(parsePunchList, worldId) {
     punchLoading,
     lastUpdated,
     agents,
-    projectDefs,
     refetch: fetchAll,
   }
 }

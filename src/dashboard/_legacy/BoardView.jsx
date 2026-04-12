@@ -7,23 +7,18 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Info } from 'lucide-react'
-import { ToastProvider, useToast } from './hooks/useToast.jsx'
-import { TaskQueuedToasts } from './HUDNotifications.jsx'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 import { getClientId } from './lib/clientConfig.js'
 import { supabase } from './lib/supabase.js'
+import { V2_CHAT_ENABLED } from './chatConnection.js'
 import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
-import VoiceToggle from './components/VoiceToggle.jsx'
-import VoiceChat from './components/VoiceChat.jsx'
 import { getAgentKnowledge } from './agentKnowledge.js'
 import agentProfiles from '../data/agent-profiles.js'
 import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 import FilesTab from './FilesTab.jsx'
 import { useSkillAutocomplete } from './components/SkillAutocomplete.jsx'
 import { useTasks } from './hooks/useTasks'
-import TaskQueueFAB from './components/TaskQueueFAB.jsx'
-import WorldSelector from './components/WorldSelector'
-import { formatRelativeTime } from './timeUtils'
+import VoiceToggle from './VoiceToggle.jsx'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -42,7 +37,6 @@ function getAgentName(slug) {
   const p = PROJECTS.find(x => x.slug === slug?.toLowerCase())
   return p?.name || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Agent')
 }
-
 
 // ── CSS VARS (night / day) ───────────────────────────────────────────────────
 
@@ -74,32 +68,31 @@ function cssVars(isNight) {
     '--bv-accent-text': '#60A5FA',
     '--bv-badge': 'rgba(59,130,246,0.10)',
   }
-  // Day mode: clean dark (same family as night, slightly lighter)
   return {
-    '--bv-bg': '#0C1220',
-    '--bv-rail': '#101828',
-    '--bv-bar': 'rgba(16,24,40,0.98)',
-    '--bv-bar2': 'rgba(12,18,32,0.4)',
-    '--bv-col': '#141E30',
-    '--bv-col-exp': '#1A2740',
-    '--bv-col-border': 'rgba(255,255,255,0.06)',
-    '--bv-col-border-exp': 'rgba(255,255,255,0.12)',
-    '--bv-card': '#1A2740',
-    '--bv-card-border': 'rgba(255,255,255,0.05)',
-    '--bv-card-hover': '#1E2F4A',
-    '--bv-divider': 'rgba(255,255,255,0.04)',
-    '--bv-input-bg': '#141E30',
-    '--bv-input-border': 'rgba(255,255,255,0.08)',
-    '--bv-chat-agent': '#1A2740',
-    '--bv-chat-user': 'rgba(59,130,246,0.15)',
+    '--bv-bg': '#1A3A7A',
+    '--bv-rail': 'rgba(15,35,80,0.7)',
+    '--bv-bar': 'rgba(20,50,120,0.7)',
+    '--bv-bar2': 'rgba(25,55,130,0.5)',
+    '--bv-col': 'rgba(30,65,155,0.45)',
+    '--bv-col-exp': 'rgba(35,75,175,0.55)',
+    '--bv-col-border': 'rgba(80,150,255,0.25)',
+    '--bv-col-border-exp': 'rgba(100,175,255,0.45)',
+    '--bv-card': 'rgba(40,85,200,0.25)',
+    '--bv-card-border': 'rgba(80,150,255,0.2)',
+    '--bv-card-hover': 'rgba(50,100,220,0.35)',
+    '--bv-divider': 'rgba(80,150,255,0.12)',
+    '--bv-input-bg': 'rgba(30,65,160,0.5)',
+    '--bv-input-border': 'rgba(80,150,255,0.25)',
+    '--bv-chat-agent': 'rgba(40,85,200,0.3)',
+    '--bv-chat-user': 'rgba(59,158,255,0.3)',
     '--bv-text': '#F0F4FF',
-    '--bv-text2': '#B0BDD0',
-    '--bv-muted': '#607090',
-    '--bv-dim': '#3E5070',
-    '--bv-accent': 'rgba(59,130,246,0.10)',
-    '--bv-accent-border': 'rgba(96,165,250,0.35)',
-    '--bv-accent-text': '#60A5FA',
-    '--bv-badge': 'rgba(59,130,246,0.10)',
+    '--bv-text2': '#D4E0F8',
+    '--bv-muted': '#8AABE0',
+    '--bv-dim': '#6B90CC',
+    '--bv-accent': 'rgba(59,158,255,0.3)',
+    '--bv-accent-border': 'rgba(80,170,255,0.6)',
+    '--bv-accent-text': '#7CC4FF',
+    '--bv-badge': 'rgba(80,150,255,0.15)',
   }
 }
 
@@ -123,7 +116,6 @@ function useColumnChat(agentSlug, isActive) {
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const pollRef = useRef(null)
-  const { showToast } = useToast()
   const loadedRef = useRef(false)
 
   useEffect(() => {
@@ -183,7 +175,6 @@ function useColumnChat(agentSlug, isActive) {
             if (hasReply) msgs[i] = { ...msgs[i], status: 'read' }
           }
         }
-        msgs.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
         setMessages(msgs)
         setLoading(false)
       })
@@ -254,12 +245,10 @@ function useColumnChat(agentSlug, isActive) {
             }
             for (const row of newMsgs) {
               const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
-              if (updated.some(m => m.id && m.id === msg.id)) continue
               if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
               if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
               updated.push(msg)
             }
-            updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
             return updated
           })
           if (newMsgs.some(m => m.role === 'assistant')) setSending(false)
@@ -267,66 +256,6 @@ function useColumnChat(agentSlug, isActive) {
       } catch {}
     }, 3000)
     return () => clearInterval(bgPollRef.current)
-  }, [agentSlug, isActive])
-
-  // Supabase Realtime: instant message updates filtered by agent + client_id
-  useEffect(() => {
-    if (!agentSlug || !isActive || !supabase) return
-    const clientId = getClientId()
-    const channelId = `chat-msgs-${agentSlug}-${clientId}-${Date.now()}`
-    const channel = supabase
-      .channel(channelId)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `agent=eq.${agentSlug}`,
-      }, (payload) => {
-        const row = payload.new
-        if (!row) return
-        if (row.client_id && row.client_id !== clientId) return
-        const src = (row.source || '').toLowerCase()
-        if (src === 'terminal' || src.startsWith('agent-') || src === 'corner-dashboard-task' ||
-            src === 'task-creation' || src === 'completion-hook' || src === 'agent-status' ||
-            src === 'poke_agent') return
-        if (row.is_task) return
-        const txt = row.text || ''
-        if (!txt) return
-        if (txt.startsWith('[SESSION LOG]') || txt.startsWith('[From ') || txt.startsWith('[Dashboard]')) return
-        if (txt.startsWith('You are ') && txt.includes('Working directory:')) return
-        if (txt.startsWith('MANDATORY FIRST STEP:') || txt.startsWith('PRIORITY:') || txt.startsWith('CRITICAL:') || txt.startsWith('NEW MANDATORY')) return
-        if (/^(Task completed|Task started|task_completed|task_started):/i.test(txt)) return
-        if (/^Task auto-confirmed:/i.test(txt)) return
-        if (/\bsession (ended|started)\b/i.test(txt)) return
-        if (txt.includes('Working directory:') && txt.includes('Read your context')) return
-        if (txt.includes('Task ID:') && txt.includes('YOUR TASK:')) return
-        if (txt.includes('REMINDER: Write your result summary')) return
-        if (txt.includes('Read the output file to retrieve the result:')) return
-        if (txt.startsWith('export CORNER_AGENT=')) return
-        const msg = {
-          id: row.id,
-          role: row.role || 'assistant',
-          content: txt,
-          time: row.timestamp || row.created_at || new Date().toISOString(),
-          source: row.source,
-          status: row.status || null,
-        }
-        setMessages(prev => {
-          if (prev.some(m => m.id && m.id === msg.id)) return prev
-          if (prev.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) return prev
-          let updated = [...prev]
-          if (msg.role === 'assistant') {
-            updated = updated.filter(m => !m.streaming)
-            updated = updated.map(m => m.role === 'user' && m.status !== 'read' ? { ...m, status: 'read' } : m)
-          }
-          updated.push(msg)
-          updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
-          return updated
-        })
-        if (msg.role === 'assistant') setSending(false)
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
   }, [agentSlug, isActive])
 
   const sendMessage = useCallback(async (text) => {
@@ -338,9 +267,9 @@ function useColumnChat(agentSlug, isActive) {
     // Step 1: single gray check (sent)
     setMessages(prev => {
       const cleaned = prev.filter(m => !m.streaming || m.content)
-      const updated = [...cleaned, { role: 'user', content: trimmed, time: sentTime, id: msgId, status: 'sent' }]
-      updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
-      return updated
+      return [...cleaned,
+        { role: 'user', content: trimmed, time: sentTime, id: msgId, status: 'sent' },
+      ]
     })
     setSending(true)
 
@@ -353,8 +282,79 @@ function useColumnChat(agentSlug, isActive) {
         parts: [{ text: m.content }],
       }))
 
+    // ── V2 path: write directly to Supabase, Edge Function responds async ──────
+    if (V2_CHAT_ENABLED && supabase) {
+      const { error: insertErr } = await supabase.from('messages').insert({
+        agent: agentSlug,
+        role: 'user',
+        text: trimmed,
+        source: 'corner-dashboard-v2',
+        client_id: clientId || 'aom',
+        needs_response: true,
+      })
+      if (insertErr) {
+        console.error('[v2-chat] insert error:', insertErr.message)
+        setSending(false)
+        return
+      }
+      // Delivered receipt after successful Supabase write
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'delivered' } : m))
+      }, 400)
+      // Poll for Edge Function response (background poll already running every 3s handles this)
+      // Set up a faster dedicated poll that stops once the response arrives
+      if (pollRef.current) clearInterval(pollRef.current)
+      pollRef.current = setInterval(async () => {
+        try {
+          const cid = getClientId()
+          const pollUrl = `/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(cid)}`
+          const res = await fetch(pollUrl)
+          if (!res.ok) return
+          const data = await res.json()
+          const newResp = (data.messages || []).filter(m =>
+            m.role === 'assistant' && m.timestamp > sentTime && m.agent === agentSlug
+          )
+          if (newResp.length > 0) {
+            const latest = newResp[newResp.length - 1]
+            setMessages(prev => prev.map(m => {
+              if (m.role === 'user' && m.status !== 'read') {
+                persistReadReceipt(m.id)
+                return { ...m, status: 'read' }
+              }
+              return m
+            }))
+            setTimeout(() => {
+              setMessages(prev => {
+                const u = prev.filter(m => !m.streaming)
+                u.push({ role: 'assistant', content: latest.text, time: latest.timestamp, source: 'gemini-responder' })
+                return u
+              })
+              setSending(false)
+            }, 600)
+            clearInterval(pollRef.current)
+            pollRef.current = null
+          }
+        } catch {}
+      }, 1500)
+      // Timeout after 30s -- Edge Function is slow or offline
+      setTimeout(() => {
+        if (pollRef.current) {
+          clearInterval(pollRef.current)
+          pollRef.current = null
+          setSending(false)
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: 'Response is taking longer than usual. It will appear when ready.',
+            time: new Date().toISOString(),
+            source: 'system',
+          }])
+        }
+      }, 30000)
+      return
+    }
+
+    // ── V1 path (fallback): call Vercel API endpoint inline ──────────────────
     let geminiReply = null
-    let geminiHandled = false
     const geminiStart = Date.now()
     try {
       const geminiRes = await fetch('/api/dashboard/v2-gemini-chat', {
@@ -374,15 +374,8 @@ function useColumnChat(agentSlug, isActive) {
       const data = await geminiRes.json()
       const reply = typeof data?.reply === 'string' ? data.reply : ''
       geminiReply = reply || null
-      geminiHandled = true  // Gemini processed it, even if reply is empty
       // If a delete_messages function was called, reset local messages from Supabase
       const hadDelete = (data.functionCalls || []).some(c => c.name === 'delete_messages')
-      // Show toast for any successfully created tasks
-      const taskCreates = (data.functionCalls || []).filter(c => c.name === 'create_task' && c.result && !c.result.error)
-      for (const c of taskCreates) {
-        const taskAgent = c.args?.agent || c.result?.agent_identity || agentSlug
-        showToast(`Task queued for ${getAgentName(taskAgent)}`, 3000)
-      }
       if (hadDelete) {
         try {
           const cid = getClientId()
@@ -395,7 +388,6 @@ function useColumnChat(agentSlug, isActive) {
             const freshMsgs = (refetchData.messages || []).map(m => ({
               id: m.id, role: m.role || 'assistant', content: m.text, time: m.timestamp, source: m.source,
             }))
-            freshMsgs.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
             setMessages(freshMsgs)
           }
         } catch (e) { /* silent */ }
@@ -404,19 +396,7 @@ function useColumnChat(agentSlug, isActive) {
       console.error('[v2-gemini-chat] Error:', err)
     }
 
-    // Gemini handled the message. Only fall to relay if Gemini actually errored.
-    if (geminiHandled) {
-      if (!geminiReply) {
-        // Gemini processed but returned empty (function-call-only response). Just mark as sent.
-        setSending(false)
-        // Persist user message only
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: agentSlug, text: trimmed, role: 'user', source: 'corner-dashboard', client_id: clientId }),
-        }).catch(() => {})
-        return
-      }
+    if (geminiReply) {
       const replyText = geminiReply
       const replyTime = new Date().toISOString()
       const elapsed = Date.now() - geminiStart
@@ -446,7 +426,6 @@ function useColumnChat(agentSlug, isActive) {
         setMessages(prev => {
           let u = prev.filter(m => !m.streaming)
           u.push({ role: 'assistant', content: replyText, time: replyTime, source: 'gemini' })
-          u.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
           return u
         })
         setSending(false)
@@ -468,25 +447,16 @@ function useColumnChat(agentSlug, isActive) {
                 const newMsgs = (data.messages || [])
                   .filter(m => m.timestamp > lastBgTsRef.current && m.text)
                   .filter(m => m.agent === agentSlug)
-                  .filter(m => {
-                    const src = (m.source || '').toLowerCase()
-                    if (src === 'task-notification' || src === 'task_completion_notification') return true
-                    if (['terminal','corner-dashboard-task','task-creation','completion-hook','agent-status','poke_agent'].includes(src)) return false
-                    if (src.startsWith('agent-')) return false
-                    return true
-                  })
+                  .filter(m => !['terminal','corner-dashboard-task','task-creation','completion-hook','agent-status','poke_agent'].includes((m.source||'').toLowerCase()) && !(m.source||'').toLowerCase().startsWith('agent-'))
                 if (newMsgs.length > 0) {
                   lastBgTsRef.current = newMsgs[newMsgs.length - 1].timestamp
                   setMessages(prev => {
                     let updated = [...prev]
                     for (const row of newMsgs) {
                       const msg = { id: row.id, role: row.role || 'assistant', content: row.text, time: row.timestamp, source: row.source }
-                      if (updated.some(m => m.id && m.id === msg.id)) continue
-                      // Dedup: same content within 30s window (Supabase timestamps can lag)
-                      if (updated.some(m => m.content === msg.content && m.role === msg.role && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 30000)) continue
+                      if (updated.some(m => m.content === msg.content && Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000)) continue
                       updated.push(msg)
                     }
-                    updated.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
                     return updated
                   })
                 }
@@ -554,8 +524,7 @@ function useColumnChat(agentSlug, isActive) {
             setTimeout(() => {
               setMessages(prev => {
                 let u = prev.filter(m => !m.streaming)
-                u.push({ id: latest.id, role: 'assistant', content: latest.text, time: latest.timestamp })
-                u.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
+                u.push({ role: 'assistant', content: latest.text, time: latest.timestamp })
                 return u
               })
               setSending(false)
@@ -571,11 +540,7 @@ function useColumnChat(agentSlug, isActive) {
           pollRef.current = null
           setSending(false)
           // Show timeout message so user isn't left hanging
-          setMessages(prev => {
-            const u = [...prev, { role: 'assistant', content: 'Agent is offline. Message saved and will be delivered when they reconnect.', time: new Date().toISOString(), source: 'system' }]
-            u.sort((a, b) => (a.time ? new Date(a.time).getTime() : 0) - (b.time ? new Date(b.time).getTime() : 0))
-            return u
-          })
+          setMessages(prev => [...prev, { role: 'assistant', content: 'Agent is offline. Message saved and will be delivered when they reconnect.', time: new Date().toISOString(), source: 'system' }])
         }
       }, 30000)
     } catch {
@@ -590,7 +555,7 @@ function useColumnChat(agentSlug, isActive) {
   }, [agentSlug, messages, sending])
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
-  return { messages, input, setInput, loading, sending, sendMessage }
+  return { messages, setMessages, input, setInput, loading, sending, sendMessage }
 }
 
 // ── COLUMN TAB BAR ───────────────────────────────────────────────────────────
@@ -641,39 +606,115 @@ function ReadReceipt({ status }) {
 }
 
 // ── MESSAGE CONTENT RENDERER ─────────────────────────────────────────────────
-// Delegated to ChatMessageRenderer (marked + preprocessBareUrls handles markdown,
-// links, and inline image detection for bare image URLs)
+// Renders plain text, [file](url) links, and inline images from agents/users
+
+const IMAGE_EXTS = /\.(png|jpg|jpeg|gif|webp|svg|bmp|heic|heif)(\?.*)?$/i
+
+function renderMessageContent(content) {
+  if (!content) return null
+  // Split on [file](url) or ![alt](url) patterns, render images inline
+  const parts = []
+  const pattern = /(!?\[([^\]]*)\]\((https?:\/\/[^)]+)\))/g
+  let last = 0
+  let match
+  while ((match = pattern.exec(content)) !== null) {
+    // Text before this match
+    if (match.index > last) {
+      const txt = content.slice(last, match.index).trim()
+      if (txt) {
+        // Linkify bare URLs in pre-match text too
+        const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
+        const tParts = txt.split(urlRe)
+        if (tParts.length > 1) {
+          tParts.forEach((p, j) => {
+            if (urlRe.test(p)) {
+              urlRe.lastIndex = 0
+              parts.push(<a key={`tu-${last}-${j}`} href={p} target="_blank" rel="noopener noreferrer"
+                style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
+                onClick={e => e.stopPropagation()}>{p}</a>)
+            } else if (p) {
+              parts.push(<span key={`t-${last}-${j}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span>)
+            }
+          })
+        } else {
+          parts.push(<span key={`t-${last}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{txt}</span>)
+        }
+      }
+    }
+    const isImage = match[1].startsWith('!') || IMAGE_EXTS.test(match[3])
+    if (isImage) {
+      parts.push(
+        <img key={`img-${match.index}`} src={match[3]} alt={match[2] || 'image'}
+          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
+          onClick={() => window.open(match[3], '_blank')}
+          onError={e => { e.target.style.display = 'none' }}
+        />
+      )
+    } else {
+      parts.push(<a key={`a-${match.index}`} href={match[3]} target="_blank" rel="noopener noreferrer"
+        style={{ color: '#60A5FA', textDecoration: 'underline' }}>{match[2] || match[3]}</a>)
+    }
+    last = match.index + match[0].length
+  }
+  // Remaining text — also scan for bare image URLs
+  const tail = content.slice(last)
+  if (tail) {
+    const urlPattern = /(https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?\S*)?)/gi
+    const tailParts = tail.split(urlPattern)
+    tailParts.forEach((seg, i) => {
+      if (IMAGE_EXTS.test(seg) && seg.startsWith('http')) {
+        parts.push(<img key={`bi-${i}`} src={seg} alt="image"
+          style={{ maxWidth: '100%', borderRadius: 8, marginTop: 6, display: 'block', cursor: 'pointer' }}
+          onClick={() => window.open(seg, '_blank')}
+          onError={e => { e.target.style.display = 'none' }}
+        />)
+      } else if (seg.trim()) {
+        // Linkify bare URLs in remaining text
+        const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
+        const urlParts = seg.split(urlRe)
+        urlParts.forEach((p, j) => {
+          if (urlRe.test(p)) {
+            urlRe.lastIndex = 0
+            parts.push(<a key={`u-${i}-${j}`} href={p} target="_blank" rel="noopener noreferrer"
+              style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
+              onClick={e => e.stopPropagation()}>{p}</a>)
+          } else if (p) {
+            parts.push(<span key={`ts-${i}-${j}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span>)
+          }
+        })
+      }
+    })
+  }
+  // Also linkify bare URLs in the fallback path
+  if (parts.length === 0) {
+    const urlRe = /(https?:\/\/[^\s<>"')\]]+)/g
+    const fallbackParts = content.split(urlRe)
+    if (fallbackParts.length > 1) {
+      return fallbackParts.map((p, i) => {
+        if (urlRe.test(p)) {
+          urlRe.lastIndex = 0
+          return <a key={`fu-${i}`} href={p} target="_blank" rel="noopener noreferrer"
+            style={{ color: '#60A5FA', textDecoration: 'underline', textUnderlineOffset: 2, wordBreak: 'break-all' }}
+            onClick={e => e.stopPropagation()}>{p}</a>
+        }
+        return p ? <span key={`ft-${i}`} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{p}</span> : null
+      })
+    }
+  }
+  return parts.length > 0 ? parts : <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{content}</span>
+}
 
 // ── CHAT PANEL (reused in agent columns) ─────────────────────────────────────
 
-function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent, isVoiceActive, onVoiceToggle }) {
+function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendToAgent }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
   const isUserScrolledUp = useRef(false)
-  const [showScrollBtn, setShowScrollBtn] = useState(false)
   const color = agentColor || getAgentColor(agentSlug)
   const [msgCtx, setMsgCtx] = useState(null) // { x, y, content, role }
   const [pendingFiles, setPendingFiles] = useState([])
   const [uploading, setUploading] = useState(false)
-  const [localVoiceStatus, setLocalVoiceStatus] = useState('idle')
-  const [localVoiceVolume, setLocalVoiceVolume] = useState(0)
-
-  // Reset voice status/volume when voice deactivates
-  useEffect(() => {
-    if (!isVoiceActive) { setLocalVoiceStatus('idle'); setLocalVoiceVolume(0) }
-  }, [isVoiceActive])
-
-  // Voice transcript handler: feed spoken text into the chat pipeline
-  const handleTranscript = useCallback((text, role) => {
-    if (role === 'user' && text?.trim()) {
-      chat.sendMessage(text.trim())
-    }
-  }, [chat])
-
-  // Fade-in animation tracking
-  const messageRefs = useRef({})
-  const animatedMessageIds = useRef(new Set())
 
   // Skill autocomplete
   const skillAC = useSkillAutocomplete(chat.input || '', chat.setInput)
@@ -682,60 +723,18 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
   const isStreaming = chat.messages.some(m => m.streaming)
 
   // Smart scroll: auto-scroll unless user scrolled up
-  const scrollToBottom = useCallback((smooth = false) => {
-    if (ref.current) ref.current.scrollTo({ top: ref.current.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+  const scrollToBottom = useCallback(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
   }, [])
 
-  // Scroll to bottom on initial mount
   useEffect(() => {
-    scrollToBottom(false)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Smooth auto-scroll on new messages if user is at bottom
-  useEffect(() => {
-    if (!isUserScrolledUp.current) scrollToBottom(true)
+    if (!isUserScrolledUp.current) scrollToBottom()
   }, [chat.messages.length, scrollToBottom])
-
-  // Scroll to bottom when typing indicator appears
-  useEffect(() => {
-    if (chat.sending && !isUserScrolledUp.current) scrollToBottom(true)
-  }, [chat.sending, scrollToBottom])
-
-  // Fade-in new messages
-  useEffect(() => {
-    const msgs = chat.messages
-    const newToAnimate = []
-    msgs.forEach((m, i) => {
-      const key = String(m.id || i)
-      if (!animatedMessageIds.current.has(key)) {
-        animatedMessageIds.current.add(key)
-        newToAnimate.push(key)
-      }
-    })
-    if (newToAnimate.length > 0) {
-      setTimeout(() => {
-        newToAnimate.forEach(key => {
-          const el = messageRefs.current[key]
-          if (el) el.style.opacity = '1'
-        })
-      }, 50)
-    }
-    // Cleanup refs for removed messages
-    const currentKeys = new Set(msgs.map((m, i) => String(m.id || i)))
-    Object.keys(messageRefs.current).forEach(key => {
-      if (!currentKeys.has(key)) {
-        delete messageRefs.current[key]
-        animatedMessageIds.current.delete(key)
-      }
-    })
-  }, [chat.messages])
 
   const handleScroll = useCallback(() => {
     if (!ref.current) return
     const { scrollTop, scrollHeight, clientHeight } = ref.current
-    const scrolledUp = scrollHeight - scrollTop - clientHeight > 80
-    isUserScrolledUp.current = scrolledUp
-    setShowScrollBtn(scrolledUp)
+    isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 80
   }, [])
 
   const doSend = async () => {
@@ -783,10 +782,8 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
     if (messageText) {
       chat.sendMessage(messageText)
       chat.setInput('')
-      if (inputRef.current) { inputRef.current.style.height = 'auto' }
       isUserScrolledUp.current = false
-      setShowScrollBtn(false)
-      setTimeout(() => scrollToBottom(true), 50)
+      setTimeout(scrollToBottom, 50)
     }
   }
 
@@ -829,71 +826,33 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
         {chat.messages.map((m, i) => (
-          (m.source === 'task_completion_notification' || m.source === 'task-runner') ? (
-            /* Task notification card -- centered, distinct from chat bubbles */
-            <div key={m.id || i}
-              ref={el => (messageRefs.current[String(m.id || i)] = el)}
-              style={{ display: 'flex', justifyContent: 'center', padding: '2px 0', opacity: animatedMessageIds.current.has(String(m.id || i)) ? 1 : 0, transition: 'opacity 200ms ease-in' }}
-            >
-              {(() => { const isFail = m.content?.toLowerCase().includes('fail'); return (
+            <div key={i} style={{
+              display: 'flex',
+              justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
+            }}>
               <div
                 data-msg-idx={i}
                 style={{
-                  padding: '8px 14px', borderRadius: 10, fontSize: 13, lineHeight: 1.5,
-                  maxWidth: '92%', width: '100%', wordBreak: 'break-word', overflowWrap: 'anywhere',
-                  whiteSpace: 'pre-wrap', color: 'var(--bv-text2)', cursor: 'context-menu',
-                  background: isFail ? 'rgba(239, 68, 68, 0.06)' : 'rgba(34, 197, 94, 0.06)',
-                  border: isFail ? '1px solid rgba(239, 68, 68, 0.15)' : '1px solid rgba(34, 197, 94, 0.15)',
-                  borderLeft: isFail ? '3px solid rgba(239, 68, 68, 0.5)' : '3px solid rgba(34, 197, 94, 0.5)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isFail ? '#EF4444' : '#22C55E'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    {isFail
-                      ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-                      : <polyline points="20 6 9 17 4 12"/>}
-                  </svg>
-                  <span style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', 'SF Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.06em', color: isFail ? '#EF4444' : '#22C55E' }}>
-                    {isFail ? 'Task Failed' : 'Task Complete'}
-                  </span>
-                </div>
-                <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{m.content}</span>
-                {m.time && (
-                  <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4, textAlign: 'center' }}>
-                    {formatRelativeTime(m.time)}
-                  </div>
-                )}
-              </div>
-              ); })()}
-            </div>
-          ) : (
-            <div key={m.id || i}
-              ref={el => (messageRefs.current[String(m.id || i)] = el)}
-              style={{
-                display: 'flex',
-                justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
-                opacity: animatedMessageIds.current.has(String(m.id || i)) ? 1 : 0,
-                transition: 'opacity 200ms ease-in',
-              }}
-            >
-              <div
-                data-msg-idx={i}
-                style={m.role === 'user' ? {
-                  padding: '10px 14px', borderRadius: 12, borderBottomRightRadius: 4,
-                  fontSize: 14, lineHeight: 1.6, maxWidth: '88%', wordBreak: 'break-word',
-                  overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
-                  background: 'var(--bv-chat-user)', border: '1px solid rgba(59, 130, 246, 0.25)',
-                  color: 'var(--bv-text)', cursor: 'context-menu',
-                } : {
-                  padding: '10px 14px', borderRadius: 12, borderBottomLeftRadius: 4,
-                  fontSize: 14, lineHeight: 1.6, maxWidth: '88%', wordBreak: 'break-word',
-                  overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
-                  background: 'var(--bv-chat-agent)', border: '1px solid var(--bv-card-border)',
-                  borderLeft: `3px solid ${color}80`, color: 'var(--bv-text2)', cursor: 'context-menu',
-                }}
-              >
-                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6 }}>
+                padding: '10px 14px', borderRadius: 12, fontSize: 14, lineHeight: 1.6,
+                maxWidth: '88%',
+                wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+                background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
+                border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
+                color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
+                borderBottomLeftRadius: m.role !== 'user' ? 4 : 12,
+                borderBottomRightRadius: m.role === 'user' ? 4 : 12,
+                cursor: 'context-menu',
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, opacity: 0.6, display: 'flex', alignItems: 'center', gap: 4 }}>
                   {m.role === 'user' ? 'You' : agentName}
+                  {m.source === 'voice' && (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" title="Voice message">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                      <line x1="12" y1="19" x2="12" y2="23"/>
+                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                  )}
                 </div>
                 {/* Streaming placeholder: show TypingIndicatorV2 if no content yet, else show live text */}
                 {m.streaming && !m.content ? (
@@ -906,7 +865,7 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                     compact={true}
                   />
                 ) : (
-                  <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{m.content}</span>
+                  <div>{renderMessageContent(m.content)}</div>
                 )}
                 {/* WhatsApp-style read receipts on user messages */}
                 {m.role === 'user' && m.status && (
@@ -914,28 +873,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
                     <ReadReceipt status={m.status} />
                   </div>
                 )}
-                {m.time && (
-                  <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4, textAlign: m.role === 'user' ? 'right' : 'left' }}>
-                    {formatRelativeTime(m.time)}
-                  </div>
-                )}
               </div>
             </div>
-          )
         ))}
-        {/* Typing indicator: visible while agent is processing the message */}
-        {chat.sending && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '2px 0' }}>
-            <TypingIndicatorV2
-              streaming={true}
-              agentSlug={agentSlug}
-              agentColor={color}
-              agentName={agentName}
-              onPoke={(text) => chat.sendMessage(text)}
-              compact={false}
-            />
-          </div>
-        )}
       </div>
 
       {/* Message context menu: portal to body to escape transform containers */}
@@ -1006,9 +946,9 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       )}
 
       {/* Scroll to bottom button -- appears when user scrolls up */}
-      {showScrollBtn && (
+      {isUserScrolledUp.current && (
         <button
-          onClick={() => { isUserScrolledUp.current = false; setShowScrollBtn(false); scrollToBottom(true) }}
+          onClick={() => { isUserScrolledUp.current = false; scrollToBottom() }}
           style={{
             position: 'absolute', bottom: 56, right: 16, zIndex: 5,
             width: 28, height: 28, borderRadius: '50%',
@@ -1056,104 +996,80 @@ function ChatPanel({ chat, agentName, agentSlug, agentColor, allAgents, onSendTo
       )}
 
       <div style={{
-        display: 'flex', gap: 8, padding: '10px 12px', alignItems: 'flex-end',
+        display: 'flex', gap: 6, padding: '10px 12px', alignItems: 'center',
         borderTop: '1px solid rgba(59,130,246,0.15)', flexShrink: 0, background: 'var(--bv-bar)',
         minHeight: 52, position: 'relative',
       }}>
         {skillAC.dropdown}
-        {/* Voice mode: VoiceChat replaces text input. Text mode: file attach + textarea + send */}
-        {isVoiceActive ? (
-          <div style={{ flex: 1 }} onClick={e => e.stopPropagation()}>
-            <VoiceChat
-              agentSlug="user"
-              agentColor={color}
-              clientId={getClientId()}
-              onTranscript={handleTranscript}
-              onStatusChange={setLocalVoiceStatus}
-              onVolumeChange={setLocalVoiceVolume}
-            />
-          </div>
-        ) : (
-          <>
-            {/* + button: attach images/files */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.md"
-              style={{ display: 'none' }}
-              onChange={e => {
-                if (e.target.files?.length) {
-                  setPendingFiles(prev => [...prev, ...Array.from(e.target.files)])
-                  e.target.value = ''
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
-              style={{
-                width: 32, height: 32, borderRadius: 8, border: '1.5px solid var(--bv-input-border)',
-                background: 'var(--bv-input-bg)', color: 'var(--bv-muted)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--bv-text)'; e.currentTarget.style.borderColor = 'var(--bv-accent)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--bv-muted)'; e.currentTarget.style.borderColor = 'var(--bv-input-border)' }}
-              title="Attach images or files"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-            <textarea
-              ref={inputRef}
-              value={chat.input}
-              rows={1}
-              onChange={e => {
-                chat.setInput(e.target.value)
-                e.target.style.height = 'auto'
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
-              }}
-              onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (chat.input?.trim()) doSend() } }}
-              placeholder={`Message ${agentName}...`}
-              onClick={e => e.stopPropagation()}
-              style={{
-                flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
-                borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
-                fontFamily: "'Inter', sans-serif", outline: 'none',
-                resize: 'none', overflowY: 'auto', lineHeight: '1.4',
-                minHeight: 36, maxHeight: 80,
-              }}
-            />
-          </>
-        )}
-        {/* Voice toggle -- always visible so user can switch modes */}
-        <div onClick={e => e.stopPropagation()}>
-          <VoiceToggle isActive={isVoiceActive} status={localVoiceStatus} volumeLevel={localVoiceVolume} onToggle={onVoiceToggle} />
-        </div>
-        {/* Send button -- text mode only */}
-        {!isVoiceActive && (
-          <button
-            type="button"
-            onClick={e => { e.stopPropagation(); doSend() }}
-            disabled={!chat.input?.trim() || chat.sending || uploading}
-            style={{
-              width: 36, height: 36, borderRadius: 10, border: 'none',
-              background: chat.input?.trim() && !chat.sending && !uploading ? '#3B82F6' : 'rgba(59,130,246,0.12)',
-              color: chat.input?.trim() && !chat.sending && !uploading ? '#fff' : 'rgba(255,255,255,0.35)',
-              cursor: uploading || chat.sending ? 'wait' : !chat.input?.trim() ? 'default' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              opacity: 1,
-              boxShadow: chat.input?.trim() && !chat.sending && !uploading ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
-              transition: 'all 0.15s',
-            }}
-          >
-            {uploading ? (
-              <div className="animate-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            )}
-          </button>
-        )}
+        {/* + button: attach images/files */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.md"
+          style={{ display: 'none' }}
+          onChange={e => {
+            if (e.target.files?.length) {
+              setPendingFiles(prev => [...prev, ...Array.from(e.target.files)])
+              e.target.value = ''
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+          style={{
+            width: 32, height: 32, borderRadius: 8, border: '1.5px solid var(--bv-input-border)',
+            background: 'var(--bv-input-bg)', color: 'var(--bv-muted)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            transition: 'color 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--bv-text)'; e.currentTarget.style.borderColor = 'var(--bv-accent)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--bv-muted)'; e.currentTarget.style.borderColor = 'var(--bv-input-border)' }}
+          title="Attach images or files"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <input
+          ref={inputRef}
+          value={chat.input}
+          onChange={e => chat.setInput(e.target.value)}
+          onKeyDown={e => { if (skillAC.onKeyDown(e)) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
+          placeholder={`Message ${agentName}...`}
+          onClick={e => e.stopPropagation()}
+          style={{
+            flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
+            borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
+            fontFamily: "'Inter', sans-serif", outline: 'none',
+          }}
+        />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); doSend() }}
+          disabled={uploading}
+          style={{
+            width: 36, height: 36, borderRadius: 10, border: 'none',
+            background: chat.input?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+            color: '#fff',
+            cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            opacity: uploading ? 0.5 : 1,
+            boxShadow: chat.input?.trim() ? '0 2px 8px rgba(59,130,246,0.35)' : 'none',
+            transition: 'all 0.15s',
+          }}
+        >
+          {uploading ? (
+            <div className="animate-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          )}
+        </button>
+        <VoiceToggle
+          agentSlug={agentSlug}
+          agentColor={color}
+          onTranscript={(msg) => {
+            chat.setMessages?.(prev => [...prev, msg])
+          }}
+        />
       </div>
     </div>
   )
@@ -1345,30 +1261,6 @@ function TaskList({ tasks, onContextMenu, showAgent = false }) {
               fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4,
               textDecoration: isDone ? 'line-through' : 'none',
             }}>{t.text || 'Task'}</div>
-            {/* Project, agent identity, and QA score always visible on card face */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
-              {(t.agent_identity || t.agent) && (
-                <span style={{
-                  fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                  padding: '1px 5px', borderRadius: 3, textTransform: 'uppercase',
-                  background: `${getAgentColor(t.agent_identity || t.agent)}18`,
-                  color: getAgentColor(t.agent_identity || t.agent),
-                }}>{getAgentName(t.agent_identity || t.agent)}</span>
-              )}
-              {(t.project || t.projectSource) && (
-                <span style={{
-                  fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
-                  background: `${t.projectColor || '#888'}18`, color: t.projectColor || '#888',
-                }}>{t.project || t.projectSource}</span>
-              )}
-              {(t.qa_score != null && t.qa_score !== '') && (
-                <span style={{
-                  fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-                  background: Number(t.qa_score) >= 8 ? 'rgba(34,197,94,0.15)' : Number(t.qa_score) >= 6 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)',
-                  color: Number(t.qa_score) >= 8 ? '#22C55E' : Number(t.qa_score) >= 6 ? '#FBBF24' : '#EF4444',
-                }}>QA {t.qa_score}</span>
-              )}
-            </div>
           </div>
           <span style={{ fontSize: 10, color: 'var(--bv-muted)', flexShrink: 0, marginTop: 2 }}>{isOpen ? '▾' : '▸'}</span>
         </div>
@@ -1715,7 +1607,7 @@ function AddColumnButton({ allItems, visibleSlugs, onToggle }) {
 
 // ── AGENT COLUMN ─────────────────────────────────────────────────────────────
 
-function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent, isVoiceActive, onVoiceToggle }) {
+function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragStart, onDragOver, onDrop, isDragTarget, onHeaderContextMenu, allAgents, onSendToAgent }) {
   const chat = useColumnChat(agent.slug, true)
   const navigate = useNavigate()
   const color = agent.color || getAgentColor(agent.slug)
@@ -1846,7 +1738,7 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
       <ColTabBar tabs={['chat', 'files', 'tasks', 'info']} active={tab} onChange={setTab} />
 
       {/* Tab content */}
-      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} isVoiceActive={isVoiceActive} onVoiceToggle={onVoiceToggle} />}
+      {tab === 'chat' && <ChatPanel chat={chat} agentName={agent.name || agent.slug} agentSlug={agent.slug} agentColor={color} allAgents={allAgents} onSendToAgent={onSendToAgent} />}
       {tab === 'tasks' && <TaskList tasks={tasks} onContextMenu={onContextMenu} />}
       {tab === 'info' && <InfoPanel slug={agent.slug} isAgent />}
       {tab === 'files' && <FilesTab agentSlug={agent.slug} clientId={getClientId()} />}
@@ -2067,11 +1959,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const inboxItems = pipeData?.inboxItems || []
   const personalTodos = pipeData?.personalTodos || []
   const completedFeed = pipeData?.completedFeed || []
-  // Active projects from Supabase projects table (is_active=true, fetched via useDataPipe)
-  const projectDefs = pipeData?.projectDefs || []
-
-  // Project filter: 'all' or a project name from projectDefs
-  const [activeProjectFilter, setActiveProjectFilter] = useState('all')
 
   // Build per-agent task index from punchData (Supabase tasks table)
   const agentTasks = useMemo(() => {
@@ -2118,9 +2005,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     catch { return null }
   })
 
-  // display_order map from agents table: slug -> display_order number
-  const [agentDisplayOrder, setAgentDisplayOrder] = useState({})
-
   // Load from Supabase on mount (overrides localStorage if found)
   useEffect(() => {
     const cid = getClientId()
@@ -2139,24 +2023,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         if (data?.value && Array.isArray(data.value)) {
           setColOrder(data.value)
           try { localStorage.setItem('corner-board-order', JSON.stringify(data.value)) } catch {}
-        }
-      })
-      .catch(() => {})
-    // Load agent display_order from Supabase agents table
-    fetch(`/api/dashboard/update-agent-order?client=${encodeURIComponent(cid)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.agents && Array.isArray(data.agents)) {
-          const orderMap = {}
-          data.agents.forEach(a => { orderMap[a.slug] = a.display_order })
-          setAgentDisplayOrder(orderMap)
-          // If no saved colOrder yet, seed initial order from Supabase display_order
-          setColOrder(prev => {
-            if (prev) return prev
-            const slugOrder = data.agents.map(a => a.slug)
-            try { localStorage.setItem('corner-board-order', JSON.stringify(slugOrder)) } catch {}
-            return slugOrder
-          })
         }
       })
       .catch(() => {})
@@ -2205,14 +2071,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     } catch {}
   }, [])
 
-  // Voice chat panel visibility
-  const [isVoiceChatActive, setIsVoiceChatActive] = useState(false)
-  const handleVoiceChatToggle = () => setIsVoiceChatActive(prev => !prev)
-
-  // CV3 nav bar state
-  const [chatPanelVisible, setChatPanelVisible] = useState(false)
-  const [cv3Tab, setCv3Tab] = useState('home')
-
   // Context menu (tasks)
   const [ctxMenu, setCtxMenu] = useState(null)
 
@@ -2231,7 +2089,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     const agentItems = agents.map(a => ({
       slug: a.slug, name: a.name || getAgentName(a.slug), color: a.color || getAgentColor(a.slug),
       status: a.status || 'IDLE', role: a.role || '', isAgent: true,
-      display_order: agentDisplayOrder[a.slug] ?? 9999,
       tasks: (() => {
         const at = agentTasks[a.slug] || { completed: [], todo: [], projects: {} }
         const live = rightNow.filter(t => t.agent === a.slug).map(t => ({ ...t, _source: 'rightNow' }))
@@ -2257,46 +2114,17 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       tasks: (p.tasks || []).map(t => ({ ...t, project: p.section })),
     }))
     return [...agentItems, ...projectItems]
-  }, [agents, rightNow, punchData, personalTodos, completedFeed, agentTasks, agentDisplayOrder])
+  }, [agents, rightNow, punchData, personalTodos, completedFeed, agentTasks])
 
-  // Apply saved column order (or sort by display_order/status/slug when no saved order)
+  // Apply saved column order
   const orderedVisibleItems = useMemo(() => {
     const visItems = allItems.filter(it => visibleSlugs.has(it.slug))
-    if (!colOrder) {
-      // Initial sort: display_order asc, then active status (non-IDLE first), then slug
-      return [...visItems].sort((a, b) => {
-        const aOrd = a.isAgent ? (a.display_order ?? 9999) : 99999
-        const bOrd = b.isAgent ? (b.display_order ?? 9999) : 99999
-        if (aOrd !== bOrd) return aOrd - bOrd
-        const aActive = a.status && a.status !== 'IDLE' ? 0 : 1
-        const bActive = b.status && b.status !== 'IDLE' ? 0 : 1
-        if (aActive !== bActive) return aActive - bActive
-        return (a.slug || '').localeCompare(b.slug || '')
-      })
-    }
+    if (!colOrder) return visItems
     const map = Object.fromEntries(visItems.map(it => [it.slug, it]))
     const ordered = colOrder.filter(s => map[s]).map(s => map[s])
     const missing = visItems.filter(it => !colOrder.includes(it.slug))
     return [...ordered, ...missing]
   }, [allItems, visibleSlugs, colOrder])
-
-  // Apply project filter to task lists in each column
-  const filteredVisibleItems = useMemo(() => {
-    if (activeProjectFilter === 'all') return orderedVisibleItems
-    return orderedVisibleItems.map(item => ({
-      ...item,
-      tasks: item.tasks.filter(t => {
-        const taskProject = (t.project || t.projectSource || '').toLowerCase()
-        const filterVal = activeProjectFilter.toLowerCase()
-        return taskProject === filterVal || taskProject.includes(filterVal) || filterVal.includes(taskProject)
-      }),
-    }))
-  }, [orderedVisibleItems, activeProjectFilter])
-
-  // True when any item (across all agents/projects) has a live or queued task
-  const hasActiveTasks = useMemo(() =>
-    allItems.some(item => item.tasks.some(t => t._source === 'rightNow' || t._source === 'todo'))
-  , [allItems])
 
   // Unread counts per agent (merge poll-based inboxItems + Realtime unreadAgents)
   const unreadMap = useMemo(() => {
@@ -2380,15 +2208,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const toggleSlug = (slug) => {
     setVisibleSlugs(prev => {
       const next = new Set(prev)
-      if (next.has(slug)) {
-        next.delete(slug)
-      } else {
-        next.add(slug)
-        // Show Chat tab when an agent column is added
-        if (allItems.find(it => it.slug === slug && it.isAgent)) {
-          setChatPanelVisible(true)
-        }
-      }
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
       return next
     })
   }
@@ -2406,22 +2227,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     setColOrder(newOrder)
     setDragSource(null)
     setDragTarget(null)
-    // Persist agent display_order to Supabase agents table
-    const cid = getClientId()
-    const agentOrders = newOrder
-      .filter(s => allItems.find(it => it.slug === s && it.isAgent))
-      .map((s, i) => ({ slug: s, display_order: (i + 1) * 10 }))
-    if (agentOrders.length > 0) {
-      const newOrderMap = {}
-      agentOrders.forEach(a => { newOrderMap[a.slug] = a.display_order })
-      setAgentDisplayOrder(newOrderMap)
-      fetch('/api/dashboard/update-agent-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agents: agentOrders, client_id: cid }),
-      }).catch(() => {})
-    }
-  }, [dragSource, orderedVisibleItems, allItems])
+  }, [dragSource, orderedVisibleItems])
 
   // Add task to project
   const handleAddTask = async (text, projectSlug) => {
@@ -2472,12 +2278,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const railAgents = allItems.filter(it => it.isAgent)
   const railProjects = allItems.filter(it => !it.isAgent)
 
-  // Mobile: visible items as array for tab switching (use filtered for consistent behavior)
-  const mobileItems = filteredVisibleItems
+  // Mobile: visible items as array for tab switching
+  const mobileItems = orderedVisibleItems
   const activeMobileItem = mobileItems[mobileIdx] || mobileItems[0]
 
   return (
-    <ToastProvider>
     <div style={{
       ...vars, display: 'flex', flexDirection: 'column',
       height: '100%', width: '100%', background: 'var(--bv-bg)',
@@ -2502,206 +2307,258 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         .bv-columns-area::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.12); border-radius: 3px; }
       `}</style>
 
-      {/* CV3 Nav Bar -- Home/Tasks/Chat tabs + world selector + task stats */}
-      <div style={{
-        flexShrink: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        background: 'var(--bv-bg)',
-      }}>
-        {/* Top row: logo + world selector + bell + avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: '-0.04em', cursor: 'pointer', color: 'var(--bv-text)', fontFamily: "'Inter', sans-serif" }}>
-              Corner<span style={{ color: '#10B981' }}>.</span>
-            </div>
-            <WorldSelector
-              currentWorldId={getClientId()}
-              currentUser={currentUser}
-              onEnterWorld={() => {}}
-              onReturnToMyWorld={() => {}}
-              isNightMode={isNightMode}
-              isMobile={isMobile}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: 'var(--bv-col)', border: '1px solid rgba(255,255,255,0.04)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', position: 'relative',
-              color: 'var(--bv-muted)', fontSize: 14,
-              transition: 'all 0.15s',
-            }}>
-              🔔
-              <div style={{
-                position: 'absolute', top: 5, right: 5,
-                width: 6, height: 6, borderRadius: '50%',
-                background: '#10B981', border: '1.5px solid var(--bv-bg)',
-              }} />
-            </div>
-            <div style={{
-              width: 28, height: 28, borderRadius: 9,
-              background: 'linear-gradient(135deg, #10B981, #60A5FA)',
-              cursor: 'pointer', flexShrink: 0,
-            }} />
-          </div>
-        </div>
-        {/* Bottom row: tabs + nav stats */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 8px' }}>
-          <div style={{ display: 'flex', gap: 2 }}>
-            {['home', 'tasks'].map(t => (
-              <button
-                key={t}
-                onClick={() => setCv3Tab(t)}
-                style={{
-                  padding: '7px 18px', borderRadius: 10, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', border: 'none', background: 'none',
-                  color: cv3Tab === t ? 'var(--bv-text)' : 'var(--bv-muted)',
-                  position: 'relative', transition: 'color 0.15s',
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-                {cv3Tab === t && (
-                  <span style={{
-                    position: 'absolute', bottom: 0, left: '20%', right: '20%',
-                    height: 2, background: '#10B981', borderRadius: 2,
-                  }} />
-                )}
-              </button>
-            ))}
-            {chatPanelVisible && (
-              <button
-                onClick={() => setCv3Tab('chat')}
-                style={{
-                  padding: '7px 18px', borderRadius: 10, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', border: 'none', background: 'none',
-                  color: cv3Tab === 'chat' ? 'var(--bv-text)' : 'var(--bv-muted)',
-                  position: 'relative', transition: 'color 0.15s',
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                Chat
-                {cv3Tab === 'chat' && (
-                  <span style={{
-                    position: 'absolute', bottom: 0, left: '20%', right: '20%',
-                    height: 2, background: '#10B981', borderRadius: 2,
-                  }} />
-                )}
-              </button>
-            )}
-          </div>
-          {/* Task stats: building (yellow) + done (green) */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--bv-dim)',
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#EAB308' }} />
-              <b style={{ color: 'var(--bv-text2)' }}>{rightNow.length}</b> building
-            </div>
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--bv-dim)',
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22C55E' }} />
-              <b style={{ color: 'var(--bv-text2)' }}>{v2Done.length}</b> done
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Project filter pills -- dynamically generated from Supabase projects table */}
-      {projectDefs.length > 0 && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px',
-          overflowX: 'auto', flexShrink: 0, borderBottom: '1px solid var(--bv-divider)',
-        }}>
-          {/* All pill */}
-          <button
-            onClick={() => setActiveProjectFilter('all')}
-            style={{
-              padding: '3px 10px', borderRadius: 20, border: '1px solid',
-              borderColor: activeProjectFilter === 'all' ? 'var(--bv-accent-border)' : 'var(--bv-card-border)',
-              background: activeProjectFilter === 'all' ? 'var(--bv-accent)' : 'transparent',
-              color: activeProjectFilter === 'all' ? 'var(--bv-accent-text)' : 'var(--bv-muted)',
-              fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-              transition: 'all 0.15s',
-            }}
-          >All</button>
-          {projectDefs.map(proj => {
-            const isActive = activeProjectFilter === proj.name
-            const color = proj.color || '#60A5FA'
-            return (
-              <button
-                key={proj.id || proj.slug || proj.name}
-                onClick={() => setActiveProjectFilter(isActive ? 'all' : proj.name)}
-                style={{
-                  padding: '3px 10px', borderRadius: 20, border: '1px solid',
-                  borderColor: isActive ? color : 'var(--bv-card-border)',
-                  background: isActive ? `${color}20` : 'transparent',
-                  color: isActive ? color : 'var(--bv-muted)',
-                  fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                  transition: 'all 0.15s',
-                }}
-              >{proj.name}</button>
-            )
-          })}
-        </div>
-      )}
-
       {/* V5 board background: radial gradients over void */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden',
-        background: 'radial-gradient(ellipse at 15% 50%, rgba(255,255,255,0.015) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(255,255,255,0.01) 0%, transparent 50%)',
+        background: 'radial-gradient(ellipse at 15% 50%, rgba(59,130,246,0.03) 0%, transparent 50%), radial-gradient(ellipse at 85% 30%, rgba(168,85,247,0.02) 0%, transparent 50%)',
       }}>
+
+        {/* LEFT RAIL -- collapsible. V5: 56px collapsed, 280px expanded */}
+        <div style={{
+          width: railOpen ? 280 : 56, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
+          transition: 'width 0.28s cubic-bezier(0.34,1.56,0.64,1)', overflow: 'hidden', position: 'relative',
+        }}>
+
+          {/* Collapsed: V5 avatar initials with status dots */}
+          {!railOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 0 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', paddingBottom: 54 }}>
+              {allItems.map(it => (
+                <div key={it.slug}
+                  onClick={() => { toggleSlug(it.slug); if (isMobile) setMobileIdx(0) }}
+                  title={it.name || it.slug}
+                  style={{
+                    width: 36, height: 36, borderRadius: it.isAgent ? 10 : 8,
+                    background: visibleSlugs.has(it.slug) ? `${it.color}20` : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${visibleSlugs.has(it.slug) ? `${it.color}50` : 'rgba(255,255,255,0.06)'}`,
+                    color: visibleSlugs.has(it.slug) ? it.color : 'var(--bv-dim)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 800, fontFamily: "'Inter Tight', 'Inter', sans-serif",
+                    cursor: 'pointer', position: 'relative', flexShrink: 0,
+                    transition: 'all 0.15s',
+                    boxShadow: it.status === 'WORKING' && visibleSlugs.has(it.slug) ? `0 0 8px ${it.color}40` : 'none',
+                  }}
+                >
+                  {(it.name || it.slug)?.charAt(0)?.toUpperCase()}
+                  {/* Status dot */}
+                  <div style={{
+                    position: 'absolute', bottom: -1, right: -1,
+                    width: 9, height: 9, borderRadius: '50%',
+                    border: '2px solid var(--bv-rail)',
+                    background: it.status === 'WORKING' ? '#22C55E' : it.status === 'DONE' ? '#3B82F6' : '#4B5563',
+                    boxShadow: it.status === 'WORKING' ? '0 0 5px #22C55E' : 'none',
+                  }} />
+                  {/* Unread badge */}
+                  {!visibleSlugs.has(it.slug) && (unreadMap[it.slug] || 0) > 0 && (
+                    <div style={{
+                      position: 'absolute', top: -4, right: -4,
+                      minWidth: 14, height: 14, borderRadius: 7,
+                      background: '#E85D26', color: '#fff',
+                      fontSize: 8, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+                    }}>{unreadMap[it.slug]}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Expanded content */}
+          {railOpen && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', flex: 1,
+              overflowY: 'auto', overflowX: 'hidden',
+              scrollbarWidth: 'none', msOverflowStyle: 'none',
+              padding: '6px 0', paddingBottom: 54,
+            }} className="bv-rail-scroll">
+              {/* Search */}
+              <div style={{ padding: '4px 8px 8px' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 7, height: 34,
+                  background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
+                  borderRadius: 9, padding: '0 10px', transition: 'border-color 0.15s',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ color: 'var(--bv-muted)', flexShrink: 0 }}>
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input
+                    value={railSearch} onChange={e => setRailSearch(e.target.value)}
+                    placeholder="Search..."
+                    style={{
+                      flex: 1, background: 'transparent', border: 'none',
+                      color: 'var(--bv-text)', fontSize: 12,
+                      fontFamily: "'Inter', sans-serif", outline: 'none', minWidth: 0,
+                    }}
+                  />
+                  {railSearch && (
+                    <button onClick={() => setRailSearch('')} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--bv-muted)', fontSize: 11, padding: 0, lineHeight: 1,
+                    }}>×</button>
+                  )}
+                </div>
+              </div>
+
+              {/* Agents section */}
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Team</div>
+              {railAgents
+                .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
+                .map(a => (
+                <RailAvatar
+                  key={a.slug} slug={a.slug} name={a.name} color={a.color}
+                  status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
+                  unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
+                  taskCount={a.tasks?.length || 0}
+                  role={a.role}
+                  onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
+                  expanded
+                />
+              ))}
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'var(--bv-divider)', margin: '8px 12px' }} />
+
+              {/* Projects section */}
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Projects</div>
+              {railProjects
+                .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
+                .map(p => (
+                <RailAvatar
+                  key={p.slug} slug={p.slug} name={p.name} color={p.color}
+                  status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
+                  unreadCount={0} taskCount={p.tasks?.length || 0} role="Project"
+                  onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
+                  expanded
+                />
+              ))}
+            </div>
+          )}
+
+          {/* V5: Bottom rail controls -- collapse + reset */}
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
+            padding: '8px', borderTop: '1px solid var(--bv-divider)',
+            background: 'var(--bv-rail)', display: 'flex', flexDirection: 'column', gap: 4,
+          }}>
+            {/* Reset Agents button */}
+            <button
+              onClick={handleResetAgents}
+              disabled={resetting}
+              title="Restart all agents"
+              style={{
+                width: '100%', height: railOpen ? 30 : 30, borderRadius: 8,
+                border: '1px solid rgba(239,68,68,0.25)',
+                background: resetting ? 'rgba(239,68,68,0.15)' : resetResult === 'sent' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.08)',
+                color: resetting ? '#F87171' : resetResult === 'sent' ? '#22C55E' : '#EF4444',
+                cursor: resetting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.2s',
+                opacity: resetting ? 0.7 : 1,
+              }}
+              onMouseEnter={e => { if (!resetting) { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)' }}}
+              onMouseLeave={e => { if (!resetting) { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' }}}
+            >
+              {resetting ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'bvPulse 1s infinite' }}>
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                  <path d="M21 3v9h-9"/>
+                </svg>
+              )}
+              {railOpen && <span>{resetting ? 'Resetting...' : resetResult === 'sent' ? 'Sent' : 'Reset Agents'}</span>}
+            </button>
+            {/* Sleep/Wake toggle */}
+            <button
+              onClick={handleSleepWake}
+              title={agentsSleeping ? 'Wake agents' : 'Put agents to sleep'}
+              style={{
+                width: '100%', height: 30, borderRadius: 8,
+                border: `1px solid ${agentsSleeping ? 'rgba(234,179,8,0.3)' : 'rgba(34,197,94,0.25)'}`,
+                background: agentsSleeping ? 'rgba(234,179,8,0.1)' : 'rgba(34,197,94,0.08)',
+                color: agentsSleeping ? '#EAB308' : '#22C55E',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.8' }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+            >
+              {agentsSleeping ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              )}
+              {railOpen && <span>{agentsSleeping ? 'Wake' : 'Sleep'}</span>}
+            </button>
+            {/* Collapse/expand toggle */}
+            <button
+              onClick={() => setRailOpen(!railOpen)}
+              title={railOpen ? 'Collapse rail' : 'Expand rail'}
+              style={{
+                width: '100%', height: 30, borderRadius: 8,
+                border: railOpen ? '1px solid var(--bv-col-border)' : '1px solid rgba(59,130,246,0.3)',
+                background: railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)',
+                color: railOpen ? 'var(--bv-muted)' : '#60A5FA',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = railOpen ? 'var(--bv-col-exp)' : 'rgba(59,130,246,0.2)'; e.currentTarget.style.color = railOpen ? 'var(--bv-text2)' : '#93C5FD' }}
+              onMouseLeave={e => { e.currentTarget.style.background = railOpen ? 'var(--bv-card)' : 'rgba(59,130,246,0.1)'; e.currentTarget.style.color = railOpen ? 'var(--bv-muted)' : '#60A5FA' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: railOpen ? 'none' : 'rotate(180deg)', transition: 'transform 0.3s' }}>
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              {railOpen && <span>Collapse</span>}
+            </button>
+          </div>
+
+        </div>
 
         {/* COLUMNS AREA */}
         {!isMobile ? (
           <div className="bv-columns-area" style={{ flex: 1, display: 'flex', gap: 10, padding: '4px 14px 4px', overflowX: 'auto', overflowY: 'hidden', scrollBehavior: 'smooth' }}>
-            {filteredVisibleItems.length === 0 && (
+            {orderedVisibleItems.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--bv-dim)' }}>
                 <div style={{ fontSize: 36, opacity: 0.2 }}>&#9776;</div>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>Click agents or projects in the rail</div>
                 <div style={{ fontSize: 11, opacity: 0.5 }}>Your view saves automatically</div>
               </div>
             )}
-            {filteredVisibleItems.length > 0 && !hasActiveTasks ? (
-              <div style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                textAlign: 'center', color: '#888', padding: '40px 20px', fontSize: '1.2em',
-                boxSizing: 'border-box', width: '100%',
-              }}>
-                No tasks in queue.
-              </div>
-            ) : (
-              filteredVisibleItems.map(item => (
-                item.isAgent ? (
-                  <AgentColumn
-                    key={item.slug} agent={item} tasks={item.tasks} isMobile={false}
-                    onContextMenu={handleContextMenu}
-                    onClose={() => toggleSlug(item.slug)}
-                    onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
-                    isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
-                    onHeaderContextMenu={setHeaderCtx}
-                    allAgents={allItems.filter(it => it.isAgent)}
-                    onSendToAgent={handleSendToAgent}
-                    isVoiceActive={isVoiceChatActive}
-                    onVoiceToggle={handleVoiceChatToggle}
-                  />
-                ) : (
-                  <ProjectColumn
-                    key={item.slug} project={item} tasks={item.tasks} isMobile={false}
-                    onContextMenu={handleContextMenu} onAddTask={handleAddTask}
-                    onClose={() => toggleSlug(item.slug)}
-                    onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
-                    isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
-                    onHeaderContextMenu={setHeaderCtx}
-                  />
-                )
-              ))
-            )}
+            {orderedVisibleItems.map(item => (
+              item.isAgent ? (
+                <AgentColumn
+                  key={item.slug} agent={item} tasks={item.tasks} isMobile={false}
+                  onContextMenu={handleContextMenu}
+                  onClose={() => toggleSlug(item.slug)}
+                  onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
+                  isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
+                  onHeaderContextMenu={setHeaderCtx}
+                  allAgents={allItems.filter(it => it.isAgent)}
+                  onSendToAgent={handleSendToAgent}
+                />
+              ) : (
+                <ProjectColumn
+                  key={item.slug} project={item} tasks={item.tasks} isMobile={false}
+                  onContextMenu={handleContextMenu} onAddTask={handleAddTask}
+                  onClose={() => toggleSlug(item.slug)}
+                  onDragStart={s => setDragSource(s)} onDragOver={s => setDragTarget(s)} onDrop={s => handleDragDrop(s)}
+                  isDragTarget={dragTarget === item.slug && dragSource !== item.slug}
+                  onHeaderContextMenu={setHeaderCtx}
+                />
+              )
+            ))}
             {/* Add column button */}
             <AddColumnButton allItems={allItems} visibleSlugs={visibleSlugs} onToggle={toggleSlug} />
           </div>
@@ -2719,7 +2576,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
                 return (
                 <div
                   key={item.slug}
-                  onClick={() => { setMobileIdx(idx); if (item.isAgent) { onAgentSelect?.(item.slug); setChatPanelVisible(true) } }}
+                  onClick={() => { setMobileIdx(idx); if (item.isAgent) onAgentSelect?.(item.slug) }}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                     padding: '3px 8px', borderRadius: 8, cursor: 'pointer', flexShrink: 0,
@@ -2775,7 +2632,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             {/* Active column */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               {activeMobileItem?.isAgent ? (
-                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} isVoiceActive={isVoiceChatActive} onVoiceToggle={handleVoiceChatToggle} />
+                <AgentColumn key={activeMobileItem.slug} agent={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onHeaderContextMenu={setHeaderCtx} allAgents={allItems.filter(it => it.isAgent)} onSendToAgent={handleSendToAgent} />
               ) : activeMobileItem ? (
                 <ProjectColumn key={activeMobileItem.slug} project={activeMobileItem} tasks={activeMobileItem.tasks} isMobile onContextMenu={handleContextMenu} onAddTask={handleAddTask} onHeaderContextMenu={setHeaderCtx} />
               ) : (
@@ -2809,10 +2666,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           onAction={handleHeaderContextAction}
         />
       )}
-
-      <TaskQueueFAB isNightMode={isNightMode} />
     </div>
-    <TaskQueuedToasts />
-    </ToastProvider>
   )
 }

@@ -130,10 +130,10 @@ export const AGENT_KNOWLEDGE = {
         steps: [
           'Events table schema: id, timestamp, agent, event_type, payload (jsonb)',
           'Event types: task_started, task_completed, qa_passed, qa_failed, build_pushed, task_failed',
-          'task_started → WORKING, task_completed/qa_passed/build_pushed → IDLE, task_failed/qa_failed → STUCK',
-          'No task completion event after 20 min from task_started → STALLED (amber)',
+          'Events are for activity feed display only. agent_status table is the sole source of truth for status.',
+          'task_runner/gemini/system write to agent_status via set_agent_status RPC.',
           'Fetch goes inside supabase-status.js (parallel Promise.all, no new API function)',
-          'deriveStateFromEvents() in useDataPipe.js handles the state derivation',
+          'Dashboard reads agent_status table directly. No event-derived status.',
         ],
       },
     ],

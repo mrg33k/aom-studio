@@ -1,7 +1,7 @@
 -- Migration 012: Agent status truthful cleanup
--- Removes poke/watchdog system. agent_status table is the ONLY source of truth.
--- Status is set by: task_runner, gemini, or system safety net (pg_cron 30-min clear).
--- Dashboard reads agent_status directly. No event-derived status.
+-- Adds constraints to enforce that agent_status table is the sole source of truth.
+-- Status can only be written by task_runner, gemini, or system.
+-- Prevents phantom "working" states from stale data.
 
 -- Ensure status_source is always one of the three allowed values
 ALTER TABLE agent_status
@@ -13,7 +13,8 @@ ALTER TABLE agent_status
   ADD CONSTRAINT IF NOT EXISTS agent_status_value_check
   CHECK (status IN ('working', 'idle', 'blocked', 'done', 'waiting', 'paused'));
 
--- Index for dashboard polling (frequently queries all agents by status)
-CREATE INDEX IF NOT EXISTS idx_agent_status_working
-  ON agent_status(status)
-  WHERE status = 'working';
+-- Index for dashboard polling (frequently queries agents by status=working)
+CREATE INDEX IF NOT EXISTS idx_agent_status_status ON agent_status(status) WHERE status = 'working';
+
+-- Index for client-scoped status reads (dashboard polls by client_id)
+CREATE INDEX IF NOT EXISTS idx_agent_status_client_slug ON agent_status(client_id, slug);

@@ -1,10 +1,16 @@
 // Chat Connection Layer (C3)
 // Abstracted so swapping from SSE to WebSocket is a config change, not a rewrite.
 // C3: WebSocket is primary. SSE is fallback.
-// Feature flag: VITE_WS_ENABLED=true enables WebSocket path.
+// Feature flags:
+//   VITE_WS_ENABLED=true  -> WebSocket path (local only)
+//   VITE_V2_CHAT=true     -> Supabase direct write + Realtime subscription (24/7, no tmux)
 
 const WS_ENABLED = typeof import.meta !== 'undefined'
   ? (import.meta.env?.VITE_WS_ENABLED === 'true')
+  : false
+
+export const V2_CHAT_ENABLED = typeof import.meta !== 'undefined'
+  ? (import.meta.env?.VITE_V2_CHAT === 'true')
   : false
 
 const IS_LOCAL = typeof window !== 'undefined' &&
@@ -173,13 +179,79 @@ class WebSocketConnection {
   }
 }
 
+// Supabase Direct Connection (V2 path -- 24/7, no tmux dependency)
+// send(): inserts user message directly to Supabase messages table
+// subscribe(): opens Realtime channel filtered by agent + client_id for assistant responses
+// The Edge Function (chat-responder) picks up needs_response=true messages and writes replies.
+export class SupabaseConnection {
+  constructor(onMessage, onDone, onError, supabaseClient) {
+    this.onMessage = onMessage
+    this.onDone = onDone
+    this.onError = onError
+    this.sb = supabaseClient
+    this.channel = null
+  }
+
+  async send({ slug, message, clientId }) {
+    if (!this.sb) {
+      this.onError('Supabase client not available')
+      return
+    }
+    const { error } = await this.sb.from('messages').insert({
+      agent: slug,
+      role: 'user',
+      text: message,
+      source: 'corner-dashboard-v2',
+      client_id: clientId || 'aom',
+      needs_response: true,
+    })
+    if (error) {
+      this.onError(`Insert failed: ${error.message}`)
+    }
+    // Response comes via subscribe() or BoardView background poll -- no inline wait
+  }
+
+  subscribe({ slug, clientId, afterTimestamp, onResponse }) {
+    if (!this.sb) return
+    this.channel = this.sb
+      .channel(`chat-${slug}-${clientId || 'aom'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `agent=eq.${slug}`,
+        },
+        (payload) => {
+          const row = payload.new
+          if (row.role !== 'assistant') return
+          if (row.source === 'terminal' || (row.source || '').startsWith('agent-')) return
+          if (afterTimestamp && row.timestamp <= afterTimestamp) return
+          onResponse(row)
+        },
+      )
+      .subscribe()
+  }
+
+  disconnect() {
+    if (this.channel && this.sb) {
+      this.sb.removeChannel(this.channel)
+      this.channel = null
+    }
+  }
+}
+
 // Factory: returns the right connection based on config
-// C3: WebSocket when enabled + local, SSE otherwise
-export function createChatConnection(onMessage, onDone, onError) {
+// Priority: V2 (Supabase) > WebSocket (local) > SSE (default)
+export function createChatConnection(onMessage, onDone, onError, supabaseClient) {
+  if (V2_CHAT_ENABLED && supabaseClient) {
+    return new SupabaseConnection(onMessage, onDone, onError, supabaseClient)
+  }
   if (WS_ENABLED && IS_LOCAL) {
     return new WebSocketConnection(onMessage, onDone, onError)
   }
   return new SSEConnection(onMessage, onDone, onError)
 }
 
-export const CONNECTION_TYPE = (WS_ENABLED && IS_LOCAL) ? 'websocket' : 'sse'
+export const CONNECTION_TYPE = V2_CHAT_ENABLED ? 'supabase-v2' : (WS_ENABLED && IS_LOCAL) ? 'websocket' : 'sse'
