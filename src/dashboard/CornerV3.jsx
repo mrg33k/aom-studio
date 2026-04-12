@@ -1,3 +1,4 @@
+// Worktree isolation verified.
 // CornerV3.jsx -- Dashboard v2: Two-row nav + world switcher
 // Route: /dashboard/v2
 //
