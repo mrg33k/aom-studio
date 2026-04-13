@@ -749,11 +749,11 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       .select('*')
       .eq('client_id', selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId)
       .eq('agent', `project:${selectedProject.slug}`)
-      .order('timestamp', { ascending: true })
+      .order('timestamp', { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
-        if (!error && data) setMessages(data)
+        if (!error && data) setMessages(data.reverse())
       })
   }, [worldId, selectedProject, selectedAgent])
 
