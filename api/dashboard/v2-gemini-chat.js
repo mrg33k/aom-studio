@@ -462,6 +462,18 @@ const PROJECT_SUPABASE = {
   },
 };
 
+// Per-table insert rules: required fields + defaults applied before write_data inserts.
+// Add entries here instead of editing handler logic when new tables need pre-insert guards.
+const TABLE_SCHEMAS = {
+  directory_reports: {
+    required: ['title', 'file_url', 'tenant_id'],
+    defaults: {
+      published_at: () => new Date().toISOString(),
+      status: 'published',
+    },
+  },
+};
+
 async function runQuery(table, filters, select, clientId, projectPath) {
   // Check if this table belongs to a project-specific Supabase
   const projectDb = await getProjectDb(projectPath, clientId);
@@ -1494,7 +1506,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
               }
             }
 
-            // directory_reports guards: dedupe by file_url + default published_at on insert
+            // directory_reports guards: dedupe by file_url on insert
             if (action === 'insert' && args.table === 'directory_reports') {
               if (args.data?.file_url) {
                 const dedupeResp = await fetch(`${projectDb.url}/rest/v1/directory_reports?file_url=eq.${encodeURIComponent(args.data.file_url)}&select=id&limit=1`, { headers: readHeaders });
@@ -1506,8 +1518,21 @@ ${PROJECT_BASE_INSTRUCTION}`;
                   continue;
                 }
               }
-              if (args.data && !args.data.published_at) {
-                args.data.published_at = new Date().toISOString();
+            }
+
+            // Generalized pre-insert schema enforcement: required fields + defaults from TABLE_SCHEMAS.
+            if (action === 'insert' && TABLE_SCHEMAS[args.table]) {
+              const schema = TABLE_SCHEMAS[args.table];
+              args.data = args.data || {};
+              for (const field of schema.required || []) {
+                if (args.data[field] === undefined || args.data[field] === null || args.data[field] === '') {
+                  throw new Error(`Missing required field "${field}" for ${args.table} insert`);
+                }
+              }
+              for (const [field, value] of Object.entries(schema.defaults || {})) {
+                if (!args.data[field]) {
+                  args.data[field] = typeof value === 'function' ? value() : value;
+                }
               }
             }
 
