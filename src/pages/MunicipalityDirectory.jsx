@@ -586,6 +586,9 @@ export default function MunicipalDirectory() {
               }}>
                 Municipality Directory
               </h1>
+              <span style={{ fontSize: '0.85em', color: '#888', marginLeft: '10px' }}>
+                Total: {filtered.length.toLocaleString()} towns
+              </span>
             </div>
             <div style={{ fontSize: 12, color: V.dim, marginTop: 2, fontFamily: V.space }}>
               19,475 incorporated places · 2020 Census · 49 states
