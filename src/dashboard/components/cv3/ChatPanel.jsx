@@ -123,6 +123,19 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   const [customizeTarget, setCustomizeTarget] = useState(null) // { agent, type: 'photo'|'color' }
   const customizeFileRef = useRef(null)
 
+  // ── R3: Composer pending attachments + send idempotency ─────────────────────
+  // pendingAttachments: files uploaded but not yet attached to a sent message.
+  // Each entry: { id, name, url, mimeType, size }. Consumed on next send.
+  const [pendingAttachments, setPendingAttachments] = useState([])
+  const [stagingFiles, setStagingFiles] = useState(false)
+  // Ref mirror so the send functions can read the latest value without
+  // adding pendingAttachments to every useCallback deps list.
+  const pendingAttachmentsRef = useRef([])
+  useEffect(() => { pendingAttachmentsRef.current = pendingAttachments }, [pendingAttachments])
+  // Idempotency: prevent overlapping sends and block same-text double-submits.
+  const inFlightSendRef = useRef(false)
+  const lastSendSigRef  = useRef({ sig: '', ts: 0 })
+
   // Voice call persistence: when voice is active and user navigates away,
   // keep the call alive and show a "return to call" banner
   const [voiceMinimized, setVoiceMinimized] = useState(false)
@@ -838,9 +851,25 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   }, [messages, currentUser?.id])
 
   const handleSend = useCallback(async () => {
-    const text = input.trim()
-    if (!text || sending || !selectedAgent) return
+    const rawText = input.trim()
+    if (!rawText || sending || !selectedAgent) return
+    // R3: idempotency — block overlapping sends and same-text double-submit
+    const attSnapshot = pendingAttachmentsRef.current
+    const sig = `${selectedAgent.slug}:${rawText}:${attSnapshot.map(a => a.id).join(',')}`
+    const nowMs = Date.now()
+    if (inFlightSendRef.current) return
+    if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
+    inFlightSendRef.current = true
+    lastSendSigRef.current = { sig, ts: nowMs }
+    // Fold pending attachments into the outgoing text so the AI sees them,
+    // matching the existing "include URL in text" convention used for manual
+    // uploads in handleFileSelection.
+    const attSuffix = attSnapshot.length
+      ? '\n' + attSnapshot.map(a => `[Attached file: ${a.name}\n${a.url}]`).join('\n')
+      : ''
+    const text = rawText + attSuffix
     setInput('')
+    if (attSnapshot.length) setPendingAttachments([])
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
 
@@ -961,13 +990,29 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       console.error('[ChatPanel] send error:', err)
     } finally {
       setSending(false)
+      inFlightSendRef.current = false
       inputRef.current?.focus()
     }
   }, [input, sending, selectedAgent, worldId])
 
   // Core send logic for agent chat -- accepts text directly so voice transcription can call it
-  const sendAgentText = useCallback(async (text) => {
-    if (!text?.trim() || !selectedAgent || !worldId) return
+  const sendAgentText = useCallback(async (rawText) => {
+    if (!rawText?.trim() || !selectedAgent || !worldId) return
+    // R3: idempotency — block overlapping sends and same-text double-submit
+    const attSnapshot = pendingAttachmentsRef.current
+    const trimmed = rawText.trim()
+    const sig = `${selectedAgent.slug}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
+    const nowMs = Date.now()
+    if (inFlightSendRef.current) return
+    if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
+    inFlightSendRef.current = true
+    lastSendSigRef.current = { sig, ts: nowMs }
+    // Consume any pending attachments by appending their URLs to the text
+    const attSuffix = attSnapshot.length
+      ? '\n' + attSnapshot.map(a => `[Attached file: ${a.name}\n${a.url}]`).join('\n')
+      : ''
+    const text = trimmed + attSuffix
+    if (attSnapshot.length) setPendingAttachments([])
     setInput('')
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
@@ -1027,6 +1072,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       console.error('[ChatPanel] agent send error:', err)
     } finally {
       setSending(false)
+      inFlightSendRef.current = false
       inputRef.current?.focus()
     }
   }, [selectedAgent, worldId, selectedProject])
@@ -1039,6 +1085,94 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       handleSend()
     }
   }, [handleSend])
+
+  // ── R3: Pending attachment helpers ────────────────────────────────────────
+  // addPendingAttachment/removePendingAttachment are exposed via ctx so
+  // ThreadView/ProjectChatView can render chips in the composer.
+  const addPendingAttachment = useCallback((att) => {
+    if (!att || !att.url) return
+    setPendingAttachments(prev => {
+      if (prev.some(p => p.id === att.id)) return prev
+      return [...prev, att]
+    })
+  }, [])
+  const removePendingAttachment = useCallback((id) => {
+    setPendingAttachments(prev => prev.filter(p => p.id !== id))
+  }, [])
+
+  // Upload files and stage them in pendingAttachments without sending a message.
+  // Sub-views can wire this to the composer paperclip/drop zone to let the user
+  // attach a file, THEN type a message, THEN send them together.
+  const stageFiles = useCallback(async (fileList) => {
+    const files = Array.from(fileList || [])
+    if (!files.length || !worldId) return
+    const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
+    setStagingFiles(true)
+    try {
+      for (const file of files) {
+        try {
+          let dataBase64, mimeType = file.type
+          if (file.type.startsWith('image/')) {
+            dataBase64 = await new Promise(resolve => {
+              const img = new Image()
+              const reader = new FileReader()
+              reader.onload = () => {
+                img.onload = () => {
+                  const maxDim = 1200
+                  let w = img.width, h = img.height
+                  if (w > maxDim || h > maxDim) {
+                    const scale = maxDim / Math.max(w, h)
+                    w = Math.round(w * scale)
+                    h = Math.round(h * scale)
+                  }
+                  const canvas = document.createElement('canvas')
+                  canvas.width = w
+                  canvas.height = h
+                  canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+                  resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1])
+                }
+                img.src = reader.result
+              }
+              reader.readAsDataURL(file)
+            })
+            mimeType = 'image/jpeg'
+          } else {
+            dataBase64 = await new Promise(resolve => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result.split(',')[1])
+              reader.readAsDataURL(file)
+            })
+          }
+          const uploadRes = await fetch('/api/dashboard/file-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              world: clientId,
+              filename: file.name,
+              data_base64: dataBase64,
+              mime_type: mimeType,
+            }),
+          })
+          const uploadData = await uploadRes.json()
+          if (!uploadRes.ok) {
+            console.error('[ChatPanel] stageFiles upload error:', uploadData.error)
+            continue
+          }
+          addPendingAttachment({
+            id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: file.name,
+            url: uploadData.full_url,
+            mimeType,
+            size: file.size,
+          })
+        } catch (err) {
+          console.error('[ChatPanel] stageFiles error:', err)
+        }
+      }
+    } finally {
+      setStagingFiles(false)
+    }
+  }, [worldId, selectedProject, addPendingAttachment])
 
   const handleFileSelection = useCallback(async (e) => {
     const files = Array.from(e.target.files || [])
@@ -1158,10 +1292,25 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   }, [selectedAgent, selectedProject, worldId])
 
   // Core send logic shared by typed input and voice transcription
-  const sendProjectText = useCallback(async (text) => {
-    if (!text?.trim() || !selectedProject || !worldId) return
-    setSending(true)
+  const sendProjectText = useCallback(async (rawText) => {
+    if (!rawText?.trim() || !selectedProject || !worldId) return
+    const trimmed = rawText.trim()
     const agentKey = `project:${selectedProject.slug}`
+    // R3: idempotency — block overlapping sends and same-text double-submit
+    const attSnapshot = pendingAttachmentsRef.current
+    const sig = `${agentKey}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
+    const nowMs = Date.now()
+    if (inFlightSendRef.current) return
+    if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
+    inFlightSendRef.current = true
+    lastSendSigRef.current = { sig, ts: nowMs }
+    // Consume pending attachments into the outgoing text
+    const attSuffix = attSnapshot.length
+      ? '\n' + attSnapshot.map(a => `[Attached file: ${a.name}\n${a.url}]`).join('\n')
+      : ''
+    const text = trimmed + attSuffix
+    if (attSnapshot.length) setPendingAttachments([])
+    setSending(true)
     const projectClientId = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
     const now = new Date().toISOString()
     const tempUserId = `temp-proj-${Date.now()}`
