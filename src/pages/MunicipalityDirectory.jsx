@@ -586,7 +586,7 @@ export default function MunicipalDirectory() {
               }}>
                 Municipality Directory
               </h1>
-              <span style={{ fontSize: '0.85em', color: '#888', marginLeft: '10px' }}>
+              <span style={{ fontSize: '0.8em', color: '#888', marginLeft: '10px' }}>
                 Total: {filtered.length.toLocaleString()} towns
               </span>
             </div>
