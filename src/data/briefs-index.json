@@ -1395,6 +1395,16 @@
           "hasPage": true
         },
         {
+          "title": "DNS Setup: SPF, DKIM, DMARC for aheadofmarket.com (Resend)",
+          "slug": "dns-setup-aheadofmarket",
+          "agent": "Elon",
+          "date": "2026-04-13",
+          "dateFormatted": "Apr 13",
+          "summary": "DNS records required to authenticate transactional email from aheadofmarket.com via Resend. Add in order, verify in Resend dashboard.",
+          "path": "/briefs/dns-setup-aheadofmarket",
+          "hasPage": true
+        },
+        {
           "title": "Mom Agent Diagnosis",
           "slug": "mom-diagnosis",
           "agent": "Elon",
