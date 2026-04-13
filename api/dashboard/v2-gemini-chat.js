@@ -213,6 +213,12 @@ WHAT TO INCLUDE IN TASK DESCRIPTIONS (the builder reads ONLY your description):
 WHAT NOT TO INCLUDE:
 - Do NOT over-specify implementation details. Describe the outcome, not the code.
 
+BULK WRITE CONFIRMATION (hard rule for write_data on user-facing tables):
+- User-facing tables are the directory_* tables that power the public site: directory_companies, directory_members, directory_certifications, directory_tenants, directory_reports, directory_listings, directory_organizations.
+- Before a BULK write (insert with multiple rows, or update/delete that would affect more than 1 row) on any of those tables, you MUST first show the user a PREVIEW -- table, action, the filter or a sample row, and the estimated row count -- and then STOP and WAIT.
+- Only proceed after the user's NEXT message explicitly replies with one of: "yes", "y", "confirm", "go", or "ok". Do not infer consent from earlier turns, vague acknowledgements ("sure", "sounds good"), or your own judgment.
+- The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.
+
 IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out loud, or just chatting, TALK TO HIM. Don't reach for a tool. Only use tools when there's a clear action to take.`;
 
 // Lean instruction for project chats. No personal info, no agent identity, no Rex-specific rules.
@@ -253,7 +259,13 @@ URL RENDERING RULES (hard -- applies to every response):
 - Only emit a URL that came verbatim from a tool result. Never interpolate variables like \${slug}, \${id}, or \${tenant} into prose -- those are code syntax, not strings the user should see.
 - NEVER emit the literal word "undefined", "null", or "[object Object]" inside a URL, and never emit a URL with an empty path segment (e.g. "sourcing.directory//reports"). If you notice yourself about to write one, STOP and omit the URL entirely.
 - When a tool returns a \`page_url\` field, quote it exactly. When it does not, confirm the action succeeded WITHOUT fabricating a link. Example: "Report saved." is correct; "Report saved: https://sourcing.directory/undefined/reports" is wrong.
-- If the user explicitly asks for a link and no \`page_url\` is available, say the slug/identifier is missing and ask for it instead of guessing.`;
+- If the user explicitly asks for a link and no \`page_url\` is available, say the slug/identifier is missing and ask for it instead of guessing.
+
+BULK WRITE CONFIRMATION (hard rule for write_data on user-facing tables):
+- User-facing tables are the directory_* tables that power the public site: directory_companies, directory_members, directory_certifications, directory_tenants, directory_reports, directory_listings, directory_organizations.
+- Before a BULK write (insert with multiple rows, or update/delete that would affect more than 1 row) on any of those tables, you MUST first show the user a PREVIEW -- table, action, the filter or a sample row, and the estimated row count -- and then STOP and WAIT.
+- Only proceed after the user's NEXT message explicitly replies with one of: "yes", "y", "confirm", "go", or "ok". Do not infer consent from earlier turns, vague acknowledgements ("sure", "sounds good"), or your own judgment.
+- The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.`;
 
 // Rex-specific identity + Corner codebase knowledge. Only used for Rex/agent chats, never for project chats.
 const SYSTEM_INSTRUCTION = `${BASE_INSTRUCTION}
@@ -479,6 +491,28 @@ const TABLE_SCHEMAS = {
     },
   },
 };
+
+// Tables whose rows appear on the public site. Bulk writes to these require
+// explicit user confirmation in the CURRENT user message -- the server checks
+// `message` (latest turn) for one of: yes, y, confirm, go, ok. We intentionally
+// do NOT trust a flag in the AI's tool arguments; confirmation must come from
+// the human.
+const USER_FACING_TABLES = new Set([
+  'directory_companies',
+  'directory_members',
+  'directory_certifications',
+  'directory_tenants',
+  'directory_reports',
+  'directory_listings',
+  'directory_organizations',
+]);
+
+const BULK_CONFIRMATION_REGEX = /(^|[^a-z0-9])(yes|y|confirm|go|ok)($|[^a-z0-9])/i;
+
+function hasBulkConfirmation(userMessage) {
+  if (!userMessage || typeof userMessage !== 'string') return false;
+  return BULK_CONFIRMATION_REGEX.test(userMessage.trim());
+}
 
 async function runQuery(table, filters, select, clientId, projectPath) {
   // Check if this table belongs to a project-specific Supabase
@@ -1499,16 +1533,36 @@ ${PROJECT_BASE_INSTRUCTION}`;
             const writeHeaders = { ...readHeaders, 'Content-Type': 'application/json', Prefer: 'return=representation' };
 
             // SAFETY: for delete/update, count affected rows FIRST
+            let affectedRowCount = null;
             if (action === 'delete' || action === 'update') {
               const countResp = await fetch(`${projectDb.url}/rest/v1/${args.table}?${args.filters}&select=id`, { headers: { ...readHeaders, Prefer: 'count=exact', Range: '0-0' } });
               const countHeader = countResp.headers.get('content-range') || '';
               const total = parseInt((countHeader.split('/')[1] || '0'), 10);
+              affectedRowCount = total;
               if (total > 50) throw new Error(`Safety: ${action} would affect ${total} rows (limit 50). Use more specific filters.`);
               if (total === 0) {
                 result = { ok: true, action, table: args.table, affected: 0, note: 'No matching rows found' };
                 allFunctionCalls.push({ name, args, result });
                 roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: result } }] });
                 continue;
+              }
+            }
+
+            // BULK WRITE CONFIRMATION GATE:
+            // Bulk writes (multi-row insert, or update/delete touching > 1 row) to
+            // user-facing tables require an explicit confirmation keyword in the
+            // CURRENT user message. We inspect `message` (the latest user turn),
+            // not any flag the model passed in its tool arguments -- the human has
+            // to actually say yes. If the check fails, we throw a descriptive error
+            // the model can read and turn into a preview + wait prompt.
+            if (USER_FACING_TABLES.has(args.table)) {
+              const bulkInsert = action === 'insert' && Array.isArray(args.data) && args.data.length > 1;
+              const bulkMutation = (action === 'update' || action === 'delete') && affectedRowCount !== null && affectedRowCount > 1;
+              if (bulkInsert || bulkMutation) {
+                if (!hasBulkConfirmation(message)) {
+                  const rowHint = bulkInsert ? `${args.data.length} rows to insert` : `${affectedRowCount} rows affected`;
+                  throw new Error(`Bulk ${action} on "${args.table}" blocked (${rowHint}). Show the user a preview (table, action, filter or sample row, estimated row count) and wait. Retry only after the user's next message replies with one of: yes, y, confirm, go, ok. The most recent user message did not contain any of those confirmation keywords.`);
+                }
               }
             }
 
