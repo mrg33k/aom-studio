@@ -247,7 +247,13 @@ CONVERSATION RULES:
 - Use tools when there's a clear action. Conversation first.
 - If you don't know something, look it up with your tools.
 - Never return an empty response. If something fails, say what went wrong.
-- CRITICAL: When asked about git history, commits, or what changed, you MUST call git_recent. When asked to search for code, you MUST call search_code. Do not try to answer from memory -- always use the tool.`;
+- CRITICAL: When asked about git history, commits, or what changed, you MUST call git_recent. When asked to search for code, you MUST call search_code. Do not try to answer from memory -- always use the tool.
+
+URL RENDERING RULES (hard -- applies to every response):
+- Only emit a URL that came verbatim from a tool result. Never interpolate variables like \${slug}, \${id}, or \${tenant} into prose -- those are code syntax, not strings the user should see.
+- NEVER emit the literal word "undefined", "null", or "[object Object]" inside a URL, and never emit a URL with an empty path segment (e.g. "sourcing.directory//reports"). If you notice yourself about to write one, STOP and omit the URL entirely.
+- When a tool returns a \`page_url\` field, quote it exactly. When it does not, confirm the action succeeded WITHOUT fabricating a link. Example: "Report saved." is correct; "Report saved: https://sourcing.directory/undefined/reports" is wrong.
+- If the user explicitly asks for a link and no \`page_url\` is available, say the slug/identifier is missing and ask for it instead of guessing.`;
 
 // Rex-specific identity + Corner codebase knowledge. Only used for Rex/agent chats, never for project chats.
 const SYSTEM_INSTRUCTION = `${BASE_INSTRUCTION}
@@ -1549,6 +1555,26 @@ ${PROJECT_BASE_INSTRUCTION}`;
             if (!resp.ok) throw new Error(`DB ${action} failed: ${resp.status} ${await resp.text().catch(() => '')}`);
             const rows = await resp.json().catch(() => []);
             result = { ok: true, action, table: args.table, affected: Array.isArray(rows) ? rows.length : 1 };
+
+            // Build canonical sourcing.directory page URL for directory_reports inserts.
+            // Only attach page_url when the tenant slug resolves -- never emit a URL
+            // containing 'undefined'. If the slug is missing, omit the field entirely so
+            // the operator response template has nothing to interpolate.
+            if (action === 'insert' && args.table === 'directory_reports') {
+              const tenantId = args.data?.tenant_id || (Array.isArray(rows) && rows[0]?.tenant_id);
+              if (tenantId) {
+                try {
+                  const tenantResp = await fetch(`${projectDb.url}/rest/v1/directory_tenants?id=eq.${encodeURIComponent(tenantId)}&select=slug&limit=1`, { headers: readHeaders });
+                  if (tenantResp.ok) {
+                    const tenantRows = await tenantResp.json().catch(() => []);
+                    const slug = Array.isArray(tenantRows) && tenantRows[0]?.slug;
+                    if (slug && typeof slug === 'string' && slug.trim()) {
+                      result.page_url = `https://sourcing.directory/${slug}/reports`;
+                    }
+                  }
+                } catch (_) { /* slug lookup is best-effort -- omit page_url on failure */ }
+              }
+            }
           }
           else if (name === 'use_integration') {
             // Load keys: project-scoped first (shared by all room members), then user-scoped (personal, overrides project).
