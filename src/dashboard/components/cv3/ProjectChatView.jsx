@@ -1,3 +1,4 @@
+// 2026-04-13: project chat history fetch fixed (was asc+limit200, now desc+reverse).
 // ProjectChatView -- project conversation thread
 // Extracted from ChatPanel.jsx. Receives all state via ctx prop.
 import { useState, useEffect } from 'react'
