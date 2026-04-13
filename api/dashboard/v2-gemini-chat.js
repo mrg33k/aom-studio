@@ -1494,6 +1494,23 @@ ${PROJECT_BASE_INSTRUCTION}`;
               }
             }
 
+            // directory_reports guards: dedupe by file_url + default published_at on insert
+            if (action === 'insert' && args.table === 'directory_reports') {
+              if (args.data?.file_url) {
+                const dedupeResp = await fetch(`${projectDb.url}/rest/v1/directory_reports?file_url=eq.${encodeURIComponent(args.data.file_url)}&select=id&limit=1`, { headers: readHeaders });
+                const existing = await dedupeResp.json().catch(() => []);
+                if (Array.isArray(existing) && existing.length > 0) {
+                  result = { ok: true, affected: 0, note: 'Skipped: row with this file_url already exists' };
+                  allFunctionCalls.push({ name, args, result });
+                  roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: result } }] });
+                  continue;
+                }
+              }
+              if (args.data && !args.data.published_at) {
+                args.data.published_at = new Date().toISOString();
+              }
+            }
+
             let resp;
             if (action === 'insert') {
               resp = await fetch(`${projectDb.url}/rest/v1/${args.table}`, { method: 'POST', headers: writeHeaders, body: JSON.stringify(args.data || {}) });
