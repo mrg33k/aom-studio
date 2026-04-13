@@ -219,6 +219,12 @@ BULK WRITE CONFIRMATION (hard rule for write_data on user-facing tables):
 - Only proceed after the user's NEXT message explicitly replies with one of: "yes", "y", "confirm", "go", or "ok". Do not infer consent from earlier turns, vague acknowledgements ("sure", "sounds good"), or your own judgment.
 - The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.
 
+WRITE_DATA WITH FILE ATTACHMENTS (hard rule -- applies to any insert that includes a file_url, attachment, or document reference):
+- Before you call write_data with a \`description\`, \`summary\`, or \`notes\` field for a row that points at a file, you MUST call lookup_context on that file first and read the returned content.
+- The \`description\` you write MUST come from what lookup_context actually returned. Do NOT derive the description from the filename, the URL slug, or the surrounding conversation.
+- If lookup_context returns nothing, the file is unreachable, or the content is empty -- stop. Tell the user "I can't read the file yet" and ask them to re-upload or share the content. Do NOT guess. Do NOT write a placeholder description. Do NOT call write_data.
+- Filename-derived descriptions (e.g. a file called "q3_vendor_audit.pdf" turning into "Q3 vendor audit") are fabrications. They look real but they're not. The server logs a warning when it sees this shape, and QA will reject the insert.
+
 IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out loud, or just chatting, TALK TO HIM. Don't reach for a tool. Only use tools when there's a clear action to take.`;
 
 // Lean instruction for project chats. No personal info, no agent identity, no Rex-specific rules.
@@ -265,7 +271,13 @@ BULK WRITE CONFIRMATION (hard rule for write_data on user-facing tables):
 - User-facing tables are the directory_* tables that power the public site: directory_companies, directory_members, directory_certifications, directory_tenants, directory_reports, directory_listings, directory_organizations.
 - Before a BULK write (insert with multiple rows, or update/delete that would affect more than 1 row) on any of those tables, you MUST first show the user a PREVIEW -- table, action, the filter or a sample row, and the estimated row count -- and then STOP and WAIT.
 - Only proceed after the user's NEXT message explicitly replies with one of: "yes", "y", "confirm", "go", or "ok". Do not infer consent from earlier turns, vague acknowledgements ("sure", "sounds good"), or your own judgment.
-- The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.`;
+- The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.
+
+WRITE_DATA WITH FILE ATTACHMENTS (hard rule -- applies to any insert that includes a file_url, attachment, or document reference):
+- Before you call write_data with a \`description\`, \`summary\`, or \`notes\` field for a row that points at a file, you MUST call lookup_context on that file first and read the returned content.
+- The \`description\` you write MUST come from what lookup_context actually returned. Do NOT derive the description from the filename, the URL slug, or the surrounding conversation.
+- If lookup_context returns nothing, the file is unreachable, or the content is empty -- stop. Tell the user "I can't read the file yet" and ask them to re-upload or share the content. Do NOT guess. Do NOT write a placeholder description. Do NOT call write_data.
+- Filename-derived descriptions (e.g. a file called "q3_vendor_audit.pdf" turning into "Q3 vendor audit") are fabrications. They look real but they're not. The server logs a warning when it sees this shape, and QA will reject the insert.`;
 
 // Rex-specific identity + Corner codebase knowledge. Only used for Rex/agent chats, never for project chats.
 const SYSTEM_INSTRUCTION = `${BASE_INSTRUCTION}
@@ -1576,6 +1588,28 @@ ${PROJECT_BASE_INSTRUCTION}`;
                   allFunctionCalls.push({ name, args, result });
                   roundResponses.push({ role: 'function', parts: [{ functionResponse: { name, response: result } }] });
                   continue;
+                }
+              }
+
+              // Observability: warn when the description looks derived from the filename
+              // rather than from real RAG/lookup_context content. Non-blocking -- the insert
+              // still proceeds; the warn just lands in Vercel logs for later auditing.
+              const desc = args.data?.description;
+              const fileUrl = args.data?.file_url;
+              if (typeof desc === 'string' && desc.trim() && typeof fileUrl === 'string' && fileUrl) {
+                const basename = (fileUrl.split('/').pop() || '').replace(/\.[a-z0-9]+$/i, '');
+                const normalize = (s) => s.toLowerCase().replace(/[_\-.]+/g, ' ').replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
+                const normBase = normalize(basename);
+                const normDesc = normalize(desc);
+                const looksFabricated = normBase.length >= 4 && (normDesc === normBase || normDesc.includes(normBase) || (desc.trim().length < 120 && normBase.includes(normDesc)));
+                if (looksFabricated) {
+                  console.warn('[write_data] description may be fabricated from filename', {
+                    table: args.table,
+                    file_url: fileUrl,
+                    description: desc,
+                    basename,
+                    project_slug: projectSlug,
+                  });
                 }
               }
             }
