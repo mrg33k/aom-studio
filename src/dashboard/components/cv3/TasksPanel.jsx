@@ -1,5 +1,6 @@
 // TasksPanel -- task queue with search, filters, stats, and task creation
 // Extracted from CornerV3.jsx
+// pipeline-test 2026-04-12 safe_push verification -- do not remove
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 import { getShippedCardColor } from './shared.jsx'
