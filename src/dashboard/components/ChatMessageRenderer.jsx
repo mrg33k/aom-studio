@@ -6,8 +6,10 @@ import React from 'react'
 import { marked } from 'marked'
 
 const renderer = new marked.Renderer()
-// All links open in new tab
-renderer.link = function(href, title, text) {
+// All links open in new tab. marked v16+ passes a single token object and
+// expects the renderer to parse child tokens for the link text.
+renderer.link = function({ href, title, tokens }) {
+  const text = this.parser.parseInline(tokens)
   const t = title ? ` title="${title}"` : ''
   return `<a href="${href}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`
 }
