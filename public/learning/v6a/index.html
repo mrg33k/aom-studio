@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Arcade — Ethan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ───────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+/* ─── VARIABLES ───────────────────────────────────────────────────────── */
+:root {
+  --bg:           #F5F4EF;
+  --surface:      #FFFFFF;
+  --text:         #0F0F0D;
+  --muted:        #888882;
+  --accent:       #FF4500;
+  --accent-light: rgba(255, 69, 0, 0.07);
+  --border:       #E0DFD7;
+  --font:         'Space Grotesk', sans-serif;
+}
+
+/* ─── BASE ────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button { border: none; background: none; font-family: var(--font); cursor: pointer; }
+
+/* ─── SCREEN SYSTEM ───────────────────────────────────────────────────── */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ─── TOP BAR SHARED ─────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* ─── HUB PLAYER BAR ──────────────────────────────────────────────────── */
+.player-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.player-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.player-lv {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.xp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.xp-track {
+  width: 100px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.xp-fill {
+  height: 100%;
+  width: 48%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.xp-num {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.streak-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ─── GAME TOPBAR ─────────────────────────────────────────────────────── */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.back-btn:hover { color: var(--text); }
+.back-btn::before { content: '←'; }
+
+.game-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.game-stats {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  display: flex;
+  gap: 16px;
+}
+.game-stats strong { color: var(--text); font-weight: 700; }
+
+/* ─── HUB BODY ────────────────────────────────────────────────────────── */
+.hub-body {
+  flex: 1;
+  padding: 88px 56px 48px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.hub-headline {
+  font-size: clamp(80px, 10vw, 148px);
+  font-weight: 700;
+  line-height: 0.93;
+  letter-spacing: -0.03em;
+  margin-bottom: 20px;
+}
+.hub-headline em { color: var(--accent); font-style: normal; }
+
+.hub-sub {
+  font-size: 17px;
+  color: var(--muted);
+  margin-bottom: 88px;
+  font-weight: 400;
+}
+
+/* ─── CARDS ──────────────────────────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 40px 32px 36px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 296px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.22s;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.09);
+  border-color: rgba(0,0,0,0.0);
+}
+
+.card:hover::after { transform: scaleY(1); }
+
+.card-num {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.card-name {
+  font-size: clamp(52px, 4.5vw, 76px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+/* ─── FOOTER ──────────────────────────────────────────────────────────── */
+.hub-footer {
+  border-top: 1px solid var(--border);
+  padding: 18px 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-text {
+  font-size: 12px;
+  color: var(--muted);
+}
+.footer-text strong { color: var(--text); font-weight: 600; }
+.footer-link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.footer-link:hover { color: var(--text); }
+
+/* ─── GAME SHELL ──────────────────────────────────────────────────────── */
+.game-body {
+  flex: 1;
+  padding: 56px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── TYPE STRIKE ─────────────────────────────────────────────────────── */
+.type-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+}
+
+.type-word {
+  font-size: clamp(72px, 11vw, 168px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-align: center;
+  user-select: none;
+}
+.type-word .hit { color: var(--accent); }
+.type-word .miss { color: var(--border); }
+
+.type-input {
+  width: min(480px, 90vw);
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 500;
+  padding: 16px 24px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  outline: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+  letter-spacing: 0.02em;
+}
+.type-input:focus { border-color: var(--text); }
+.type-input.correct { border-color: var(--accent); }
+
+.type-stats-row {
+  display: flex;
+  gap: 48px;
+}
+.stat-block { text-align: center; }
+.stat-val {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.stat-val.accent { color: var(--accent); }
+.stat-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.prog-bar {
+  width: min(560px, 90vw);
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.prog-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+.word-queue {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.q-word {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* ─── DASH QUIZ ───────────────────────────────────────────────────────── */
+.dash-stage { flex: 1; display: flex; flex-direction: column; gap: 28px; }
+
+.dash-hp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hp-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.hp-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.hp-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s ease; }
+.hp-val { font-size: 12px; font-weight: 700; min-width: 50px; text-align: right; }
+
+.dash-arena {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  height: 100px;
+  position: relative;
+  overflow: hidden;
+}
+.arena-track {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 1px;
+  background: var(--border);
+}
+.arena-char {
+  position: absolute;
+  bottom: 10px;
+  left: 10%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: left 0.4s ease;
+}
+.char-head {
+  width: 20px; height: 20px;
+  background: var(--text);
+  border-radius: 50%;
+}
+.char-body {
+  width: 22px; height: 28px;
+  background: var(--accent);
+  border-radius: 5px 5px 3px 3px;
+}
+.char-name { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); }
+
+.dash-q {
+  font-size: clamp(22px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ans-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ans-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 24px;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ans-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.ans-btn.correct { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.ans-btn.wrong { opacity: 0.45; }
+.ans-key {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 5px; color: var(--muted); min-width: 22px; text-align: center;
+}
+.wasd-hint { text-align: center; font-size: 12px; color: var(--muted); }
+
+/* ─── STACK ───────────────────────────────────────────────────────────── */
+.stack-stage {
+  flex: 1;
+  display: flex;
+  gap: 56px;
+  align-items: flex-start;
+}
+
+.stack-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 260px;
+  flex-shrink: 0;
+}
+.stack-col-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.tower-base {
+  width: 100%;
+  height: 3px;
+  background: var(--text);
+  border-radius: 1px;
+  margin-bottom: 4px;
+}
+
+.t-block {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+.t-block.stacked {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.t-block.lit {
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.t-block.falling {
+  background: var(--text);
+  color: var(--surface);
+  animation: bob 1.6s ease-in-out infinite;
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.stack-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.stack-score-big {
+  font-size: 80px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--accent);
+}
+.stack-score-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.stack-q { font-size: clamp(28px, 3.5vw, 52px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.stack-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stack-opt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px;
+  font-family: var(--font);
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color 0.15s, color 0.15s;
+}
+.stack-opt:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── BOSS ─────────────────────────────────────────────────────────────  */
+.boss-stage { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+.boss-hp-row {
+  display: flex; align-items: center; gap: 14px;
+}
+.boss-name-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.boss-hp-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.boss-hp-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s; }
+.boss-hp-num { font-size: 12px; font-weight: 700; min-width: 48px; text-align: right; }
+
+.boss-arena {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 180px;
+}
+.boss-shape {
+  width: 144px; height: 144px;
+  background: var(--text);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: breathe 3s ease-in-out infinite;
+}
+.boss-shape::before {
+  content: '';
+  position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-bottom: 18px solid var(--text);
+}
+.boss-mark {
+  font-size: 64px; font-weight: 700; color: var(--accent); line-height: 1;
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.boss-q { font-size: clamp(20px, 2.5vw, 34px); font-weight: 700; letter-spacing: -0.02em; text-align: center; line-height: 1.25; }
+.boss-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.player-row {
+  display: flex; align-items: center; gap: 14px;
+  border-top: 1px solid var(--border); padding-top: 16px;
+}
+.player-tag { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.player-hp-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.player-hp-bar { height: 100%; background: #22c55e; border-radius: 4px; }
+.player-hp-num { font-size: 12px; font-weight: 700; color: #22c55e; min-width: 44px; text-align: right; }
+
+/* ─── MATCH ───────────────────────────────────────────────────────────── */
+.match-stage { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 36px; }
+
+.match-hud { display: flex; gap: 48px; }
+.mstat-val { font-size: 52px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.mstat-val.accent { color: var(--accent); }
+.mstat-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 4px; text-align: center; }
+
+.match-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: min(700px, 100%);
+}
+.m-tile {
+  aspect-ratio: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.2s;
+  position: relative;
+}
+.m-tile:hover { transform: scale(1.04); border-color: var(--text); }
+.m-tile.face-down {
+  background: var(--border);
+  color: transparent;
+  cursor: pointer;
+}
+.m-tile.face-up { border-color: var(--text); background: var(--surface); }
+.m-tile.matched { border-color: var(--accent); background: var(--accent-light); color: var(--accent); cursor: default; }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .cards { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .topbar { padding: 16px 24px; }
+  .hub-body { padding: 48px 24px 32px; }
+  .hub-headline { font-size: 72px; }
+  .hub-sub { margin-bottom: 48px; }
+  .cards { grid-template-columns: 1fr; }
+  .hub-footer { padding: 16px 24px; }
+  .game-body { padding: 24px; }
+  .ans-grid, .boss-answers { grid-template-columns: 1fr; }
+  .stack-stage { flex-direction: column; }
+  .stack-col { width: 100%; }
+  .streak-pill { display: none; }
+  .xp-wrap { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     HUB
+════════════════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-hub">
+  <header class="topbar">
+    <div class="logo">Learning Arcade</div>
+    <div class="player-bar">
+      <span class="player-name">Ethan</span>
+      <span class="player-lv">Lv. 3</span>
+      <div class="xp-wrap">
+        <div class="xp-track"><div class="xp-fill"></div></div>
+        <span class="xp-num">240 / 500 XP</span>
+      </div>
+      <span class="streak-pill">7 Day Streak</span>
+    </div>
+  </header>
+
+  <main class="hub-body">
+    <h1 class="hub-headline">PICK A<br><em>GAME.</em></h1>
+    <p class="hub-sub">6th Grade Vocabulary &nbsp;&middot;&nbsp; 8 words loaded</p>
+
+    <div class="cards">
+      <div class="card" onclick="showScreen('type')">
+        <div class="card-num">01</div>
+        <div class="card-name">TYPE</div>
+        <div class="card-desc">Words fly in. Type fast to destroy them before they hit.</div>
+      </div>
+      <div class="card" onclick="showScreen('dash')">
+        <div class="card-num">02</div>
+        <div class="card-name">DASH</div>
+        <div class="card-desc">Run the gauntlet. Answer right to keep sprinting forward.</div>
+      </div>
+      <div class="card" onclick="showScreen('stack')">
+        <div class="card-num">03</div>
+        <div class="card-name">STACK</div>
+        <div class="card-desc">Answer right to stack the block. How tall can you build?</div>
+      </div>
+      <div class="card" onclick="showScreen('boss')">
+        <div class="card-num">04</div>
+        <div class="card-name">BOSS</div>
+        <div class="card-desc">Face the boss. Fastest correct answer wins the round.</div>
+      </div>
+      <div class="card" onclick="showScreen('match')">
+        <div class="card-num">05</div>
+        <div class="card-name">MATCH</div>
+        <div class="card-desc">Flip tiles. Find pairs. Words meet their definitions.</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="hub-footer">
+    <p class="footer-text">Pack: <strong>6th Grade Vocabulary</strong> &nbsp;&middot;&nbsp; 8 words &nbsp;&middot;&nbsp; Updated today</p>
+    <a href="/learning/admin" class="footer-link">Admin &rarr;</a>
+  </footer>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     TYPE STRIKE
+════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-type">
+  <header class="topbar">
+    <span class="back-btn" onclick="showScreen('hub')">Hub</span>
+    <span class="game-title">Type Strike</span>
+    <div class="game-stats">WPM <strong id="t-wpm">0</strong> &nbsp;&middot;&nbsp; Streak <strong id="t-streak">0</strong></div>
+  </header>
+  <div class="game-body">
+    <div class="type-stage">
+      <div class="type-word" id="t-word">
+        <span class="hit" id="t-hit"></span><span id="t-rest">BENEVOLENT</span>
+      </div>
+      <input class="type-input" id="t-input" type="text" placeholder="type here..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="type-stats-row">
+        <div class="stat-block">
+          <div class="stat-val accent" id="t-wpm-big">0</div>
+          <div class="stat-lbl">WPM</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-val" id="t-done">0</div>
+          <div class="stat-lbl">Destroyed</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-val" id="t-rem">8</div>
+          <div class="stat-lbl">Left</div>
+        </div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="t-prog"></div></div>
+      <div class="word-queue" id="t-queue"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     DASH QUIZ
+════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-dash">
+  <header class="topbar">
+    <span class="back-btn" onclick="showScreen('hub')">Hub</span>
+    <span class="game-title">Dash Quiz</span>
+    <div class="game-stats">Q <strong id="dq-num">1</strong>/5 &nbsp;&middot;&nbsp; Score <strong id="dq-score">0</strong></div>
+  </header>
+  <div class="game-body">
+    <div class="dash-stage">
+      <div class="dash-hp">
+        <span class="hp-lbl">HP</span>
+        <div class="hp-track"><div class="hp-bar" id="dq-hp" style="width:80%"></div></div>
+        <span class="hp-val">80 / 100</span>
+      </div>
+      <div class="dash-arena">
+        <div class="arena-track"></div>
+        <div class="arena-char" id="dq-char">
+          <div class="char-head"></div>
+          <div class="char-body"></div>
+          <span class="char-name">ETHAN</span>
+        </div>
+      </div>
+      <div class="dash-q" id="dq-q">What does <strong>PERILOUS</strong> mean?</div>
+      <div class="ans-grid" id="dq-answers">
+        <button class="ans-btn" onclick="dashAns(this,true)"><span class="ans-key">A</span> Full of danger</button>
+        <button class="ans-btn" onclick="dashAns(this,false)"><span class="ans-key">B</span> Kind and generous</button>
+        <button class="ans-btn" onclick="dashAns(this,false)"><span class="ans-key">C</span> Very precise</button>
+        <button class="ans-btn" onclick="dashAns(this,false)"><span class="ans-key">D</span> Short-lasting</button>
+      </div>
+      <p class="wasd-hint">WASD to move &nbsp;&middot;&nbsp; A B C D to answer</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     STACK
+════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-stack">
+  <header class="topbar">
+    <span class="back-btn" onclick="showScreen('hub')">Hub</span>
+    <span class="game-title">Stack</span>
+    <div class="game-stats">Height <strong id="sk-h">5</strong> &nbsp;&middot;&nbsp; Score <strong id="sk-s">240</strong></div>
+  </header>
+  <div class="game-body">
+    <div class="stack-stage">
+      <div class="stack-col">
+        <div class="stack-col-label">Tower</div>
+        <div class="t-block falling" id="sk-falling">METICULOUS</div>
+        <div class="t-block lit">AMBIGUOUS</div>
+        <div class="t-block stacked">LUMINOUS</div>
+        <div class="t-block stacked">CANDID</div>
+        <div class="t-block stacked">PERILOUS</div>
+        <div class="tower-base"></div>
+      </div>
+      <div class="stack-right">
+        <div>
+          <div class="stack-score-lbl">Score</div>
+          <div class="stack-score-big" id="sk-score-big">240</div>
+        </div>
+        <div class="stack-q" id="sk-q">7 &times; 8 = ?</div>
+        <div class="stack-opts">
+          <button class="stack-opt" onclick="stackAns(this,false)">48</button>
+          <button class="stack-opt" onclick="stackAns(this,false)">54</button>
+          <button class="stack-opt" onclick="stackAns(this,true)">56</button>
+          <button class="stack-opt" onclick="stackAns(this,false)">64</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     BOSS QUIZ
+════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-boss">
+  <header class="topbar">
+    <span class="back-btn" onclick="showScreen('hub')">Hub</span>
+    <span class="game-title">Boss</span>
+    <div class="game-stats">Round <strong>1</strong> / 3</div>
+  </header>
+  <div class="game-body">
+    <div class="boss-stage">
+      <div class="boss-hp-row">
+        <span class="boss-name-tag">Vocab Master</span>
+        <div class="boss-hp-track"><div class="boss-hp-bar" id="bs-hp" style="width:60%"></div></div>
+        <span class="boss-hp-num">60 / 100</span>
+      </div>
+      <div class="boss-arena">
+        <div class="boss-shape" id="bs-shape">
+          <span class="boss-mark">?</span>
+        </div>
+      </div>
+      <div class="boss-q">What does <strong>METICULOUS</strong> mean?</div>
+      <div class="boss-answers" id="bs-answers">
+        <button class="ans-btn" onclick="bossAns(this,false)"><span class="ans-key">A</span> Quick to recover</button>
+        <button class="ans-btn" onclick="bossAns(this,true)"><span class="ans-key">B</span> Extreme attention to detail</button>
+        <button class="ans-btn" onclick="bossAns(this,false)"><span class="ans-key">C</span> Hard to understand</button>
+        <button class="ans-btn" onclick="bossAns(this,false)"><span class="ans-key">D</span> Giving off light</button>
+      </div>
+      <div class="player-row">
+        <span class="player-tag">Ethan &middot; Lv. 3</span>
+        <div class="player-hp-track"><div class="player-hp-bar" style="width:90%"></div></div>
+        <span class="player-hp-num">90 HP</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     MATCH
+════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-match">
+  <header class="topbar">
+    <span class="back-btn" onclick="showScreen('hub')">Hub</span>
+    <span class="game-title">Match</span>
+    <div class="game-stats">Pairs <strong id="mc-pairs">3</strong>/8 &nbsp;&middot;&nbsp; Moves <strong id="mc-moves">12</strong></div>
+  </header>
+  <div class="game-body">
+    <div class="match-stage">
+      <div class="match-hud">
+        <div>
+          <div class="mstat-val accent" id="mc-pairs-big">3</div>
+          <div class="mstat-lbl">Pairs Found</div>
+        </div>
+        <div>
+          <div class="mstat-val" id="mc-moves-big">12</div>
+          <div class="mstat-lbl">Moves</div>
+        </div>
+        <div>
+          <div class="mstat-val" id="mc-time">1:24</div>
+          <div class="mstat-lbl">Time</div>
+        </div>
+      </div>
+      <div class="match-grid" id="mc-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Screen Nav ─────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  el.classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'type') initType();
+  if (id === 'match') initMatch();
+}
+
+// ── Type Strike ────────────────────────────────────────────────────────
+const WORDS = ['BENEVOLENT','PERILOUS','CANDID','LUMINOUS','METICULOUS','RESILIENT','AMBIGUOUS','EPHEMERAL'];
+let tIdx = 0, tStart = null, tStreak = 0;
+
+function initType() {
+  tIdx = 0; tStreak = 0; tStart = null;
+  renderTypeWord();
+  const inp = document.getElementById('t-input');
+  inp.value = '';
+  setTimeout(() => inp.focus(), 80);
+}
+
+function renderTypeWord() {
+  const w = WORDS[tIdx] || '';
+  document.getElementById('t-hit').textContent = '';
+  document.getElementById('t-rest').textContent = w;
+  document.getElementById('t-rem').textContent = WORDS.length - tIdx;
+  document.getElementById('t-done').textContent = tIdx;
+  document.getElementById('t-prog').style.width = Math.round((tIdx / WORDS.length) * 100) + '%';
+  const q = document.getElementById('t-queue');
+  q.innerHTML = '';
+  for (let i = tIdx + 1; i < Math.min(tIdx + 5, WORDS.length); i++) {
+    const s = document.createElement('span');
+    s.className = 'q-word';
+    s.textContent = WORDS[i];
+    q.appendChild(s);
+  }
+}
+
+document.getElementById('t-input').addEventListener('input', function() {
+  if (!tStart) tStart = Date.now();
+  const v = this.value.toUpperCase().trim();
+  const w = WORDS[tIdx];
+  if (!w) return;
+  if (w.startsWith(v)) {
+    document.getElementById('t-hit').textContent = v;
+    document.getElementById('t-rest').textContent = w.slice(v.length);
+  } else {
+    document.getElementById('t-hit').textContent = '';
+    document.getElementById('t-rest').textContent = w;
+  }
+  if (v === w) {
+    tIdx++; tStreak++;
+    this.value = '';
+    const mins = (Date.now() - tStart) / 60000;
+    const wpm = mins > 0 ? Math.round(tIdx / mins) : 0;
+    document.getElementById('t-wpm').textContent = wpm;
+    document.getElementById('t-wpm-big').textContent = wpm;
+    document.getElementById('t-streak').textContent = tStreak;
+    this.classList.add('correct');
+    setTimeout(() => this.classList.remove('correct'), 280);
+    renderTypeWord();
+    if (tIdx >= WORDS.length) {
+      setTimeout(() => {
+        document.getElementById('t-hit').textContent = '';
+        document.getElementById('t-rest').textContent = 'ALL CLEAR';
+      }, 100);
+    }
+  }
+});
+
+// ── Dash Quiz ──────────────────────────────────────────────────────────
+let dqScore = 0;
+function dashAns(btn, correct) {
+  const btns = document.querySelectorAll('#dq-answers .ans-btn');
+  btns.forEach(b => b.disabled = true);
+  if (correct) {
+    btn.classList.add('correct');
+    dqScore += 20;
+    document.getElementById('dq-score').textContent = dqScore;
+    const hp = document.getElementById('dq-hp');
+    const cur = parseInt(hp.style.width);
+    hp.style.width = Math.min(100, cur + 5) + '%';
+    const char = document.getElementById('dq-char');
+    const curLeft = parseFloat(char.style.left) || 10;
+    char.style.left = Math.min(80, curLeft + 10) + '%';
+  } else {
+    btn.classList.add('wrong');
+    const hp = document.getElementById('dq-hp');
+    hp.style.width = Math.max(0, parseInt(hp.style.width) - 20) + '%';
+  }
+  setTimeout(() => btns.forEach(b => { b.disabled = false; b.classList.remove('correct', 'wrong'); }), 1000);
+}
+
+// ── Stack ──────────────────────────────────────────────────────────────
+let skScore = 240, skH = 5;
+function stackAns(btn, correct) {
+  const btns = document.querySelectorAll('.stack-opt');
+  if (correct) {
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    skScore += 40; skH++;
+    document.getElementById('sk-score-big').textContent = skScore;
+    document.getElementById('sk-s').textContent = skScore;
+    document.getElementById('sk-h').textContent = skH;
+    const falling = document.getElementById('sk-falling');
+    if (falling) {
+      falling.classList.remove('falling');
+      falling.classList.add('lit');
+      falling.removeAttribute('id');
+      const newFall = document.createElement('div');
+      newFall.className = 't-block falling';
+      newFall.id = 'sk-falling';
+      newFall.textContent = 'RESILIENT';
+      falling.parentNode.insertBefore(newFall, falling.parentNode.firstChild);
+    }
+  } else {
+    btn.style.opacity = '0.4';
+  }
+  setTimeout(() => btns.forEach(b => { b.style.borderColor = ''; b.style.color = ''; b.style.opacity = ''; }), 700);
+}
+
+// ── Boss Quiz ──────────────────────────────────────────────────────────
+function bossAns(btn, correct) {
+  const btns = document.querySelectorAll('#bs-answers .ans-btn');
+  btns.forEach(b => b.disabled = true);
+  const shape = document.getElementById('bs-shape');
+  if (correct) {
+    btn.classList.add('correct');
+    const hp = document.getElementById('bs-hp');
+    hp.style.width = Math.max(0, parseInt(hp.style.width) - 20) + '%';
+    shape.style.transform = 'scale(0.88) rotate(-3deg)';
+    setTimeout(() => shape.style.transform = '', 350);
+  } else {
+    btn.classList.add('wrong');
+    shape.style.transform = 'scale(1.1) rotate(2deg)';
+    setTimeout(() => shape.style.transform = '', 350);
+  }
+  setTimeout(() => btns.forEach(b => { b.disabled = false; b.classList.remove('correct', 'wrong'); }), 1000);
+}
+
+// ── Match ──────────────────────────────────────────────────────────────
+const PAIRS = [
+  { word: 'BENEVOLENT', def: 'kind and generous' },
+  { word: 'PERILOUS',   def: 'dangerous' },
+  { word: 'CANDID',     def: 'truthful' },
+  { word: 'LUMINOUS',   def: 'giving off light' },
+  { word: 'METICULOUS', def: 'attention to detail' },
+  { word: 'RESILIENT',  def: 'quick recovery' },
+  { word: 'AMBIGUOUS',  def: 'unclear' },
+  { word: 'EPHEMERAL',  def: 'short-lasting' },
+];
+
+let mcFlipped = [], mcMatched = new Set(), mcMoves = 12, mcPairs = 3;
+
+function initMatch() {
+  const tiles = [];
+  PAIRS.forEach((p, i) => {
+    tiles.push({ pairId: i, text: p.word });
+    tiles.push({ pairId: i, text: p.def });
+  });
+  shuffle(tiles);
+
+  mcFlipped = []; mcMatched = new Set([0, 1, 2]); mcMoves = 12; mcPairs = 3;
+  document.getElementById('mc-pairs').textContent = 3;
+  document.getElementById('mc-pairs-big').textContent = 3;
+  document.getElementById('mc-moves').textContent = 12;
+  document.getElementById('mc-moves-big').textContent = 12;
+
+  const grid = document.getElementById('mc-grid');
+  grid.innerHTML = '';
+  tiles.forEach((tile) => {
+    const el = document.createElement('div');
+    el.className = 'm-tile';
+    el.dataset.pair = tile.pairId;
+    el.textContent = tile.text;
+    if (mcMatched.has(tile.pairId)) {
+      el.classList.add('matched');
+    } else {
+      el.classList.add('face-down');
+      el.addEventListener('click', () => matchClick(el, tile));
+    }
+    grid.appendChild(el);
+  });
+
+  if (window._mcTimer) clearInterval(window._mcTimer);
+  let s = 84;
+  window._mcTimer = setInterval(() => {
+    s++;
+    document.getElementById('mc-time').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }, 1000);
+}
+
+function matchClick(el, tile) {
+  if (el.classList.contains('face-up') || el.classList.contains('matched')) return;
+  if (mcFlipped.length >= 2) return;
+  el.classList.remove('face-down');
+  el.classList.add('face-up');
+  mcFlipped.push({ el, tile });
+  if (mcFlipped.length === 2) {
+    mcMoves++;
+    document.getElementById('mc-moves').textContent = mcMoves;
+    document.getElementById('mc-moves-big').textContent = mcMoves;
+    const [a, b] = mcFlipped;
+    if (a.tile.pairId === b.tile.pairId) {
+      mcPairs++;
+      mcMatched.add(a.tile.pairId);
+      setTimeout(() => {
+        a.el.classList.remove('face-up'); a.el.classList.add('matched');
+        b.el.classList.remove('face-up'); b.el.classList.add('matched');
+        document.getElementById('mc-pairs').textContent = mcPairs;
+        document.getElementById('mc-pairs-big').textContent = mcPairs;
+        mcFlipped = [];
+        if (mcPairs >= 8) { clearInterval(window._mcTimer); }
+      }, 380);
+    } else {
+      setTimeout(() => {
+        a.el.classList.remove('face-up'); a.el.classList.add('face-down');
+        b.el.classList.remove('face-up'); b.el.classList.add('face-down');
+        mcFlipped = [];
+      }, 800);
+    }
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+</script>
+</body>
+</html>
