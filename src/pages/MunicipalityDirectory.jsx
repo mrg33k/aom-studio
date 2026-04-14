@@ -688,6 +688,7 @@ export default function MunicipalDirectory() {
             </button>
             <button
               className="md-btn-topright"
+              data-test-id="arsenal-csv-export-btn"
               onClick={() => exportCSV(
                 filtered,
                 `arsenal-municipalities${enrichedOnly ? '-enriched' : ''}.csv`
