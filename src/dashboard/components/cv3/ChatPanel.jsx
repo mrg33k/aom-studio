@@ -1395,6 +1395,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       console.error('[ChatPanel] project send error:', err)
     } finally {
       setSending(false)
+      inFlightSendRef.current = false
       inputRef.current?.focus()
     }
   }, [sending, selectedProject, worldId])
