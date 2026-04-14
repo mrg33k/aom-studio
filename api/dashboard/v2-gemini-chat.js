@@ -978,10 +978,12 @@ export default async function handler(req, res) {
   const handlerStart = Date.now();
   console.log(`[v2-gemini-chat] START agent=${agent||'none'} project=${project_slug||'none'} msg=${(message||'').slice(0,80)}`);
 
-  // Studio/Terminal agent: messages are handled by the tmux relay, not Gemini.
-  // Return immediately — the real response arrives via realtime from the tmux relay.
-  if (agent === 'studio') {
-    return res.json({ reply: null, functionCalls: [], agent: 'studio', relay: true });
+  // Terminal agents (elon, studio): text messages are handled by the tmux relay,
+  // not Gemini. Return immediately — the real response arrives via realtime from
+  // the tmux relay. Gemini only activates for these rooms when the user hits the
+  // voice call button (handled by VoiceChat.jsx, not this endpoint).
+  if (agent === 'elon' || agent === 'studio') {
+    return res.json({ reply: null, functionCalls: [], agent, relay: true });
   }
 
   const clientId = (client_id && String(client_id).trim()) || 'aom';
