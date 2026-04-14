@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Arcade — Castlevania Gothic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep:    #0d0618;
+  --bg-mid:     #1a0b2e;
+  --bg-upper:   #2d1b4e;
+  --purple-hi:  #4b2874;
+  --torch-hot:  #ff6b1a;
+  --torch-warm: #ffaa33;
+  --moon-blue:  #4ea8de;
+  --bone-white: #f4e8d0;
+  --bone-dim:   #c9b99a;
+  --danger:     #e03c3c;
+  --success:    #5dda6f;
+  --gold:       #f5c842;
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-body:  'Inter', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--bone-white);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── CRT Overlay ── */
+#crt-overlay {
+  pointer-events: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.18) 2px,
+    rgba(0,0,0,0.18) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+#crt-overlay.off { opacity: 0; }
+
+/* ── Atmospheric Background ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, #2d1b4e 0%, transparent 60%),
+    radial-gradient(ellipse 30% 60% at 10% 50%, rgba(78,168,222,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 60% at 90% 50%, rgba(255,107,26,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Top Navigation ── */
+#top-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(180deg, rgba(13,6,24,0.98) 0%, rgba(26,11,46,0.95) 100%);
+  border-bottom: 1px solid rgba(75,40,116,0.8);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.6);
+}
+#top-nav::-webkit-scrollbar { display: none; }
+
+.nav-brand {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--torch-warm);
+  text-shadow: 0 0 12px rgba(255,170,51,0.8);
+  white-space: nowrap;
+  padding: 14px 8px 14px 0;
+  border-right: 1px solid rgba(75,40,116,0.5);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--bone-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+.nav-btn:hover {
+  color: var(--bone-white);
+  border-color: rgba(75,40,116,0.6);
+  background: rgba(75,40,116,0.2);
+}
+.nav-btn.active {
+  color: var(--torch-warm);
+  border-color: var(--torch-hot);
+  background: rgba(255,107,26,0.12);
+  text-shadow: 0 0 8px rgba(255,170,51,0.6);
+}
+
+.crt-toggle {
+  margin-left: auto;
+  font-family: var(--font-pixel);
+  font-size: 5px;
+  color: var(--moon-blue);
+  background: transparent;
+  border: 1px solid rgba(78,168,222,0.3);
+  padding: 6px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  border-radius: 2px;
+}
+.crt-toggle:hover {
+  background: rgba(78,168,222,0.1);
+  border-color: var(--moon-blue);
+}
+
+/* ── Screen Container ── */
+.screen { display: none; position: relative; z-index: 1; min-height: calc(100vh - 48px); }
+.screen.active { display: block; }
+
+/* ── Player HUD Bar ── */
+.hud-bar {
+  background: linear-gradient(180deg, rgba(26,11,46,0.9) 0%, rgba(13,6,24,0.85) 100%);
+  border-bottom: 1px solid rgba(75,40,116,0.4);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  backdrop-filter: blur(4px);
+}
+.hud-avatar {
+  width: 36px; height: 36px;
+  border: 2px solid var(--torch-hot);
+  background: linear-gradient(135deg, #2d1b4e, #1a0b2e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 12px rgba(255,107,26,0.4);
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+.hud-info { flex: 1; min-width: 120px; }
+.hud-name {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--torch-warm);
+  text-shadow: 0 0 8px rgba(255,170,51,0.5);
+  margin-bottom: 4px;
+}
+.hud-level { font-size: 11px; color: var(--bone-dim); margin-bottom: 4px; }
+.xp-track {
+  height: 6px; background: rgba(75,40,116,0.4);
+  border: 1px solid rgba(75,40,116,0.6);
+  position: relative; overflow: hidden;
+}
+.xp-fill {
+  height: 100%; width: 68%;
+  background: linear-gradient(90deg, var(--torch-hot), var(--torch-warm));
+  box-shadow: 0 0 8px rgba(255,107,26,0.6);
+}
+.hud-right {
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.hud-streak {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(245,200,66,0.5);
+  text-align: center;
+}
+.hud-pack {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--moon-blue);
+  text-shadow: 0 0 6px rgba(78,168,222,0.4);
+  text-align: right;
+}
+
+/* ── HUB SCREEN ── */
+#screen-hub {
+  padding: 0 0 40px;
+}
+
+.castle-header {
+  background: linear-gradient(180deg, #1a0b2e 0%, #0d0618 100%);
+  padding: 32px 16px 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Castle silhouette via CSS */
+.castle-silhouette {
+  position: relative;
+  height: 100px;
+  margin: 0 auto 0;
+  max-width: 500px;
+}
+.castle-silhouette::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 200px; height: 60px;
+  background: #1a0b2e;
+  border-top: 3px solid rgba(75,40,116,0.6);
+  box-shadow: inset 0 -4px 0 #0d0618;
+}
+.castle-silhouette::after {
+  content: '';
+  position: absolute;
+  bottom: 58px; left: 50%; transform: translateX(-50%);
+  width: 40px; height: 50px;
+  background: #2d1b4e;
+  border: 2px solid rgba(75,40,116,0.6);
+  box-shadow:
+    -70px 10px 0 0 #2d1b4e,
+    70px 10px 0 0 #2d1b4e,
+    -110px 20px 0 0 #1a0b2e,
+    110px 20px 0 0 #1a0b2e;
+}
+
+.battlements {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.merlon {
+  width: 14px; height: 20px;
+  background: #2d1b4e;
+  border: 1px solid rgba(75,40,116,0.5);
+}
+.merlon-gap { width: 8px; }
+
+/* Torches */
+.torch-left, .torch-right {
+  position: absolute;
+  bottom: 20px;
+  width: 8px;
+  height: 24px;
+  background: #4b2874;
+  border: 1px solid rgba(75,40,116,0.8);
+}
+.torch-left { left: calc(50% - 80px); }
+.torch-right { right: calc(50% - 80px); }
+.torch-left::after, .torch-right::after {
+  content: '';
+  position: absolute;
+  top: -12px; left: 50%; transform: translateX(-50%);
+  width: 16px; height: 20px;
+  background: radial-gradient(ellipse at 50% 80%, var(--torch-hot) 0%, var(--torch-warm) 40%, transparent 80%);
+  animation: flicker 1.4s ease-in-out infinite alternate;
+}
+@keyframes flicker {
+  0%   { opacity: 0.8; transform: translateX(-50%) scaleY(0.9); }
+  33%  { opacity: 1;   transform: translateX(-48%) scaleY(1.05) scaleX(0.95); }
+  66%  { opacity: 0.85; transform: translateX(-52%) scaleY(0.95); }
+  100% { opacity: 1;   transform: translateX(-50%) scaleY(1.1); }
+}
+
+.hub-title {
+  font-family: var(--font-pixel);
+  font-size: clamp(12px, 3vw, 18px);
+  color: var(--bone-white);
+  text-shadow: 0 0 20px rgba(255,170,51,0.4), 0 2px 0 #0d0618;
+  margin: 24px 0 4px;
+  letter-spacing: 2px;
+}
+.hub-subtitle {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--torch-warm);
+  text-shadow: 0 0 10px rgba(255,170,51,0.5);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.hub-pack-label {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--moon-blue);
+  background: rgba(78,168,222,0.1);
+  border: 1px solid rgba(78,168,222,0.3);
+  padding: 4px 12px;
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+}
+
+.hub-grid {
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+@media (min-width: 640px) {
+  .hub-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .hub-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.game-door {
+  position: relative;
+  background: linear-gradient(180deg, #2d1b4e 0%, #1a0b2e 100%);
+  border: 2px solid rgba(75,40,116,0.7);
+  padding: 20px 16px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+  text-align: center;
+}
+.game-door::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,170,51,0.6), transparent);
+}
+.game-door:hover {
+  border-color: var(--torch-warm);
+  background: linear-gradient(180deg, #3d2560 0%, #2d1b4e 100%);
+  box-shadow: 0 0 20px rgba(255,107,26,0.2), inset 0 0 20px rgba(255,107,26,0.05);
+  transform: translateY(-2px);
+}
+.game-door:hover .door-icon { text-shadow: 0 0 16px rgba(255,170,51,0.8); }
+
+.door-num {
+  position: absolute; top: 8px; right: 10px;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: rgba(75,40,116,0.8);
+}
+.door-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+  display: block;
+  filter: drop-shadow(0 0 8px rgba(255,107,26,0.3));
+  transition: filter 0.2s;
+}
+.door-name {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--bone-white);
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+.door-desc {
+  font-size: 11px;
+  color: var(--bone-dim);
+  line-height: 1.5;
+}
+.door-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--torch-warm);
+  background: rgba(255,107,26,0.12);
+  border: 1px solid rgba(255,107,26,0.3);
+  padding: 3px 8px;
+}
+
+.door-status-done {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 14px;
+}
+.door-status-locked {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 12px; opacity: 0.5;
+}
+
+.hub-footer {
+  text-align: center;
+  padding: 24px 16px 0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.hub-footer a {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: rgba(75,40,116,0.7);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.hub-footer a:hover { color: var(--bone-dim); }
+.hub-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.prog-dot {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(75,40,116,0.6);
+  background: rgba(75,40,116,0.2);
+}
+.prog-dot.done {
+  background: var(--torch-warm);
+  border-color: var(--torch-hot);
+  box-shadow: 0 0 8px rgba(255,170,51,0.5);
+}
+
+/* ── GAME SCREEN BASE ── */
+.game-screen-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+}
+.game-title {
+  font-family: var(--font-pixel);
+  font-size: clamp(10px, 2.5vw, 16px);
+  color: var(--torch-warm);
+  text-shadow: 0 0 16px rgba(255,170,51,0.5);
+  margin: 20px 0 4px;
+  letter-spacing: 1px;
+}
+.game-sub {
+  font-size: 12px;
+  color: var(--bone-dim);
+  margin-bottom: 20px;
+}
+.game-stats-row {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.stat-chip {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--bone-white);
+  background: rgba(45,27,78,0.8);
+  border: 1px solid rgba(75,40,116,0.6);
+  padding: 6px 10px;
+}
+.stat-chip span { color: var(--torch-warm); }
+
+/* HP Bars */
+.hp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.hp-label { font-family: var(--font-pixel); font-size: 7px; width: 50px; color: var(--bone-dim); }
+.hp-track { flex: 1; height: 12px; background: rgba(20,6,30,0.8); border: 1px solid rgba(75,40,116,0.5); position: relative; overflow: hidden; }
+.hp-fill { height: 100%; transition: width 0.4s; }
+.hp-fill.player { background: linear-gradient(90deg, #5dda6f, #3ab850); box-shadow: 0 0 6px rgba(93,218,111,0.4); }
+.hp-fill.boss   { background: linear-gradient(90deg, #e03c3c, #c02020); box-shadow: 0 0 6px rgba(224,60,60,0.4); }
+.hp-val { font-family: var(--font-pixel); font-size: 7px; color: var(--bone-dim); min-width: 48px; text-align: right; }
+
+/* ── WHIP STRIKE SCREEN ── */
+.arena {
+  position: relative;
+  height: 320px;
+  background:
+    linear-gradient(180deg, #0d0618 0%, #1a0b2e 60%, #2d1b4e 100%);
+  border: 2px solid rgba(75,40,116,0.5);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* Stone block texture */
+.stone-ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 48px;
+  background: repeating-linear-gradient(
+    90deg,
+    #2d1b4e 0px, #2d1b4e 40px,
+    #251542 40px, #251542 80px
+  );
+  border-top: 3px solid #4b2874;
+}
+.stone-ground::before {
+  content: '';
+  position: absolute;
+  top: 16px; left: 0; right: 0; height: 1px;
+  background: rgba(75,40,116,0.3);
+}
+
+/* Player character */
+.player-char {
+  position: absolute;
+  bottom: 48px; left: 24px;
+  width: 28px; height: 40px;
+  background: var(--bg-upper);
+  border: 2px solid var(--torch-warm);
+  box-shadow: 0 0 12px rgba(255,170,51,0.3);
+  image-rendering: pixelated;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+/* Enemy sprite */
+.enemy {
+  position: absolute;
+  width: 40px; height: 40px;
+  border: 2px solid rgba(224,60,60,0.6);
+  background: linear-gradient(135deg, rgba(45,27,78,0.9), rgba(13,6,24,0.9));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 12px rgba(224,60,60,0.2);
+}
+.enemy-word {
+  position: absolute;
+  top: -22px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--bone-white);
+  background: rgba(13,6,24,0.9);
+  border: 1px solid rgba(75,40,116,0.5);
+  padding: 2px 5px;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
+.enemy-1 { top: 40px; left: 60%; animation: fall 3s linear forwards; }
+.enemy-2 { top: 20px; right: 25%; animation: fall 4s linear 1s forwards; }
+.enemy-3 { top: 60px; left: 40%; animation: fall 5s linear 0.5s forwards; }
+@keyframes fall {
+  to { top: calc(100% - 88px); }
+}
+
+/* Whip visual */
+.whip {
+  position: absolute;
+  bottom: 80px; left: 50px;
+  width: 80px; height: 4px;
+  background: linear-gradient(90deg, var(--torch-hot), var(--torch-warm), transparent);
+  border-radius: 2px;
+  transform-origin: left center;
+  transform: rotate(-20deg);
+  box-shadow: 0 0 8px rgba(255,107,26,0.6);
+  animation: whipSwing 1.5s ease-in-out infinite;
+}
+@keyframes whipSwing {
+  0%   { transform: rotate(-20deg); }
+  50%  { transform: rotate(20deg); }
+  100% { transform: rotate(-20deg); }
+}
+
+/* Type input bar */
+.type-bar {
+  background: rgba(13,6,24,0.9);
+  border: 2px solid rgba(75,40,116,0.6);
+  border-top: 2px solid var(--purple-hi);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.type-input {
+  flex: 1;
+  background: rgba(26,11,46,0.8);
+  border: 1px solid rgba(75,40,116,0.6);
+  color: var(--bone-white);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 10px 12px;
+  outline: none;
+  caret-color: var(--torch-warm);
+  letter-spacing: 1px;
+}
+.type-input::placeholder { color: rgba(201,185,154,0.3); }
+.type-input:focus { border-color: var(--torch-warm); box-shadow: 0 0 8px rgba(255,170,51,0.2); }
+
+.combo-display {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--torch-warm);
+  text-shadow: 0 0 10px rgba(255,170,51,0.6);
+  text-align: center;
+}
+
+/* Torch sconces on arena walls */
+.arena-torch {
+  position: absolute;
+  top: 30px;
+  width: 6px; height: 18px;
+  background: #4b2874;
+  border: 1px solid rgba(75,40,116,0.8);
+}
+.arena-torch.left { left: 16px; }
+.arena-torch.right { right: 16px; }
+.arena-torch::after {
+  content: '';
+  position: absolute;
+  top: -10px; left: 50%; transform: translateX(-50%);
+  width: 12px; height: 16px;
+  background: radial-gradient(ellipse at 50% 80%, var(--torch-hot) 0%, var(--torch-warm) 50%, transparent 80%);
+  animation: flicker 1.2s ease-in-out infinite alternate;
+}
+
+/* ── DUNGEON RUN ── */
+.corridor {
+  position: relative;
+  height: 280px;
+  background: linear-gradient(180deg, #0d0618 0%, #1a0b2e 70%, #2d1b4e 100%);
+  border: 2px solid rgba(75,40,116,0.5);
+  overflow: hidden;
+  perspective: 300px;
+  margin-bottom: 16px;
+}
+
+/* Vanishing point corridor walls */
+.corridor-wall-left {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 120px;
+  background: linear-gradient(90deg, #1a0b2e 0%, transparent 100%);
+  border-right: 2px solid rgba(75,40,116,0.3);
+}
+.corridor-wall-right {
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 120px;
+  background: linear-gradient(270deg, #1a0b2e 0%, transparent 100%);
+  border-left: 2px solid rgba(75,40,116,0.3);
+}
+
+/* Floor tiles */
+.corridor-floor {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(45,27,78,0.6) 0px, rgba(45,27,78,0.6) 48px,
+    rgba(37,21,66,0.6) 48px, rgba(37,21,66,0.6) 96px
+  ),
+  repeating-linear-gradient(
+    0deg,
+    rgba(75,40,116,0.2) 0px, rgba(75,40,116,0.2) 1px,
+    transparent 1px, transparent 40px
+  );
+  border-top: 2px solid rgba(75,40,116,0.4);
+}
+
+/* Doors in corridor */
+.corr-door {
+  position: absolute;
+  bottom: 76px;
+  width: 60px; height: 90px;
+  background: linear-gradient(180deg, #2d1b4e, #1a0b2e);
+  border: 2px solid rgba(75,40,116,0.7);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding-top: 8px;
+  cursor: pointer;
+}
+.corr-door.near { width: 70px; height: 100px; }
+.corr-door.far  { opacity: 0.6; transform: scale(0.7); }
+.corr-door-1 { left: 160px; }
+.corr-door-2 { right: 160px; }
+.corr-door::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: 50%; transform: translateX(-50%);
+  border-left: 35px solid transparent;
+  border-right: 35px solid transparent;
+  border-bottom: 14px solid rgba(75,40,116,0.7);
+}
+.corr-door-label {
+  font-family: var(--font-pixel);
+  font-size: 5px;
+  color: var(--bone-dim);
+  text-align: center;
+  line-height: 1.8;
+  padding: 0 4px;
+}
+.pressure-plate {
+  position: absolute;
+  bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 40px; height: 8px;
+  background: rgba(78,168,222,0.3);
+  border: 1px solid rgba(78,168,222,0.6);
+  font-family: var(--font-pixel);
+  font-size: 5px;
+  color: var(--moon-blue);
+  text-align: center;
+  line-height: 8px;
+}
+
+/* Dungeon passage question */
+.dungeon-player {
+  position: absolute;
+  bottom: 80px; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 36px;
+  background: var(--bg-upper);
+  border: 2px solid var(--moon-blue);
+  box-shadow: 0 0 10px rgba(78,168,222,0.3);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.question-panel {
+  background: rgba(13,6,24,0.95);
+  border: 2px solid rgba(75,40,116,0.7);
+  border-top: 2px solid var(--moon-blue);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.question-passage {
+  font-size: 12px;
+  color: var(--bone-dim);
+  line-height: 1.6;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(26,11,46,0.5);
+  border-left: 2px solid rgba(78,168,222,0.4);
+  font-style: italic;
+}
+.question-text {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--bone-white);
+  margin-bottom: 14px;
+  line-height: 1.8;
+}
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.answer-btn {
+  background: rgba(26,11,46,0.8);
+  border: 1px solid rgba(75,40,116,0.5);
+  color: var(--bone-white);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.6;
+  text-align: left;
+}
+.answer-btn:hover {
+  border-color: var(--moon-blue);
+  background: rgba(78,168,222,0.1);
+  color: var(--moon-blue);
+}
+.answer-btn.correct {
+  border-color: var(--success);
+  background: rgba(93,218,111,0.12);
+  color: var(--success);
+}
+.answer-btn.wrong {
+  border-color: var(--danger);
+  background: rgba(224,60,60,0.12);
+  color: var(--danger);
+}
+
+/* ── STACK THE TOWER ── */
+.tower-arena {
+  position: relative;
+  height: 320px;
+  background: linear-gradient(180deg, #0d0618 0%, #1a0b2e 100%);
+  border: 2px solid rgba(75,40,116,0.5);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* Moving block */
+.falling-block {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 28px;
+  background: linear-gradient(180deg, var(--torch-warm) 0%, var(--torch-hot) 100%);
+  border: 2px solid rgba(255,170,51,0.8);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: #0d0618;
+  padding: 0 10px;
+  white-space: nowrap;
+  box-shadow: 0 0 16px rgba(255,170,51,0.4);
+  animation: slideBlock 2s ease-in-out infinite;
+  cursor: pointer;
+}
+@keyframes slideBlock {
+  0%   { left: 20%; }
+  50%  { left: 70%; }
+  100% { left: 20%; }
+}
+
+/* Stacked tower */
+.tower-base {
+  position: absolute;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 120px;
+  display: flex; flex-direction: column-reverse; gap: 2px;
+  padding-bottom: 4px;
+}
+.tower-block {
+  height: 26px;
+  background: linear-gradient(180deg, #2d1b4e, #1a0b2e);
+  border: 1px solid rgba(75,40,116,0.7);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--bone-dim);
+  padding: 0 4px;
+  text-align: center;
+  line-height: 1.4;
+}
+.tower-block.perfect {
+  border-color: var(--torch-warm);
+  background: linear-gradient(180deg, rgba(255,107,26,0.2), rgba(45,27,78,0.9));
+  box-shadow: 0 0 8px rgba(255,170,51,0.2);
+}
+
+.combo-burst {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(245,200,66,0.8);
+  animation: comboBurst 0.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes comboBurst {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+  60%  { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+}
+
+.tower-height-label {
+  position: absolute;
+  top: 12px; right: 12px;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--torch-warm);
+  text-shadow: 0 0 8px rgba(255,170,51,0.4);
+}
+
+/* ── BOSS QUIZ ── */
+.boss-arena {
+  background: linear-gradient(180deg, #0d0618 0%, #1a0b2e 50%, #2d1b4e 100%);
+  border: 2px solid rgba(75,40,116,0.5);
+  padding: 20px 16px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Boss sprite (CSS art) */
+.boss-container {
+  display: flex; justify-content: center; margin-bottom: 20px;
+}
+.boss-sprite {
+  position: relative;
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, #3d1560, #1a0b2e);
+  border: 3px solid var(--danger);
+  box-shadow: 0 0 30px rgba(224,60,60,0.4), inset 0 0 20px rgba(224,60,60,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  image-rendering: pixelated;
+  animation: bossPulse 2s ease-in-out infinite;
+}
+@keyframes bossPulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(224,60,60,0.4), inset 0 0 20px rgba(224,60,60,0.1); }
+  50%       { box-shadow: 0 0 50px rgba(224,60,60,0.7), inset 0 0 30px rgba(224,60,60,0.2); }
+}
+.boss-sprite::before {
+  content: '';
+  position: absolute;
+  top: -8px; left: 50%; transform: translateX(-50%);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 12px solid var(--danger);
+  opacity: 0.7;
+}
+.boss-sprite::after {
+  content: '';
+  position: absolute;
+  top: -8px; left: calc(50% - 24px); transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 10px solid rgba(224,60,60,0.5);
+}
+
+.boss-name {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--danger);
+  text-shadow: 0 0 12px rgba(224,60,60,0.6);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* Battle dialog */
+.battle-dialog {
+  background: rgba(13,6,24,0.9);
+  border: 2px solid rgba(75,40,116,0.6);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.battle-prompt {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--bone-white);
+  line-height: 1.8;
+  margin-bottom: 14px;
+}
+.battle-prompt .prompt-word {
+  color: var(--torch-warm);
+  text-shadow: 0 0 8px rgba(255,170,51,0.4);
+}
+
+.battle-answers {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.battle-answer {
+  background: rgba(26,11,46,0.8);
+  border: 1px solid rgba(75,40,116,0.5);
+  color: var(--bone-white);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.6;
+  text-align: left;
+}
+.battle-answer:hover {
+  border-color: var(--danger);
+  background: rgba(224,60,60,0.12);
+  color: #ff8080;
+}
+.battle-answer.selected-crit {
+  border-color: var(--gold);
+  background: rgba(245,200,66,0.15);
+  color: var(--gold);
+}
+
+.crit-badge {
+  display: inline-block;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--gold);
+  background: rgba(245,200,66,0.12);
+  border: 1px solid rgba(245,200,66,0.4);
+  padding: 3px 8px;
+  margin-left: 8px;
+  animation: critFlash 0.5s ease-out;
+}
+@keyframes critFlash {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── RUNE MATCH ── */
+.rune-arena {
+  background: linear-gradient(180deg, #0d0618 0%, #1a0b2e 100%);
+  border: 2px solid rgba(75,40,116,0.5);
+  padding: 20px 16px;
+  margin-bottom: 16px;
+}
+.rune-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap; gap: 8px;
+}
+.rune-timer {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--danger);
+  text-shadow: 0 0 8px rgba(224,60,60,0.4);
+}
+.rune-streak {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(245,200,66,0.4);
+}
+
+.rune-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0 auto;
+  max-width: 400px;
+}
+@media (min-width: 600px) {
+  .rune-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.rune-card {
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #2d1b4e, #1a0b2e);
+  border: 2px solid rgba(75,40,116,0.6);
+  cursor: pointer;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+.rune-card::before {
+  content: '';
+  position: absolute; inset: 3px;
+  border: 1px solid rgba(75,40,116,0.3);
+}
+.rune-card:hover {
+  border-color: var(--purple-hi);
+  background: linear-gradient(135deg, #3d2560, #2d1b4e);
+  box-shadow: 0 0 12px rgba(75,40,116,0.4);
+}
+.rune-card.flipped {
+  border-color: var(--torch-warm);
+  background: linear-gradient(135deg, rgba(255,107,26,0.15), #2d1b4e);
+}
+.rune-card.matched {
+  border-color: var(--success);
+  background: linear-gradient(135deg, rgba(93,218,111,0.15), #1a0b2e);
+  cursor: default;
+}
+.rune-symbol {
+  font-size: 22px;
+  filter: drop-shadow(0 0 6px rgba(255,107,26,0.4));
+}
+.rune-text-front {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--bone-white);
+  text-align: center;
+  line-height: 1.6;
+  padding: 4px;
+}
+.rune-back {
+  font-size: 20px;
+  opacity: 0.5;
+  filter: drop-shadow(0 0 4px rgba(75,40,116,0.6));
+}
+
+/* Stone ornaments */
+.rune-divider {
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  margin: 16px 0;
+  color: rgba(75,40,116,0.5);
+  font-size: 12px;
+}
+.rune-divider::before, .rune-divider::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(75,40,116,0.4), transparent);
+}
+
+/* Btn primary */
+.btn-primary {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: #0d0618;
+  background: linear-gradient(180deg, var(--torch-warm), var(--torch-hot));
+  border: 2px solid var(--torch-hot);
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(255,107,26,0.3);
+}
+.btn-primary:hover {
+  background: linear-gradient(180deg, #ffd060, var(--torch-warm));
+  box-shadow: 0 0 20px rgba(255,170,51,0.5);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--moon-blue);
+  background: transparent;
+  border: 1px solid rgba(78,168,222,0.4);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-secondary:hover {
+  background: rgba(78,168,222,0.1);
+  border-color: var(--moon-blue);
+}
+
+/* Star / score decorations */
+.score-stars {
+  display: flex; gap: 4px; margin: 8px 0;
+}
+.star { font-size: 16px; filter: drop-shadow(0 0 4px rgba(245,200,66,0.5)); }
+.star.empty { opacity: 0.2; filter: none; }
+</style>
+</head>
+<body>
+
+<!-- CRT Overlay -->
+<div id="crt-overlay"></div>
+
+<!-- Top Navigation -->
+<nav id="top-nav">
+  <span class="nav-brand">⚔ ARCANE ACADEMY</span>
+  <button class="nav-btn active" onclick="showScreen('hub')">CASTLE</button>
+  <button class="nav-btn" onclick="showScreen('whip')">WHIP STRIKE</button>
+  <button class="nav-btn" onclick="showScreen('dungeon')">DUNGEON RUN</button>
+  <button class="nav-btn" onclick="showScreen('stack')">STACK TOWER</button>
+  <button class="nav-btn" onclick="showScreen('boss')">BOSS QUIZ</button>
+  <button class="nav-btn" onclick="showScreen('rune')">RUNE MATCH</button>
+  <button class="crt-toggle" onclick="toggleCRT()">CRT: ON</button>
+</nav>
+
+<!-- ─────────────────────────────────────────── HUB ── -->
+<section class="screen active" id="screen-hub">
+  <!-- HUD -->
+  <div class="hud-bar">
+    <div class="hud-avatar">🧙</div>
+    <div class="hud-info">
+      <div class="hud-name">ETHAN</div>
+      <div class="hud-level">Level 7 Scholar</div>
+      <div class="xp-track"><div class="xp-fill"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">🔥 12<br>STREAK</div>
+      <div class="hud-pack">📚 6TH GRADE<br>VOCABULARY</div>
+    </div>
+  </div>
+
+  <!-- Castle Header -->
+  <div class="castle-header">
+    <div class="battlements">
+      <div class="merlon"></div><div class="merlon-gap"></div>
+      <div class="merlon"></div><div class="merlon-gap"></div>
+      <div class="merlon"></div><div class="merlon-gap"></div>
+      <div class="merlon"></div><div class="merlon-gap"></div>
+      <div class="merlon"></div><div class="merlon-gap"></div>
+      <div class="merlon"></div><div class="merlon-gap"></div>
+      <div class="merlon"></div>
+    </div>
+    <div class="castle-silhouette">
+      <div class="torch-left"></div>
+      <div class="torch-right"></div>
+    </div>
+    <h1 class="hub-title">ARCANE ACADEMY</h1>
+    <p class="hub-subtitle">ENTER THE CASTLE. EARN YOUR KNOWLEDGE.</p>
+    <span class="hub-pack-label">📖 Active Pack: 6th Grade Vocabulary</span>
+  </div>
+
+  <!-- Progress dots -->
+  <div style="padding: 16px 16px 0; max-width: 600px; margin: 0 auto;">
+    <div style="font-family: var(--font-pixel); font-size: 7px; color: var(--bone-dim); margin-bottom: 8px; text-align: center; letter-spacing: 1px;">SESSION PROGRESS</div>
+    <div class="hub-progress">
+      <div class="prog-dot done" title="Boss Quiz — Complete"></div>
+      <div class="prog-dot done" title="Rune Match — Complete"></div>
+      <div class="prog-dot" title="Whip Strike — Pending"></div>
+      <div class="prog-dot" title="Dungeon Run — Pending"></div>
+      <div class="prog-dot" title="Stack Tower — Pending"></div>
+    </div>
+  </div>
+
+  <!-- Game Doors -->
+  <div class="hub-grid">
+    <div class="game-door" onclick="showScreen('whip')">
+      <span class="door-num">01</span>
+      <span class="door-status-locked">🔒</span>
+      <span class="door-icon">⚡</span>
+      <div class="door-name">WHIP STRIKE</div>
+      <div class="door-desc">Type fast. Destroy the falling enemies before they reach the ground.</div>
+      <span class="door-badge">TYPING SPEED</span>
+    </div>
+    <div class="game-door" onclick="showScreen('dungeon')">
+      <span class="door-num">02</span>
+      <span class="door-icon">🚪</span>
+      <div class="door-name">DUNGEON RUN</div>
+      <div class="door-desc">Navigate the corridor. Answer the doors correctly to advance.</div>
+      <span class="door-badge">COMPREHENSION</span>
+    </div>
+    <div class="game-door" onclick="showScreen('stack')">
+      <span class="door-num">03</span>
+      <span class="door-icon">🗼</span>
+      <div class="door-name">STACK TOWER</div>
+      <div class="door-desc">Click to stack fact fragments at the right moment. Build to the sky.</div>
+      <span class="door-badge">RECALL TIMING</span>
+    </div>
+    <div class="game-door" onclick="showScreen('boss')">
+      <span class="door-num">04</span>
+      <span class="door-status-done">✅</span>
+      <span class="door-icon">💀</span>
+      <div class="door-name">BOSS QUIZ</div>
+      <div class="door-desc">Turn-based battle. Answer fast and correctly to land critical hits.</div>
+      <span class="door-badge">FACT RECALL</span>
+    </div>
+    <div class="game-door" onclick="showScreen('rune')">
+      <span class="door-num">05</span>
+      <span class="door-status-done">✅</span>
+      <span class="door-icon">🔮</span>
+      <div class="door-name">RUNE MATCH</div>
+      <div class="door-desc">Flip tiles to match word-definition pairs. Memory under pressure.</div>
+      <span class="door-badge">MEMORY PAIRS</span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="hub-footer">
+    <div style="font-family: var(--font-pixel); font-size: 7px; color: var(--bone-dim); margin-bottom: 8px;">
+      XP: 3,480 / 4,000 &nbsp;|&nbsp; ★ RANK: APPRENTICE MAGE
+    </div>
+    <a href="/learning/admin">⚙ admin</a>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── WHIP STRIKE ── -->
+<section class="screen" id="screen-whip">
+  <div class="hud-bar">
+    <div class="hud-avatar">🧙</div>
+    <div class="hud-info">
+      <div class="hud-name">WHIP STRIKE</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:45%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak" style="color:var(--danger)">❤️ 3 HP</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">⚡ WHIP STRIKE</div>
+    <div class="game-sub">Type the word on each enemy to destroy them. Don't let them reach the ground.</div>
+    <div class="game-stats-row">
+      <div class="stat-chip">WPM <span>47</span></div>
+      <div class="stat-chip">COMBO <span>x3</span></div>
+      <div class="stat-chip">ACCURACY <span>91%</span></div>
+      <div class="stat-chip">SCORE <span>1,240</span></div>
+    </div>
+
+    <!-- Arena -->
+    <div class="arena">
+      <div class="arena-torch left"></div>
+      <div class="arena-torch right"></div>
+
+      <!-- Enemies with words -->
+      <div class="enemy enemy-1">
+        <div class="enemy-word">BENEVOLENT</div>
+        🦇
+      </div>
+      <div class="enemy enemy-2">
+        <div class="enemy-word">PERILOUS</div>
+        💀
+      </div>
+      <div class="enemy enemy-3">
+        <div class="enemy-word">CANDID</div>
+        👻
+      </div>
+
+      <!-- Player character -->
+      <div class="player-char">🧙</div>
+      <div class="whip"></div>
+
+      <!-- Stone ground -->
+      <div class="stone-ground"></div>
+
+      <!-- Combo text -->
+      <div class="combo-burst" style="top:40%;left:60%;animation:comboBurst 0.8s 0.5s ease-out both;">x3 COMBO!</div>
+    </div>
+
+    <!-- Type bar -->
+    <div class="type-bar">
+      <input class="type-input" type="text" placeholder="TYPE THE WORD..." spellcheck="false" autocomplete="off">
+      <div class="combo-display">x3<br><span style="font-size:6px;color:var(--bone-dim)">COMBO</span></div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="hp-row">
+        <span class="hp-label">HP</span>
+        <div class="hp-track"><div class="hp-fill player" style="width:60%"></div></div>
+        <span class="hp-val">60/100</span>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK TO CASTLE</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── DUNGEON RUN ── -->
+<section class="screen" id="screen-dungeon">
+  <div class="hud-bar">
+    <div class="hud-avatar">🧙</div>
+    <div class="hud-info">
+      <div class="hud-name">DUNGEON RUN</div>
+      <div class="hud-level">Reading Comprehension</div>
+      <div class="xp-track"><div class="xp-fill" style="width:30%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">🔑 3 KEYS</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">🚪 DUNGEON RUN</div>
+    <div class="game-sub">Use A/D or click answers. Pick wrong — into the pit. Right — key and progress.</div>
+    <div class="game-stats-row">
+      <div class="stat-chip">ROOM <span>4 / 10</span></div>
+      <div class="stat-chip">KEYS <span>3</span></div>
+      <div class="stat-chip">STREAK <span>3</span></div>
+    </div>
+
+    <!-- Corridor view -->
+    <div class="corridor">
+      <div class="corridor-wall-left"></div>
+      <div class="corridor-wall-right"></div>
+      <!-- Doors with choices -->
+      <div class="corr-door corr-door-1">
+        <div class="corr-door-label">A)<br>SLEEPING</div>
+        <div class="pressure-plate">[A KEY]</div>
+      </div>
+      <div class="corr-door corr-door-2">
+        <div class="corr-door-label">B)<br>CASTING<br>LIGHT</div>
+        <div class="pressure-plate">[D KEY]</div>
+      </div>
+      <!-- Player -->
+      <div class="dungeon-player">🧙</div>
+      <div class="corridor-floor"></div>
+    </div>
+
+    <!-- Question panel -->
+    <div class="question-panel">
+      <div class="question-passage">
+        "The old lighthouse stood at the edge of the cliff, its beam cutting through the fog like a sword through silk, warning ships of the treacherous rocks below..."
+      </div>
+      <div class="question-text">❓ What is the lighthouse doing in the fog?</div>
+      <div class="answer-grid">
+        <button class="answer-btn" onclick="this.className='answer-btn wrong'">A) Sleeping</button>
+        <button class="answer-btn correct" onclick="this.className='answer-btn correct'">B) Casting light ✓</button>
+        <button class="answer-btn" onclick="this.className='answer-btn wrong'">C) Hiding</button>
+        <button class="answer-btn" onclick="this.className='answer-btn wrong'">D) Crumbling</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK TO CASTLE</button>
+      <button class="btn-secondary">NEXT ROOM →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── STACK TOWER ── -->
+<section class="screen" id="screen-stack">
+  <div class="hud-bar">
+    <div class="hud-avatar">🧙</div>
+    <div class="hud-info">
+      <div class="hud-name">STACK TOWER</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:55%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">🗼 HEIGHT: 7</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">🗼 STACK THE TOWER</div>
+    <div class="game-sub">Click when the block is centered to stack it. Miss the edge — block shrinks.</div>
+    <div class="game-stats-row">
+      <div class="stat-chip">HEIGHT <span>7</span></div>
+      <div class="stat-chip">COMBO <span>x4</span></div>
+      <div class="stat-chip">PERFECT <span>5</span></div>
+    </div>
+
+    <div class="tower-arena">
+      <div class="tower-height-label">TOWER: 7</div>
+
+      <!-- Falling (moving) block -->
+      <div class="falling-block" onclick="this.style.animation='none'">LUMINOUS = giving off light</div>
+
+      <!-- Stacked blocks -->
+      <div class="tower-base">
+        <div class="tower-block perfect">BENEVOLENT = kind &amp; generous</div>
+        <div class="tower-block">PERILOUS = dangerous</div>
+        <div class="tower-block perfect">CANDID = honest ✓</div>
+        <div class="tower-block">7×8 = 56</div>
+        <div class="tower-block">RESILIENT = recovers fast</div>
+        <div class="tower-block perfect">15+27 = 42 ✓</div>
+        <div class="tower-block">EPHEMERAL = short-lived</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK</button>
+      <div style="font-family:var(--font-pixel);font-size:8px;color:var(--gold);text-shadow:0 0 8px rgba(245,200,66,0.4);">x4 COMBO ACTIVE!</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── BOSS QUIZ ── -->
+<section class="screen" id="screen-boss">
+  <div class="hud-bar">
+    <div class="hud-avatar">🧙</div>
+    <div class="hud-info">
+      <div class="hud-name">BOSS QUIZ</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:75%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">⚔️ TURN 3</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">💀 BOSS QUIZ</div>
+    <div class="game-sub">Answer fast and correctly. Critical hit = extra damage. Boss HP: 40/100.</div>
+
+    <div class="boss-arena">
+      <!-- HP bars -->
+      <div class="hp-row">
+        <span class="hp-label">ETHAN</span>
+        <div class="hp-track"><div class="hp-fill player" style="width:80%"></div></div>
+        <span class="hp-val">80/100</span>
+      </div>
+      <div class="hp-row">
+        <span class="hp-label" style="color:var(--danger)">VOCAB<br>LICH</span>
+        <div class="hp-track"><div class="hp-fill boss" style="width:40%"></div></div>
+        <span class="hp-val">40/100</span>
+      </div>
+
+      <div style="height:16px;"></div>
+
+      <!-- Boss sprite -->
+      <div class="boss-container">
+        <div class="boss-sprite">💀</div>
+      </div>
+      <div class="boss-name">THE VOCABULARY LICH</div>
+
+      <!-- Battle dialog -->
+      <div class="battle-dialog">
+        <div class="battle-prompt">
+          The Lich raises his staff...<br>
+          "Define the word: <span class="prompt-word">METICULOUS</span>"
+          <span class="crit-badge">⚡ CRIT IF &lt;3s</span>
+        </div>
+        <div class="battle-answers">
+          <button class="battle-answer" onclick="this.classList.add('wrong')">A) Bold and daring</button>
+          <button class="battle-answer selected-crit" onclick="">B) Great attention to detail ✓ ⚡</button>
+          <button class="battle-answer" onclick="this.classList.add('wrong')">C) Quick to anger</button>
+          <button class="battle-answer" onclick="this.classList.add('wrong')">D) Easily confused</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="score-stars">
+          <span class="star">⭐</span>
+          <span class="star">⭐</span>
+          <span class="star">⭐</span>
+        </div>
+        <div style="font-family:var(--font-pixel);font-size:7px;color:var(--gold);">CRITICAL HIT! +60 DAMAGE</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK TO CASTLE</button>
+      <button class="btn-secondary">NEXT ATTACK →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── RUNE MATCH ── -->
+<section class="screen" id="screen-rune">
+  <div class="hud-bar">
+    <div class="hud-avatar">🧙</div>
+    <div class="hud-info">
+      <div class="hud-name">RUNE MATCH</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:50%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">🔮 5 MATCHED</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">🔮 RUNE MATCH</div>
+    <div class="game-sub">Flip tiles to match each word with its definition. Beat the clock.</div>
+
+    <div class="rune-arena">
+      <div class="rune-header">
+        <div class="rune-timer">⏱ 1:32</div>
+        <div class="rune-streak">🔥 STREAK x4</div>
+        <div style="font-family:var(--font-pixel);font-size:7px;color:var(--moon-blue);">PAIRS: 5/10</div>
+      </div>
+
+      <div class="rune-grid">
+        <!-- Matched pairs -->
+        <div class="rune-card matched"><div class="rune-text-front">BENEVOLENT</div></div>
+        <div class="rune-card matched"><div class="rune-text-front">kind &amp;<br>generous</div></div>
+        <div class="rune-card matched"><div class="rune-text-front">CANDID</div></div>
+        <div class="rune-card matched"><div class="rune-text-front">truthful,<br>honest</div></div>
+
+        <!-- Flipped (currently visible) -->
+        <div class="rune-card flipped"><div class="rune-text-front">LUMINOUS</div></div>
+
+        <!-- Face-down cards -->
+        <div class="rune-card"><div class="rune-back">ᚱ</div></div>
+        <div class="rune-card"><div class="rune-back">ᚷ</div></div>
+        <div class="rune-card"><div class="rune-back">ᚹ</div></div>
+        <div class="rune-card"><div class="rune-back">ᚻ</div></div>
+        <div class="rune-card"><div class="rune-back">ᚾ</div></div>
+        <div class="rune-card"><div class="rune-back">ᛁ</div></div>
+        <div class="rune-card"><div class="rune-back">ᛃ</div></div>
+        <div class="rune-card"><div class="rune-back">ᛇ</div></div>
+        <div class="rune-card"><div class="rune-back">ᛈ</div></div>
+        <div class="rune-card"><div class="rune-back">ᛉ</div></div>
+        <div class="rune-card"><div class="rune-back">ᛟ</div></div>
+      </div>
+
+      <div class="rune-divider">✦ ✦ ✦</div>
+
+      <div style="text-align:center;">
+        <div style="font-family:var(--font-pixel);font-size:7px;color:var(--bone-dim);margin-bottom:8px;">
+          Flip: LUMINOUS = ?
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK TO CASTLE</button>
+    </div>
+  </div>
+</section>
+
+<script>
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const map = {hub:'CASTLE',whip:'WHIP STRIKE',dungeon:'DUNGEON RUN',stack:'STACK TOWER',boss:'BOSS QUIZ',rune:'RUNE MATCH'};
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.trim() === map[id]) b.classList.add('active');
+  });
+}
+
+let crtOn = true;
+function toggleCRT() {
+  crtOn = !crtOn;
+  document.getElementById('crt-overlay').classList.toggle('off', !crtOn);
+  document.querySelector('.crt-toggle').textContent = 'CRT: ' + (crtOn ? 'ON' : 'OFF');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Arcade — Neon Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #0a0014;
+  --bg-2:       #0f001f;
+  --bg-panel:   #130025;
+  --pink:       #ff00aa;
+  --pink-dim:   #cc0088;
+  --cyan:       #00f0ff;
+  --cyan-dim:   #00b8cc;
+  --yellow:     #fff700;
+  --yellow-dim: #ccc300;
+  --white:      #ffffff;
+  --grey:       #888899;
+  --danger:     #ff3355;
+  --success:    #00ff88;
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-body:  'Inter', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── CRT / Scanlines ── */
+#crt-overlay {
+  pointer-events: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.22) 2px,
+    rgba(0,0,0,0.22) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+#crt-overlay.off { opacity: 0; }
+
+/* Chromatic aberration glow on titles */
+@keyframes aberration {
+  0%   { text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan); }
+  33%  { text-shadow: -1px 0 var(--pink), 1px 0 var(--cyan); }
+  66%  { text-shadow: 3px 0 var(--cyan), -3px 0 var(--pink); }
+  100% { text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan); }
+}
+
+/* Star field background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,0,170,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 60%, rgba(0,240,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 15%, rgba(255,247,0,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 75%, rgba(255,0,170,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 45%, rgba(0,240,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 30%, rgba(255,247,0,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 85%, rgba(255,0,170,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 50%, rgba(0,240,255,0.2) 0%, transparent 100%);
+  background-size: 400px 400px;
+  pointer-events: none;
+}
+
+/* Grid floor effect */
+body::after {
+  content: '';
+  position: fixed; bottom: 0; left: 0; right: 0; height: 200px; z-index: 0;
+  background:
+    linear-gradient(transparent, rgba(255,0,170,0.05)),
+    repeating-linear-gradient(90deg, rgba(255,0,170,0.08) 0px, transparent 1px, transparent 39px, rgba(255,0,170,0.08) 40px),
+    repeating-linear-gradient(0deg, rgba(255,0,170,0.08) 0px, transparent 1px, transparent 39px, rgba(255,0,170,0.08) 40px);
+  pointer-events: none;
+  perspective: 400px;
+}
+
+/* ── Top Nav ── */
+#top-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,0,20,0.96);
+  border-bottom: 1px solid rgba(255,0,170,0.3);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  box-shadow: 0 2px 20px rgba(255,0,170,0.15);
+}
+#top-nav::-webkit-scrollbar { display: none; }
+
+.nav-brand {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--pink);
+  white-space: nowrap;
+  padding: 14px 10px 14px 0;
+  border-right: 1px solid rgba(255,0,170,0.3);
+  margin-right: 4px;
+  flex-shrink: 0;
+  animation: aberration 3s linear infinite;
+}
+
+.nav-btn {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--grey);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+.nav-btn:hover {
+  color: var(--cyan);
+  border-color: rgba(0,240,255,0.3);
+  text-shadow: 0 0 8px var(--cyan);
+}
+.nav-btn.active {
+  color: var(--yellow);
+  border-color: rgba(255,247,0,0.4);
+  background: rgba(255,247,0,0.06);
+  text-shadow: 0 0 8px var(--yellow);
+  box-shadow: 0 0 12px rgba(255,247,0,0.1);
+}
+
+.crt-toggle {
+  margin-left: auto;
+  font-family: var(--font-pixel);
+  font-size: 5px;
+  color: var(--cyan);
+  background: transparent;
+  border: 1px solid rgba(0,240,255,0.3);
+  padding: 6px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.crt-toggle:hover {
+  background: rgba(0,240,255,0.08);
+  border-color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan);
+}
+
+/* ── Screens ── */
+.screen { display: none; position: relative; z-index: 1; min-height: calc(100vh - 48px); }
+.screen.active { display: block; }
+
+/* ── HUD Bar ── */
+.hud-bar {
+  background: rgba(15,0,31,0.95);
+  border-bottom: 1px solid rgba(255,0,170,0.25);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  box-shadow: 0 1px 0 rgba(0,240,255,0.08);
+}
+.hud-avatar {
+  width: 36px; height: 36px;
+  border: 2px solid var(--pink);
+  background: rgba(255,0,170,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 16px rgba(255,0,170,0.4), inset 0 0 12px rgba(255,0,170,0.1);
+  flex-shrink: 0;
+}
+.hud-info { flex: 1; min-width: 100px; }
+.hud-name {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--pink);
+  text-shadow: 0 0 12px rgba(255,0,170,0.7);
+  margin-bottom: 4px;
+}
+.hud-level { font-size: 11px; color: var(--grey); margin-bottom: 4px; }
+.xp-track {
+  height: 6px;
+  background: rgba(255,0,170,0.08);
+  border: 1px solid rgba(255,0,170,0.2);
+  position: relative; overflow: hidden;
+}
+.xp-fill {
+  height: 100%; width: 68%;
+  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  box-shadow: 0 0 8px rgba(255,0,170,0.6);
+}
+.hud-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.hud-streak {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--yellow);
+  text-shadow: 0 0 10px rgba(255,247,0,0.6);
+  text-align: center;
+}
+.hud-pack {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(0,240,255,0.5);
+  text-align: right;
+}
+
+/* ── Neon borders / panel utility ── */
+.neon-panel {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255,0,170,0.3);
+  box-shadow: 0 0 20px rgba(255,0,170,0.08), inset 0 0 30px rgba(0,0,0,0.3);
+}
+.neon-panel-cyan {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0,240,255,0.3);
+  box-shadow: 0 0 20px rgba(0,240,255,0.08);
+}
+.neon-panel-yellow {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255,247,0,0.3);
+  box-shadow: 0 0 20px rgba(255,247,0,0.06);
+}
+
+/* ── Game screen wrapper ── */
+.game-screen-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+}
+.game-title {
+  font-family: var(--font-pixel);
+  font-size: clamp(10px, 2.5vw, 16px);
+  color: var(--pink);
+  animation: aberration 3s linear infinite;
+  margin: 20px 0 4px;
+  letter-spacing: 1px;
+}
+.game-sub { font-size: 12px; color: var(--grey); margin-bottom: 20px; }
+
+.stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.stat-chip {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  background: rgba(255,0,170,0.08);
+  border: 1px solid rgba(255,0,170,0.3);
+  color: var(--white);
+  padding: 6px 10px;
+}
+.stat-chip span { color: var(--yellow); text-shadow: 0 0 6px rgba(255,247,0,0.5); }
+.stat-chip.cyan {
+  background: rgba(0,240,255,0.08);
+  border-color: rgba(0,240,255,0.3);
+}
+.stat-chip.cyan span { color: var(--cyan); text-shadow: 0 0 6px rgba(0,240,255,0.5); }
+
+/* HP bars */
+.hp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.hp-label { font-family: var(--font-pixel); font-size: 7px; width: 50px; color: var(--grey); }
+.hp-track { flex: 1; height: 12px; background: rgba(10,0,20,0.8); border: 1px solid rgba(255,0,170,0.25); position: relative; overflow: hidden; }
+.hp-fill { height: 100%; transition: width 0.4s; }
+.hp-fill.player { background: linear-gradient(90deg, var(--success), #00cc66); box-shadow: 0 0 8px rgba(0,255,136,0.5); }
+.hp-fill.boss   { background: linear-gradient(90deg, var(--pink), var(--danger)); box-shadow: 0 0 8px rgba(255,0,170,0.5); }
+.hp-val { font-family: var(--font-pixel); font-size: 7px; color: var(--grey); min-width: 48px; text-align: right; }
+
+/* ══════════════════════════════════════════ HUB SCREEN ── */
+#screen-hub { padding: 0 0 40px; }
+
+.arcade-header {
+  text-align: center;
+  padding: 32px 16px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Neon cabinet outline */
+.cabinet-art {
+  position: relative;
+  display: inline-block;
+  padding: 16px 32px;
+  border: 2px solid var(--pink);
+  box-shadow: 0 0 30px rgba(255,0,170,0.4), inset 0 0 40px rgba(255,0,170,0.06);
+  margin-bottom: 20px;
+}
+.cabinet-art::before {
+  content: 'INSERT COIN';
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--yellow);
+  text-shadow: 0 0 8px var(--yellow);
+  position: absolute;
+  bottom: -24px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+  animation: blink 1.2s step-end infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.arcade-logo-main {
+  font-family: var(--font-pixel);
+  font-size: clamp(14px, 4vw, 24px);
+  color: var(--white);
+  animation: aberration 2s linear infinite;
+  display: block;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.arcade-logo-sub {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--cyan);
+  text-shadow: 0 0 12px var(--cyan);
+  display: block;
+  letter-spacing: 3px;
+}
+
+.hub-pack-tag {
+  display: inline-block;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--yellow);
+  background: rgba(255,247,0,0.06);
+  border: 1px solid rgba(255,247,0,0.3);
+  box-shadow: 0 0 12px rgba(255,247,0,0.1);
+  padding: 6px 14px;
+  text-shadow: 0 0 8px rgba(255,247,0,0.6);
+  margin-bottom: 24px;
+}
+
+/* High score ticker */
+.high-score-strip {
+  background: rgba(255,0,170,0.06);
+  border-top: 1px solid rgba(255,0,170,0.2);
+  border-bottom: 1px solid rgba(255,0,170,0.2);
+  padding: 8px 0;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.ticker-inner {
+  display: flex;
+  gap: 40px;
+  animation: ticker 20s linear infinite;
+  width: max-content;
+}
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ticker-item {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--pink);
+  white-space: nowrap;
+}
+.ticker-score { color: var(--yellow); }
+
+/* Game tiles (arcade cabinet style) */
+.hub-grid {
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+@media (min-width: 540px) { .hub-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1024px) { .hub-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.game-tile {
+  background: var(--bg-panel);
+  border: 1px solid rgba(255,0,170,0.3);
+  padding: 16px 14px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.game-tile::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pink), transparent);
+  box-shadow: 0 0 8px var(--pink);
+}
+.game-tile::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+.game-tile:hover {
+  border-color: var(--pink);
+  box-shadow: 0 0 20px rgba(255,0,170,0.3), 0 0 40px rgba(255,0,170,0.1);
+  transform: translateY(-2px);
+}
+.game-tile:hover .tile-icon { text-shadow: 0 0 20px var(--pink); }
+
+.tile-num {
+  position: absolute; top: 8px; right: 10px;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: rgba(255,0,170,0.4);
+}
+.tile-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 10px;
+  transition: text-shadow 0.2s;
+}
+.tile-name {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--white);
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+.tile-desc { font-size: 11px; color: var(--grey); line-height: 1.5; margin-bottom: 10px; }
+.tile-badge {
+  display: inline-block;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--cyan);
+  background: rgba(0,240,255,0.06);
+  border: 1px solid rgba(0,240,255,0.25);
+  padding: 3px 8px;
+  text-shadow: 0 0 6px var(--cyan);
+}
+
+.tile-done {
+  position: absolute; top: 8px; left: 8px;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  color: var(--success);
+  text-shadow: 0 0 6px var(--success);
+}
+
+/* Progress bar */
+.hub-progress {
+  display: flex; justify-content: center; gap: 6px; margin: 0 16px 16px;
+  max-width: 680px; margin: 0 auto 16px;
+  padding: 0 16px;
+}
+.prog-seg {
+  flex: 1; height: 8px;
+  background: rgba(255,0,170,0.08);
+  border: 1px solid rgba(255,0,170,0.2);
+}
+.prog-seg.done {
+  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  border-color: var(--pink);
+  box-shadow: 0 0 8px rgba(255,0,170,0.4);
+}
+
+.hub-footer {
+  text-align: center; padding: 20px 16px 0;
+}
+.hub-footer a {
+  font-family: var(--font-pixel); font-size: 6px;
+  color: rgba(255,0,170,0.3); text-decoration: none; transition: color 0.2s;
+}
+.hub-footer a:hover { color: var(--pink); }
+
+/* ══════════════════════════════════════════ WHIP STRIKE ── */
+.arena {
+  position: relative; height: 300px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255,0,170,0.06) 0%, var(--bg) 70%);
+  border: 1px solid rgba(255,0,170,0.3);
+  box-shadow: inset 0 0 40px rgba(255,0,170,0.05);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+/* Neon grid floor */
+.neon-floor {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,0,170,0.15) 0px, transparent 1px, transparent 39px, rgba(255,0,170,0.15) 40px),
+    repeating-linear-gradient(0deg, rgba(255,0,170,0.15) 0px, transparent 1px, transparent 39px, rgba(255,0,170,0.15) 40px),
+    linear-gradient(transparent, rgba(255,0,170,0.05));
+  border-top: 1px solid rgba(255,0,170,0.4);
+}
+
+/* Player sprite */
+.player-char {
+  position: absolute; bottom: 60px; left: 20px;
+  width: 32px; height: 40px;
+  background: rgba(255,0,170,0.08);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 16px rgba(0,240,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+/* Enemy sprites */
+.enemy {
+  position: absolute;
+  width: 44px; height: 44px;
+  border: 2px solid rgba(255,51,85,0.7);
+  background: rgba(255,51,85,0.08);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 0 16px rgba(255,51,85,0.25);
+}
+.enemy-word {
+  position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-pixel); font-size: 7px;
+  color: var(--yellow);
+  background: rgba(10,0,20,0.95);
+  border: 1px solid rgba(255,247,0,0.3);
+  padding: 2px 6px;
+  white-space: nowrap;
+  text-shadow: 0 0 6px var(--yellow);
+}
+.enemy-1 { top: 30px; left: 55%; animation: fall 3.5s linear forwards; }
+.enemy-2 { top: 10px; right: 20%; animation: fall 4.5s linear 0.8s forwards; }
+.enemy-3 { top: 50px; left: 35%; animation: fall 5s linear 0.3s forwards; }
+@keyframes fall { to { top: calc(100% - 104px); } }
+
+/* Lightning whip */
+.whip {
+  position: absolute; bottom: 90px; left: 50px;
+  width: 70px; height: 3px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+  box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,240,255,0.4);
+  transform-origin: left center;
+  animation: whipSwing 1.2s ease-in-out infinite;
+  border-radius: 2px;
+}
+@keyframes whipSwing {
+  0%   { transform: rotate(-25deg) scaleX(1); }
+  40%  { transform: rotate(25deg) scaleX(1.2); }
+  100% { transform: rotate(-25deg) scaleX(1); }
+}
+
+/* Explosion effect */
+.explosion {
+  position: absolute; top: 35%; right: 30%;
+  width: 50px; height: 50px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  animation: explode 0.5s ease-out 1s both;
+}
+@keyframes explode {
+  0%   { opacity: 0; transform: scale(0.2); }
+  50%  { opacity: 1; transform: scale(1.5); filter: brightness(2); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* Typing input */
+.type-bar {
+  background: rgba(15,0,31,0.98);
+  border: 1px solid rgba(0,240,255,0.3);
+  border-top: 2px solid var(--cyan);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 0 20px rgba(0,240,255,0.1);
+}
+.type-input {
+  flex: 1;
+  background: rgba(10,0,20,0.8);
+  border: 1px solid rgba(0,240,255,0.25);
+  color: var(--cyan);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 10px 12px;
+  outline: none;
+  caret-color: var(--cyan);
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px var(--cyan);
+}
+.type-input::placeholder { color: rgba(0,240,255,0.2); }
+.type-input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(0,240,255,0.25); }
+
+.combo-display {
+  font-family: var(--font-pixel); font-size: 9px;
+  color: var(--pink);
+  text-shadow: 0 0 12px var(--pink);
+  text-align: center;
+}
+
+/* ══════════════════════════════════════════ DUNGEON RUN ── */
+.corridor {
+  position: relative; height: 280px;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  border: 1px solid rgba(0,240,255,0.3);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+/* Neon corridor perspective lines */
+.corridor::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(0deg, transparent 0%, rgba(0,240,255,0.04) 100%),
+    repeating-linear-gradient(
+      to bottom right,
+      rgba(0,240,255,0.06) 0px, transparent 1px,
+      transparent 60px, rgba(0,240,255,0.06) 61px
+    );
+}
+
+.corridor-wall-left {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 100px;
+  background: linear-gradient(90deg, rgba(255,0,170,0.08), transparent);
+  border-right: 1px solid rgba(255,0,170,0.2);
+}
+.corridor-wall-right {
+  position: absolute; top: 0; bottom: 0; right: 0; width: 100px;
+  background: linear-gradient(270deg, rgba(255,0,170,0.08), transparent);
+  border-left: 1px solid rgba(255,0,170,0.2);
+}
+
+/* Neon grid floor */
+.corridor-floor {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 70px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,240,255,0.12) 0px, transparent 1px, transparent 39px, rgba(0,240,255,0.12) 40px),
+    repeating-linear-gradient(0deg, rgba(0,240,255,0.08) 0px, transparent 1px, transparent 19px, rgba(0,240,255,0.08) 20px),
+    linear-gradient(transparent, rgba(0,240,255,0.04));
+  border-top: 1px solid rgba(0,240,255,0.4);
+}
+
+/* Neon doors */
+.corr-door {
+  position: absolute; bottom: 68px;
+  width: 60px; height: 100px;
+  background: rgba(15,0,31,0.9);
+  border: 2px solid;
+  display: flex; flex-direction: column; align-items: center; padding-top: 10px;
+  cursor: pointer; transition: all 0.15s;
+}
+.corr-door.door-a { border-color: var(--pink); box-shadow: 0 0 20px rgba(255,0,170,0.2), inset 0 0 20px rgba(255,0,170,0.05); left: 120px; }
+.corr-door.door-b { border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,240,255,0.2), inset 0 0 20px rgba(0,240,255,0.05); right: 120px; }
+.corr-door:hover { transform: scale(1.05); }
+.corr-door-label {
+  font-family: var(--font-pixel); font-size: 5px;
+  text-align: center; line-height: 2; padding: 0 4px;
+}
+.corr-door.door-a .corr-door-label { color: var(--pink); }
+.corr-door.door-b .corr-door-label { color: var(--cyan); }
+
+.pressure-plate {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 44px; height: 8px; font-family: var(--font-pixel); font-size: 4px;
+  text-align: center; line-height: 8px; border: 1px solid;
+}
+.corr-door.door-a .pressure-plate { border-color: rgba(255,0,170,0.4); color: var(--pink); background: rgba(255,0,170,0.06); }
+.corr-door.door-b .pressure-plate { border-color: rgba(0,240,255,0.4); color: var(--cyan); background: rgba(0,240,255,0.06); }
+
+.dungeon-player {
+  position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 38px;
+  background: rgba(0,240,255,0.06);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 16px rgba(0,240,255,0.4);
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Question panel */
+.question-panel {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0,240,255,0.3);
+  border-top: 2px solid var(--cyan);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 0 20px rgba(0,240,255,0.06);
+}
+.question-passage {
+  font-size: 12px; color: var(--grey); line-height: 1.6;
+  margin-bottom: 12px; padding: 10px;
+  background: rgba(10,0,20,0.6);
+  border-left: 2px solid rgba(0,240,255,0.4);
+  font-style: italic;
+}
+.question-text {
+  font-family: var(--font-pixel); font-size: 8px;
+  color: var(--white); margin-bottom: 14px; line-height: 1.8;
+}
+.answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.answer-btn {
+  background: rgba(10,0,20,0.8);
+  border: 1px solid rgba(255,0,170,0.2);
+  color: var(--white); font-family: var(--font-pixel); font-size: 7px;
+  padding: 10px 8px; cursor: pointer; transition: all 0.15s;
+  line-height: 1.6; text-align: left;
+}
+.answer-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,240,255,0.06); }
+.answer-btn.correct { border-color: var(--success); color: var(--success); background: rgba(0,255,136,0.06); box-shadow: 0 0 8px rgba(0,255,136,0.15); }
+.answer-btn.wrong { border-color: var(--danger); color: var(--danger); background: rgba(255,51,85,0.06); }
+
+/* ══════════════════════════════════════════ STACK TOWER ── */
+.tower-arena {
+  position: relative; height: 320px;
+  background: var(--bg);
+  border: 1px solid rgba(255,247,0,0.2);
+  box-shadow: 0 0 30px rgba(255,247,0,0.05);
+  overflow: hidden; margin-bottom: 12px;
+}
+
+.falling-block {
+  position: absolute; top: 20px; left: 25%;
+  height: 30px;
+  background: linear-gradient(180deg, var(--yellow), var(--yellow-dim));
+  border: 2px solid var(--yellow);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-pixel); font-size: 7px; color: #0a0014;
+  padding: 0 10px; white-space: nowrap;
+  box-shadow: 0 0 20px rgba(255,247,0,0.5);
+  cursor: pointer;
+  animation: slideBlock 2.2s ease-in-out infinite;
+}
+@keyframes slideBlock { 0% { left: 10%; } 50% { left: 60%; } 100% { left: 10%; } }
+
+.tower-base {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 140px; display: flex; flex-direction: column-reverse; gap: 2px; padding-bottom: 4px;
+}
+.tower-block {
+  height: 26px;
+  background: rgba(15,0,31,0.9);
+  border: 1px solid rgba(255,247,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-pixel); font-size: 6px;
+  color: var(--grey); padding: 0 6px; text-align: center; line-height: 1.4;
+}
+.tower-block.perfect {
+  border-color: var(--yellow);
+  background: rgba(255,247,0,0.06);
+  box-shadow: 0 0 8px rgba(255,247,0,0.2);
+  color: var(--yellow);
+}
+
+.tower-height-label {
+  position: absolute; top: 12px; right: 12px;
+  font-family: var(--font-pixel); font-size: 8px;
+  color: var(--yellow); text-shadow: 0 0 10px var(--yellow);
+}
+
+/* ══════════════════════════════════════════ BOSS QUIZ ── */
+.boss-arena {
+  background: radial-gradient(ellipse at 50% 20%, rgba(255,0,170,0.08) 0%, var(--bg) 60%);
+  border: 1px solid rgba(255,0,170,0.3);
+  padding: 20px 16px;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.boss-container { display: flex; justify-content: center; margin-bottom: 16px; }
+.boss-sprite {
+  width: 80px; height: 80px;
+  background: rgba(255,0,170,0.06);
+  border: 3px solid var(--pink);
+  box-shadow: 0 0 40px rgba(255,0,170,0.5), 0 0 80px rgba(255,0,170,0.2), inset 0 0 30px rgba(255,0,170,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  animation: bossPulse 1.8s ease-in-out infinite;
+}
+@keyframes bossPulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(255,0,170,0.5), 0 0 80px rgba(255,0,170,0.2); }
+  50%       { box-shadow: 0 0 60px rgba(255,0,170,0.8), 0 0 120px rgba(255,0,170,0.3); }
+}
+.boss-name {
+  font-family: var(--font-pixel); font-size: 9px; color: var(--pink);
+  text-shadow: 0 0 12px var(--pink); text-align: center; margin-bottom: 14px;
+  animation: aberration 3s linear infinite;
+}
+
+.battle-dialog {
+  background: rgba(10,0,20,0.9);
+  border: 1px solid rgba(255,0,170,0.2);
+  padding: 14px; margin-bottom: 12px;
+}
+.battle-prompt {
+  font-family: var(--font-pixel); font-size: 9px; color: var(--white);
+  line-height: 1.8; margin-bottom: 14px;
+}
+.battle-prompt .prompt-word { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+.crit-badge {
+  display: inline-block; font-family: var(--font-pixel); font-size: 6px;
+  color: var(--yellow); background: rgba(255,247,0,0.08);
+  border: 1px solid rgba(255,247,0,0.3);
+  padding: 2px 6px; margin-left: 8px;
+}
+
+.battle-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.battle-answer {
+  background: rgba(10,0,20,0.8);
+  border: 1px solid rgba(255,0,170,0.2);
+  color: var(--white); font-family: var(--font-pixel); font-size: 7px;
+  padding: 10px 8px; cursor: pointer; transition: all 0.15s; line-height: 1.6; text-align: left;
+}
+.battle-answer:hover { border-color: var(--pink); color: var(--pink); background: rgba(255,0,170,0.08); }
+.battle-answer.selected-crit {
+  border-color: var(--yellow); background: rgba(255,247,0,0.08); color: var(--yellow);
+  box-shadow: 0 0 12px rgba(255,247,0,0.2);
+}
+
+/* ══════════════════════════════════════════ RUNE MATCH ── */
+.rune-arena {
+  background: var(--bg-panel);
+  border: 1px solid rgba(0,240,255,0.25);
+  padding: 20px 16px; margin-bottom: 14px;
+}
+.rune-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.rune-timer { font-family: var(--font-pixel); font-size: 10px; color: var(--pink); text-shadow: 0 0 10px var(--pink); }
+.rune-streak { font-family: var(--font-pixel); font-size: 8px; color: var(--yellow); text-shadow: 0 0 8px var(--yellow); }
+
+.rune-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; max-width: 420px; margin: 0 auto;
+}
+@media (min-width: 600px) { .rune-grid { grid-template-columns: repeat(5, 1fr); } }
+
+.rune-card {
+  aspect-ratio: 1;
+  background: rgba(10,0,20,0.8);
+  border: 1px solid rgba(255,0,170,0.25);
+  cursor: pointer; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; overflow: hidden;
+}
+.rune-card::before {
+  content: '';
+  position: absolute; inset: 2px;
+  border: 1px solid rgba(255,0,170,0.1);
+}
+.rune-card:hover {
+  border-color: var(--pink);
+  box-shadow: 0 0 12px rgba(255,0,170,0.3);
+}
+.rune-card.flipped {
+  border-color: var(--cyan);
+  background: rgba(0,240,255,0.06);
+  box-shadow: 0 0 16px rgba(0,240,255,0.3);
+}
+.rune-card.matched {
+  border-color: var(--success);
+  background: rgba(0,255,136,0.06);
+  box-shadow: 0 0 12px rgba(0,255,136,0.2);
+  cursor: default;
+}
+.rune-text-front {
+  font-family: var(--font-pixel); font-size: 6px;
+  color: var(--white); text-align: center; line-height: 1.6; padding: 4px;
+}
+.rune-back {
+  font-size: 20px;
+  color: rgba(255,0,170,0.3);
+  filter: drop-shadow(0 0 4px rgba(255,0,170,0.3));
+}
+
+/* Buttons */
+.btn-primary {
+  font-family: var(--font-pixel); font-size: 8px;
+  color: #0a0014;
+  background: linear-gradient(180deg, var(--pink), var(--pink-dim));
+  border: 2px solid var(--pink);
+  padding: 10px 20px; cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 0 16px rgba(255,0,170,0.4);
+}
+.btn-primary:hover {
+  background: linear-gradient(180deg, #ff44cc, var(--pink));
+  box-shadow: 0 0 28px rgba(255,0,170,0.6);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  font-family: var(--font-pixel); font-size: 7px;
+  color: var(--cyan); background: transparent;
+  border: 1px solid rgba(0,240,255,0.3);
+  padding: 8px 16px; cursor: pointer; transition: all 0.15s;
+}
+.btn-secondary:hover {
+  background: rgba(0,240,255,0.06);
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,240,255,0.2);
+}
+
+.score-stars { display: flex; gap: 4px; margin: 8px 0; }
+.star { font-size: 16px; filter: drop-shadow(0 0 6px var(--yellow)); }
+.star.empty { opacity: 0.15; filter: none; }
+</style>
+</head>
+<body>
+
+<div id="crt-overlay"></div>
+
+<!-- Top Nav -->
+<nav id="top-nav">
+  <span class="nav-brand">★ LEVEL UP ARCADE</span>
+  <button class="nav-btn active" onclick="showScreen('hub')">ARCADE</button>
+  <button class="nav-btn" onclick="showScreen('whip')">WHIP STRIKE</button>
+  <button class="nav-btn" onclick="showScreen('dungeon')">DUNGEON RUN</button>
+  <button class="nav-btn" onclick="showScreen('stack')">STACK TOWER</button>
+  <button class="nav-btn" onclick="showScreen('boss')">BOSS QUIZ</button>
+  <button class="nav-btn" onclick="showScreen('rune')">RUNE MATCH</button>
+  <button class="crt-toggle" onclick="toggleCRT()">CRT: ON</button>
+</nav>
+
+<!-- ─────────────────────────────── HUB ── -->
+<section class="screen active" id="screen-hub">
+  <div class="hud-bar">
+    <div class="hud-avatar">🕹️</div>
+    <div class="hud-info">
+      <div class="hud-name">ETHAN</div>
+      <div class="hud-level">Level 7 · 3,480 XP</div>
+      <div class="xp-track"><div class="xp-fill"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">🔥 12<br>STREAK</div>
+      <div class="hud-pack">6TH GRADE<br>VOCABULARY</div>
+    </div>
+  </div>
+
+  <!-- Arcade Header -->
+  <div class="arcade-header">
+    <div class="cabinet-art">
+      <span class="arcade-logo-main">LEVEL UP ARCADE</span>
+      <span class="arcade-logo-sub">★ KNOWLEDGE UNLOCKED ★</span>
+    </div>
+
+    <div class="hub-pack-tag">▶ ACTIVE PACK: 6TH GRADE VOCABULARY ◀</div>
+  </div>
+
+  <!-- High score ticker -->
+  <div class="high-score-strip">
+    <div class="ticker-inner">
+      <span class="ticker-item">HIGH SCORE — ETHAN — <span class="ticker-score">12,400</span></span>
+      <span class="ticker-item">BENEVOLENT = <span class="ticker-score">KIND & GENEROUS</span></span>
+      <span class="ticker-item">TOP WPM — ETHAN — <span class="ticker-score">52</span></span>
+      <span class="ticker-item">PERILOUS = <span class="ticker-score">DANGEROUS OR RISKY</span></span>
+      <span class="ticker-item">TOWER HEIGHT RECORD — <span class="ticker-score">23</span></span>
+      <span class="ticker-item">CANDID = <span class="ticker-score">TRUTHFUL AND HONEST</span></span>
+      <span class="ticker-item">HIGH SCORE — ETHAN — <span class="ticker-score">12,400</span></span>
+      <span class="ticker-item">BENEVOLENT = <span class="ticker-score">KIND & GENEROUS</span></span>
+      <span class="ticker-item">TOP WPM — ETHAN — <span class="ticker-score">52</span></span>
+      <span class="ticker-item">PERILOUS = <span class="ticker-score">DANGEROUS OR RISKY</span></span>
+    </div>
+  </div>
+
+  <!-- Session progress -->
+  <div style="padding: 0 16px; max-width: 680px; margin: 0 auto 16px;">
+    <div style="font-family: var(--font-pixel); font-size: 6px; color: var(--grey); margin-bottom: 8px; letter-spacing: 1px;">SESSION: 2/5 COMPLETE</div>
+    <div class="hub-progress">
+      <div class="prog-seg done"></div>
+      <div class="prog-seg done"></div>
+      <div class="prog-seg"></div>
+      <div class="prog-seg"></div>
+      <div class="prog-seg"></div>
+    </div>
+  </div>
+
+  <!-- Game tiles -->
+  <div class="hub-grid">
+    <div class="game-tile" onclick="showScreen('whip')">
+      <span class="tile-num">01</span>
+      <span class="tile-icon">⚡</span>
+      <div class="tile-name">WHIP STRIKE</div>
+      <div class="tile-desc">Type to destroy enemies before they reach the ground.</div>
+      <span class="tile-badge">TYPING SPEED</span>
+    </div>
+    <div class="game-tile" onclick="showScreen('dungeon')">
+      <span class="tile-num">02</span>
+      <span class="tile-icon">🚪</span>
+      <div class="tile-name">DUNGEON RUN</div>
+      <div class="tile-desc">Navigate the corridor. Pressure plates pick your answers.</div>
+      <span class="tile-badge">COMPREHENSION</span>
+    </div>
+    <div class="game-tile" onclick="showScreen('stack')">
+      <span class="tile-num">03</span>
+      <span class="tile-icon">🗼</span>
+      <div class="tile-name">STACK TOWER</div>
+      <div class="tile-desc">Click to stack. Miss the moment — block shrinks. Build high.</div>
+      <span class="tile-badge">RECALL TIMING</span>
+    </div>
+    <div class="game-tile" onclick="showScreen('boss')">
+      <span class="tile-num">04</span>
+      <div class="tile-done">CLEARED ✓</div>
+      <span class="tile-icon">👾</span>
+      <div class="tile-name">BOSS QUIZ</div>
+      <div class="tile-desc">Turn-based battle. Critical hits for fast, correct answers.</div>
+      <span class="tile-badge">FACT RECALL</span>
+    </div>
+    <div class="game-tile" onclick="showScreen('rune')">
+      <span class="tile-num">05</span>
+      <div class="tile-done">CLEARED ✓</div>
+      <span class="tile-icon">🔮</span>
+      <div class="tile-name">RUNE MATCH</div>
+      <div class="tile-desc">Match word-definition pairs. Memory against the clock.</div>
+      <span class="tile-badge">MEMORY PAIRS</span>
+    </div>
+  </div>
+
+  <div class="hub-footer" style="padding-top: 24px;">
+    <div style="font-family: var(--font-pixel); font-size: 6px; color: var(--grey); margin-bottom: 8px;">
+      RANK: <span style="color: var(--yellow);">APPRENTICE</span> &nbsp;|&nbsp; COINS: <span style="color: var(--yellow);">480</span>
+    </div>
+    <a href="/learning/admin">⚙ admin</a>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── WHIP STRIKE ── -->
+<section class="screen" id="screen-whip">
+  <div class="hud-bar">
+    <div class="hud-avatar">🕹️</div>
+    <div class="hud-info">
+      <div class="hud-name">WHIP STRIKE</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:45%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak" style="color:var(--danger)">❤️ 3 HP</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">⚡ WHIP STRIKE</div>
+    <div class="game-sub">Type the glowing word to destroy the enemy. Don't let them reach the floor.</div>
+    <div class="stat-row">
+      <div class="stat-chip">WPM <span>47</span></div>
+      <div class="stat-chip cyan">COMBO <span>x3</span></div>
+      <div class="stat-chip">ACCURACY <span>91%</span></div>
+      <div class="stat-chip cyan">SCORE <span>1,240</span></div>
+    </div>
+
+    <div class="arena">
+      <div class="enemy enemy-1">
+        <div class="enemy-word">BENEVOLENT</div>
+        👾
+      </div>
+      <div class="enemy enemy-2">
+        <div class="enemy-word">PERILOUS</div>
+        👾
+      </div>
+      <div class="enemy enemy-3">
+        <div class="enemy-word">CANDID</div>
+        👾
+      </div>
+      <div class="player-char">🕹️</div>
+      <div class="whip"></div>
+      <div class="explosion">💥</div>
+      <div class="neon-floor"></div>
+    </div>
+
+    <div class="type-bar">
+      <input class="type-input" type="text" placeholder="TYPE TO DESTROY..." spellcheck="false" autocomplete="off">
+      <div class="combo-display">x3<br><span style="font-size:6px;color:var(--grey)">COMBO</span></div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="hp-row">
+        <span class="hp-label">HP</span>
+        <div class="hp-track"><div class="hp-fill player" style="width:60%"></div></div>
+        <span class="hp-val">60/100</span>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── DUNGEON RUN ── -->
+<section class="screen" id="screen-dungeon">
+  <div class="hud-bar">
+    <div class="hud-avatar">🕹️</div>
+    <div class="hud-info">
+      <div class="hud-name">DUNGEON RUN</div>
+      <div class="hud-level">Reading Comprehension</div>
+      <div class="xp-track"><div class="xp-fill" style="width:30%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak" style="color:var(--cyan)">🔑 3 KEYS</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">🚪 DUNGEON RUN</div>
+    <div class="game-sub">A/D keys or click. Step on the plate for your answer. Wrong = game over.</div>
+    <div class="stat-row">
+      <div class="stat-chip cyan">ROOM <span>4 / 10</span></div>
+      <div class="stat-chip">KEYS <span>3</span></div>
+      <div class="stat-chip cyan">STREAK <span>3</span></div>
+    </div>
+
+    <div class="corridor">
+      <div class="corridor-wall-left"></div>
+      <div class="corridor-wall-right"></div>
+      <div class="corr-door door-a">
+        <div class="corr-door-label">A)<br>SLEEPING</div>
+        <div class="pressure-plate">[A KEY]</div>
+      </div>
+      <div class="corr-door door-b">
+        <div class="corr-door-label">B)<br>CASTING<br>LIGHT</div>
+        <div class="pressure-plate">[D KEY]</div>
+      </div>
+      <div class="dungeon-player">🕹️</div>
+      <div class="corridor-floor"></div>
+    </div>
+
+    <div class="question-panel">
+      <div class="question-passage">
+        "The old lighthouse stood at the edge of the cliff, its beam cutting through the fog like a sword through silk..."
+      </div>
+      <div class="question-text">❓ What is the lighthouse doing in the fog?</div>
+      <div class="answer-grid">
+        <button class="answer-btn" onclick="this.className='answer-btn wrong'">A) Sleeping</button>
+        <button class="answer-btn correct">B) Casting light ✓</button>
+        <button class="answer-btn" onclick="this.className='answer-btn wrong'">C) Hiding</button>
+        <button class="answer-btn" onclick="this.className='answer-btn wrong'">D) Crumbling</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK</button>
+      <button class="btn-secondary">NEXT ROOM →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── STACK TOWER ── -->
+<section class="screen" id="screen-stack">
+  <div class="hud-bar">
+    <div class="hud-avatar">🕹️</div>
+    <div class="hud-info">
+      <div class="hud-name">STACK TOWER</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:55%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak" style="color:var(--yellow)">🗼 HEIGHT: 7</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">🗼 STACK TOWER</div>
+    <div class="game-sub">Click to drop and stack. Perfect center = bonus points. Tower height = score.</div>
+    <div class="stat-row">
+      <div class="stat-chip">HEIGHT <span>7</span></div>
+      <div class="stat-chip cyan">COMBO <span>x4</span></div>
+      <div class="stat-chip">PERFECT <span>5</span></div>
+    </div>
+
+    <div class="tower-arena">
+      <div class="tower-height-label">HEIGHT: 7</div>
+      <div class="falling-block">LUMINOUS = giving off light</div>
+      <div class="tower-base">
+        <div class="tower-block perfect">BENEVOLENT = kind</div>
+        <div class="tower-block">PERILOUS = dangerous</div>
+        <div class="tower-block perfect">CANDID = honest ✓</div>
+        <div class="tower-block">7×8 = 56</div>
+        <div class="tower-block">RESILIENT = recovers fast</div>
+        <div class="tower-block perfect">15+27 = 42 ✓</div>
+        <div class="tower-block">EPHEMERAL = short-lived</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK</button>
+      <div style="font-family:var(--font-pixel);font-size:8px;color:var(--yellow);text-shadow:0 0 8px var(--yellow);">x4 COMBO!</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── BOSS QUIZ ── -->
+<section class="screen" id="screen-boss">
+  <div class="hud-bar">
+    <div class="hud-avatar">🕹️</div>
+    <div class="hud-info">
+      <div class="hud-name">BOSS QUIZ</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:75%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak">⚔️ TURN 3</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">👾 BOSS QUIZ</div>
+    <div class="game-sub">Answer fast for critical hits. Boss is at 40 HP. One wrong answer = boss attacks.</div>
+
+    <div class="boss-arena">
+      <div class="hp-row">
+        <span class="hp-label">ETHAN</span>
+        <div class="hp-track"><div class="hp-fill player" style="width:80%"></div></div>
+        <span class="hp-val">80/100</span>
+      </div>
+      <div class="hp-row">
+        <span class="hp-label" style="color:var(--pink)">GLITCH<br>LORD</span>
+        <div class="hp-track"><div class="hp-fill boss" style="width:40%"></div></div>
+        <span class="hp-val">40/100</span>
+      </div>
+
+      <div style="height:16px;"></div>
+      <div class="boss-container">
+        <div class="boss-sprite">👾</div>
+      </div>
+      <div class="boss-name">THE GLITCH LORD</div>
+
+      <div class="battle-dialog">
+        <div class="battle-prompt">
+          GLITCH LORD sends a DATA SURGE!<br>
+          "Define: <span class="prompt-word">METICULOUS</span>"
+          <span class="crit-badge">⚡ CRIT IF &lt;3s</span>
+        </div>
+        <div class="battle-answers">
+          <button class="battle-answer">A) Bold and daring</button>
+          <button class="battle-answer selected-crit">B) Great attention to detail ✓ ⚡</button>
+          <button class="battle-answer">C) Quick to anger</button>
+          <button class="battle-answer">D) Easily confused</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="score-stars">
+          <span class="star">⭐</span><span class="star">⭐</span><span class="star">⭐</span>
+        </div>
+        <div style="font-family:var(--font-pixel);font-size:7px;color:var(--yellow);text-shadow:0 0 6px var(--yellow);">CRITICAL HIT! -60 HP</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK</button>
+      <button class="btn-secondary">NEXT TURN →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── RUNE MATCH ── -->
+<section class="screen" id="screen-rune">
+  <div class="hud-bar">
+    <div class="hud-avatar">🕹️</div>
+    <div class="hud-info">
+      <div class="hud-name">RUNE MATCH</div>
+      <div class="hud-level">6th Grade Vocabulary</div>
+      <div class="xp-track"><div class="xp-fill" style="width:50%"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-streak" style="color:var(--cyan)">🔮 5 MATCHED</div>
+    </div>
+  </div>
+  <div class="game-screen-inner">
+    <div class="game-title">🔮 RUNE MATCH</div>
+    <div class="game-sub">Match each vocabulary word with its definition. Beat the clock for bonus XP.</div>
+
+    <div class="rune-arena">
+      <div class="rune-header">
+        <div class="rune-timer">⏱ 1:32</div>
+        <div class="rune-streak">🔥 STREAK x4</div>
+        <div style="font-family:var(--font-pixel);font-size:7px;color:var(--cyan);text-shadow:0 0 6px var(--cyan);">PAIRS: 5/10</div>
+      </div>
+
+      <div class="rune-grid">
+        <div class="rune-card matched"><div class="rune-text-front">BENEVOLENT</div></div>
+        <div class="rune-card matched"><div class="rune-text-front">kind &amp;<br>generous</div></div>
+        <div class="rune-card matched"><div class="rune-text-front">CANDID</div></div>
+        <div class="rune-card matched"><div class="rune-text-front">truthful,<br>honest</div></div>
+        <div class="rune-card flipped"><div class="rune-text-front">LUMINOUS</div></div>
+        <div class="rune-card"><div class="rune-back">▓</div></div>
+        <div class="rune-card"><div class="rune-back">▒</div></div>
+        <div class="rune-card"><div class="rune-back">░</div></div>
+        <div class="rune-card"><div class="rune-back">▓</div></div>
+        <div class="rune-card"><div class="rune-back">▒</div></div>
+        <div class="rune-card"><div class="rune-back">░</div></div>
+        <div class="rune-card"><div class="rune-back">▓</div></div>
+        <div class="rune-card"><div class="rune-back">▒</div></div>
+        <div class="rune-card"><div class="rune-back">░</div></div>
+        <div class="rune-card"><div class="rune-back">▓</div></div>
+        <div class="rune-card"><div class="rune-back">▒</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="showScreen('hub')">← BACK</button>
+    </div>
+  </div>
+</section>
+
+<script>
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const labels = {hub:'ARCADE',whip:'WHIP STRIKE',dungeon:'DUNGEON RUN',stack:'STACK TOWER',boss:'BOSS QUIZ',rune:'RUNE MATCH'};
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.trim() === labels[id]) b.classList.add('active');
+  });
+}
+let crtOn = true;
+function toggleCRT() {
+  crtOn = !crtOn;
+  document.getElementById('crt-overlay').classList.toggle('off', !crtOn);
+  document.querySelector('.crt-toggle').textContent = 'CRT: ' + (crtOn ? 'ON' : 'OFF');
+}
+</script>
+</body>
+</html>
