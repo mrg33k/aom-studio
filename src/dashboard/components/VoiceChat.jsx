@@ -142,6 +142,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     } catch { return { ...DEFAULT_SETTINGS, voice: initialVoice } }
   })
   const [availableVoices, setAvailableVoices] = useState([])
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   const wsRef = useRef(null)
   const audioCtxRef = useRef(null)
@@ -164,6 +165,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   // Mirror of the transcript state. stopSession reads this synchronously to build
   // the final transcript for /api/dashboard/voice-summary without racing React state.
   const transcriptRef = useRef([])
+  const previewWsRef = useRef(null)
 
   // Keep transcriptRef in sync with transcript state. On every transcript change
   // the effect commits the latest array to the ref. stopSession also merges any
@@ -205,6 +207,98 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       return next
     })
   }, [])
+
+  const previewVoice = useCallback(async () => {
+    if (previewLoading) return
+    if (previewWsRef.current) {
+      try { previewWsRef.current.close() } catch (_) {}
+      previewWsRef.current = null
+    }
+    setPreviewLoading(true)
+    try {
+      const sessionRes = await fetch('/api/dashboard/voice-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, client_id: clientId, voice: settings.voice }),
+      })
+      if (!sessionRes.ok) throw new Error('Session API failed')
+      const sessionConfig = await sessionRes.json()
+
+      const audioChunks = []
+      const ws = new WebSocket(sessionConfig.wsUrl)
+      previewWsRef.current = ws
+      let setupDone = false
+
+      ws.onopen = () => { ws.send(JSON.stringify(sessionConfig.setupMessage)) }
+
+      ws.onmessage = (event) => {
+        try {
+          const raw = event.data instanceof ArrayBuffer
+            ? new TextDecoder().decode(event.data)
+            : event.data
+          const msg = JSON.parse(raw)
+
+          if (msg.setupComplete !== undefined && !setupDone) {
+            setupDone = true
+            ws.send(JSON.stringify({
+              clientContent: {
+                turns: [{ role: 'user', parts: [{ text: 'Say exactly: Hello, this is a voice preview.' }] }],
+                turnComplete: true,
+              },
+            }))
+          }
+
+          const sc = msg.serverContent
+          if (!sc) return
+
+          if (sc.modelTurn?.parts) {
+            for (const part of sc.modelTurn.parts) {
+              if (part.inlineData?.data) audioChunks.push(fromBase64(part.inlineData.data))
+            }
+          }
+
+          if (sc.turnComplete) {
+            try { ws.close() } catch (_) {}
+            previewWsRef.current = null
+            if (audioChunks.length > 0) {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: GEMINI_OUTPUT_RATE })
+              const totalLen = audioChunks.reduce((s, b) => s + new Int16Array(b).length, 0)
+              const combined = new Int16Array(totalLen)
+              let off = 0
+              for (const chunk of audioChunks) {
+                const int16 = new Int16Array(chunk)
+                combined.set(int16, off)
+                off += int16.length
+              }
+              const floatData = new Float32Array(combined.length)
+              for (let i = 0; i < combined.length; i++) floatData[i] = combined[i] / 32768.0
+              const audioBuf = ctx.createBuffer(1, floatData.length, GEMINI_OUTPUT_RATE)
+              audioBuf.copyToChannel(floatData, 0)
+              const source = ctx.createBufferSource()
+              source.buffer = audioBuf
+              source.connect(ctx.destination)
+              source.onended = () => { try { ctx.close() } catch (_) {} }
+              source.start()
+            }
+            setPreviewLoading(false)
+          }
+        } catch (_) {}
+      }
+
+      ws.onerror = () => { previewWsRef.current = null; setPreviewLoading(false) }
+      ws.onclose = () => { previewWsRef.current = null; setPreviewLoading(false) }
+
+      // Safety timeout: 10s
+      setTimeout(() => {
+        if (previewWsRef.current === ws) {
+          try { ws.close() } catch (_) {}
+          setPreviewLoading(false)
+        }
+      }, 10000)
+    } catch (_) {
+      setPreviewLoading(false)
+    }
+  }, [previewLoading, agentSlug, clientId, settings.voice])
 
   const updateStatus = useCallback((s) => {
     statusRef.current = s
@@ -778,7 +872,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     else stopSession()
   }, [status, startSession, stopSession])
 
-  useEffect(() => { return () => { stopSession() } }, []) // eslint-disable-line
+  useEffect(() => { return () => { stopSession(); if (previewWsRef.current) { try { previewWsRef.current.close() } catch (_) {} previewWsRef.current = null } } }, []) // eslint-disable-line
   useEffect(() => { if (status !== 'idle') stopSession() }, [agentSlug]) // eslint-disable-line
   useEffect(() => { if (autoStart) startSession() }, []) // eslint-disable-line
 
@@ -828,9 +922,40 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
 
           {/* Voice Selection */}
           <div>
-            <label style={{ color: 'rgba(148,168,200,0.7)', fontSize: 10, fontWeight: 600, fontFamily: "'Inter', sans-serif", display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Voice Selection
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ color: 'rgba(148,168,200,0.7)', fontSize: 10, fontWeight: 600, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Voice Selection
+              </label>
+              <button
+                onClick={previewVoice}
+                disabled={previewLoading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '3px 8px', borderRadius: 5, cursor: previewLoading ? 'not-allowed' : 'pointer',
+                  background: previewLoading ? 'rgba(96,165,250,0.05)' : 'rgba(96,165,250,0.1)',
+                  border: '1px solid rgba(96,165,250,0.25)', outline: 'none',
+                  color: previewLoading ? 'rgba(96,165,250,0.4)' : '#60A5FA',
+                  fontSize: 9, fontWeight: 700, fontFamily: "'Inter', sans-serif",
+                  letterSpacing: '0.05em', textTransform: 'uppercase', transition: 'all 0.15s',
+                }}
+              >
+                {previewLoading ? (
+                  <>
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'voiceSpin 0.8s linear infinite' }}>
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                    </svg>
+                    Playing…
+                  </>
+                ) : (
+                  <>
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="5,3 19,12 5,21" />
+                    </svg>
+                    Preview Voice
+                  </>
+                )}
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {(availableVoices.length > 0
                 ? availableVoices.map(id => VOICE_OPTIONS.find(o => o.id === id) || { id, label: id, desc: '' })
