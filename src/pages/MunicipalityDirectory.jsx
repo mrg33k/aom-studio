@@ -70,8 +70,44 @@ function fmtArea(n) {
   return n.toFixed(1) + ' mi²';
 }
 
-function downloadTownManagersCsv() {
-  window.location.href = '/api/town-managers/export';
+const CSV_COLUMNS = [
+  ['name',             p => p.name],
+  ['state_abbr',       p => p.state_abbr],
+  ['state_name',       p => p.state_name],
+  ['type',             p => p.type],
+  ['population_2020',  p => p.population_2020],
+  ['land_area_sqmi',   p => p.land_area_sqmi],
+  ['latitude',         p => p.latitude],
+  ['longitude',        p => p.longitude],
+  ['geoid',            p => p.geoid],
+  ['contact_name',     p => p.contact_name || ''],
+  ['contact_title',    p => p.contact_title || ''],
+  ['contact_email',    p => p.contact_email || ''],
+  ['contact_phone',    p => p.contact_phone || ''],
+  ['contact_source',   p => p.contact_source || ''],
+  ['contact_enriched_at', p => p.contact_enriched_at || ''],
+];
+
+function csvCell(v) {
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function exportCSV(places, filename = 'arsenal-municipalities.csv') {
+  const header = CSV_COLUMNS.map(([k]) => k).join(',');
+  const rows = places.map(p => CSV_COLUMNS.map(([, fn]) => csvCell(fn(p))).join(','));
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ─── Type badge ───────────────────────────────────────────────────────────────
@@ -449,6 +485,7 @@ export default function MunicipalDirectory() {
   const [page,        setPage]        = useState(1);
   const [selected,    setSelected]    = useState(null);
   const [showStats,   setShowStats]   = useState(false);
+  const [enrichedOnly, setEnrichedOnly] = useState(false);
 
   const PAGE_SIZE = 50;
 
@@ -476,6 +513,7 @@ export default function MunicipalDirectory() {
     return data.filter(p => {
       if (selState && p.state_abbr !== selState) return false;
       if (selType  && (p.type?.toLowerCase() !== selType)) return false;
+      if (enrichedOnly && !p.contact_email) return false;
 
       const pop = p.population_2020 ?? 0;
       if (pop < preset.min) return false;
@@ -496,7 +534,12 @@ export default function MunicipalDirectory() {
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [data, search, selState, selType, popPreset, sortField, sortDir]);
+  }, [data, search, selState, selType, popPreset, sortField, sortDir, enrichedOnly]);
+
+  const enrichedCount = useMemo(
+    () => data.reduce((n, p) => n + (p.contact_email ? 1 : 0), 0),
+    [data]
+  );
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -609,15 +652,22 @@ export default function MunicipalDirectory() {
               Stats
             </button>
             <button
-              onClick={downloadTownManagersCsv}
+              onClick={() => exportCSV(
+                filtered,
+                `arsenal-municipalities${enrichedOnly ? '-enriched' : ''}.csv`
+              )}
+              disabled={filtered.length === 0}
               style={{
                 background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.3)',
                 color: '#FDBA74', borderRadius: 6, padding: '7px 14px',
-                fontSize: 12, fontFamily: V.space, fontWeight: 700, cursor: 'pointer',
+                fontSize: 12, fontFamily: V.space, fontWeight: 700,
+                cursor: filtered.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: filtered.length === 0 ? 0.5 : 1,
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
+              title={`Download ${filtered.length.toLocaleString()} rows as CSV`}
             >
-              <span>↓</span> Download CSV
+              <span>↓</span> Download CSV ({filtered.length.toLocaleString()})
             </button>
           </div>
         </div>
@@ -679,6 +729,27 @@ export default function MunicipalDirectory() {
             <option value="borough">Borough</option>
           </select>
 
+          {/* Enriched only toggle */}
+          <button
+            onClick={() => { setEnrichedOnly(v => !v); setPage(1); }}
+            style={{
+              background: enrichedOnly ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${enrichedOnly ? 'rgba(34,197,94,0.45)' : V.border}`,
+              color: enrichedOnly ? '#86EFAC' : V.muted,
+              borderRadius: 5, padding: '6px 10px', fontSize: 11,
+              fontFamily: V.mono, cursor: 'pointer', whiteSpace: 'nowrap',
+              fontWeight: enrichedOnly ? 700 : 500, transition: 'all 0.12s',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+            title={`${enrichedCount.toLocaleString()} cities with enriched contact info`}
+          >
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: enrichedOnly ? '#22C55E' : V.dim,
+            }} />
+            Enriched only ({enrichedCount.toLocaleString()})
+          </button>
+
           {/* Population presets */}
           <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap', overflowX: 'auto' }}>
             {POP_PRESETS.map((p, i) => (
@@ -700,9 +771,9 @@ export default function MunicipalDirectory() {
           </div>
 
           {/* Clear */}
-          {(search || selState || selType || popPreset !== 0) && (
+          {(search || selState || selType || popPreset !== 0 || enrichedOnly) && (
             <button
-              onClick={() => { setSearch(''); setSelState(''); setSelType(''); setPopPreset(0); setPage(1); }}
+              onClick={() => { setSearch(''); setSelState(''); setSelType(''); setPopPreset(0); setEnrichedOnly(false); setPage(1); }}
               style={{
                 background: 'none', border: `1px solid ${V.border}`, color: V.dim,
                 borderRadius: 5, padding: '6px 10px', fontSize: 11,
