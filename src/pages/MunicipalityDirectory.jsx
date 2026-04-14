@@ -436,13 +436,13 @@ function DetailModal({ place, onClose }) {
 // ─── Stats Dashboard ──────────────────────────────────────────────────────────
 function StatsStrip({ meta, filtered, total }) {
   const stats = [
-    { label: 'Total',      value: total?.toLocaleString(),    color: V.text },
-    { label: 'Filtered',   value: filtered?.toLocaleString(), color: '#93C5FD' },
-    { label: 'Cities',     value: meta?.type_breakdown?.city?.toLocaleString(), color: '#FDBA74' },
-    { label: 'Towns',      value: meta?.type_breakdown?.town?.toLocaleString(), color: '#86EFAC' },
-    { label: 'Villages',   value: meta?.type_breakdown?.village?.toLocaleString(), color: '#D8B4FE' },
-    { label: 'Boroughs',   value: meta?.type_breakdown?.borough?.toLocaleString(), color: '#FCA5A5' },
-    { label: 'States',     value: '49', color: V.muted },
+    { label: 'Total',      value: total?.toLocaleString(),    color: V.text,    hideOnMobile: false },
+    { label: 'Filtered',   value: filtered?.toLocaleString(), color: '#93C5FD', hideOnMobile: false },
+    { label: 'Cities',     value: meta?.type_breakdown?.city?.toLocaleString(), color: '#FDBA74', hideOnMobile: false },
+    { label: 'Towns',      value: meta?.type_breakdown?.town?.toLocaleString(), color: '#86EFAC', hideOnMobile: true  },
+    { label: 'Villages',   value: meta?.type_breakdown?.village?.toLocaleString(), color: '#D8B4FE', hideOnMobile: true  },
+    { label: 'Boroughs',   value: meta?.type_breakdown?.borough?.toLocaleString(), color: '#FCA5A5', hideOnMobile: true  },
+    { label: 'States',     value: '49', color: V.muted, hideOnMobile: true },
   ];
 
   return (
@@ -452,15 +452,18 @@ function StatsStrip({ meta, filtered, total }) {
     }}>
       <style>{`.stats-strip::-webkit-scrollbar { display: none; }`}</style>
       {stats.map((s, i) => (
-        <div key={s.label} style={{
-          flex: '0 0 auto', padding: '10px 14px',
-          borderRight: i < stats.length - 1 ? `1px solid ${V.border}` : 'none',
-          minWidth: 68,
-        }}>
-          <div style={{ fontSize: 10, color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+        <div
+          key={s.label}
+          className={`md-stats-tile${s.hideOnMobile ? ' md-stats-strip-tile-hide-sm' : ''}`}
+          style={{
+            flex: '0 0 auto',
+            borderRight: i < stats.length - 1 ? `1px solid ${V.border}` : 'none',
+          }}
+        >
+          <div className="md-stats-tile-label" style={{ color: V.dim, fontFamily: V.mono, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
             {s.label}
           </div>
-          <div style={{ fontSize: 16, fontWeight: 900, fontFamily: V.syne, color: s.color }}>
+          <div className="md-stats-tile-val" style={{ fontWeight: 900, fontFamily: V.syne, color: s.color }}>
             {s.value ?? '—'}
           </div>
         </div>
@@ -600,8 +603,39 @@ export default function MunicipalDirectory() {
   return (
     <div style={{ minHeight: '100vh', background: V.bg, color: V.text, fontFamily: V.space }}>
       <style>{`
+        .md-title { font-size: 20px; white-space: nowrap; }
+        .md-title-row { padding: 12px 16px 10px; }
+        .md-filter-bar { padding: 10px 16px 12px; }
+        .md-stats-tile { padding: 10px 14px; min-width: 68px; }
+        .md-stats-tile-val { font-size: 16px; }
+        .md-stats-tile-label { font-size: 10px; }
+        .md-table { min-width: 700px; }
+        .md-row-td { padding: 10px 14px; }
+        .md-row-name { font-size: 14px; }
+        .md-inline-contact { display: none; }
+        .md-results-bar { padding: 8px 20px; }
+        .md-btn-topright { padding: 7px 14px; font-size: 12px; }
+
         @media (max-width: 520px) {
-          .md-area-col { display: none !important; }
+          .md-area-col, .md-type-col, .md-contact-col, .md-phone-col { display: none !important; }
+          .md-table { min-width: 0 !important; }
+          .md-title { font-size: 17px; white-space: normal; letter-spacing: -0.01em; }
+          .md-title-row { padding: 10px 12px 8px; gap: 8px; }
+          .md-title-row h1 { font-size: 17px !important; white-space: normal !important; }
+          .md-filter-bar { padding: 8px 12px 10px; gap: 6px; }
+          .md-results-bar { padding: 6px 12px; }
+          .md-stats-tile { padding: 8px 10px; min-width: 60px; }
+          .md-stats-tile-val { font-size: 13px; }
+          .md-stats-tile-label { font-size: 9px; }
+          .md-row-td { padding: 10px 12px; }
+          .md-row-name { font-size: 14px; }
+          .md-inline-contact { display: block; margin-top: 3px; }
+          .md-btn-topright { padding: 6px 10px; font-size: 11px; }
+          .md-stats-strip-tile-hide-sm { display: none !important; }
+        }
+        @media (max-width: 380px) {
+          .md-stats-tile { padding: 7px 8px; min-width: 54px; }
+          .md-title-row h1 { font-size: 15px !important; }
         }
       `}</style>
 
@@ -611,40 +645,41 @@ export default function MunicipalDirectory() {
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         {/* Title row */}
-        <div style={{
+        <div className="md-title-row" style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
-          padding: '12px 16px 10px', flexWrap: 'wrap',
+          flexWrap: 'wrap',
         }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{
                 background: V.orange, color: '#fff', fontSize: 10, fontWeight: 900,
                 fontFamily: V.mono, letterSpacing: '0.12em', padding: '3px 7px', borderRadius: 3,
-                textTransform: 'uppercase',
+                textTransform: 'uppercase', flex: '0 0 auto',
               }}>Arsenal</span>
-              <h1 style={{
-                fontFamily: V.syne, fontWeight: 900, fontSize: 20,
+              <h1 className="md-title" style={{
+                fontFamily: V.syne, fontWeight: 900,
                 color: V.text, margin: 0, letterSpacing: '-0.02em',
-                whiteSpace: 'nowrap',
+                minWidth: 0, lineHeight: 1.15,
               }}>
                 Municipality Directory
               </h1>
-              <span style={{ fontSize: '0.8em', color: '#888', marginLeft: '10px' }}>
-                Total: {filtered.length.toLocaleString()} towns
+              <span style={{ fontSize: 12, color: '#888', fontFamily: V.mono, flex: '0 0 auto' }}>
+                {filtered.length.toLocaleString()} towns
               </span>
             </div>
-            <div style={{ fontSize: 12, color: V.dim, marginTop: 2, fontFamily: V.space }}>
+            <div style={{ fontSize: 11, color: V.dim, marginTop: 3, fontFamily: V.space }}>
               19,475 incorporated places · 2020 Census · 49 states
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
             <button
+              className="md-btn-topright"
               onClick={() => setShowStats(s => !s)}
               style={{
                 background: showStats ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
                 border: `1px solid ${showStats ? 'rgba(59,130,246,0.4)' : V.border}`,
                 color: showStats ? '#93C5FD' : V.muted,
-                borderRadius: 6, padding: '7px 12px', fontSize: 12,
+                borderRadius: 6,
                 fontFamily: V.space, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
@@ -652,6 +687,7 @@ export default function MunicipalDirectory() {
               Stats
             </button>
             <button
+              className="md-btn-topright"
               onClick={() => exportCSV(
                 filtered,
                 `arsenal-municipalities${enrichedOnly ? '-enriched' : ''}.csv`
@@ -659,15 +695,15 @@ export default function MunicipalDirectory() {
               disabled={filtered.length === 0}
               style={{
                 background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.3)',
-                color: '#FDBA74', borderRadius: 6, padding: '7px 14px',
-                fontSize: 12, fontFamily: V.space, fontWeight: 700,
+                color: '#FDBA74', borderRadius: 6,
+                fontFamily: V.space, fontWeight: 700,
                 cursor: filtered.length === 0 ? 'not-allowed' : 'pointer',
                 opacity: filtered.length === 0 ? 0.5 : 1,
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
               title={`Download ${filtered.length.toLocaleString()} rows as CSV`}
             >
-              <span>↓</span> Download CSV ({filtered.length.toLocaleString()})
+              <span>↓</span> CSV ({filtered.length.toLocaleString()})
             </button>
           </div>
         </div>
@@ -676,8 +712,8 @@ export default function MunicipalDirectory() {
         <StatsStrip meta={meta} filtered={filtered.length} total={data.length} />
 
         {/* Filter bar */}
-        <div style={{
-          display: 'flex', gap: 8, padding: '10px 16px 12px',
+        <div className="md-filter-bar" style={{
+          display: 'flex', gap: 8,
           flexWrap: 'wrap', alignItems: 'center',
         }}>
           {/* Search */}
@@ -823,8 +859,8 @@ export default function MunicipalDirectory() {
       )}
 
       {/* ── Results bar ────────────────────────────────────────────────────── */}
-      <div style={{
-        padding: '8px 20px', background: '#0F0F0D',
+      <div className="md-results-bar" style={{
+        background: '#0F0F0D',
         borderBottom: `1px solid ${V.border}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 8,
@@ -870,7 +906,7 @@ export default function MunicipalDirectory() {
 
       {/* ── Table ──────────────────────────────────────────────────────────── */}
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+        <table className="md-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#0F0F0D' }}>
               <th style={thStyle('name')} onClick={() => handleSort('name')}>
@@ -879,12 +915,12 @@ export default function MunicipalDirectory() {
               <th style={thStyle('state_abbr')} onClick={() => handleSort('state_abbr')}>
                 State <SortIcon field="state_abbr" />
               </th>
-              <th style={{ ...thStyle('type'), cursor: 'default' }}>Type</th>
+              <th className="md-type-col" style={{ ...thStyle('type'), cursor: 'default' }}>Type</th>
               <th style={{ ...thStyle('population_2020'), textAlign: 'right' }} onClick={() => handleSort('population_2020')}>
                 Pop <SortIcon field="population_2020" />
               </th>
-              <th style={{ ...thStyle('contact_name'), cursor: 'default' }}>Contact</th>
-              <th style={{ ...thStyle(''), cursor: 'default' }}>Phone / Email</th>
+              <th className="md-contact-col" style={{ ...thStyle('contact_name'), cursor: 'default' }}>Contact</th>
+              <th className="md-phone-col" style={{ ...thStyle(''), cursor: 'default' }}>Phone / Email</th>
               <th className="md-area-col" style={thStyle('land_area_sqmi')} onClick={() => handleSort('land_area_sqmi')}>
                 Area <SortIcon field="land_area_sqmi" />
               </th>
@@ -913,23 +949,30 @@ export default function MunicipalDirectory() {
                 onMouseEnter={e => e.currentTarget.style.background = V.cardHov}
                 onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
               >
-                <td style={{ padding: '10px 14px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, fontFamily: V.space, color: V.text }}>
+                <td className="md-row-td" style={{ padding: '10px 14px' }}>
+                  <div className="md-row-name" style={{ fontWeight: 600, fontFamily: V.space, color: V.text }}>
                     {p.name}
                   </div>
+                  {p.contact_name && (
+                    <div className="md-inline-contact" style={{ fontSize: 11, fontFamily: V.space, color: '#86EFAC', lineHeight: 1.3 }}>
+                      {p.contact_name}{p.contact_title ? ` · ${p.contact_title}` : ''}
+                      {p.contact_email && (
+                        <div style={{ fontSize: 10, color: '#93C5FD', fontFamily: V.mono, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {p.contact_email}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </td>
-                <td style={{ padding: '10px 14px' }}>
+                <td className="md-row-td" style={{ padding: '10px 14px' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: V.mono, color: V.muted }}>
                     {p.state_abbr}
                   </span>
-                  <span style={{ fontSize: 12, color: V.dim, fontFamily: V.space, marginLeft: 6, display: 'none' }}>
-                    {p.state_name}
-                  </span>
                 </td>
-                <td style={{ padding: '10px 14px' }}>
+                <td className="md-type-col md-row-td" style={{ padding: '10px 14px' }}>
                   <TypeBadge type={p.type} />
                 </td>
-                <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                <td className="md-row-td" style={{ padding: '10px 14px', textAlign: 'right' }}>
                   {p.population_2020 != null ? (
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 700, fontFamily: V.mono, color: V.text, whiteSpace: 'nowrap' }}>
@@ -940,7 +983,7 @@ export default function MunicipalDirectory() {
                     <span style={{ fontSize: 12, color: V.dim, fontFamily: V.mono }}>N/A</span>
                   )}
                 </td>
-                <td style={{ padding: '10px 14px' }}>
+                <td className="md-contact-col md-row-td" style={{ padding: '10px 14px' }}>
                   {p.contact_name ? (
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#86EFAC', fontFamily: V.space, whiteSpace: 'nowrap' }}>{p.contact_name}</div>
@@ -950,7 +993,7 @@ export default function MunicipalDirectory() {
                     <span style={{ fontSize: 11, color: V.dim }}>—</span>
                   )}
                 </td>
-                <td style={{ padding: '10px 14px' }}>
+                <td className="md-phone-col md-row-td" style={{ padding: '10px 14px' }}>
                   {(p.contact_phone || p.contact_email) ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {p.contact_phone && (
@@ -968,7 +1011,7 @@ export default function MunicipalDirectory() {
                     <span style={{ fontSize: 11, color: V.dim }}>—</span>
                   )}
                 </td>
-                <td className="md-area-col" style={{ padding: '10px 14px' }}>
+                <td className="md-area-col md-row-td" style={{ padding: '10px 14px' }}>
                   <span style={{ fontSize: 13, fontFamily: V.mono, color: V.muted }}>
                     {p.land_area_sqmi ? p.land_area_sqmi.toFixed(1) + ' mi²' : '—'}
                   </span>
