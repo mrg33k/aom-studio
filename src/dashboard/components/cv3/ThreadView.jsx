@@ -1,5 +1,6 @@
 // ThreadView -- agent conversation thread with message list and input
 // Extracted from ChatPanel.jsx. Receives all state via ctx props.
+import { useState } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../lib/typeScale.js'
 import { supabase } from '../../lib/supabase.js'
@@ -7,6 +8,10 @@ import { LinkifyText, AgentAvatar, formatChatTime } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../TypingIndicatorV2.jsx'
+
+// Slugs that have a tmux super-agent session managed by relay-keepalive.py
+// and can be hard-reset via the Control tab in chat settings.
+const RESETTABLE_AGENTS = new Set(['elon', 'studio'])
 
 export default function ThreadView(ctx) {
   const {
@@ -41,6 +46,33 @@ export default function ThreadView(ctx) {
 
   const selectedAgentRecord = agents?.find((agent) => String(agent?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
   const selectedAgentPrimarySkill = selectedAgentRecord?.primary_skill || selectedAgent?.primary_skill || 'AI Agent'
+
+  const isResettable = RESETTABLE_AGENTS.has(selectedAgent?.slug)
+  const settingsTabs = isResettable
+    ? ['General', 'Voice', 'Google', 'Keys', 'Control']
+    : ['General', 'Voice', 'Google', 'Keys']
+  const [resetState, setResetState] = useState({ phase: 'idle', message: '' })
+
+  async function handleResetAgent() {
+    const slug = selectedAgent?.slug
+    if (!RESETTABLE_AGENTS.has(slug)) return
+    if (resetState.phase === 'confirming') {
+      try {
+        setResetState({ phase: 'resetting', message: 'Killing tmux session...' })
+        const resp = await fetch(`/api/dashboard/reset-agent?agent=${encodeURIComponent(slug)}`, { method: 'POST' })
+        const data = await resp.json().catch(() => ({}))
+        if (!resp.ok || !data.ok) {
+          setResetState({ phase: 'error', message: data.error || `HTTP ${resp.status}` })
+          return
+        }
+        setResetState({ phase: 'success', message: 'Reset queued. Session will recreate in ~3s.' })
+      } catch (err) {
+        setResetState({ phase: 'error', message: err.message || 'Network error' })
+      }
+      return
+    }
+    setResetState({ phase: 'confirming', message: '' })
+  }
 
   return (
     <div style={{
@@ -959,7 +991,7 @@ export default function ThreadView(ctx) {
               <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>Settings</span>
             </div>
             <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {['General', 'Voice', 'Google', 'Keys'].map(item => (
+              {settingsTabs.map(item => (
                 <button
                   key={item}
                   onClick={() => setSettingsTab(item)}
@@ -1264,6 +1296,62 @@ export default function ThreadView(ctx) {
                       )}
                     </div>
                   </>
+                )}
+              </div>
+              )}
+              {/* Control tab: hard-reset the agent's tmux session.
+                  Routes through Supabase -> supabase-listener -> signal file
+                  -> relay-keepalive (the single owner of session lifecycle). */}
+              {settingsTab === 'Control' && isResettable && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Reset Agent
+                </div>
+                <div style={{
+                  padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 10,
+                  marginBottom: 12,
+                }}>
+                  <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>
+                    Hard-kills the tmux session for <strong style={{ color: C.text }}>{selectedAgent?.name || selectedAgent?.slug}</strong> and relaunches Claude fresh. Use this if the agent is stuck, hung, or unresponsive. Any attached terminal will be detached.
+                  </div>
+                </div>
+                <button
+                  onClick={handleResetAgent}
+                  disabled={resetState.phase === 'resetting'}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#fff',
+                    background: resetState.phase === 'confirming' ? '#DC2626'
+                              : resetState.phase === 'resetting' ? C.muted
+                              : resetState.phase === 'success' ? '#16A34A'
+                              : '#B91C1C',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: resetState.phase === 'resetting' ? 'default' : 'pointer',
+                  }}
+                >
+                  {resetState.phase === 'idle' && 'Reset Agent'}
+                  {resetState.phase === 'confirming' && 'Click again to confirm'}
+                  {resetState.phase === 'resetting' && 'Resetting...'}
+                  {resetState.phase === 'success' && 'Reset queued'}
+                  {resetState.phase === 'error' && 'Failed - click to retry'}
+                </button>
+                {resetState.message && (
+                  <div style={{
+                    marginTop: 10,
+                    fontSize: 12,
+                    fontFamily: "'Inter', sans-serif",
+                    color: resetState.phase === 'error' ? '#F87171' : C.text2,
+                  }}>
+                    {resetState.message}
+                  </div>
                 )}
               </div>
               )}
