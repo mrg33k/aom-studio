@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AOM Learning Arcade</title>
+  <style>
+    @font-face {
+      font-family: 'PrintChar21';
+      src: url('../assets/apple2-fonts/PrintChar21.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0D0F1A;
+      --poke-white: #F5F5F0;
+      --poke-border: #1A1A2E;
+      --accent-yellow: #FFD700;
+      --accent-green: #4ADE80;
+      --hp-green: #22C55E;
+      --hp-red: #EF4444;
+      --px: 'PrintChar21', 'Press Start 2P', monospace;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--navy);
+      color: #fff;
+      font-family: var(--px);
+      overflow: hidden;
+    }
+
+    /* ---- Screen System ---- */
+    .screen { display: none; width: 100%; height: 100vh; position: relative; overflow: hidden; }
+    .screen.active { display: block; }
+
+    /* ---- Top Nav ---- */
+    .top-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10,12,20,0.97);
+      border-bottom: 3px solid #252840;
+      display: flex; align-items: center;
+      padding: 0 8px; height: 40px; gap: 3px;
+    }
+    .logo {
+      font-family: var(--px); font-size: 8px;
+      color: var(--accent-yellow); letter-spacing: 1px;
+      margin-right: 6px; white-space: nowrap;
+    }
+    .nav-btn {
+      font-family: var(--px); font-size: 7px;
+      padding: 5px 8px;
+      background: transparent;
+      border: 2px solid #252840;
+      color: #777; cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.1s;
+      white-space: nowrap;
+      border-radius: 3px;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      background: #252840; color: #fff;
+      border-color: var(--accent-yellow);
+    }
+
+    /* ---- Pokemon Box ---- */
+    .poke-box {
+      background: var(--poke-white);
+      border: 4px solid var(--poke-border);
+      border-radius: 8px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.7);
+      color: var(--poke-border);
+    }
+
+    /* ---- Room Background ---- */
+    .room-bg {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .room-bg::after {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(0,0,0,0.18);
+    }
+
+    /* ---- Stat Bar ---- */
+    .stat-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 54px;
+      background: rgba(8,10,18,0.98);
+      border-top: 4px solid var(--accent-yellow);
+      box-shadow: 0 -3px 0 rgba(255,215,0,0.15);
+      display: flex; align-items: center;
+      padding: 0 10px; gap: 10px; z-index: 50;
+      overflow: hidden;
+    }
+    .si { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    .sl { font-family: var(--px); font-size: 5.5px; color: #666; letter-spacing: 0.5px; text-transform: uppercase; }
+    .sv { font-family: var(--px); font-size: 9px; color: var(--accent-yellow); letter-spacing: 0.5px; }
+    .sd { width: 2px; height: 28px; background: #252840; flex-shrink: 0; }
+    .xp-bar { width: 70px; height: 7px; background: #1e2035; border: 2px solid #333; border-radius: 2px; overflow: hidden; margin-top: 2px; }
+    .xp-fill { height: 100%; background: var(--accent-yellow); width: 48%; }
+
+    /* ============================
+       HUB SCREEN
+    ============================ */
+    #screen-hub { background: var(--navy); }
+
+    .hub-wrap {
+      position: absolute;
+      top: 40px; bottom: 54px; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hub-inner {
+      position: relative;
+      width: min(calc(100vh - 100px), 100vw, 620px);
+      height: min(calc(100vh - 100px), 100vw, 620px);
+    }
+    .hub-img {
+      width: 100%; height: 100%;
+      object-fit: contain; display: block;
+    }
+
+    /* Game markers */
+    .gm {
+      position: absolute;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; z-index: 20;
+      animation: gmFloat 2.8s ease-in-out infinite;
+    }
+    .gm:nth-child(2) { animation-delay: 0.5s; }
+    .gm:nth-child(3) { animation-delay: 1s; }
+    .gm:nth-child(4) { animation-delay: 1.5s; }
+    .gm:nth-child(5) { animation-delay: 2s; }
+    @keyframes gmFloat {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-6px); }
+    }
+    .gm-label {
+      background: rgba(8,10,18,0.92);
+      border: 2px solid var(--accent-yellow);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-family: var(--px); font-size: 7px;
+      color: var(--accent-yellow);
+      white-space: nowrap; letter-spacing: 0.5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.7), 0 0 14px rgba(255,215,0,0.25);
+      transition: all 0.15s;
+    }
+    .gm-arrow {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid var(--accent-yellow);
+    }
+    .gm:hover .gm-label {
+      background: var(--accent-yellow); color: #0a0c14;
+      box-shadow: 0 0 20px rgba(255,215,0,0.6);
+    }
+
+    /* Ethan marker */
+    .ethan-dot {
+      position: absolute;
+      width: 14px; height: 14px;
+      background: #00CFFF;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(0,207,255,0.3);
+      z-index: 25;
+      transform: translate(-50%, -50%);
+      animation: ethanPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes ethanPulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(0,207,255,0.3); }
+      50% { box-shadow: 0 0 0 6px rgba(0,207,255,0.1), 0 0 14px rgba(0,207,255,0.6); }
+    }
+
+    /* Collection button */
+    .coll-btn {
+      position: fixed; top: 48px; right: 8px; z-index: 60;
+      font-family: var(--px); font-size: 6.5px;
+      background: #1a1a2e; border: 2px solid var(--accent-yellow);
+      color: var(--accent-yellow); padding: 5px 10px;
+      cursor: pointer; border-radius: 4px; letter-spacing: 0.5px;
+      transition: all 0.1s;
+    }
+    .coll-btn:hover { background: var(--accent-yellow); color: #0a0c14; }
+
+    /* ============================
+       SHARED GAME ELEMENTS
+    ============================ */
+    .screen-badge {
+      position: absolute; top: 48px; left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--px); font-size: 8px;
+      color: var(--accent-yellow);
+      background: rgba(8,10,18,0.88);
+      padding: 4px 14px;
+      border-bottom: 2px solid var(--accent-yellow);
+      border-left: 2px solid #333;
+      border-right: 2px solid #333;
+      letter-spacing: 0.5px; z-index: 15; white-space: nowrap;
+    }
+
+    /* HP bar */
+    .hp-wrap { display: flex; align-items: center; gap: 6px; }
+    .hp-lbl { font-family: var(--px); font-size: 7px; color: var(--poke-border); }
+    .hp-bar { height: 9px; background: #ddd; border: 2px solid var(--poke-border); border-radius: 2px; overflow: hidden; }
+    .hp-fill { height: 100%; background: var(--hp-green); transition: width 0.5s; }
+    .hp-fill.low { background: var(--hp-red); }
+    .hp-num { font-family: var(--px); font-size: 7px; color: #666; }
+
+    /* ============================
+       WHIP STRIKE
+    ============================ */
+    #screen-whip .room-bg { background-image: url('../../corner/rooms/bobby-room.png'); }
+
+    .whip-field {
+      position: absolute; top: 78px; left: 0; right: 0; bottom: 148px;
+      overflow: hidden; z-index: 5;
+    }
+    .fw {
+      position: absolute;
+      font-family: var(--px); font-size: 12px;
+      color: #e0c8ff;
+      text-shadow: 0 0 10px #a855f7, 0 0 18px rgba(168,85,247,0.5);
+      background: rgba(88,28,135,0.25);
+      border: 2px solid rgba(168,85,247,0.6);
+      border-radius: 4px; padding: 4px 10px;
+      white-space: nowrap; letter-spacing: 1px;
+      animation: fwFall linear infinite;
+    }
+    .fw.target {
+      border-color: var(--accent-yellow);
+      color: var(--accent-yellow);
+      text-shadow: 0 0 10px rgba(255,215,0,0.8);
+      background: rgba(120,90,0,0.2);
+    }
+    .fw.whipped { opacity: 0; transform: scale(1.5); transition: all 0.25s; }
+    @keyframes fwFall { 0% { top: -40px; } 100% { top: 100%; } }
+
+    .whip-hud {
+      position: absolute; bottom: 54px; left: 8px; right: 8px; z-index: 10;
+    }
+    .whip-hud .poke-box { padding: 10px 14px; }
+    .whip-stats { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
+    .whip-stat { font-family: var(--px); font-size: 8px; color: #555; }
+    .whip-inp {
+      width: 100%; font-family: var(--px); font-size: 13px;
+      padding: 8px 12px;
+      border: 3px solid var(--poke-border); border-radius: 4px;
+      background: #eee; color: var(--poke-border); outline: none;
+      letter-spacing: 1px;
+    }
+    .whip-hint { font-family: var(--px); font-size: 6px; color: #aaa; margin-top: 6px; }
+
+    /* ============================
+       DUNGEON RUN
+    ============================ */
+    #screen-dungeon .room-bg { background-image: url('../../corner/rooms/elon-v2.png'); }
+
+    .dun-scene {
+      position: absolute; top: 78px; left: 0; right: 0; bottom: 200px;
+      z-index: 5; display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 8px; gap: 60px;
+    }
+
+    /* CSS player sprite */
+    .css-player { position: relative; width: 38px; height: 56px; }
+    .cp-head {
+      width: 24px; height: 22px; background: #F5C5A3;
+      border: 2px solid #1a1a2e; border-radius: 4px;
+      margin: 0 auto; position: relative;
+    }
+    .cp-hair {
+      position: absolute; top: -5px; left: 0; right: 0;
+      height: 9px; background: #3D1F0A;
+      border-radius: 4px 4px 0 0;
+    }
+    .cp-eyes {
+      position: absolute; top: 8px; left: 0; right: 0;
+      display: flex; justify-content: space-evenly;
+    }
+    .cp-eye { width: 4px; height: 4px; background: #1a1a2e; border-radius: 50%; }
+    .cp-body {
+      width: 28px; height: 20px; background: #1D4ED8;
+      border: 2px solid #1a1a2e; border-radius: 2px;
+      margin: 2px auto 0;
+    }
+    .cp-legs { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
+    .cp-leg {
+      width: 11px; height: 14px; background: #1e293b;
+      border: 2px solid #1a1a2e; border-radius: 2px;
+    }
+
+    /* CSS door */
+    .css-door {
+      width: 48px; height: 78px;
+      background: linear-gradient(135deg, #92400e, #78350f);
+      border: 3px solid #451a03;
+      border-radius: 5px 5px 0 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px; position: relative;
+    }
+    .css-door::after {
+      content: ''; position: absolute;
+      width: 8px; height: 8px;
+      background: #fbbf24; border-radius: 50%;
+      right: 8px; top: 50%;
+      box-shadow: 0 0 6px rgba(251,191,36,0.8);
+    }
+    .door-icon { font-size: 22px; animation: lockPulse 1.2s ease-in-out infinite; }
+    @keyframes lockPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .door-label { font-family: var(--px); font-size: 6px; color: #fcd34d; }
+
+    .dun-dialog {
+      position: absolute; bottom: 54px; left: 8px; right: 8px; z-index: 10;
+    }
+    .dun-dialog .poke-box { padding: 12px 14px; }
+    .passage-text {
+      font-family: Georgia, serif; font-size: 11px; font-style: italic;
+      color: #555; line-height: 1.55; margin-bottom: 10px;
+      border-left: 3px solid #ccc; padding-left: 8px;
+    }
+    .question-text { font-family: var(--px); font-size: 9px; color: var(--poke-border); margin-bottom: 10px; }
+    .mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .mc-btn {
+      font-family: var(--px); font-size: 8px;
+      padding: 7px 8px; text-align: left;
+      background: #eee; border: 3px solid var(--poke-border);
+      border-radius: 4px; cursor: pointer; color: var(--poke-border);
+      transition: all 0.1s; line-height: 1.4;
+    }
+    .mc-btn:hover { background: #e5e5d5; }
+    .mc-btn.correct { background: #dcfce7; border-color: #15803d; color: #15803d; }
+    .mc-btn.wrong { background: #fee2e2; border-color: #dc2626; color: #dc2626; }
+    .wasd-hint { font-family: var(--px); font-size: 6.5px; color: #aaa; margin-top: 8px; text-align: center; }
+
+    /* ============================
+       STACK TOWER
+    ============================ */
+    #screen-stack .room-bg { background-image: url('../../corner/rooms/colton-room.png'); }
+
+    .stack-field {
+      position: absolute; top: 78px; left: 0; right: 0; bottom: 150px;
+      z-index: 5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      padding-bottom: 8px; gap: 3px;
+    }
+    .sb {
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--px); font-size: 9px; color: #fff;
+      border: 3px solid rgba(0,0,0,0.25);
+      border-radius: 4px; height: 30px; letter-spacing: 0.5px;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .stack-falling-wrap {
+      position: absolute; left: 50%; top: 82px; z-index: 6;
+      transform: translateX(-50%);
+      animation: fallBlock 1.8s linear infinite;
+    }
+    @keyframes fallBlock { 0% { top: 82px; } 100% { top: calc(100% - 180px); } }
+    .sb-falling {
+      border-color: var(--accent-yellow) !important;
+      box-shadow: 0 0 14px rgba(255,215,0,0.5), 2px 2px 0 rgba(0,0,0,0.3) !important;
+    }
+
+    .stack-hud {
+      position: absolute; bottom: 54px; left: 8px; right: 8px; z-index: 10;
+    }
+    .stack-hud .poke-box { padding: 10px 14px; }
+    .stack-stats { display: flex; gap: 20px; justify-content: center; margin-bottom: 10px; }
+    .ss { text-align: center; }
+    .ss .lbl { font-family: var(--px); font-size: 6.5px; color: #888; margin-bottom: 2px; }
+    .ss .val { font-family: var(--px); font-size: 18px; color: var(--poke-border); }
+    .stack-btn {
+      width: 100%; font-family: var(--px); font-size: 11px;
+      padding: 11px; background: var(--poke-border);
+      color: var(--accent-yellow); border: 3px solid var(--accent-yellow);
+      border-radius: 4px; cursor: pointer; letter-spacing: 1px;
+      transition: all 0.1s;
+    }
+    .stack-btn:active { transform: translateY(2px); }
+    .stack-hint { font-family: var(--px); font-size: 6px; color: #aaa; margin-top: 6px; text-align: center; }
+
+    /* ============================
+       BOSS QUIZ
+    ============================ */
+    #screen-boss .room-bg { background-image: url('../../corner/rooms/patrik-room.png'); }
+
+    .boss-arena {
+      position: absolute; top: 78px; left: 8px; right: 8px; bottom: 210px;
+      z-index: 5; display: flex; flex-direction: column; gap: 8px;
+    }
+
+    /* HP panels */
+    .hp-panels { display: flex; gap: 8px; }
+    .hp-panel { flex: 1; }
+    .hp-panel .poke-box { padding: 7px 10px; }
+    .hp-panel-name { font-family: var(--px); font-size: 7px; color: var(--poke-border); margin-bottom: 5px; }
+
+    /* Battle sprites area */
+    .battle-sprites {
+      flex: 1;
+      display: flex; align-items: center; justify-content: space-around;
+    }
+
+    /* CSS Dragon boss */
+    .boss-dragon { position: relative; animation: bossFloat 1.6s ease-in-out infinite; }
+    @keyframes bossFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+    .bd-body {
+      width: 70px; height: 58px; background: #7c3aed;
+      border: 3px solid #4c1d95; border-radius: 8px;
+      position: relative; margin: 24px auto 0;
+    }
+    .bd-eye { position: absolute; width: 13px; height: 13px; background: #fbbf24; border: 2px solid #1a1a2e; border-radius: 50%; top: 14px; }
+    .bd-eye.l { left: 10px; }
+    .bd-eye.r { right: 10px; }
+    .bd-pupil { width: 5px; height: 5px; background: #1a1a2e; border-radius: 50%; position: absolute; top: 4px; left: 4px; }
+    .bd-mouth { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 28px; height: 10px; background: #fbbf24; border: 2px solid #1a1a2e; border-radius: 0 0 10px 10px; }
+    .bd-wing { position: absolute; top: 10px; width: 0; height: 0; }
+    .bd-wing.l { left: -22px; border-right: 22px solid #6d28d9; border-top: 16px solid transparent; border-bottom: 16px solid transparent; }
+    .bd-wing.r { right: -22px; border-left: 22px solid #6d28d9; border-top: 16px solid transparent; border-bottom: 16px solid transparent; }
+    .bd-horn { position: absolute; top: -18px; width: 0; height: 0; }
+    .bd-horn.l { left: 12px; border-bottom: 20px solid #5b21b6; border-left: 7px solid transparent; border-right: 7px solid transparent; }
+    .bd-horn.r { right: 12px; border-bottom: 20px solid #5b21b6; border-left: 7px solid transparent; border-right: 7px solid transparent; }
+    .bd-tail {
+      position: absolute; bottom: -16px; right: -20px;
+      width: 30px; height: 14px;
+      background: #7c3aed; border: 2px solid #4c1d95;
+      border-radius: 0 8px 8px 0; transform: skewX(20deg);
+    }
+
+    /* CSS player party */
+    .party-sprite { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .ps-head { width: 22px; height: 20px; background: #F5C5A3; border: 2px solid #1a1a2e; border-radius: 3px; margin: 0 auto; position: relative; }
+    .ps-hair { position: absolute; top: -4px; left: 0; right: 0; height: 7px; background: #3D1F0A; border-radius: 3px 3px 0 0; }
+    .ps-body { width: 26px; height: 18px; background: #1D4ED8; border: 2px solid #1a1a2e; border-radius: 2px; margin: 1px auto 0; }
+    .ps-legs { display: flex; gap: 3px; justify-content: center; margin-top: 1px; }
+    .ps-leg { width: 10px; height: 13px; background: #1e293b; border: 2px solid #1a1a2e; border-radius: 2px; }
+    .ps-name { font-family: var(--px); font-size: 7px; color: #00CFFF; }
+
+    .boss-hud {
+      position: absolute; bottom: 54px; left: 8px; right: 8px; z-index: 10;
+    }
+    .boss-hud .poke-box { padding: 12px 14px; }
+    .boss-question { font-family: var(--px); font-size: 12px; color: var(--poke-border); margin-bottom: 10px; }
+    .move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .move-btn {
+      font-family: var(--px); font-size: 11px;
+      padding: 11px 8px; background: #eee;
+      border: 3px solid var(--poke-border);
+      border-radius: 4px; cursor: pointer;
+      color: var(--poke-border); text-align: center;
+      transition: all 0.1s;
+    }
+    .move-btn:hover { background: #ddd; }
+    .move-btn.correct { background: #dcfce7; border-color: #15803d; color: #15803d; }
+    .move-btn.wrong { background: #fee2e2; border-color: #dc2626; color: #dc2626; }
+    .battle-msg { font-family: var(--px); font-size: 8px; color: #555; margin-top: 8px; min-height: 16px; }
+
+    /* ============================
+       RUNE MATCH
+    ============================ */
+    #screen-rune .room-bg { background-image: url('../../corner/rooms/alex-room.png'); }
+
+    .rune-hud-top {
+      position: absolute; top: 78px; left: 8px; right: 8px; z-index: 10;
+    }
+    .rune-hud-top .poke-box {
+      padding: 8px 14px;
+      display: flex; gap: 18px; justify-content: center; align-items: center;
+    }
+    .rs { text-align: center; }
+    .rs .lbl { font-family: var(--px); font-size: 6.5px; color: #888; }
+    .rs .val { font-family: var(--px); font-size: 14px; color: var(--poke-border); }
+
+    .rune-grid-area {
+      position: absolute; top: 130px; bottom: 60px; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center; z-index: 5;
+    }
+    .rune-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 6px; padding: 8px;
+    }
+    .rune-tile {
+      width: clamp(58px, 20vw, 78px);
+      height: clamp(58px, 20vw, 78px);
+      background: #12152a;
+      border: 3px solid #2a2d4a;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--px); font-size: 6.5px; color: transparent;
+      transition: transform 0.2s, background 0.2s;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+      text-align: center; padding: 4px; line-height: 1.3; word-break: break-word;
+    }
+    .rune-tile::before {
+      content: '✦';
+      font-size: 18px; color: #2a3060;
+      position: absolute;
+    }
+    .rune-tile.face-up {
+      background: var(--poke-white); border-color: var(--poke-border);
+      color: var(--poke-border); transform: scale(1.05);
+    }
+    .rune-tile.face-up::before { display: none; }
+    .rune-tile.matched {
+      background: #dcfce7; border-color: #15803d;
+      color: #15803d; transform: scale(1);
+      box-shadow: 0 0 10px rgba(21,128,61,0.35), 2px 2px 0 rgba(0,0,0,0.3);
+    }
+    .rune-tile.matched::before { display: none; }
+
+    /* ============================
+       COLLECTION MODAL
+    ============================ */
+    .modal-mask {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-mask.open { display: flex; }
+    .modal-box {
+      background: var(--poke-white);
+      border: 4px solid var(--poke-border);
+      border-radius: 8px;
+      width: min(360px, 92vw);
+      max-height: 78vh;
+      padding: 16px;
+      overflow-y: auto;
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.55);
+    }
+    .modal-title {
+      font-family: var(--px); font-size: 11px;
+      color: var(--poke-border); text-align: center;
+      margin-bottom: 14px; letter-spacing: 1px;
+    }
+    .coll-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .ci {
+      width: 100%; aspect-ratio: 1;
+      border: 3px solid #ddd; border-radius: 6px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 18px; background: #f0efe8;
+      gap: 2px;
+    }
+    .ci.owned { border-color: var(--accent-yellow); background: #fffbeb; }
+    .ci.locked { opacity: 0.3; filter: grayscale(1); }
+    .ci-name { font-family: var(--px); font-size: 5px; color: #666; text-align: center; line-height: 1.2; }
+    .modal-close-btn {
+      display: block; width: 100%; margin-top: 14px;
+      font-family: var(--px); font-size: 9px; padding: 9px;
+      background: var(--poke-border); color: #fff;
+      border: none; border-radius: 4px; cursor: pointer;
+      letter-spacing: 0.5px;
+    }
+
+    /* ============================
+       RESPONSIVE
+    ============================ */
+    @media (max-width: 480px) {
+      .logo { display: none; }
+      .nav-btn { font-size: 6px; padding: 4px 5px; }
+      .stat-bar { gap: 7px; padding: 0 7px; }
+      .sd { height: 22px; }
+      .xp-bar { width: 50px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── TOP NAV ── -->
+<nav class="top-nav">
+  <span class="logo">◈ AOM ARCADE</span>
+  <button class="nav-btn active" onclick="gotoScreen('hub')">HUB</button>
+  <button class="nav-btn" onclick="gotoScreen('whip')">⌨ WHIP</button>
+  <button class="nav-btn" onclick="gotoScreen('dungeon')">🔒 DUNGEON</button>
+  <button class="nav-btn" onclick="gotoScreen('stack')">📦 STACK</button>
+  <button class="nav-btn" onclick="gotoScreen('boss')">⚔ BOSS</button>
+  <button class="nav-btn" onclick="gotoScreen('rune')">✦ RUNE</button>
+</nav>
+
+<!-- ── COLLECTION BUTTON (hub only) ── -->
+<button class="coll-btn" id="coll-btn" onclick="openColl()">COLLECTION 7/50</button>
+
+<!-- ── STAT BAR ── -->
+<div class="stat-bar">
+  <div class="si">
+    <span class="sl">SUBJECT</span>
+    <span class="sv" style="font-size:6.5px">6TH VOCAB</span>
+  </div>
+  <div class="sd"></div>
+  <div class="si">
+    <span class="sl">STREAK</span>
+    <span class="sv">🔥 7</span>
+  </div>
+  <div class="sd"></div>
+  <div class="si">
+    <span class="sl">XP  240/500</span>
+    <div class="xp-bar"><div class="xp-fill"></div></div>
+  </div>
+  <div class="sd"></div>
+  <div class="si">
+    <span class="sl">LEVEL</span>
+    <span class="sv">3</span>
+  </div>
+  <div class="sd"></div>
+  <div class="si">
+    <span class="sl">MASTERED</span>
+    <span class="sv">12</span>
+  </div>
+  <div class="sd"></div>
+  <div class="si" style="flex:1;min-width:0;">
+    <span class="sl">NEXT STOP</span>
+    <span class="sv" style="font-size:6.5px;color:#aaa">RUNE MATCH</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     HUB SCREEN
+════════════════════════════ -->
+<div id="screen-hub" class="screen active">
+  <div class="hub-wrap">
+    <div class="hub-inner">
+      <img class="hub-img" src="../../corner/rooms/full-office-overhead.png" alt="AOM Office Map" />
+
+      <!-- Game markers — positioned over rooms visible in the overhead map -->
+      <!-- 1. Whip Strike → lower-left purple neon area (Bobby's room) -->
+      <div class="gm" style="left:27%;top:72%;" onclick="gotoScreen('whip')">
+        <div class="gm-label">1. WHIP STRIKE</div>
+        <div class="gm-arrow"></div>
+      </div>
+
+      <!-- 2. Dungeon Run → bottom-center server vault (Elon-v2) -->
+      <div class="gm" style="left:56%;top:84%;" onclick="gotoScreen('dungeon')">
+        <div class="gm-label">2. DUNGEON RUN</div>
+        <div class="gm-arrow"></div>
+      </div>
+
+      <!-- 3. Stack Tower → right-center workspace (Colton) -->
+      <div class="gm" style="left:80%;top:52%;" onclick="gotoScreen('stack')">
+        <div class="gm-label">3. STACK TOWER</div>
+        <div class="gm-arrow"></div>
+      </div>
+
+      <!-- 4. Boss Quiz → upper-center warm office (Patrik) -->
+      <div class="gm" style="left:54%;top:22%;" onclick="gotoScreen('boss')">
+        <div class="gm-label">4. BOSS QUIZ</div>
+        <div class="gm-arrow"></div>
+      </div>
+
+      <!-- 5. Rune Match → upper-left library (Alex) -->
+      <div class="gm" style="left:20%;top:36%;" onclick="gotoScreen('rune')">
+        <div class="gm-label">5. RUNE MATCH</div>
+        <div class="gm-arrow"></div>
+      </div>
+
+      <!-- Ethan's current position -->
+      <div class="ethan-dot" style="left:49%;top:59%;"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     1. WHIP STRIKE
+════════════════════════════ -->
+<div id="screen-whip" class="screen">
+  <div class="room-bg"></div>
+  <div class="screen-badge">⌨ WHIP STRIKE — BOBBY'S CODING LAIR</div>
+
+  <div class="whip-field" id="whip-field">
+    <div class="fw target" id="fw0" style="left:12%;animation-duration:4.5s;animation-delay:0s">BENEVOLENT</div>
+    <div class="fw" id="fw1" style="left:48%;animation-duration:5.5s;animation-delay:1.5s">PERILOUS</div>
+    <div class="fw" id="fw2" style="left:70%;animation-duration:3.8s;animation-delay:0.8s">CANDID</div>
+    <div class="fw" id="fw3" style="left:30%;animation-duration:6s;animation-delay:2.5s">LUMINOUS</div>
+  </div>
+
+  <div class="whip-hud">
+    <div class="poke-box">
+      <div class="whip-stats">
+        <div class="hp-wrap">
+          <span class="hp-lbl">HP</span>
+          <div class="hp-bar" style="width:90px"><div class="hp-fill" style="width:78%"></div></div>
+          <span class="hp-num">78</span>
+        </div>
+        <span class="whip-stat">WPM: 42</span>
+        <span class="whip-stat">STREAK: <span style="color:#f97316">5×</span></span>
+        <span class="whip-stat" style="margin-left:auto;color:#a855f7">WORDS: 12</span>
+      </div>
+      <input class="whip-inp" id="whip-inp" type="text" placeholder="type the glowing word..." autocomplete="off" spellcheck="false" />
+      <div class="whip-hint">Target word glows gold · Type it exactly to destroy it · Stay alive</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     2. DUNGEON RUN
+════════════════════════════ -->
+<div id="screen-dungeon" class="screen">
+  <div class="room-bg"></div>
+  <div class="screen-badge">🔒 DUNGEON RUN — ELON'S SERVER VAULT</div>
+
+  <div class="dun-scene">
+    <!-- Player sprite -->
+    <div class="css-player">
+      <div class="cp-head">
+        <div class="cp-hair"></div>
+        <div class="cp-eyes"><div class="cp-eye"></div><div class="cp-eye"></div></div>
+      </div>
+      <div class="cp-body"></div>
+      <div class="cp-legs"><div class="cp-leg"></div><div class="cp-leg"></div></div>
+    </div>
+
+    <!-- Door obstacle -->
+    <div class="css-door">
+      <div class="door-icon">🔐</div>
+      <div class="door-label">LOCKED</div>
+    </div>
+  </div>
+
+  <div class="dun-dialog">
+    <div class="poke-box">
+      <div class="passage-text">
+        "The old lighthouse stood at the edge of the cliff, its beam cutting through the fog, warning ships of the rocky shore below."
+      </div>
+      <div class="question-text">❓ What is the lighthouse doing in the fog?</div>
+      <div class="mc-grid">
+        <button class="mc-btn" onclick="dunAnswer(this,false)">A) Sleeping</button>
+        <button class="mc-btn" onclick="dunAnswer(this,true)">B) Casting light to warn ships</button>
+        <button class="mc-btn" onclick="dunAnswer(this,false)">C) Hiding from ships</button>
+        <button class="mc-btn" onclick="dunAnswer(this,false)">D) Crumbling apart</button>
+      </div>
+      <div class="wasd-hint">[ A / D ] to run · [ SPACE ] jump · Answer the question to unlock the door</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     3. STACK TOWER
+════════════════════════════ -->
+<div id="screen-stack" class="screen">
+  <div class="room-bg"></div>
+  <div class="screen-badge">📦 STACK TOWER — COLTON'S WORKSPACE</div>
+
+  <div class="stack-field" id="stack-field">
+    <!-- Built tower — bottom to top -->
+    <div class="sb" style="width:190px;background:#059669">5 + 8 = 13</div>
+    <div class="sb" style="width:174px;background:#2563eb">7 × 8 = 56</div>
+    <div class="sb" style="width:158px;background:#d97706">15 + 27 = 42</div>
+    <div class="sb" style="width:142px;background:#dc2626">96 ÷ 4 = 24</div>
+    <div class="sb" style="width:126px;background:#7c3aed">12 × 11 = 132</div>
+    <div class="sb" style="width:110px;background:#0891b2">RESILIENT</div>
+    <div class="sb" style="width:94px;background:#be185d">EPHEMERAL</div>
+  </div>
+
+  <!-- Falling block -->
+  <div class="stack-falling-wrap">
+    <div class="sb sb-falling" style="width:80px;background:#ca8a04;color:#fff">12 × 11</div>
+  </div>
+
+  <div class="stack-hud">
+    <div class="poke-box">
+      <div class="stack-stats">
+        <div class="ss"><div class="lbl">SCORE</div><div class="val" id="st-score">240</div></div>
+        <div class="ss"><div class="lbl">HEIGHT</div><div class="val" id="st-height">7</div></div>
+        <div class="ss"><div class="lbl">NEXT</div><div class="val" id="st-next" style="font-size:14px">132</div></div>
+      </div>
+      <button class="stack-btn" id="stack-btn" onclick="stackClick()">[ CLICK TO STACK ]</button>
+      <div class="stack-hint">Time it right · Click when the block aligns with the tower</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     4. BOSS QUIZ
+════════════════════════════ -->
+<div id="screen-boss" class="screen">
+  <div class="room-bg"></div>
+  <div class="screen-badge">⚔ BOSS QUIZ — PATRIK'S OFFICE</div>
+
+  <div class="boss-arena">
+    <!-- HP panels -->
+    <div class="hp-panels">
+      <div class="hp-panel">
+        <div class="poke-box">
+          <div class="hp-panel-name">VOCAB DRAGON Lv.12</div>
+          <div class="hp-wrap">
+            <span class="hp-lbl">HP</span>
+            <div class="hp-bar" style="width:110px"><div class="hp-fill low" id="boss-hp-fill" style="width:62%"></div></div>
+            <span class="hp-num" id="boss-hp-num">62/100</span>
+          </div>
+        </div>
+      </div>
+      <div class="hp-panel">
+        <div class="poke-box">
+          <div class="hp-panel-name">ETHAN Lv.3</div>
+          <div class="hp-wrap">
+            <span class="hp-lbl">HP</span>
+            <div class="hp-bar" style="width:110px"><div class="hp-fill" id="player-hp-fill" style="width:85%"></div></div>
+            <span class="hp-num" id="player-hp-num">85/100</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Battle sprites -->
+    <div class="battle-sprites">
+      <!-- CSS Dragon -->
+      <div class="boss-dragon">
+        <div class="bd-body">
+          <div class="bd-wing l"></div>
+          <div class="bd-wing r"></div>
+          <div class="bd-horn l"></div>
+          <div class="bd-horn r"></div>
+          <div class="bd-eye l"><div class="bd-pupil"></div></div>
+          <div class="bd-eye r"><div class="bd-pupil"></div></div>
+          <div class="bd-mouth"></div>
+          <div class="bd-tail"></div>
+        </div>
+      </div>
+
+      <!-- Player party -->
+      <div class="party-sprite">
+        <div class="ps-head"><div class="ps-hair"></div></div>
+        <div class="ps-body"></div>
+        <div class="ps-legs"><div class="ps-leg"></div><div class="ps-leg"></div></div>
+        <div class="ps-name">ETHAN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="boss-hud">
+    <div class="poke-box">
+      <div class="boss-question">7 × 8 = ?</div>
+      <div class="move-grid">
+        <button class="move-btn" onclick="bossAnswer(this,false)">54</button>
+        <button class="move-btn" onclick="bossAnswer(this,true)">56</button>
+        <button class="move-btn" onclick="bossAnswer(this,false)">48</button>
+        <button class="move-btn" onclick="bossAnswer(this,false)">64</button>
+      </div>
+      <div class="battle-msg" id="battle-msg">What will ETHAN do?</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     5. RUNE MATCH
+════════════════════════════ -->
+<div id="screen-rune" class="screen">
+  <div class="room-bg"></div>
+  <div class="screen-badge">✦ RUNE MATCH — ALEX'S LIBRARY</div>
+
+  <div class="rune-hud-top">
+    <div class="poke-box">
+      <div class="rs"><div class="lbl">TIME</div><div class="val" id="rune-time">1:23</div></div>
+      <div style="width:2px;height:30px;background:#ccc;"></div>
+      <div class="rs"><div class="lbl">PAIRS</div><div class="val" id="rune-pairs">3/8</div></div>
+      <div style="width:2px;height:30px;background:#ccc;"></div>
+      <div class="rs"><div class="lbl">STREAK</div><div class="val" id="rune-streak">2×</div></div>
+    </div>
+  </div>
+
+  <div class="rune-grid-area">
+    <div class="rune-grid" id="rune-grid"></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════
+     COLLECTION MODAL
+════════════════════════════ -->
+<div class="modal-mask" id="coll-modal">
+  <div class="modal-box">
+    <div class="modal-title">◈ COLLECTION  ( 7 / 50 )</div>
+    <div class="coll-grid">
+      <div class="ci owned">🌟<div class="ci-name">WORD STAR</div></div>
+      <div class="ci owned">📖<div class="ci-name">VOCAB TOME</div></div>
+      <div class="ci owned">⚡<div class="ci-name">TYPE BOLT</div></div>
+      <div class="ci owned">🔮<div class="ci-name">RUNE ORB</div></div>
+      <div class="ci owned">🏆<div class="ci-name">STREAK CUP</div></div>
+      <div class="ci owned">🦎<div class="ci-name">WORD DRAKE</div></div>
+      <div class="ci owned">🗺️<div class="ci-name">OFFICE MAP</div></div>
+      <div class="ci locked">🐉<div class="ci-name">BOSS SLAYER</div></div>
+      <div class="ci locked">🧩<div class="ci-name">MATCH KING</div></div>
+      <div class="ci locked">🌀<div class="ci-name">DUNGEON KEY</div></div>
+      <div class="ci locked">💎<div class="ci-name">GEM BLADE</div></div>
+      <div class="ci locked">🦋<div class="ci-name">EPHEMERAL</div></div>
+      <div class="ci locked">🔱<div class="ci-name">TRIDENT</div></div>
+      <div class="ci locked">🌙<div class="ci-name">NIGHT ORB</div></div>
+      <div class="ci locked">🏔️<div class="ci-name">PEAK</div></div>
+      <div class="ci locked">⚗️<div class="ci-name">FLASK</div></div>
+      <div class="ci locked">🦅<div class="ci-name">RESILIENT</div></div>
+      <div class="ci locked">🌊<div class="ci-name">LUMINOUS</div></div>
+      <div class="ci locked">🎯<div class="ci-name">CANDID</div></div>
+      <div class="ci locked">🦁<div class="ci-name">TENACIOUS</div></div>
+    </div>
+    <button class="modal-close-btn" onclick="closeColl()">CLOSE</button>
+  </div>
+</div>
+
+
+<script>
+// =====================
+// SCREEN SYSTEM
+// =====================
+const SCREENS = ['hub','whip','dungeon','stack','boss','rune'];
+
+function gotoScreen(id) {
+  SCREENS.forEach(s => {
+    document.getElementById('screen-'+s).classList.toggle('active', s===id);
+    const btn = document.querySelector(`.nav-btn[onclick="gotoScreen('${s}')"]`);
+    if (btn) btn.classList.toggle('active', s===id);
+  });
+  document.getElementById('coll-btn').style.display = (id==='hub') ? '' : 'none';
+  if (id==='rune') initRune();
+  if (id==='whip') setTimeout(()=>{ const i=document.getElementById('whip-inp'); if(i) i.focus(); }, 200);
+}
+
+// =====================
+// COLLECTION MODAL
+// =====================
+function openColl() { document.getElementById('coll-modal').classList.add('open'); }
+function closeColl() { document.getElementById('coll-modal').classList.remove('open'); }
+
+// =====================
+// DUNGEON RUN
+// =====================
+function dunAnswer(btn, correct) {
+  const all = document.querySelectorAll('.mc-btn');
+  all.forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) {
+    all.forEach(b => { if (b.getAttribute('onclick').includes('true')) b.classList.add('correct'); });
+  }
+  setTimeout(() => {
+    all.forEach(b => { b.disabled=false; b.classList.remove('correct','wrong'); });
+  }, 2200);
+}
+
+// =====================
+// STACK TOWER
+// =====================
+let stScore = 240, stHeight = 7;
+const stNextFacts = ['12 × 11','7 × 8','METICULOUS','CANDID','96 ÷ 4'];
+let stNextIdx = 0;
+function stackClick() {
+  stScore += 30; stHeight++;
+  document.getElementById('st-score').textContent = stScore;
+  document.getElementById('st-height').textContent = stHeight;
+  const btn = document.getElementById('stack-btn');
+  btn.textContent = '✓  STACKED!';
+  btn.style.background = '#15803d';
+  btn.style.borderColor = '#15803d';
+  stNextIdx = (stNextIdx+1) % stNextFacts.length;
+  document.getElementById('st-next').textContent = stNextFacts[stNextIdx];
+  setTimeout(() => {
+    btn.textContent = '[ CLICK TO STACK ]';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+  }, 650);
+}
+
+// =====================
+// BOSS QUIZ
+// =====================
+function bossAnswer(btn, correct) {
+  const all = document.querySelectorAll('.move-btn');
+  all.forEach(b => b.disabled = true);
+  const msg = document.getElementById('battle-msg');
+  if (correct) {
+    btn.classList.add('correct');
+    msg.textContent = "ETHAN used VOCAB STRIKE! It's super effective! Dragon takes 38 damage!";
+    document.getElementById('boss-hp-fill').style.width = '24%';
+    document.getElementById('boss-hp-num').textContent = '24/100';
+  } else {
+    btn.classList.add('wrong');
+    all.forEach(b => { if (b.getAttribute('onclick').includes('true')) b.classList.add('correct'); });
+    msg.textContent = "Wrong! VOCAB DRAGON attacks! ETHAN loses 15 HP!";
+    document.getElementById('player-hp-fill').style.width = '70%';
+    document.getElementById('player-hp-num').textContent = '70/100';
+  }
+  setTimeout(() => {
+    all.forEach(b => { b.disabled=false; b.classList.remove('correct','wrong'); });
+    msg.textContent = 'What will ETHAN do?';
+    document.getElementById('boss-hp-fill').style.width = '62%';
+    document.getElementById('boss-hp-num').textContent = '62/100';
+    document.getElementById('player-hp-fill').style.width = '85%';
+    document.getElementById('player-hp-num').textContent = '85/100';
+  }, 2600);
+}
+
+// =====================
+// RUNE MATCH
+// =====================
+const RUNE_PAIRS = [
+  ['BENEVOLENT','kind & generous'],
+  ['PERILOUS','dangerous / risky'],
+  ['CANDID','truthful & honest'],
+  ['LUMINOUS','gives off light'],
+  ['METICULOUS','great attention'],
+  ['RESILIENT','recovers quickly'],
+  ['AMBIGUOUS','unclear / vague'],
+  ['EPHEMERAL','lasts short time'],
+];
+
+let runeFlipped = [], runeLocked = false, runeMatchedCount = 3, runeInitDone = false;
+
+function initRune() {
+  if (runeInitDone) return;
+  runeInitDone = true;
+  const grid = document.getElementById('rune-grid');
+
+  // Build tile array: pairs × 2
+  let tiles = [];
+  RUNE_PAIRS.forEach((pair, idx) => {
+    tiles.push({ pairId: idx, text: pair[0] });
+    tiles.push({ pairId: idx, text: pair[1] });
+  });
+  // Shuffle
+  for (let i = tiles.length-1; i>0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+  }
+
+  // Pre-match first 3 pairs for the demo state
+  const preMatched = new Set([0,1,2]);
+
+  grid.innerHTML = '';
+  tiles.forEach((tile, i) => {
+    const el = document.createElement('div');
+    el.className = 'rune-tile';
+    el.dataset.pairId = tile.pairId;
+    el.dataset.text = tile.text;
+    if (preMatched.has(tile.pairId)) {
+      el.classList.add('matched');
+      el.textContent = tile.text;
+    }
+    el.addEventListener('click', () => flipTile(el));
+    grid.appendChild(el);
+  });
+}
+
+function flipTile(el) {
+  if (runeLocked) return;
+  if (el.classList.contains('matched') || el.classList.contains('face-up')) return;
+  el.classList.add('face-up');
+  el.textContent = el.dataset.text;
+  runeFlipped.push(el);
+  if (runeFlipped.length === 2) {
+    runeLocked = true;
+    const [a, b] = runeFlipped;
+    if (a.dataset.pairId === b.dataset.pairId && a !== b) {
+      // Match!
+      setTimeout(() => {
+        a.classList.replace('face-up','matched');
+        b.classList.replace('face-up','matched');
+        runeMatchedCount++;
+        document.getElementById('rune-pairs').textContent = runeMatchedCount + '/8';
+        runeFlipped = []; runeLocked = false;
+      }, 450);
+    } else {
+      // No match
+      setTimeout(() => {
+        a.classList.remove('face-up'); a.textContent = '';
+        b.classList.remove('face-up'); b.textContent = '';
+        runeFlipped = []; runeLocked = false;
+      }, 900);
+    }
+  }
+}
+
+// =====================
+// WHIP STRIKE
+// =====================
+const WHIP_WORDS = ['BENEVOLENT','PERILOUS','CANDID','LUMINOUS','METICULOUS','RESILIENT','AMBIGUOUS','EPHEMERAL'];
+let whipTarget = 'BENEVOLENT';
+
+function pickNextTarget() {
+  const opts = WHIP_WORDS.filter(w => w !== whipTarget);
+  whipTarget = opts[Math.floor(Math.random() * opts.length)];
+  updateTargetHighlight();
+}
+function updateTargetHighlight() {
+  document.querySelectorAll('.fw').forEach(el => {
+    const match = el.textContent.trim() === whipTarget;
+    el.classList.toggle('target', match);
+  });
+}
+
+document.getElementById('whip-inp').addEventListener('input', function() {
+  const val = this.value.toUpperCase().trim();
+  updateTargetHighlight();
+  if (val === whipTarget) {
+    document.querySelectorAll('.fw').forEach(el => {
+      if (el.textContent.trim() === whipTarget) {
+        el.classList.add('whipped');
+        setTimeout(() => el.classList.remove('whipped'), 400);
+      }
+    });
+    this.value = '';
+    pickNextTarget();
+  }
+});
+
+// Initialize
+gotoScreen('hub');
+</script>
+</body>
+</html>
