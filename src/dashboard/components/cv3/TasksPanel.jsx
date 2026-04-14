@@ -23,6 +23,10 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const [expandedTask,           setExpandedTask]           = useState(null)
   const [taskThread,             setTaskThread]             = useState([])
   const [threadLoading,          setThreadLoading]          = useState(false)
+  const [insightsOpen,           setInsightsOpen]           = useState({})
+  const [insightsData,           setInsightsData]           = useState({})
+  const [insightsLoading,        setInsightsLoading]        = useState({})
+  const [insightsError,          setInsightsError]          = useState({})
   const taskInputRef = useRef(null)
   const [isRecording,  setIsRecording]  = useState(false)
   const [recordedBlob, setRecordedBlob] = useState(null) // eslint-disable-line no-unused-vars
@@ -56,6 +60,70 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
     } catch { setTaskThread([]) }
     setThreadLoading(false)
   }, [expandedTask])
+
+  // Fetch per-task failure insights (QA notes, error, failure-related pipeline events)
+  const toggleInsights = useCallback(async (taskId) => {
+    const alreadyOpen = !!insightsOpen[taskId]
+    if (alreadyOpen) {
+      setInsightsOpen(prev => ({ ...prev, [taskId]: false }))
+      return
+    }
+    setInsightsOpen(prev => ({ ...prev, [taskId]: true }))
+
+    // Already loaded -- show cached
+    if (insightsData[taskId]) return
+
+    setInsightsLoading(prev => ({ ...prev, [taskId]: true }))
+    setInsightsError(prev => ({ ...prev, [taskId]: null }))
+    try {
+      if (!supabase) throw new Error('Supabase not configured')
+      const [taskRes, msgRes] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('qa_score,qa_notes,error,metadata,attempt_count,result')
+          .eq('id', taskId)
+          .maybeSingle(),
+        supabase
+          .from('messages')
+          .select('text,timestamp,role,source')
+          .eq('agent', `task:${taskId}`)
+          .order('timestamp', { ascending: false })
+          .limit(40),
+      ])
+      if (taskRes.error) throw new Error(taskRes.error.message || 'Failed to load task')
+      if (msgRes.error) throw new Error(msgRes.error.message || 'Failed to load logs')
+
+      const row = taskRes.data || {}
+      const allMsgs = msgRes.data || []
+      const failureKeywords = /\b(qa|fail|error|stuck|timeout|reject|retry|denied|exception)\b/i
+      const failureLogs = allMsgs
+        .filter(m => {
+          const src = String(m.source || m.role || '').toLowerCase()
+          if (src.includes('qa') || src.includes('error') || src.includes('fail')) return true
+          return failureKeywords.test(String(m.text || ''))
+        })
+        .slice(0, 15)
+        .reverse()
+
+      setInsightsData(prev => ({
+        ...prev,
+        [taskId]: {
+          qaScore: row.qa_score ?? null,
+          qaNotes: row.qa_notes || '',
+          error: row.error || '',
+          attemptCount: row.attempt_count || 1,
+          resultSummary: row.result || '',
+          failureLogs,
+          logCount: failureLogs.length,
+        },
+      }))
+    } catch (err) {
+      setInsightsError(prev => ({ ...prev, [taskId]: err?.message || 'Failed to load insights' }))
+    } finally {
+      setInsightsLoading(prev => ({ ...prev, [taskId]: false }))
+    }
+  }, [insightsOpen, insightsData])
+
   const { projects: taskProjects } = useProjects()
 
   // Auto-start runner every time Tasks tab mounts
@@ -696,6 +764,17 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       </button>
                       <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
                       <button
+                        data-test-id={`failed-task-insights-${t.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleInsights(t.id)
+                        }}
+                        style={{ fontSize: 11, fontWeight: 700, color: insightsOpen[t.id] ? '#F0F4FF' : '#F59E0B', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
+                      >
+                        {insightsOpen[t.id] ? 'Hide' : 'Insights'}
+                      </button>
+                      <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
+                      <button
                         onClick={async (e) => {
                           e.stopPropagation()
                           await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
@@ -707,6 +786,130 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       </button>
                     </div>
                   </div>
+                  {/* Per-task Failure Insights panel */}
+                  {insightsOpen[t.id] && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        marginTop: 10,
+                        borderTop: '1px solid rgba(239,68,68,0.2)',
+                        paddingTop: 10,
+                        background: 'rgba(0,0,0,0.18)',
+                        margin: '10px -16px -14px',
+                        padding: '10px 16px 12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+                          Failure Insights
+                        </span>
+                        {insightsData[t.id] && (insightsData[t.id].attemptCount > 1) && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.06em' }}>
+                            · {insightsData[t.id].attemptCount} attempts
+                          </span>
+                        )}
+                      </div>
+                      {insightsLoading[t.id] ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+                          <div style={{ width: 10, height: 10, border: '2px solid rgba(245,158,11,0.3)', borderTopColor: '#F59E0B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                          Loading insights...
+                        </div>
+                      ) : insightsError[t.id] ? (
+                        <div style={{ fontSize: 11, color: '#EF4444', fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.5 }}>
+                          <div style={{ marginBottom: 6 }}>Failed to load insights: {insightsError[t.id]}</div>
+                          <button
+                            onClick={() => toggleInsights(t.id)}
+                            style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B', cursor: 'pointer', padding: '4px 8px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 6 }}
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : insightsData[t.id] ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {/* Top facts row */}
+                          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                            <div>
+                              <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>QA Score</div>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: '#EF4444', fontFamily: "'JetBrains Mono', monospace" }}>
+                                {insightsData[t.id].qaScore != null ? `${insightsData[t.id].qaScore}/10` : '—'}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Failure Events</div>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: '#F59E0B', fontFamily: "'JetBrains Mono', monospace" }}>
+                                {insightsData[t.id].logCount}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* QA notes */}
+                          {insightsData[t.id].qaNotes ? (
+                            <div>
+                              <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>QA Notes</div>
+                              <div style={{
+                                fontSize: 12, color: 'rgba(240,244,255,0.82)', lineHeight: 1.5,
+                                padding: '7px 10px', borderRadius: 8,
+                                background: 'rgba(245,158,11,0.08)',
+                                border: '1px solid rgba(245,158,11,0.18)',
+                                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                              }}>{insightsData[t.id].qaNotes}</div>
+                            </div>
+                          ) : null}
+
+                          {/* Error message */}
+                          {insightsData[t.id].error ? (
+                            <div>
+                              <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>Error</div>
+                              <div style={{
+                                fontSize: 11, color: '#FCA5A5', lineHeight: 1.5,
+                                padding: '7px 10px', borderRadius: 8,
+                                background: 'rgba(239,68,68,0.08)',
+                                border: '1px solid rgba(239,68,68,0.2)',
+                                fontFamily: "'JetBrains Mono', monospace",
+                                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                              }}>{insightsData[t.id].error}</div>
+                            </div>
+                          ) : null}
+
+                          {/* Failure logs */}
+                          <div>
+                            <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>Pipeline Logs</div>
+                            {insightsData[t.id].failureLogs.length === 0 ? (
+                              <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace", fontStyle: 'italic' }}>
+                                No failure-related events logged.
+                              </div>
+                            ) : (
+                              <div style={{ maxHeight: 180, overflowY: 'auto', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '6px 8px' }}>
+                                {insightsData[t.id].failureLogs.map((m, idx) => (
+                                  <div key={idx} style={{
+                                    fontSize: 11, color: 'rgba(240,244,255,0.75)', lineHeight: 1.5,
+                                    padding: '3px 0',
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                    borderBottom: idx < insightsData[t.id].failureLogs.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                                  }}>
+                                    <span style={{ color: C.dim, fontSize: 9 }}>{(m.timestamp || '').slice(11, 19)}</span>
+                                    {m.source || m.role ? (
+                                      <span style={{ color: '#F59E0B', fontSize: 9, fontWeight: 700, marginLeft: 4, textTransform: 'uppercase' }}>
+                                        {String(m.source || m.role).slice(0, 8)}
+                                      </span>
+                                    ) : null}
+                                    {' '}
+                                    <span>{m.text}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {!insightsData[t.id].qaNotes && !insightsData[t.id].error && insightsData[t.id].failureLogs.length === 0 ? (
+                            <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace", fontStyle: 'italic' }}>
+                              No QA notes or failure logs recorded for this task.
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                   {/* Expandable: result summary + thread */}
                   {expandedTask === t.id && (
                     <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
