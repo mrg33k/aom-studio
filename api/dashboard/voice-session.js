@@ -47,7 +47,7 @@ SYSTEM MAP (what exists, where things live):
 - Dashboard: CornerV3.jsx is the ONLY active view. Two tabs: Home (conversations) and Tasks (pipeline). Dark theme. All work happens in CornerV3. BoardView and all other old views are dead code in _legacy/.
 
 WHEN PATRIK ASKS FOR SOMETHING TECHNICAL:
-Use lookup_context to check what already exists before speccing anything. Don't guess. If he says "iMessage bridge," look up what iMessage scripts exist. If he says "fix the onboarding," look up onboarding files. Spec from real code, not assumptions.
+You are a thinking partner, not a code explorer. Help him talk through the idea, push back if something sounds off, and shape it into a concrete plan. DO NOT try to read or search the codebase during a call -- that's the planner's job, and it confuses the conversation. When he lands on a plan, create a task and let the planner dive into the code when it runs.
 
 CREATING TASKS:
 You have a create_task tool. Use it when Patrik lands on a plan and says to do it. Rules:
@@ -326,17 +326,6 @@ ${BASE_INSTRUCTION}`;
               properties: {
                 limit: { type: 'NUMBER', description: 'How many tasks to return (default 5)' },
               },
-            },
-          },
-          {
-            name: 'lookup_context',
-            description: 'Search the codebase for relevant files, scripts, and context. Use this BEFORE creating tasks to check what already exists. Examples: "imessage" finds iMessage scripts, "onboarding" finds onboarding components, "auth" finds auth files.',
-            parameters: {
-              type: 'OBJECT',
-              properties: {
-                query: { type: 'STRING', description: 'What to search for (e.g. "imessage", "onboarding flow", "task runner", "voice chat")' },
-              },
-              required: ['query'],
             },
           },
           {
