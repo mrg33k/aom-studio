@@ -20,6 +20,14 @@
 
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 
+// Terminal rooms: live Claude Code sessions attached via tmux relay.
+// Text in these rooms bypasses Gemini entirely (handled in v2-gemini-chat.js).
+// Voice calls DO run Gemini Live, but the transcript is consolidated into one
+// summary+transcript message at call-end and piped to the terminal via
+// /api/dashboard/voice-summary instead of streaming chunks. Keep this set in
+// sync with the same set in v2-gemini-chat.js and api/dashboard/voice-summary.js.
+const TERMINAL_AGENTS = new Set(['elon', 'studio'])
+
 // Target sample rate for Gemini Live input
 const TARGET_SAMPLE_RATE = 16000
 // Gemini Live output is 24kHz
@@ -152,6 +160,14 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   const volumeLevelRef = useRef(0)
   const inputAccRef = useRef('')   // accumulates user transcription chunks per turn
   const outputAccRef = useRef('')  // accumulates model transcription chunks per turn
+  // Mirror of the transcript state. stopSession reads this synchronously to build
+  // the final transcript for /api/dashboard/voice-summary without racing React state.
+  const transcriptRef = useRef([])
+
+  // Keep transcriptRef in sync with transcript state. On every transcript change
+  // the effect commits the latest array to the ref. stopSession also merges any
+  // still-in-flight inputAccRef/outputAccRef content before posting.
+  useEffect(() => { transcriptRef.current = transcript }, [transcript])
 
   const addSystemMessage = useCallback((text) => {
     setTranscript(prev => [...prev, { role: 'system', text, id: Date.now() + Math.random() }])
@@ -159,6 +175,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
 
   const saveTranscript = useCallback((role, text) => {
     if (!text?.trim() || !sessionIdRef.current) return
+    // Terminal rooms get ONE consolidated summary+transcript message on call end
+    // (via /api/dashboard/voice-summary), not a stream of per-chunk writes. Skipping
+    // here prevents noisy fragment messages from flooding the terminal agent's inbox
+    // during the call itself.
+    if (TERMINAL_AGENTS.has(agentSlug)) return
     fetch('/api/dashboard/supabase-messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -251,6 +272,31 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       onTranscript?.(pendingOutput, 'model')
     }
 
+    // Terminal rooms: build the final transcript from transcriptRef (mirror of
+    // state) PLUS the two pending chunks we just flushed, then POST the whole
+    // thing to /api/dashboard/voice-summary. The endpoint summarizes via Gemini
+    // Flash and writes ONE message to supabase-messages, which the tmux relay
+    // pipes to the terminal agent's inbox.
+    if (TERMINAL_AGENTS.has(agentSlug)) {
+      const base = Array.isArray(transcriptRef.current) ? transcriptRef.current : []
+      const finalTranscript = [...base]
+      if (pendingInput) finalTranscript.push({ role: 'user', text: pendingInput })
+      if (pendingOutput) finalTranscript.push({ role: 'model-text', text: pendingOutput })
+      const hasContent = finalTranscript.some(t => t && typeof t.text === 'string' && t.text.trim())
+      if (hasContent) {
+        fetch('/api/dashboard/voice-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: agentSlug,
+            client_id: clientId,
+            duration_secs: sessionSecs,
+            transcript: finalTranscript.map(t => ({ role: t.role, text: t.text })),
+          }),
+        }).catch(err => console.warn('[VoiceChat] voice-summary POST failed:', err))
+      }
+    }
+
     if (connectTimeoutRef.current) { clearTimeout(connectTimeoutRef.current); connectTimeoutRef.current = null }
     if (pingIntervalRef.current) { clearInterval(pingIntervalRef.current); pingIntervalRef.current = null }
     if (sessionTimerRef.current) { clearInterval(sessionTimerRef.current); sessionTimerRef.current = null }
@@ -275,12 +321,13 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     volumeLevelRef.current = 0
     setVolumeLevel(0)
     updateStatus('idle')
-  }, [updateStatus, onTranscript])
+  }, [updateStatus, onTranscript, agentSlug, clientId, sessionSecs])
 
   const startSession = useCallback(async () => {
     if (status !== 'idle') return
     setErrorMsg('')
     setTranscript([])
+    transcriptRef.current = []
     setLastUserTranscript('')
     inputAccRef.current = ''
     outputAccRef.current = ''

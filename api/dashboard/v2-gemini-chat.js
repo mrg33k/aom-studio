@@ -5,6 +5,14 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Terminal rooms: live Claude Code sessions attached via tmux relay.
+// Text in these rooms bypasses Gemini entirely — v2-gemini-chat short-circuits
+// below and returns { relay: true }. Voice calls in these rooms still run
+// Gemini Live via voice-session.js, and the call-end summary is written back
+// through voice-summary.js. Keep this set in sync with the same set in
+// src/dashboard/components/VoiceChat.jsx and api/dashboard/voice-summary.js.
+const TERMINAL_AGENTS = new Set(['elon', 'studio']);
+
 // Image extensions Gemini can process
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']);
 const IMAGE_MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp' };
@@ -978,11 +986,14 @@ export default async function handler(req, res) {
   const handlerStart = Date.now();
   console.log(`[v2-gemini-chat] START agent=${agent||'none'} project=${project_slug||'none'} msg=${(message||'').slice(0,80)}`);
 
-  // Terminal agents (elon, studio): text messages are handled by the tmux relay,
-  // not Gemini. Return immediately — the real response arrives via realtime from
-  // the tmux relay. Gemini only activates for these rooms when the user hits the
-  // voice call button (handled by VoiceChat.jsx, not this endpoint).
-  if (agent === 'elon' || agent === 'studio') {
+  // Terminal agents: text messages are handled by the tmux relay, not Gemini.
+  // Return immediately — the real response arrives via realtime from the tmux
+  // relay. Gemini only activates for these rooms when the user hits the voice
+  // call button (handled by VoiceChat.jsx + voice-summary.js, not this endpoint).
+  //
+  // Keep this set in sync with TERMINAL_AGENTS in VoiceChat.jsx and
+  // api/dashboard/voice-summary.js. To add a new terminal room, update all three.
+  if (TERMINAL_AGENTS.has(agent)) {
     return res.json({ reply: null, functionCalls: [], agent, relay: true });
   }
 
