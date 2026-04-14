@@ -1,3 +1,4 @@
+// hello
 // VoiceChat.jsx
 // Gemini Live voice chat -- direct browser-to-Google connection.
 //
