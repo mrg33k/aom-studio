@@ -171,9 +171,7 @@ HOW TO TALK:
 - If you don't know something, say so. Or look it up with your tools. Don't guess.
 
 YOUR TOOLS (use naturally, only when the conversation calls for it):
-- read_file: READ THE ACTUAL CODE before writing task descriptions. See what exists before telling an agent what to change.
-- list_files: Check directory structure. Never guess file paths -- verify them.
-- lookup_context: search the codebase for files, components, scripts.
+- read_project_file / list_project_files: read the project's CONTEXT.md and component files (the right way to get project context)
 - run_query: look up data in Supabase (messages, tasks, agents, events, projects)
 - search_history: find past conversations or decisions
 - get_queue / get_status: check what's being worked on
@@ -220,9 +218,9 @@ BULK WRITE CONFIRMATION (hard rule for write_data on user-facing tables):
 - The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.
 
 WRITE_DATA WITH FILE ATTACHMENTS (hard rule -- applies to any insert that includes a file_url, attachment, or document reference):
-- Before you call write_data with a \`description\`, \`summary\`, or \`notes\` field for a row that points at a file, you MUST call lookup_context on that file first and read the returned content.
-- The \`description\` you write MUST come from what lookup_context actually returned. Do NOT derive the description from the filename, the URL slug, or the surrounding conversation.
-- If lookup_context returns nothing, the file is unreachable, or the content is empty -- stop. Tell the user "I can't read the file yet" and ask them to re-upload or share the content. Do NOT guess. Do NOT write a placeholder description. Do NOT call write_data.
+- Before you call write_data with a \`description\`, \`summary\`, or \`notes\` field for a row that points at a file, you MUST call read_project_file on that file first and read the returned content.
+- The \`description\` you write MUST come from what read_project_file actually returned. Do NOT derive the description from the filename, the URL slug, or the surrounding conversation.
+- If read_project_file returns nothing, the file is unreachable, or the content is empty -- stop. Tell the user "I can't read the file yet" and ask them to re-upload or share the content. Do NOT guess. Do NOT write a placeholder description. Do NOT call write_data.
 - Filename-derived descriptions (e.g. a file called "q3_vendor_audit.pdf" turning into "Q3 vendor audit") are fabrications. They look real but they're not. The server logs a warning when it sees this shape, and QA will reject the insert.
 
 IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out loud, or just chatting, TALK TO HIM. Don't reach for a tool. Only use tools when there's a clear action to take.`;
@@ -230,9 +228,7 @@ IMPORTANT: Conversation first. Tools second. If Patrik is venting, thinking out 
 // Lean instruction for project chats. No personal info, no agent identity, no Rex-specific rules.
 // Keeps token count low so Gemini Flash doesn't choke on first messages.
 const PROJECT_BASE_INSTRUCTION = `YOUR TOOLS (use naturally when the conversation calls for it):
-- read_file / list_files: explore the project codebase
-- lookup_context: search for files, components, scripts
-- search_code: exact string search across the codebase (grep)
+- read_project_file / list_project_files: read the project's CONTEXT.md and component files
 - git_recent: show recent commits and changes
 - run_query: look up data in Supabase
 - search_history: find past conversations
@@ -259,7 +255,7 @@ CONVERSATION RULES:
 - Use tools when there's a clear action. Conversation first.
 - If you don't know something, look it up with your tools.
 - Never return an empty response. If something fails, say what went wrong.
-- CRITICAL: When asked about git history, commits, or what changed, you MUST call git_recent. When asked to search for code, you MUST call search_code. Do not try to answer from memory -- always use the tool.
+- CRITICAL: When asked about git history, commits, or what changed, you MUST call git_recent. When asked about how code works or where something lives, DO NOT try to explore the source yourself -- queue a task to the planner, who will dive in.
 
 URL RENDERING RULES (hard -- applies to every response):
 - Only emit a URL that came verbatim from a tool result. Never interpolate variables like \${slug}, \${id}, or \${tenant} into prose -- those are code syntax, not strings the user should see.
@@ -274,9 +270,9 @@ BULK WRITE CONFIRMATION (hard rule for write_data on user-facing tables):
 - The server enforces this: it rejects any bulk write_data call when the most recent user message does not contain one of those exact keywords. If you see that rejection, show the preview again and wait for a clean confirmation.
 
 WRITE_DATA WITH FILE ATTACHMENTS (hard rule -- applies to any insert that includes a file_url, attachment, or document reference):
-- Before you call write_data with a \`description\`, \`summary\`, or \`notes\` field for a row that points at a file, you MUST call lookup_context on that file first and read the returned content.
-- The \`description\` you write MUST come from what lookup_context actually returned. Do NOT derive the description from the filename, the URL slug, or the surrounding conversation.
-- If lookup_context returns nothing, the file is unreachable, or the content is empty -- stop. Tell the user "I can't read the file yet" and ask them to re-upload or share the content. Do NOT guess. Do NOT write a placeholder description. Do NOT call write_data.
+- Before you call write_data with a \`description\`, \`summary\`, or \`notes\` field for a row that points at a file, you MUST call read_project_file on that file first and read the returned content.
+- The \`description\` you write MUST come from what read_project_file actually returned. Do NOT derive the description from the filename, the URL slug, or the surrounding conversation.
+- If read_project_file returns nothing, the file is unreachable, or the content is empty -- stop. Tell the user "I can't read the file yet" and ask them to re-upload or share the content. Do NOT guess. Do NOT write a placeholder description. Do NOT call write_data.
 - Filename-derived descriptions (e.g. a file called "q3_vendor_audit.pdf" turning into "Q3 vendor audit") are fabrications. They look real but they're not. The server logs a warning when it sees this shape, and QA will reject the insert.`;
 
 // Rex-specific identity + Corner codebase knowledge. Only used for Rex/agent chats, never for project chats.
@@ -314,9 +310,9 @@ PROJECTS AND REPOS (where work lives):
 You have FULL CROSS-PROJECT POWERS. You can create tasks for ANY project by setting the project field to the correct slug. Route work to wherever it belongs. If the conversation is about Corner, set project to "corner". If it's about Sourcing, use "sourcing". You own the whole system.
 
 HOW TO CREATE GOOD TASKS:
-- ALWAYS use read_file to see the current code before writing a task description. The builder needs to know what exists.
-- ALWAYS use list_files to verify paths before mentioning them. Never guess directory structures.
-- Include: which file, what function/section to modify, what the code should do, what "done" looks like.
+- DO NOT try to explore source code yourself. The planner (Claude) dives into the repo when the task runs. Your job is to describe the outcome clearly, not map the code.
+- Describe the component or section by NAME (e.g. "CornerV3 header", "Tasks tab task input"), not by file path. The builder has Glob/Grep/Read to find the file.
+- Include: which component/section to modify, what the code should do, what "done" looks like.
 - For new routes: include main.jsx Route entry AND vercel.json rewrite.
 - The builder sees ONLY your description. If you're vague, the task fails.
 
@@ -345,19 +341,15 @@ const TOOLS = [{ functionDeclarations: [
   { name: 'search_history', description: 'Search conversation history for past discussions, decisions, or events. Use when asked about what happened before.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for in conversation history' }, agent: { type: 'string', description: 'Optional: limit search to specific agent' } }, required: ['query'] } },
   { name: 'start_runner', description: 'Start the task runner to process queued tasks. Use when asked to run the queue, start building, get tasks going, or kick off work. The runner picks up queued tasks and builds them.', parameters: { type: 'object', properties: {} } },
   { name: 'register_project', description: 'Add or update a project in the registry. Use proactively when conversation implies a project change: new repo mentioned, project moved, rules changed, work should go to a specific repo. Fuzzy-matches existing projects so you don\'t need the exact slug. If unsure which project, it will return candidates to clarify with Patrik.', parameters: { type: 'object', properties: { slug: { type: 'string', description: 'Best guess at project slug (lowercase, hyphenated). Fuzzy-matched against all existing projects.' }, name: { type: 'string', description: 'Display name' }, repo_path: { type: 'string', description: 'Absolute filesystem path to the repo' }, repo_description: { type: 'string', description: 'What this repo is, one line' }, scan_dirs: { type: 'string', description: 'Comma-separated directories to scan for the phonebook (e.g. "src,api,tests")' }, hard_rules: { type: 'string', description: 'Comma-separated rules agents must follow for this project' } }, required: ['slug'] } },
-  { name: 'lookup_context', description: 'Search the codebase for relevant files, scripts, components, and architecture. Use this BEFORE creating tasks to check what already exists. Also use when Patrik asks about how something works or where something lives in the code.', parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to search for (e.g. "voice chat", "onboarding", "task runner", "auth")' } }, required: ['query'] } },
   { name: 'update_task', description: 'Update a task status, QA score, or error. Use when Patrik asks to fix task scores, mark tasks done, requeue failed tasks, or correct task metadata.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to update' }, status: { type: 'string', description: 'New status: queued, done, failed, cancelled' }, qa_score: { type: 'number', description: 'QA score 1-10' }, qa_notes: { type: 'string', description: 'QA notes explaining the score' }, error: { type: 'string', description: 'Error message (set to empty string to clear)' } }, required: ['task_id'] } },
   { name: 'cancel_task', description: 'Cancel a queued task. Use when you created a task with wrong details and need to clean it up before the runner picks it up.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The task ID to cancel' } }, required: ['task_id'] } },
   { name: 'reply_to_task', description: 'Reply to a skill task that is waiting for human input. Use when Patrik answers a question from an agent (like Cleo or Steffen) working on a skill task. The task will resume with the answer.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'The waiting task ID' }, answer: { type: 'string', description: 'The human reply/direction to give the agent' } }, required: ['task_id', 'answer'] } },
-  { name: 'read_file', description: 'Read a source file from the codebase. Use this BEFORE creating tasks to see what code already exists in a file. Returns the file contents. Paths are relative to the repo root (e.g. "src/dashboard/CornerV3.jsx").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to repo root' }, start_line: { type: 'number', description: 'Start line (1-indexed, default 1)' }, end_line: { type: 'number', description: 'End line (default: start+100)' } }, required: ['path'] } },
-  { name: 'list_files', description: 'List files in a directory. Use this to verify file paths and see the actual directory structure instead of guessing. Returns file names in the directory.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Directory path relative to repo root (e.g. "src/dashboard")' } }, required: ['path'] } },
   { name: 'update_context', description: 'Update a section of a project CONTEXT.md document. Use when the operator asks to record decisions, update project status, add constraints, or note architectural choices for a project. Only works within a project conversation (requires project_slug).', parameters: { type: 'object', properties: { project_slug: { type: 'string', description: 'The project slug to update context for' }, section: { type: 'string', enum: ['overview', 'status', 'decisions', 'constraints', 'architecture', 'notes'], description: 'Which section of the CONTEXT.md to update' }, content: { type: 'string', description: 'The content to write into the section' }, action: { type: 'string', enum: ['replace', 'append'], description: 'Whether to replace the section content or append to it (default: replace)' } }, required: ['project_slug', 'section', 'content'] } },
   { name: 'read_project_file', description: 'Read a file from the project folder (plans, rankings, specs, briefs). Use this when CONTEXT.md references a file you need to read. Path is relative to the project folder (e.g. "tiktok-respin-rankings.md").', parameters: { type: 'object', properties: { path: { type: 'string', description: 'File path relative to the project folder (e.g. "tiktok-respin-rankings.md", "respin-001-freezer-repair.md")' } }, required: ['path'] } },
   { name: 'list_project_files', description: 'List files in the project folder. Use to discover what files are available (plans, specs, briefs, rankings, etc.).', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Subdirectory to list (optional, default lists project root)' } } } },
   { name: 'write_data', description: 'Insert, update, or delete records in the project database. Use for direct data operations like clearing placeholder records, seeding data, or updating fields. Only works for projects with their own Supabase (e.g. sourcing). Always confirm with the user before deleting.', parameters: { type: 'object', properties: { table: { type: 'string', description: 'Table name (e.g. directory_reports, directory_companies)' }, action: { type: 'string', enum: ['insert', 'update', 'delete'], description: 'What to do' }, filters: { type: 'string', description: 'PostgREST filter for update/delete (e.g. id=eq.abc123 or title=ilike.*coming%20soon*)' }, data: { type: 'object', description: 'Data to insert or update (key-value pairs)' } }, required: ['table', 'action'] } },
   { name: 'use_integration', description: 'Use an external integration (Gmail, Google Calendar, etc) using keys stored in Settings. The user must configure their API key in Settings first. Use this when the user asks to check email, list calendar events, send email, or create calendar events.', parameters: { type: 'object', properties: { service: { type: 'string', enum: ['gmail', 'calendar'], description: 'Which service to use' }, action: { type: 'string', description: 'What to do: gmail supports list_emails, send_email; calendar supports list_events, create_event' }, params: { type: 'object', description: 'Action-specific params (e.g. {to, subject, body} for send_email, {query, maxResults} for list_emails, {summary, start, end} for create_event)' } }, required: ['service', 'action'] } },
   { name: 'git_recent', description: 'Show recent git commits for this project repo. Use when asked "what changed?", "what shipped recently?", "show me recent commits", or when you need to understand what code was modified. Returns commit hash, author, time, message, and files changed.', parameters: { type: 'object', properties: { count: { type: 'number', description: 'Number of commits to show (default 10, max 30)' } } } },
-  { name: 'search_code', description: 'Search the project codebase for an exact string or pattern. Returns file paths, line numbers, and matching code. Use this for precise lookups like finding a function definition, variable usage, or specific string. More precise than lookup_context (which is semantic/fuzzy).', parameters: { type: 'object', properties: { pattern: { type: 'string', description: 'The string or pattern to search for (e.g. "loadEnvVars", "settingsOpen", "use_integration")' } }, required: ['pattern'] } },
   { name: 'escalate', description: 'Escalate a hard problem to the terminal expert (Claude Code). Use this when you cannot solve a problem yourself -- complex debugging, architecture questions, multi-file issues, or anything that requires deep reasoning. Creates a terminal task that Claude Code will pick up, solve, and report back. Include what you tried and why you are stuck.', parameters: { type: 'object', properties: { problem: { type: 'string', description: 'Clear description of the problem the user is facing' }, what_i_tried: { type: 'string', description: 'What you already tried or investigated' }, relevant_files: { type: 'string', description: 'Comma-separated list of files related to the problem' } }, required: ['problem'] } },
   { name: 'get_task_logs', description: 'Fetch runner logs and QA feedback for a task. Use when asked "why did this task fail?", "what went wrong?", "show me the logs", or to debug a failed/completed task. Returns runner log excerpts and QA notes.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'Task ID to look up' }, query: { type: 'string', description: 'Search term if task_id unknown (e.g. task title)' } } } },
   { name: 'get_task_diff', description: 'Fetch the code diff from a completed task. Use when asked "what did this task change?", "show me the code changes", "what was modified?". Returns the git diff with file stats and actual code changes.', parameters: { type: 'object', properties: { task_id: { type: 'string', description: 'Task ID to look up' }, title: { type: 'string', description: 'Task title to search for in commit messages' } } } },
@@ -661,7 +653,7 @@ async function validateProjectIsolation(slug, repoPath) {
     if (!ctx?.context_md) warnings.push(`Missing CONTEXT.md at projects/${slug}/CONTEXT.md -- operator will have no project knowledge`);
   } catch { warnings.push(`Could not check CONTEXT.md (RAG server unreachable)`); }
   // Check repo_path
-  if (!repoPath) warnings.push('No repo_path set -- read_file/list_files will fall back to aom-studio (wrong codebase)');
+  if (!repoPath) warnings.push('No repo_path set -- planner will fall back to aom-studio (wrong codebase)');
   // Check PHONEBOOK.md
   try {
     const pbResp = await fetch(`${RAG_URL}/read-project-file?slug=${encodeURIComponent(slug)}&path=PHONEBOOK.md`, { signal: AbortSignal.timeout(3000) });
@@ -943,9 +935,12 @@ async function setAgentStatus(slug, status) {
 }
 
 // Project chats: lean tool set to reduce token overhead. Admin/internal tools excluded.
+// Raw code-exploration tools (read_file, list_files, lookup_context, search_code) removed:
+// operators should route work to the planner instead of diving into source code themselves.
+// Project context is read via the project-scoped tools below (tight CONTEXT.md + components).
 const PROJECT_TOOL_NAMES = new Set([
   'create_task', 'get_queue', 'get_status', 'run_query', 'search_history',
-  'read_file', 'list_files', 'lookup_context', 'search_code', 'git_recent',
+  'git_recent',
   'escalate', 'update_context', 'read_project_file', 'list_project_files',
   'write_data', 'use_integration',
   'get_task_logs', 'get_task_diff', 'get_task_progress',
@@ -1157,7 +1152,7 @@ ${baseInstruction}${isEAOnboarding ? '' : systemState}${recentContext}`;
 - You own the whole system. Nothing is "outside your scope." Route work to the right project directly.
 - Before recommending work, use list_project_files and read_project_file to check what already exists.`
           : `PROJECT SCOPE:
-- You know about this project. Use your tools (read_file, list_files, lookup_context) to explore the codebase when asked.
+- You know about this project from CONTEXT.md. Use read_project_file and list_project_files to load more detail on demand. Do not try to dive into the source code -- route work to the planner via create_task.
 - If someone asks about something outside this project, help route them: "That sounds like it lives in [other project]. Want me to note it?"
 - Before recommending work, use list_project_files and read_project_file to check what already exists.`;
 
@@ -1291,7 +1286,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
       // Project chats: operator needs read/list/lookup to help the user, so only block admin tools.
       const blockedForUsers = isAOM ? [] : (projectSlug
         ? ['start_runner', 'register_project', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task']
-        : ['read_file', 'list_files', 'lookup_context', 'start_runner', 'register_project', 'update_context', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task']);
+        : ['start_runner', 'register_project', 'update_context', 'update_task', 'delete_messages', 'cancel_task', 'reply_to_task']);
 
       for (const call of calls) {
         const name = call.name;
