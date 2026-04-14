@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Film, Mic, Camera, Clock, User, Zap, Battery, Wifi, Box,
   Home, Building, Server, ChevronDown, ChevronUp, Play, Volume2,
+  ExternalLink,
 } from 'lucide-react';
 import SiteNav from '../components/SiteNav.jsx';
 
@@ -19,6 +20,10 @@ const STORY_SECTIONS = [
     speaker: 'Hunter',
     quote: 'Our mission is to solve the world\'s energy problem. This is a really difficult problem to solve. When we founded ISA in 2016, we began our journey with a fundamental look at what is the problem of energy.',
     visual: 'Cinematic lab wide shot, founders',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=cinematic+laboratory+scientists+wide+shot' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=cinematic+lab+wide+shot+founders&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Zap,
   },
   {
@@ -29,6 +34,10 @@ const STORY_SECTIONS = [
     speaker: 'Hunter + Skylar',
     quote: 'The majority of the world agrees we should build a sustainable future. However, we\'ve had renewables for over 100 years. When we installed the first electrical grids in New York City, photovoltaics had already been invented. So why haven\'t we already built a sustainable world?',
     visual: 'Historical energy footage, cost comparison graphic',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=historical+energy+fossil+fuel+infrastructure' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=renewable+energy+history+cost+comparison&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Battery,
   },
   {
@@ -45,6 +54,10 @@ const STORY_SECTIONS = [
       { name: 'Sustainable', desc: 'Inherent built-in benefit' },
     ],
     visual: 'Motion graphics — four attributes',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=energy+motion+graphics+infographic+attributes' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=clean+energy+motion+graphics+infographic&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Wifi,
   },
   {
@@ -55,6 +68,10 @@ const STORY_SECTIONS = [
     speaker: 'Hunter + Skylar',
     quote: 'With those attributes in mind, we began a search. We looked at everything from fusion to hydrogen and new types of battery chemistry. And along our journey, we kept running into scientists who were proposing this idea that empty space around us isn\'t actually empty at all. It\'s full of energy.',
     visual: 'Research montage, equations',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=scientists+working+in+lab+research+equations' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=physics+research+equations+laboratory&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Box,
   },
   {
@@ -65,6 +82,10 @@ const STORY_SECTIONS = [
     speaker: 'Hunter',
     quote: 'At that point in time, we didn\'t know if it would be possible, but we knew if we could figure it out, it would be the most ideal source of energy for the future. So, after nearly a decade of research, thousands of experiments, trial and error, we\'ve proven that you can actually harvest energy at the quantum level from space around us and use it to generate electrical power.',
     visual: 'Lab b-roll, prototypes, then device footage',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=laboratory+testing+prototype+technology+device' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=lab+prototype+testing+device+footage&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Zap,
   },
   {
@@ -80,6 +101,10 @@ const STORY_SECTIONS = [
       { name: 'Data Centers', icon: Server },
     ],
     visual: 'Application visualizations',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=clean+energy+home+community+data+center' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=energy+electricity+clean+renewable+home+data+center&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Zap,
   },
   {
@@ -90,6 +115,10 @@ const STORY_SECTIONS = [
     speaker: 'Hunter + Skylar',
     quote: 'We are ISA. This is power reimagined.',
     visual: 'End card, logo',
+    stockLinks: [
+      { label: 'Envato Elements', url: 'https://elements.envato.com/stock-video?q=minimal+corporate+logo+reveal+energy' },
+      { label: 'Adobe Stock', url: 'https://stock.adobe.com/search?k=corporate+logo+reveal+clean+energy&filters%5Bcontent_type%3Avideo%5D=1' },
+    ],
     icon: Zap,
   },
 ];
@@ -271,6 +300,24 @@ function StoryCard({ section, index }) {
           <Film size={14} />
           <span>{section.visual}</span>
         </div>
+
+        {/* Stock footage links */}
+        {section.stockLinks && (
+          <div className="flex gap-3 mt-3">
+            {section.stockLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-[#E85D26]/70 hover:text-[#E85D26] transition-colors duration-200"
+              >
+                <ExternalLink size={12} />
+                <span>{link.label}</span>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );
