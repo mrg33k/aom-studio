@@ -374,6 +374,23 @@ async function sbFetch(path, options = {}) {
   return resp.json();
 }
 
+// Defence-in-depth: strip fabricated URLs with 'undefined'/'null'/'[object Object]'
+// path segments that Gemini occasionally emits despite system-prompt instructions.
+function sanitizeReplyText(text) {
+  if (!text) return text;
+  // Markdown links [text](href) -- keep link text, drop bad href
+  text = text.replace(/\[([^\]]*)\]\(([^)]*)\)/g, (match, linkText, href) => {
+    if (/\bundefined\b|\bnull\b|\[object Object\]/.test(href)) return linkText;
+    return match;
+  });
+  // Bare URLs in prose -- remove entirely if they contain fabricated segments
+  text = text.replace(/https?:\/\/\S+/g, (url) => {
+    if (/\bundefined\b|\bnull\b|\[object Object\]/.test(url)) return '';
+    return url;
+  });
+  return text;
+}
+
 async function getMaxSortOrder(clientId) {
   const rows = await sbFetch(`/rest/v1/tasks?select=sort_order&client_id=eq.${encodeURIComponent(clientId)}&order=sort_order.desc.nullslast&limit=1`);
   const value = rows[0]?.sort_order;
@@ -1219,7 +1236,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
 
       if (calls.length === 0) {
         // No function calls -- extract text and return
-        let reply = geminiParts.filter(p => p.text).map(p => p.text).join('') || '';
+        let reply = sanitizeReplyText(geminiParts.filter(p => p.text).map(p => p.text).join('') || '');
         // If still empty after 3 attempts and we have prior tool results, try to format them
         if (!reply.trim() && allFunctionCalls.length > 0 && !retried) {
           retried = true;
@@ -1821,7 +1838,7 @@ ${PROJECT_BASE_INSTRUCTION}`;
     // Max rounds reached -- return whatever text we have
     const finalResult = await callGemini(currentContents, systemInstruction, activeTools, activeModel);
     const finalContent = finalResult?.candidates?.[0]?.content || { role: 'model', parts: [] };
-    const reply = (finalContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '';
+    const reply = sanitizeReplyText((finalContent.parts || []).filter(p => p.text).map(p => p.text).join('') || '');
     await setAgentStatus(agentSlug, 'idle');
     return res.status(200).json({ reply, functionCalls: allFunctionCalls, history: [...currentContents, finalContent], agent: agentSlug });
   } catch (err) {

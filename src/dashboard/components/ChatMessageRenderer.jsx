@@ -10,6 +10,11 @@ const renderer = new marked.Renderer()
 // expects the renderer to parse child tokens for the link text.
 renderer.link = function({ href, title, tokens }) {
   const text = this.parser.parseInline(tokens)
+  // Guard: if href is missing or contains fabricated placeholders ('undefined', 'null',
+  // '[object Object]') that Gemini occasionally emits, render only the link text.
+  if (!href || /\bundefined\b|\bnull\b|\[object Object\]/.test(href)) {
+    return text
+  }
   const t = title ? ` title="${title}"` : ''
   return `<a href="${href}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`
 }
