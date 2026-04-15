@@ -318,17 +318,17 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
     let cancelled = false
     let lastSeenTs = null
 
+    // R6 hotfix: events table has RLS on, anon key can't SELECT. Reading
+    // the latest project_summary row through a server-side endpoint that
+    // uses the service role key instead of a direct supabase-js query.
     const fetchLatest = async () => {
       try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('event_type', 'project_summary')
-          .eq('agent', activeProject)
-          .order('timestamp', { ascending: false })
-          .limit(1)
-        if (cancelled || error) return
-        const row = (data && data[0]) || null
+        const resp = await fetch(`/api/dashboard/project-summary?slug=${encodeURIComponent(activeProject)}`)
+        if (cancelled) return
+        if (!resp.ok) return
+        const data = await resp.json().catch(() => null)
+        if (cancelled) return
+        const row = data?.event || null
         if (!row) {
           if (lastSeenTs !== null) setSummaryEvent(null)
           lastSeenTs = null
