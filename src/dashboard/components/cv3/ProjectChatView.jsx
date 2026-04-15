@@ -1,7 +1,7 @@
 // 2026-04-13: project chat history fetch fixed (was asc+limit200, now desc+reverse).
 // ProjectChatView -- project conversation thread
 // Extracted from ChatPanel.jsx. Receives all state via ctx prop.
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../lib/typeScale.js'
 import { supabase } from '../../lib/supabase.js'
@@ -34,7 +34,7 @@ export default function ProjectChatView(ctx) {
     newKeyValue, setNewKeyValue, newKeyScope, setNewKeyScope,
     keySaveMsg, setKeySaveMsg,
     saveEnvKey, deleteEnvKey,
-    worldId, currentUser, agents, VOICE_OPTIONS,
+    worldId, currentUser, agents, projects, onSelectAgent, onSelectProject, VOICE_OPTIONS,
     agentVoices, setAgentVoices, currentChatKey,
     currentVoice, selectVoice, saveRoomName,
     userProfiles, isShared, sendProjectTextRef,
@@ -45,10 +45,27 @@ export default function ProjectChatView(ctx) {
     prefillMessage, setPrefillMessage,
   } = ctx
   const projColor = selectedProject?.color || '#6B8AB0'
-  
+
   // Project files state
   const [projectFiles, setProjectFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
+
+  // Quick-switcher dropdown state (ports the ThreadView pattern so every room
+  // can jump to any other agent or project room without returning home)
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const switcherRef = useRef(null)
+  useEffect(() => {
+    if (!switcherOpen) return
+    const handleClick = (e) => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target)) setSwitcherOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [switcherOpen])
+
+  const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '')
+  )
 
   const formatFileSize = (bytes) => {
     const value = Number(bytes)
@@ -159,27 +176,171 @@ export default function ProjectChatView(ctx) {
           >
             &#x2190;
           </button>
-          {/* Project color dot */}
-          <div style={{
-            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-            background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
-            border: `1px solid ${projColor}55`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          {/* Project title + quick-switcher */}
+          <div ref={switcherRef} style={{ flex: 1, minWidth: 0, position: 'relative', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 12, height: 12, borderRadius: 3,
-              background: projColor,
-              boxShadow: `0 0 6px ${projColor}66`,
-            }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: C.text,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              display: 'block',
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
+              border: `1px solid ${projColor}55`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {selectedProject?.name || 'Project'}
-            </span>
+              <div style={{
+                width: 12, height: 12, borderRadius: 3,
+                background: projColor,
+                boxShadow: `0 0 6px ${projColor}66`,
+              }} />
+            </div>
+            <button
+              onClick={() => setSwitcherOpen(o => !o)}
+              style={{
+                flex: 1, minWidth: 0, background: 'none', border: 'none',
+                cursor: 'pointer', textAlign: 'left', padding: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{
+                  fontSize: 14, fontWeight: 700, color: C.text,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {selectedProject?.name || 'Project'}
+                </span>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                  style={{ flexShrink: 0, transform: switcherOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms ease' }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            </button>
+
+            {/* Quick-switcher dropdown */}
+            {switcherOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: 6,
+                width: 260,
+                maxHeight: 360,
+                overflowY: 'auto',
+                background: C.s1,
+                border: `1px solid ${C.border2}`,
+                borderRadius: 12,
+                padding: 6,
+                zIndex: 200,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+              }}>
+                {/* Agents section */}
+                <div style={{
+                  fontSize: 10, fontWeight: 700, color: C.dim,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  padding: '6px 8px 4px',
+                }}>
+                  Agents
+                </div>
+                {(agents || []).map(agent => (
+                  <button
+                    key={`sw-a-${agent.slug}`}
+                    onClick={() => {
+                      setSwitcherOpen(false)
+                      setInlineProject(null)
+                      setMessages([])
+                      setSelectedAgent(agent)
+                      onSelectAgent?.(agent)
+                      if (projectId) navigate('/dashboard')
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      width: '100%', padding: '8px 8px',
+                      borderRadius: 8,
+                      background: 'transparent',
+                      border: 'none', cursor: 'pointer', textAlign: 'left',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div style={{
+                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                      background: agent.color || C.accent,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, fontSize: 10, color: '#000',
+                    }}>
+                      {(agent.name || '?')[0].toUpperCase()}
+                    </div>
+                    <span style={{
+                      fontSize: 13, fontWeight: 600, color: C.text,
+                      fontFamily: "'Inter', sans-serif",
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {agent.name}
+                    </span>
+                  </button>
+                ))}
+
+                {/* Projects section */}
+                {sortedSwitcherProjects.length > 0 && (
+                  <>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 8px' }} />
+                    <div style={{
+                      fontSize: 10, fontWeight: 700, color: C.dim,
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      padding: '6px 8px 4px',
+                    }}>
+                      Projects
+                    </div>
+                    {sortedSwitcherProjects.map(project => {
+                      const pColor = project.color || '#6B8AB0'
+                      const isCurrent = project.slug === selectedProject?.slug
+                      return (
+                        <button
+                          key={`sw-p-${project.id || project.slug}`}
+                          onClick={() => {
+                            setSwitcherOpen(false)
+                            if (!isCurrent) {
+                              setMessages([])
+                              setSelectedAgent(null)
+                              setInlineProject(project)
+                              onSelectProject?.(project)
+                            }
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            width: '100%', padding: '8px 8px',
+                            borderRadius: 8,
+                            background: isCurrent ? 'rgba(16,185,129,0.1)' : 'transparent',
+                            border: 'none', cursor: 'pointer', textAlign: 'left',
+                            transition: 'background 0.1s',
+                          }}
+                          onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = C.s2 }}
+                          onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent' }}
+                        >
+                          <div style={{
+                            width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                            background: `linear-gradient(135deg, ${pColor}44, ${pColor}22)`,
+                            border: `1px solid ${pColor}33`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <div style={{ width: 8, height: 8, borderRadius: 2, background: pColor }} />
+                          </div>
+                          <span style={{
+                            fontSize: 13, fontWeight: 600, color: C.text,
+                            fontFamily: "'Inter', sans-serif",
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {project.name}
+                          </span>
+                          {isCurrent && (
+                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </>
+                )}
+              </div>
+            )}
           </div>
           {/* Telephone button in project header */}
           <button
