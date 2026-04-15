@@ -203,6 +203,14 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const [filesLoading, setFilesLoading] = useState(false)
   const [selectedProject, setSelectedProject] = useState('corner') // Default to 'corner' project
 
+  // R2: live project summary card driven by project-summary-daemon events
+  // Reads the latest row from the shared `events` table where
+  // event_type='project_summary' and agent=<slug>. Polls every 4s while a
+  // project pill is selected. Flashes on change.
+  const [summaryEvent, setSummaryEvent] = useState(null)
+  const [summaryJustUpdated, setSummaryJustUpdated] = useState(false)
+  const [summaryNowTick, setSummaryNowTick] = useState(0)
+
   // Fetch task thread messages when a task is expanded
   const toggleTaskExpand = useCallback(async (taskId) => {
     if (expandedTask === taskId) {
@@ -297,6 +305,60 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
       body: JSON.stringify({ action: 'startRunner' }),
     }).catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // R2: poll the latest project_summary event when a project pill is active.
+  // The daemon writes new rows on debounce, so polling every 4s picks them up
+  // within one beat. We flash the card when the timestamp advances.
+  useEffect(() => {
+    if (!activeProject || activeProject === 'all') {
+      setSummaryEvent(null)
+      setSummaryJustUpdated(false)
+      return
+    }
+    let cancelled = false
+    let lastSeenTs = null
+
+    const fetchLatest = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('event_type', 'project_summary')
+          .eq('agent', activeProject)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+        if (cancelled || error) return
+        const row = (data && data[0]) || null
+        if (!row) {
+          if (lastSeenTs !== null) setSummaryEvent(null)
+          lastSeenTs = null
+          return
+        }
+        if (row.timestamp !== lastSeenTs) {
+          const wasFirst = lastSeenTs === null
+          lastSeenTs = row.timestamp
+          setSummaryEvent(row)
+          if (!wasFirst) {
+            setSummaryJustUpdated(true)
+            window.setTimeout(() => setSummaryJustUpdated(false), 1800)
+          }
+        }
+      } catch {
+        // swallow — next tick will retry
+      }
+    }
+
+    fetchLatest()
+    const iv = window.setInterval(fetchLatest, 4000)
+    return () => { cancelled = true; window.clearInterval(iv) }
+  }, [activeProject])
+
+  // Drive the "updated Ns ago" label without re-fetching
+  useEffect(() => {
+    if (!summaryEvent) return
+    const iv = window.setInterval(() => setSummaryNowTick(t => t + 1), 1000)
+    return () => window.clearInterval(iv)
+  }, [summaryEvent])
 
   // Instant task maker: submit handler
   const handleTaskSubmit = useCallback(async () => {
@@ -468,6 +530,15 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
         @keyframes spin { to { transform: rotate(360deg) } }
         @keyframes rec-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5) } 60% { box-shadow: 0 0 0 8px rgba(239,68,68,0) } }
         @keyframes rec-dot { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+        @keyframes cv3-summary-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.45); border-color: rgba(16,185,129,0.55) }
+          70%  { box-shadow: 0 0 0 12px rgba(16,185,129,0) }
+          100% { box-shadow: 0 0 0 0 rgba(16,185,129,0) }
+        }
+        @keyframes cv3-summary-dot {
+          0%, 100% { opacity: 0.35; transform: scale(1) }
+          50%      { opacity: 1;    transform: scale(1.4) }
+        }
       `}</style>
 
       {/* Scrollable content */}
@@ -567,6 +638,129 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
             >+</button>
           </div>
         </div>
+
+        {/* R2: Live project summary card -- only when a specific pill is active.
+            Driven by scripts/project-summary-daemon.py writing events rows with
+            event_type='project_summary', agent=<slug>. Polls every 4s, flashes
+            on new row. The summary_md content is an R1 stub until R3 wires
+            Haiku in. */}
+        {activeProject && activeProject !== 'all' && (() => {
+          const payload = summaryEvent?.payload || null
+          const rowTs   = summaryEvent?.timestamp || null
+          const rowMs   = rowTs ? Date.parse(rowTs) : null
+          const ageSecs = rowMs ? Math.max(0, Math.round((Date.now() - rowMs) / 1000)) : null
+          // summaryNowTick is read to keep this expression re-computing every second
+          void summaryNowTick
+          const ageLabel = ageSecs == null
+            ? '—'
+            : ageSecs < 5   ? 'just now'
+            : ageSecs < 60  ? `${ageSecs}s ago`
+            : ageSecs < 3600 ? `${Math.round(ageSecs / 60)}m ago`
+            : `${Math.round(ageSecs / 3600)}h ago`
+          const openN   = payload?.open_task_count ?? null
+          const doneArr = Array.isArray(payload?.recent_completions) ? payload.recent_completions : []
+          const summaryText = (payload?.summary_md || '').trim()
+          const reasonsArr  = Array.isArray(payload?.reasons) ? payload.reasons : []
+          const projectRec  = taskProjects?.find(p => String(p.slug || '').toLowerCase() === activeProject)
+                             || projectPills // noop — just to avoid lint issue, real color comes from taskProjects
+          const projColor   = (projectRec && !Array.isArray(projectRec) && projectRec.color) || '#6B8AB0'
+          const projName    = (projectRec && !Array.isArray(projectRec) && projectRec.name) || activeProject
+
+          return (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: '14px 16px',
+                borderRadius: 14,
+                background: `linear-gradient(135deg, ${projColor}1A, ${projColor}08)`,
+                border: `1px solid ${summaryJustUpdated ? 'rgba(16,185,129,0.55)' : projColor + '33'}`,
+                animation: summaryJustUpdated ? 'cv3-summary-pulse 1.8s ease-out' : 'none',
+                transition: 'border-color 0.25s ease',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              {/* Header row: project name, dot, timestamp */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: summaryJustUpdated ? '#10B981' : projColor,
+                  animation: summaryJustUpdated ? 'cv3-summary-dot 1.2s ease-in-out' : 'none',
+                  flexShrink: 0,
+                }} />
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: C.text,
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                }}>
+                  {projName}
+                </span>
+                <span style={{
+                  fontSize: 10, fontWeight: 600,
+                  color: summaryJustUpdated ? '#10B981' : C.muted,
+                  marginLeft: 'auto',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  transition: 'color 0.25s ease',
+                }}>
+                  {summaryEvent ? (summaryJustUpdated ? 'just updated' : `updated ${ageLabel}`) : 'waiting for first event'}
+                </span>
+              </div>
+
+              {/* Summary body */}
+              {summaryText ? (
+                <div style={{
+                  fontSize: 12, lineHeight: 1.5,
+                  color: C.text2,
+                  whiteSpace: 'pre-wrap',
+                  marginBottom: 10,
+                }}>
+                  {summaryText}
+                </div>
+              ) : (
+                <div style={{
+                  fontSize: 11, color: C.dim, fontStyle: 'italic', marginBottom: 10,
+                }}>
+                  No project events yet. Summary writes on the next message or task in this project.
+                </div>
+              )}
+
+              {/* Stat pills */}
+              {summaryEvent && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {openN != null && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: C.text2,
+                      padding: '3px 9px', borderRadius: 10,
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      {openN} open
+                    </span>
+                  )}
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: C.text2,
+                    padding: '3px 9px', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>
+                    {doneArr.length} done 24h
+                  </span>
+                  {reasonsArr.length > 0 && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: C.muted,
+                      padding: '3px 9px', borderRadius: 10,
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      {reasonsArr.join(', ')}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Building Now */}
         {filteredActive.length > 0 && (
