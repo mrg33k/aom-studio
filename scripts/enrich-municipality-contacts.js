@@ -3,10 +3,10 @@
 /**
  * enrich-municipality-contacts.js
  *
- * Enriches 784 municipalities (100k-500k population) with contact data from Apollo.io
+ * Enriches municipalities (50k+ population) with contact data from Apollo.io
  * 
  * Steps:
- * 1. Filter 19,475 records to the 784 in the 100k–500k population band
+ * 1. Filter 19,475 records to municipalities with 50k+ population
  * 2. Format each municipality name into an org search term
  * 3. Hit Apollo's People Search API with title filters
  * 4. Write matched contacts back onto the original JSON records
@@ -191,13 +191,13 @@ async function main() {
   
   console.log(`📊 Total municipalities: ${places.length.toLocaleString()}`);
   
-  // Filter to 100k-500k population
+  // Filter to 50k+ population
   const targetPlaces = places.filter(place => {
     const population = place.population_2020;
-    return population >= 100000 && population <= 500000;
+    return population >= 50000;
   });
   
-  console.log(`🎯 Target municipalities (100k-500k): ${targetPlaces.length.toLocaleString()}`);
+  console.log(`🎯 Target municipalities (50k+): ${targetPlaces.length.toLocaleString()}`);
   
   // Load progress
   const progress = loadProgress();
@@ -234,22 +234,19 @@ async function main() {
       
       if (contacts.length > 0) {
         console.log(`     ✅ Found ${contacts.length} contact(s)`);
-        
-        // Take the first contact (most relevant)
-        const primaryContact = contacts[0];
-        
-        // Update the place object with contact data
-        place.contact_name = primaryContact.name;
-        place.contact_title = primaryContact.title;
-        place.contact_email = primaryContact.email;
-        place.contact_phone = primaryContact.phone;
-        place.contact_source = primaryContact.source;
+
+        place.contacts = contacts;
+        place.contact_name = contacts[0].name;
+        place.contact_title = contacts[0].title;
+        place.contact_email = contacts[0].email;
+        place.contact_phone = contacts[0].phone;
+        place.contact_source = 'apollo';
         place.contact_enriched_at = new Date().toISOString();
-        
-        progress.totalEnriched++;
+
+        progress.totalEnriched += contacts.length;
       } else {
         console.log(`     ❌ No contacts found`);
-        // Mark as attempted but not found
+        place.contacts = [];
         place.contact_enriched_at = new Date().toISOString();
         place.contact_source = 'apollo_attempted';
       }
@@ -286,7 +283,7 @@ async function main() {
     data.metadata.enrichment = {};
   }
   data.metadata.enrichment.last_run = new Date().toISOString();
-  data.metadata.enrichment.target_population_band = '100k-500k';
+  data.metadata.enrichment.target_population_band = '50k+';
   data.metadata.enrichment.target_count = targetPlaces.length;
   data.metadata.enrichment.processed_count = progress.totalFound;
   data.metadata.enrichment.enriched_count = progress.totalEnriched;

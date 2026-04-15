@@ -516,7 +516,7 @@ export default function MunicipalDirectory() {
     return data.filter(p => {
       if (selState && p.state_abbr !== selState) return false;
       if (selType  && (p.type?.toLowerCase() !== selType)) return false;
-      if (enrichedOnly && !p.contact_email) return false;
+      if (enrichedOnly && !(p.contact_email || (p.contacts && p.contacts.length))) return false;
 
       const pop = p.population_2020 ?? 0;
       if (pop < preset.min) return false;
@@ -540,7 +540,7 @@ export default function MunicipalDirectory() {
   }, [data, search, selState, selType, popPreset, sortField, sortDir, enrichedOnly]);
 
   const enrichedCount = useMemo(
-    () => data.reduce((n, p) => n + (p.contact_email ? 1 : 0), 0),
+    () => data.reduce((n, p) => n + (Array.isArray(p.contacts) ? p.contacts.length : (p.contact_email ? 1 : 0)), 0),
     [data]
   );
 
