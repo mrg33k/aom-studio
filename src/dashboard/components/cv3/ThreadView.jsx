@@ -314,13 +314,13 @@ export default function ThreadView(ctx) {
                 setIsVoiceActive(false)
                 setVoiceMuted(false)
                 setVoiceTranscriptText('')
-                // Voice session ended -- ask agent to summarize and create follow-ups
-                const voiceMsgs = messagesRef.current?.filter(m => m.source === 'voice') || []
-                if (voiceMsgs.length >= 4) {
-                  setTimeout(() => {
-                    sendAgentText('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
-                  }, 1500)
-                }
+                // Voice session ended. Post-rewire (Apr 14): VoiceChat.stopSession
+                // POSTs the full transcript to /api/dashboard/voice-summary which
+                // uses Claude Haiku to produce ONE composed summary message tagged
+                // source='voice-summary'. The supabase-listener now forwards
+                // voice-summary rows to the terminal relay inbox. No need to send
+                // a separate sendAgentText prompt here -- that would duplicate the
+                // summary and confuse the agent.
               }
             }}
             onVolumeChange={setVoiceVolume}
@@ -521,6 +521,86 @@ export default function ThreadView(ctx) {
                     )}
                   </div>
                   <div style={{ fontSize: 10, color: 'rgba(80,100,128,0.55)', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
+                    {formatChatTime(msg.timestamp)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          // Voice transcript turns: the live Gemini-Live layer persists each turn
+          // to the DB so Patrik can scroll back through the call, but the
+          // supabase-listener does NOT forward these to the terminal agent. They
+          // get a distinct indigo treatment so Patrik can tell at a glance that
+          // these were spoken (via Gemini) and didn't reach Elon. Only the
+          // post-call voice-summary Haiku message actually lands in Elon's inbox.
+          if (msg.source === 'voice') {
+            const isVoiceUser = msg.role === 'user'
+            const voiceBg = 'rgba(129,140,248,0.10)'
+            const voiceBorder = '1px dashed rgba(129,140,248,0.35)'
+            const voiceAccent = '#A5B4FC'
+            return (
+              <div
+                key={msg.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: isVoiceUser ? 'flex-end' : 'flex-start',
+                  marginBottom: 6,
+                }}
+              >
+                <div style={{
+                  maxWidth: '80%',
+                  padding: '8px 12px',
+                  borderRadius: 12,
+                  background: voiceBg,
+                  border: voiceBorder,
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 4,
+                  }}>
+                    <span style={{
+                      fontSize: 8,
+                      fontWeight: 800,
+                      color: voiceAccent,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      {isVoiceUser ? 'Patrik (voice)' : 'Gemini (voice)'}
+                    </span>
+                    <span style={{
+                      fontSize: 7,
+                      fontWeight: 700,
+                      color: 'rgba(129,140,248,0.6)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      background: 'rgba(129,140,248,0.15)',
+                    }}>
+                      not sent to {selectedAgent.name}
+                    </span>
+                  </div>
+                  <div style={{
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    color: 'rgba(226,232,240,0.78)',
+                    fontStyle: 'italic',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}>
+                    {msg.text}
+                  </div>
+                  <div style={{
+                    fontSize: 9,
+                    color: 'rgba(129,140,248,0.45)',
+                    marginTop: 4,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>
                     {formatChatTime(msg.timestamp)}
                   </div>
                 </div>

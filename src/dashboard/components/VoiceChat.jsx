@@ -132,6 +132,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
   const [lastUserTranscript, setLastUserTranscript] = useState('')
   const isMutedRef = useRef(false)
   const sessionIdRef = useRef(null)
+  const summaryPostedRef = useRef(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(() => {
     try {
@@ -368,16 +369,22 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
 
     // Terminal rooms: build the final transcript from transcriptRef (mirror of
     // state) PLUS the two pending chunks we just flushed, then POST the whole
-    // thing to /api/dashboard/voice-summary. The endpoint summarizes via Gemini
-    // Flash and writes ONE message to supabase-messages, which the tmux relay
-    // pipes to the terminal agent's inbox.
-    if (TERMINAL_AGENTS.has(agentSlug)) {
+    // thing to /api/dashboard/voice-summary. Claude Haiku summarizes and writes
+    // ONE message to supabase-messages (source='voice-summary'), and the
+    // supabase-listener forwards that to the terminal relay inbox.
+    //
+    // Idempotency: stopSession can fire multiple times (mute toggle, agent
+    // swap, component unmount cleanup effect). Guard the POST with a ref
+    // keyed off sessionIdRef so we only summarize a given call once. The guard
+    // clears in startSession when a fresh session id is minted.
+    if (TERMINAL_AGENTS.has(agentSlug) && sessionIdRef.current && !summaryPostedRef.current) {
       const base = Array.isArray(transcriptRef.current) ? transcriptRef.current : []
       const finalTranscript = [...base]
       if (pendingInput) finalTranscript.push({ role: 'user', text: pendingInput })
       if (pendingOutput) finalTranscript.push({ role: 'model-text', text: pendingOutput })
       const hasContent = finalTranscript.some(t => t && typeof t.text === 'string' && t.text.trim())
       if (hasContent) {
+        summaryPostedRef.current = true
         fetch('/api/dashboard/voice-summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -426,6 +433,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     inputAccRef.current = ''
     outputAccRef.current = ''
     sessionIdRef.current = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    summaryPostedRef.current = false
     updateStatus('connecting')
 
     try {
