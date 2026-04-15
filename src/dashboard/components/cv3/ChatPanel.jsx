@@ -921,7 +921,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
             ...userIdentity,
           }),
         }).then(r => r.json()),
-        fetch('/api/dashboard/v2-gemini-chat', {
+        fetch('/api/dashboard/haiku-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1042,7 +1042,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
         }).then(r => r.json()),
-        fetch('/api/dashboard/v2-gemini-chat', {
+        fetch('/api/dashboard/haiku-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: text, agent: selectedAgent.slug, client_id: worldId, history, project_id: selectedProject?.id || null, ...userIdentity }),
@@ -1339,7 +1339,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: projectClientId, ...userIdentity }),
         }).then(r => r.json()),
-        fetch('/api/dashboard/v2-gemini-chat', {
+        fetch('/api/dashboard/haiku-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

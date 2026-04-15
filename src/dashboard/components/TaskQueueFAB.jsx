@@ -47,17 +47,6 @@ async function taskUpdate(taskId, fields) {
   return resp.json()
 }
 
-async function startRunner() {
-  const clientId = getClientId()
-  const resp = await fetch(`${API_BASE}/api/dashboard/v2-gemini-chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: '__start_runner__', client_id: clientId, agent: 'system' }),
-  })
-  // Alternatively, write event directly to Supabase if we have the client
-  return resp.ok
-}
-
 function StatusPill({ status }) {
   const cfg = STATUS_COLORS[status] || STATUS_COLORS.queued
   const isActive = ['building', 'qa', 'planning', 'classifying'].includes(status)
@@ -208,7 +197,6 @@ export default function TaskQueueFAB({ isNightMode }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
-  const [runnerMsg, setRunnerMsg] = useState(null)
   const panelRef = useRef(null)
   const intervalRef = useRef(null)
 
@@ -263,20 +251,6 @@ export default function TaskQueueFAB({ isNightMode }) {
       load()
     } catch (err) {
       console.error('[TaskQueueFAB] action failed:', err)
-    }
-  }, [load])
-
-  const handleStartRunner = useCallback(async () => {
-    setRunnerMsg('Starting...')
-    try {
-      await startRunner()
-      setRunnerMsg('Runner started')
-      setTimeout(() => setRunnerMsg(null), 3000)
-      // Refresh after a beat
-      setTimeout(load, 2000)
-    } catch {
-      setRunnerMsg('Failed to start')
-      setTimeout(() => setRunnerMsg(null), 3000)
     }
   }, [load])
 
@@ -392,21 +366,6 @@ export default function TaskQueueFAB({ isNightMode }) {
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button
-                onClick={handleStartRunner}
-                style={{
-                  padding: '4px 10px', borderRadius: 6,
-                  background: 'rgba(34,197,94,0.12)',
-                  border: '1px solid rgba(34,197,94,0.25)',
-                  color: 'rgba(34,197,94,0.9)',
-                  fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                  transition: 'background 100ms',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.22)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(34,197,94,0.12)'}
-              >
-                Start Runner
-              </button>
-              <button
                 onClick={() => setOpen(false)}
                 style={{
                   width: 28, height: 28, borderRadius: 6,
@@ -421,18 +380,6 @@ export default function TaskQueueFAB({ isNightMode }) {
               </button>
             </div>
           </div>
-
-          {/* Runner message */}
-          {runnerMsg && (
-            <div style={{
-              padding: '6px 16px',
-              background: 'rgba(34,197,94,0.08)',
-              borderBottom: '1px solid rgba(34,197,94,0.1)',
-              fontSize: 12, color: 'rgba(34,197,94,0.8)',
-            }}>
-              {runnerMsg}
-            </div>
-          )}
 
           {/* Task list */}
           <div style={{

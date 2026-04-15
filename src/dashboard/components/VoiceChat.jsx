@@ -22,11 +22,10 @@
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 
 // Terminal rooms: live Claude Code sessions attached via tmux relay.
-// Text in these rooms bypasses Gemini entirely (handled in v2-gemini-chat.js).
-// Voice calls DO run Gemini Live, but the transcript is consolidated into one
-// summary+transcript message at call-end and piped to the terminal via
-// /api/dashboard/voice-summary instead of streaming chunks. Keep this set in
-// sync with the same set in v2-gemini-chat.js and api/dashboard/voice-summary.js.
+// Text in these rooms bypasses the dashboard chat API entirely (handled by the
+// tmux relay). Voice calls DO run Gemini Live, but the transcript is summarized
+// at call-end via /api/dashboard/voice-summary (Claude Haiku) and piped to the
+// terminal as one consolidated message.
 const TERMINAL_AGENTS = new Set(['elon', 'studio'])
 
 // Target sample rate for Gemini Live input
@@ -693,18 +692,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                   if (!projSlug) {
                     result = { error: 'update_context only works in project chats' }
                   } else {
-                    const resp = await fetch('/api/dashboard/v2-gemini-chat', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        message: `__tool_call__update_context`,
-                        agent: `project:${projSlug}`,
-                        project_slug: projSlug,
-                        client_id: clientId,
-                        tool_call: { name: 'update_context', args: { ...args, project_slug: projSlug } },
-                      }),
-                    })
-                    // Simpler: call RAG server directly
                     const ragResp = await fetch(`${window.location.protocol}//${window.location.host}/api/dashboard/voice-context-update`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },

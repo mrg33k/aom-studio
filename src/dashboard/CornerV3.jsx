@@ -325,18 +325,16 @@ export default function CornerV3() {
             ...parentUserIdentity,
           }),
         }).then(r => r.json()),
-        fetch('/api/dashboard/v2-gemini-chat', {
+        fetch('/api/dashboard/haiku-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: text,
-            agent: target.slug,
             client_id: worldId,
             history: [],
-            project_id: selectedProject?.id || null,
             ...parentUserIdentity,
           }),
-        }).then(r => r.json()),
+        }).then(r => r.text()).catch(() => null),
       ])
     } catch (e) {
       // silent fail -- message already persisted optimistically by ChatPanel

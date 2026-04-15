@@ -32,7 +32,7 @@ class SSEConnection {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
     try {
-      const res = await fetch('/api/dashboard/v2-gemini-chat', {
+      const res = await fetch('/api/dashboard/haiku-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

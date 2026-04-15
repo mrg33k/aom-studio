@@ -1,38 +1,37 @@
-// rexTaskClient.js -- Client-side utility for creating tasks via the Rex AI agent.
+// rexTaskClient.js -- Client-side utility for creating tasks via the Haiku front desk.
 //
-// Sends a natural language message to the v2-gemini-chat endpoint so Rex can
-// interpret the request, invoke the create_task function call, and queue work
-// for the build pipeline.
+// Sends a natural language message to /api/dashboard/haiku-chat. Haiku decides
+// whether to call write_task and what repo to target. We parse the SSE stream
+// for the first write_task tool_result and return its task id.
 //
 // Usage:
 //   import { createTaskWithRex } from './rexTaskClient.js'
 //   const result = await createTaskWithRex('Build a dark mode toggle', userId, userName)
 
-const GEMINI_CHAT_ENDPOINT = '/api/dashboard/v2-gemini-chat'
+const HAIKU_CHAT_ENDPOINT = '/api/dashboard/haiku-chat'
 
 /**
- * Send a natural language task request to Rex.
+ * Send a natural language task request to the Haiku front desk.
  *
  * @param {string} text     - Natural language description of the task to create.
- * @param {string} userId   - Authenticated user's UUID (passed to API for identity).
- * @param {string} userName - Authenticated user's display name.
- * @returns {Promise<{ reply: string, task: object|null, functionCalls: Array }>}
- *   reply        -- Rex's text response
- *   task         -- the created task object if Rex called create_task, else null
- *   functionCalls -- raw function call array from the API response
- * @throws {Error} if the network request fails or the API returns an error.
+ * @param {string} userId   - Authenticated user's UUID (forwarded as user_id).
+ * @param {string} userName - Authenticated user's display name (forwarded as user_name).
+ * @returns {Promise<{ reply: string, task: object|null, toolCalls: Array }>}
+ *   reply      -- Haiku's text response (concatenated deltas)
+ *   task       -- the created task summary if write_task ran, else null
+ *   toolCalls  -- all tool_call events observed on the stream
+ * @throws {Error} if the network request fails or the stream reports an error.
  */
 export async function createTaskWithRex(text, userId, userName) {
   if (!text || typeof text !== 'string' || !text.trim()) {
     throw new Error('text is required')
   }
 
-  const res = await fetch(GEMINI_CHAT_ENDPOINT, {
+  const res = await fetch(HAIKU_CHAT_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message: text,
-      agent: 'rex',
       client_id: 'aom',
       user_id: userId || null,
       user_name: userName || null,
@@ -40,25 +39,50 @@ export async function createTaskWithRex(text, userId, userName) {
   })
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Request failed with status ${res.status}`)
+    const body = await res.text().catch(() => '')
+    throw new Error(body || `Request failed with status ${res.status}`)
   }
 
-  const data = await res.json()
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let reply = ''
+  let task = null
+  const toolCalls = []
+  let streamError = null
 
-  if (data.error) {
-    throw new Error(data.error)
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      let evt
+      try {
+        evt = JSON.parse(line.slice(6))
+      } catch {
+        continue
+      }
+      if (evt.type === 'text' && typeof evt.text === 'string') {
+        reply += evt.text
+      } else if (evt.type === 'tool_call') {
+        toolCalls.push({ name: evt.name, args: evt.args })
+      } else if (evt.type === 'tool_result' && evt.name === 'write_task' && evt.result?.success && !task) {
+        task = {
+          id: evt.result.task_id,
+          status: evt.result.status,
+          repo: evt.result.repo,
+          title: evt.result.title,
+        }
+      } else if (evt.type === 'error') {
+        streamError = evt.error || 'stream error'
+      }
+    }
   }
 
-  // Extract the task object from the create_task function call result if present.
-  // The API returns functionCalls as an array of { name, args } objects.
-  const functionCalls = Array.isArray(data.functionCalls) ? data.functionCalls : []
-  const createTaskCall = functionCalls.find(fc => fc.name === 'create_task')
-  const task = createTaskCall ? (createTaskCall.result || createTaskCall.args || null) : null
+  if (streamError) throw new Error(streamError)
 
-  return {
-    reply: data.reply || '',
-    task,
-    functionCalls,
-  }
+  return { reply, task, toolCalls }
 }
