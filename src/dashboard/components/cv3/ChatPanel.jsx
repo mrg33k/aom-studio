@@ -753,15 +753,20 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   }, [selectedAgent, worldId])
 
   // Load project messages when a project is selected
+  // R6: filter on the project column instead of the legacy
+  // agent='project:<slug>' pseudo-agent convention. Historical rows with
+  // the old shape are still picked up via a second OR filter so pre-R6
+  // conversations don't disappear.
   useEffect(() => {
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
     setLoadingMsgs(true)
     setMessages([])
+    const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
     supabase
       .from('messages')
       .select('*')
-      .eq('client_id', selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId)
-      .eq('agent', `project:${selectedProject.slug}`)
+      .eq('client_id', projCid)
+      .or(`project.eq.${selectedProject.slug},agent.eq.project:${selectedProject.slug}`)
       .order('timestamp', { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
@@ -781,7 +786,12 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
         (payload) => {
           const msg = payload.new
-          if (msg.agent === `project:${selectedProject.slug}`) {
+          // R6: match either new shape (project column set) or legacy shape
+          // (agent='project:<slug>') so mid-migration history keeps flowing.
+          const isForThisProject =
+            msg.project === selectedProject.slug ||
+            msg.agent === `project:${selectedProject.slug}`
+          if (isForThisProject) {
             setMessages(prev => {
               if (prev.some(m => m.id === msg.id)) return prev
               // Replace temp optimistic message with real DB row
@@ -1211,7 +1221,13 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
   const sendProjectText = useCallback(async (rawText) => {
     if (!rawText?.trim() || !selectedProject || !worldId) return
     const trimmed = rawText.trim()
-    const agentKey = `project:${selectedProject.slug}`
+    // R6: the project chat pseudo-agent ('project:<slug>') is dead. Project
+    // messages now go out as agent='elon' with project=<slug> so Elon's
+    // tmux listener routes them and his queue-task.py can auto-pick the
+    // right repo. agentKey is still used for the temp optimistic message so
+    // the fetch/subscribe filters below can find it during the swap.
+    const agentKey = 'elon'
+    const projectSlug = selectedProject.slug
     // R3: idempotency — block overlapping sends and same-text double-submit
     const attSnapshot = pendingAttachmentsRef.current
     const sig = `${agentKey}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
@@ -1247,65 +1263,27 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text }] }
     })
 
+    // R6: no more haiku-chat. The user message persists with the project
+    // tag and agent='elon'; the listener routes it into Elon's tmux inbox
+    // with a [project:<slug>] prefix so he knows the scope. Elon's reply
+    // arrives via the cv3-project realtime subscription below.
     try {
-      // Run in parallel: persist user message + get AI response
-      const [saveResult, geminiResult] = await Promise.allSettled([
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: agentKey, text, role: 'user', source: 'corner-dashboard', client_id: projectClientId, ...userIdentity }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/haiku-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            project_slug: selectedProject.slug,
-            project_id: selectedProject.id || null,
-            client_id: projectClientId,
-            history,
-            ...userIdentity,
-          }),
-        }).then(r => r.json()),
-      ])
-
-      // Replace temp user msg with real DB id
-      if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
-        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.value.message } : m))
-      }
-
-      // Append AI response
-      if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
-        const reply = geminiResult.value.reply
-        const replyTime = new Date().toISOString()
-        const tempAgentId = `temp-proj-reply-${Date.now()}`
-        setMessages(prev => [...prev, {
-          id: tempAgentId,
-          role: 'agent',
+      const saveResult = await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           agent: agentKey,
-          text: reply,
-          timestamp: replyTime,
-          source: 'gemini',
-        }])
-        // Persist AI response
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent: agentKey,
-            text: reply,
-            role: 'agent',
-            source: 'gemini',
-            client_id: projectClientId,
-          }),
-        })
-          .then(r => r.json())
-          .then(data => {
-            if (data?.message?.id) {
-              setMessages(prev => prev.map(m => m.id === tempAgentId ? { ...data.message } : m))
-            }
-          })
-          .catch(() => {})
+          text,
+          role: 'user',
+          source: 'corner-dashboard',
+          project: projectSlug,
+          project_path: selectedProject.repo_path || '',
+          client_id: projectClientId,
+          ...userIdentity,
+        }),
+      }).then(r => r.json()).catch(() => null)
+      if (saveResult?.message?.id) {
+        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.message } : m))
       }
     } catch (err) {
       console.error('[ChatPanel] project send error:', err)
