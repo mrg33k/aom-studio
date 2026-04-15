@@ -1,7 +1,10 @@
-// ConversationsView -- home: Elon focus + Agents/Projects sections
-// Redesigned to put Elon front and center with dedicated Agents and Projects sections below.
+// ConversationsView -- home: greeting + real-time search + Elon focus
+// R4 (Apr 15): added top-level search bar. Below 2 chars -> normal home.
+// At >= 2 chars -> grouped filtered results (Messages, Tasks, Agents, Projects).
+import { useState, useEffect, useRef } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 import { formatChatTime, getStatusColor } from './shared.jsx'
+import { supabase } from '../../lib/supabase.js'
 
 export default function ConversationsView(ctx) {
   const {
@@ -13,6 +16,65 @@ export default function ConversationsView(ctx) {
     isVoiceActive, voiceMinimized, voiceMinimizedAgent,
     setVoiceMinimized,
   } = ctx
+
+  // ── R4: real-time home search ───────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [msgHits, setMsgHits] = useState([])
+  const [taskHits, setTaskHits] = useState([])
+  const [searching, setSearching] = useState(false)
+  const searchSeq = useRef(0) // cancel out-of-order fetches
+
+  const q = searchQuery.trim()
+  const showSearch = q.length >= 2
+
+  useEffect(() => {
+    if (!showSearch) {
+      setMsgHits([]); setTaskHits([]); setSearching(false)
+      return
+    }
+    const mySeq = ++searchSeq.current
+    setSearching(true)
+    const ilikeQ = `%${q.replace(/%/g, '')}%`
+    const handle = window.setTimeout(async () => {
+      try {
+        const [msgRes, taskRes] = await Promise.all([
+          supabase
+            .from('messages')
+            .select('id,text,role,source,agent,project,timestamp')
+            .ilike('text', ilikeQ)
+            .order('timestamp', { ascending: false })
+            .limit(8),
+          supabase
+            .from('tasks')
+            .select('id,title,text,status,project,created_at')
+            .or(`title.ilike.${ilikeQ},text.ilike.${ilikeQ}`)
+            .order('created_at', { ascending: false })
+            .limit(8),
+        ])
+        if (mySeq !== searchSeq.current) return
+        setMsgHits(msgRes?.data || [])
+        setTaskHits(taskRes?.data || [])
+      } catch {
+        if (mySeq !== searchSeq.current) return
+        setMsgHits([]); setTaskHits([])
+      } finally {
+        if (mySeq === searchSeq.current) setSearching(false)
+      }
+    }, 220)
+    return () => window.clearTimeout(handle)
+  }, [q, showSearch])
+
+  // Agents + projects are already in-memory, filter client-side (instant)
+  const qLower = q.toLowerCase()
+  const agentHits = !showSearch ? [] : (agents || []).filter(a =>
+    (a.name || '').toLowerCase().includes(qLower) ||
+    (a.slug || '').toLowerCase().includes(qLower)
+  )
+  const projectHits = !showSearch ? [] : (projects || []).filter(p =>
+    (p.name || '').toLowerCase().includes(qLower) ||
+    (p.slug || '').toLowerCase().includes(qLower)
+  )
 
   const elonAgent = agents?.find(a => a.slug === 'elon')
   const elonLastMsg = elonAgent ? unreadMap[elonAgent.slug] : null
@@ -71,7 +133,7 @@ export default function ConversationsView(ctx) {
       )}
 
       {/* Greeting hero */}
-      <div style={{ paddingBottom: 20 }}>
+      <div style={{ paddingBottom: 16 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
           fontSize: 12, fontWeight: 500, color: C.muted, marginBottom: 6,
@@ -95,6 +157,312 @@ export default function ConversationsView(ctx) {
           {GREETINGS[greetingIdx](displayName)}
         </h1>
       </div>
+
+      {/* R4: Home search bar. Below 2 chars shows default home; at >=2 chars
+          replaces the sections below with grouped filtered results. */}
+      <div style={{ marginBottom: 22 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: C.s1,
+          border: '1px solid ' + (searchFocused
+            ? 'rgba(16,185,129,0.25)'
+            : showSearch ? 'rgba(96,165,250,0.25)' : C.border),
+          borderRadius: 14,
+          padding: '12px 16px',
+          transition: 'border-color 0.2s',
+        }}>
+          <svg width={17} height={17} viewBox="0 0 24 24" fill="none"
+            stroke={C.dim} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+            style={{ flexShrink: 0 }}>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search messages, tasks, agents, projects…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: C.text,
+              fontSize: 14,
+              fontFamily: "'Inter', sans-serif",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
+                fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0,
+              }}
+            >×</button>
+          )}
+        </div>
+        {showSearch && (
+          <div style={{
+            fontSize: 10, fontWeight: 600, color: C.dim,
+            marginTop: 8, fontFamily: "'JetBrains Mono', monospace",
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+          }}>
+            {searching ? 'searching…' : `${msgHits.length + taskHits.length + agentHits.length + projectHits.length} results`}
+          </div>
+        )}
+      </div>
+
+      {/* R4: grouped search results -- shown only when query >= 2 chars.
+          Default home (Elon hero + Agents + Projects) is hidden below. */}
+      {showSearch && (
+        <div>
+          {/* Agents */}
+          {agentHits.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: C.muted,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                marginBottom: 8, display: 'flex', gap: 6,
+              }}>
+                <span>Agents</span>
+                <span style={{
+                  fontSize: 10, color: C.muted,
+                  background: 'rgba(255,255,255,0.06)', borderRadius: 8,
+                  padding: '1px 6px',
+                }}>{agentHits.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {agentHits.slice(0, 6).map(a => (
+                  <button
+                    key={`srch-a-${a.slug}`}
+                    onClick={() => { setSearchQuery(''); setSelectedAgent(a); onSelectAgent?.(a) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      width: '100%', padding: '9px 12px',
+                      borderRadius: 10, background: C.s1,
+                      border: `1px solid ${C.border}`, cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <div style={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      background: a.color || C.accent,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, fontSize: 11, color: '#000',
+                    }}>{(a.name || '?')[0].toUpperCase()}</div>
+                    <span style={{
+                      fontSize: 13, fontWeight: 600, color: C.text,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{a.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Projects */}
+          {projectHits.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: C.muted,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                marginBottom: 8, display: 'flex', gap: 6,
+              }}>
+                <span>Projects</span>
+                <span style={{
+                  fontSize: 10, color: C.muted,
+                  background: 'rgba(255,255,255,0.06)', borderRadius: 8,
+                  padding: '1px 6px',
+                }}>{projectHits.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {projectHits.slice(0, 6).map(p => {
+                  const pColor = p.color || '#6B8AB0'
+                  return (
+                    <button
+                      key={`srch-p-${p.id || p.slug}`}
+                      onClick={() => {
+                        setSearchQuery('')
+                        setInlineProject(p)
+                        setMessages([])
+                        setSelectedAgent(null)
+                        onSelectProject?.(p)
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        width: '100%', padding: '9px 12px',
+                        borderRadius: 10, background: C.s1,
+                        border: `1px solid ${C.border}`, cursor: 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      <div style={{
+                        width: 26, height: 26, borderRadius: 7, flexShrink: 0,
+                        background: `linear-gradient(135deg, ${pColor}44, ${pColor}22)`,
+                        border: `1px solid ${pColor}33`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <div style={{ width: 9, height: 9, borderRadius: 2, background: pColor }} />
+                      </div>
+                      <span style={{
+                        fontSize: 13, fontWeight: 600, color: C.text,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{p.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Tasks */}
+          {taskHits.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: C.muted,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                marginBottom: 8, display: 'flex', gap: 6,
+              }}>
+                <span>Tasks</span>
+                <span style={{
+                  fontSize: 10, color: C.muted,
+                  background: 'rgba(255,255,255,0.06)', borderRadius: 8,
+                  padding: '1px 6px',
+                }}>{taskHits.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {taskHits.map(t => (
+                  <div
+                    key={`srch-t-${t.id}`}
+                    style={{
+                      padding: '9px 12px', borderRadius: 10,
+                      background: C.s1, border: `1px solid ${C.border}`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700,
+                        color: C.muted, fontFamily: "'JetBrains Mono', monospace",
+                        textTransform: 'uppercase',
+                        padding: '1px 6px', borderRadius: 6,
+                        background: 'rgba(255,255,255,0.04)',
+                        flexShrink: 0,
+                      }}>{t.status || '?'}</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 600, color: C.text,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        flex: 1, minWidth: 0,
+                      }}>{t.title || t.text || '(untitled)'}</span>
+                      {t.project && (
+                        <span style={{
+                          fontSize: 9, color: C.dim,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          flexShrink: 0,
+                        }}>{t.project}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          {msgHits.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: C.muted,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                marginBottom: 8, display: 'flex', gap: 6,
+              }}>
+                <span>Messages</span>
+                <span style={{
+                  fontSize: 10, color: C.muted,
+                  background: 'rgba(255,255,255,0.06)', borderRadius: 8,
+                  padding: '1px 6px',
+                }}>{msgHits.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {msgHits.map(m => {
+                  const scopeLabel = m.project ? `#${m.project}` : (m.agent ? `@${m.agent}` : '')
+                  return (
+                    <button
+                      key={`srch-m-${m.id}`}
+                      onClick={() => {
+                        setSearchQuery('')
+                        // Jump to the conversation scope this message belongs to
+                        if (m.project) {
+                          const proj = (projects || []).find(p => p.slug === m.project)
+                          if (proj) {
+                            setInlineProject(proj)
+                            setMessages([])
+                            setSelectedAgent(null)
+                            onSelectProject?.(proj)
+                          }
+                        } else if (m.agent) {
+                          const agent = (agents || []).find(a => a.slug === m.agent)
+                          if (agent) {
+                            setSelectedAgent(agent)
+                            onSelectAgent?.(agent)
+                          }
+                        }
+                      }}
+                      style={{
+                        padding: '9px 12px', borderRadius: 10,
+                        background: C.s1, border: `1px solid ${C.border}`,
+                        cursor: 'pointer', textAlign: 'left', width: '100%',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <span style={{
+                          fontSize: 9, fontWeight: 700,
+                          color: m.role === 'user' ? '#60A5FA' : C.accent,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          textTransform: 'uppercase',
+                        }}>{m.role}</span>
+                        {scopeLabel && (
+                          <span style={{
+                            fontSize: 9, color: C.dim,
+                            fontFamily: "'JetBrains Mono', monospace",
+                          }}>{scopeLabel}</span>
+                        )}
+                        <span style={{
+                          fontSize: 9, color: C.dim,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          marginLeft: 'auto',
+                        }}>
+                          {m.timestamp ? formatChatTime(m.timestamp) : ''}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: 12, color: C.text2,
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      }}>
+                        {(m.text || '').trim()}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!searching && msgHits.length + taskHits.length + agentHits.length + projectHits.length === 0 && (
+            <div style={{
+              fontSize: 13, color: C.muted, textAlign: 'center',
+              padding: '40px 0',
+            }}>
+              No matches for "{q}".
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Default home (hidden during search) ────────────────── */}
+      {!showSearch && (
+      <>
 
       {/* ── ELON HERO CARD ──────────────────────────────────────── */}
       {elonAgent && (
@@ -425,6 +793,9 @@ export default function ConversationsView(ctx) {
           </div>
         )}
       </div>
+
+      </>
+      )}
     </div>
   )
 }
