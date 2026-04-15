@@ -906,85 +906,24 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text }] }
     })
 
+    // R5: retire inline Haiku reply path. Persist the user message via
+    // supabase-messages; the listener routes to Elon's tmux inbox and his
+    // response arrives via the cv3-thread realtime subscription above.
     try {
-      // Run in parallel: persist user message + get AI response
-      const [saveResult, geminiResult] = await Promise.allSettled([
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent: selectedAgent.slug,
-            text,
-            role: 'user',
-            source: 'corner-dashboard',
-            client_id: worldId,
-            ...userIdentity,
-          }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/haiku-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            agent: selectedAgent.slug,
-            client_id: worldId,
-            history,
-            ...userIdentity,
-            project_id: selectedProject?.id || null,
-          }),
-        }).then(r => r.json()),
-      ])
-
-      // Replace temp user msg with real DB id -- prevents realtime duplicate
-      if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
-        const realMsg = saveResult.value.message
-        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...realMsg } : m))
-      }
-
-      // Append AI response
-      if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
-        const reply = geminiResult.value.reply
-        const replyTime = new Date().toISOString()
-        const tempAgentId = `temp-agent-${Date.now()}`
-        setMessages(prev => [...prev, {
-          id: tempAgentId,
-          role: 'agent',
+      const saveResult = await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           agent: selectedAgent.slug,
-          text: reply,
-          timestamp: replyTime,
-          source: 'gemini',
-        }])
-        // Update preview with AI reply so agent list is current
-        const replyPreview = (reply.length > 80 ? reply.slice(0, 80) + '...' : reply)
-        setAgentPreviews(prev => ({
-          ...prev,
-          [selectedAgent.slug]: {
-            agent: selectedAgent.slug,
-            text: replyPreview,
-            timestamp: replyTime,
-            id: tempAgentId,
-            isUnread: false,
-          },
-        }))
-        // Persist AI response; swap temp id for real one when saved
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent: selectedAgent.slug,
-            text: reply,
-            role: 'agent',
-            source: 'gemini',
-            client_id: worldId,
-          }),
-        })
-          .then(r => r.json())
-          .then(data => {
-            if (data?.message?.id) {
-              setMessages(prev => prev.map(m => m.id === tempAgentId ? { ...data.message } : m))
-            }
-          })
-          .catch(() => {})
+          text,
+          role: 'user',
+          source: 'corner-dashboard',
+          client_id: worldId,
+          ...userIdentity,
+        }),
+      }).then(r => r.json()).catch(() => null)
+      if (saveResult?.message?.id) {
+        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.message } : m))
       }
     } catch (err) {
       console.error('[ChatPanel] send error:', err)
@@ -1031,42 +970,19 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
       ...prev,
       [selectedAgent.slug]: { agent: selectedAgent.slug, text: previewText, timestamp: now, id: tempUserId, isUnread: false },
     }))
-    const history = messagesRef.current.slice(-20).map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text || '' }],
-    }))
+    // R5: no more parallel haiku-chat fetch. The user message is persisted
+    // via supabase-messages, which the listener picks up and routes into
+    // Elon's tmux inbox. Elon responds naturally; his Stop hook writes the
+    // reply to Supabase and the Realtime subscription (cv3-thread-*) pulls
+    // it into the thread. Haiku is no longer the chat operator.
     try {
-      const [saveResult, geminiResult] = await Promise.allSettled([
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/haiku-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, agent: selectedAgent.slug, client_id: worldId, history, project_id: selectedProject?.id || null, ...userIdentity }),
-        }).then(r => r.json()),
-      ])
-      if (saveResult.status === 'fulfilled' && saveResult.value?.message?.id) {
-        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.value.message } : m))
-      }
-      if (geminiResult.status === 'fulfilled' && geminiResult.value?.reply) {
-        const reply = geminiResult.value.reply
-        const replyTime = new Date().toISOString()
-        const tempAgentId = `temp-agent-${Date.now()}`
-        setMessages(prev => [...prev, { id: tempAgentId, role: 'agent', agent: selectedAgent.slug, text: reply, timestamp: replyTime, source: 'gemini' }])
-        setAgentPreviews(prev => ({
-          ...prev,
-          [selectedAgent.slug]: { agent: selectedAgent.slug, text: reply.length > 80 ? reply.slice(0, 80) + '...' : reply, timestamp: replyTime, id: tempAgentId, isUnread: false },
-        }))
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: selectedAgent.slug, text: reply, role: 'agent', source: 'gemini', client_id: worldId }),
-        }).then(r => r.json()).then(data => {
-          if (data?.message?.id) setMessages(prev => prev.map(m => m.id === tempAgentId ? { ...data.message } : m))
-        }).catch(() => {})
+      const saveResult = await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
+      }).then(r => r.json()).catch(() => null)
+      if (saveResult?.message?.id) {
+        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.message } : m))
       }
     } catch (err) {
       console.error('[ChatPanel] agent send error:', err)

@@ -311,31 +311,22 @@ export default function CornerV3() {
     setInputBarText('')
     setInputBarSending(true)
 
+    // R5: dropped the parallel haiku-chat fetch. User message persists via
+    // supabase-messages, listener routes to Elon's tmux, his reply arrives
+    // via the cv3-thread realtime subscription in ChatPanel.
     try {
-      await Promise.allSettled([
-        fetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent: target.slug,
-            text,
-            role: 'user',
-            source: 'corner-dashboard',
-            client_id: worldId,
-            ...parentUserIdentity,
-          }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/haiku-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            client_id: worldId,
-            history: [],
-            ...parentUserIdentity,
-          }),
-        }).then(r => r.text()).catch(() => null),
-      ])
+      await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: target.slug,
+          text,
+          role: 'user',
+          source: 'corner-dashboard',
+          client_id: worldId,
+          ...parentUserIdentity,
+        }),
+      }).catch(() => null)
     } catch (e) {
       // silent fail -- message already persisted optimistically by ChatPanel
     } finally {

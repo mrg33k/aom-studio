@@ -1,88 +1,97 @@
-// rexTaskClient.js -- Client-side utility for creating tasks via the Haiku front desk.
+// rexTaskClient.js -- Direct task insert (post-Haiku R5 rewire)
 //
-// Sends a natural language message to /api/dashboard/haiku-chat. Haiku decides
-// whether to call write_task and what repo to target. We parse the SSE stream
-// for the first write_task tool_result and return its task id.
+// BEFORE: sent the text to /api/dashboard/haiku-chat which interpreted it,
+//   picked a repo, and called write_task. Unreliable because Haiku couldn't
+//   understand task references in context.
+// AFTER: inserts a row directly into the Supabase `tasks` table with a
+//   minimal payload. Project + repo are resolved from an optional slug the
+//   caller passes (TasksPanel already knows the selected project pill).
 //
-// Usage:
-//   import { createTaskWithRex } from './rexTaskClient.js'
-//   const result = await createTaskWithRex('Build a dark mode toggle', userId, userName)
+// Elon-side tasks are created by scripts/queue-task.py in AOM-EA; this
+// function is the browser-side equivalent so the dashboard's task creator
+// doesn't need a router.
 
-const HAIKU_CHAT_ENDPOINT = '/api/dashboard/haiku-chat'
+import { supabase } from './supabase.js'
+
+function cleanTitle(raw) {
+  const s = (raw || '').trim().replace(/\s+/g, ' ')
+  if (!s) return 'Untitled task'
+  return s.length > 140 ? s.slice(0, 137) + '…' : s
+}
 
 /**
- * Send a natural language task request to the Haiku front desk.
+ * Create a task directly. Used by TasksPanel's task creation UI.
  *
- * @param {string} text     - Natural language description of the task to create.
- * @param {string} userId   - Authenticated user's UUID (forwarded as user_id).
- * @param {string} userName - Authenticated user's display name (forwarded as user_name).
+ * @param {string} text         - Natural language task description (used as title + text body).
+ * @param {string} [userId]     - Forwarded as created_by.
+ * @param {string} [userName]   - Ignored for now; kept in the signature for call-site compat.
+ * @param {object} [options]
+ * @param {string} [options.projectSlug] - Project slug to attach (e.g. 'corner', 'ambition').
+ *                                          When set, project_path is filled from the projects table.
+ * @param {string} [options.clientId]    - Supabase client_id, defaults to 'aom'.
  * @returns {Promise<{ reply: string, task: object|null, toolCalls: Array }>}
- *   reply      -- Haiku's text response (concatenated deltas)
- *   task       -- the created task summary if write_task ran, else null
- *   toolCalls  -- all tool_call events observed on the stream
- * @throws {Error} if the network request fails or the stream reports an error.
+ *   reply     -- short confirmation string ("Task queued: <title>")
+ *   task      -- the created task row summary
+ *   toolCalls -- always [] (kept for compat with TasksPanel's old return shape)
+ * @throws {Error} if the insert fails.
  */
-export async function createTaskWithRex(text, userId, userName) {
+export async function createTaskWithRex(text, userId, userName, options = {}) {
   if (!text || typeof text !== 'string' || !text.trim()) {
     throw new Error('text is required')
   }
 
-  const res = await fetch(HAIKU_CHAT_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: text,
-      client_id: 'aom',
-      user_id: userId || null,
-      user_name: userName || null,
-    }),
-  })
+  const title = cleanTitle(text)
+  const clientId = options.clientId || 'aom'
+  const projectSlug = (options.projectSlug || '').trim().toLowerCase() || null
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(body || `Request failed with status ${res.status}`)
+  // Resolve project -> repo_path if a slug was provided. Missing project is
+  // fine; runner will fall back to AOM-EA or whatever metadata.repo says.
+  let repoPath = null
+  if (projectSlug) {
+    const { data: proj } = await supabase
+      .from('projects')
+      .select('slug,repo_path')
+      .eq('slug', projectSlug)
+      .maybeSingle()
+    repoPath = proj?.repo_path || null
   }
 
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let reply = ''
-  let task = null
-  const toolCalls = []
-  let streamError = null
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() || ''
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue
-      let evt
-      try {
-        evt = JSON.parse(line.slice(6))
-      } catch {
-        continue
-      }
-      if (evt.type === 'text' && typeof evt.text === 'string') {
-        reply += evt.text
-      } else if (evt.type === 'tool_call') {
-        toolCalls.push({ name: evt.name, args: evt.args })
-      } else if (evt.type === 'tool_result' && evt.name === 'write_task' && evt.result?.success && !task) {
-        task = {
-          id: evt.result.task_id,
-          status: evt.result.status,
-          repo: evt.result.repo,
-          title: evt.result.title,
-        }
-      } else if (evt.type === 'error') {
-        streamError = evt.error || 'stream error'
-      }
-    }
+  const row = {
+    title,
+    text,
+    description: text,
+    status: 'queued',
+    source: 'corner-dashboard-task',
+    client_id: clientId,
+    created_by: userId || null,
+    project: projectSlug,
+    project_path: repoPath || '',
+    metadata: {
+      repo: projectSlug || null,
+      created_via: 'dashboard-direct-insert',
+    },
   }
 
-  if (streamError) throw new Error(streamError)
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert(row)
+    .select('id,title,status,project')
+    .maybeSingle()
 
-  return { reply, task, toolCalls }
+  if (error) {
+    throw new Error(error.message || 'Failed to create task')
+  }
+
+  const task = data ? {
+    id: data.id,
+    status: data.status,
+    repo: projectSlug || undefined,
+    title: data.title,
+  } : null
+
+  return {
+    reply: task ? `Task queued: ${task.title}` : 'Task queued.',
+    task,
+    toolCalls: [],
+  }
 }

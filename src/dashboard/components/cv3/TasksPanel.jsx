@@ -369,7 +369,13 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
     try {
       const userId   = currentUser?.id || null
       const userName = currentUser?.user_metadata?.full_name || null
-      const result = await createTaskWithRex(text, userId, userName)
+      // R5: pass the active project pill (if any) so the task gets the
+      // right project + repo_path without Haiku guessing.
+      const projectSlug = (activeProject && activeProject !== 'all') ? activeProject : null
+      const result = await createTaskWithRex(text, userId, userName, {
+        projectSlug,
+        clientId: worldId || 'aom',
+      })
       setTaskInput('')
       if (result.task) {
         if (addOptimisticTask) addOptimisticTask(result.task)
