@@ -662,7 +662,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
             return
           }
 
-          // Tool calls from Gemini (create_task, get_task_status)
+          // Tool calls from Gemini. Task creation no longer happens mid-call --
+          // the post-call summary handles that. Only lookup_context and update_context survive.
           if (msg.toolCall) {
             const calls = msg.toolCall.functionCalls || []
             console.log('[VoiceChat] Tool calls:', calls)
@@ -672,39 +673,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
               const args = call.args || {}
               let result = {}
 
-              if (call.name === 'create_task') {
-                addSystemMessage(`Creating task: ${args.title}`)
-                try {
-                  const resp = await fetch('/api/dashboard/v2-task-create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      title: args.title,
-                      description: args.description || args.title,
-                      text: args.title,
-                      agent: args.agent || 'bobby',
-                      complexity: args.complexity || 'medium',
-                      status: 'queued',
-                      client_id: clientId,
-                      source: 'voice',
-                      created_by: 'rex-voice',
-                    }),
-                  })
-                  const data = await resp.json()
-                  if (resp.ok) {
-                    const taskId = data?.id || data?.[0]?.id || 'created'
-                    result = { success: true, task_id: taskId, message: `Task created: ${args.title}` }
-                    addSystemMessage(`Task created for ${args.agent || 'bobby'}: ${args.title}`)
-                    saveTranscript('system', `[Task created] ${args.title} (${args.agent || 'bobby'})`)
-                  } else {
-                    result = { success: false, error: data?.error || 'Failed to create task' }
-                    addSystemMessage(`Failed to create task: ${data?.error || 'unknown error'}`)
-                  }
-                } catch (err) {
-                  result = { success: false, error: err.message }
-                  addSystemMessage(`Task creation error: ${err.message}`)
-                }
-              } else if (call.name === 'lookup_context') {
+              if (call.name === 'lookup_context') {
                 try {
                   const resp = await fetch(`/api/dashboard/voice-context-lookup?q=${encodeURIComponent(args.query || '')}`)
                   const data = await resp.json()
@@ -714,40 +683,6 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                   } else {
                     result = { results: [], message: `Nothing found for "${args.query}"` }
                   }
-                } catch (err) {
-                  result = { error: err.message }
-                }
-              } else if (call.name === 'get_task_status') {
-                try {
-                  const limit = args.limit || 5
-                  const resp = await fetch(`/api/dashboard/v2-task-list?client=${clientId}&limit=${limit}&status=neq.done`)
-                  const tasks = await resp.json()
-                  if (Array.isArray(tasks)) {
-                    result = { tasks: tasks.map(t => ({ title: t.title || t.text, status: t.status, agent: t.agent })) }
-                  } else {
-                    result = { tasks: [] }
-                  }
-                } catch (err) {
-                  result = { error: err.message }
-                }
-              } else if (call.name === 'get_queue') {
-                try {
-                  const resp = await fetch(`/api/dashboard/v2-task-list?client_id=${clientId}&status=queued,classifying,planning,building,qa`)
-                  const data = await resp.json()
-                  const tasks = data?.tasks || []
-                  if (tasks.length > 0) {
-                    addSystemMessage(`${tasks.length} task(s) in queue`)
-                    result = { tasks: tasks.map(t => ({ title: t.title, status: t.status, agent: t.agent_identity })), total: tasks.length }
-                  } else {
-                    result = { tasks: [], total: 0, message: 'Queue is empty' }
-                  }
-                } catch (err) {
-                  result = { error: err.message }
-                }
-              } else if (call.name === 'start_runner') {
-                try {
-                  addSystemMessage('Sending start signal to task runner...')
-                  result = { signaled: true, message: 'Start signal sent. The runner watches the queue and picks up tasks automatically.' }
                 } catch (err) {
                   result = { error: err.message }
                 }

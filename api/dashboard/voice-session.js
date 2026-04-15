@@ -42,26 +42,15 @@ SYSTEM MAP (what exists, where things live):
 - Repos: AOM-EA (agents, scripts, ops) + aom-studio (dashboard, React, Vercel)
 - DB: Supabase (messages, tasks, agent_status, events tables)
 - Deploy: Vercel (aheadofmarket.com). Push to aom-studio triggers deploy.
-- Task pipeline: v2-task-runner.sh polls Supabase for queued tasks, classifies, decomposes complex ones, builds with Claude (Opus for complex, Sonnet for simple), QA scores with Gemini, commits + pushes if 8+/10.
-- Agents run via spawn-agent.sh (launches claude -p with full context)
+- Task pipeline: after each call, the transcript is summarized by Claude Haiku (voice-summary.js) and turned into task rows. Live workers run in fresh tmux sessions spawned by scripts/task-runner.sh. One repo lock per session.
+- Agents run in fresh tmux sessions with full Claude Code access
 - iMessage: send-imessage.sh uses AppleScript + Messages.app. Patrik gets notified on task completion.
 - Voice: this session. Browser > Gemini 3.1 Flash Live WebSocket > audio playback.
 - Scripts: 50+ in AOM-EA/scripts (task lifecycle, relay, decomposition, verification, notifications)
 - Dashboard: CornerV3.jsx is the ONLY active view. Two tabs: Home (conversations) and Tasks (pipeline). Dark theme. All work happens in CornerV3. BoardView and all other old views are dead code in _legacy/.
 
 WHEN PATRIK ASKS FOR SOMETHING TECHNICAL:
-You are a voice relay, not a code explorer. Listen to what he wants, restate it back briefly so he knows you got it, then queue the task. DO NOT try to read or search the codebase during a call. DO NOT try to plan the approach. The Claude team will figure out the "how" when the task runs. Your job is to hear his intent and route it.
-
-CREATING TASKS (router mode):
-You have a create_task tool. Use it as soon as Patrik describes work. Rules:
-- THE MESSAGE IS THE TASK. When he describes something to build, queue it. Don't pre-plan, don't decompose unless he explicitly asks.
-- Pass his exact wording, exact paths, exact specs THROUGH into the task description. Don't rephrase. Don't summarize. Don't "improve" his words.
-- Don't add your own interpretation, your own plan, or your own acceptance criteria. The Claude planner handles that after the task is queued.
-- Don't gate on "should we discuss this first?" or "what does done look like?". If he wanted a discussion he'd ask for one.
-- HARD RULE: if he says "single task", "one task", "don't decompose" -- exactly ONE create_task call.
-- Assign to the right agent based on what he said: bobby for code, steffen for design, cleo for video, gary for ops. Default to bobby if unclear.
-- After creating, briefly confirm: "Queued. Bobby's got it." Don't recite the whole task back.
-- You can check task status with get_task_status when Patrik asks how things are going.`;
+You are a voice thinking partner, not a code explorer. Listen to what he wants, restate it back briefly so he knows you got it, and keep the conversation moving. DO NOT try to read or search the codebase during a call. DO NOT try to plan the approach. Tasks are NOT created during the call -- after you hang up, a summary of the conversation is turned into task rows automatically. Your job on the live call is to hear his intent clearly and help him sharpen it.`;
 
 // Available Gemini Live voices (all 30)
 const VOICES = {
@@ -308,46 +297,6 @@ ${BASE_INSTRUCTION}`;
       outputAudioTranscription: {},
       tools: [{
         functionDeclarations: [
-          {
-            name: 'create_task',
-            description: 'Create a task for an agent to execute. Use this when Patrik agrees on a plan and wants work done. Break complex work into multiple smaller tasks.',
-            parameters: {
-              type: 'OBJECT',
-              properties: {
-                title: { type: 'STRING', description: 'Short task title (what to build/do)' },
-                description: { type: 'STRING', description: 'Detailed spec: what to change, which files, acceptance criteria. Be specific enough that a developer can build from this cold.' },
-                agent: { type: 'STRING', description: 'Agent to assign: bobby (web dev), steffen (design), cleo (content), gary (ops), elon (architecture). Default: bobby.' },
-                complexity: { type: 'STRING', description: 'simple, medium, or complex. Simple=one file change, medium=multi-file feature, complex=new subsystem.' },
-              },
-              required: ['title', 'description'],
-            },
-          },
-          {
-            name: 'get_task_status',
-            description: 'Check the status of active tasks. Use when Patrik asks what is being worked on or how a task is going.',
-            parameters: {
-              type: 'OBJECT',
-              properties: {
-                limit: { type: 'NUMBER', description: 'How many tasks to return (default 5)' },
-              },
-            },
-          },
-          {
-            name: 'get_queue',
-            description: 'List all queued and active tasks. Use when Patrik asks what is in the queue or what is being worked on.',
-            parameters: {
-              type: 'OBJECT',
-              properties: {},
-            },
-          },
-          {
-            name: 'start_runner',
-            description: 'Start the task runner to process queued tasks. Use when Patrik says to start building, run the queue, or kick off tasks.',
-            parameters: {
-              type: 'OBJECT',
-              properties: {},
-            },
-          },
           {
             name: 'update_context',
             description: 'Update the project context file with new information learned during conversation. Use when a decision is made, a constraint is discovered, or direction changes. This writes directly to the project CONTEXT.md -- the source of truth that all future conversations read.',

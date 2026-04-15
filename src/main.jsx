@@ -41,7 +41,6 @@ import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
 import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
-import AI from './pages/AI.jsx'
 import Gemma4Brief from './pages/Gemma4Brief.jsx'
 import Gemma4BriefGemini from './pages/Gemma4BriefGemini.jsx'
 import Gemma4BriefDeepseek from './pages/Gemma4BriefDeepseek.jsx'
@@ -232,7 +231,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/guides/ambition-memorial-tower" element={<GuideAmbitionMemorialTower />} />
           <Route path="/roi-calculator" element={<ROICalculator />} />
           <Route path="/case-study" element={<CaseStudy />} />
-          <Route path="/ai" element={<AI />} />
           <Route path="/ai/gemma-4" element={<Gemma4Brief />} />
           <Route path="/ai/gemma-4/gemini" element={<Gemma4BriefGemini />} />
           <Route path="/ai/gemma-4/deepseek" element={<Gemma4BriefDeepseek />} />
