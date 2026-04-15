@@ -11,6 +11,7 @@ const MAX_LIMIT = 200;
 const SELECT_COLUMNS = [
   'id',
   'title',
+  'text',
   'description',
   'status',
   'complexity',
@@ -27,6 +28,7 @@ const SELECT_COLUMNS = [
   'completed_at',
   'qa_score',
   'token_cost',
+  'metadata',
 ].join(',');
 
 function clampInt(value, fallback, min, max) {
@@ -57,7 +59,6 @@ export default async function handler(req, res) {
   const params = [
     `select=${SELECT_COLUMNS}`,
     `client_id=eq.${encodeURIComponent(clientId)}`,
-    'title=not.is.null',
     'order=priority.desc,sort_order.asc,created_at.asc',
     `limit=${limit}`,
     `offset=${offset}`,

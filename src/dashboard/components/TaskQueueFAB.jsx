@@ -8,13 +8,11 @@ import { getClientId } from '../lib/clientConfig.js'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-const STATUS_ORDER = ['building', 'qa', 'planning', 'classifying', 'queued', 'done', 'failed']
+const STATUS_ORDER = ['running', 'queued', 'needs_input', 'done', 'failed']
 const STATUS_COLORS = {
   queued: { bg: '59,130,246', label: 'Queued' },
-  classifying: { bg: '168,85,247', label: 'Classifying' },
-  planning: { bg: '168,85,247', label: 'Planning' },
-  building: { bg: '245,158,11', label: 'Building' },
-  qa: { bg: '34,197,94', label: 'QA' },
+  running: { bg: '245,158,11', label: 'Running' },
+  needs_input: { bg: '234,179,8', label: 'Needs input' },
   done: { bg: '34,197,94', label: 'Done' },
   failed: { bg: '239,68,68', label: 'Failed' },
 }
@@ -49,7 +47,7 @@ async function taskUpdate(taskId, fields) {
 
 function StatusPill({ status }) {
   const cfg = STATUS_COLORS[status] || STATUS_COLORS.queued
-  const isActive = ['building', 'qa', 'planning', 'classifying'].includes(status)
+  const isActive = status === 'running'
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -72,10 +70,82 @@ function StatusPill({ status }) {
   )
 }
 
+function ResultPreview({ payload }) {
+  if (!payload || !payload.type) return null
+  const boxStyle = {
+    marginTop: 6, padding: '8px 10px', borderRadius: 6,
+    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+    fontSize: 12, color: 'rgba(226,232,240,0.9)',
+  }
+  const summaryStyle = { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 4 }
+  const { type, payload: value, summary } = payload
+
+  if (type === 'link') {
+    return (
+      <div style={boxStyle}>
+        <a href={value} target="_blank" rel="noopener noreferrer" style={{
+          display: 'inline-block', padding: '4px 10px', borderRadius: 5,
+          background: 'rgba(34,197,94,0.22)', color: 'rgba(187,247,208,0.95)',
+          textDecoration: 'none', fontSize: 12, fontWeight: 600,
+        }}>Open link</a>
+        <div style={summaryStyle}>{summary || value}</div>
+      </div>
+    )
+  }
+  if (type === 'image') {
+    return (
+      <div style={boxStyle}>
+        <img src={value} alt={summary || 'result'} style={{
+          maxWidth: '100%', maxHeight: 180, borderRadius: 4,
+          display: 'block',
+        }} />
+        {summary && <div style={summaryStyle}>{summary}</div>}
+      </div>
+    )
+  }
+  if (type === 'video') {
+    return (
+      <div style={boxStyle}>
+        <video src={value} controls style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 4 }} />
+        {summary && <div style={summaryStyle}>{summary}</div>}
+      </div>
+    )
+  }
+  if (type === 'text') {
+    return (
+      <div style={boxStyle}>
+        <pre style={{
+          whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit', fontSize: 12,
+          maxHeight: 140, overflow: 'auto',
+        }}>{value}</pre>
+        {summary && <div style={summaryStyle}>{summary}</div>}
+      </div>
+    )
+  }
+  if (type === 'check_external') {
+    return (
+      <div style={boxStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            width: 22, height: 22, borderRadius: 11,
+            background: 'rgba(245,158,11,0.22)', color: 'rgba(253,230,138,0.9)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 700,
+          }}>!</span>
+          <span style={{ fontSize: 12 }}>{value}</span>
+        </div>
+        {summary && <div style={summaryStyle}>{summary}</div>}
+      </div>
+    )
+  }
+  return null
+}
+
 function TaskRow({ task, onAction, expanded, onToggle }) {
   const cfg = STATUS_COLORS[task.status] || STATUS_COLORS.queued
-  const isActive = ['building', 'qa', 'planning', 'classifying'].includes(task.status)
+  const isActive = task.status === 'running'
   const ago = task.created_at ? timeAgo(task.created_at) : ''
+  const resultPayload = task.metadata?.result_payload || null
 
   return (
     <div style={{
@@ -142,6 +212,10 @@ function TaskRow({ task, onAction, expanded, onToggle }) {
             <div style={{ color: 'rgba(239,68,68,0.8)', marginBottom: 4, fontSize: 11 }}>
               Error: {task.error}
             </div>
+          )}
+
+          {task.status === 'done' && resultPayload && (
+            <ResultPreview payload={resultPayload} />
           )}
 
           <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
@@ -264,7 +338,7 @@ export default function TaskQueueFAB({ isNightMode }) {
   // Remove empty groups
   const sections = STATUS_ORDER.filter(s => grouped[s].length > 0)
 
-  const activeCount = tasks.filter(t => ['queued', 'building', 'qa', 'planning', 'classifying'].includes(t.status)).length
+  const activeCount = tasks.filter(t => ['queued', 'running', 'needs_input'].includes(t.status)).length
   const hasActive = activeCount > 0
 
   const glowColor = isNightMode ? '120,80,255' : '59,130,246'

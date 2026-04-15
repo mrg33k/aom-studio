@@ -616,25 +616,21 @@ export function useDataPipe(parsePunchList) {
   }
 
   // Build agents status map for CanvasOffice room states.
-  // Source of truth: agent_status table only (set by task_runner, gemini, or system).
-  // No events-derived status, no RNB-derived status. What's in the table is reality.
+  // Source of truth: agent_status table only (set by task_runner or system).
   //
-  // WORLD ISOLATION: Non-AOM worlds use ONLY their Supabase agent_status rows.
-  // AOM falls back to hardcoded list for backwards compatibility.
-  // REGISTRY_MIGRATED: was ['rex', 'elon', 'bobby', 'gary', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
-  const AOM_AGENT_SLUGS = supabaseAgents.length > 0
-    ? supabaseAgents.map(a => a.slug)
-    : ['rex', 'elon', 'bobby', 'gary', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel'] // fallback
+  // Post-rewire (Apr 14): AOM only exposes two terminal rooms -- Elon and Studio.
+  // Everything else (bobby, cleo, steffen, etc.) was removed when the pipeline
+  // died and the Haiku front desk took over. The picker reads this array, so
+  // the guaranteed set here prevents a stale Supabase row from leaking a ghost
+  // room back into the UI.
+  const AOM_TERMINAL_SLUGS = ['elon', 'studio']
   const clientId = getClientId()
 
   let agents
   if (clientId === 'aom') {
-    // AOM always uses the full hardcoded agent list. Supabase agent_status
-    // entries overlay status info but never shrink the list. AOM's agent
-    // roster is curated in gridSpec -- Supabase may only have a subset.
     const sbMap = Object.fromEntries(supabaseAgents.map(a => [a.slug, a]))
     const gridMap = Object.fromEntries(GRID_AGENTS.map(a => [a.slug, a]))
-    agents = AOM_AGENT_SLUGS.map(slug => {
+    agents = AOM_TERMINAL_SLUGS.map(slug => {
       const sb = sbMap[slug]
       const grid = gridMap[slug]
       const status = sb?.status ? sb.status.toUpperCase() : 'IDLE'
