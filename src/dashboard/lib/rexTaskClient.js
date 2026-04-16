@@ -69,6 +69,7 @@ export async function createTaskWithRex(text, userId, userName, options = {}) {
     metadata: {
       repo: projectSlug || null,
       created_via: 'dashboard-direct-insert',
+      model: 'sonnet',
     },
   }
 

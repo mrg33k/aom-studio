@@ -667,6 +667,12 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           const doneArr = Array.isArray(payload?.recent_completions) ? payload.recent_completions : []
           const summaryText = (payload?.summary_md || '').trim()
           const reasonsArr  = Array.isArray(payload?.reasons) ? payload.reasons : []
+          // R4: parse "What it is" line from the CONTEXT.md header mirror
+          const headerMd = (payload?.context_header_md || '').trim()
+          const taglineMatch = headerMd.match(/\*\*What it is:\*\*\s*([^\n]+)/i)
+          const tagline = taglineMatch ? taglineMatch[1].trim() : ''
+          // R4: recent activity list from CONTEXT.md's Recent Activity block
+          const activityEntries = Array.isArray(payload?.recent_activity) ? payload.recent_activity : []
           const projectRec  = taskProjects?.find(p => String(p.slug || '').toLowerCase() === activeProject)
                              || projectPills // noop — just to avoid lint issue, real color comes from taskProjects
           const projColor   = (projectRec && !Array.isArray(projectRec) && projectRec.color) || '#6B8AB0'
@@ -686,7 +692,7 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
               }}
             >
               {/* Header row: project name, dot, timestamp */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: tagline ? 4 : 8 }}>
                 <div style={{
                   width: 8, height: 8, borderRadius: '50%',
                   background: summaryJustUpdated ? '#10B981' : projColor,
@@ -709,6 +715,19 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   {summaryEvent ? (summaryJustUpdated ? 'just updated' : `updated ${ageLabel}`) : 'waiting for first event'}
                 </span>
               </div>
+
+              {/* Tagline row: "What it is" from CONTEXT.md header */}
+              {tagline && (
+                <div style={{
+                  fontSize: 11, fontWeight: 500,
+                  color: C.muted,
+                  marginBottom: 10,
+                  paddingLeft: 18,
+                  fontStyle: 'italic',
+                }}>
+                  {tagline}
+                </div>
+              )}
 
               {/* Summary body */}
               {summaryText ? (
@@ -762,6 +781,73 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       {reasonsArr.join(', ')}
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* R4: Recent Activity footer -- last few entries from CONTEXT.md */}
+              {activityEntries.length > 0 && (
+                <div style={{
+                  marginTop: 12,
+                  paddingTop: 10,
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  <div style={{
+                    fontSize: 9, fontWeight: 700, color: C.dim,
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                    marginBottom: 6,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>
+                    Recent activity
+                  </div>
+                  {activityEntries.slice(0, 3).map((entry, i) => {
+                    // Entries look like: "- **2026-04-16 00:00 UTC** `opus` title _(task abc12345)_"
+                    // Strip the leading "- " and wrap the markdown lightly.
+                    const raw = entry.replace(/^-\s*/, '')
+                    const dateMatch = raw.match(/\*\*([^*]+)\*\*/)
+                    const modelMatch = raw.match(/`([^`]+)`/)
+                    const taskMatch = raw.match(/_\(task\s+([a-f0-9]+)\)_/)
+                    const dateStr = dateMatch ? dateMatch[1] : ''
+                    const modelStr = modelMatch ? modelMatch[1] : ''
+                    const taskId = taskMatch ? taskMatch[1] : ''
+                    // Text is everything between model backtick and task marker
+                    let text = raw
+                      .replace(/\*\*[^*]+\*\*\s*/, '')
+                      .replace(/`[^`]+`\s*/, '')
+                      .replace(/\s*_\(task\s+[a-f0-9]+\)_\s*$/, '')
+                      .trim()
+                    return (
+                      <div key={i} style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 8,
+                        marginBottom: 4,
+                        fontSize: 11,
+                        color: C.text2,
+                      }}>
+                        {modelStr && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, color: C.muted,
+                            padding: '1px 5px', borderRadius: 4,
+                            background: 'rgba(255,255,255,0.05)',
+                            fontFamily: "'JetBrains Mono', monospace",
+                            flexShrink: 0,
+                          }}>
+                            {modelStr}
+                          </span>
+                        )}
+                        <span style={{ flex: 1, lineHeight: 1.4 }}>{text}</span>
+                        {taskId && (
+                          <span style={{
+                            fontSize: 9, color: C.dim,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            flexShrink: 0,
+                          }}>
+                            {taskId}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
