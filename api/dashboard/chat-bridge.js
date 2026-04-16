@@ -105,6 +105,8 @@ async function maybeCreateChain(body) {
     }),
   }).catch(() => {})
 
+  // tasks table has no user_id / user_name columns (messages does). Stash the
+  // submitter in metadata so we keep the trail without triggering PGRST204.
   const rows = parts.map((title, i) => ({
     id: crypto.randomUUID(),
     title,
@@ -114,8 +116,6 @@ async function maybeCreateChain(body) {
     source: 'corner-dashboard',
     client_id,
     ...(project ? { project } : {}),
-    ...(body.user_id ? { user_id: body.user_id } : {}),
-    ...(body.user_name ? { user_name: body.user_name } : {}),
     created_at: now,
     metadata: {
       chain_id,
@@ -126,6 +126,8 @@ async function maybeCreateChain(body) {
       created_via: 'chain-operator',
       model: 'sonnet',
       repo,
+      ...(body.user_id ? { user_id: body.user_id } : {}),
+      ...(body.user_name ? { user_name: body.user_name } : {}),
     },
   }))
 
