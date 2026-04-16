@@ -97,8 +97,6 @@ export default async function handler(req, res) {
       user_id, user_name,
       // Attachment fields (optional)
       attachment_url, file_mime_type, file_size,
-      // Response tracking (persistent typing indicator)
-      needs_response,
     } = req.body || {}
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
@@ -128,7 +126,6 @@ export default async function handler(req, res) {
       ...(attachment_url ? { attachment_url } : {}),
       ...(file_mime_type ? { file_mime_type } : {}),
       ...(file_size != null ? { file_size } : {}),
-      ...(needs_response != null ? { needs_response } : {}),
     }
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
