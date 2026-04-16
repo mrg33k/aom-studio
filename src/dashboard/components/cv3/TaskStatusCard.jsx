@@ -216,7 +216,7 @@ export default function TaskStatusCard({
       }}>
         <div style={{
           width: 18, height: 18, borderRadius: 6,
-          background: tint(cfg.color, 0.12),
+          background: tint(cfg.color, 0.08),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 10, fontWeight: 800, color: cfg.color,
         }}>{cfg.icon}</div>
@@ -231,7 +231,6 @@ export default function TaskStatusCard({
       {title && (
         <div style={{
           fontSize: 14, fontWeight: 700, color: C.text,
-          lineHeight: 1.25,
         }}>{title}</div>
       )}
 
