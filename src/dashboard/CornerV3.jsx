@@ -28,9 +28,6 @@ import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
-import { formatRelativeTime } from './timeUtils.js'
-
-const BUILD_TIMESTAMP = new Date().getFullYear().toString() + '-' + (new Date().getMonth() + 1).toString().padStart(2, '0') + '-' + new Date().getDate().toString().padStart(2, '0') + ' ' + new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0')
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -339,8 +336,6 @@ export default function CornerV3() {
   const ROW1_H = 44
   const ROW2_H = 36
   const NAV_H  = ROW1_H + ROW2_H
-  const lastLoginRelativeTime = formatRelativeTime(currentUser?.last_sign_in_at || currentUser?.user?.last_sign_in_at)
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Wait for auth to resolve AND world to be set before rendering
@@ -408,19 +403,8 @@ export default function CornerV3() {
             />
           </div>
 
-          {/* Right: Last login + Bell + Avatar */}
+          {/* Right: Bell + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {!!lastLoginRelativeTime && (
-              <span style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: C.dim,
-                fontFamily: "'JetBrains Mono', monospace",
-                whiteSpace: 'nowrap',
-              }}>
-                Last login: <b style={{ color: C.text2 }}>{lastLoginRelativeTime}</b>
-              </span>
-            )}
             <BellIcon hasNew={unreadChat > 0} />
             <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
           </div>
@@ -470,9 +454,6 @@ export default function CornerV3() {
             </span>
           </div>
         </div>
-
-        {/* Date label */}
-        <div style={{ fontSize: 11, color: '#888', marginTop: 2, paddingLeft: 16 }}>04/12/2026</div>
 
       </nav>
 
@@ -705,19 +686,6 @@ export default function CornerV3() {
         visible={toast.visible}
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
-
-      <div style={{
-        position: 'fixed',
-        right: 10,
-        bottom: 10,
-        zIndex: 100,
-        fontSize: '0.75rem',
-        color: 'rgba(255,255,255,0.4)',
-        fontFamily: "'JetBrains Mono', monospace",
-        pointerEvents: 'none',
-      }}>
-        Build: {BUILD_TIMESTAMP}
-      </div>
 
     </div>
   )
