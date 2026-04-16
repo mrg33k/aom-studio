@@ -124,7 +124,7 @@ function deriveProjectProgress(punchData) {
 // Returns: { rightNow, completedFeed, yourTodos, finishThese, schedule, projectProgress,
 //            pillCounts, isAutoChecked, punchData, punchLoading, lastUpdated, refetch }
 // =============================================================================
-export function useDataPipe(parsePunchList) {
+export function useDataPipe(parsePunchList, worldId) {
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
@@ -526,6 +526,18 @@ export function useDataPipe(parsePunchList) {
       }
     }
   }, [])
+
+  // When the active world changes (e.g. auth resolves and sets client_id from "aom" to
+  // the user's actual world), clear stale agent data and immediately refetch so the
+  // correct agents/rooms appear without waiting for the next poll interval.
+  const prevWorldRef = useRef(worldId)
+  useEffect(() => {
+    if (worldId && worldId !== prevWorldRef.current) {
+      prevWorldRef.current = worldId
+      setSupabaseAgents([])
+      fetchAll()
+    }
+  }, [worldId, fetchAll])
 
   useEffect(() => {
     fetchAll()
