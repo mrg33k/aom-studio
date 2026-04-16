@@ -1,0 +1,825 @@
+{
+  "generatedAt": "2026-04-16T16:14:38.440Z",
+  "source": ".claude/skills/INDEX.md",
+  "skills": [
+    {
+      "name": "/video-footage-review",
+      "alias": "/footage-review",
+      "description": "New footage arrived, need catalog + ratings",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-footage-reorganize",
+      "alias": "/footage-reorganize",
+      "description": "Folder structure messy, needs cleanup",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-instant-watch",
+      "alias": "/instant-watch",
+      "description": "Watch + report on a video before working with it",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-story-cut",
+      "alias": "/b-roll-story-cut",
+      "description": "Full structured edit: transcript > story > cut",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-fast-recut",
+      "alias": "/fast-recut",
+      "description": "Quick recut of existing footage, no deep analysis",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-social-edit",
+      "alias": "/doc-social-edit",
+      "description": "Edit a documentary-style clip for social",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-auto-color",
+      "alias": "/auto-color",
+      "description": "Apply LUT color grade to video",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-auto-timeline",
+      "alias": "/auto-timeline",
+      "description": "Export edit timeline from cut plan",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-lip-sync",
+      "alias": "/lip-sync",
+      "description": "Sync lip movement to audio",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-text-overlay",
+      "alias": "/text-overlay",
+      "description": "Add text/captions overlay to reel",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-overlay",
+      "alias": null,
+      "description": "Composite video overlay on footage",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-ai-gen",
+      "alias": "/ai-video-gen",
+      "description": "Generate video/images with AI tools",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-storyboard",
+      "alias": "/storyboard",
+      "description": "Generate visual storyboard frames from script",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-butter",
+      "alias": "/butter-method",
+      "description": "Smoothing/polish pass on an edit",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-watch-learn",
+      "alias": "/watch-and-learn",
+      "description": "Reference-based editing: watch, break down, plan, push to Resolve",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-segment-preview",
+      "alias": "/segment-preview",
+      "description": "Preview a segment before committing",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-source-index",
+      "alias": "/source-index",
+      "description": "Index source footage for fast lookup",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-gemini-vision",
+      "alias": "/gemini-vision",
+      "description": "Shot analysis + quality scoring via Gemini",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-visual-search",
+      "alias": "/visual-search",
+      "description": "Multimodal footage search",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-eyes-ears",
+      "alias": "/eyes-and-ears",
+      "description": "Full media analysis (Gemini + technical specs)",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-edit-patterns",
+      "alias": "/edit-patterns",
+      "description": "Analyze and apply edit patterns",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/audio-align",
+      "alias": null,
+      "description": "Sync lav mic audio to camera audio",
+      "category": "audio",
+      "categoryLabel": "Audio"
+    },
+    {
+      "name": "/audio-library",
+      "alias": null,
+      "description": "Browse/select music from AOM's audio library",
+      "category": "audio",
+      "categoryLabel": "Audio"
+    },
+    {
+      "name": "/audio-elevenlabs",
+      "alias": "/elevenlabs-voice",
+      "description": "Generate voiceover from script",
+      "category": "audio",
+      "categoryLabel": "Audio"
+    },
+    {
+      "name": "/audio-voice-clone",
+      "alias": "/voice-clone",
+      "description": "Generate audio from text using cloned voice",
+      "category": "audio",
+      "categoryLabel": "Audio"
+    },
+    {
+      "name": "/audio-suno-music",
+      "alias": "/suno-music",
+      "description": "Generate original music for a project",
+      "category": "audio",
+      "categoryLabel": "Audio"
+    },
+    {
+      "name": "/resolve-collab",
+      "alias": null,
+      "description": "Side-by-side editing with Patrik",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-push",
+      "alias": null,
+      "description": "Push media clips to timeline at specific positions",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-read",
+      "alias": null,
+      "description": "Read/snapshot timeline state",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-match",
+      "alias": null,
+      "description": "Match interview video + audio to timeline",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-diff",
+      "alias": null,
+      "description": "Diff timeline changes",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-multicam",
+      "alias": null,
+      "description": "Multicam clip export",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-pool",
+      "alias": null,
+      "description": "Pool management",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-render",
+      "alias": null,
+      "description": "Render job queue",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-broll-catalog",
+      "alias": "/broll-catalog",
+      "description": "Catalog strongest b-roll moments with timecodes",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-broll-fill",
+      "alias": "/broll-fill",
+      "description": "Fill visual gaps with contextual b-roll",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-sync-reader",
+      "alias": "/sync-reader",
+      "description": "Bulk read CamAudioSync offsets",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/resolve-story-chain",
+      "alias": "/story-chain",
+      "description": "Build cohesive VO chain from interview transcripts",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
+      "name": "/brand-agent",
+      "alias": null,
+      "description": "Full Steffen brand session (identity, guidelines)",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-refresh",
+      "alias": null,
+      "description": "Update/evolve existing brand",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-page",
+      "alias": null,
+      "description": "Generate branded page from data",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-mood-board",
+      "alias": "/mood-board",
+      "description": "Generate mood board from keywords via Gemini",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-thumbnail",
+      "alias": "/thumbnail",
+      "description": "Generate social thumbnail from topic",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/web-dev-agent",
+      "alias": null,
+      "description": "General web development task",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-css-buildout",
+      "alias": "/css-buildout",
+      "description": "Build full static HTML/CSS prototype from design",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-css-to-react",
+      "alias": "/css-to-react",
+      "description": "Wire static prototype into React components (reskin)",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-quick-fix",
+      "alias": "/quick-fix",
+      "description": "Fast bug fix + push + deploy",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-wd40",
+      "alias": "/wd40",
+      "description": "Iterate on a feature until it works",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-wd40-page",
+      "alias": "/wd40-page",
+      "description": "Iterate on a page: screenshot > fix > deploy > repeat",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-cage-match",
+      "alias": "/cage-match",
+      "description": "Build two competing approaches, keep the winner",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-wrestlemania",
+      "alias": "/wrestlemania",
+      "description": "Multi-contender face-off for hard problems",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-ship-it",
+      "alias": "/ship-it",
+      "description": "Push + deploy + verify + send link",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-coding-qa",
+      "alias": "/coding-qa",
+      "description": "Code review / quality audit",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/web-merge-branches",
+      "alias": "/merge-branches",
+      "description": "Merge git branches",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/corner-build",
+      "alias": "/build-corner",
+      "description": "Corner-specific build task",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/corner-make-room",
+      "alias": "/make-corner-room",
+      "description": "Build a new Corner room",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/corner-debug-pipeline",
+      "alias": "/debug-corner-pipeline",
+      "description": "Debug Corner pipeline issues",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/corner-new-user",
+      "alias": "/new-user",
+      "description": "Create a new Corner user account",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/social-agent",
+      "alias": null,
+      "description": "Multi-platform social posting (IG/TikTok/LinkedIn)",
+      "category": "social",
+      "categoryLabel": "Social / Marketing"
+    },
+    {
+      "name": "/social-media-research",
+      "alias": null,
+      "description": "Research a client's social presence",
+      "category": "social",
+      "categoryLabel": "Social / Marketing"
+    },
+    {
+      "name": "/social-caption-writer",
+      "alias": "/caption-writer",
+      "description": "Write platform-specific captions from transcript",
+      "category": "social",
+      "categoryLabel": "Social / Marketing"
+    },
+    {
+      "name": "/social-content-calendar",
+      "alias": "/content-calendar",
+      "description": "Generate 30-day posting schedule",
+      "category": "social",
+      "categoryLabel": "Social / Marketing"
+    },
+    {
+      "name": "/social-competitor-scan",
+      "alias": "/competitor-scan",
+      "description": "Research competitor's web/social gaps",
+      "category": "social",
+      "categoryLabel": "Social / Marketing"
+    },
+    {
+      "name": "/outreach",
+      "alias": null,
+      "description": "Full cold outreach pipeline",
+      "category": "outreach",
+      "categoryLabel": "Outreach / Sales"
+    },
+    {
+      "name": "/outreach-numbers",
+      "alias": null,
+      "description": "Track outreach metrics",
+      "category": "outreach",
+      "categoryLabel": "Outreach / Sales"
+    },
+    {
+      "name": "/outreach-email-drafter",
+      "alias": "/email-drafter",
+      "description": "Draft emails (cold, follow-up, client)",
+      "category": "outreach",
+      "categoryLabel": "Outreach / Sales"
+    },
+    {
+      "name": "/outreach-client-onboard",
+      "alias": "/client-onboarding",
+      "description": "Onboard a new client",
+      "category": "outreach",
+      "categoryLabel": "Outreach / Sales"
+    },
+    {
+      "name": "/outreach-client-setup",
+      "alias": "/client-setup",
+      "description": "Set up client workspace + systems",
+      "category": "outreach",
+      "categoryLabel": "Outreach / Sales"
+    },
+    {
+      "name": "/biz-roi-calc",
+      "alias": "/roi-calc",
+      "description": "Build custom ROI calculator for client",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-pitch-deck",
+      "alias": "/pitch-deck",
+      "description": "Generate pitch deck for investors/clients",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-invoice",
+      "alias": "/invoice",
+      "description": "Generate invoice from project data",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-say-it-better",
+      "alias": "/say-it-better",
+      "description": "Sharpen a rough idea, fill gaps, add clarity",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-research",
+      "alias": "/do-research",
+      "description": "Deep research on any topic",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-rag",
+      "alias": "/rag",
+      "description": "Search internal knowledge base",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-new-project",
+      "alias": "/new-project",
+      "description": "Start a new project",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/ops-plan-day",
+      "alias": "/plan-my-day",
+      "description": "Plan the workday from priorities",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-calendar",
+      "alias": "/calendar",
+      "description": "Google Calendar operations",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-calendar-hygiene",
+      "alias": "/calendar-hygiene",
+      "description": "Clean up and organize calendar",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-punch-list",
+      "alias": "/punch-list",
+      "description": "Review + update the master task list",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-big-3",
+      "alias": "/big-3",
+      "description": "Pick the 3 most important things right now",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-masterplan",
+      "alias": "/masterplan",
+      "description": "Full system optimization session",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-mobile-rundown",
+      "alias": "/mobile-rundown",
+      "description": "Quick mobile-friendly status rundown",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-blockers",
+      "alias": "/blockers",
+      "description": "Surface and resolve current blockers",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-status",
+      "alias": "/status",
+      "description": "Elon's radar: what's running, what's stuck",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-health-check",
+      "alias": "/health-check",
+      "description": "Full system scan: stale data, broken links",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-weekly-report",
+      "alias": "/weekly-report",
+      "description": "Auto-generate weekly client report",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-status-check",
+      "alias": "/status-check",
+      "description": "Full system snapshot: deployed, building, queued",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-run-numbers",
+      "alias": "/run-the-numbers",
+      "description": "Pull and analyze key metrics",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-double-check",
+      "alias": "/double-check",
+      "description": "QA pass on any deliverable (Elmo gate)",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-rally",
+      "alias": "/rally",
+      "description": "Rally the team",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/ops-knowledge-lint",
+      "alias": "/knowledge-lint",
+      "description": "Lint knowledge base for issues",
+      "category": "ops",
+      "categoryLabel": "Operations / Planning / Reporting"
+    },
+    {
+      "name": "/sys-kill-bugs",
+      "alias": "/kill-the-bugs",
+      "description": "System health audit + cleanup",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-skill-gap",
+      "alias": "/skill-gap-scan",
+      "description": "Find gaps between existing skills and needs",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-snapshot",
+      "alias": "/snapshot",
+      "description": "Save full system state for disaster recovery",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-migrate",
+      "alias": "/migrate",
+      "description": "Move client from one setup to another",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-nuke",
+      "alias": "/nuke",
+      "description": "Emergency reset: kill all agents, clean slate",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-clean",
+      "alias": "/clean",
+      "description": "Safe tmux session restart + stale process cleanup",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-supersaiyan",
+      "alias": "/supersaiyan",
+      "description": "Maximum effort: all agents, all resources",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-little-engine",
+      "alias": "/little-engine",
+      "description": "Run 3 parallel Bobby agents on top queue tasks",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-dashboard-training",
+      "alias": "/dashboard-training",
+      "description": "Dashboard queue tasks, watch builds, fix plumbing",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-dashboard-debugging",
+      "alias": "/dashboard-debugging",
+      "description": "Systematic pipeline testing + diagnosis",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-create-agent",
+      "alias": "/create-super-agent",
+      "description": "Create a new super agent with full setup",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-chrome-scrape",
+      "alias": "/chrome-scrape",
+      "description": "CDP browser automation",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/session-start",
+      "alias": null,
+      "description": "Beginning of a new work session",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/session-handoff",
+      "alias": null,
+      "description": "End of session, hand off to next",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/session-internal-update",
+      "alias": "/internal-update",
+      "description": "Mid-session sync + wash hands",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/session-hold-thought",
+      "alias": "/hold-that-thought",
+      "description": "Capture an idea/thought to revisit later",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/session-go-back",
+      "alias": "/go-back-in-time",
+      "description": "Recover prior state or decision context",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/session-reprompt",
+      "alias": "/reprompt",
+      "description": "Reframe a stuck prompt for better results",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/session-wash-face",
+      "alias": "/wash-your-face",
+      "description": "Fresh start within a session",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/collab-council",
+      "alias": "/council",
+      "description": "Multi-agent deliberation on a hard decision",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/collab-ask-elon",
+      "alias": "/ask-elon",
+      "description": "Route a question to Elon",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/collab-check-elon",
+      "alias": "/check-with-elon",
+      "description": "Quick Elon gate check before proceeding",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/collab-1on1",
+      "alias": "/1on1",
+      "description": "Open a 1:1 conversation with a specific agent",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/collab-create-conversation",
+      "alias": "/create-team-conversation",
+      "description": "Start a new team thread",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/collab-look",
+      "alias": "/look",
+      "description": "Screen awareness: see what's on screen",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/collab-phone-home",
+      "alias": "/phone-home",
+      "description": "Queue a task for the Mac when running away",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    }
+  ]
+}
