@@ -253,6 +253,15 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const body = req.body || {}
     const message = (body.message || '').trim()
+
+    // Project-owned rooms route to the owner's EA, not the default AOM dispatcher.
+    // Patrik is a guest in Ben's rooms — the host agent answers, not Elon.
+    // AOM internal projects stay on Elon.
+    const BEN_PROJECTS = new Set(['arsenal-directory', 'sourcing', 'sourcing-directory', 'valor'])
+    if (body.project && BEN_PROJECTS.has(body.project.trim().toLowerCase())) {
+      body.agent = 'arsenal-ea'
+    }
+
     const agent = (body.agent || 'elon').trim()
 
     if (!message) return res.status(400).json({ error: 'message required' })
