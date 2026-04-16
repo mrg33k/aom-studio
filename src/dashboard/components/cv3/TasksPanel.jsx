@@ -179,7 +179,7 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const [projectName,            setProjectName]            = useState('')
   const [selectedColor,          setSelectedColor]          = useState('#10B981')
   const [shippedLimit,           setShippedLimit]           = useState(50)
-  const [projectNames,           setProjectNames]           = useState([])
+  const [projectDefs,            setProjectDefs]             = useState([])  // [{name, slug}]
   const [taskInput,              setTaskInput]              = useState('')
   const [taskInputFocused,       setTaskInputFocused]       = useState(false)
   const [taskSubmitting,         setTaskSubmitting]         = useState(false)
@@ -427,12 +427,12 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
     }
   }, [isRecording])
 
-  // Load project names from Supabase on mount
+  // Load project definitions from Supabase on mount
   useEffect(() => {
     if (!supabase) return
     supabase.from('projects').select('name,slug').eq('is_active', true).eq('client_id', worldId).order('name')
       .then(({ data }) => {
-        if (data) setProjectNames(data.map(p => p.name))
+        if (data) setProjectDefs(data.map(p => ({ name: p.name, slug: p.slug })))
       })
   }, [])
 
@@ -457,19 +457,19 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const [waitingReply, setWaitingReply] = useState({})
   const [waitingReplySending, setWaitingReplySending] = useState({})
 
-  // Project pills from Supabase projects table
-  const projectPills = ['All', ...projectNames]
+  // Project pills from Supabase projects table -- [{name, slug}] with 'all' sentinel
+  const projectPills = [{ name: 'All', slug: 'all' }, ...projectDefs]
+  // Slug-to-name map for display in summary header etc.
+  const slugToName = useMemo(() => Object.fromEntries(projectDefs.map(p => [p.slug, p.name])), [projectDefs])
 
-  // Filter helper
+  // Filter helper -- matches on the task's project field (slug), not title text
   function filterTasks(tasks) {
     return tasks.filter(t => {
       const title  = (t.title || t.text || '').toLowerCase()
       const matchQ = !searchQuery || title.includes(searchQuery.toLowerCase())
-      const agent  = (t.agent_identity || t.agentIdentity || '').toLowerCase()
-      const matchP = activeProject === 'all'
-        || title.includes(activeProject.toLowerCase())
-        || agent.includes(activeProject.toLowerCase())
-      return matchQ && matchP
+      if (activeProject === 'all') return matchQ
+      const taskProject = (t.project || '').toLowerCase()
+      return matchQ && taskProject === activeProject
     })
   }
 
@@ -600,12 +600,11 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           {/* Project filter pills */}
           <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
             {projectPills.map(p => {
-              const key      = p === 'All' ? 'all' : p.toLowerCase()
-              const isActive = activeProject === key
+              const isActive = activeProject === p.slug
               return (
                 <button
-                  key={p}
-                  onClick={() => setActiveProject(key)}
+                  key={p.slug}
+                  onClick={() => setActiveProject(p.slug)}
                   style={{
                     padding: '5px 12px',
                     borderRadius: 16,
@@ -620,7 +619,7 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                     transition: 'all 0.15s',
                     fontFamily: "'Inter', sans-serif",
                   }}
-                >{p}</button>
+                >{p.name}</button>
               )
             })}
             <button
@@ -674,9 +673,8 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           // R4: recent activity list from CONTEXT.md's Recent Activity block
           const activityEntries = Array.isArray(payload?.recent_activity) ? payload.recent_activity : []
           const projectRec  = taskProjects?.find(p => String(p.slug || '').toLowerCase() === activeProject)
-                             || projectPills // noop — just to avoid lint issue, real color comes from taskProjects
-          const projColor   = (projectRec && !Array.isArray(projectRec) && projectRec.color) || '#6B8AB0'
-          const projName    = (projectRec && !Array.isArray(projectRec) && projectRec.name) || activeProject
+          const projColor   = projectRec?.color || '#6B8AB0'
+          const projName    = projectRec?.name || slugToName[activeProject] || activeProject
 
           return (
             <div
