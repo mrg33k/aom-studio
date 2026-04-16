@@ -25,7 +25,7 @@ function mapRow(row) {
   }
 }
 
-export function useProjects() {
+export function useProjects(worldId) {
   const [isLoading, setIsLoading] = useState(true)
   const [isError,   setIsError]   = useState(false)
   const [projects,  setProjects]  = useState([])
@@ -34,16 +34,13 @@ export function useProjects() {
     let cancelled = false
 
     if (!supabase) {
-      // No Supabase configured (local dev without env vars)
       setIsLoading(false)
       return
     }
 
     const clientId = getClientId()
+    setIsLoading(true)
 
-    // Fetch owned projects + shared projects (via project_access) in parallel.
-    // Also fetch ALL project_access rows for owned projects so we know which
-    // owned projects are shared with other worlds (messages use shared:{slug}).
     Promise.all([
       supabase
         .from('projects')
@@ -55,7 +52,6 @@ export function useProjects() {
         .from('project_access')
         .select('project_id, projects(id, slug, name, color, is_active)')
         .eq('client_id', clientId),
-      // Which of our owned projects are shared with anyone?
       supabase
         .from('project_access')
         .select('project_id'),
@@ -66,7 +62,6 @@ export function useProjects() {
           setIsLoading(false)
           return
         }
-        // Build set of project IDs that appear in project_access (shared with someone)
         const sharedProjectIds = new Set(
           (allAccessResult.data || []).map(r => r.project_id)
         )
@@ -78,7 +73,6 @@ export function useProjects() {
           .map(r => r.projects)
           .filter(p => p && p.is_active)
           .map(p => ({ ...p, isShared: true }))
-        // Deduplicate by id (a project could be both owned and shared)
         const seen = new Set()
         const all = []
         for (const p of [...owned, ...shared]) {
@@ -90,7 +84,7 @@ export function useProjects() {
       })
 
     return () => { cancelled = true }
-  }, [])
+  }, [worldId])
 
   return { isLoading, isError, projects }
 }

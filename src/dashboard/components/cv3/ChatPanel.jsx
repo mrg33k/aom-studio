@@ -70,7 +70,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [], prefillMessage, setPrefillMessage }) {
+export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [], prefillMessage, setPrefillMessage }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
@@ -258,7 +258,16 @@ export default function ChatPanel({ agents, inboxItems, worldId, initialAgent, o
     })
   }, [savePref])
 
-  const { isLoading: projectsLoading, isError: projectsError, projects } = useProjects()
+  const { isLoading: projectsLoading, isError: projectsError, projects: dbProjects } = useProjects(worldId)
+
+  // Merge projects from useProjects (projects table) with projectRooms from agent_status.
+  // For non-AOM worlds, the projects table may be empty but agent_status has project rooms.
+  // Agent_status project rooms fill in any gaps not covered by the projects table.
+  const projects = useMemo(() => {
+    const dbSlugs = new Set((dbProjects || []).map(p => p.slug))
+    const extras = (projectRooms || []).filter(p => !dbSlugs.has(p.slug))
+    return [...(dbProjects || []), ...extras]
+  }, [dbProjects, projectRooms])
 
   const selectedProject = useMemo(() => {
     if (inlineProject) return inlineProject

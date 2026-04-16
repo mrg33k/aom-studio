@@ -160,8 +160,8 @@ export default function CornerV3() {
     }
     prevDoneIdsRef.current = new Set(done.map(t => t.id))
   }, [done])
-  // useDataPipe provides agents (with realtime status), inboxItems, and projectDefs
-  const { agents, inboxItems, projectDefs } = useDataPipe(null, worldId)
+  // useDataPipe provides agents (with realtime status), inboxItems, projectRooms (from agent_status)
+  const { agents, inboxItems, projectRooms } = useDataPipe(null, worldId)
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
@@ -460,7 +460,7 @@ export default function CornerV3() {
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} addOptimisticTask={addOptimisticTask} showToast={showToast} currentUser={currentUser} setActiveTab={setTab} setActiveConversation={handleSelectProject} setPrefillMessage={setPrefillMessage} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} prefillMessage={prefillMessage} setPrefillMessage={setPrefillMessage} />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} projectRooms={projectRooms} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} prefillMessage={prefillMessage} setPrefillMessage={setPrefillMessage} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}

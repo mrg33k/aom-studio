@@ -135,6 +135,9 @@ export function useDataPipe(parsePunchList, worldId) {
   const [lastUpdated, setLastUpdated] = useState(null)
   // Supabase-sourced agent list for the current world (replaces hardcoded ALL_AGENT_SLUGS)
   const [supabaseAgents, setSupabaseAgents] = useState([])
+  // Project rooms from agent_status (type=project) — used for non-AOM worlds where
+  // the projects table may be empty but agent_status has project room entries.
+  const [supabaseProjectRooms, setSupabaseProjectRooms] = useState([])
   // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
   // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
   const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
@@ -330,6 +333,21 @@ export function useDataPipe(parsePunchList, worldId) {
         // Store Supabase agent list for world-scoped rooms (replaces hardcoded ALL_AGENT_SLUGS)
         if (data.agents && data.agents.length > 0) {
           setSupabaseAgents(data.agents)
+        }
+
+        // Store project rooms from agent_status (type=project) for non-AOM worlds
+        if (data.projects && data.projects.length > 0) {
+          setSupabaseProjectRooms(data.projects.map(p => ({
+            id: p.id || p.slug,
+            slug: p.slug,
+            name: p.name || p.slug,
+            color: p.color || '#6B8AB0',
+            is_active: true,
+            isShared: false,
+            section: 'general',
+            tasks: [],
+            isClient: false,
+          })))
         }
 
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
@@ -535,6 +553,7 @@ export function useDataPipe(parsePunchList, worldId) {
     if (worldId && worldId !== prevWorldRef.current) {
       prevWorldRef.current = worldId
       setSupabaseAgents([])
+      setSupabaseProjectRooms([])
       fetchAll()
     }
   }, [worldId, fetchAll])
@@ -681,6 +700,7 @@ export function useDataPipe(parsePunchList, worldId) {
     punchLoading,
     lastUpdated,
     agents,
+    projectRooms: supabaseProjectRooms,
     refetch: fetchAll,
   }
 }
