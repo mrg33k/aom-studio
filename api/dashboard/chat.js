@@ -56,7 +56,7 @@ const AGENT_META = {
 
 // Agents that can dispatch work to fresh tmux workers via the tasks table.
 // Everyone else stays in plain-streaming mode (no tools).
-const DISPATCH_AGENTS = new Set(['elon', 'studio', 'mom'])
+const DISPATCH_AGENTS = new Set(['elon', 'gary', 'mom'])
 
 // ─── Tools for dispatcher agents ─────────────────────────────────────
 const TOOLS = [

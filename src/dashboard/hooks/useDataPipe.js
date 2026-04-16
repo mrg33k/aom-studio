@@ -652,7 +652,7 @@ export function useDataPipe(parsePunchList, worldId) {
   // Post-rewire (Apr 14): AOM terminal rooms. Rex added Apr 15 (chat was not wired).
   // The picker reads this array, so the guaranteed set here prevents a stale Supabase
   // row from leaking a ghost room back into the UI.
-  const AOM_TERMINAL_SLUGS = ['rex', 'elon', 'studio']
+  const AOM_TERMINAL_SLUGS = ['rex', 'elon', 'gary']
   const clientId = getClientId()
 
   let agents

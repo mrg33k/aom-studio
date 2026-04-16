@@ -23,7 +23,7 @@ const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
 
 // Terminal rooms: live Claude Code sessions attached via tmux relay.
 // Mirror of the same set in v2-gemini-chat.js and VoiceChat.jsx. Keep in sync.
-const TERMINAL_AGENTS = new Set(['elon', 'studio'])
+const TERMINAL_AGENTS = new Set(['elon', 'gary'])
 
 const SUMMARY_SYSTEM_PROMPT = `You summarize voice conversations between Patrik and his voice assistant.
 

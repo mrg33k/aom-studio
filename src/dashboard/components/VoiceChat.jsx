@@ -26,7 +26,7 @@ import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperat
 // tmux relay). Voice calls DO run Gemini Live, but the transcript is summarized
 // at call-end via /api/dashboard/voice-summary (Claude Haiku) and piped to the
 // terminal as one consolidated message.
-const TERMINAL_AGENTS = new Set(['elon', 'studio'])
+const TERMINAL_AGENTS = new Set(['elon', 'gary'])
 
 // Target sample rate for Gemini Live input
 const TARGET_SAMPLE_RATE = 16000

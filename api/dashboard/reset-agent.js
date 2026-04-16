@@ -11,12 +11,12 @@
 //   3. relay-keepalive.py sees the signal file on its next 3s tick and
 //      runs force_reset_session(): tmux kill-session + new-session + claude.
 //
-// Allowlist enforced server-side: only elon and studio. This matches the
+// Allowlist enforced server-side: only elon and gary. This matches the
 // agents that relay-keepalive owns.
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ALLOWED_AGENTS = new Set(['elon', 'studio']);
+const ALLOWED_AGENTS = new Set(['elon', 'gary']);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
