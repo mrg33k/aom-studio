@@ -45,6 +45,7 @@ console.log(`[briefs] Scanning ${EA_ROOT} for published .md files...`);
 // Category display order (fixed, per Steffen spec)
 const CATEGORY_ORDER = [
   'Strategy',
+  'Sales Assets',
   'Design Specs',
   'Audits',
   'Client Reports',

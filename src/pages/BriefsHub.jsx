@@ -87,6 +87,7 @@ const fallbackItems = [
 // Category display order
 const CATEGORY_ORDER = [
   'Strategy',
+  'Sales Assets',
   'Design Specs',
   'Audits',
   'Client Reports',
