@@ -541,33 +541,14 @@ export default function ConversationsView(ctx) {
                 )}
               </div>
               {(['building', 'in_progress', 'working'].includes(elonAgent?.status?.toLowerCase())) ? (
-                <div style={{
-                  marginTop: 6,
-                  background: 'rgba(34,197,94,0.06)',
-                  border: '1px solid rgba(34,197,94,0.22)',
-                  borderRadius: 10,
-                  padding: '6px 12px',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    flex: 1, minWidth: 0,
-                    fontSize: 12, color: '#4ADE80',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    fontFamily: "'Inter', sans-serif",
-                    animation: 'cv3LiveText 2s ease-in-out infinite',
-                  }}>
-                    {elonLastMsg?.text || 'Working…'}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-                    {[0, 0.18, 0.36].map((delay, i) => (
-                      <div key={i} style={{
-                        width: 4, height: 4, borderRadius: '50%',
-                        background: '#4ADE80',
-                        animation: `cv3LiveDot 1.2s ease-in-out ${delay}s infinite`,
-                      }} />
-                    ))}
-                  </div>
+                <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: C.accentBg, border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, padding: '4px 10px' }}>
+                  {[0, 0.18, 0.36].map((delay, i) => (
+                    <div key={i} style={{
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: C.accent,
+                      animation: `cv3LiveDot 1.2s ease-in-out ${delay}s infinite`,
+                    }} />
+                  ))}
                 </div>
               ) : (
                 <>
@@ -682,33 +663,14 @@ export default function ConversationsView(ctx) {
                     </span>
                   </div>
                   {(agentStatus === 'building' || agentStatus === 'in_progress' || agentStatus === 'working') ? (
-                    <div style={{
-                      marginTop: 4,
-                      background: 'rgba(34,197,94,0.06)',
-                      border: '1px solid rgba(34,197,94,0.2)',
-                      borderRadius: 8,
-                      padding: '4px 9px',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      overflow: 'hidden',
-                    }}>
-                      <div style={{
-                        flex: 1, minWidth: 0,
-                        fontSize: 11, color: '#4ADE80',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                        fontFamily: "'Inter', sans-serif",
-                        animation: 'cv3LiveText 2s ease-in-out infinite',
-                      }}>
-                        {lastMsg?.text || 'Working…'}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-                        {[0, 0.18, 0.36].map((delay, i) => (
-                          <div key={i} style={{
-                            width: 3, height: 3, borderRadius: '50%',
-                            background: '#4ADE80',
-                            animation: `cv3LiveDot 1.2s ease-in-out ${delay}s infinite`,
-                          }} />
-                        ))}
-                      </div>
+                    <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 3, background: C.accentBg, border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '3px 8px' }}>
+                      {[0, 0.18, 0.36].map((delay, i) => (
+                        <div key={i} style={{
+                          width: 4, height: 4, borderRadius: '50%',
+                          background: C.accent,
+                          animation: `cv3LiveDot 1.2s ease-in-out ${delay}s infinite`,
+                        }} />
+                      ))}
                     </div>
                   ) : (
                     <div style={{
