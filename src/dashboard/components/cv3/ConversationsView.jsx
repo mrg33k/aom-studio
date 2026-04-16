@@ -93,6 +93,10 @@ export default function ConversationsView(ctx) {
       padding: '16px 20px',
       fontFamily: "'Inter', sans-serif",
     }}>
+      <style>{`
+        @keyframes cv3LiveDot { 0%,100% { opacity:0.3; transform:scale(0.75); } 50% { opacity:1; transform:scale(1.25); } }
+        @keyframes cv3LiveText { 0%,100% { opacity:0.65; } 50% { opacity:1; } }
+      `}</style>
 
       {/* Call in progress banner */}
       {voiceMinimized && isVoiceActive && voiceMinimizedAgent.current && (
@@ -536,20 +540,53 @@ export default function ConversationsView(ctx) {
                   </span>
                 )}
               </div>
-              <div style={{
-                fontSize: 13, color: C.text2,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {elonLastMsg?.text || 'Start a conversation with Elon'}
-              </div>
-              {elonLastMsg?.timestamp && (
+              {(elonAgent?.status === 'building' || elonAgent?.status === 'in_progress') ? (
                 <div style={{
-                  fontSize: 10, color: C.dim,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  marginTop: 4,
+                  marginTop: 6,
+                  background: 'rgba(34,197,94,0.06)',
+                  border: '1px solid rgba(34,197,94,0.22)',
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  overflow: 'hidden',
                 }}>
-                  {formatChatTime(elonLastMsg.timestamp)}
+                  <div style={{
+                    flex: 1, minWidth: 0,
+                    fontSize: 12, color: '#4ADE80',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    fontFamily: "'Inter', sans-serif",
+                    animation: 'cv3LiveText 2s ease-in-out infinite',
+                  }}>
+                    {elonLastMsg?.text || 'Working…'}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                    {[0, 0.18, 0.36].map((delay, i) => (
+                      <div key={i} style={{
+                        width: 4, height: 4, borderRadius: '50%',
+                        background: '#4ADE80',
+                        animation: `cv3LiveDot 1.2s ease-in-out ${delay}s infinite`,
+                      }} />
+                    ))}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div style={{
+                    fontSize: 13, color: C.text2,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {elonLastMsg?.text || 'Start a conversation with Elon'}
+                  </div>
+                  {elonLastMsg?.timestamp && (
+                    <div style={{
+                      fontSize: 10, color: C.dim,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      marginTop: 4,
+                    }}>
+                      {formatChatTime(elonLastMsg.timestamp)}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
@@ -642,13 +679,44 @@ export default function ConversationsView(ctx) {
                       {lastMsg?.timestamp ? formatChatTime(lastMsg.timestamp) : ''}
                     </span>
                   </div>
-                  <div style={{
-                    fontSize: 12, color: C.muted, marginTop: 2,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    fontFamily: "'Inter', sans-serif",
-                  }}>
-                    {lastMsg?.text || 'No messages yet'}
-                  </div>
+                  {(agent.status === 'building' || agent.status === 'in_progress') ? (
+                    <div style={{
+                      marginTop: 4,
+                      background: 'rgba(34,197,94,0.06)',
+                      border: '1px solid rgba(34,197,94,0.2)',
+                      borderRadius: 8,
+                      padding: '4px 9px',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        flex: 1, minWidth: 0,
+                        fontSize: 11, color: '#4ADE80',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        fontFamily: "'Inter', sans-serif",
+                        animation: 'cv3LiveText 2s ease-in-out infinite',
+                      }}>
+                        {lastMsg?.text || 'Working…'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                        {[0, 0.18, 0.36].map((delay, i) => (
+                          <div key={i} style={{
+                            width: 3, height: 3, borderRadius: '50%',
+                            background: '#4ADE80',
+                            animation: `cv3LiveDot 1.2s ease-in-out ${delay}s infinite`,
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      fontSize: 12, color: C.muted, marginTop: 2,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>
+                      {lastMsg?.text || 'No messages yet'}
+                    </div>
+                  )}
                 </div>
                 <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                   <div style={{
