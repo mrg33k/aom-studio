@@ -298,7 +298,25 @@ export default async function handler(req, res) {
       }
 
       case 'dismiss': {
-        const result = await supabasePatch(filter, { status: 'done', metadata: { dismissed: true } });
+        // Hide a task from the dashboard without rewriting its history. Previously
+        // this flipped status -> 'done', which masked timeouts + worker failures
+        // as if they had succeeded (e.g. e64cf748 chain parent ended up status=done
+        // even though it errored with 'timeout after 20 minutes'). Now we preserve
+        // the existing status + error and just merge metadata.dismissed=true so
+        // filteredFailed (status==='failed' && !isDismissed) hides it. For tasks
+        // not yet in a terminal state, escalate to 'cancelled' so they stop being
+        // worked, but never overwrite 'failed'.
+        const fetchResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}&select=status,metadata`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        });
+        const existing = fetchResp.ok ? await fetchResp.json() : [];
+        const current = Array.isArray(existing) && existing[0] ? existing[0] : { status: null, metadata: {} };
+        const mergedMeta = { ...(current.metadata || {}), dismissed: true };
+        const TERMINAL = new Set(['failed', 'done', 'completed', 'cancelled']);
+        const body = TERMINAL.has((current.status || '').toLowerCase())
+          ? { metadata: mergedMeta }
+          : { status: 'cancelled', metadata: mergedMeta };
+        const result = await supabasePatch(filter, body);
         return res.status(200).json({ ok: true, action: 'dismiss', result });
       }
 
