@@ -1,6 +1,6 @@
 // ThreadView -- agent conversation thread with message list and input
 // Extracted from ChatPanel.jsx. Receives all state via ctx props.
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../lib/typeScale.js'
 import { supabase } from '../../lib/supabase.js'
@@ -8,6 +8,28 @@ import { LinkifyText, AgentAvatar, formatChatTime } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../TypingIndicatorV2.jsx'
+
+// ── Message status checkmarks ─────────────────────────────────────────────────
+// Single check = saved to DB. Double check = agent responded.
+function MessageChecks({ msgId, isResponded }) {
+  const isSaved = msgId && !String(msgId).startsWith('temp-')
+  if (!isSaved) return null
+  const checkColor = isResponded ? 'rgba(96,165,250,0.7)' : 'rgba(120,140,165,0.45)'
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 4, verticalAlign: 'middle' }}>
+      {/* First check -- always shown when saved */}
+      <svg width="13" height="10" viewBox="0 0 13 10" fill="none" style={{ display: 'block' }}>
+        <path d="M1 5.5L4.5 9L12 1" stroke={checkColor} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {/* Second check -- shown when agent responded */}
+      {isResponded && (
+        <svg width="10" height="10" viewBox="0 0 13 10" fill="none" style={{ display: 'block', marginLeft: -5 }}>
+          <path d="M1 5.5L4.5 9L12 1" stroke={checkColor} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </span>
+  )
+}
 
 // Slugs that have a tmux super-agent session managed by relay-keepalive.py
 // and can be hard-reset via the Control tab in chat settings.
@@ -70,6 +92,31 @@ export default function ThreadView(ctx) {
   const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
     (a.name || '').localeCompare(b.name || '')
   )
+
+  // ── Message status: checkmarks + persistent typing ────────────────────────
+  // Build a set of user message IDs that have been "responded to" (an assistant
+  // message exists after them in the thread). Also detect if the agent hasn't
+  // responded to the latest user message yet -> show typing indicator.
+  const { respondedSet, awaitingResponse } = useMemo(() => {
+    const responded = new Set()
+    let awaiting = false
+    // Walk messages in order. Each assistant message "responds to" the most
+    // recent preceding user message.
+    let lastUserMsgId = null
+    for (const m of messages) {
+      if (m.role === 'user') {
+        lastUserMsgId = m.id
+      } else if (m.role === 'assistant' && lastUserMsgId) {
+        responded.add(lastUserMsgId)
+        lastUserMsgId = null
+      }
+    }
+    // If the last message is from the user and has a real ID, agent hasn't responded
+    if (lastUserMsgId && !String(lastUserMsgId).startsWith('temp-')) {
+      awaiting = true
+    }
+    return { respondedSet: responded, awaitingResponse: awaiting }
+  }, [messages])
 
   async function handleResetAgent() {
     const slug = selectedAgent?.slug
@@ -899,8 +946,12 @@ export default function ThreadView(ctx) {
                   paddingRight: isUser ? 2 : 0,
                   paddingLeft: isUser ? 0 : 2,
                   fontFamily: "'Inter', sans-serif",
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: isUser ? 'flex-end' : 'flex-start',
+                  gap: 2,
                 }}>
                   {formatChatTime(msg.timestamp)}
+                  {isUser && <MessageChecks msgId={msg.id} isResponded={respondedSet.has(msg.id)} />}
                 </div>
               </div>
               {isUser && (
@@ -920,13 +971,14 @@ export default function ThreadView(ctx) {
             </div>
           )
         })}
-        {sending && (
+        {(sending || awaitingResponse) && (
           <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
             <TypingIndicatorV2
               streaming={true}
               agentColor={selectedAgent?.color || '#3B82F6'}
               agentName={selectedAgent?.name}
               agentSlug={selectedAgent?.slug}
+              onPoke={(text) => sendAgentTextRef?.current?.(text)}
               compact={false}
             />
           </div>

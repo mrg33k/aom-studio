@@ -1003,7 +1003,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
       const saveResult = await fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
+        body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, needs_response: true, ...userIdentity }),
       }).then(r => r.json()).catch(() => null)
       if (saveResult?.message?.id) {
         setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.message } : m))
