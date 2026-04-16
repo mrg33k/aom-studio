@@ -129,6 +129,16 @@
       "agent": "Steve",
       "dateFormatted": "Mar 22",
       "summary": "Builder brief for Bobby on the Corner signup + onboarding flow. Auth to first message in under 3 minutes. Industry-specific auto-build. Copy strings, routes, API calls, state, animations."
+    },
+    {
+      "title": "Notion Competitors Deep Dive",
+      "path": "/briefs/notion-competitors",
+      "slug": "notion-competitors",
+      "type": "brief",
+      "updated_at": "2026-04-16",
+      "agent": "research-competitor",
+      "dateFormatted": "Apr 16",
+      "summary": "Overview of Notion's main competitors including Obsidian, Coda, and Linear"
     }
   ],
   "ambition-mechanical": [
