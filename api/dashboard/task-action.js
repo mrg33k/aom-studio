@@ -95,7 +95,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
-  const { action, taskText, taskId, agent, payload, clientId = 'aom' } = req.body || {};
+  const { action, taskText, taskId, agent, payload, clientId = 'aom', project } = req.body || {};
 
   if (!action) return res.status(400).json({ error: 'action required' });
 
@@ -232,6 +232,7 @@ export default async function handler(req, res) {
         } else {
           // Task doesn't exist in Supabase yet -- create it as active
           const crypto = await import('crypto');
+          const projectSlug = (project || '').trim().toLowerCase() || null
           const newTask = {
             id: crypto.randomUUID(),
             text: taskText,
@@ -239,6 +240,7 @@ export default async function handler(req, res) {
             status: 'active',
             source: 'user',
             client_id: clientId,
+            ...(projectSlug ? { project: projectSlug } : {}),
           };
           addResult = await supabasePost(newTask);
         }

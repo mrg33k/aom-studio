@@ -903,6 +903,7 @@ function supabaseTaskAction(action, task, payload) {
         agent: task.agent || null,
         payload: payload || null,
         clientId: typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom',
+        project: task.project || task.projectSection || null,
       }),
     }).catch(err => console.warn(`[Corner] Supabase task-action (${action}) failed:`, err))
   } catch {}

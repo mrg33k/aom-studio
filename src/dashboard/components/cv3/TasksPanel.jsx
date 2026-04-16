@@ -201,7 +201,7 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const [showProjectFiles, setShowProjectFiles] = useState(false)
   const [projectFiles, setProjectFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
-  const [selectedProject, setSelectedProject] = useState('corner') // Default to 'corner' project
+  const [selectedProject, setSelectedProject] = useState(null) // Set by active pill; no default
 
   // R2: live project summary card driven by project-summary-daemon events
   // Reads the latest row from the shared `events` table where
