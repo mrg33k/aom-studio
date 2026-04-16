@@ -259,7 +259,14 @@ export default async function handler(req, res) {
     // Project-owned rooms route to the owner's EA, not the default AOM dispatcher.
     // Patrik is a guest in Ben's rooms — the host agent answers, not Elon.
     // AOM internal projects stay on Elon.
-    const BEN_PROJECTS = new Set(['arsenal-directory', 'sourcing', 'sourcing-directory', 'valor'])
+    // Dashboard uses the short slug ('arsenal', 'sourcing'); phonebook + repo
+    // aliases use the long form ('arsenal-directory', 'sourcing-directory').
+    // Accept both so whichever the sender used still lands on Ben's EA.
+    const BEN_PROJECTS = new Set([
+      'arsenal', 'arsenal-directory',
+      'sourcing', 'sourcing-directory',
+      'valor', 'valor-to-victory',
+    ])
     if (body.project && BEN_PROJECTS.has(body.project.trim().toLowerCase())) {
       body.agent = 'arsenal-ea'
     }
