@@ -105,9 +105,7 @@ export default async function handler(req, res) {
       ? client_id.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
 
-    const resolvedProject = source === 'corner-dashboard'
-      ? 'corner'
-      : ((project && project.trim()) ? project.trim() : null)
+    const resolvedProject = (project && project.trim()) ? project.trim() : null
 
     const payload = {
       id: crypto.randomUUID(),
