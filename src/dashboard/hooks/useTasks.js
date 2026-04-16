@@ -25,7 +25,7 @@ import { getClientId } from '../lib/clientConfig'
 // ── Constants ────────────────────────────────────────────────────────────────
 
 // Right Now bar: ONLY tasks in these statuses. Zero tolerance for anything else.
-const RIGHT_NOW_STATUSES = new Set(['building', 'qa'])
+const RIGHT_NOW_STATUSES = new Set(['building', 'running', 'qa'])
 
 // Queued pipeline statuses (not yet building)
 const QUEUED_STATUSES = new Set(['queued', 'classifying', 'planning'])

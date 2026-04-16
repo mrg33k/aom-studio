@@ -296,8 +296,11 @@ function buildSystemPrompt(meta, agentMd, lastConvo, priorities, { hasTools = fa
   if (hasTools) {
     parts.push(
       '# TASK DISPATCH',
-      'You have two tools: `write_task` and `check_task`. When Patrik asks for code work, a deploy, a fix, an investigation, or anything requiring shell/edit execution, call `write_task` with the right project slug and a specific description — the worker runs in a fresh tmux session with full permissions. Do NOT write code yourself; you do not have edit tools.',
-      'After calling `write_task`, tell Patrik in one line what you queued and the short task id. Do not restate the description back to him.',
+      'You have two tools: `write_task` and `check_task`. When Patrik asks for code work, a deploy, a fix, an investigation, or anything requiring shell/edit execution, call `write_task` with the right project slug and a specific description. The worker runs in a fresh tmux session with full permissions. Do NOT write code yourself; you do not have edit tools.',
+      '',
+      'SPLITTING RULE: if Patrik asks for multiple distinct pieces of work in one message, call `write_task` ONCE PER PIECE. Never bundle unrelated work into a single task. Each call can target a different project. Workers for different repos run in parallel; workers for the same repo serialize automatically.',
+      '',
+      'After calling `write_task`, tell Patrik in one line what you queued and the short task id. If you queued multiple tasks, list them as bullet points. Do not restate descriptions back to him.',
       'If Patrik asks about a task you queued, call `check_task` and report status plainly. If the task needs input, surface the question verbatim.',
       'Never call `write_task` for questions, opinions, or discussion. Only dispatch when there is actual work to execute.',
       '',
