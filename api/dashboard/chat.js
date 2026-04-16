@@ -54,6 +54,210 @@ const AGENT_META = {
   mom:     { name: 'Mom',     role: 'Orchestrator',      folder: 'mom' },
 }
 
+// Agents that can dispatch work to fresh tmux workers via the tasks table.
+// Everyone else stays in plain-streaming mode (no tools).
+const DISPATCH_AGENTS = new Set(['elon', 'studio', 'mom'])
+
+// ─── Tools for dispatcher agents ─────────────────────────────────────
+const TOOLS = [
+  {
+    name: 'write_task',
+    description: 'Queue a task for a fresh tmux worker to execute. Use this when Patrik asks for code work, a page change, a deploy, a fix, an investigation that requires running commands or editing files. Pick the project slug carefully (corner/aom-studio/ambition/sourcing) — the worker cds into that repo and runs with full bash + edit tools. Do NOT call this for questions, opinions, or chit-chat.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          description: "Project slug. Must match the Supabase projects table (e.g. 'corner', 'aom-studio', 'ambition', 'sourcing', 'aom-website'). If unsure, ask Patrik with ONE clarifying question instead of guessing.",
+        },
+        title: {
+          type: 'string',
+          description: 'Short task title (≤140 chars). This is what shows up on the task card.',
+        },
+        description: {
+          type: 'string',
+          description: 'Full task brief for the worker. Include page paths, scripts to run, success criteria, anything the worker needs. Be specific. The worker will read this and execute.',
+        },
+        model: {
+          type: 'string',
+          enum: ['sonnet', 'opus', 'haiku'],
+          description: "Worker model. Default 'sonnet'. Use 'opus' only for complex reasoning tasks.",
+        },
+      },
+      required: ['project', 'title', 'description'],
+    },
+  },
+  {
+    name: 'check_task',
+    description: "Get the current status of a task you queued. Returns status (queued/building/done/failed/waiting/needs_input), the result payload if done, or the blocking question if needs_input. Use this when Patrik asks 'is it done?' or 'what's the status of X?' or when you need to confirm a task you dispatched earlier in this conversation.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string', description: 'The UUID of the task to look up.' },
+      },
+      required: ['task_id'],
+    },
+  },
+]
+
+// ─── Supabase REST helper ─────────────────────────────────────────────
+async function sbRest(method, path, body) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    throw new Error('Supabase not configured (SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing)')
+  }
+  const url = `${SUPABASE_URL}/rest/v1/${path}`
+  const opts = {
+    method,
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+  }
+  if (body !== undefined) opts.body = typeof body === 'string' ? body : JSON.stringify(body)
+  const res = await fetch(url, opts)
+  const text = await res.text()
+  if (!res.ok) {
+    throw new Error(`Supabase ${method} ${path} -> ${res.status}: ${text.slice(0, 400)}`)
+  }
+  try { return JSON.parse(text) } catch { return null }
+}
+
+function cleanTaskTitle(raw) {
+  const s = (raw || '').trim().replace(/\s+/g, ' ')
+  if (!s) return 'Untitled task'
+  return s.length > 140 ? s.slice(0, 137) + '…' : s
+}
+
+// ─── Tool executor ────────────────────────────────────────────────────
+async function executeTool(name, args, ctx) {
+  switch (name) {
+    case 'write_task': {
+      const projectSlug = String(args.project || '').trim().toLowerCase() || null
+      const title = cleanTaskTitle(args.title || args.description || '')
+      const description = String(args.description || args.title || '').trim()
+      const model = ['sonnet', 'opus', 'haiku'].includes(args.model) ? args.model : 'sonnet'
+
+      if (!description) {
+        throw new Error('description is required')
+      }
+
+      // Resolve project -> repo_path from projects table. Missing project is
+      // allowed; task-runner will mark failed if metadata.repo can't resolve.
+      let repoPath = ''
+      if (projectSlug) {
+        try {
+          const rows = await sbRest('GET', `projects?slug=eq.${encodeURIComponent(projectSlug)}&select=slug,repo_path&limit=1`)
+          if (Array.isArray(rows) && rows[0]?.repo_path) repoPath = rows[0].repo_path
+        } catch { /* non-fatal */ }
+      }
+
+      const nowIso = new Date().toISOString()
+      const row = {
+        title,
+        text: description,
+        description,
+        status: 'queued',
+        source: `dashboard-chat-${ctx.slug}`,
+        client_id: ctx.clientId,
+        project: projectSlug,
+        project_path: repoPath,
+        priority: 0,
+        created_at: nowIso,
+        metadata: {
+          repo: projectSlug,
+          created_via: `dashboard-chat-${ctx.slug}`,
+          model,
+          requested_by_agent: ctx.slug,
+        },
+      }
+
+      const inserted = await sbRest('POST', 'tasks', row)
+      const task = Array.isArray(inserted) ? inserted[0] : inserted
+      if (!task?.id) throw new Error('Task insert returned no row')
+
+      // Seed the task thread with a "queued" event so it shows up when the
+      // user expands the task card in TasksPanel. Fire-and-forget.
+      writeToSupabase('assistant', `task:${task.id}`, `queued by ${ctx.slug} from dashboard chat: ${title}`, 'chat-dispatch', '', ctx.clientId).catch(() => {})
+
+      return {
+        success: true,
+        task_id: task.id,
+        title: task.title,
+        status: task.status,
+        project: projectSlug,
+        repo_path: repoPath || null,
+      }
+    }
+    case 'check_task': {
+      const id = String(args.task_id || '').trim()
+      if (!id) throw new Error('task_id is required')
+      const rows = await sbRest('GET', `tasks?id=eq.${encodeURIComponent(id)}&select=id,title,status,error,metadata,started_at,completed_at,result&limit=1`)
+      const task = Array.isArray(rows) ? rows[0] : null
+      if (!task) return { found: false, task_id: id }
+
+      const meta = task.metadata || {}
+      const payload = meta.result_payload || null
+      const question = meta.question || null
+      return {
+        found: true,
+        task_id: task.id,
+        title: task.title,
+        status: task.status,
+        started_at: task.started_at,
+        completed_at: task.completed_at,
+        error: task.error || null,
+        result: payload,
+        question,
+      }
+    }
+  }
+  throw new Error(`Unknown tool: ${name}`)
+}
+
+// Look up tasks this dispatcher queued that are in a terminal or blocked state
+// so the agent can proactively mention them to Patrik. Scoped by source +
+// client_id so we don't surface unrelated activity. Ordered by created_at so
+// the most recently dispatched rows surface first — these are the ones from
+// this chat session Patrik is most likely to care about.
+async function fetchRecentTaskUpdates(slug, clientId) {
+  try {
+    const source = `dashboard-chat-${slug}`
+    const qs = [
+      `source=eq.${encodeURIComponent(source)}`,
+      `client_id=eq.${encodeURIComponent(clientId)}`,
+      `status=in.(done,failed,needs_input)`,
+      `select=id,title,status,metadata,error,completed_at,created_at`,
+      `order=created_at.desc`,
+      `limit=6`,
+    ].join('&')
+    const rows = await sbRest('GET', `tasks?${qs}`)
+    return Array.isArray(rows) ? rows : []
+  } catch {
+    return []
+  }
+}
+
+function formatTaskUpdatesForPrompt(rows) {
+  if (!rows || rows.length === 0) return ''
+  const lines = ['# RECENT TASK STATUS UPDATES', "Tasks you dispatched that changed state recently. Mention these to Patrik proactively if relevant — he can't see what happened while he was away from the chat.", '']
+  for (const r of rows) {
+    const meta = r.metadata || {}
+    const short = (r.id || '').slice(0, 8)
+    if (r.status === 'done') {
+      const summary = (meta.result_payload?.summary || '').toString().slice(0, 200)
+      lines.push(`- DONE ${short} "${r.title}"${summary ? ' — ' + summary : ''}`)
+    } else if (r.status === 'failed') {
+      lines.push(`- FAILED ${short} "${r.title}" — ${(r.error || 'no reason').toString().slice(0, 200)}`)
+    } else if (r.status === 'needs_input') {
+      const q = (meta.question || '').toString().slice(0, 300)
+      lines.push(`- NEEDS INPUT ${short} "${r.title}" — worker asks: ${q}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 async function fetchFile(path) {
   try {
     const res = await fetch(
@@ -79,7 +283,7 @@ async function loadAgentContext(slug) {
   return { meta, agentMd, lastConvo, priorities }
 }
 
-function buildSystemPrompt(meta, agentMd, lastConvo, priorities) {
+function buildSystemPrompt(meta, agentMd, lastConvo, priorities, { hasTools = false, taskUpdatesBlock = '' } = {}) {
   const parts = [
     `You are ${meta.name}, an AI agent at AOM (Ahead of Market), a creative production and AI systems company in Phoenix, AZ.`,
     `Your role: ${meta.role}.`,
@@ -88,6 +292,21 @@ function buildSystemPrompt(meta, agentMd, lastConvo, priorities) {
     `Keep responses focused and useful. When you can take action or give a specific recommendation, do it.`,
     '',
   ]
+
+  if (hasTools) {
+    parts.push(
+      '# TASK DISPATCH',
+      'You have two tools: `write_task` and `check_task`. When Patrik asks for code work, a deploy, a fix, an investigation, or anything requiring shell/edit execution, call `write_task` with the right project slug and a specific description — the worker runs in a fresh tmux session with full permissions. Do NOT write code yourself; you do not have edit tools.',
+      'After calling `write_task`, tell Patrik in one line what you queued and the short task id. Do not restate the description back to him.',
+      'If Patrik asks about a task you queued, call `check_task` and report status plainly. If the task needs input, surface the question verbatim.',
+      'Never call `write_task` for questions, opinions, or discussion. Only dispatch when there is actual work to execute.',
+      '',
+    )
+  }
+
+  if (taskUpdatesBlock) {
+    parts.push(taskUpdatesBlock, '')
+  }
 
   if (agentMd) {
     // Truncate to avoid token explosion but keep the useful parts
@@ -150,17 +369,27 @@ export default async function handler(req, res) {
     const userMsgId = crypto.randomUUID()
     writeToSupabase('user', slug, message, 'dashboard', '', resolvedClientId).catch(() => {})
 
-    // Load agent context from GitHub
-    const { agentMd, lastConvo, priorities } = await loadAgentContext(slug)
-    const systemPrompt = buildSystemPrompt(meta, agentMd, lastConvo, priorities)
+    const hasTools = DISPATCH_AGENTS.has(slug)
 
-    // Build messages array from history
+    // Load agent context from GitHub + recent task status updates (dispatchers only)
+    const [{ agentMd, lastConvo, priorities }, taskUpdateRows] = await Promise.all([
+      loadAgentContext(slug),
+      hasTools ? fetchRecentTaskUpdates(slug, resolvedClientId) : Promise.resolve([]),
+    ])
+    const taskUpdatesBlock = formatTaskUpdatesForPrompt(taskUpdateRows)
+    const systemPrompt = buildSystemPrompt(meta, agentMd, lastConvo, priorities, { hasTools, taskUpdatesBlock })
+
+    // Build messages array from history (text-only history; tool results from
+    // prior turns are not replayed — tasks outlive the chat and are re-surfaced
+    // via the RECENT TASK STATUS UPDATES block on the next call).
     const messages = []
     if (history && Array.isArray(history)) {
-      for (const h of history.slice(-20)) { // Keep last 20 messages for context
+      for (const h of history.slice(-20)) {
+        const content = h.content || h.text || ''
+        if (!content) continue
         messages.push({
           role: h.role === 'user' ? 'user' : 'assistant',
-          content: h.content || h.text || '',
+          content,
         })
       }
     }
@@ -171,75 +400,142 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
 
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Multi-round tool-use loop. For plain agents (no tools), this runs exactly
+    // one round and returns streamed text. For dispatcher agents, it can loop
+    // up to MAX_LOOPS times to call tools and continue.
+    const MAX_LOOPS = hasTools ? 3 : 1
+    let fullResponse = ''
+
+    for (let loop = 0; loop < MAX_LOOPS; loop++) {
+      const requestBody = {
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: systemPrompt,
         messages,
         stream: true,
-      }),
-    })
+      }
+      if (hasTools) requestBody.tools = TOOLS
 
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text()
-      res.write(`data: ${JSON.stringify({ type: 'error', error: errText })}\n\n`)
-      res.end()
-      return
-    }
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
 
-    // Pipe the Anthropic SSE stream to the client, collect full response
-    const reader = anthropicRes.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    let fullResponse = ''
+      if (!anthropicRes.ok) {
+        const errText = await anthropicRes.text()
+        res.write(`data: ${JSON.stringify({ type: 'error', error: errText })}\n\n`)
+        break
+      }
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      // Parse Anthropic's streaming SSE. We need to track content blocks by
+      // index because tool_use inputs arrive as partial JSON deltas that must
+      // be concatenated before JSON.parse.
+      const reader = anthropicRes.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      const blocks = []          // [{type, text?, id?, name?, input?, _json?}]
+      let stopReason = null
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-        const data = line.slice(6)
-        if (data === '[DONE]') continue
-
-        try {
-          const parsed = JSON.parse(data)
-
-          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-            fullResponse += parsed.delta.text
-            res.write(`data: ${JSON.stringify({ type: 'text', text: parsed.delta.text })}\n\n`)
-          } else if (parsed.type === 'message_stop') {
-            res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
-          } else if (parsed.type === 'error') {
-            res.write(`data: ${JSON.stringify({ type: 'error', error: parsed.error?.message || 'Unknown error' })}\n\n`)
+      const handleEvent = (parsed) => {
+        if (!parsed || !parsed.type) return
+        if (parsed.type === 'content_block_start') {
+          const idx = parsed.index
+          const b = parsed.content_block || {}
+          blocks[idx] = {
+            type: b.type,
+            text: b.type === 'text' ? '' : undefined,
+            id: b.id,
+            name: b.name,
+            _json: b.type === 'tool_use' ? '' : undefined,
           }
-        } catch {
-          // Skip malformed JSON
+        } else if (parsed.type === 'content_block_delta') {
+          const idx = parsed.index
+          const d = parsed.delta || {}
+          const blk = blocks[idx]
+          if (!blk) return
+          if (d.type === 'text_delta' && typeof d.text === 'string') {
+            blk.text = (blk.text || '') + d.text
+            fullResponse += d.text
+            res.write(`data: ${JSON.stringify({ type: 'text', text: d.text })}\n\n`)
+          } else if (d.type === 'input_json_delta' && typeof d.partial_json === 'string') {
+            blk._json = (blk._json || '') + d.partial_json
+          }
+        } else if (parsed.type === 'content_block_stop') {
+          const idx = parsed.index
+          const blk = blocks[idx]
+          if (blk && blk.type === 'tool_use') {
+            try { blk.input = blk._json ? JSON.parse(blk._json) : {} }
+            catch { blk.input = {} }
+          }
+        } else if (parsed.type === 'message_delta') {
+          if (parsed.delta?.stop_reason) stopReason = parsed.delta.stop_reason
+        } else if (parsed.type === 'error') {
+          res.write(`data: ${JSON.stringify({ type: 'error', error: parsed.error?.message || 'Unknown error' })}\n\n`)
         }
       }
-    }
 
-    // Process any remaining buffer
-    if (buffer.startsWith('data: ')) {
-      const data = buffer.slice(6)
-      try {
-        const parsed = JSON.parse(data)
-        if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-          fullResponse += parsed.delta.text
-          res.write(`data: ${JSON.stringify({ type: 'text', text: parsed.delta.text })}\n\n`)
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const data = line.slice(6)
+          if (data === '[DONE]') continue
+          try { handleEvent(JSON.parse(data)) } catch { /* skip malformed */ }
         }
-      } catch {}
+      }
+      if (buffer.startsWith('data: ')) {
+        const data = buffer.slice(6)
+        try { handleEvent(JSON.parse(data)) } catch {}
+      }
+
+      // Tool_use loop: if model requested tools, append assistant turn,
+      // execute tools, append tool_result turn, and continue the loop.
+      const toolUseBlocks = blocks.filter(b => b && b.type === 'tool_use')
+      if (!hasTools || toolUseBlocks.length === 0 || stopReason === 'end_turn') break
+
+      // Append the assistant's content (text + tool_use blocks) exactly as the
+      // API needs it for the next round.
+      const assistantContent = blocks
+        .filter(Boolean)
+        .map(b => b.type === 'tool_use'
+          ? { type: 'tool_use', id: b.id, name: b.name, input: b.input || {} }
+          : { type: 'text', text: b.text || '' })
+        .filter(b => b.type !== 'text' || b.text)
+      messages.push({ role: 'assistant', content: assistantContent })
+
+      // Execute each tool and collect results.
+      const toolResults = []
+      for (const tb of toolUseBlocks) {
+        res.write(`data: ${JSON.stringify({ type: 'tool_call', name: tb.name, args: tb.input || {} })}\n\n`)
+        try {
+          const result = await executeTool(tb.name, tb.input || {}, { slug, clientId: resolvedClientId })
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tb.id,
+            content: JSON.stringify(result),
+          })
+          res.write(`data: ${JSON.stringify({ type: 'tool_result', name: tb.name, result })}\n\n`)
+        } catch (err) {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: tb.id,
+            content: JSON.stringify({ error: err.message || String(err) }),
+            is_error: true,
+          })
+          res.write(`data: ${JSON.stringify({ type: 'tool_result', name: tb.name, result: { error: err.message || String(err) } })}\n\n`)
+        }
+      }
+      messages.push({ role: 'user', content: toolResults })
+      // Continue the outer loop for another Anthropic call with tool results.
     }
 
     // Write assistant response to Supabase (syncs conversation to Mac)
