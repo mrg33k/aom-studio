@@ -518,6 +518,19 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const MIN_BAR_H     = 2
   const MAX_BAR_H     = 19
 
+  // Time-based greeting
+  const greetingHour = new Date().getHours()
+  const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening'
+
+  // Lifecycle colors from design spec
+  const LIFECYCLE = {
+    queued:   '#E91E90', // fuschia
+    working:  '#FF6B3D', // orange
+    done:     '#22C55E', // green
+    failed:   '#EF4444', // red
+    waiting:  '#F59E0B', // yellow/amber
+  }
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
 
@@ -545,26 +558,57 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           0%, 100% { opacity: 0.35; transform: scale(1) }
           50%      { opacity: 1;    transform: scale(1.4) }
         }
+        @keyframes rn-glow {
+          0%, 100% { opacity: 0.4 }
+          50%      { opacity: 1 }
+        }
       `}</style>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px 24px' }}>
 
-        {/* Search + Filters */}
-        <div style={{ marginBottom: 16 }}>
-          {/* Search input */}
+        {/* ── Greeting header ─────────────────────────────────────── */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{
+            fontSize: 26,
+            fontWeight: 800,
+            color: C.text,
+            letterSpacing: '-0.03em',
+            lineHeight: 1.15,
+            margin: 0,
+          }}>
+            {greeting}<span style={{ color: C.accent }}>.</span>
+          </h1>
+          <p style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: C.muted,
+            margin: '6px 0 0',
+            lineHeight: 1.4,
+          }}>
+            {filteredActive.length > 0
+              ? `${filteredActive.length} task${filteredActive.length !== 1 ? 's' : ''} in motion`
+              : 'All clear'}
+            {waitingTasks.length > 0 ? ` · ${waitingTasks.length} need${waitingTasks.length !== 1 ? '' : 's'} input` : ''}
+            {filteredCompleted.length > 0 ? ` · ${filteredCompleted.length} done` : ''}
+          </p>
+        </div>
+
+        {/* ── Search + Project filters ────────────────────────────── */}
+        <div style={{ marginBottom: 28 }}>
+          {/* Search input — minimal */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            background: C.s1,
-            border: '1px solid ' + (searchFocused ? 'rgba(16,185,129,0.15)' : C.border),
-            borderRadius: 12,
-            padding: '9px 14px',
-            transition: 'border-color 0.2s',
-            marginBottom: 10,
+            gap: 10,
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid ' + (searchFocused ? 'rgba(255,255,255,0.1)' : 'transparent'),
+            borderRadius: 14,
+            padding: '10px 16px',
+            transition: 'border-color 0.2s, background 0.2s',
+            marginBottom: 12,
           }}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
               stroke={C.dim} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
               style={{ flexShrink: 0 }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -582,7 +626,8 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                 border: 'none',
                 outline: 'none',
                 color: C.text,
-                fontSize: 13,
+                fontSize: 14,
+                fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
               }}
             />
@@ -598,7 +643,7 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           </div>
 
           {/* Project filter pills */}
-          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
             {projectPills.map(p => {
               const isActive = activeProject === p.slug
               return (
@@ -606,14 +651,14 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   key={p.slug}
                   onClick={() => setActiveProject(p.slug)}
                   style={{
-                    padding: '5px 12px',
-                    borderRadius: 16,
-                    fontSize: 10,
-                    fontWeight: 700,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600,
                     cursor: 'pointer',
                     flexShrink: 0,
-                    border: isActive ? '1px solid rgba(16,185,129,0.2)' : '1px solid ' + C.border,
-                    background: isActive ? 'rgba(16,185,129,0.1)' : C.s1,
+                    border: isActive ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(255,255,255,0.06)',
+                    background: isActive ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)',
                     color: isActive ? C.accent : C.text2,
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
@@ -628,15 +673,15 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                 setShowCreateProjectModal(prev => !prev);
               }}
               style={{
-                padding: '5px 10px',
-                borderRadius: 16,
+                padding: '6px 12px',
+                borderRadius: 20,
                 fontSize: 14,
-                fontWeight: 400,
+                fontWeight: 500,
                 lineHeight: 1,
                 cursor: 'pointer',
                 flexShrink: 0,
-                border: '1px solid ' + C.border,
-                background: C.s1,
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(255,255,255,0.03)',
                 color: C.text2,
                 fontFamily: "'Inter', sans-serif",
               }}
@@ -852,40 +897,51 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           )
         })()}
 
-        {/* Building Now */}
+        {/* ── RIGHT NOW — Hero section ─────────────────────────── */}
         {filteredActive.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 6px' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
-                Building Now
-              </span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
+              <h2 style={{
+                fontSize: 20,
+                fontWeight: 800,
+                color: C.text,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                lineHeight: 1,
+              }}>
+                Right Now
+              </h2>
+              <span style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: LIFECYCLE.working,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
                 {filteredActive.length}
               </span>
             </div>
             {filteredActive.map((t, i) => {
               const isBuilding = t.status === 'building' || t.status === 'qa'
-              const cardColor = isBuilding ? '#22C55E' : '#EAB308'
-              const cardBorder = isBuilding ? 'rgba(34,197,94,0.15)' : 'rgba(234,179,8,0.1)'
+              const cardColor = isBuilding ? LIFECYCLE.working : LIFECYCLE.queued
               const statusLabel = t.status === 'building' ? 'Building' : t.status === 'qa' ? 'QA' : t.status === 'planning' ? 'Planning' : t.status === 'classifying' ? 'Classifying' : 'Queued'
               return (
               <div
                 key={t.id}
                 onClick={() => toggleTaskExpand(t.id)}
                 style={{
-                  padding: '14px 16px',
-                  marginBottom: 8,
-                  borderRadius: 14,
+                  padding: '18px 20px',
+                  marginBottom: 10,
+                  borderRadius: 16,
                   cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden',
                   transition: 'transform 0.15s, box-shadow 0.15s',
-                  background: '#1A2035',
-                  border: `1px solid ${expandedTask === t.id ? 'rgba(255,255,255,0.15)' : cardBorder}`,
+                  background: `linear-gradient(135deg, ${cardColor}12, ${cardColor}06)`,
+                  border: `1px solid ${expandedTask === t.id ? cardColor + '40' : cardColor + '18'}`,
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)'
+                  e.currentTarget.style.boxShadow = `0 12px 32px ${cardColor}15`
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.transform = ''
@@ -893,74 +949,97 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                 }}
               >
                 {/* Animated top progress bar */}
-                {isBuilding && <div style={{
+                <div style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  height: 2,
-                  background: cardColor,
-                  animation: 'bld 5s ease-in-out infinite',
-                  borderRadius: '14px 14px 0 0',
-                }} />}
-                {!isBuilding && <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  height: 2,
-                  background: cardColor,
-                  animation: 'bld 8s ease-in-out infinite',
-                  borderRadius: '14px 14px 0 0',
-                  opacity: 0.6,
-                }} />}
+                  height: 3,
+                  background: `linear-gradient(90deg, ${cardColor}, ${cardColor}88)`,
+                  animation: isBuilding ? 'bld 5s ease-in-out infinite' : 'bld 8s ease-in-out infinite',
+                  borderRadius: '16px 16px 0 0',
+                  opacity: isBuilding ? 1 : 0.6,
+                }} />
 
                 {/* Card content row */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ color: cardColor, fontSize: 14, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap' }}>
+                    <div style={{
+                      color: C.text,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      lineHeight: 1.25,
+                      letterSpacing: '-0.01em',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
+                    }}>
                       {t.title || t.text || 'Untitled task'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                      {/* Status pill */}
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '3px 10px',
+                        borderRadius: 12,
+                        background: cardColor + '18',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: cardColor,
+                        letterSpacing: '0.02em',
+                      }}>
+                        <span style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: cardColor,
+                          animation: isBuilding ? 'rn-glow 2s ease-in-out infinite' : 'none',
+                          flexShrink: 0,
+                        }} />
+                        {statusLabel}
+                      </span>
                       {t.project_id && (() => {
                         const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
                         return proj ? <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
                       })()}
-                      {t.agent_identity || t.agentIdentity ? (
-                        <span style={{ color: '#475569', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {(t.agent_identity || t.agentIdentity) && (
+                        <span style={{ color: C.muted, fontSize: 11, fontWeight: 600 }}>
                           {t.agent_identity || t.agentIdentity}
                         </span>
-                      ) : null}
-                      {t.attempt_count > 1 ? (
-                        <span style={{ color: '#475569', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      )}
+                      {t.attempt_count > 1 && (
+                        <span style={{ color: C.dim, fontSize: 11, fontWeight: 600 }}>
                           Attempt {t.attempt_count}
                         </span>
-                      ) : null}
-                      <span style={{ color: C.dim, fontSize: 9 }}>{expandedTask === t.id ? '▾' : '▸'}</span>
+                      )}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ color: cardColor, fontSize: 12, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div style={{ textAlign: 'right', flexShrink: 0, paddingTop: 2 }}>
+                    <div style={{
+                      color: cardColor,
+                      fontSize: 14,
+                      fontWeight: 800,
+                      lineHeight: 1,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
                       {t.qa_score || t.qaScore || '...'}
-                    </div>
-                    <div style={{ color: t.status === 'building' ? cardColor : t.status === 'queued' ? C.dim : C.muted, fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>
-                      {statusLabel}
                     </div>
                   </div>
                 </div>
                 {/* Expandable thread */}
                 {expandedTask === t.id && (
-                  <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+                  <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
                     {threadLoading ? (
-                      <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
+                      <div style={{ fontSize: 12, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
                     ) : taskThread.length === 0 ? (
-                      <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events yet.</div>
+                      <div style={{ fontSize: 12, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events yet.</div>
                     ) : taskThread.map((m, idx) => (
                       <div key={idx} style={{
-                        fontSize: 11, color: C.text2, lineHeight: 1.4,
-                        padding: '3px 0',
+                        fontSize: 12, color: C.text2, lineHeight: 1.5,
+                        padding: '4px 0',
                         fontFamily: "'JetBrains Mono', monospace",
                         borderBottom: idx < taskThread.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
                       }}>
-                        <span style={{ color: C.dim, fontSize: 9 }}>{(m.timestamp || '').slice(11, 19)}</span>
+                        <span style={{ color: C.dim, fontSize: 10 }}>{(m.timestamp || '').slice(11, 19)}</span>
                         {' '}
                         <span>{m.text}</span>
                       </div>
@@ -973,42 +1052,39 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           </div>
         )}
 
-        {/* Weekly Stats Bar */}
+        {/* ── This Week — Clean stats ─────────────────────────── */}
         <div style={{
-          background: C.s1,
-          border: '1px solid ' + C.border,
-          borderRadius: 14,
-          padding: '12px 14px',
-          margin: '14px -4px 16px',
+          background: 'rgba(255,255,255,0.02)',
+          borderRadius: 16,
+          padding: '18px 20px',
+          marginBottom: 36,
         }}>
-          <div style={{
-            fontSize: 10,
+          <h3 style={{
+            fontSize: 14,
             fontWeight: 700,
-            color: C.muted,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            fontFamily: "'JetBrains Mono', monospace",
-            marginBottom: 8,
-          }}>This Week</div>
+            color: C.text2,
+            margin: '0 0 14px',
+            letterSpacing: '-0.01em',
+          }}>This Week</h3>
 
           {/* 7-day bar chart */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 36 }}>
             {DAY_LABELS.map((label, i) => {
               const count    = dailyCounts[i]
               const isFuture = i > (dayOfWeek === 0 ? 6 : dayOfWeek - 1)
               const barH     = count > 0 ? Math.round((count / maxDailyCount) * (MAX_BAR_H - MIN_BAR_H)) + MIN_BAR_H : MIN_BAR_H
               return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 3 }}>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 4 }}>
                   <div style={{
                     width: '100%',
                     height: barH,
-                    borderRadius: 3,
-                    background: isFuture || count === 0 ? 'rgba(255,255,255,0.06)' : C.accent,
+                    borderRadius: 4,
+                    background: isFuture || count === 0 ? 'rgba(255,255,255,0.04)' : C.accent,
                     minHeight: 2,
                     transition: 'height 0.3s ease',
                   }} />
                   <div style={{
-                    fontSize: 8,
+                    fontSize: 10,
                     fontWeight: 600,
                     color: C.dim,
                     fontFamily: "'JetBrains Mono', monospace",
@@ -1022,37 +1098,42 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
-            marginTop: 8,
-            paddingTop: 8,
-            borderTop: '1px solid ' + C.border,
+            marginTop: 16,
+            paddingTop: 14,
+            borderTop: '1px solid rgba(255,255,255,0.04)',
           }}>
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{weekTotal}</div>
-              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Tasks</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{weekTotal}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Tasks</div>
             </div>
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{passRate !== null ? passRate + '%' : '--'}</div>
-              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Pass Rate</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{passRate !== null ? passRate + '%' : '--'}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Pass Rate</div>
             </div>
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
-              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>Avg QA</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Avg QA</div>
             </div>
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 800, textAlign: 'center', color: C.text }}>{qaRatio}</div>
-              <div style={{ fontSize: 8, fontWeight: 600, color: C.muted, textTransform: 'uppercase', textAlign: 'center' }}>QAd</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{qaRatio}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>QAd</div>
             </div>
           </div>
         </div>
 
-        {/* Waiting for input */}
+        {/* ── Needs Input ──────────────────────────────────────── */}
         {waitingTasks.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ padding: '12px 0 6px' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
-                Needs Input
-              </span>
-            </div>
+          <div style={{ marginBottom: 36 }}>
+            <h2 style={{
+              fontSize: 20,
+              fontWeight: 800,
+              color: LIFECYCLE.waiting,
+              letterSpacing: '-0.02em',
+              margin: '0 0 16px',
+              lineHeight: 1,
+            }}>
+              Needs Input
+            </h2>
             {waitingTasks.map((t) => {
               const agent = t.agent_identity || t.agentIdentity || 'agent'
               const question = t.metadata?.checkpoint?.question || 'Waiting for your input...'
@@ -1062,26 +1143,34 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                 <div
                   key={t.id}
                   style={{
-                    padding: '14px 16px',
-                    marginBottom: 8,
-                    borderRadius: 14,
-                    background: 'rgba(245,158,11,0.08)',
-                    border: '1px solid rgba(245,158,11,0.15)',
+                    padding: '18px 20px',
+                    marginBottom: 10,
+                    borderRadius: 16,
+                    background: 'rgba(245,158,11,0.06)',
+                    border: '1px solid rgba(245,158,11,0.12)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{agent}</span>
-                    <span style={{ fontSize: 9, color: C.dim }}>needs input</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: LIFECYCLE.waiting,
+                      padding: '2px 8px', borderRadius: 8,
+                      background: 'rgba(245,158,11,0.12)',
+                    }}>{agent}</span>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: 'rgba(240,244,255,0.7)', lineHeight: 1.2, marginBottom: 8 }}>
+                  <div style={{
+                    fontSize: 16, fontWeight: 700,
+                    color: 'rgba(240,244,255,0.8)',
+                    lineHeight: 1.25,
+                    marginBottom: 10,
+                  }}>
                     {t.title || t.text || 'Untitled task'}
                   </div>
                   <div style={{
-                    fontSize: 13, color: '#F59E0B', lineHeight: 1.4,
-                    padding: '8px 12px', borderRadius: 10,
+                    fontSize: 14, color: LIFECYCLE.waiting, lineHeight: 1.5,
+                    padding: '10px 14px', borderRadius: 12,
                     background: 'rgba(245,158,11,0.06)',
                     border: '1px solid rgba(245,158,11,0.1)',
-                    marginBottom: 10,
+                    marginBottom: 12,
                   }}>
                     {question}
                   </div>
@@ -1103,11 +1192,11 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       }}
                       placeholder="Reply..."
                       style={{
-                        flex: 1, padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 10, color: C.text,
-                        fontSize: 13, fontFamily: "'Inter', sans-serif",
+                        flex: 1, padding: '10px 14px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 12, color: C.text,
+                        fontSize: 14, fontFamily: "'Inter', sans-serif",
                         outline: 'none',
                       }}
                     />
@@ -1124,11 +1213,11 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                       }}
                       disabled={!replyText.trim() || sending}
                       style={{
-                        padding: '8px 14px', borderRadius: 10,
-                        background: replyText.trim() && !sending ? '#F59E0B' : 'rgba(255,255,255,0.05)',
+                        padding: '10px 16px', borderRadius: 12,
+                        background: replyText.trim() && !sending ? LIFECYCLE.waiting : 'rgba(255,255,255,0.04)',
                         border: 'none', cursor: replyText.trim() && !sending ? 'pointer' : 'default',
                         color: replyText.trim() && !sending ? '#000' : C.muted,
-                        fontSize: 12, fontWeight: 700,
+                        fontSize: 13, fontWeight: 700,
                         flexShrink: 0,
                       }}
                     >
@@ -1141,13 +1230,20 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           </div>
         )}
 
-        {/* Failed tasks */}
+        {/* ── Failed ──────────────────────────────────────────── */}
         {filteredFailed.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 6px' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h2 style={{
+                fontSize: 18,
+                fontWeight: 800,
+                color: LIFECYCLE.failed,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                lineHeight: 1,
+              }}>
                 Failed
-              </span>
+              </h2>
               <button
                 onClick={async () => {
                   for (const t of filteredFailed) {
@@ -1155,7 +1251,7 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   }
                   refreshTasks()
                 }}
-                style={{ fontSize: 10, fontWeight: 600, color: C.dim, cursor: 'pointer', letterSpacing: '0.02em', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+                style={{ fontSize: 12, fontWeight: 600, color: C.dim, cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
                 onMouseEnter={e => { e.currentTarget.style.color = C.muted }}
                 onMouseLeave={e => { e.currentTarget.style.color = C.dim }}
               >
@@ -1170,25 +1266,30 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   key={t.id}
                   onClick={() => toggleTaskExpand(t.id)}
                   style={{
-                    padding: '14px 16px',
-                    marginBottom: 8,
-                    borderRadius: 14,
+                    padding: '18px 20px',
+                    marginBottom: 10,
+                    borderRadius: 16,
                     position: 'relative',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    background: 'rgba(239,68,68,0.08)',
-                    border: expandedTask === t.id ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(239,68,68,0.12)',
+                    background: 'rgba(239,68,68,0.05)',
+                    border: expandedTask === t.id ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(239,68,68,0.1)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: 'rgba(240,244,255,0.6)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap' }}>
+                      <div style={{
+                        fontSize: 15, fontWeight: 700,
+                        color: 'rgba(240,244,255,0.6)',
+                        lineHeight: 1.25,
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
+                      }}>
                         {t.title || t.text || 'Untitled task'}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                        {agent && <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,244,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{agent}</span>}
-                        {qa && <span style={{ fontSize: 9, fontWeight: 700, color: '#EF4444', letterSpacing: '0.06em' }}>QA {qa}/10</span>}
-                        <span style={{ color: C.dim, fontSize: 9 }}>{expandedTask === t.id ? '▾' : '▸'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                        {agent && <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(240,244,255,0.25)' }}>{agent}</span>}
+                        {qa && <span style={{ fontSize: 11, fontWeight: 700, color: LIFECYCLE.failed }}>QA {qa}/10</span>}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -1385,14 +1486,26 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           </div>
         )}
 
-        {/* Shipped tasks */}
+        {/* ── Done ────────────────────────────────────────────── */}
         {filteredCompleted.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 6px' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'JetBrains Mono', monospace" }}>
-                Shipped
-              </span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
+              <h2 style={{
+                fontSize: 20,
+                fontWeight: 800,
+                color: C.text,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                lineHeight: 1,
+              }}>
+                Done
+              </h2>
+              <span style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: C.dim,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
                 {filteredCompleted.length}
               </span>
             </div>
@@ -1408,9 +1521,9 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   key={t.id}
                   onClick={() => toggleTaskExpand(t.id)}
                   style={{
-                    padding: '14px 16px',
-                    marginBottom: 8,
-                    borderRadius: 14,
+                    padding: '18px 20px',
+                    marginBottom: 10,
+                    borderRadius: 16,
                     cursor: 'pointer',
                     position: 'relative',
                     overflow: 'hidden',
@@ -1420,46 +1533,62 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.transform = 'translateY(-2px)'
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)'
+                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.25)'
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.transform = ''
                     e.currentTarget.style.boxShadow = ''
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#F0F4FF' : '#0A0A0A', lineHeight: 1.2, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap', textDecoration: 'none' }}>
+                      <div style={{
+                        fontSize: 16, fontWeight: 700,
+                        color: isDark ? '#F0F4FF' : '#0A0A0A',
+                        lineHeight: 1.25,
+                        letterSpacing: '-0.01em',
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
+                      }}>
                         {t.title || t.text || 'Untitled task'}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7, flexWrap: 'wrap' }}>
                         {t.project_id && (() => {
                           const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
                           return proj ? <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
                         })()}
                         {agent && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.35)' : 'rgba(0,0,0,0.35)' }}>
                             {agent}
                           </span>
                         )}
                         {project && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.35)' : 'rgba(0,0,0,0.35)' }}>
                             {project}
                           </span>
                         )}
                         {!agent && !project && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: isDark ? 'rgba(240,244,255,0.4)' : 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                            {isFailed ? 'Failed' : 'Shipped'}
+                          <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.35)' : 'rgba(0,0,0,0.35)' }}>
+                            {isFailed ? 'Failed' : 'Done'}
                           </span>
                         )}
                       </div>
                     </div>
                     {qa && (
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: isFailed ? '#EF4444' : 'rgba(0,0,0,0.55)', lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                        <div style={{
+                          fontSize: 22, fontWeight: 800,
+                          color: isFailed ? LIFECYCLE.failed : 'rgba(0,0,0,0.5)',
+                          lineHeight: 1,
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}>
                           {qa}
                         </div>
-                        <div style={{ fontSize: 8, fontWeight: 600, color: isDark ? 'rgba(240,244,255,0.3)' : 'rgba(0,0,0,0.3)', textTransform: 'uppercase', textAlign: 'right', marginTop: 2 }}>
+                        <div style={{
+                          fontSize: 9, fontWeight: 600,
+                          color: isDark ? 'rgba(240,244,255,0.25)' : 'rgba(0,0,0,0.25)',
+                          textAlign: 'right', marginTop: 3,
+                        }}>
                           QA
                         </div>
                       </div>
@@ -1467,20 +1596,20 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
                   </div>
                   {/* Expandable: result summary + thread */}
                   {expandedTask === t.id && (
-                    <div style={{ marginTop: 10, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`, paddingTop: 8 }}>
+                    <div style={{ marginTop: 14, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`, paddingTop: 10 }}>
                       <ResultPreview task={t} isDark={isDark} />
                       {threadLoading ? (
-                        <div style={{ fontSize: 11, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
+                        <div style={{ fontSize: 12, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
                       ) : taskThread.length === 0 && !t.result ? (
-                        <div style={{ fontSize: 11, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events.</div>
+                        <div style={{ fontSize: 12, color: isDark ? C.dim : 'rgba(0,0,0,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>No pipeline events.</div>
                       ) : taskThread.map((m, idx) => (
                         <div key={idx} style={{
-                          fontSize: 11, color: isDark ? C.text2 : 'rgba(0,0,0,0.5)', lineHeight: 1.4,
-                          padding: '3px 0',
+                          fontSize: 12, color: isDark ? C.text2 : 'rgba(0,0,0,0.5)', lineHeight: 1.5,
+                          padding: '4px 0',
                           fontFamily: "'JetBrains Mono', monospace",
                           borderBottom: idx < taskThread.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.05)'}` : 'none',
                         }}>
-                          <span style={{ color: isDark ? C.dim : 'rgba(0,0,0,0.25)', fontSize: 9 }}>{(m.timestamp || '').slice(11, 19)}</span>
+                          <span style={{ color: isDark ? C.dim : 'rgba(0,0,0,0.25)', fontSize: 10 }}>{(m.timestamp || '').slice(11, 19)}</span>
                           {' '}
                           <span>{m.text}</span>
                         </div>
@@ -1493,7 +1622,13 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
             {filteredCompleted.length > shippedLimit && (
               <div
                 onClick={() => setShippedLimit(prev => prev + 50)}
-                style={{ padding: '10px 16px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: C.muted, cursor: 'pointer', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 8 }}
+                style={{
+                  padding: '12px 20px', textAlign: 'center',
+                  fontSize: 13, fontWeight: 600, color: C.muted,
+                  cursor: 'pointer', borderRadius: 14,
+                  background: 'rgba(255,255,255,0.03)',
+                  marginBottom: 10,
+                }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
               >
@@ -1505,12 +1640,26 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
 
         {/* Empty state */}
         {filteredActive.length === 0 && filteredCompleted.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: C.muted, gap: 8, paddingTop: 60 }}>
-            <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-              <line x1="8" y1="18" x2="21" y2="18"/>
-            </svg>
-            <span style={{ fontSize: 13 }}>{searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'No tasks'}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: C.muted, gap: 16, paddingTop: 80 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: 'rgba(255,255,255,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.text, letterSpacing: '-0.01em', marginBottom: 6 }}>
+                {searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'All clear'}
+              </div>
+              <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.5 }}>
+                {searchQuery || activeProject !== 'all' ? 'Try a different search or filter' : 'Nothing on your plate right now'}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1518,39 +1667,40 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
       {/* Task creation input bar */}
       <div style={{
         flexShrink: 0,
-        padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
+        padding: '12px 16px calc(14px + env(safe-area-inset-bottom, 0px))',
         background: C.bg,
-        borderTop: '1px solid ' + C.border,
+        borderTop: '1px solid rgba(255,255,255,0.03)',
       }}>
         {/* Recording indicator */}
         {isRecording && (
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            marginBottom: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            marginBottom: 8,
           }}>
             <div style={{
-              width: 7, height: 7, borderRadius: '50%',
+              width: 8, height: 8, borderRadius: '50%',
               background: '#EF4444',
               animation: 'rec-dot 1s ease-in-out infinite',
               flexShrink: 0,
             }} />
             <span style={{
-              fontSize: 11, fontWeight: 600, color: '#EF4444',
+              fontSize: 12, fontWeight: 700, color: '#EF4444',
               fontFamily: "'Inter', sans-serif",
-              letterSpacing: '0.04em',
-            }}>Recording...</span>
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+            }}>Recording</span>
           </div>
         )}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          background: isRecording ? 'rgba(239,68,68,0.06)' : C.s1,
-          border: '1.5px solid ' + (isRecording ? 'rgba(239,68,68,0.3)' : taskInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
-          borderRadius: 26,
-          padding: '5px 5px 5px 16px',
+          background: isRecording ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.03)',
+          border: '1.5px solid ' + (isRecording ? 'rgba(239,68,68,0.25)' : taskInputFocused ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)'),
+          borderRadius: 28,
+          padding: '6px 6px 6px 18px',
           maxWidth: 560,
           margin: '0 auto',
-          boxShadow: isRecording ? '0 0 0 4px rgba(239,68,68,0.06)' : taskInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+          boxShadow: isRecording ? '0 0 0 4px rgba(239,68,68,0.04)' : taskInputFocused ? '0 0 0 4px rgba(255,255,255,0.02), 0 8px 32px rgba(0,0,0,0.3)' : 'none',
           transition: 'border-color 0.25s, box-shadow 0.25s, background 0.25s',
         }}>
           <input
@@ -1667,7 +1817,8 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
         <div
           style={{
             position: 'absolute', inset: 0, zIndex: 100,
-            background: 'rgba(0,0,0,0.65)',
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
           onClick={() => { setShowCreateProjectModal(false); setProjectName(''); setSelectedColor('#10B981') }}
@@ -1675,15 +1826,16 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
           <div
             style={{
               background: C.s1,
-              border: '1px solid ' + C.border2,
-              borderRadius: 16,
-              padding: 24,
-              width: 300,
-              display: 'flex', flexDirection: 'column', gap: 16,
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 20,
+              padding: 28,
+              width: 320,
+              display: 'flex', flexDirection: 'column', gap: 20,
+              boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.text, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.02em' }}>
               New Project
             </div>
 
@@ -1693,64 +1845,69 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
               value={projectName}
               onChange={e => setProjectName(e.target.value)}
               style={{
-                background: C.bg2,
-                border: '1px solid ' + C.border2,
-                borderRadius: 8,
-                padding: '8px 12px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1.5px solid rgba(255,255,255,0.06)',
+                borderRadius: 12,
+                padding: '12px 16px',
                 color: C.text,
-                fontSize: 13,
+                fontSize: 15,
+                fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
                 outline: 'none',
+                transition: 'border-color 0.2s',
               }}
             />
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
               {['#EAB308', '#22C55E', '#A78BFA', '#F59E0B', '#10B981', '#F97316'].map(color => (
                 <div
                   key={color}
                   onClick={() => setSelectedColor(color)}
                   style={{
-                    width: 28, height: 28,
+                    width: 32, height: 32,
                     borderRadius: '50%',
                     background: color,
                     cursor: 'pointer',
-                    border: selectedColor === color ? '2px solid #fff' : '2px solid transparent',
+                    border: selectedColor === color ? '2.5px solid #fff' : '2.5px solid transparent',
                     boxSizing: 'border-box',
                     flexShrink: 0,
-                    outline: selectedColor === color ? '2px solid rgba(255,255,255,0.25)' : 'none',
-                    outlineOffset: 2,
+                    outline: selectedColor === color ? '2px solid rgba(255,255,255,0.2)' : 'none',
+                    outlineOffset: 3,
+                    transition: 'transform 0.15s',
                   }}
                 />
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
               <button
                 onClick={() => { setShowCreateProjectModal(false); setProjectName(''); setSelectedColor('#10B981') }}
                 style={{
-                  padding: '7px 16px',
-                  borderRadius: 8,
-                  fontSize: 12,
+                  padding: '10px 20px',
+                  borderRadius: 12,
+                  fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: '1px solid ' + C.border2,
+                  border: '1px solid rgba(255,255,255,0.06)',
                   background: 'none',
                   color: C.text2,
                   fontFamily: "'Inter', sans-serif",
+                  transition: 'background 0.15s',
                 }}
               >Cancel</button>
               <button
                 onClick={() => setShowCreateProjectModal(false)}
                 style={{
-                  padding: '7px 16px',
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 600,
+                  padding: '10px 20px',
+                  borderRadius: 12,
+                  fontSize: 13,
+                  fontWeight: 700,
                   cursor: 'pointer',
                   border: 'none',
                   background: C.accent,
                   color: '#fff',
                   fontFamily: "'Inter', sans-serif",
+                  transition: 'transform 0.15s, box-shadow 0.15s',
                 }}
               >Create</button>
             </div>
