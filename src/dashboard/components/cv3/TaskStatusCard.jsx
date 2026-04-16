@@ -22,13 +22,17 @@
 // .tc.bld::before @keyframes bld in public/cv3.html (lines 121-122).
 import { C } from '../../lib/cv3Colors.js'
 
-// State-color config: one source of truth for icon/label/pill theming.
+// Head (icon + label) colors describe the event type; pill colors describe
+// status. For the one state Steffen explicitly demoed (.m-task in cv3.html
+// line 434 -- "+ Task Created" + yellow "Queued" pill), we match exactly:
+// head uses accent green, pill uses the q token. Other states derive minimally
+// by color-matching the head to their state.
 const VARIANT = {
-  queued:      { color: C.yellow, icon: '+', label: 'Task Queued',  pill: 'Queued'   },
-  in_progress: { color: C.yellow, icon: '▶', label: 'Running',      pill: 'Building' },
-  completed:   { color: C.green,  icon: '✓', label: 'Task Done',    pill: 'Done'     },
-  needs_input: { color: C.yellow, icon: '?', label: 'Needs Input',  pill: 'Waiting'  },
-  failed:      { color: C.red,    icon: '!', label: 'Task Failed',  pill: 'Failed'   },
+  queued:      { head: C.accent, pill: C.yellow, icon: '+', label: 'Task Created', pillText: 'Queued'   },
+  in_progress: { head: C.accent, pill: C.yellow, icon: '▶', label: 'Running',      pillText: 'Building' },
+  completed:   { head: C.green,  pill: C.green,  icon: '✓', label: 'Task Done',    pillText: 'Done'     },
+  needs_input: { head: C.yellow, pill: C.yellow, icon: '?', label: 'Needs Input',  pillText: 'Waiting'  },
+  failed:      { head: C.red,    pill: C.red,    icon: '!', label: 'Task Failed',  pillText: 'Failed'   },
 }
 
 // rgba() wrapper -- build the .12 alpha tint that Steffen uses for mt-icon bg
@@ -216,12 +220,12 @@ export default function TaskStatusCard({
       }}>
         <div style={{
           width: 18, height: 18, borderRadius: 6,
-          background: tint(cfg.color, 0.08),
+          background: tint(cfg.head, 0.08),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, fontWeight: 800, color: cfg.color,
+          fontSize: 10, fontWeight: 800, color: cfg.head,
         }}>{cfg.icon}</div>
         <span style={{
-          fontSize: 10, fontWeight: 700, color: cfg.color,
+          fontSize: 10, fontWeight: 700, color: cfg.head,
           textTransform: 'uppercase', letterSpacing: '0.06em',
           fontFamily: "'JetBrains Mono', monospace",
         }}>{cfg.label}</span>
@@ -247,8 +251,8 @@ export default function TaskStatusCard({
           marginTop: 8,
           padding: '8px 10px',
           borderRadius: 8,
-          background: tint(cfg.color, 0.08),
-          border: `1px solid ${tint(cfg.color, 0.18)}`,
+          background: tint(cfg.head, 0.08),
+          border: `1px solid ${tint(cfg.head, 0.18)}`,
           fontSize: 12.5, fontWeight: 500,
           color: C.text, lineHeight: 1.45,
           whiteSpace: 'pre-wrap',
@@ -280,10 +284,9 @@ export default function TaskStatusCard({
           fontSize: 9, fontWeight: 700,
           padding: '3px 8px', borderRadius: 6,
           fontFamily: "'JetBrains Mono', monospace",
-          background: tint(cfg.color, 0.12),
-          color: cfg.color,
-          textTransform: 'uppercase', letterSpacing: '0.04em',
-        }}>{cfg.pill}</span>
+          background: tint(cfg.pill, 0.12),
+          color: cfg.pill,
+        }}>{cfg.pillText}</span>
         {qaScore != null && variant === 'completed' && (
           <span style={{
             fontSize: 9, fontWeight: 700,
@@ -291,7 +294,6 @@ export default function TaskStatusCard({
             fontFamily: "'JetBrains Mono', monospace",
             background: tint(C.accent, 0.12),
             color: C.accent,
-            textTransform: 'uppercase', letterSpacing: '0.04em',
           }}>QA {qaScore}</span>
         )}
         {agent && (
