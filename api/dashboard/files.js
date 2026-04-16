@@ -1,5 +1,6 @@
 // GET  /api/dashboard/files?type=images&prefix={prefix}
 // GET  /api/dashboard/files?type=text&client={clientId}
+// GET  /api/dashboard/files?type=briefs&project={slug}  -- reads docs/briefs/INDEX.json
 // POST /api/dashboard/files  { action: 'sign-upload', path, contentType }  -- returns signed upload URL
 // POST /api/dashboard/files  { action: 'save-text', client_id, filename, content }
 // DELETE /api/dashboard/files?type=image&path={path}
@@ -8,6 +9,9 @@
 // Server-side Supabase proxy for file storage + text_files table.
 // Uses service role key -- never exposes it to the browser.
 // Upload flow: client gets signed URL from here, then PUTs file directly to Supabase Storage (no body size limit).
+
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -39,6 +43,21 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  // ---- GET briefs from INDEX.json (no Supabase needed) -----------------
+  if (req.method === 'GET' && req.query.type === 'briefs') {
+    const project = req.query.project
+    if (!project) return res.status(400).json({ error: 'project required' })
+    try {
+      const indexPath = join(process.cwd(), 'docs', 'briefs', 'INDEX.json')
+      const raw = readFileSync(indexPath, 'utf-8')
+      const index = JSON.parse(raw)
+      const briefs = index[project] || []
+      return res.status(200).json({ briefs })
+    } catch {
+      return res.status(200).json({ briefs: [] })
+    }
+  }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: 'Supabase not configured' })

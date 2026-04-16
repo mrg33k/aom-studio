@@ -1,0 +1,388 @@
+{
+  "corner": [
+    {
+      "title": "Corner: Founder Pilot Mode -- First 3 Customers Without Waiting",
+      "path": "/briefs/corner-pilot-mode",
+      "slug": "corner-pilot-mode",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "How to close Corner's first 3 paying customers at $3,500/month without waiting for S1-S3 engineering fixes. White-glove founder pilot model. AOM does the setup manually. Revenue starts before self-serve works."
+    },
+    {
+      "title": "Corner: 30-Minute Live Demo Script",
+      "path": "/briefs/corner-demo-script",
+      "slug": "corner-demo-script",
+      "type": "brief",
+      "updated_at": "2026-03-23",
+      "agent": "Steve",
+      "dateFormatted": "Mar 23",
+      "summary": "Beat-by-beat script for Patrik's live demo calls. Exact words, exact screen moments, exact questions to ask. This is how Corner gets sold."
+    },
+    {
+      "title": "Corner Landing Page: Final Copy",
+      "path": "/briefs/corner-landing-copy",
+      "slug": "corner-landing-copy",
+      "type": "brief",
+      "updated_at": "2026-03-23",
+      "agent": "Steve",
+      "dateFormatted": "Mar 23",
+      "summary": "Production-ready copy for the /corner landing page rebuild. Every word finalized. Bobby copy-pastes. Steffen places. This is what converts visitors into demo bookings."
+    },
+    {
+      "title": "Corner: Sales One-Pager",
+      "path": "/briefs/corner-one-pager",
+      "slug": "corner-one-pager",
+      "type": "brief",
+      "updated_at": "2026-03-23",
+      "agent": "Steve",
+      "dateFormatted": "Mar 23",
+      "summary": "The one-pager Patrik sends within 24 hours of a live demo. Prospect-specific cover (swap [NAME] and [INDUSTRY]). Two pages max. Sent as PDF. Closes the deal or keeps it warm."
+    },
+    {
+      "title": "Corner: Scripted Demo Environment Spec",
+      "path": "/briefs/corner-demo-env",
+      "slug": "corner-demo-env",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "Full spec for a self-running scripted demo at aheadofmarket.com/demo. Pre-recorded story, no backend needed, any prospect can run it anytime. Removes the bottleneck of Patrik needing to be on every call."
+    },
+    {
+      "title": "Corner: 15-Minute Discovery Call Script",
+      "path": "/briefs/corner-discovery-call",
+      "slug": "corner-discovery-call",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "The discovery call happens before the live demo. This script qualifies the prospect, uncovers their #1 pain point, and books the 30-minute demo. Every demo starts here."
+    },
+    {
+      "title": "Corner: Warm Network Outreach Playbook",
+      "path": "/briefs/corner-outreach-playbook",
+      "slug": "corner-outreach-playbook",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "The complete playbook for landing the first 10 Corner customers through Patrik's personal network. Who to target, what to text, how to follow up, and how to close. The first customer comes from this doc."
+    },
+    {
+      "title": "Corner Compositing Spec",
+      "path": "/briefs/corner-compositing-spec",
+      "slug": "corner-compositing-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Layer assembly recipe for Bobby. How to composite building shell, room interiors, characters, lighting, and UI into the final game view."
+    },
+    {
+      "title": "Corner Product Site - Landed in Heaven Visual Spec",
+      "path": "/briefs/corner-product-site",
+      "slug": "corner-product-site",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual design for corner.app (or the Corner product section of aheadofmarket.com). Ultra clean, white, spacious. Apple keynote energy. The calm before the game storm. Bobby builds this."
+    },
+    {
+      "title": "CORNER Vision Page Spec",
+      "path": "/briefs/corner-vision-page-spec",
+      "slug": "corner-vision-page-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Spec for corner.app/vision: the public roadmap page. Shows where Corner is going without revealing proprietary timelines. Builds investor and client confidence. Heaven design language."
+    },
+    {
+      "title": "CORNER Product Website: The Heaven Spec",
+      "path": "/briefs/corner-website-spec",
+      "slug": "corner-website-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Full design and content spec for corner.app, the Corner product website. 'Landed in heaven' design language. Ultra clean, white, spacious, calm. Every page spec'd with layout, copy, visual direction, and responsive behavior. The site that sells the operating system."
+    },
+    {
+      "title": "Corner - Connected Office Floor Plan Spec",
+      "path": "/briefs/corner-floor-plan-spec",
+      "slug": "corner-floor-plan-spec",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "The full connected office floor plan for Corner. One map. All agents. Shared walls."
+    },
+    {
+      "title": "Corner Signup Flow: Technical Spec",
+      "path": "/briefs/corner-signup-flow-spec",
+      "slug": "corner-signup-flow-spec",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "Builder brief for Bobby on the Corner signup + onboarding flow. Auth to first message in under 3 minutes. Industry-specific auto-build. Copy strings, routes, API calls, state, animations."
+    }
+  ],
+  "ambition-mechanical": [
+    {
+      "title": "Ambition Content Emergency Plan",
+      "path": "/briefs/ambition-content-emergency",
+      "slug": "ambition-content-emergency",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Emergency content strategy for Ambition Mechanical social media launch."
+    },
+    {
+      "title": "Ambition Social Media Templates Spec",
+      "path": "/briefs/ambition-social-templates-spec",
+      "slug": "ambition-social-templates-spec",
+      "type": "brief",
+      "updated_at": "2026-03-13",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 13",
+      "summary": "Social media templates and video overlay specs for Ambition Mechanical content."
+    },
+    {
+      "title": "Ambition Section Specs",
+      "path": "/briefs/ambition-sections",
+      "slug": "ambition-sections",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "11 section-level design specs with layout, motion, hierarchy, and wow moments."
+    },
+    {
+      "title": "Ambition Brand Guidelines v2",
+      "path": "/briefs/ambition-brand-guidelines-v2",
+      "slug": "ambition-brand-guidelines-v2",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Second iteration of Ambition Mechanical brand guidelines, live at /brands/ambition."
+    },
+    {
+      "title": "Ambition Brand Guidelines v3",
+      "path": "/briefs/ambition-brand-guidelines-v3",
+      "slug": "ambition-brand-guidelines-v3",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Comprehensive brand guidelines for Ambition Mechanical, for Tony, Cleo, and Bobby."
+    },
+    {
+      "title": "Ambition Component Brand Review",
+      "path": "/briefs/ambition-component-brand-review",
+      "slug": "ambition-component-brand-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Component-level brand review for Ambition Mechanical website rebuild."
+    },
+    {
+      "title": "Ambition Loading Screen Spec",
+      "path": "/briefs/ambition-loader-spec",
+      "slug": "ambition-loader-spec",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Loading screen design specification for the Ambition Mechanical website."
+    },
+    {
+      "title": "Ambition Website Rebuild Spec",
+      "path": "/briefs/ambition-rebuild-spec",
+      "slug": "ambition-rebuild-spec",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Full rebuild specification for the Ambition Mechanical website."
+    },
+    {
+      "title": "Ambition Link and Functionality Audit",
+      "path": "/briefs/ambition-link-audit",
+      "slug": "ambition-link-audit",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 10",
+      "summary": "Round 1 link and functionality audit of the Ambition Mechanical website."
+    },
+    {
+      "title": "Ambition QA Report: Brand Review Commit",
+      "path": "/briefs/ambition-qa-brand-review",
+      "slug": "ambition-qa-brand-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "QA report on Bobby's brand review commit for Ambition Mechanical."
+    },
+    {
+      "title": "Ambition QA Report: Round 5 (Broken)",
+      "path": "/briefs/ambition-qa-r5-broken",
+      "slug": "ambition-qa-r5-broken",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Round 5 QA revealing critical rendering failures at desktop and tablet."
+    },
+    {
+      "title": "Ambition LinkedIn Posts",
+      "path": "/briefs/ambition-linkedin",
+      "slug": "ambition-linkedin",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "3 LinkedIn posts ready to copy-paste. Breaking 4+ weeks of silence."
+    },
+    {
+      "title": "Ambition: 15-20 Branded Social Animations",
+      "path": "/briefs/ambition-branded-posts",
+      "slug": "ambition-branded-posts",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Alex",
+      "dateFormatted": "Mar 16",
+      "summary": "18 branded Remotion animation briefs targeting GCs. Tool tips, checklists, industry intel, Phoenix events, culture."
+    },
+    {
+      "title": "Ambition Mechanical: 30-Day Content Arsenal",
+      "path": "/briefs/ambition-content-plan",
+      "slug": "ambition-content-plan",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Alex",
+      "dateFormatted": "Mar 15",
+      "summary": "30-day content plan mining Ambition's footage archive. 5 videos/week + 2 LinkedIn authority posts."
+    },
+    {
+      "title": "Ambition Week 1: Detailed Content Briefs",
+      "path": "/briefs/ambition-week1-plan",
+      "slug": "ambition-week1-plan",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Alex",
+      "dateFormatted": "Mar 15",
+      "summary": "Week 1 detailed briefs for Ambition content. 5 video briefs + 2 LinkedIn posts, ready to produce."
+    },
+    {
+      "title": "Ambition Video Intro Catalog",
+      "path": "/briefs/ambition-intro-catalog",
+      "slug": "ambition-intro-catalog",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Catalog of Remotion-based video intro compositions for Ambition Mechanical content."
+    },
+    {
+      "title": "Crown HVAC Footage Reorg Report",
+      "path": "/briefs/ambition-crown-reorg",
+      "slug": "ambition-crown-reorg",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 11",
+      "summary": "Footage reorganization report for Crown HVAC shoot split into two locations."
+    },
+    {
+      "title": "Primrose Footage Reorg Report",
+      "path": "/briefs/ambition-primrose-reorg",
+      "slug": "ambition-primrose-reorg",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 11",
+      "summary": "Footage organization report for Primrose senior living HVAC project."
+    },
+    {
+      "title": "Ambition Content Briefs: Weeks 1-2",
+      "path": "/briefs/ambition-content-briefs",
+      "slug": "ambition-content-briefs",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 9",
+      "summary": "First two weeks of content briefs for Ambition Mechanical social media."
+    },
+    {
+      "title": "Ambition Mechanical Footage Scan",
+      "path": "/briefs/ambition-footage-scan",
+      "slug": "ambition-footage-scan",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 8",
+      "summary": "First-pass footage scan of all Ambition Mechanical video assets."
+    }
+  ],
+  "aom-website": [
+    {
+      "title": "AOM Website Page Layout Review",
+      "path": "/briefs/aom-page-layout-review",
+      "slug": "aom-page-layout-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Alex",
+      "dateFormatted": "Mar 9",
+      "summary": "Business owner perspective review of AOM website page layouts and messaging."
+    },
+    {
+      "title": "AOM Brand Guidelines v2",
+      "path": "/briefs/aom-brand-guidelines-v2",
+      "slug": "aom-brand-guidelines-v2",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Core AOM brand guidelines synced to the live site, for all agents building AOM work."
+    },
+    {
+      "title": "AOM Brand Guidelines v4",
+      "path": "/briefs/aom-brand-guidelines-v4",
+      "slug": "aom-brand-guidelines-v4",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Bold Graphic System brand guidelines, built as live React page at /brand/v4."
+    },
+    {
+      "title": "AOM Brand Iteration v2: Contrast + Life",
+      "path": "/briefs/aom-brand-iteration-v2",
+      "slug": "aom-brand-iteration-v2",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Evolution of Bold Graphic direction with contrast and life calibration."
+    },
+    {
+      "title": "AOM Website Visual Audit",
+      "path": "/briefs/aom-site-visual-audit",
+      "slug": "aom-site-visual-audit",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Council",
+      "dateFormatted": "Mar 8",
+      "summary": "Automated Playwright visual audit of aheadofmarket.com."
+    }
+  ]
+}
