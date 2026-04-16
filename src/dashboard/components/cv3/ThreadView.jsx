@@ -8,6 +8,8 @@ import { LinkifyText, AgentAvatar, formatChatTime } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../TypingIndicatorV2.jsx'
+import SlashCommandAutocomplete from './SlashCommandAutocomplete.jsx'
+import TaskStatusCard, { TaskStatusCardStyles } from './TaskStatusCard.jsx'
 
 // ── Message status checkmarks ─────────────────────────────────────────────────
 // Single check = saved to DB. Double check = agent responded.
@@ -66,6 +68,7 @@ export default function ThreadView(ctx) {
     onSelectAgent, onSelectProject,
     projects,
     allTasks,
+    isAgentTyping,
   } = ctx
 
   const selectedAgentRecord = agents?.find((agent) => String(agent?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
@@ -76,6 +79,10 @@ export default function ThreadView(ctx) {
     ? ['General', 'Voice', 'Google', 'Keys', 'Control']
     : ['General', 'Voice', 'Google', 'Keys']
   const [resetState, setResetState] = useState({ phase: 'idle', message: '' })
+
+  // Caret position for slash-command autocomplete
+  const [caret, setCaret] = useState(null)
+  const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
   // Quick-switcher dropdown state
   const [switcherOpen, setSwitcherOpen] = useState(false)
@@ -144,6 +151,7 @@ export default function ThreadView(ctx) {
       flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
       fontFamily: "'Inter', sans-serif",
     }}>
+      <TaskStatusCardStyles />
 
       {/* Thread header */}
       <div style={{
@@ -552,7 +560,7 @@ export default function ThreadView(ctx) {
           </div>
         )}
 
-        {messages.map(msg => {
+        {messages.filter(m => !(m.source === 'bridge-stream' && m._streaming && !m.text)).map(msg => {
           const isUser = msg.role === 'user'
           const agSenderName = msg.user_name || (isUser ? displayName : null)
           const agSenderInitial = agSenderName ? agSenderName[0].toUpperCase() : 'U'
@@ -561,108 +569,75 @@ export default function ThreadView(ctx) {
           const agProfile = msg.user_id ? (msg.user_id === currentUser?.id ? { avatar_url: currentUser?.user_metadata?.avatar_url } : userProfiles[msg.user_id]) : null
           const agAvatar = agProfile?.avatar_url || null
 
-          // Checkpoint: agent needs human input (amber card)
+          // Task status cards (Steffen's CV3 design).
+          // Five variants dispatched from one component: queued / in_progress /
+          // completed / needs_input / failed. Each lifecycle message source
+          // funnels into the same card so visual language stays consistent.
+
+          // 1. Checkpoint source => needs_input variant
           if (msg.source === 'checkpoint') {
+            const question = msg.metadata?.question || msg.text
+            const title = msg.metadata?.task_title || msg.metadata?.title
+            const cardAgent = msg.metadata?.agent || msg.agent || selectedAgent?.name
+            const project = msg.metadata?.project || msg.metadata?.project_name
             return (
               <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{
-                  background: 'rgba(245,158,11,0.08)',
-                  border: '1px solid rgba(245,158,11,0.15)',
-                  borderRadius: 14,
-                  padding: '12px 16px',
-                  maxWidth: '85%', minWidth: 200,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      Needs Input
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
-                    {msg.text}
-                  </div>
-                  <div style={{ fontSize: 10, color: C.dim, marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
-                    {formatChatTime(msg.timestamp)}
-                  </div>
-                </div>
+                <TaskStatusCard
+                  status="needs_input"
+                  title={title}
+                  question={question}
+                  agent={cardAgent}
+                  project={project}
+                  timestamp={msg.timestamp}
+                  formatTime={formatChatTime}
+                />
               </div>
             )
           }
 
-          // Inline task card for task-runner lifecycle notifications
+          // 2. Task-runner lifecycle notifications (queued / running / done / failed)
           if (msg.source === 'task-runner') {
             const qaMatch = msg.text?.match(/QA:\s*(\d+(?:\.\d+)?)/i)
-            const qaScore = qaMatch ? parseFloat(qaMatch[1]) : null
-            const isFailed = /fail/i.test(msg.text || '')
-            const isStarted = /^task started/i.test(msg.text || '')
-            // Extract clean title: first non-empty line
-            const taskLines = (msg.text || '').split('\n').filter(l => l.trim())
-            const rawTitle = taskLines[0] || ''
-            const taskTitle = rawTitle.replace(/^(task\s+(started|complete[d]?|failed|done)[:\s]*)/i, '').trim() || rawTitle
-            const taskDesc = taskLines.slice(1).join(' ').trim()
-            const headColor = isFailed ? C.red : isStarted ? C.blue : C.accent
-            const headBg = isStarted ? 'rgba(96,165,250,0.08)' : C.accentBg
-            const headIcon = isFailed ? '!' : isStarted ? '▶' : '✓'
-            const headLabel = isFailed ? 'Task Failed' : isStarted ? 'Task Started' : 'Task Complete'
+            const qaScore = qaMatch ? parseFloat(qaMatch[1]) : (msg.metadata?.qa_score ?? null)
+            const rawLines = (msg.text || '').split('\n').filter(l => l.trim())
+            const rawTitle = rawLines[0] || ''
+            const taskTitle = msg.metadata?.task_title
+              || rawTitle.replace(/^(task\s+(started|complete[d]?|failed|done|queued)[:\s]*)/i, '').trim()
+              || rawTitle
+            const taskDesc = rawLines.slice(1).join(' ').trim()
+            // Status can come from structured metadata, otherwise infer from text.
+            let status = msg.metadata?.status
+            if (!status) {
+              if (/fail/i.test(msg.text || '')) status = 'failed'
+              else if (/^task started|running|building|in progress/i.test(msg.text || '')) status = 'in_progress'
+              else if (/^task queued|queued/i.test(msg.text || '')) status = 'queued'
+              else status = 'completed'
+            }
+            const cardAgent = msg.metadata?.agent || msg.agent || selectedAgent?.name
+            const project = msg.metadata?.project || msg.metadata?.project_name
+            const payload = msg.metadata?.result_payload
+            const errorMessage = status === 'failed'
+              ? (msg.metadata?.error || taskDesc || msg.text)
+              : undefined
             return (
               <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{
-                  background: C.s1,
-                  border: '1px solid ' + C.border,
-                  borderRadius: 14,
-                  padding: '12px 16px',
-                  maxWidth: '88%',
-                }}>
-                  {/* mt-head */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: 6,
-                      background: headBg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, color: headColor, fontWeight: 800,
-                    }}>{headIcon}</div>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700,
-                      color: headColor,
-                      textTransform: 'uppercase', letterSpacing: '0.06em',
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>{headLabel}</span>
-                  </div>
-                  {/* mt-title */}
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{taskTitle}</div>
-                  {/* mt-desc */}
-                  {taskDesc && (
-                    <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{taskDesc}</div>
-                  )}
-                  {/* mt-foot */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                    {qaScore !== null ? (
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
-                        fontFamily: "'JetBrains Mono', monospace",
-                        background: qaScore >= 8 ? 'rgba(34,197,94,0.12)' : qaScore >= 5 ? 'rgba(234,179,8,0.12)' : 'rgba(239,68,68,0.12)',
-                        color: qaScore >= 8 ? C.green : qaScore >= 5 ? C.yellow : C.red,
-                      }}>QA {qaScore}/10</span>
-                    ) : (
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
-                        fontFamily: "'JetBrains Mono', monospace",
-                        background: isFailed ? 'rgba(239,68,68,0.12)' : isStarted ? 'rgba(96,165,250,0.12)' : 'rgba(34,197,94,0.12)',
-                        color: isFailed ? C.red : isStarted ? C.blue : C.green,
-                      }}>{isFailed ? 'Failed' : isStarted ? 'Building' : 'Done'}</span>
-                    )}
-                    <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>
-                      {msg.agent || selectedAgent?.name}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 10, color: 'rgba(80,100,128,0.55)', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
-                    {formatChatTime(msg.timestamp)}
-                  </div>
-                </div>
+                <TaskStatusCard
+                  status={status}
+                  title={taskTitle}
+                  description={status === 'failed' ? undefined : taskDesc}
+                  agent={cardAgent}
+                  project={project}
+                  qaScore={qaScore}
+                  payload={payload}
+                  errorMessage={errorMessage}
+                  timestamp={msg.timestamp}
+                  formatTime={formatChatTime}
+                />
               </div>
             )
           }
 
-          // Inline task card for task-created notifications (rex announcing a new task)
+          // 3. "Task Created" announcements from rex (front desk) => queued variant
           if (
             msg.source === 'gemini-chat' &&
             msg.agent === 'rex' &&
@@ -674,50 +649,149 @@ export default function ThreadView(ctx) {
             const taskTitle = (titleMatch ? titleMatch[1].trim() : firstLine.replace(/task created/i, '').trim()) || 'New Task'
             const taskDesc = textLines.slice(1).join(' ').trim()
             const agentMatch = msg.text?.match(/(?:assigned to|for agent|agent[:\s]+)\s*([A-Za-z]+)/i)
-            const taskAgent = agentMatch ? agentMatch[1] : (selectedAgent?.name || '')
+            const taskAgent = agentMatch ? agentMatch[1] : (msg.metadata?.agent || selectedAgent?.name || '')
             return (
               <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <TaskStatusCard
+                  status="queued"
+                  title={taskTitle}
+                  description={taskDesc}
+                  agent={taskAgent}
+                  project={msg.metadata?.project}
+                  timestamp={msg.timestamp}
+                  formatTime={formatChatTime}
+                />
+              </div>
+            )
+          }
+
+          // Chain card: posted by chat-bridge when user sends "a >> b >> c" and
+          // by task-complete.sh when a chain finishes or blocks. msg.metadata holds
+          // chain_id, chain_total, chain_status ('queued'|'complete'|'blocked'),
+          // chain_tasks: [{id, seq, title, status}].
+          if (msg.source === 'chain-card') {
+            const cm = msg.metadata || {}
+            const chainTotal = cm.chain_total || (cm.chain_tasks || []).length || 0
+            const chainStatus = cm.chain_status || 'queued'
+            // Try to resolve up-to-date task statuses from allTasks if available.
+            const liveTasks = (cm.chain_tasks || []).map(t => {
+              const live = (typeof allTasks !== 'undefined' && Array.isArray(allTasks))
+                ? allTasks.find(a => a.id === t.id) : null
+              return live ? { ...t, status: live.status } : t
+            })
+            const headerColor = chainStatus === 'complete' ? '#34D399'
+              : chainStatus === 'blocked' ? '#F87171'
+              : '#A5B4FC'
+            const headerBg = chainStatus === 'complete' ? 'rgba(52,211,153,0.10)'
+              : chainStatus === 'blocked' ? 'rgba(248,113,113,0.10)'
+              : 'rgba(99,102,241,0.10)'
+            const headerBorder = chainStatus === 'complete' ? 'rgba(52,211,153,0.35)'
+              : chainStatus === 'blocked' ? 'rgba(248,113,113,0.45)'
+              : 'rgba(99,102,241,0.30)'
+            const headerLabel = chainStatus === 'complete' ? `Chain complete · ${chainTotal} steps`
+              : chainStatus === 'blocked' ? `Chain blocked at ${cm.blocked_at_seq || '?'}/${chainTotal}`
+              : `Chain queued · ${chainTotal} steps`
+            const dotFor = (st) => {
+              const s = (st || '').toLowerCase()
+              if (s === 'done' || s === 'completed') return { c: '#34D399', label: 'done', pulse: false }
+              if (s === 'failed' || s === 'rejected' || s === 'cancelled') return { c: '#F87171', label: 'blocked', pulse: false }
+              if (s === 'running' || s === 'active' || s === 'building' || s === 'qa' || s === 'planning' || s === 'classifying') return { c: '#FBBF24', label: 'running', pulse: true }
+              if (s === 'queued') return { c: '#A5B4FC', label: 'queued', pulse: false }
+              if (s === 'waiting') return { c: 'rgba(148,163,184,0.55)', label: 'waiting', pulse: false }
+              return { c: 'rgba(148,163,184,0.55)', label: s || 'unknown', pulse: false }
+            }
+            return (
+              <div
+                key={msg.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  marginBottom: 6,
+                }}
+              >
                 <div style={{
-                  background: C.s1,
-                  border: '1px solid ' + C.border,
-                  borderRadius: 14,
-                  padding: '12px 16px',
-                  maxWidth: '88%',
+                  maxWidth: '85%',
+                  padding: '10px 12px',
+                  borderRadius: 12,
+                  background: headerBg,
+                  border: `1px solid ${headerBorder}`,
+                  fontFamily: "'Inter', sans-serif",
                 }}>
-                  {/* mt-head */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: 6,
-                      background: C.accentBg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, color: C.accent, fontWeight: 800,
-                    }}>+</div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}>
                     <span style={{
-                      fontSize: 10, fontWeight: 700,
-                      color: C.accent,
-                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      fontSize: 8,
+                      fontWeight: 800,
+                      color: headerColor,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
                       fontFamily: "'JetBrains Mono', monospace",
-                    }}>Task Created</span>
+                    }}>
+                      {headerLabel}
+                    </span>
                   </div>
-                  {/* mt-title */}
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{taskTitle}</div>
-                  {/* mt-desc */}
-                  {taskDesc && (
-                    <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{taskDesc}</div>
-                  )}
-                  {/* mt-foot */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                    <span style={{
-                      fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      background: 'rgba(234,179,8,0.12)',
-                      color: C.yellow,
-                    }}>Queued</span>
-                    {taskAgent && (
-                      <span style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>{taskAgent}</span>
-                    )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {liveTasks.map((t) => {
+                      const d = dotFor(t.status)
+                      return (
+                        <div key={t.id || t.seq} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '4px 6px',
+                          borderRadius: 6,
+                          background: 'rgba(0,0,0,0.18)',
+                        }}>
+                          <span style={{
+                            width: 7, height: 7, borderRadius: '50%',
+                            background: d.c,
+                            boxShadow: d.pulse ? `0 0 0 4px ${d.c}22` : 'none',
+                            animation: d.pulse ? 'cv3pulse 1.4s ease-in-out infinite' : 'none',
+                            flexShrink: 0,
+                          }} />
+                          <span style={{
+                            fontSize: 9,
+                            fontWeight: 700,
+                            color: 'rgba(148,163,184,0.7)',
+                            fontFamily: "'JetBrains Mono', monospace",
+                            minWidth: 28,
+                          }}>
+                            {t.seq}/{chainTotal}
+                          </span>
+                          <span style={{
+                            fontSize: 12,
+                            color: 'rgba(226,232,240,0.92)',
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {t.title}
+                          </span>
+                          <span style={{
+                            fontSize: 8,
+                            fontWeight: 700,
+                            color: d.c,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            fontFamily: "'JetBrains Mono', monospace",
+                          }}>
+                            {d.label}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <div style={{ fontSize: 10, color: 'rgba(80,100,128,0.55)', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
+                  <div style={{
+                    fontSize: 9,
+                    color: 'rgba(148,163,184,0.45)',
+                    marginTop: 6,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>
                     {formatChatTime(msg.timestamp)}
                   </div>
                 </div>
@@ -971,7 +1045,7 @@ export default function ThreadView(ctx) {
             </div>
           )
         })}
-        {(sending || awaitingResponse) && (
+        {(sending || awaitingResponse || isAgentTyping) && (
           <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
             <TypingIndicatorV2
               streaming={true}
@@ -1120,25 +1194,50 @@ export default function ThreadView(ctx) {
           style={{ display: 'none' }}
           onChange={handleFileSelection}
         />
+        {input.includes('>>') && (() => {
+          const parts = input.split('>>').map(s => s.trim()).filter(Boolean)
+          if (parts.length < 2) return null
+          return (
+            <div style={{
+              maxWidth: 560,
+              margin: '0 auto 6px',
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#A5B4FC',
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.04em',
+            }}>
+              Chain · {parts.length} steps · runs in sequence
+            </div>
+          )
+        })()}
+        <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
+        <SlashCommandAutocomplete
+          value={input}
+          setValue={setInput}
+          inputRef={inputRef}
+          caret={caret}
+        />
         <div style={{
           display: 'flex',
           alignItems: 'center',
           background: C.s1,
-          border: '1.5px solid ' + (chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
+          border: '1.5px solid ' + (input.includes('>>') && input.split('>>').filter(s => s.trim()).length >= 2 ? 'rgba(99,102,241,0.40)' : chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
           borderRadius: 26,
           padding: '5px 5px 5px 16px',
-          maxWidth: 560,
-          margin: '0 auto',
-          boxShadow: chatInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
+          boxShadow: input.includes('>>') && input.split('>>').filter(s => s.trim()).length >= 2 ? '0 0 0 4px rgba(99,102,241,0.06), 0 4px 20px rgba(0,0,0,0.2)' : chatInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
           transition: 'border-color 0.25s, box-shadow 0.25s',
         }}>
           <input
             ref={inputRef}
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => { setInput(e.target.value); updateCaret(e) }}
             onKeyDown={handleKeyDown}
-            onFocus={() => setChatInputFocused(true)}
+            onKeyUp={updateCaret}
+            onClick={updateCaret}
+            onSelect={updateCaret}
+            onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
             onBlur={() => setChatInputFocused(false)}
             placeholder={`Message ${selectedAgent.name}...`}
             style={{
@@ -1246,6 +1345,7 @@ export default function ThreadView(ctx) {
               )}
             </button>
           )}
+        </div>
         </div>
       </div>}
 
