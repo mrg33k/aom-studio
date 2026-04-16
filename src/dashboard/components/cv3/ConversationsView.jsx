@@ -540,7 +540,7 @@ export default function ConversationsView(ctx) {
                   </span>
                 )}
               </div>
-              {(elonAgent?.status === 'building' || elonAgent?.status === 'in_progress') ? (
+              {(['building', 'in_progress'].includes(elonAgent?.status?.toLowerCase())) ? (
                 <div style={{
                   marginTop: 6,
                   background: 'rgba(34,197,94,0.06)',
@@ -621,11 +621,12 @@ export default function ConversationsView(ctx) {
           {(agents || []).map(agent => {
             const lastMsg = unreadMap[agent.slug]
             const unreadCount = unreadCounts[agent.slug] || 0
-            const isActive = agent.status?.toUpperCase() !== 'IDLE'
-            const statusInfo = getStatusColor(agent.status)
-            const statusLabel = agent.status === 'building' ? 'Building'
-              : agent.status === 'qa' ? 'QA'
-              : agent.status === 'queued' ? 'Queued'
+            const agentStatus = (agent.status || '').toLowerCase()
+            const isActive = agentStatus !== 'idle'
+            const statusInfo = getStatusColor(agentStatus)
+            const statusLabel = agentStatus === 'building' ? 'Building'
+              : agentStatus === 'qa' ? 'QA'
+              : agentStatus === 'queued' ? 'Queued'
               : isActive ? 'Online' : 'Idle'
 
             return (
@@ -679,7 +680,7 @@ export default function ConversationsView(ctx) {
                       {lastMsg?.timestamp ? formatChatTime(lastMsg.timestamp) : ''}
                     </span>
                   </div>
-                  {(agent.status === 'building' || agent.status === 'in_progress') ? (
+                  {(agentStatus === 'building' || agentStatus === 'in_progress') ? (
                     <div style={{
                       marginTop: 4,
                       background: 'rgba(34,197,94,0.06)',
@@ -723,7 +724,7 @@ export default function ConversationsView(ctx) {
                     display: 'flex', alignItems: 'center', gap: 3,
                     fontSize: 9, fontWeight: 600,
                     fontFamily: "'JetBrains Mono', monospace",
-                    color: isActive ? C.accent : agent.status === 'building' ? C.yellow : C.dim,
+                    color: isActive ? C.accent : agentStatus === 'building' ? C.yellow : C.dim,
                   }}>
                     <div style={{
                       width: 5, height: 5, borderRadius: '50%',

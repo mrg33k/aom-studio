@@ -264,7 +264,7 @@ export function SwipeCard({ children, actions, style }) {
 
 // Task status colors (returns object with dot, glow, border, bg)
 export function getStatusColor(status) {
-  switch (status) {
+  switch ((status || '').toLowerCase()) {
     case 'building':  return { dot: '#22C55E', glow: '0 0 6px rgba(34,197,94,0.6)',  border: 'rgba(34,197,94,0.2)',  bg: 'rgba(34,197,94,0.05)' }
     case 'qa':        return { dot: '#3B9EFF', glow: '0 0 6px rgba(59,158,255,0.5)', border: 'rgba(59,158,255,0.2)', bg: 'rgba(59,158,255,0.05)' }
     case 'queued':    return { dot: '#F59E0B', glow: 'none',                          border: 'rgba(245,158,11,0.15)', bg: 'rgba(245,158,11,0.03)' }
