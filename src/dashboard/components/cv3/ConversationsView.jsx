@@ -540,7 +540,7 @@ export default function ConversationsView(ctx) {
                   </span>
                 )}
               </div>
-              {(['building', 'in_progress'].includes(elonAgent?.status?.toLowerCase())) ? (
+              {(['building', 'in_progress', 'working'].includes(elonAgent?.status?.toLowerCase())) ? (
                 <div style={{
                   marginTop: 6,
                   background: 'rgba(34,197,94,0.06)',
@@ -625,6 +625,7 @@ export default function ConversationsView(ctx) {
             const isActive = agentStatus !== 'idle'
             const statusInfo = getStatusColor(agentStatus)
             const statusLabel = agentStatus === 'building' ? 'Building'
+              : agentStatus === 'working' ? 'Working'
               : agentStatus === 'qa' ? 'QA'
               : agentStatus === 'queued' ? 'Queued'
               : isActive ? 'Online' : 'Idle'
@@ -680,7 +681,7 @@ export default function ConversationsView(ctx) {
                       {lastMsg?.timestamp ? formatChatTime(lastMsg.timestamp) : ''}
                     </span>
                   </div>
-                  {(agentStatus === 'building' || agentStatus === 'in_progress') ? (
+                  {(agentStatus === 'building' || agentStatus === 'in_progress' || agentStatus === 'working') ? (
                     <div style={{
                       marginTop: 4,
                       background: 'rgba(34,197,94,0.06)',
