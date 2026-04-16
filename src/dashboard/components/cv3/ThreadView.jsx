@@ -9,7 +9,7 @@ import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../TypingIndicatorV2.jsx'
 import SlashCommandAutocomplete from './SlashCommandAutocomplete.jsx'
-import TaskStatusCard, { TaskStatusCardStyles } from './TaskStatusCard.jsx'
+import TaskStatusCard, { TaskStatusCardStyles, renderTaskCardForMessage } from './TaskStatusCard.jsx'
 
 // ── Message status checkmarks ─────────────────────────────────────────────────
 // Single check = saved to DB. Double check = agent responded.
@@ -569,100 +569,12 @@ export default function ThreadView(ctx) {
           const agProfile = msg.user_id ? (msg.user_id === currentUser?.id ? { avatar_url: currentUser?.user_metadata?.avatar_url } : userProfiles[msg.user_id]) : null
           const agAvatar = agProfile?.avatar_url || null
 
-          // Task status cards (Steffen's CV3 design).
-          // Five variants dispatched from one component: queued / in_progress /
-          // completed / needs_input / failed. Each lifecycle message source
-          // funnels into the same card so visual language stays consistent.
-
-          // 1. Checkpoint source => needs_input variant
-          if (msg.source === 'checkpoint') {
-            const question = msg.metadata?.question || msg.text
-            const title = msg.metadata?.task_title || msg.metadata?.title
-            const cardAgent = msg.metadata?.agent || msg.agent || selectedAgent?.name
-            const project = msg.metadata?.project || msg.metadata?.project_name
-            return (
-              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <TaskStatusCard
-                  status="needs_input"
-                  title={title}
-                  question={question}
-                  agent={cardAgent}
-                  project={project}
-                  timestamp={msg.timestamp}
-                  formatTime={formatChatTime}
-                />
-              </div>
-            )
-          }
-
-          // 2. Task-runner lifecycle notifications (queued / running / done / failed)
-          if (msg.source === 'task-runner') {
-            const qaMatch = msg.text?.match(/QA:\s*(\d+(?:\.\d+)?)/i)
-            const qaScore = qaMatch ? parseFloat(qaMatch[1]) : (msg.metadata?.qa_score ?? null)
-            const rawLines = (msg.text || '').split('\n').filter(l => l.trim())
-            const rawTitle = rawLines[0] || ''
-            const taskTitle = msg.metadata?.task_title
-              || rawTitle.replace(/^(task\s+(started|complete[d]?|failed|done|queued)[:\s]*)/i, '').trim()
-              || rawTitle
-            const taskDesc = rawLines.slice(1).join(' ').trim()
-            // Status can come from structured metadata, otherwise infer from text.
-            let status = msg.metadata?.status
-            if (!status) {
-              if (/fail/i.test(msg.text || '')) status = 'failed'
-              else if (/^task started|running|building|in progress/i.test(msg.text || '')) status = 'in_progress'
-              else if (/^task queued|queued/i.test(msg.text || '')) status = 'queued'
-              else status = 'completed'
-            }
-            const cardAgent = msg.metadata?.agent || msg.agent || selectedAgent?.name
-            const project = msg.metadata?.project || msg.metadata?.project_name
-            const payload = msg.metadata?.result_payload
-            const errorMessage = status === 'failed'
-              ? (msg.metadata?.error || taskDesc || msg.text)
-              : undefined
-            return (
-              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <TaskStatusCard
-                  status={status}
-                  title={taskTitle}
-                  description={status === 'failed' ? undefined : taskDesc}
-                  agent={cardAgent}
-                  project={project}
-                  qaScore={qaScore}
-                  payload={payload}
-                  errorMessage={errorMessage}
-                  timestamp={msg.timestamp}
-                  formatTime={formatChatTime}
-                />
-              </div>
-            )
-          }
-
-          // 3. "Task Created" announcements from rex (front desk) => queued variant
-          if (
-            msg.source === 'gemini-chat' &&
-            msg.agent === 'rex' &&
-            msg.text?.toLowerCase().includes('task created')
-          ) {
-            const textLines = (msg.text || '').split('\n').filter(l => l.trim())
-            const firstLine = textLines[0] || ''
-            const titleMatch = firstLine.match(/task created[:\s]+(.+)/i)
-            const taskTitle = (titleMatch ? titleMatch[1].trim() : firstLine.replace(/task created/i, '').trim()) || 'New Task'
-            const taskDesc = textLines.slice(1).join(' ').trim()
-            const agentMatch = msg.text?.match(/(?:assigned to|for agent|agent[:\s]+)\s*([A-Za-z]+)/i)
-            const taskAgent = agentMatch ? agentMatch[1] : (msg.metadata?.agent || selectedAgent?.name || '')
-            return (
-              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <TaskStatusCard
-                  status="queued"
-                  title={taskTitle}
-                  description={taskDesc}
-                  agent={taskAgent}
-                  project={msg.metadata?.project}
-                  timestamp={msg.timestamp}
-                  formatTime={formatChatTime}
-                />
-              </div>
-            )
+          // Task status cards (Steffen's CV3 design). One helper dispatches
+          // checkpoint / task-runner / task-completion / task-notification and
+          // the rex "Task Created" announcements into the shared card.
+          const taskCard = renderTaskCardForMessage(msg, { selectedAgent, formatTime: formatChatTime })
+          if (taskCard) {
+            return <div key={msg.id}>{taskCard}</div>
           }
 
           // Chain card: posted by chat-bridge when user sends "a >> b >> c" and

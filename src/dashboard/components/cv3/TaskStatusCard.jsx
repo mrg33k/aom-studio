@@ -506,3 +506,235 @@ export function TaskStatusCardStyles() {
     `}</style>
   )
 }
+
+// ── Text parser for task-status messages ──────────────────────────────────────
+// Handles the formats emitted by AOM-EA/scripts/post-task-chat-message.py:
+//   done          -> "Task done: <title>. <summary>. <link?>"
+//   failed        -> "Task failed: <title>. Reason: <err>. I'm on it ..."
+//   needs_input   -> "Task needs input: <title>\n\nQuestion: <q>"
+// Also handles lifecycle prefixes emitted by task-runner.sh:
+//   "Task started: <title>" / "Task queued: <title>" / "Task running: <title>"
+export function parseTaskMessageText(text = '') {
+  const t = (text || '').trim()
+  if (!t) return null
+
+  const niMatch = t.match(/^Task needs input:\s*([\s\S]+)$/i)
+  if (niMatch) {
+    const rest = niMatch[1]
+    const qIdx = rest.search(/\n\s*Question:\s*/i)
+    let title = rest
+    let question = ''
+    if (qIdx >= 0) {
+      title = rest.slice(0, qIdx).trim()
+      question = rest.slice(qIdx).replace(/^\s*\n\s*Question:\s*/i, '').trim()
+    } else {
+      title = rest.trim()
+    }
+    return {
+      status: 'needs_input',
+      title: title.replace(/[.\s]+$/, '').trim(),
+      question,
+    }
+  }
+
+  const failMatch = t.match(/^Task failed:\s*([^.\n]+?)\.\s*([\s\S]*)$/i)
+  if (failMatch) {
+    const title = failMatch[1].trim()
+    const rest = (failMatch[2] || '').trim()
+    // "Reason: <err>. I'm on it — ..." — pull err, drop the trailing hand-hold.
+    let errorMessage = rest
+    const reasonMatch = rest.match(/^Reason:\s*([\s\S]*)$/i)
+    if (reasonMatch) errorMessage = reasonMatch[1].trim()
+    errorMessage = errorMessage.split(/\.\s*I'?m on it/i)[0].trim().replace(/[.\s]+$/, '').trim()
+    if (!errorMessage) errorMessage = 'no reason supplied'
+    return { status: 'failed', title, errorMessage }
+  }
+
+  const doneMatch = t.match(/^Task done:\s*([^.\n]+?)\.\s*([\s\S]*)$/i)
+  if (doneMatch) {
+    const title = doneMatch[1].trim()
+    const rest = (doneMatch[2] || '').trim()
+    const urlMatch = rest.match(/https?:\/\/\S+/)
+    if (urlMatch) {
+      const url = urlMatch[0].replace(/[.,)\]]+$/, '')
+      const summary = rest.replace(urlMatch[0], '').trim().replace(/[.\s]+$/, '').trim()
+      return {
+        status: 'completed',
+        title,
+        description: summary || undefined,
+        payload: { type: 'link', payload: url, summary },
+      }
+    }
+    return {
+      status: 'completed',
+      title,
+      description: rest.replace(/[.\s]+$/, '').trim() || undefined,
+    }
+  }
+
+  const startMatch = t.match(/^Task (started|running|building|in progress):\s*(.+)$/i)
+  if (startMatch) {
+    return { status: 'in_progress', title: startMatch[2].split('\n')[0].trim() }
+  }
+
+  const queueMatch = t.match(/^Task queued:\s*(.+)$/i)
+  if (queueMatch) {
+    return { status: 'queued', title: queueMatch[1].split('\n')[0].trim() }
+  }
+
+  return null
+}
+
+// Detect task-status messages in a chat row and render them as a TaskStatusCard.
+// Returns a React element wrapped in the standard flex row, or null if the
+// message is not a task-status message (caller falls back to default bubble).
+// Used by ThreadView and ProjectChatView so the card shows up wherever the
+// message lands (agent thread + project room crosspost).
+export function renderTaskCardForMessage(msg, { selectedAgent, formatTime = v => v } = {}) {
+  if (!msg) return null
+  const source = msg.source || ''
+  const meta = msg.metadata || {}
+  const text = msg.text || ''
+
+  const wrap = (card) => (
+    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>{card}</div>
+  )
+
+  // Checkpoint -> needs_input (structured metadata carries the question).
+  if (source === 'checkpoint') {
+    const question = meta.question || text
+    const title = meta.task_title || meta.title
+    const cardAgent = meta.agent || msg.agent || selectedAgent?.name
+    const project = meta.project || meta.project_name || msg.project
+    return wrap(
+      <TaskStatusCard
+        status="needs_input"
+        title={title}
+        question={question}
+        agent={cardAgent}
+        project={project}
+        timestamp={msg.timestamp}
+        formatTime={formatTime}
+      />,
+    )
+  }
+
+  // task-runner: lifecycle notifications (queued / running / done / failed).
+  if (source === 'task-runner') {
+    const qaMatch = text.match(/QA:\s*(\d+(?:\.\d+)?)/i)
+    const qaScore = qaMatch ? parseFloat(qaMatch[1]) : (meta.qa_score ?? null)
+    const rawLines = text.split('\n').filter(l => l.trim())
+    const rawTitle = rawLines[0] || ''
+    const taskTitle = meta.task_title
+      || rawTitle.replace(/^(task\s+(started|complete[d]?|failed|done|queued)[:\s]*)/i, '').trim()
+      || rawTitle
+    const taskDesc = rawLines.slice(1).join(' ').trim()
+    let status = meta.status
+    if (!status) {
+      if (/fail/i.test(text)) status = 'failed'
+      else if (/^task started|running|building|in progress/i.test(text)) status = 'in_progress'
+      else if (/^task queued|queued/i.test(text)) status = 'queued'
+      else status = 'completed'
+    }
+    const cardAgent = meta.agent || msg.agent || selectedAgent?.name
+    const project = meta.project || meta.project_name || msg.project
+    const payload = meta.result_payload
+    const errorMessage = status === 'failed' ? (meta.error || taskDesc || text) : undefined
+    return wrap(
+      <TaskStatusCard
+        status={status}
+        title={taskTitle}
+        description={status === 'failed' ? undefined : taskDesc}
+        agent={cardAgent}
+        project={project}
+        qaScore={qaScore}
+        payload={payload}
+        errorMessage={errorMessage}
+        timestamp={msg.timestamp}
+        formatTime={formatTime}
+      />,
+    )
+  }
+
+  // task-completion / task-completion-crosspost / task-notification.
+  // These come from AOM-EA/scripts/post-task-chat-message.py and land in the
+  // owning agent's thread + the project crosspost client_id. Metadata may be
+  // null on historical rows, so we always fall back to text parsing.
+  if (
+    source === 'task-completion'
+    || source === 'task-completion-crosspost'
+    || source === 'task-notification'
+  ) {
+    const parsed = parseTaskMessageText(text) || {}
+    const status = meta.status || parsed.status || 'completed'
+    const title = meta.task_title || meta.title || parsed.title || ''
+    const description = meta.description || parsed.description
+    const question = meta.question || parsed.question
+    const errorMessage = meta.error || meta.error_message || parsed.errorMessage
+    const payload = meta.result_payload || parsed.payload
+    const qaScore = meta.qa_score ?? null
+    const cardAgent = meta.agent || meta.task_agent || msg.agent || selectedAgent?.name
+    const project = meta.project || meta.project_name || msg.project
+    return wrap(
+      <TaskStatusCard
+        status={status}
+        title={title}
+        description={status === 'failed' ? undefined : description}
+        question={question}
+        agent={cardAgent}
+        project={project}
+        qaScore={qaScore}
+        payload={payload}
+        errorMessage={errorMessage}
+        timestamp={msg.timestamp}
+        formatTime={formatTime}
+      />,
+    )
+  }
+
+  // Rex "Task created" announcements from front desk -> queued variant.
+  if (source === 'gemini-chat' && msg.agent === 'rex' && text.toLowerCase().includes('task created')) {
+    const textLines = text.split('\n').filter(l => l.trim())
+    const firstLine = textLines[0] || ''
+    const titleMatch = firstLine.match(/task created[:\s]+(.+)/i)
+    const taskTitle = (titleMatch ? titleMatch[1].trim() : firstLine.replace(/task created/i, '').trim()) || 'New Task'
+    const taskDesc = textLines.slice(1).join(' ').trim()
+    const agentMatch = text.match(/(?:assigned to|for agent|agent[:\s]+)\s*([A-Za-z]+)/i)
+    const taskAgent = agentMatch ? agentMatch[1] : (meta.agent || selectedAgent?.name || '')
+    return wrap(
+      <TaskStatusCard
+        status="queued"
+        title={taskTitle}
+        description={taskDesc}
+        agent={taskAgent}
+        project={meta.project || msg.project}
+        timestamp={msg.timestamp}
+        formatTime={formatTime}
+      />,
+    )
+  }
+
+  // Fallback: any message whose text begins with a task-status prefix.
+  // Catches messages from unknown sources that still use the expected shape.
+  if (/^Task (done|failed|needs input|queued|running|started|building|in progress):/i.test(text)) {
+    const parsed = parseTaskMessageText(text)
+    if (parsed) {
+      return wrap(
+        <TaskStatusCard
+          status={parsed.status}
+          title={parsed.title}
+          description={parsed.status === 'failed' ? undefined : parsed.description}
+          question={parsed.question}
+          payload={parsed.payload}
+          errorMessage={parsed.errorMessage}
+          agent={meta.agent || msg.agent || selectedAgent?.name}
+          project={meta.project || msg.project}
+          timestamp={msg.timestamp}
+          formatTime={formatTime}
+        />,
+      )
+    }
+  }
+
+  return null
+}

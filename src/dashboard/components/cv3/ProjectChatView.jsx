@@ -9,6 +9,8 @@ import { LinkifyText, formatChatTime } from './shared.jsx'
 import VoiceChat from '../VoiceChat.jsx'
 import ChatMessageRenderer from '../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../TypingIndicatorV2.jsx'
+import SlashCommandAutocomplete from './SlashCommandAutocomplete.jsx'
+import { TaskStatusCardStyles, renderTaskCardForMessage } from './TaskStatusCard.jsx'
 
 export default function ProjectChatView(ctx) {
   // All variables come from ctx (spread from ChatPanel state)
@@ -45,6 +47,10 @@ export default function ProjectChatView(ctx) {
     prefillMessage, setPrefillMessage,
   } = ctx
   const projColor = selectedProject?.color || '#6B8AB0'
+
+  // Caret position for slash-command autocomplete
+  const [caret, setCaret] = useState(null)
+  const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
   // Project files state
   const [projectFiles, setProjectFiles] = useState([])
@@ -145,6 +151,7 @@ export default function ProjectChatView(ctx) {
         flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         fontFamily: "'Inter', sans-serif",
       }}>
+        <TaskStatusCardStyles />
         {/* Project chat header */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
@@ -557,6 +564,13 @@ export default function ProjectChatView(ctx) {
             </div>
           )}
           {messages.map(msg => {
+            // Task status cards: render task-completion / task-runner / checkpoint
+            // messages as the CV3 card (Steffen's design) instead of a plain bubble.
+            // Mirrors ThreadView so project-room crossposts also get the card.
+            const taskCard = renderTaskCardForMessage(msg, { formatTime: formatChatTime })
+            if (taskCard) {
+              return <div key={msg.id}>{taskCard}</div>
+            }
             const isUser = msg.role === 'user'
             const senderName = msg.user_name || (isUser ? displayName : null)
             const senderInitial = senderName ? senderName[0].toUpperCase() : 'U'
@@ -833,6 +847,13 @@ export default function ProjectChatView(ctx) {
             style={{ display: 'none' }}
             onChange={handleFileSelection}
           />
+          <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
+          <SlashCommandAutocomplete
+            value={input}
+            setValue={setInput}
+            inputRef={inputRef}
+            caret={caret}
+          />
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -840,8 +861,6 @@ export default function ProjectChatView(ctx) {
             border: '1.5px solid ' + (chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
             borderRadius: 26,
             padding: '5px 5px 5px 16px',
-            maxWidth: 560,
-            margin: '0 auto',
             boxShadow: chatInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
             transition: 'border-color 0.25s, box-shadow 0.25s',
           }}>
@@ -849,7 +868,7 @@ export default function ProjectChatView(ctx) {
               ref={inputRef}
               type="text"
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => { setInput(e.target.value); updateCaret(e) }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
@@ -858,7 +877,10 @@ export default function ProjectChatView(ctx) {
                   setInput('')
                 }
               }}
-              onFocus={() => setChatInputFocused(true)}
+              onKeyUp={updateCaret}
+              onClick={updateCaret}
+              onSelect={updateCaret}
+              onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
               onBlur={() => setChatInputFocused(false)}
               placeholder={`Message ${selectedProject?.name || 'project'}...`}
               style={{
@@ -956,6 +978,7 @@ export default function ProjectChatView(ctx) {
                 )}
               </button>
             )}
+          </div>
           </div>
         </div>}
         {/* Chat settings full-screen overlay */}
