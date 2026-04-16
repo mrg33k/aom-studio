@@ -105,7 +105,44 @@ export default async function handler(req, res) {
       ? client_id.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
 
-    const resolvedProject = (project && project.trim()) ? project.trim() : null
+    // --- Project auto-detection ---
+    // Priority: explicit project field > [project:slug] tag in text > null
+    let resolvedProject = (project && project.trim()) ? project.trim() : null
+    let autoDetectedProject = false
+
+    if (!resolvedProject) {
+      // Check for [project:slug] tag in message text (set by dashboard context)
+      const tagMatch = text.match(/\[project:([a-z0-9_-]+)\]/i)
+      if (tagMatch) {
+        resolvedProject = tagMatch[1].toLowerCase()
+        autoDetectedProject = true
+      }
+    }
+
+    // --- Fetch project list for name-based detection (if no tag found) ---
+    if (!resolvedProject && SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        const projUrl = `${SUPABASE_URL}/rest/v1/projects?select=slug,name&is_active=eq.true`
+        const projRes = await fetch(projUrl, { headers: supabaseHeaders() })
+        if (projRes.ok) {
+          const projects = await projRes.json()
+          const lowerText = text.toLowerCase()
+          // Match project name or slug mentioned in the message text
+          for (const p of projects) {
+            if (p.slug && lowerText.includes(p.slug.toLowerCase())) {
+              resolvedProject = p.slug
+              autoDetectedProject = true
+              break
+            }
+            if (p.name && p.name.length > 2 && lowerText.includes(p.name.toLowerCase())) {
+              resolvedProject = p.slug
+              autoDetectedProject = true
+              break
+            }
+          }
+        }
+      } catch (_) { /* project detection is best-effort */ }
+    }
 
     const payload = {
       id: crypto.randomUUID(),
@@ -141,6 +178,37 @@ export default async function handler(req, res) {
     }
 
     const inserted = await sbRes.json()
+
+    // --- Cross-post to shared project thread ---
+    // When a project is tagged and the message isn't already in that project's
+    // shared thread, insert a copy so it appears in the project chat view.
+    // Skip if: already a crosspost, or client_id is already the shared thread.
+    if (resolvedProject && source !== 'crosspost' && resolvedClientId !== `shared:${resolvedProject}`) {
+      try {
+        const crosspostPayload = {
+          id: crypto.randomUUID(),
+          agent,
+          role,
+          text: text.trim(),
+          source: 'crosspost',
+          client_id: `shared:${resolvedProject}`,
+          project: resolvedProject,
+          ...(sender_role ? { sender_role } : {}),
+          ...(world_id ? { world_id } : {}),
+          ...(user_id ? { user_id } : {}),
+          ...(user_name ? { user_name } : {}),
+          ...(attachment_url ? { attachment_url } : {}),
+          ...(file_mime_type ? { file_mime_type } : {}),
+          ...(file_size != null ? { file_size } : {}),
+        }
+        await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+          method: 'POST',
+          headers: supabaseHeaders(),
+          body: JSON.stringify(crosspostPayload),
+        })
+      } catch (_) { /* cross-post is best-effort */ }
+    }
+
     return res.status(200).json({ ok: true, message: inserted[0] || payload })
   }
 

@@ -759,6 +759,37 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
               }
               return [...prev, msg]
             })
+            // Cross-post messages that mention a project to the shared project
+            // thread. Messages that already went through supabase-messages POST
+            // with a project field were cross-posted server-side, so only trigger
+            // here for messages that arrived WITHOUT a project tag (e.g. Elon's
+            // direct Supabase writes from AOM-EA). source='crosspost' is always skipped.
+            if (msg.source !== 'crosspost' && !msg.project) {
+              let taggedProject = null
+              const tagMatch = (msg.text || '').match(/\[project:([a-z0-9_-]+)\]/i)
+              if (tagMatch) taggedProject = tagMatch[1].toLowerCase()
+              if (!taggedProject && projectsRef.current?.length) {
+                const lt = (msg.text || '').toLowerCase()
+                for (const p of projectsRef.current) {
+                  if (p.slug && lt.includes(p.slug.toLowerCase())) { taggedProject = p.slug; break }
+                  if (p.name && p.name.length > 2 && lt.includes(p.name.toLowerCase())) { taggedProject = p.slug; break }
+                }
+              }
+              if (taggedProject) {
+                fetch('/api/dashboard/supabase-messages', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    agent: msg.agent,
+                    text: msg.text,
+                    role: msg.role,
+                    source: 'crosspost',
+                    project: taggedProject,
+                    client_id: `shared:${taggedProject}`,
+                  }),
+                }).catch(() => {})
+              }
+            }
           }
         }
       )
@@ -857,6 +888,8 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
   // Keep a ref so handleSend can read current messages without stale closure
   const messagesRef = useRef(messages)
   useEffect(() => { messagesRef.current = messages }, [messages])
+  const projectsRef = useRef(projects)
+  useEffect(() => { projectsRef.current = projects }, [projects])
 
   // Fetch user profiles for avatars in shared chats
   useEffect(() => {
@@ -877,9 +910,13 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
   const handleSend = useCallback(async () => {
     const rawText = input.trim()
     if (!rawText || sending || !selectedAgent) return
+    // Detect queued follow-up prefix >>
+    const isQueuedFollowup = rawText.startsWith('>>')
+    const cleanText = isQueuedFollowup ? rawText.slice(2).trim() : rawText
+    if (!cleanText) return
     // R3: idempotency — block overlapping sends and same-text double-submit
     const attSnapshot = pendingAttachmentsRef.current
-    const sig = `${selectedAgent.slug}:${rawText}:${attSnapshot.map(a => a.id).join(',')}`
+    const sig = `${selectedAgent.slug}:${cleanText}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
     if (inFlightSendRef.current) return
     if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
@@ -891,7 +928,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     const attSuffix = attSnapshot.length
       ? '\n' + attSnapshot.map(a => `[Attached file: ${a.name}\n${a.url}]`).join('\n')
       : ''
-    const text = rawText + attSuffix
+    const text = cleanText + attSuffix
     setInput('')
     if (attSnapshot.length) setPendingAttachments([])
     if (inputRef.current) inputRef.current.style.height = 'auto'
@@ -906,7 +943,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
       agent: selectedAgent.slug,
       text,
       timestamp: now,
-      source: 'corner-dashboard',
+      source: isQueuedFollowup ? 'queued-followup' : 'corner-dashboard',
     }])
 
     // Optimistic preview update so agent list shows "You: ..." immediately
@@ -941,7 +978,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
           agent: selectedAgent.slug,
           text,
           role: 'user',
-          source: 'corner-dashboard',
+          source: isQueuedFollowup ? 'queued-followup' : 'corner-dashboard',
           client_id: worldId,
           ...userIdentity,
         }),
@@ -961,9 +998,12 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
   // Core send logic for agent chat -- accepts text directly so voice transcription can call it
   const sendAgentText = useCallback(async (rawText) => {
     if (!rawText?.trim() || !selectedAgent || !worldId) return
+    // Detect queued follow-up prefix >>
+    const isQueuedFollowup = rawText.trim().startsWith('>>')
     // R3: idempotency — block overlapping sends and same-text double-submit
     const attSnapshot = pendingAttachmentsRef.current
-    const trimmed = rawText.trim()
+    const trimmed = isQueuedFollowup ? rawText.trim().slice(2).trim() : rawText.trim()
+    if (!trimmed) return
     const sig = `${selectedAgent.slug}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
     if (inFlightSendRef.current) return
@@ -987,7 +1027,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
       agent: selectedAgent.slug,
       text,
       timestamp: now,
-      source: 'corner-dashboard',
+      source: isQueuedFollowup ? 'queued-followup' : 'corner-dashboard',
     }])
     const previewText = 'You: ' + (text.length > 70 ? text.slice(0, 70) + '...' : text)
     setAgentPreviews(prev => ({
@@ -1003,7 +1043,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
       const saveResult = await fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: 'corner-dashboard', client_id: worldId, ...userIdentity }),
+        body: JSON.stringify({ agent: selectedAgent.slug, text, role: 'user', source: isQueuedFollowup ? 'queued-followup' : 'corner-dashboard', client_id: worldId, ...userIdentity }),
       }).then(r => r.json()).catch(() => null)
       if (saveResult?.message?.id) {
         setMessages(prev => prev.map(m => m.id === tempUserId ? { ...saveResult.message } : m))
