@@ -261,12 +261,17 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
   const { isLoading: projectsLoading, isError: projectsError, projects: dbProjects } = useProjects(worldId)
 
   // Merge projects from useProjects (projects table) with projectRooms from agent_status.
-  // For non-AOM worlds, the projects table may be empty but agent_status has project rooms.
-  // Agent_status project rooms fill in any gaps not covered by the projects table.
+  // For non-AOM worlds, agent_status project rooms are the source of truth. When present,
+  // they override DB projects to avoid stale AOM data leaking through during auth race.
   const projects = useMemo(() => {
-    const dbSlugs = new Set((dbProjects || []).map(p => p.slug))
-    const extras = (projectRooms || []).filter(p => !dbSlugs.has(p.slug))
-    return [...(dbProjects || []), ...extras]
+    if (projectRooms && projectRooms.length > 0) {
+      // Agent_status projectRooms present — use them, supplement with any DB projects
+      // that have different slugs (e.g. shared projects from other worlds)
+      const roomSlugs = new Set(projectRooms.map(p => p.slug))
+      const extras = (dbProjects || []).filter(p => !roomSlugs.has(p.slug))
+      return [...projectRooms, ...extras]
+    }
+    return dbProjects || []
   }, [dbProjects, projectRooms])
 
   const selectedProject = useMemo(() => {
