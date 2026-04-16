@@ -1,14 +1,14 @@
 {
   "corner": [
     {
-      "title": "Corner: Founder Pilot Mode -- First 3 Customers Without Waiting",
-      "path": "/briefs/corner-pilot-mode",
-      "slug": "corner-pilot-mode",
+      "title": "Notion Competitors Deep Dive",
+      "path": "/briefs/notion-competitors",
+      "slug": "notion-competitors",
       "type": "brief",
-      "updated_at": "2026-03-22",
-      "agent": "Steve",
-      "dateFormatted": "Mar 22",
-      "summary": "How to close Corner's first 3 paying customers at $3,500/month without waiting for S1-S3 engineering fixes. White-glove founder pilot model. AOM does the setup manually. Revenue starts before self-serve works."
+      "updated_at": "2026-04-16",
+      "agent": "research-competitor",
+      "dateFormatted": "Apr 16",
+      "summary": "Overview of Notion's main competitors including Obsidian, Coda, and Linear"
     },
     {
       "title": "Corner: 30-Minute Live Demo Script",
@@ -41,6 +41,16 @@
       "summary": "The one-pager Patrik sends within 24 hours of a live demo. Prospect-specific cover (swap [NAME] and [INDUSTRY]). Two pages max. Sent as PDF. Closes the deal or keeps it warm."
     },
     {
+      "title": "Corner: Founder Pilot Mode -- First 3 Customers Without Waiting",
+      "path": "/briefs/corner-pilot-mode",
+      "slug": "corner-pilot-mode",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "How to close Corner's first 3 paying customers at $3,500/month without waiting for S1-S3 engineering fixes. White-glove founder pilot model. AOM does the setup manually. Revenue starts before self-serve works."
+    },
+    {
       "title": "Corner: Scripted Demo Environment Spec",
       "path": "/briefs/corner-demo-env",
       "slug": "corner-demo-env",
@@ -71,6 +81,536 @@
       "summary": "The complete playbook for landing the first 10 Corner customers through Patrik's personal network. Who to target, what to text, how to follow up, and how to close. The first customer comes from this doc."
     },
     {
+      "title": "Corner Signup Flow: Technical Spec",
+      "path": "/briefs/corner-signup-flow-spec",
+      "slug": "corner-signup-flow-spec",
+      "type": "brief",
+      "updated_at": "2026-03-22",
+      "agent": "Steve",
+      "dateFormatted": "Mar 22",
+      "summary": "Builder brief for Bobby on the Corner signup + onboarding flow. Auth to first message in under 3 minutes. Industry-specific auto-build. Copy strings, routes, API calls, state, animations."
+    },
+    {
+      "title": "Crossy Road Celebration Frames",
+      "path": "/briefs/crossy-road-celebration-frames",
+      "slug": "crossy-road-celebration-frames",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "13 celebration jump-peak sprites. Arms up, airborne, stars + confetti + checkmark."
+    },
+    {
+      "title": "Crossy Road Directional Hop Frames",
+      "path": "/briefs/crossy-road-hop-directional",
+      "slug": "crossy-road-hop-directional",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "156 directional hop frames for all 13 agents. 4 directions x 3 frames each. Full movement coverage."
+    },
+    {
+      "title": "Crossy Road Movement Effects",
+      "path": "/briefs/crossy-road-movement-effects",
+      "slug": "crossy-road-movement-effects",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "7 particle effect sprites. Dust puff (3 frames), confetti burst (3 frames), speech bubble (1 frame)."
+    },
+    {
+      "title": "Crossy Road Speaking Animation Frames",
+      "path": "/briefs/crossy-road-speaking-frames",
+      "slug": "crossy-road-speaking-frames",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "26 speaking animation frames. 13 agents x 2 mouth states (open, closed). Simple talk cycle."
+    },
+    {
+      "title": "Council Chat Spec: One Stream, All Agents",
+      "path": "/briefs/council-chat-spec",
+      "slug": "council-chat-spec",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "Chat is a running council. All agents in one chronological stream. User switches active agent by clicking or typing 'talk to [name]'. No separate per-agent chats. Two sides: Patrik (right) and agents (left)."
+    },
+    {
+      "title": "Dream HUD Implementation Checklist",
+      "path": "/briefs/dream-hud-implementation-checklist",
+      "slug": "dream-hud-implementation-checklist",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "Pixel-match checklist for Bobby. Every element from dream-hud-v1.png mapped to code. Covers top bar, game viewport, sidebar, chat, room interaction. Cross-references invisible-hotspot-spec.md and council-chat-spec.md."
+    },
+    {
+      "title": "Elon Walking System - Canvas 2D Spec",
+      "path": "/briefs/elon-walking-spec",
+      "slug": "elon-walking-spec",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "Complete Canvas 2D walking system for Elon's character. Walk sprites, walkable area, pathfinding, animation. The proof-of-concept that scales to all 13 agents."
+    },
+    {
+      "title": "HUD TODO Manifest: Visual Target Gaps",
+      "path": "/briefs/hud-todo-manifest",
+      "slug": "hud-todo-manifest",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "Line-by-line gap analysis between visual targets and current code. Bobby reads this directly. Updated v9: Invisible hotspot spec replaces diamond overlays. Council chat spec (one stream, all agents). Dream HUD implementation checklist. Priority order v10."
+    },
+    {
+      "title": "Invisible Hotspot Interaction Spec (OVO Approach)",
+      "path": "/briefs/invisible-hotspot-spec",
+      "slug": "invisible-hotspot-spec",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "Replaces diamond overlay spec. Invisible click regions mapped to existing wall boundaries. OVO Drake store technique. No drawn outlines. Hover = subtle glow within walls. Art does the work."
+    },
+    {
+      "title": "Sidebar Overhaul Spec - Unified Blue Glass Panel",
+      "path": "/briefs/sidebar-overhaul-spec",
+      "slug": "sidebar-overhaul-spec",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "Complete visual spec for the right sidebar. Same blue glass design language as the bottom HUD. Night mode is already close; daytime mode is the broken one. Every CSS value Bobby needs."
+    },
+    {
+      "title": "Build Review: 637b79c (3 commits since 5c6f517)",
+      "path": "/briefs/build-review-637b79c",
+      "slug": "build-review-637b79c",
+      "type": "brief",
+      "updated_at": "2026-03-17",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 17",
+      "summary": "70/30 layout LANDED. Top HUD bar LANDED. Vegas sidebar restructured. 3 commits reviewed: 9ec8b81, 17379e7, 637b79c. Grade: 9/10."
+    },
+    {
+      "title": "CORNER Client Onboarding Guide",
+      "path": "/briefs/client-onboarding-guide",
+      "slug": "client-onboarding-guide",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Step-by-step guide for taking a signed Corner client from contract to live operations. The 14-day journey. Who does what, when, and how. Built for Patrik and the AOM ops team."
+    },
+    {
+      "title": "CORNER Competitive Battle Cards",
+      "path": "/briefs/competitive-battle-cards",
+      "slug": "competitive-battle-cards",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "One-page battle cards for every competitor type Patrik might face in a sales call. Pull up the right card, know exactly what to say. Covers DIY tools, fractional CAIOs, chatbot vendors, AI consulting agencies, and construction-specific competitors."
+    },
+    {
+      "title": "CORNER Go-To-Market Playbook",
+      "path": "/briefs/go-to-market-playbook",
+      "slug": "go-to-market-playbook",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "How AOM gets the first 15 paying Corner clients. Sales channels, conversion funnel, objection handling, pricing presentation, and the 90-day launch sprint. Built for Patrik + Ash + Jacob."
+    },
+    {
+      "title": "CORNER Investor Pitch Brief",
+      "path": "/briefs/investor-pitch-brief",
+      "slug": "investor-pitch-brief",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Investor pitch brief for Corner. Market thesis, product vision, business model, competitive landscape, financial projections, team, capital needs, and use of funds. Not a slide deck. The strategic brief that a deck gets built from."
+    },
+    {
+      "title": "CORNER Legal Templates Spec",
+      "path": "/briefs/legal-templates",
+      "slug": "legal-templates",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "What AOM's client legal documents need to cover. NDA template, Master Service Agreement, and Acceptable Use Policy specs. Not legal advice. The strategic framework for a lawyer to draft from. Covers data isolation, AI liability, SLA commitments, and termination."
+    },
+    {
+      "title": "CORNER Sales One-Pager",
+      "path": "/briefs/sales-one-pager",
+      "slug": "sales-one-pager",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "The leave-behind. What Patrik hands a prospect after a demo or attaches to a follow-up email. One page. Both sides. Print-ready and PDF-ready. Steffen designs, Bobby builds the web version at /one-pager."
+    },
+    {
+      "title": "Avatar System Decisions",
+      "path": "/briefs/avatar-system-decisions",
+      "slug": "avatar-system-decisions",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Steffen 1 + Steffen 2 coordination document. Avatar system decisions, style direction, character proportions, color palette, BLUE HUD pivot, full Crossy Road character set."
+    },
+    {
+      "title": "Build Review: Steve B+ Fixes + Vegas Energy + Zoom (bebc327)",
+      "path": "/briefs/build-review-bebc327",
+      "slug": "build-review-bebc327",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Bobby shipped Steve's 4 exact code fixes plus Vegas energy overhaul. 9/10. The checklist grouped by project is the right call. Font sizes finally respect the 18px minimum. Two items need polish."
+    },
+    {
+      "title": "Build Review: Crossy Road Energy + Viewport Fill (e8d1832)",
+      "path": "/briefs/build-review-e8d1832",
+      "slug": "build-review-e8d1832",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Creative Director review of Bobby's Crossy Road energy build. 8/10. Bounce physics are right, viewport fill works, wave animation delivers. Three items need iteration."
+    },
+    {
+      "title": "Corner C2.2 - Pixel Art Integration + Visual Polish",
+      "path": "/briefs/c2-2-refinement-spec",
+      "slug": "c2-2-refinement-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Bridge between C2.1 (SVG approximations) and C3 (Living Office). Integrates 77 generated pixel art assets, fixes visual gaps, polishes the isometric game to the point where Patrik says 'that's it.'"
+    },
+    {
+      "title": "Corner C2.2 Build Review - Steffen's Design QA",
+      "path": "/briefs/c2-3-review",
+      "slug": "c2-3-review",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Design review of Bobby's C2.2 build (commit adef267). What shipped correctly, what diverged from spec, and what needs fixing in C2.3 before C3 starts."
+    },
+    {
+      "title": "Corner C3 Build Review",
+      "path": "/briefs/c3-build-review",
+      "slug": "c3-build-review",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Steffen's visual review of Bobby's C3 build (commit be3a651). Mode switcher, Checklist, Megaboard, notification toasts graded against 10 design specs."
+    },
+    {
+      "title": "Corner C3 - Checklist Mode Visual Spec",
+      "path": "/briefs/c3-checklist-mode",
+      "slug": "c3-checklist-mode",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "The workhorse mode. Per-agent draggable task list. Simple, fast, useful every day. Full design spec for Bobby."
+    },
+    {
+      "title": "Corner C3 - Command Palette Design Spec",
+      "path": "/briefs/c3-command-palette",
+      "slug": "c3-command-palette",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Cmd+K command palette. Search agents, tasks, switch modes. The power-user shortcut that makes Corner feel like a pro tool."
+    },
+    {
+      "title": "Corner C3 - Agent Death/Error Animation Spec",
+      "path": "/briefs/c3-death-animation",
+      "slug": "c3-death-animation",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "When an agent crashes, they don't show an error message. They walk away. Recovery = walk back. Humanizes errors."
+    },
+    {
+      "title": "Corner C3 - Handoff Animation Design Spec",
+      "path": "/briefs/c3-handoff-animation",
+      "slug": "c3-handoff-animation",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "When one agent hands work to another, you see it happen. Note icon, float path, pickup animation. The visual that sells transparency."
+    },
+    {
+      "title": "Corner C3 - Megaboard RPG Visual Spec",
+      "path": "/briefs/c3-megaboard-mode",
+      "slug": "c3-megaboard-mode",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "The RPG tactical menu. Party screen, quest log, mission feed. Pokemon meets business intelligence. Dark theme, game typography, HP bars."
+    },
+    {
+      "title": "Corner C3 - Mobile Layout Wireframes",
+      "path": "/briefs/c3-mobile-layout",
+      "slug": "c3-mobile-layout",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "All 3 modes at 390px width. Bottom sheet, PWA icon, splash screen. Touch interactions. iPhone-first."
+    },
+    {
+      "title": "Corner C3 - Mode Switcher Design Spec",
+      "path": "/briefs/c3-mode-switcher",
+      "slug": "c3-mode-switcher",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual spec for the three-mode switcher: Game, Checklist, Megaboard. Nav bar design, active states, keyboard shortcuts, mobile adaptation."
+    },
+    {
+      "title": "Corner C3 - Notification Toast Design Spec",
+      "path": "/briefs/c3-notification-toast",
+      "slug": "c3-notification-toast",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Toast notification design for real-time WebSocket events. 4 types, stacking, auto-dismiss, click-to-navigate."
+    },
+    {
+      "title": "Corner C3 - Room Zoom Transition Spec",
+      "path": "/briefs/c3-room-zoom",
+      "slug": "c3-room-zoom",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "How zooming into a room feels. Animation curves, HUD behavior during zoom, detail levels, mobile pinch-zoom."
+    },
+    {
+      "title": "Corner C3 - Walking Sprite Sheets Spec",
+      "path": "/briefs/c3-walking-sprites",
+      "slug": "c3-walking-sprites",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "4-directional walking animations for all agents. 6 frames per direction. Consistent with existing idle/thinking/speaking/done sprites."
+    },
+    {
+      "title": "Corner C4 - Admin Panel Visual Spec",
+      "path": "/briefs/c4-admin-panel",
+      "slug": "c4-admin-panel",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual design for AOM's internal admin panel. Fleet overview, client detail, update management, revenue dashboard. Dark theme control room for managing all Corner clients."
+    },
+    {
+      "title": "Corner C4 - Onboarding Wizard Visual Spec",
+      "path": "/briefs/c4-onboarding-wizard",
+      "slug": "c4-onboarding-wizard",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual design for the Corner client onboarding flow. One-question-per-screen, stage selector, dream office input, room generation loading, Meet Your Team reveal, and first interaction prompt."
+    },
+    {
+      "title": "Corner C4 - Welcome to Your Corner Reveal Spec",
+      "path": "/briefs/c4-welcome-reveal",
+      "slug": "c4-welcome-reveal",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "The hero reveal moment when a new client first sees their Corner office. Beat-by-beat choreography. This is the moment that makes people say 'holy shit.' Bobby builds this from frame-perfect specs."
+    },
+    {
+      "title": "Corner C5 - Billing UI Visual Spec",
+      "path": "/briefs/c5-billing-ui",
+      "slug": "c5-billing-ui",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual spec for the in-app billing settings UI. Plan management, subscription details, usage meters, invoice history, payment method management, plan change flow, cancellation flow."
+    },
+    {
+      "title": "Corner C5 - Weekly Recap Animation Visual Spec",
+      "path": "/briefs/c5-weekly-recap",
+      "slug": "c5-weekly-recap",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual spec for the Monday morning weekly recap animation. 30-60 second choreographed sequence showing agent accomplishments, stats, streaks, and upcoming priorities. The 'was this worth it?' answer, delivered visually."
+    },
+    {
+      "title": "Corner C5 - XP & Leveling Visual Spec",
+      "path": "/briefs/c5-xp-visual",
+      "slug": "c5-xp-visual",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Visual spec for XP system, level badges, streak indicators, progress bars, level-up celebration animation, leaderboard. Turns accumulated C3 data into a visible engagement loop."
+    },
+    {
+      "title": "Crossy Road Hop Frames",
+      "path": "/briefs/crossy-road-hop-frames",
+      "slug": "crossy-road-hop-frames",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "39 hop animation frames for all 13 agents. 3 frames per agent: ground, peak, landing. The signature Crossy Road movement."
+    },
+    {
+      "title": "Crossy Road State Sheets",
+      "path": "/briefs/crossy-road-state-sheets",
+      "slug": "crossy-road-state-sheets",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "52 state sprites for ALL 13 agents in 4 states: working, speaking, thinking, done."
+    },
+    {
+      "title": "Hat Pack 1 - First Accessory Collection",
+      "path": "/briefs/hat-pack-1",
+      "slug": "hat-pack-1",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "5 hats at 3 sizes = 15 transparent PNG overlays. First accessory pack for the Corner character system."
+    },
+    {
+      "title": "Construction HQ Style Pack",
+      "path": "/briefs/construction-hq-pack",
+      "slug": "construction-hq-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "5 furniture items for the construction company office. Hard hats, blueprints, safety cones, toolboxes, tape measures. AOM's target vertical in the game."
+    },
+    {
+      "title": "Crossy Road Office Style Pack",
+      "path": "/briefs/crossy-road-office-pack",
+      "slug": "crossy-road-office-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "15 furniture items in chunky voxel Crossy Road style. First style pack for the Corner catalog marketplace. Tests whether alternate art styles work alongside the default pixel-warm."
+    },
+    {
+      "title": "Door Sign Collection",
+      "path": "/briefs/door-sign-collection",
+      "slug": "door-sign-collection",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "13 in-room door sign assets. Modern dark style with room numbers, agent names, and status dots. Go OUTSIDE each room door, complementing the wall nameplates inside."
+    },
+    {
+      "title": "Executive Suite Style Pack",
+      "path": "/briefs/executive-suite-pack",
+      "slug": "executive-suite-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "5 premium furniture items for Patrik's room and high-end client offices. Award shelf, whiskey decanter, desk globe, cigar box, executive leather chair. The corner office energy."
+    },
+    {
+      "title": "Gaming Setup Pack Expansion",
+      "path": "/briefs/gaming-setup-expansion",
+      "slug": "gaming-setup-expansion",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "3 new gaming setup items. RGB mechanical keyboard, collectible display shelf, gaming poster wall. Fills the expansion pack gaps."
+    },
+    {
+      "title": "Law Firm Pack",
+      "path": "/briefs/law-firm-pack",
+      "slug": "law-firm-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "5 law firm furniture items. Gavel, scales of justice, law library wall, mahogany desk, leather conference chair. Authority and tradition."
+    },
+    {
+      "title": "Nameplate Collection",
+      "path": "/briefs/nameplate-collection",
+      "slug": "nameplate-collection",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "39 in-room nameplate assets. 13 agents x 3 styles (gold, silver, modern). Wall-mounted office nameplates that replace floating text labels with real office decor."
+    },
+    {
+      "title": "Tech Startup Style Pack",
+      "path": "/briefs/tech-startup-pack",
+      "slug": "tech-startup-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "5 furniture items for the tech startup office. Mechanical keyboards, energy drinks, RGB strips, drones, streaming mics. Late-night coding energy."
+    },
+    {
+      "title": "Universal Bonus Pack",
+      "path": "/briefs/universal-bonus-pack",
+      "slug": "universal-bonus-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "5 furniture items that work in any office. Wall clock, fire extinguisher, vending machine, kanban board, pizza stack. Every office has these."
+    },
+    {
+      "title": "Zen Garden Pack",
+      "path": "/briefs/zen-garden-pack",
+      "slug": "zen-garden-pack",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "4 zen garden items. Bamboo stalks, desktop rock garden, meditation cushion, desktop water feature. Calm and mindfulness."
+    },
+    {
       "title": "Corner Compositing Spec",
       "path": "/briefs/corner-compositing-spec",
       "slug": "corner-compositing-spec",
@@ -89,6 +629,56 @@
       "agent": "Steffen",
       "dateFormatted": "Mar 16",
       "summary": "Visual design for corner.app (or the Corner product section of aheadofmarket.com). Ultra clean, white, spacious. Apple keynote energy. The calm before the game storm. Bobby builds this."
+    },
+    {
+      "title": "HUD Blue Spec - The Real Direction",
+      "path": "/briefs/hud-blue-spec",
+      "slug": "hud-blue-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "BLUE HUD. Not warm amber. VEGAS oversized energy. Trello thickness. Crossy Road bounce. 18-20px minimum. This replaces all previous HUD color direction."
+    },
+    {
+      "title": "HUD Integration Notes",
+      "path": "/briefs/hud-integration-notes",
+      "slug": "hud-integration-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "How the HUD connects to the game world. Visual rules, interaction patterns, data mapping. For Bobby 2."
+    },
+    {
+      "title": "Corner Pricing Page Visual Design Spec",
+      "path": "/briefs/pricing-page-design",
+      "slug": "pricing-page-design",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Complete visual design spec for Corner's pricing page. 9 deliverables: plan cards (4 variations), comparison table, billing toggle, social proof bar, FAQ accordion, bottom CTA, mobile wireframes, OG image, responsive breakpoints. Bobby builds from this."
+    },
+    {
+      "title": "Visual Target - Crossy Road Style Exploration",
+      "path": "/briefs/crossy-road-style-exploration",
+      "slug": "crossy-road-style-exploration",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Crossy Road voxel art direction applied to Corner. Three office variants + four agent characters. Potential new art direction or style pack."
+    },
+    {
+      "title": "Visual Target - Creative Director Notes",
+      "path": "/briefs/visual-target-notes",
+      "slug": "visual-target-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "What makes the visual target work and how Bobby implements it. The gap analysis between current dashboard and the north star."
     },
     {
       "title": "CORNER Vision Page Spec",
@@ -111,6 +701,226 @@
       "summary": "Full design and content spec for corner.app, the Corner product website. 'Landed in heaven' design language. Ultra clean, white, spacious, calm. Every page spec'd with layout, copy, visual direction, and responsive behavior. The site that sells the operating system."
     },
     {
+      "title": "CORNER Pricing Page Design Brief",
+      "path": "/briefs/pricing-page-spec",
+      "slug": "pricing-page-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Full design brief for the Corner pricing page. Competitive analysis (Vercel, Linear, Notion), 4-tier pricing model, feature comparison matrix, FAQ, conversion optimization, responsive design, visual direction. Bobby builds, Steffen designs."
+    },
+    {
+      "title": "Canvas 2D Isometric Rendering Research",
+      "path": "/briefs/canvas-rendering-research",
+      "slug": "canvas-rendering-research",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 16",
+      "summary": "Practical Canvas 2D patterns for Bobby. Sprite sheets, Z-sorting, camera pan/zoom, click detection, React integration. Code-ready."
+    },
+    {
+      "title": "CORNER C3 Spec: The Living Office",
+      "path": "/briefs/c3-spec",
+      "slug": "c3-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C3 build spec. Full character movement, WebSocket real-time, Megaboard mode, Checklist mode, mode switching, room zoom, mobile PWA, mini-map, keyboard shortcuts. Everything that makes Corner feel alive."
+    },
+    {
+      "title": "CORNER C4 Spec: The Hosted Platform",
+      "path": "/briefs/c4-hosted-spec",
+      "slug": "c4-hosted-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C4 build spec. Docker container per client, provisioning API, WebSocket bridge, OTA updates, admin panel, data isolation, relay bridge, onboarding flow, scaling path, cost model. The thing people pay for."
+    },
+    {
+      "title": "CORNER C5 Notes: The Platform",
+      "path": "/briefs/c5-notes",
+      "slug": "c5-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C5 forward-looking notes. Furniture marketplace, XP/points UI, neighbor offices, skills marketplace, App Store/PWA distribution, room editor, weekly recaps, self-service signup. Early thinking for the platform layer."
+    },
+    {
+      "title": "CORNER C5 Spec: The Platform",
+      "path": "/briefs/c5-spec",
+      "slug": "c5-spec",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C5 build spec. Self-service signup, XP/points UI, weekly recap animation, room editor, furniture marketplace, trend charts, ROI reports, skills marketplace, neighbor offices, push notifications, App Store listing. The stickiness layer."
+    },
+    {
+      "title": "CORNER C6 Notes: The Ecosystem",
+      "path": "/briefs/c6-notes",
+      "slug": "c6-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C6 forward-looking notes. White-label, multi-language, voice interface, Corner SDK, enterprise tier, third-party skill marketplace, API integrations, AI-to-AI collaboration, brand partnerships. Early thinking for the ecosystem layer."
+    },
+    {
+      "title": "CORNER C7 Notes: The Intelligence Layer",
+      "path": "/briefs/c7-notes",
+      "slug": "c7-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C7 forward-looking notes. Corner Academy, video agents, predictive intelligence, multi-user collaboration, industry editions, offline mode, marketplace data, autonomous agent networks, mobile-native features, Corner for Education. The layer where Corner becomes smarter than the people using it."
+    },
+    {
+      "title": "CORNER C8 Notes: The Operating System",
+      "path": "/briefs/c8-notes",
+      "slug": "c8-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C8 horizon notes. Corner OS, dedicated hardware, franchise model, AI-native CRM, government edition, open-source core, physical spaces, financial infrastructure, agent consciousness, and the AOM network. The layer where Corner becomes an operating system for business."
+    },
+    {
+      "title": "CORNER C9 Notes: The Autonomous Company",
+      "path": "/briefs/c9-notes",
+      "slug": "c9-notes",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "C9 horizon notes. Self-Building AI, acquisition engine, international expansion, IPO infrastructure, edge deployment, Corner for Government v2, the talent marketplace, Corner Capital, and the self-replicating system. The layer where Corner stops needing humans to grow."
+    },
+    {
+      "title": "Steve Coach Report - Mar 16",
+      "path": "/briefs/coach-report-mar16",
+      "slug": "coach-report-mar16",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Live coaching review of CORNER build. Two passes: initial C3 review (C+), then updated grades after Bobby's single-image pivot and GameHUD ship."
+    },
+    {
+      "title": "Steve Coach Report - Pass 10",
+      "path": "/briefs/coach-report-pass10",
+      "slug": "coach-report-pass10",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Bobby's Tier 0 commit 67ee8e2: 4/4 fixes verified (pan bounds, chat timeout, checkbox persist, expand dots). Grade C+ with path to B-. Live chat is the new #1 priority."
+    },
+    {
+      "title": "Steve Coach Report - Pass 9 (e8eabcf)",
+      "path": "/briefs/coach-report-pass9",
+      "slug": "coach-report-pass9",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Pass 9 against recalibrated standard. 22 tests, 17 PASS / 4 FAIL / 1 WARN. ChecklistMode revert COMMITTED (e8eabcf). Client projects now in HUD (4/6). Grade: C (up from D+/C-). Tier 0: 2/7 complete."
+    },
+    {
+      "title": "Steve Coach Report - RECALIBRATED",
+      "path": "/briefs/coach-report-recalibrated",
+      "slug": "coach-report-recalibrated",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Patrik rated the build C-. Steve rated it A-. This report re-grades every component against Crossy Road smoothness, Trello snappiness, and Uber cleanliness. Honest assessment of what a paying customer would actually experience."
+    },
+    {
+      "title": "CORNER Skills Catalog: C3/C4 Launch",
+      "path": "/briefs/skills-catalog",
+      "slug": "skills-catalog",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Every skill that ships at C3 and C4 launch. Organized by category. Each skill has: name, trigger, what it does, which agent uses it, and tier availability. This is what Bobby builds. This is what Patrik sells."
+    },
+    {
+      "title": "CORNER Spec Amendments: C3/C4/C5 Gaps",
+      "path": "/briefs/spec-amendments",
+      "slug": "spec-amendments",
+      "type": "brief",
+      "updated_at": "2026-03-16",
+      "agent": "Steve",
+      "dateFormatted": "Mar 16",
+      "summary": "Gaps and amendments identified in C3, C4, and C5 specs after writing C6 and C7. Backward-looking review. Things the later specs revealed that the earlier specs missed or underspecified."
+    },
+    {
+      "title": "Product Name Research v2",
+      "path": "/briefs/product-name-research-v2",
+      "slug": "product-name-research-v2",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Second pass product naming research, starting from zero with full vision context."
+    },
+    {
+      "title": "Product Name Research v3",
+      "path": "/briefs/product-name-research-v3",
+      "slug": "product-name-research-v3",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Third pass product naming with a completely new direction."
+    },
+    {
+      "title": "Product Name Research",
+      "path": "/briefs/product-name-research",
+      "slug": "product-name-research",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Initial product naming research for the AI agent platform."
+    },
+    {
+      "title": "Corner C2 - Furniture Starter Pack Spec",
+      "path": "/briefs/c2-furniture-spec",
+      "slug": "c2-furniture-spec",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "15 base furniture items every Corner office gets. Grid-snapping, pixel dimensions, art style guide."
+    },
+    {
+      "title": "Corner C2 - HUD + Chat Visual Spec",
+      "path": "/briefs/c2-hud-spec",
+      "slug": "c2-hud-spec",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Task HUD (top) and Chat Bar (bottom) specs for the Corner game dashboard. Complete dimensions, colors, animations."
+    },
+    {
+      "title": "Corner C2 - Agent Sprite States",
+      "path": "/briefs/c2-sprite-spec",
+      "slug": "c2-sprite-spec",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Complete sprite state definitions for all 13 Corner agents. 4 states each. Bobby builds, pixel artist generates."
+    },
+    {
       "title": "Corner - Connected Office Floor Plan Spec",
       "path": "/briefs/corner-floor-plan-spec",
       "slug": "corner-floor-plan-spec",
@@ -121,36 +931,166 @@
       "summary": "The full connected office floor plan for Corner. One map. All agents. Shared walls."
     },
     {
-      "title": "Corner Signup Flow: Technical Spec",
-      "path": "/briefs/corner-signup-flow-spec",
-      "slug": "corner-signup-flow-spec",
+      "title": "CORNER Product Spec",
+      "path": "/briefs/product-spec-web",
+      "slug": "product-spec-web",
       "type": "brief",
-      "updated_at": "2026-03-22",
+      "updated_at": "2026-03-15",
       "agent": "Steve",
-      "dateFormatted": "Mar 22",
-      "summary": "Builder brief for Bobby on the Corner signup + onboarding flow. Auth to first message in under 3 minutes. Industry-specific auto-build. Copy strings, routes, API calls, state, animations."
+      "dateFormatted": "Mar 15",
+      "summary": "THE BIBLE. Complete product specification for CORNER, the AOM OS web edition. Local-first architecture."
     },
     {
-      "title": "Notion Competitors Deep Dive",
-      "path": "/briefs/notion-competitors",
-      "slug": "notion-competitors",
+      "title": "Auto-Publish Architecture Spec",
+      "path": "/briefs/auto-publish-spec",
+      "slug": "auto-publish-spec",
       "type": "brief",
-      "updated_at": "2026-04-16",
-      "agent": "research-competitor",
-      "dateFormatted": "Apr 16",
-      "summary": "Overview of Notion's main competitors including Obsidian, Coda, and Linear"
+      "updated_at": "2026-03-12",
+      "agent": "Steve",
+      "dateFormatted": "Mar 12",
+      "summary": "Three-layer architecture for auto-publishing .md files as webpages on aheadofmarket.com."
+    },
+    {
+      "title": "Dashboard Dual-View Product Spec",
+      "path": "/briefs/dashboard-dual-view-spec",
+      "slug": "dashboard-dual-view-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steve",
+      "dateFormatted": "Mar 12",
+      "summary": "Product spec for two dashboard views: individual agent detail and high-level command center."
+    },
+    {
+      "title": "Dashboard MVP Implementation Brief",
+      "path": "/briefs/dashboard-mvp-brief",
+      "slug": "dashboard-mvp-brief",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steve",
+      "dateFormatted": "Mar 12",
+      "summary": "Bobby's implementation brief for the dashboard MVP build."
+    },
+    {
+      "title": "Supabase Multi-Tenant Schema Spec",
+      "path": "/briefs/supabase-schema-spec",
+      "slug": "supabase-schema-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steve",
+      "dateFormatted": "Mar 12",
+      "summary": "Supabase schema and auth architecture for multi-tenant dashboard platform."
+    },
+    {
+      "title": "Build Velocity Audit",
+      "path": "/briefs/velocity",
+      "slug": "velocity",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Elon",
+      "dateFormatted": "Mar 10",
+      "summary": "Analysis of development speed and deployment efficiency."
+    },
+    {
+      "title": "Masterplan System Audit",
+      "path": "/briefs/masterplan",
+      "slug": "masterplan",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Elon",
+      "dateFormatted": "Mar 10",
+      "summary": "Comprehensive audit of AOM agent system architecture."
+    },
+    {
+      "title": "Security Architecture",
+      "path": "/briefs/security",
+      "slug": "security",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Elon",
+      "dateFormatted": "Mar 10",
+      "summary": "Security posture review and SOC 2 readiness assessment."
+    },
+    {
+      "title": "Dashboard UX Review",
+      "path": "/briefs/dashboard-ux-review",
+      "slug": "dashboard-ux-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "UX review of aheadofmarket.com/dashboard with design improvement recommendations."
+    },
+    {
+      "title": "Super Admin Photo Replace QA",
+      "path": "/briefs/colton-super-admin-qa",
+      "slug": "colton-super-admin-qa",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Full audit of super admin mode, image replacement, video upload, and admin auth."
+    },
+    {
+      "title": "Dashboard Control Panel Architecture",
+      "path": "/briefs/dashboard-control-panel-arch",
+      "slug": "dashboard-control-panel-arch",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Alex",
+      "dateFormatted": "Mar 9",
+      "summary": "Architecture design for switching dashboard agents to Anthropic tool_use with structured actions."
+    },
+    {
+      "title": "AOM Mission Control Dashboard Brief",
+      "path": "/briefs/dashboard-brief",
+      "slug": "dashboard-brief",
+      "type": "brief",
+      "updated_at": "2026-03-07",
+      "agent": "Bobby",
+      "dateFormatted": "Mar 7",
+      "summary": "Gap analysis between current dashboard and reference, with actionable improvement proposals."
     }
   ],
   "ambition-mechanical": [
     {
-      "title": "Ambition Content Emergency Plan",
-      "path": "/briefs/ambition-content-emergency",
-      "slug": "ambition-content-emergency",
+      "title": "Ambition: 15-20 Branded Social Animations",
+      "path": "/briefs/ambition-branded-posts",
+      "slug": "ambition-branded-posts",
       "type": "brief",
-      "updated_at": "2026-03-12",
+      "updated_at": "2026-03-16",
       "agent": "Alex",
-      "dateFormatted": "Mar 12",
-      "summary": "Emergency content strategy for Ambition Mechanical social media launch."
+      "dateFormatted": "Mar 16",
+      "summary": "18 branded Remotion animation briefs targeting GCs. Tool tips, checklists, industry intel, Phoenix events, culture."
+    },
+    {
+      "title": "Ambition Mechanical: 30-Day Content Arsenal",
+      "path": "/briefs/ambition-content-plan",
+      "slug": "ambition-content-plan",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Alex",
+      "dateFormatted": "Mar 15",
+      "summary": "30-day content plan mining Ambition's footage archive. 5 videos/week + 2 LinkedIn authority posts."
+    },
+    {
+      "title": "Ambition Week 1: Detailed Content Briefs",
+      "path": "/briefs/ambition-week1-plan",
+      "slug": "ambition-week1-plan",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Alex",
+      "dateFormatted": "Mar 15",
+      "summary": "Week 1 detailed briefs for Ambition content. 5 video briefs + 2 LinkedIn posts, ready to produce."
+    },
+    {
+      "title": "Ambition Video Intro Catalog",
+      "path": "/briefs/ambition-intro-catalog",
+      "slug": "ambition-intro-catalog",
+      "type": "brief",
+      "updated_at": "2026-03-15",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 15",
+      "summary": "Catalog of Remotion-based video intro compositions for Ambition Mechanical content."
     },
     {
       "title": "Ambition Social Media Templates Spec",
@@ -163,6 +1103,16 @@
       "summary": "Social media templates and video overlay specs for Ambition Mechanical content."
     },
     {
+      "title": "Ambition Content Emergency Plan",
+      "path": "/briefs/ambition-content-emergency",
+      "slug": "ambition-content-emergency",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Emergency content strategy for Ambition Mechanical social media launch."
+    },
+    {
       "title": "Ambition Section Specs",
       "path": "/briefs/ambition-sections",
       "slug": "ambition-sections",
@@ -171,6 +1121,146 @@
       "agent": "Steffen",
       "dateFormatted": "Mar 12",
       "summary": "11 section-level design specs with layout, motion, hierarchy, and wow moments."
+    },
+    {
+      "title": "Ambition LinkedIn Posts",
+      "path": "/briefs/ambition-linkedin",
+      "slug": "ambition-linkedin",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "3 LinkedIn posts ready to copy-paste. Breaking 4+ weeks of silence."
+    },
+    {
+      "title": "Text Overlay Research for Cleo",
+      "path": "/briefs/text-overlay-research",
+      "slug": "text-overlay-research",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Elon",
+      "dateFormatted": "Mar 12",
+      "summary": "Research on text overlay tools and techniques for video content production."
+    },
+    {
+      "title": "Crown HVAC Audio Sync Map",
+      "path": "/briefs/crown-room-sync-map",
+      "slug": "crown-room-sync-map",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 12",
+      "summary": "Audio sync map for Crown HVAC Service shoot with DJI MIC timecodes."
+    },
+    {
+      "title": "Crown v10 Production Plan",
+      "path": "/briefs/crown-v10-plan",
+      "slug": "crown-v10-plan",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 12",
+      "summary": "Production plan to push Crown from v9 (9/10) to v10 with text overlays and music."
+    },
+    {
+      "title": "Memorial Tower Audio Sync Map",
+      "path": "/briefs/memorial-tower-sync-map",
+      "slug": "memorial-tower-sync-map",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 12",
+      "summary": "DJI MIC audio-to-video sync map for the Memorial Tower project."
+    },
+    {
+      "title": "Crown v10 Gemini Vision QA Score",
+      "path": "/briefs/crown-v10-gemini-score",
+      "slug": "crown-v10-gemini-score",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 12",
+      "summary": "Gemini Vision 9/10 QA score for Crown v10 HVAC video."
+    },
+    {
+      "title": "Chiller Mobile Reference Analysis",
+      "path": "/briefs/chiller-mobile-analysis",
+      "slug": "chiller-mobile-analysis",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 12",
+      "summary": "Gemini Vision analysis of Chiller Mobile reference video for text overlay style."
+    },
+    {
+      "title": "Roka Akor Reference Analysis",
+      "path": "/briefs/roka-akor-analysis",
+      "slug": "roka-akor-analysis",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 12",
+      "summary": "Gemini Vision analysis of Roka Akor reference video for text overlay style."
+    },
+    {
+      "title": "Crown HVAC Footage Reorg Report",
+      "path": "/briefs/ambition-crown-reorg",
+      "slug": "ambition-crown-reorg",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 11",
+      "summary": "Footage reorganization report for Crown HVAC shoot split into two locations."
+    },
+    {
+      "title": "Primrose Footage Reorg Report",
+      "path": "/briefs/ambition-primrose-reorg",
+      "slug": "ambition-primrose-reorg",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 11",
+      "summary": "Footage organization report for Primrose senior living HVAC project."
+    },
+    {
+      "title": "Ambition Link and Functionality Audit",
+      "path": "/briefs/ambition-link-audit",
+      "slug": "ambition-link-audit",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 10",
+      "summary": "Round 1 link and functionality audit of the Ambition Mechanical website."
+    },
+    {
+      "title": "Meta Ads Research: HVAC in Arizona",
+      "path": "/briefs/meta-ads-research-hvac-az",
+      "slug": "meta-ads-research-hvac-az",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 10",
+      "summary": "Meta Ad Library research on Arizona HVAC companies with industry benchmarks."
+    },
+    {
+      "title": "Meta Ads Research: Web Page Data",
+      "path": "/briefs/meta-ads-research-web-data",
+      "slug": "meta-ads-research-web-data",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 10",
+      "summary": "Structured HVAC ad research data for Bobby to build a sales tool webpage."
+    },
+    {
+      "title": "Meta Ads Research: Arizona Full Report",
+      "path": "/briefs/meta-ads-research-arizona",
+      "slug": "meta-ads-research-arizona",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 10",
+      "summary": "Full Arizona HVAC, plumbing, roofing, and construction Meta Ads Library research."
     },
     {
       "title": "Ambition Brand Guidelines v2",
@@ -223,16 +1313,6 @@
       "summary": "Full rebuild specification for the Ambition Mechanical website."
     },
     {
-      "title": "Ambition Link and Functionality Audit",
-      "path": "/briefs/ambition-link-audit",
-      "slug": "ambition-link-audit",
-      "type": "brief",
-      "updated_at": "2026-03-10",
-      "agent": "Steffen",
-      "dateFormatted": "Mar 10",
-      "summary": "Round 1 link and functionality audit of the Ambition Mechanical website."
-    },
-    {
       "title": "Ambition QA Report: Brand Review Commit",
       "path": "/briefs/ambition-qa-brand-review",
       "slug": "ambition-qa-brand-review",
@@ -253,74 +1333,94 @@
       "summary": "Round 5 QA revealing critical rendering failures at desktop and tablet."
     },
     {
-      "title": "Ambition LinkedIn Posts",
-      "path": "/briefs/ambition-linkedin",
-      "slug": "ambition-linkedin",
+      "title": "Ambition Brand v2 QA: Round 1",
+      "path": "/briefs/elmo-ambition-v2-qa-r1",
+      "slug": "elmo-ambition-v2-qa-r1",
       "type": "brief",
-      "updated_at": "2026-03-12",
-      "agent": "Alex",
-      "dateFormatted": "Mar 12",
-      "summary": "3 LinkedIn posts ready to copy-paste. Breaking 4+ weeks of silence."
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "First QA round of Ambition brand v2 token cleanup application."
     },
     {
-      "title": "Ambition: 15-20 Branded Social Animations",
-      "path": "/briefs/ambition-branded-posts",
-      "slug": "ambition-branded-posts",
+      "title": "Ambition Brand v2 QA: Round 2",
+      "path": "/briefs/elmo-ambition-v2-qa-r2",
+      "slug": "elmo-ambition-v2-qa-r2",
       "type": "brief",
-      "updated_at": "2026-03-16",
-      "agent": "Alex",
-      "dateFormatted": "Mar 16",
-      "summary": "18 branded Remotion animation briefs targeting GCs. Tool tips, checklists, industry intel, Phoenix events, culture."
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Second QA round following 14 blockers and 9 warnings from Round 1."
     },
     {
-      "title": "Ambition Mechanical: 30-Day Content Arsenal",
-      "path": "/briefs/ambition-content-plan",
-      "slug": "ambition-content-plan",
+      "title": "Ambition Brand v2 QA: Round 3",
+      "path": "/briefs/elmo-ambition-v2-qa-r3",
+      "slug": "elmo-ambition-v2-qa-r3",
       "type": "brief",
-      "updated_at": "2026-03-15",
-      "agent": "Alex",
-      "dateFormatted": "Mar 15",
-      "summary": "30-day content plan mining Ambition's footage archive. 5 videos/week + 2 LinkedIn authority posts."
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Third QA round following 8 blockers and 7 warnings from Round 2."
     },
     {
-      "title": "Ambition Week 1: Detailed Content Briefs",
-      "path": "/briefs/ambition-week1-plan",
-      "slug": "ambition-week1-plan",
+      "title": "Ambition Brand v2 QA: Round 4",
+      "path": "/briefs/elmo-ambition-v2-qa-r4",
+      "slug": "elmo-ambition-v2-qa-r4",
       "type": "brief",
-      "updated_at": "2026-03-15",
-      "agent": "Alex",
-      "dateFormatted": "Mar 15",
-      "summary": "Week 1 detailed briefs for Ambition content. 5 video briefs + 2 LinkedIn posts, ready to produce."
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Fourth QA round testing 3 deployed commits on production."
     },
     {
-      "title": "Ambition Video Intro Catalog",
-      "path": "/briefs/ambition-intro-catalog",
-      "slug": "ambition-intro-catalog",
+      "title": "Cleo Video Quality Diagnosis",
+      "path": "/briefs/cleo-video-diagnosis",
+      "slug": "cleo-video-diagnosis",
       "type": "brief",
-      "updated_at": "2026-03-15",
-      "agent": "Steffen",
-      "dateFormatted": "Mar 15",
-      "summary": "Catalog of Remotion-based video intro compositions for Ambition Mechanical content."
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Diagnosis of video cut quality issues and fixes for pacing, transitions, and text animations."
     },
     {
-      "title": "Crown HVAC Footage Reorg Report",
-      "path": "/briefs/ambition-crown-reorg",
-      "slug": "ambition-crown-reorg",
+      "title": "Pixel Agents Video Analysis",
+      "path": "/briefs/pixel-agents-video-analysis",
+      "slug": "pixel-agents-video-analysis",
       "type": "brief",
-      "updated_at": "2026-03-11",
-      "agent": "Cleo",
-      "dateFormatted": "Mar 11",
-      "summary": "Footage reorganization report for Crown HVAC shoot split into two locations."
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Analysis of Nate Herk's visual AI agent monitoring tool and implementation takeaways."
     },
     {
-      "title": "Primrose Footage Reorg Report",
-      "path": "/briefs/ambition-primrose-reorg",
-      "slug": "ambition-primrose-reorg",
+      "title": "Nate Herk Course Analysis",
+      "path": "/briefs/nate-herk-analysis",
+      "slug": "nate-herk-analysis",
       "type": "brief",
-      "updated_at": "2026-03-11",
-      "agent": "Cleo",
-      "dateFormatted": "Mar 11",
-      "summary": "Footage organization report for Primrose senior living HVAC project."
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Analysis of Nate Herk's Build and Sell with Claude Code course for applicable takeaways."
+    },
+    {
+      "title": "Pinterest Board Scraper Report",
+      "path": "/briefs/pinterest-scraper-report",
+      "slug": "pinterest-scraper-report",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Build report for the Pinterest board scraper tool for brand research."
+    },
+    {
+      "title": "Tony vs Cleo: Content Pipeline Recommendation",
+      "path": "/briefs/tony-vs-cleo-recommendation",
+      "slug": "tony-vs-cleo-recommendation",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Recommendation on whether Tony or Cleo should own the content pipeline tracking."
     },
     {
       "title": "Ambition Content Briefs: Weeks 1-2",
@@ -333,6 +1433,36 @@
       "summary": "First two weeks of content briefs for Ambition Mechanical social media."
     },
     {
+      "title": "KOHRS Content Briefs: 10 Videos",
+      "path": "/briefs/kohrs-content-briefs",
+      "slug": "kohrs-content-briefs",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 9",
+      "summary": "Content briefs for 10 videos owed to Leigh Kohrs."
+    },
+    {
+      "title": "Construction Social Media Competitive Landscape",
+      "path": "/briefs/construction-social-competitive",
+      "slug": "construction-social-competitive",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Alex",
+      "dateFormatted": "Mar 8",
+      "summary": "Competitive research to sharpen AOM's $3k/month social media retainer pitch for construction."
+    },
+    {
+      "title": "Construction Brand Landscape Research",
+      "path": "/briefs/construction-brand-landscape",
+      "slug": "construction-brand-landscape",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 8",
+      "summary": "Research on construction industry branding to inform AOM's vertical positioning."
+    },
+    {
       "title": "Ambition Mechanical Footage Scan",
       "path": "/briefs/ambition-footage-scan",
       "slug": "ambition-footage-scan",
@@ -341,9 +1471,559 @@
       "agent": "Cleo",
       "dateFormatted": "Mar 8",
       "summary": "First-pass footage scan of all Ambition Mechanical video assets."
+    },
+    {
+      "title": "Primrose Update Edit Notes",
+      "path": "/briefs/primrose-edit-notes",
+      "slug": "primrose-edit-notes",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 8",
+      "summary": "Recut edit notes for the Primrose Update video."
+    },
+    {
+      "title": "Primrose V3 Edit Plan",
+      "path": "/briefs/primrose-v3-plan",
+      "slug": "primrose-v3-plan",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 8",
+      "summary": "Edit plan for Primrose HVAC install progress update video for social platforms."
+    },
+    {
+      "title": "Editing Guide: Crown HVAC Service",
+      "path": "/briefs/crown-room-editing-guide",
+      "slug": "crown-room-editing-guide",
+      "type": "brief",
+      "updated_at": "2026-03-05",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 5",
+      "summary": "Editing guide for Crown HVAC Service shoot across two locations."
+    },
+    {
+      "title": "Crown Room Editing Guide v4",
+      "path": "/briefs/crown-room-only-guide",
+      "slug": "crown-room-only-guide",
+      "type": "brief",
+      "updated_at": "2026-03-05",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 5",
+      "summary": "Crown-only editing guide with lav sync for Hotel San Carlos rooftop exhaust replacement."
+    },
+    {
+      "title": "Memorial Tower Editing Guide",
+      "path": "/briefs/memorial-tower-editing-guide",
+      "slug": "memorial-tower-editing-guide",
+      "type": "brief",
+      "updated_at": "2026-03-05",
+      "agent": "Cleo",
+      "dateFormatted": "Mar 5",
+      "summary": "Editing guide for the Memorial Tower insulation project footage."
     }
   ],
   "aom-website": [
+    {
+      "title": "Friday Sprint Plan: AI Advisory Product",
+      "path": "/briefs/friday-sprint-plan",
+      "slug": "friday-sprint-plan",
+      "type": "brief",
+      "updated_at": "2026-03-14",
+      "agent": "Council",
+      "dateFormatted": "Mar 14",
+      "summary": "Sprint plan to have a sellable AI advisory product by end of day Friday."
+    },
+    {
+      "title": "Cold Email v3 Framework",
+      "path": "/briefs/cold-email-v3-framework",
+      "slug": "cold-email-v3-framework",
+      "type": "brief",
+      "updated_at": "2026-03-13",
+      "agent": "Alex",
+      "dateFormatted": "Mar 13",
+      "summary": "Active cold email framework built from Instantly benchmarks and Belkins 5.5M email study."
+    },
+    {
+      "title": "Bobby Brief: Build /case-study Page",
+      "path": "/briefs/bobby-case-study-brief",
+      "slug": "bobby-case-study-brief",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Build brief for Bobby to create the /case-study page showcasing AOM as proof of concept."
+    },
+    {
+      "title": "Bobby Brief: ROI Calculator Page",
+      "path": "/briefs/bobby-roi-brief",
+      "slug": "bobby-roi-brief",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Build brief for Bobby to create the ROI calculator lead magnet page."
+    },
+    {
+      "title": "AI Operations Build-Phase Proposal Template",
+      "path": "/briefs/build-proposal-template",
+      "slug": "build-proposal-template",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "SOW template to convert $2,500 audit roadmaps into $5-8k build contracts."
+    },
+    {
+      "title": "Case Study Content Brief",
+      "path": "/briefs/case-study-brief",
+      "slug": "case-study-brief",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Content brief for AOM as its own first case study on aheadofmarket.com/case-study."
+    },
+    {
+      "title": "Case Study Page Content",
+      "path": "/briefs/case-study-content",
+      "slug": "case-study-content",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Production-ready content for Bobby, mapped 1:1 to Steffen's 16-section design spec."
+    },
+    {
+      "title": "AOM Offer Ladder",
+      "path": "/briefs/offer-ladder",
+      "slug": "offer-ladder",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Alex",
+      "dateFormatted": "Mar 12",
+      "summary": "Source of truth for what AOM offers at every stage of the sales pipeline."
+    },
+    {
+      "title": "Client Onboarding Sequence",
+      "path": "/briefs/onboarding-sequence",
+      "slug": "onboarding-sequence",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steve",
+      "dateFormatted": "Mar 12",
+      "summary": "Complete client onboarding sequence for the AI Operations Audit product."
+    },
+    {
+      "title": "AOM Brand Guidelines v2",
+      "path": "/briefs/aom-brand-guidelines-v2",
+      "slug": "aom-brand-guidelines-v2",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Core AOM brand guidelines synced to the live site, for all agents building AOM work."
+    },
+    {
+      "title": "AI Audit Deliverable Design Spec",
+      "path": "/briefs/audit-deliverable-design-spec",
+      "slug": "audit-deliverable-design-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Design spec for the $2,500 AI Operations Audit deliverable. Must feel premium."
+    },
+    {
+      "title": "Brand Page v4 Update Spec",
+      "path": "/briefs/brand-page-v4-spec",
+      "slug": "brand-page-v4-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Spec for updating /brand to current v4 standard with expanded template kit."
+    },
+    {
+      "title": "/briefs Page Accordion Reorg Spec",
+      "path": "/briefs/briefs-page-design-spec",
+      "slug": "briefs-page-design-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Design spec for reorganizing the /briefs page with accordion categories."
+    },
+    {
+      "title": "Case Study Page Design Spec",
+      "path": "/briefs/case-study-design-spec",
+      "slug": "case-study-design-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Implementation-ready design spec for the AOM case study page."
+    },
+    {
+      "title": "ROI Calculator Design Spec",
+      "path": "/briefs/roi-calculator",
+      "slug": "roi-calculator",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "13-section implementation-ready spec for the ROI calculator page."
+    },
+    {
+      "title": "/v2 Feel Refinement Spec",
+      "path": "/briefs/v2-feel-refinement-spec",
+      "slug": "v2-feel-refinement-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Framer Motion addendum for /v2 rebuild: transitions, animations, and premium feel."
+    },
+    {
+      "title": "Creative Director Review: March 12",
+      "path": "/briefs/creative-review-mar12",
+      "slug": "creative-review-mar12",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Full-pass creative review of aheadofmarket.com and ambition-teal.vercel.app."
+    },
+    {
+      "title": "Creative Director Review: Wave 5",
+      "path": "/briefs/creative-review-wave5",
+      "slug": "creative-review-wave5",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 12",
+      "summary": "Post-deploy creative review of /ideas, /briefs, and /book pages."
+    },
+    {
+      "title": "Web Design Upgrade",
+      "path": "/briefs/web-design-upgrade",
+      "slug": "web-design-upgrade",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Elon",
+      "dateFormatted": "Mar 12",
+      "summary": "Aceternity UI, Magic UI, construction patterns, and anti-AI-slop techniques."
+    },
+    {
+      "title": "CPA Phone Outreach Strategy",
+      "path": "/briefs/cpa-phone-strategy",
+      "slug": "cpa-phone-strategy",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 12",
+      "summary": "Phone outreach strategy for CPAs after 51 cold emails yielded 0 replies."
+    },
+    {
+      "title": "Arizona Contractor Lead Database Research",
+      "path": "/briefs/niche-database-research",
+      "slug": "niche-database-research",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 12",
+      "summary": "Research on databases for pre-qualified AZ contractor leads without Apollo credits."
+    },
+    {
+      "title": "Outreach Voice Template v2",
+      "path": "/briefs/voice-template-v2",
+      "slug": "voice-template-v2",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 12",
+      "summary": "Upgraded outreach template with zero-risk offer framework and social proof."
+    },
+    {
+      "title": "ROI Calculator Spec",
+      "path": "/briefs/roi-calculator-spec",
+      "slug": "roi-calculator-spec",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Steve",
+      "dateFormatted": "Mar 12",
+      "summary": "Interactive ROI calculator spec for AI Operations Advisory lead magnet."
+    },
+    {
+      "title": "Council: Briefs Reorg + Offer Strategy",
+      "path": "/briefs/council-briefs-reorg-offer",
+      "slug": "council-briefs-reorg-offer",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Council",
+      "dateFormatted": "Mar 12",
+      "summary": "Council on /briefs accordion reorganization and replacing zero-risk offers in outreach."
+    },
+    {
+      "title": "Council: /v2 Rebuild to Audit Standard",
+      "path": "/briefs/council-v2-rebuild-wave6",
+      "slug": "council-v2-rebuild-wave6",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Council",
+      "dateFormatted": "Mar 12",
+      "summary": "Council on rebuilding /v2 to match audit tool quality standard. Wave 6."
+    },
+    {
+      "title": "Council: Wave 4 Priorities",
+      "path": "/briefs/council-wave4-priorities",
+      "slug": "council-wave4-priorities",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Council",
+      "dateFormatted": "Mar 12",
+      "summary": "Priority stack after /book fix, /briefs ship, and offer ladder completion."
+    },
+    {
+      "title": "Council: Wave 5 Priorities",
+      "path": "/briefs/council-wave5-priorities",
+      "slug": "council-wave5-priorities",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Council",
+      "dateFormatted": "Mar 12",
+      "summary": "Quick council on what to build next after Wave 4 completions."
+    },
+    {
+      "title": "Council: Wave 7 Post-Reset Priorities",
+      "path": "/briefs/council-wave7-post-reset",
+      "slug": "council-wave7-post-reset",
+      "type": "brief",
+      "updated_at": "2026-03-12",
+      "agent": "Council",
+      "dateFormatted": "Mar 12",
+      "summary": "Priority stack after rate limit hit during Wave 6 interrupted Bobby and Mom."
+    },
+    {
+      "title": "AI Advisory Offer Language",
+      "path": "/briefs/ai-advisory-offer-language",
+      "slug": "ai-advisory-offer-language",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Alex",
+      "dateFormatted": "Mar 11",
+      "summary": "Exact language for selling the AI advisory product, plus CPA-specific email angles."
+    },
+    {
+      "title": "Audit Onboarding Tool Design Brief",
+      "path": "/briefs/audit-onboarding-brief",
+      "slug": "audit-onboarding-brief",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "Design brief from Elon to Steffen for the audit onboarding tool UX."
+    },
+    {
+      "title": "Audit Onboarding Tool",
+      "path": "/briefs/audit-onboarding",
+      "slug": "audit-onboarding",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 11",
+      "summary": "Premium Typeform-style 27-slide audit intake experience."
+    },
+    {
+      "title": "Full-Screen Guided Experience Design Brief",
+      "path": "/briefs/fullscreen-site-brief",
+      "slug": "fullscreen-site-brief",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "Design brief from Elon to Steffen for the full-screen guided site experience."
+    },
+    {
+      "title": "Full-Screen Site Redesign",
+      "path": "/briefs/fullscreen-site",
+      "slug": "fullscreen-site",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 11",
+      "summary": "8-slide scroll-snap pitch deck experience for aheadofmarket.com."
+    },
+    {
+      "title": "Ideas Tracker Design Brief",
+      "path": "/briefs/ideas-tracker-brief",
+      "slug": "ideas-tracker-brief",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "Design brief from Elon to Steffen for the ideas tracker page."
+    },
+    {
+      "title": "Ideas Tracker (Brain Map)",
+      "path": "/briefs/ideas-tracker",
+      "slug": "ideas-tracker",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 11",
+      "summary": "Force-directed graph visualization for idea management."
+    },
+    {
+      "title": "AI Advisory Audit Onboarding Tool Spec",
+      "path": "/briefs/audit-onboarding-spec",
+      "slug": "audit-onboarding-spec",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "Technical spec for the audit onboarding tool, ready for Steffen design then Bobby build."
+    },
+    {
+      "title": "Credential Rotation Plan",
+      "path": "/briefs/credential-rotation-plan",
+      "slug": "credential-rotation-plan",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "Research-complete plan for rotating credentials across AOM systems."
+    },
+    {
+      "title": "Full-Screen Guided Experience Spec",
+      "path": "/briefs/fullscreen-site-spec",
+      "slug": "fullscreen-site-spec",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "Technical spec for the full-screen guided AOM website redesign experience."
+    },
+    {
+      "title": "Ideas Tracker System Spec",
+      "path": "/briefs/ideas-tracker-spec",
+      "slug": "ideas-tracker-spec",
+      "type": "brief",
+      "updated_at": "2026-03-11",
+      "agent": "Elon",
+      "dateFormatted": "Mar 11",
+      "summary": "System spec for the ideas tracker page: a visual of Patrik's brain."
+    },
+    {
+      "title": "Partnership Strategy",
+      "path": "/briefs/partnerships",
+      "slug": "partnerships",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Alex",
+      "dateFormatted": "Mar 10",
+      "summary": "Why partnerships beat cold email. 30+ specific targets for AOM growth."
+    },
+    {
+      "title": "AI Advisory Services Strategy",
+      "path": "/briefs/ai-advisory",
+      "slug": "ai-advisory",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Steve",
+      "dateFormatted": "Mar 10",
+      "summary": "How AOM turns its internal AI system into a sellable product."
+    },
+    {
+      "title": "/system Page Content",
+      "path": "/briefs/system-explainer-content",
+      "slug": "system-explainer-content",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Steve",
+      "dateFormatted": "Mar 10",
+      "summary": "Content for the /system page explaining AOM's AI operations offering."
+    },
+    {
+      "title": "OG Image Design Spec",
+      "path": "/briefs/og-image-spec",
+      "slug": "og-image-spec",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 10",
+      "summary": "Design spec for AOM Dark OG image, built as HTML/CSS and screenshotted with Playwright."
+    },
+    {
+      "title": "/system Page Design Spec",
+      "path": "/briefs/system-page-spec",
+      "slug": "system-page-spec",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 10",
+      "summary": "Design spec for the /system page based on Steve's content and AOM Dark Frame v4."
+    },
+    {
+      "title": "Competitive Deep Dive",
+      "path": "/briefs/competitors",
+      "slug": "competitors",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Elon",
+      "dateFormatted": "Mar 10",
+      "summary": "Market analysis of AI advisory competitors and positioning."
+    },
+    {
+      "title": "Email Freshness System Design",
+      "path": "/briefs/email-freshness-design",
+      "slug": "email-freshness-design",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Elon",
+      "dateFormatted": "Mar 10",
+      "summary": "System design for tracking email freshness and follow-up timing."
+    },
+    {
+      "title": "Scribe Agent Assessment",
+      "path": "/briefs/scribe-agent-assessment",
+      "slug": "scribe-agent-assessment",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Elon",
+      "dateFormatted": "Mar 10",
+      "summary": "Assessment of an always-running scribe agent that logs Patrik's requests to GitHub."
+    },
+    {
+      "title": "AI Advisory Sprint Plan",
+      "path": "/briefs/sprint-plan",
+      "slug": "sprint-plan",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Council",
+      "dateFormatted": "Mar 10",
+      "summary": "Multi-agent sprint plan for the AI advisory product launch."
+    },
+    {
+      "title": "Council: AI Advisory Services",
+      "path": "/briefs/council-ai-advisory",
+      "slug": "council-ai-advisory",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Council",
+      "dateFormatted": "Mar 10",
+      "summary": "Council brief on what AOM sells, how it delivers, and when it starts AI advisory."
+    },
+    {
+      "title": "Council: How to Grow AOM",
+      "path": "/briefs/council-business-growth",
+      "slug": "council-business-growth",
+      "type": "brief",
+      "updated_at": "2026-03-10",
+      "agent": "Council",
+      "dateFormatted": "Mar 10",
+      "summary": "Council brief on new business strategies and revenue growth opportunities."
+    },
     {
       "title": "AOM Website Page Layout Review",
       "path": "/briefs/aom-page-layout-review",
@@ -355,14 +2035,14 @@
       "summary": "Business owner perspective review of AOM website page layouts and messaging."
     },
     {
-      "title": "AOM Brand Guidelines v2",
-      "path": "/briefs/aom-brand-guidelines-v2",
-      "slug": "aom-brand-guidelines-v2",
+      "title": "AOM Website v2 Direction",
+      "path": "/briefs/website-v2-direction",
+      "slug": "website-v2-direction",
       "type": "brief",
-      "updated_at": "2026-03-12",
-      "agent": "Steffen",
-      "dateFormatted": "Mar 12",
-      "summary": "Core AOM brand guidelines synced to the live site, for all agents building AOM work."
+      "updated_at": "2026-03-09",
+      "agent": "Alex",
+      "dateFormatted": "Mar 9",
+      "summary": "Strategic direction for AOM website v2 redesign, copy and positioning."
     },
     {
       "title": "AOM Brand Guidelines v4",
@@ -385,6 +2065,336 @@
       "summary": "Evolution of Bold Graphic direction with contrast and life calibration."
     },
     {
+      "title": "AOM Brand: 3 Directions",
+      "path": "/briefs/brand-3-directions",
+      "slug": "brand-3-directions",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Three brand direction options generated from Patrik's branding board and Pinterest research."
+    },
+    {
+      "title": "AOM Copy Brand Alignment Review",
+      "path": "/briefs/copy-brand-review",
+      "slug": "copy-brand-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Brand alignment review of Alex's website copy before Bobby implements."
+    },
+    {
+      "title": "Recraft AI Prompting Guide",
+      "path": "/briefs/recraft-prompting-guide",
+      "slug": "recraft-prompting-guide",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Reference guide for generating logos, patterns, and brand assets with Recraft AI."
+    },
+    {
+      "title": "Super Saiyan Reflection: Brand Page Rebuild",
+      "path": "/briefs/supersaiyan-reflection",
+      "slug": "supersaiyan-reflection",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Reflection on the AOM brand page rebuild process across 3 rounds."
+    },
+    {
+      "title": "AOM Website v2 Brand Review",
+      "path": "/briefs/website-v2-brand-review",
+      "slug": "website-v2-brand-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Steffen",
+      "dateFormatted": "Mar 9",
+      "summary": "Brand review of v2 website direction addressing Patrik's feedback on kerning, monotony, portfolio."
+    },
+    {
+      "title": "Combined QA Report R5: Ambition + AOM",
+      "path": "/briefs/elmo-combined-qa-r5",
+      "slug": "elmo-combined-qa-r5",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Combined QA of both Ambition and AOM sites across 4 viewports with Playwright."
+    },
+    {
+      "title": "Brand Pages Inspection Report",
+      "path": "/briefs/elmer-brand-pages-report",
+      "slug": "elmer-brand-pages-report",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "QA inspection of /brands, /brand, and /brands/ambition pages."
+    },
+    {
+      "title": "AOM Functional Test",
+      "path": "/briefs/elmo-aom-functional-test",
+      "slug": "elmo-aom-functional-test",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Functional test of AOM site across desktop and mobile viewports."
+    },
+    {
+      "title": "AOM Homepage Redesign QA: Round 1",
+      "path": "/briefs/elmo-aom-redesign-qa-r1",
+      "slug": "elmo-aom-redesign-qa-r1",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "First QA round of the AOM homepage redesign."
+    },
+    {
+      "title": "AOM Homepage Redesign QA: Round 2",
+      "path": "/briefs/elmo-aom-redesign-qa-r2",
+      "slug": "elmo-aom-redesign-qa-r2",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Second QA round testing Bobby's 9 fixes commit."
+    },
+    {
+      "title": "AOM Homepage Redesign QA: Round 3",
+      "path": "/briefs/elmo-aom-redesign-qa-r3",
+      "slug": "elmo-aom-redesign-qa-r3",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Third QA round of the AOM homepage redesign."
+    },
+    {
+      "title": "AOM Homepage Redesign QA: Round 4",
+      "path": "/briefs/elmo-aom-redesign-qa-r4",
+      "slug": "elmo-aom-redesign-qa-r4",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "Fourth QA round of Dark Frame redesign after 3 previous FAILs from stale deploys."
+    },
+    {
+      "title": "System Audit: March 9, 2026",
+      "path": "/briefs/system-audit-mar9",
+      "slug": "system-audit-mar9",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Full system audit of agents, skills, context files, memory, and repo structure."
+    },
+    {
+      "title": "Context Efficiency Audit",
+      "path": "/briefs/context-efficiency-audit",
+      "slug": "context-efficiency-audit",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Audit to reduce context consumption and extend session life before compaction."
+    },
+    {
+      "title": "Email Deliverability Report",
+      "path": "/briefs/email-deliverability-report",
+      "slug": "email-deliverability-report",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Deliverability analysis for hello@aom-inhouse.com outbound email."
+    },
+    {
+      "title": "Mom Agent Diagnosis",
+      "path": "/briefs/mom-diagnosis",
+      "slug": "mom-diagnosis",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Diagnosis of Mom agent operational issues and recommended fixes."
+    },
+    {
+      "title": "Mom Infrastructure Audit",
+      "path": "/briefs/mom-infrastructure-audit",
+      "slug": "mom-infrastructure-audit",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Audit identifying gaps blocking Mom from operating as a full chief of staff."
+    },
+    {
+      "title": "System Audit v2: March 9, 2026",
+      "path": "/briefs/system-audit-v2-mar9",
+      "slug": "system-audit-v2-mar9",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Full admin audit of every AGENT.md, SKILL.md, script, and config in the system."
+    },
+    {
+      "title": "Alex Review: 3 Piece Special Outreach",
+      "path": "/briefs/alex-3ps-outreach-review",
+      "slug": "alex-3ps-outreach-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Alex",
+      "dateFormatted": "Mar 9",
+      "summary": "Copy quality review of 51 outreach emails for positioning, tone, and CTA consistency."
+    },
+    {
+      "title": "Outreach-to-Website Alignment Review",
+      "path": "/briefs/alex-outreach-website-review",
+      "slug": "alex-outreach-website-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Alex",
+      "dateFormatted": "Mar 9",
+      "summary": "Review of outreach email alignment with AOM website, competitive research, and biz dev brief."
+    },
+    {
+      "title": "Cold Email Analysis Brief",
+      "path": "/briefs/cold-email-analysis-brief",
+      "slug": "cold-email-analysis-brief",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 9",
+      "summary": "Framework analysis from Nate Herk's cold email strategy video."
+    },
+    {
+      "title": "Cold Email Framework Video Analysis",
+      "path": "/briefs/cold-email-video-transcript",
+      "slug": "cold-email-video-transcript",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 9",
+      "summary": "Transcript analysis of cold email framework video for $500k+ in sales opportunities."
+    },
+    {
+      "title": "Outreach Emails QA Report",
+      "path": "/briefs/elmer-outreach-qa",
+      "slug": "elmer-outreach-qa",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elmo",
+      "dateFormatted": "Mar 9",
+      "summary": "QA report on 3 Piece Special outreach emails cross-checked against work.md."
+    },
+    {
+      "title": "Outreach Voice Template",
+      "path": "/briefs/voice-template",
+      "slug": "voice-template",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 9",
+      "summary": "Patrik's original voice template, the source of truth for all cold outreach."
+    },
+    {
+      "title": "Website Review for Outreach",
+      "path": "/briefs/website-outreach-review",
+      "slug": "website-outreach-review",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 9",
+      "summary": "Review of AOM website from outreach alignment perspective."
+    },
+    {
+      "title": "Jacob Outreach Workflow Reference",
+      "path": "/briefs/jacob-workflow",
+      "slug": "jacob-workflow",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 9",
+      "summary": "Detailed workflow steps, templates, and reference docs for outreach operations."
+    },
+    {
+      "title": "Pipeline Wiring Report",
+      "path": "/briefs/pipeline-wiring-report",
+      "slug": "pipeline-wiring-report",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Report on wiring the official AOM production pipeline into the system."
+    },
+    {
+      "title": "Relay Compaction Fix",
+      "path": "/briefs/relay-compaction-fix",
+      "slug": "relay-compaction-fix",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Implementation details for the relay compaction fix with watchdog restart."
+    },
+    {
+      "title": "Steffen Logo Skill Upgrade Research",
+      "path": "/briefs/steffen-logo-skill-research",
+      "slug": "steffen-logo-skill-research",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Research on giving Steffen real logo creation capabilities using SVG in React."
+    },
+    {
+      "title": "Telegram Bridge Research",
+      "path": "/briefs/telegram-bridge-research",
+      "slug": "telegram-bridge-research",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Elon",
+      "dateFormatted": "Mar 9",
+      "summary": "Research on bridging Telegram to Claude Code for full agent access from mobile."
+    },
+    {
+      "title": "Council: AOM Website Redesign",
+      "path": "/briefs/council-website-redesign",
+      "slug": "council-website-redesign",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Council",
+      "dateFormatted": "Mar 9",
+      "summary": "Council brief on what the AOM website should become beyond video production."
+    },
+    {
+      "title": "Council: Why Outreach Is Not Landing",
+      "path": "/briefs/council-outreach-not-landing",
+      "slug": "council-outreach-not-landing",
+      "type": "brief",
+      "updated_at": "2026-03-09",
+      "agent": "Council",
+      "dateFormatted": "Mar 9",
+      "summary": "Council analysis of why cold outreach is getting zero replies and what to change."
+    },
+    {
+      "title": "AOM Site Redesign Visual Audit",
+      "path": "/briefs/site-redesign-visual-audit",
+      "slug": "site-redesign-visual-audit",
+      "type": "brief",
+      "updated_at": "2026-03-08",
+      "agent": "Bobby",
+      "dateFormatted": "Mar 8",
+      "summary": "Visual audit of AOM site redesign across iPhone SE, iPhone 12 Pro, and Desktop."
+    },
+    {
       "title": "AOM Website Visual Audit",
       "path": "/briefs/aom-site-visual-audit",
       "slug": "aom-site-visual-audit",
@@ -393,6 +2403,26 @@
       "agent": "Council",
       "dateFormatted": "Mar 8",
       "summary": "Automated Playwright visual audit of aheadofmarket.com."
+    },
+    {
+      "title": "Business Development Brief",
+      "path": "/briefs/biz-dev-brief",
+      "slug": "biz-dev-brief",
+      "type": "brief",
+      "updated_at": "2026-03-07",
+      "agent": "Alex",
+      "dateFormatted": "Mar 7",
+      "summary": "Business development strategy informed by Notion data analysis and market positioning."
+    },
+    {
+      "title": "Outreach Pipeline Plan",
+      "path": "/briefs/outreach-pipeline-plan",
+      "slug": "outreach-pipeline-plan",
+      "type": "brief",
+      "updated_at": "2026-03-07",
+      "agent": "Jacob",
+      "dateFormatted": "Mar 7",
+      "summary": "Full outreach pipeline plan covering 675 Apollo contacts plus 37 existing leads."
     }
   ]
 }

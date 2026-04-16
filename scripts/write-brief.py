@@ -13,11 +13,16 @@ Usage:
     [--summary "One-line summary for INDEX.json"] \
     [--content "Markdown body text"] \
     [--content-file path/to/body.md]
+
+Auto-publish: after writing docs/briefs/<slug>.md, also creates
+src/data/briefs/<slug>.json and updates src/data/briefs-index.json
+so the brief is immediately live on aheadofmarket.com/briefs/<slug>.
 """
 import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -25,6 +30,116 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 BRIEFS_DIR = REPO_ROOT / "docs" / "briefs"
 INDEX_PATH = BRIEFS_DIR / "INDEX.json"
+
+# Maps (project, skill) to the category shown on aheadofmarket.com/briefs
+CATEGORY_ORDER = [
+    "Strategy", "Sales Assets", "Design Specs", "Audits",
+    "Client Reports", "Outreach", "Technical", "Content", "Council",
+]
+
+def _infer_category(project: str, skill: str) -> str:
+    skill_l = skill.lower()
+    if "competitor" in skill_l or "market" in skill_l:
+        return "Strategy"
+    if "person" in skill_l or "outreach" in skill_l:
+        return "Outreach"
+    if "podcast" in skill_l or "youtube" in skill_l:
+        return "Research"
+    project_l = project.lower()
+    if "ambition" in project_l:
+        return "Content"
+    return "Strategy"
+
+
+def _md_to_html(markdown_text: str) -> str:
+    js = (
+        "const {marked} = require('marked');"
+        "const input = require('fs').readFileSync('/dev/stdin','utf-8');"
+        "process.stdout.write(marked.parse(input));"
+    )
+    try:
+        result = subprocess.run(
+            ["node", "-e", js],
+            input=markdown_text,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            cwd=str(REPO_ROOT),
+        )
+        if result.returncode == 0:
+            return result.stdout
+    except Exception:
+        pass
+    # Fallback: return raw markdown wrapped in <pre> if node fails
+    return f"<pre>{markdown_text}</pre>"
+
+
+def _format_date(date_str: str) -> str:
+    months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    try:
+        parts = date_str.split("-")
+        m = months[int(parts[1]) - 1]
+        d = int(parts[2])
+        return f"{m} {d}"
+    except Exception:
+        return date_str
+
+
+def _publish_web(slug: str, title: str, category: str, agent: str,
+                 date_str: str, summary: str, content_md: str) -> None:
+    """Write src/data/briefs/<slug>.json and update src/data/briefs-index.json."""
+    html = _md_to_html(content_md)
+    date_fmt = _format_date(date_str)
+
+    brief_data = {
+        "title": title,
+        "slug": slug,
+        "category": category,
+        "agent": agent,
+        "date": date_str,
+        "dateFormatted": date_fmt,
+        "updated": None,
+        "summary": summary,
+        "tags": [],
+        "content": html,
+    }
+
+    web_briefs_dir = REPO_ROOT / "src" / "data" / "briefs"
+    web_briefs_dir.mkdir(parents=True, exist_ok=True)
+    brief_path = web_briefs_dir / f"{slug}.json"
+    brief_path.write_text(json.dumps(brief_data, indent=2))
+    print(f"[write-brief] Published JSON: {brief_path.relative_to(REPO_ROOT)}")
+
+    index_path = REPO_ROOT / "src" / "data" / "briefs-index.json"
+    if index_path.exists():
+        try:
+            idx = json.loads(index_path.read_text())
+        except json.JSONDecodeError:
+            idx = {"generated": "", "categories": []}
+    else:
+        idx = {"generated": "", "categories": []}
+
+    cat_entry = next((c for c in idx.get("categories", []) if c["name"] == category), None)
+    if cat_entry is None:
+        cat_entry = {"name": category, "items": []}
+        idx.setdefault("categories", []).append(cat_entry)
+
+    cat_entry["items"] = [i for i in cat_entry["items"] if i.get("slug") != slug]
+    cat_entry["items"].insert(0, {
+        "title": title,
+        "slug": slug,
+        "agent": agent,
+        "date": date_str,
+        "dateFormatted": date_fmt,
+        "summary": summary,
+        "path": f"/briefs/{slug}",
+        "hasPage": True,
+    })
+
+    from datetime import datetime
+    idx["generated"] = datetime.utcnow().isoformat() + "Z"
+    index_path.write_text(json.dumps(idx, indent=2))
+    print(f"[write-brief] briefs-index.json updated: {category} -> {slug}")
 
 
 def slugify(text):
@@ -114,6 +229,18 @@ def main():
 
     INDEX_PATH.write_text(json.dumps(index, indent=2) + "\n")
     print(f"[write-brief] INDEX.json updated: {project_key} -> {slug}")
+
+    # Auto-publish to aheadofmarket.com/briefs/<slug>
+    category = _infer_category(args.project, args.skill)
+    _publish_web(
+        slug=slug,
+        title=args.title,
+        category=category,
+        agent=args.skill,
+        date_str=today,
+        summary=args.summary or args.title,
+        content_md=content,
+    )
 
     return 0
 

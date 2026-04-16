@@ -1,0 +1,12 @@
+{
+  "title": "Notion Competitors Deep Dive",
+  "slug": "notion-competitors",
+  "category": "Strategy",
+  "agent": "research-competitor",
+  "date": "2026-04-16",
+  "dateFormatted": "Apr 16",
+  "updated": null,
+  "summary": "Overview of Notion's main competitors including Obsidian, Coda, and Linear",
+  "tags": [],
+  "content": "<h2>TL;DR</h2>\n<p>Notion dominates the all-in-one workspace category but faces pressure from focused tools. Obsidian wins on local-first/privacy, Coda on powerful databases, Linear on dev workflows.</p>\n<h2>Company Overview</h2>\n<p>Notion Labs. Founded 2016. San Francisco. ~$10B valuation (2021). ~400 employees.</p>\n<h2>Product</h2>\n<p>All-in-one workspace: notes, docs, databases, wikis, project management. Key differentiator: flexible block-based editor + relational databases.</p>\n<h2>Pricing</h2>\n<ul>\n<li>Free: limited blocks</li>\n<li>Plus: $8/month</li>\n<li>Business: $15/month</li>\n<li>Enterprise: custom</li>\n</ul>\n<h2>Positioning</h2>\n<p>&#39;The all-in-one workspace for your notes, tasks, wikis, and databases.&#39; Targets knowledge workers and teams who need flexible structure.</p>\n<h2>Key Competitors</h2>\n<table>\n<thead>\n<tr>\n<th>Competitor</th>\n<th>Strength</th>\n<th>Pricing</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>Obsidian</td>\n<td>Local-first, privacy, markdown</td>\n<td>Free/$8/month</td>\n</tr>\n<tr>\n<td>Coda</td>\n<td>Powerful formulas, automations</td>\n<td>Free/$10/month</td>\n</tr>\n<tr>\n<td>Confluence</td>\n<td>Enterprise, Atlassian ecosystem</td>\n<td>$5.75/user/month</td>\n</tr>\n<tr>\n<td>Linear</td>\n<td>Dev workflow, speed</td>\n<td>Free/$8/user/month</td>\n</tr>\n<tr>\n<td>Roam Research</td>\n<td>Bidirectional links, networked thought</td>\n<td>$15/month</td>\n</tr>\n</tbody></table>\n<h2>Weaknesses</h2>\n<ul>\n<li>Performance issues at scale</li>\n<li>Mobile app is limited</li>\n<li>Offline mode unreliable</li>\n<li>Pricing jumps steeply for teams</li>\n</ul>\n<h2>Gaps &amp; Opportunities</h2>\n<ul>\n<li>Notion users frequently complain about speed + reliability</li>\n<li>No strong AI-native alternative yet (Notion AI is a bolt-on)</li>\n<li>Privacy/local-first segment underserved by Notion</li>\n</ul>\n<h2>Sources</h2>\n<ul>\n<li><a href=\"https://reddit.com/r/Notion\">https://reddit.com/r/Notion</a></li>\n<li><a href=\"https://g2.com/products/notion/competitors\">https://g2.com/products/notion/competitors</a></li>\n<li><a href=\"https://www.producthunt.com/alternatives/notion\">https://www.producthunt.com/alternatives/notion</a></li>\n</ul>\n"
+}
