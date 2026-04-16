@@ -618,12 +618,10 @@ export function useDataPipe(parsePunchList) {
   // Build agents status map for CanvasOffice room states.
   // Source of truth: agent_status table only (set by task_runner or system).
   //
-  // Post-rewire (Apr 14): AOM only exposes two terminal rooms -- Elon and Studio.
-  // Everything else (bobby, cleo, steffen, etc.) was removed when the pipeline
-  // died and the Haiku front desk took over. The picker reads this array, so
-  // the guaranteed set here prevents a stale Supabase row from leaking a ghost
-  // room back into the UI.
-  const AOM_TERMINAL_SLUGS = ['elon', 'studio']
+  // Post-rewire (Apr 14): AOM terminal rooms. Rex added Apr 15 (chat was not wired).
+  // The picker reads this array, so the guaranteed set here prevents a stale Supabase
+  // row from leaking a ghost room back into the UI.
+  const AOM_TERMINAL_SLUGS = ['rex', 'elon', 'studio']
   const clientId = getClientId()
 
   let agents
