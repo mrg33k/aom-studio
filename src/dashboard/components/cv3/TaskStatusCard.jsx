@@ -1,61 +1,62 @@
 // TaskStatusCard -- inline task status card for chat messages.
-// Port of Steffen's CV3 task-completion card design (public/cv3.html `.tc` / `.tc.bld`)
-// into React, extended with queued / in_progress / needs_input / failed variants.
+// Visual spec: Steffen's .m-task card in public/cv3.html (lines 157-166).
+// Base card is a subtle dark surface (var(--s1)) with a small color-coded head
+// (icon + label), title, description, and a foot with a status pill + agent/
+// project tags. All five runtime states reuse the same shell and swap the
+// head/pill color tokens to communicate state.
 //
-// Visual contract (from cv3.html lines 108-122 + design-specs/project-welcome-card-redesign.md):
-//   - completed / done: bright colored background (agent palette), dark text, QA score on right
-//   - in_progress:       dark bg with animated yellow top bar (`.tc.bld`)
-//   - queued:            dark bg with static yellow corner accent
-//   - needs_input:       amber background, question prominent, reply hint
-//   - failed:            loud red background, bold error message (fail-loud task 1eb1ff96)
+// .m-task   background var(--s1), border var(--border), radius 14, pad 12/16, max-w 88%
+// .mt-head  flex gap 6, mb 6
+// .mt-icon  18x18 rounded 6, state-tinted bg, 10/800 state color
+// .mt-label 10/700 uppercase 0.06em JetBrains Mono, state color
+// .mt-title 14/700
+// .mt-desc  12 muted, mt 3, line-height 1.4
+// .mt-foot  flex gap 8, mt 8
+// .mt-pill  9/700 padding 3/8 radius 6 JetBrains Mono
+//   .q bg rgba(234,179,8,.12) / yellow     (queued / running / needs_input)
+//   .d bg rgba(34,197,94,.12) / green      (done)
+//   .f bg rgba(239,68,68,.12) / red        (failed — derived, same pattern)
+// .mt-agent 10/600 muted
 //
-// Typography:
-//   title:  Inter 800 16px, letter-spacing -0.01em, #0A0A0A on bright
-//   tags:   Inter 700 9px, uppercase, 0.06em tracking, rgba(0,0,0,0.4)
-//   score:  JetBrains Mono 800 20px, rgba(0,0,0,0.55)
-//   label:  Inter 600 8px, uppercase
-import { useMemo } from 'react'
+// Running adds a 2px animated yellow bar on the top edge, ported from
+// .tc.bld::before @keyframes bld in public/cv3.html (lines 121-122).
 import { C } from '../../lib/cv3Colors.js'
 
-const AGENT_CARD_COLORS = {
-  bobby:   '#FB923C',
-  colton:  '#FB923C',
-  steffen: '#A78BFA',
-  gary:    '#2DD4BF',
-  alex:    '#22C55E',
-  tony:    '#22C55E',
-  jacob:   '#EAB308',
-  elon:    '#60A5FA',
-  cleo:    '#F472B6',
-  rex:     '#10B981',
-}
-const FALLBACK_PALETTE = ['#EAB308', '#22C55E', '#A78BFA', '#60A5FA', '#F472B6', '#FB923C', '#2DD4BF']
-
-function pickColor(agent, seed = 0) {
-  const key = (agent || '').toLowerCase()
-  if (AGENT_CARD_COLORS[key]) return AGENT_CARD_COLORS[key]
-  const hash = [...(agent || 'task')].reduce((a, c) => a + c.charCodeAt(0), 0)
-  return FALLBACK_PALETTE[(hash + seed) % FALLBACK_PALETTE.length]
+// State-color config: one source of truth for icon/label/pill theming.
+const VARIANT = {
+  queued:      { color: C.yellow, icon: '+', label: 'Task Queued',  pill: 'Queued'   },
+  in_progress: { color: C.yellow, icon: '▶', label: 'Running',      pill: 'Building' },
+  completed:   { color: C.green,  icon: '✓', label: 'Task Done',    pill: 'Done'     },
+  needs_input: { color: C.yellow, icon: '?', label: 'Needs Input',  pill: 'Waiting'  },
+  failed:      { color: C.red,    icon: '!', label: 'Task Failed',  pill: 'Failed'   },
 }
 
-// Result payload renderer -- mirrors TasksPanel.ResultPreview but scoped for
-// the chat card. Supports: link, image, video, text, check_external.
-function PayloadPreview({ payload, onDarkBg }) {
+// rgba() wrapper -- build the .12 alpha tint that Steffen uses for mt-icon bg
+// and mt-pill bg. Keeps us token-consistent instead of hard-coding hex alphas.
+function tint(hex, alpha = 0.12) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+// Result payload renderer for the 'done' variant. Mirrors TasksPanel.ResultPreview
+// but keeps the color palette on the dark .m-task surface.
+function PayloadPreview({ payload }) {
   if (!payload || typeof payload !== 'object' || !payload.type) return null
   const { type, payload: value, summary } = payload
-  const boxBg = onDarkBg ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-  const textColor = onDarkBg ? 'rgba(240,244,255,0.92)' : 'rgba(0,0,0,0.82)'
-  const summaryColor = onDarkBg ? 'rgba(240,244,255,0.58)' : 'rgba(0,0,0,0.58)'
   const box = {
     padding: '9px 11px',
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 10,
-    background: boxBg,
+    background: 'rgba(255,255,255,0.03)',
+    border: `1px solid ${C.border}`,
     fontFamily: "'Inter', sans-serif",
   }
   const summaryStyle = {
     fontSize: 11,
-    color: summaryColor,
+    color: C.muted,
     marginTop: summary ? 6 : 0,
     lineHeight: 1.4,
   }
@@ -72,11 +73,12 @@ function PayloadPreview({ payload, onDarkBg }) {
             display: 'inline-block',
             padding: '5px 12px',
             borderRadius: 6,
-            background: onDarkBg ? 'rgba(16,185,129,0.22)' : 'rgba(0,0,0,0.12)',
-            color: onDarkBg ? 'rgba(187,247,208,0.95)' : 'rgba(0,0,0,0.9)',
+            background: tint(C.green, 0.12),
+            color: C.green,
             textDecoration: 'none',
             fontSize: 12,
             fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
           }}
         >Open link ↗</a>
         {summary ? <div style={summaryStyle}>{summary}</div> : null}
@@ -119,7 +121,7 @@ function PayloadPreview({ payload, onDarkBg }) {
           fontSize: 12,
           maxHeight: 150,
           overflow: 'auto',
-          color: textColor,
+          color: C.text2,
         }}>{value}</pre>
         {summary ? <div style={summaryStyle}>{summary}</div> : null}
       </div>
@@ -131,12 +133,12 @@ function PayloadPreview({ payload, onDarkBg }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             width: 22, height: 22, borderRadius: 11,
-            background: onDarkBg ? 'rgba(245,158,11,0.22)' : 'rgba(255,255,255,0.35)',
-            color: onDarkBg ? 'rgba(253,230,138,0.95)' : '#7A5A00',
+            background: tint(C.yellow, 0.18),
+            color: C.yellow,
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 13, fontWeight: 800, flexShrink: 0,
           }}>!</span>
-          <span style={{ fontSize: 12, color: textColor }}>{value}</span>
+          <span style={{ fontSize: 12, color: C.text2 }}>{value}</span>
         </div>
         {summary ? <div style={summaryStyle}>{summary}</div> : null}
       </div>
@@ -167,328 +169,157 @@ export default function TaskStatusCard({
   errorMessage,
   question,
   timestamp,
-  colorSeed = 0,
   formatTime = v => v,
 }) {
   const variant = normalizeStatus(status)
+  const cfg = VARIANT[variant]
 
-  // Bright-card variants use the agent palette; dark variants use surface colors.
-  const brightColor = useMemo(() => pickColor(agent, colorSeed), [agent, colorSeed])
+  // The question text for needs_input -- prefer explicit prop, then
+  // description, then title so we always have something to render.
+  const questionText = variant === 'needs_input' ? (question || description || title) : null
+  // Suppress description-duplicate when needs_input falls back to it.
+  const shownDescription =
+    variant === 'needs_input' && description && description === questionText
+      ? null
+      : description
 
-  // ── Completed: bright colored card, Steffen's .tc design ──────────────────
-  if (variant === 'completed') {
-    return (
-      <div style={{
-        padding: '14px 16px',
-        borderRadius: 14,
-        background: brightColor,
-        maxWidth: '88%',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'transform 0.15s, box-shadow 0.15s',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{
-              fontSize: 16, fontWeight: 800,
-              lineHeight: 1.2, letterSpacing: '-0.01em',
-              color: '#0A0A0A',
-              fontFamily: "'Inter', sans-serif",
-            }}>
-              {title || 'Task Complete'}
-            </div>
-            {(agent || project) && (
-              <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-                {agent && (
-                  <span style={{
-                    fontSize: 9, fontWeight: 700,
-                    color: 'rgba(0,0,0,0.45)',
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                  }}>{agent}</span>
-                )}
-                {project && (
-                  <span style={{
-                    fontSize: 9, fontWeight: 700,
-                    color: 'rgba(0,0,0,0.45)',
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                  }}>{project}</span>
-                )}
-              </div>
-            )}
-          </div>
-          {qaScore != null && (
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 20, fontWeight: 800,
-                color: 'rgba(0,0,0,0.6)',
-                lineHeight: 1,
-              }}>{qaScore}</div>
-              <div style={{
-                fontSize: 8, fontWeight: 600,
-                color: 'rgba(0,0,0,0.35)',
-                textTransform: 'uppercase', textAlign: 'right',
-                marginTop: 3,
-              }}>QA</div>
-            </div>
-          )}
-        </div>
-        {description && (
-          <div style={{
-            fontSize: 12, color: 'rgba(0,0,0,0.62)',
-            marginTop: 8, lineHeight: 1.4,
-            fontFamily: "'Inter', sans-serif",
-          }}>{description}</div>
-        )}
-        <PayloadPreview payload={payload} onDarkBg={false} />
-        {timestamp && (
-          <div style={{
-            fontSize: 10, color: 'rgba(0,0,0,0.4)',
-            marginTop: 8,
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>{formatTime(timestamp)}</div>
-        )}
-      </div>
-    )
-  }
+  const isRunning = variant === 'in_progress'
 
-  // ── Failed: loud red bright card (fail-loud) ──────────────────────────────
-  if (variant === 'failed') {
-    return (
-      <div style={{
-        padding: '14px 16px',
-        borderRadius: 14,
-        background: C.red,
-        maxWidth: '88%',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: '0 6px 20px rgba(239,68,68,0.28)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <div style={{
-            width: 18, height: 18, borderRadius: 6,
-            background: 'rgba(0,0,0,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 900, color: '#fff',
-          }}>!</div>
-          <span style={{
-            fontSize: 10, fontWeight: 800,
-            color: '#fff',
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>Task Failed</span>
-        </div>
-        <div style={{
-          fontSize: 16, fontWeight: 800,
-          lineHeight: 1.2, letterSpacing: '-0.01em',
-          color: '#0A0A0A',
-          fontFamily: "'Inter', sans-serif",
-        }}>{title || 'Task Failed'}</div>
-        {(agent || project) && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-            {agent && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: 'rgba(0,0,0,0.5)',
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-              }}>{agent}</span>
-            )}
-            {project && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: 'rgba(0,0,0,0.5)',
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-              }}>{project}</span>
-            )}
-          </div>
-        )}
-        {(errorMessage || description) && (
-          <div style={{
-            marginTop: 10,
-            padding: '9px 11px',
-            borderRadius: 10,
-            background: 'rgba(0,0,0,0.22)',
-            fontSize: 12.5,
-            fontWeight: 500,
-            color: '#FEE2E2',
-            lineHeight: 1.45,
-            whiteSpace: 'pre-wrap',
-            fontFamily: "'Inter', sans-serif",
-          }}>{errorMessage || description}</div>
-        )}
-        {timestamp && (
-          <div style={{
-            fontSize: 10, color: 'rgba(0,0,0,0.45)',
-            marginTop: 8,
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>{formatTime(timestamp)}</div>
-        )}
-      </div>
-    )
-  }
-
-  // ── Needs input: amber bright card ────────────────────────────────────────
-  if (variant === 'needs_input') {
-    const questionText = question || description || title
-    return (
-      <div style={{
-        padding: '14px 16px',
-        borderRadius: 14,
-        background: C.yellow,
-        maxWidth: '88%',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: '0 6px 20px rgba(234,179,8,0.22)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <div style={{
-            width: 18, height: 18, borderRadius: 6,
-            background: 'rgba(0,0,0,0.18)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 900, color: '#0A0A0A',
-          }}>?</div>
-          <span style={{
-            fontSize: 10, fontWeight: 800,
-            color: '#0A0A0A',
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>Needs Input</span>
-        </div>
-        {title && title !== questionText && (
-          <div style={{
-            fontSize: 16, fontWeight: 800,
-            lineHeight: 1.2, letterSpacing: '-0.01em',
-            color: '#0A0A0A',
-            fontFamily: "'Inter', sans-serif",
-          }}>{title}</div>
-        )}
-        {(agent || project) && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-            {agent && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: 'rgba(0,0,0,0.5)',
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-              }}>{agent}</span>
-            )}
-            {project && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: 'rgba(0,0,0,0.5)',
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-              }}>{project}</span>
-            )}
-          </div>
-        )}
-        {questionText && (
-          <div style={{
-            marginTop: 10,
-            padding: '9px 11px',
-            borderRadius: 10,
-            background: 'rgba(0,0,0,0.14)',
-            fontSize: 13,
-            fontWeight: 500,
-            color: '#0A0A0A',
-            lineHeight: 1.45,
-            whiteSpace: 'pre-wrap',
-            fontFamily: "'Inter', sans-serif",
-          }}>{questionText}</div>
-        )}
-        <div style={{
-          marginTop: 8,
-          fontSize: 10, fontWeight: 600,
-          color: 'rgba(0,0,0,0.55)',
-          fontFamily: "'Inter', sans-serif",
-        }}>Reply below to unblock.</div>
-        {timestamp && (
-          <div style={{
-            fontSize: 10, color: 'rgba(0,0,0,0.4)',
-            marginTop: 8,
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>{formatTime(timestamp)}</div>
-        )}
-      </div>
-    )
-  }
-
-  // ── In progress + queued: dark card with yellow accent (`.tc.bld` port) ───
-  const isBuilding = variant === 'in_progress'
-  const accent = C.yellow
-  const label = isBuilding ? 'Running' : 'Queued'
-  const icon = isBuilding ? '▶' : '+'
   return (
     <div style={{
-      padding: '14px 16px',
+      alignSelf: 'flex-start',
+      background: C.s1,
+      border: `1px solid ${C.border}`,
       borderRadius: 14,
-      background: C.s2,
-      border: `1px solid ${isBuilding ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.08)'}`,
+      padding: '12px 16px',
       maxWidth: '88%',
       position: 'relative',
       overflow: 'hidden',
+      fontFamily: "'Inter', sans-serif",
     }}>
-      {isBuilding && (
+      {/* Running: animated top accent bar (port of .tc.bld::before) */}
+      {isRunning && (
         <div
           className="cv3-tsc-bld-bar"
           style={{
             position: 'absolute', top: 0, left: 0,
-            height: 2, background: accent,
+            height: 2, background: C.yellow,
             borderRadius: '14px 14px 0 0',
             animation: 'cv3TscBld 5s ease-in-out infinite',
           }}
         />
       )}
-      {!isBuilding && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0,
-          height: 2, width: '30%', background: 'rgba(234,179,8,0.5)',
-          borderRadius: '14px 14px 0 0',
-        }} />
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+
+      {/* mt-head */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6,
+      }}>
         <div style={{
           width: 18, height: 18, borderRadius: 6,
-          background: 'rgba(234,179,8,0.12)',
+          background: tint(cfg.color, 0.12),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, fontWeight: 800, color: accent,
-        }}>{icon}</div>
+          fontSize: 10, fontWeight: 800, color: cfg.color,
+        }}>{cfg.icon}</div>
         <span style={{
-          fontSize: 10, fontWeight: 700,
-          color: accent,
+          fontSize: 10, fontWeight: 700, color: cfg.color,
           textTransform: 'uppercase', letterSpacing: '0.06em',
           fontFamily: "'JetBrains Mono', monospace",
-        }}>{label}</span>
+        }}>{cfg.label}</span>
       </div>
-      <div style={{
-        fontSize: 14, fontWeight: 700,
-        color: accent,
-        lineHeight: 1.25, letterSpacing: '-0.01em',
-        fontFamily: "'Inter', sans-serif",
-      }}>{title || (isBuilding ? 'Working on task…' : 'Queued task')}</div>
-      {description && (
+
+      {/* mt-title */}
+      {title && (
         <div style={{
-          fontSize: 12, color: C.muted,
-          marginTop: 4, lineHeight: 1.4,
-          fontFamily: "'Inter', sans-serif",
-        }}>{description}</div>
+          fontSize: 14, fontWeight: 700, color: C.text,
+          lineHeight: 1.25,
+        }}>{title}</div>
       )}
-      {(agent || project) && (
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-          {agent && (
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: C.muted,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-            }}>{agent}</span>
-          )}
-          {project && (
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: C.muted,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-            }}>{project}</span>
-          )}
-        </div>
-      )}
-      {timestamp && (
+
+      {/* mt-desc */}
+      {shownDescription && (
         <div style={{
-          fontSize: 10, color: C.dim,
+          fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.4,
+        }}>{shownDescription}</div>
+      )}
+
+      {/* needs_input: pulled-out question block */}
+      {questionText && (
+        <div style={{
           marginTop: 8,
+          padding: '8px 10px',
+          borderRadius: 8,
+          background: tint(cfg.color, 0.08),
+          border: `1px solid ${tint(cfg.color, 0.18)}`,
+          fontSize: 12.5, fontWeight: 500,
+          color: C.text, lineHeight: 1.45,
+          whiteSpace: 'pre-wrap',
+        }}>{questionText}</div>
+      )}
+
+      {/* failed: pulled-out error message block */}
+      {variant === 'failed' && (errorMessage || description) && (
+        <div style={{
+          marginTop: 8,
+          padding: '8px 10px',
+          borderRadius: 8,
+          background: tint(C.red, 0.08),
+          border: `1px solid ${tint(C.red, 0.18)}`,
+          fontSize: 12.5, fontWeight: 500,
+          color: '#FECACA', lineHeight: 1.45,
+          whiteSpace: 'pre-wrap',
+        }}>{errorMessage || description}</div>
+      )}
+
+      {/* done: payload preview */}
+      {variant === 'completed' && <PayloadPreview payload={payload} />}
+
+      {/* mt-foot */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontSize: 9, fontWeight: 700,
+          padding: '3px 8px', borderRadius: 6,
           fontFamily: "'JetBrains Mono', monospace",
-        }}>{formatTime(timestamp)}</div>
+          background: tint(cfg.color, 0.12),
+          color: cfg.color,
+          textTransform: 'uppercase', letterSpacing: '0.04em',
+        }}>{cfg.pill}</span>
+        {qaScore != null && variant === 'completed' && (
+          <span style={{
+            fontSize: 9, fontWeight: 700,
+            padding: '3px 8px', borderRadius: 6,
+            fontFamily: "'JetBrains Mono', monospace",
+            background: tint(C.accent, 0.12),
+            color: C.accent,
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>QA {qaScore}</span>
+        )}
+        {agent && (
+          <span style={{
+            fontSize: 10, fontWeight: 600, color: C.muted,
+          }}>{agent}</span>
+        )}
+        {project && (
+          <span style={{
+            fontSize: 10, fontWeight: 600, color: C.dim,
+          }}>· {project}</span>
+        )}
+        {timestamp && (
+          <span style={{
+            marginLeft: 'auto',
+            fontSize: 10, color: C.dim,
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>{formatTime(timestamp)}</span>
+        )}
+      </div>
+
+      {/* needs_input: reply hint sits below the foot */}
+      {variant === 'needs_input' && (
+        <div style={{
+          marginTop: 6,
+          fontSize: 10, fontWeight: 500, color: C.muted,
+        }}>Reply below to unblock.</div>
       )}
     </div>
   )
@@ -541,7 +372,6 @@ export function parseTaskMessageText(text = '') {
   if (failMatch) {
     const title = failMatch[1].trim()
     const rest = (failMatch[2] || '').trim()
-    // "Reason: <err>. I'm on it — ..." — pull err, drop the trailing hand-hold.
     let errorMessage = rest
     const reasonMatch = rest.match(/^Reason:\s*([\s\S]*)$/i)
     if (reasonMatch) errorMessage = reasonMatch[1].trim()
@@ -657,9 +487,6 @@ export function renderTaskCardForMessage(msg, { selectedAgent, formatTime = v =>
   }
 
   // task-completion / task-completion-crosspost / task-notification.
-  // These come from AOM-EA/scripts/post-task-chat-message.py and land in the
-  // owning agent's thread + the project crosspost client_id. Metadata may be
-  // null on historical rows, so we always fall back to text parsing.
   if (
     source === 'task-completion'
     || source === 'task-completion-crosspost'
@@ -715,7 +542,6 @@ export function renderTaskCardForMessage(msg, { selectedAgent, formatTime = v =>
   }
 
   // Fallback: any message whose text begins with a task-status prefix.
-  // Catches messages from unknown sources that still use the expected shape.
   if (/^Task (done|failed|needs input|queued|running|started|building|in progress):/i.test(text)) {
     const parsed = parseTaskMessageText(text)
     if (parsed) {
