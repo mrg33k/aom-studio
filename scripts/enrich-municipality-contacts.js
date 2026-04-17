@@ -95,57 +95,70 @@ function formatOrgSearchTerm(municipality) {
   return `${typeDisplay} of ${cleanName}`;
 }
 
-// Apollo People Search API call
+// Apollo People Search API call (two-step: search then bulk_match to reveal)
 async function searchApolloContacts(orgName, stateAbbr) {
-  const url = 'https://api.apollo.io/v1/mixed_people/search';
-  
-  const body = {
-    api_key: APOLLO_API_KEY,
-    q_organization_name: orgName,
-    organization_locations: [stateAbbr],
-    page: 1,
-    per_page: 10,
-    person_titles: TITLE_FILTERS,
-    contact_email_status: ['verified', 'guess']
+  const APOLLO_HEADERS = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache',
+    'X-Api-Key': APOLLO_API_KEY
   };
-  
+
   try {
-    const response = await fetch(url, {
+    // Step 1: search for people (returns obfuscated data + IDs)
+    const searchResp = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      body: JSON.stringify(body)
+      headers: APOLLO_HEADERS,
+      body: JSON.stringify({
+        q_organization_name: orgName,
+        organization_locations: [stateAbbr],
+        page: 1,
+        per_page: 10,
+        person_titles: TITLE_FILTERS
+      })
     });
-    
-    if (!response.ok) {
-      console.error(`  Apollo API error: ${response.status} ${response.statusText}`);
+
+    if (!searchResp.ok) {
+      console.error(`  Apollo search error: ${searchResp.status} ${searchResp.statusText}`);
       return [];
     }
-    
-    const data = await response.json();
-    
-    if (!data.people || !Array.isArray(data.people)) {
+
+    const searchData = await searchResp.json();
+    if (!searchData.people || !Array.isArray(searchData.people) || searchData.people.length === 0) {
       return [];
     }
-    
-    // Filter to only include people with verified or guessed emails
-    const filteredPeople = data.people.filter(person => {
-      // Check if email is present and not redacted
-      const email = person.email;
-      return email && !email.includes('***') && email.includes('@');
+
+    // Step 2: bulk_match to reveal full names and emails
+    const ids = searchData.people.map(p => ({ id: p.id }));
+    const matchResp = await fetch('https://api.apollo.io/api/v1/people/bulk_match', {
+      method: 'POST',
+      headers: APOLLO_HEADERS,
+      body: JSON.stringify({ reveal_personal_emails: true, details: ids })
     });
-    
-    return filteredPeople.map(person => ({
-      name: `${person.first_name || ''} ${person.last_name || ''}`.trim(),
-      title: person.title || '',
-      email: person.email || '',
-      phone: person.phone || '',
-      linkedin_url: person.linkedin_url || '',
-      source: 'apollo'
-    }));
-    
+
+    if (!matchResp.ok) {
+      console.error(`  Apollo bulk_match error: ${matchResp.status} ${matchResp.statusText}`);
+      return [];
+    }
+
+    const matchData = await matchResp.json();
+    if (!matchData.matches || !Array.isArray(matchData.matches)) {
+      return [];
+    }
+
+    return matchData.matches
+      .filter(person => {
+        const email = person.email;
+        return email && !email.includes('***') && email.includes('@');
+      })
+      .map(person => ({
+        name: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),
+        title: person.title || '',
+        email: person.email || '',
+        phone: (person.phone_numbers && person.phone_numbers[0]?.sanitized_number) || person.phone || '',
+        linkedin_url: person.linkedin_url || '',
+        source: 'apollo'
+      }));
+
   } catch (error) {
     console.error(`  Apollo search failed: ${error.message}`);
     return [];
