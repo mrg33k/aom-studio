@@ -18,7 +18,6 @@ export default function useChatSend({
   worldId,
   userIdentity,
   inputRef,
-  messagesRef,
   setMessages,
   pendingAttachmentsRef,
   setPendingAttachments,
@@ -90,18 +89,6 @@ export default function useChatSend({
       },
     }))
 
-    // Build Gemini-format history from the last 20 messages for context.
-    // Includes attachment URLs so the AI knows about uploaded files.
-    // NOTE (R2b): history is computed but the chat-bridge path below does
-    // not send it. Preserved as-is to match pre-split behavior; flagged
-    // for R3 / follow-up.
-    const history = messagesRef.current.slice(-20).map(m => {
-      let text = m.text || ''
-      if (m.attachment_url) text += `\n[Uploaded file: ${m.attachment_url}]`
-      return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text }] }
-    })
-    void history
-
     try {
       const bridgeResult = await fetch('/api/dashboard/chat-bridge', {
         method: 'POST',
@@ -130,7 +117,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [input, sending, selectedAgent, worldId, userIdentity, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, startBridgeStream, pendingAttachmentsRef, messagesRef, inputRef])
+  }, [input, sending, selectedAgent, worldId, userIdentity, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, startBridgeStream, pendingAttachmentsRef, inputRef])
 
   // ── sendAgentText: programmatic (voice transcription) ────────────────────
   const sendAgentText = useCallback(async (rawText) => {
@@ -254,14 +241,6 @@ export default function useChatSend({
       ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
     }])
 
-    // See sendHandle history note above -- same dead-code pattern preserved.
-    const history = messagesRef.current.slice(-20).map(m => {
-      let text = m.text || ''
-      if (m.attachment_url) text += `\n[Uploaded file: ${m.attachment_url}]`
-      return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text }] }
-    })
-    void history
-
     try {
       const bridgeResult = await fetch('/api/dashboard/chat-bridge', {
         method: 'POST',
@@ -290,7 +269,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [selectedProject, worldId, userIdentity, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, messagesRef, inputRef])
+  }, [selectedProject, worldId, userIdentity, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef])
 
   useEffect(() => { sendProjectTextRef.current = sendProjectText }, [sendProjectText])
 
