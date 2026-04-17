@@ -63,8 +63,6 @@ const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 const TenantSignupPage = lazy(() => import('./pages/TenantSignupPage.jsx'))
 import './index.css'
 
-// Legacy views moved to src/dashboard/_legacy/. Do not import.
-
 function ConstructionRedirect() {
   const navigate = useNavigate()
   useEffect(() => {

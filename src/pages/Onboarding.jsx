@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
-import ArchitectChat from '../dashboard/_legacy/ArchitectChat.jsx'
 
 function toSlug(str) {
   return str.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'my-world'
@@ -328,12 +327,6 @@ export default function Onboarding() {
     setTimeout(() => { setStep(s => s - 1); setAnimating(false) }, 210)
   }
 
-  function handlePlanApproved(plan) {
-    setArchitectPlan(plan)
-    setAnimating(true)
-    setTimeout(() => { setStep(2); setAnimating(false) }, 210)
-  }
-
   async function handleLaunch() {
     if (finishing) return
     setFinishing(true)
@@ -498,21 +491,6 @@ export default function Onboarding() {
             >
               Next
             </button>
-          </div>
-        )}
-
-        {/* ---- STEP 1: ARCHITECT CONVERSATION ---- */}
-        {step === 1 && (
-          <div>
-            <div style={{ ...stepLabel, textAlign: 'center', marginBottom: 4 }}>Step 2 of 2</div>
-            <h2 style={{ ...heading, textAlign: 'center', marginBottom: 6 }}>Meet your Architect.</h2>
-            <p style={{ ...sub, textAlign: 'center', marginBottom: 24 }}>
-              They'll learn about you and build the right team.
-            </p>
-            <ArchitectChat
-              stageContext={{ whoType, ageRange }}
-              onPlanApproved={handlePlanApproved}
-            />
           </div>
         )}
 
