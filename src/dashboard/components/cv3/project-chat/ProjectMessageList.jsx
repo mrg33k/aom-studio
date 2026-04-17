@@ -1,0 +1,176 @@
+import { C } from '../../../lib/cv3Colors.js'
+import { LinkifyText, formatChatTime } from '../shared.jsx'
+import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
+import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
+import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
+import { NeedsVerificationBadge } from '../ContextMenu.jsx'
+
+// Scrollable messages area for project chat. Renders:
+// - Task status cards for task-* / checkpoint messages (via TaskStatusCard)
+// - Regular user / agent bubbles with avatar + name + timestamp
+// - NeedsVerification badge per flagged message
+// - Typing indicator while `sending`
+// Hidden (display:none) while search results are being shown.
+export default function ProjectMessageList({
+  messages,
+  loadingMsgs,
+  selectedProject,
+  projColor,
+  displayName,
+  currentUser,
+  userProfiles,
+  needsVerificationIds,
+  sending,
+  messagesEndRef,
+  hidden,
+  openMsgMenu,
+  startLongPress,
+  cancelLongPress,
+}) {
+  return (
+    <div style={{
+      flex: 1, overflowY: 'auto',
+      padding: '12px 14px',
+      display: hidden ? 'none' : 'flex',
+      flexDirection: 'column', gap: 6,
+    }}>
+      {loadingMsgs && (
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
+          <span style={{ fontSize: 12, color: C.muted }}>Loading…</span>
+        </div>
+      )}
+      {!loadingMsgs && messages.length === 0 && (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 8, paddingTop: 60,
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            background: `linear-gradient(135deg, ${projColor}44, ${projColor}22)`,
+            border: `1px solid ${projColor}55`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: 5,
+              background: projColor,
+              boxShadow: `0 0 10px ${projColor}77`,
+            }} />
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: C.text, marginTop: 4 }}>
+            {selectedProject?.name || 'Project'}
+          </span>
+          <span style={{ fontSize: 12, color: C.muted }}>Start a conversation</span>
+        </div>
+      )}
+      {messages.map(msg => {
+        // Task status cards: render task-completion / task-runner / checkpoint
+        // messages as the CV3 card (Steffen's design) instead of a plain bubble.
+        // Mirrors ThreadView so project-room crossposts also get the card.
+        const taskCard = renderTaskCardForMessage(msg, { formatTime: formatChatTime })
+        if (taskCard) {
+          return <div key={msg.id}>{taskCard}</div>
+        }
+        const isUser = msg.role === 'user'
+        const senderName = msg.user_name || (isUser ? displayName : null)
+        const senderInitial = senderName ? senderName[0].toUpperCase() : 'U'
+        const isOtherUser = isUser && msg.user_name && msg.user_name !== displayName
+        const senderColor = isUser ? (isOtherUser ? '#7C3AED' : '#2563EB') : projColor
+        const senderProfile = msg.user_id ? (msg.user_id === currentUser?.id ? { avatar_url: currentUser?.user_metadata?.avatar_url } : userProfiles[msg.user_id]) : null
+        const senderAvatar = senderProfile?.avatar_url || null
+        const msgFlagged = needsVerificationIds?.has?.(msg.id)
+        return (
+          <div
+            key={msg.id}
+            data-test-id="chat-message"
+            data-message-id={msg.id}
+            onContextMenu={(e) => openMsgMenu(e, msg)}
+            onTouchStart={(e) => startLongPress(e, msg)}
+            onTouchEnd={cancelLongPress}
+            onTouchMove={cancelLongPress}
+            onTouchCancel={cancelLongPress}
+            style={{
+              display: 'flex',
+              justifyContent: isUser ? 'flex-end' : 'flex-start',
+              alignItems: 'flex-end',
+              gap: 10,
+              marginBottom: isUser ? 4 : 12,
+            }}
+          >
+            {!isUser && (
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: `linear-gradient(135deg, ${projColor}33, ${projColor}18)`,
+                border: `1px solid ${projColor}44`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                alignSelf: 'flex-start', marginTop: 2,
+              }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: projColor }} />
+              </div>
+            )}
+            <div style={{ maxWidth: isUser ? '75%' : '85%', minWidth: 0 }}>
+              {isUser && isOtherUser && (
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
+                  {msg.user_name}
+                </div>
+              )}
+              <div style={{
+                padding: isUser ? '10px 16px' : '2px 0',
+                borderRadius: isUser ? '18px 18px 4px 18px' : 0,
+                fontSize: 14, lineHeight: 1.6,
+                color: isUser ? '#fff' : '#E2E8F0',
+                background: isUser ? senderColor : 'transparent',
+                border: 'none',
+                wordBreak: 'break-word',
+                fontFamily: "'Inter', sans-serif",
+                letterSpacing: '-0.01em',
+                ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
+              }}>
+                {isUser
+                  ? <LinkifyText text={msg.text} />
+                  : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
+                }
+              </div>
+              <div style={{
+                fontSize: 11, color: 'rgba(120,140,165,0.4)',
+                marginTop: 4,
+                textAlign: isUser ? 'right' : 'left',
+                paddingRight: isUser ? 2 : 0,
+                paddingLeft: isUser ? 0 : 2,
+                fontFamily: "'Inter', sans-serif",
+                display: 'flex', alignItems: 'center',
+                justifyContent: isUser ? 'flex-end' : 'flex-start',
+                gap: 6,
+              }}>
+                <span>{formatChatTime(msg.timestamp)}</span>
+                {msgFlagged && (
+                  <NeedsVerificationBadge testId={`msg-verify-badge-${msg.id}`} label="Needs QA" />
+                )}
+              </div>
+            </div>
+            {isUser && (
+              <div title={senderName || 'User'} style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: senderAvatar ? 'transparent' : senderColor,
+                border: senderAvatar ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden',
+              }}>
+                {senderAvatar
+                  ? <img src={senderAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{senderInitial}</span>
+                }
+              </div>
+            )}
+          </div>
+        )
+      })}
+      {sending && (
+        <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+          <TypingIndicatorV2 streaming={true} agentColor={projColor} compact={false} />
+        </div>
+      )}
+      <div ref={messagesEndRef} />
+    </div>
+  )
+}
