@@ -1,12 +1,11 @@
+import { useChatRecordingCtx } from '../chat/ChatPanelContext.jsx'
+
 // Status strip shown above the composer while mic is recording or audio is
 // transcribing. Mirrors thread/RecordingStatusBar.
-export default function ProjectRecordingStatusBar({
-  isRecording,
-  isTranscribing,
-  recordingElapsed,
-  handleMicToggle,
-  micError,
-}) {
+export default function ProjectRecordingStatusBar() {
+  const {
+    isRecording, isTranscribing, recordingElapsed, handleMicToggle, micError,
+  } = useChatRecordingCtx()
   return (
     <div style={{
       flexShrink: 0, padding: '8px 16px',

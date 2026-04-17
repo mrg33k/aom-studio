@@ -2,22 +2,29 @@ import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
+import {
+  useChatCore,
+  useChatSendCtx,
+  useChatAttachmentsCtx,
+  useChatVoiceCtx,
+  useChatContextMenuCtx,
+} from '../chat/ChatPanelContext.jsx'
 
 // CV3 pill input bar: hidden file input, optional reply/chain indicators,
 // slash-command autocomplete, attach button, commands stub, and the
 // mic-or-send button that toggles between voice mode and send.
-export default function ThreadInputBar({
-  input, setInput,
-  inputRef, fileInputRef,
-  chatInputFocused, setChatInputFocused,
-  handleKeyDown, handleSend, handleFileSelection,
-  sending, uploading,
-  selectedAgent,
-  replyTo, setReplyTo,
-  isVoiceActive, setIsVoiceActive,
-  voiceChatRef,
-  setVoiceMuted, setVoiceTranscriptText,
-}) {
+export default function ThreadInputBar() {
+  const { selectedAgent, chatInputFocused, setChatInputFocused } = useChatCore()
+  const {
+    input, setInput, inputRef, sending,
+    handleSend, handleKeyDown,
+  } = useChatSendCtx()
+  const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
+  const {
+    isVoiceActive, setIsVoiceActive, voiceChatRef,
+    setVoiceMuted, setVoiceTranscriptText,
+  } = useChatVoiceCtx()
+  const { replyTo, setReplyTo } = useChatContextMenuCtx()
   // Caret position for slash-command autocomplete
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)

@@ -2,27 +2,35 @@ import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
+import {
+  useChatCore,
+  useChatSendCtx,
+  useChatAttachmentsCtx,
+  useChatVoiceCtx,
+  useChatContextMenuCtx,
+} from '../chat/ChatPanelContext.jsx'
+import useProjectChatPrefill from './useProjectChatPrefill.js'
 
 // The CV3-pill input bar for the project-chat room. Handles slash-command
 // autocomplete (via caret tracking), file attach button, voice start/send
 // toggle, and the reply-to chip. Enter fires sendProjectText(input).
-export default function ProjectInputBar({
-  input,
-  setInput,
-  inputRef,
-  fileInputRef,
-  chatInputFocused,
-  setChatInputFocused,
-  sending,
-  uploading,
-  selectedProject,
-  sendProjectText,
-  handleFileSelection,
-  setIsVoiceActive,
-  isVoiceActive,
-  replyTo,
-  setReplyTo,
-}) {
+export default function ProjectInputBar() {
+  const {
+    selectedProject,
+    chatInputFocused, setChatInputFocused,
+    prefillMessage, setPrefillMessage,
+  } = useChatCore()
+  const {
+    input, setInput, inputRef, sending, sendProjectText,
+  } = useChatSendCtx()
+  const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
+  const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx()
+  const { replyTo, setReplyTo } = useChatContextMenuCtx()
+
+  useProjectChatPrefill({
+    prefillMessage, selectedProject, setInput, setPrefillMessage, inputRef,
+  })
+
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 

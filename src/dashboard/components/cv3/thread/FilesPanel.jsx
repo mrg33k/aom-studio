@@ -1,8 +1,10 @@
 import { C } from '../../../lib/cv3Colors.js'
+import { useChatMessagesCtx } from '../chat/ChatPanelContext.jsx'
 
 // Shared-files drawer opened from the thread header. Lists every message that
 // carries an attachment_url as a thumbnail (images) or chip (files).
-export default function FilesPanel({ messages }) {
+export default function FilesPanel() {
+  const { messages } = useChatMessagesCtx()
   const fileMessages = messages.filter(m => m.attachment_url)
   return (
     <div style={{

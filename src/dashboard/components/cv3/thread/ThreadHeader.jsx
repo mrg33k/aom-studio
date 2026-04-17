@@ -1,31 +1,40 @@
 import { C } from '../../../lib/cv3Colors.js'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatVoiceCtx,
+  useChatRecordingCtx,
+  useChatSettingsCtx,
+} from '../chat/ChatPanelContext.jsx'
+import useThreadQuickSwitcher from './useThreadQuickSwitcher.js'
 
 // Thread header: back button, agent avatar + name + quick switcher, mic/files/settings buttons.
-export default function ThreadHeader({
-  selectedAgent,
-  selectedAgentPrimarySkill,
-  setSelectedAgent,
-  setMessages,
-  setInlineProject,
-  onBack,
-  onSelectAgent,
-  onSelectProject,
-  isVoiceActive,
-  setIsVoiceActive,
-  setVoiceMinimized,
-  voiceMinimizedAgent,
-  isRecording,
-  handleMicToggle,
-  filesOpen,
-  setFilesOpen,
-  settingsOpen,
-  setSettingsOpen,
-  agents,
-  sortedSwitcherProjects,
-  switcherOpen,
-  setSwitcherOpen,
-  switcherRef,
-}) {
+export default function ThreadHeader() {
+  const {
+    selectedAgent, setSelectedAgent,
+    agents, projects,
+    onBack, onSelectAgent, onSelectProject,
+    setInlineProject,
+  } = useChatCore()
+  const { setMessages } = useChatMessagesCtx()
+  const {
+    isVoiceActive, setIsVoiceActive,
+    setVoiceMinimized, voiceMinimizedAgent,
+  } = useChatVoiceCtx()
+  const { isRecording, handleMicToggle } = useChatRecordingCtx()
+  const {
+    filesOpen, setFilesOpen, settingsOpen, setSettingsOpen,
+  } = useChatSettingsCtx()
+
+  const { switcherOpen, setSwitcherOpen, switcherRef } = useThreadQuickSwitcher()
+
+  const selectedAgentRecord = agents?.find((agent) => String(agent?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
+  const selectedAgentPrimarySkill = selectedAgentRecord?.primary_skill || selectedAgent?.primary_skill || 'AI Agent'
+
+  const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '')
+  )
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,

@@ -3,7 +3,15 @@ import { LinkifyText, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
-import { NeedsVerificationBadge } from '../ContextMenu.jsx'
+import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
+import useProjectChatMsgMenu from './useProjectChatMsgMenu.js'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatSendCtx,
+  useChatSearchCtx,
+  useChatContextMenuCtx,
+} from '../chat/ChatPanelContext.jsx'
 
 // Scrollable messages area for project chat. Renders:
 // - Task status cards for task-* / checkpoint messages (via TaskStatusCard)
@@ -11,23 +19,26 @@ import { NeedsVerificationBadge } from '../ContextMenu.jsx'
 // - NeedsVerification badge per flagged message
 // - Typing indicator while `sending`
 // Hidden (display:none) while search results are being shown.
-export default function ProjectMessageList({
-  messages,
-  loadingMsgs,
-  selectedProject,
-  projColor,
-  displayName,
-  currentUser,
-  userProfiles,
-  needsVerificationIds,
-  sending,
-  messagesEndRef,
-  hidden,
-  openMsgMenu,
-  startLongPress,
-  cancelLongPress,
-}) {
+// Also owns the right-click/long-press context menu for messages.
+export default function ProjectMessageList() {
+  const {
+    selectedProject, displayName, currentUser, agents,
+  } = useChatCore()
+  const { messages, loadingMsgs, messagesEndRef, userProfiles } = useChatMessagesCtx()
+  const { sending } = useChatSendCtx()
+  const { chatSearchOpen, chatSearchResults } = useChatSearchCtx()
+  const {
+    needsVerificationIds,
+    handleMessageFollowUp, handleMessageNeedsVerification,
+    handleMessageResearch, handleMessageSendTo,
+  } = useChatContextMenuCtx()
+
+  const { msgMenu, setMsgMenu, openMsgMenu, startLongPress, cancelLongPress } = useProjectChatMsgMenu()
+  const projColor = selectedProject?.color || '#6B8AB0'
+  const hidden = chatSearchOpen && chatSearchResults && chatSearchResults.length > 0
+
   return (
+    <>
     <div style={{
       flex: 1, overflowY: 'auto',
       padding: '12px 14px',
@@ -172,5 +183,20 @@ export default function ProjectMessageList({
       )}
       <div ref={messagesEndRef} />
     </div>
+
+    {/* Right-click / long-press context menu for messages */}
+    <MessageContextMenu
+      open={!!msgMenu}
+      x={msgMenu?.x || 0}
+      y={msgMenu?.y || 0}
+      message={msgMenu?.message || null}
+      agents={agents || []}
+      onClose={() => setMsgMenu(null)}
+      onFollowUp={(m) => handleMessageFollowUp?.(m)}
+      onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
+      onResearch={(m) => handleMessageResearch?.(m)}
+      onSendTo={(target) => handleMessageSendTo?.(msgMenu?.message, target)}
+    />
+    </>
   )
 }

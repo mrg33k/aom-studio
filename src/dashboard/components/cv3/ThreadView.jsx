@@ -1,26 +1,19 @@
-// ThreadView -- agent conversation thread. Shell that wires hooks + sub-pieces
-// from ./thread/ into the individual props the leaves consume.
+// ThreadView -- agent conversation thread. Shell that composes the sub-pieces
+// from ./thread/. Each leaf now reads its own slice of chat context directly,
+// so the shell only reads the few fields needed to gate mounting (voice on/off,
+// settings open, files open, recording state, context-menu toast).
 //
-// R3b (Apr 17, 2026): reads from the feature-sliced chat contexts instead of
-// destructuring a single ctx prop. The internal split (R2c) is unchanged.
+// R3c (Apr 17, 2026): dissolved the prop-drilling layer. Leaves own their
+// context consumption; MessageList also owns the right-click context menu.
 import { TaskStatusCardStyles } from './TaskStatusCard.jsx'
-import { MessageContextMenu } from './ContextMenu.jsx'
 
 import {
-  useChatCore,
-  useChatMessagesCtx,
-  useChatSendCtx,
-  useChatAttachmentsCtx,
-  useChatRecordingCtx,
   useChatVoiceCtx,
+  useChatRecordingCtx,
   useChatSettingsCtx,
   useChatContextMenuCtx,
 } from './chat/ChatPanelContext.jsx'
 
-import useThreadMessageStatus from './thread/useThreadMessageStatus.js'
-import useThreadResetAgent from './thread/useThreadResetAgent.js'
-import useThreadMsgMenu from './thread/useThreadMsgMenu.js'
-import useThreadQuickSwitcher from './thread/useThreadQuickSwitcher.js'
 import ThreadHeader from './thread/ThreadHeader.jsx'
 import FilesPanel from './thread/FilesPanel.jsx'
 import VoiceChatHost from './thread/VoiceChatHost.jsx'
@@ -31,63 +24,10 @@ import ThreadInputBar from './thread/ThreadInputBar.jsx'
 import ThreadSettingsModal from './thread/ThreadSettingsModal.jsx'
 
 export default function ThreadView() {
-  const {
-    selectedAgent, setSelectedAgent, onBack,
-    chatInputFocused, setChatInputFocused,
-    worldId, currentUser, agents, projects, VOICE_OPTIONS,
-    userIdentity, displayName, allTasks,
-    selectedProject, setInlineProject,
-    onSelectAgent, onSelectProject,
-  } = useChatCore()
-  const { messages, setMessages, loadingMsgs, messagesEndRef, userProfiles } = useChatMessagesCtx()
-  const {
-    input, setInput, inputRef, sending,
-    handleSend, handleKeyDown,
-    sendAgentTextRef,
-    isAgentTyping,
-  } = useChatSendCtx()
-  const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
-  const { isRecording, recordingElapsed, handleMicToggle, micError, isTranscribing } = useChatRecordingCtx()
-  const {
-    isVoiceActive, setIsVoiceActive, voiceChatRef,
-    voiceStatus, setVoiceStatus, setVoiceVolume,
-    voiceTranscriptText, setVoiceTranscriptText,
-    voiceMuted, setVoiceMuted,
-    setVoiceMinimized, voiceMinimizedAgent,
-  } = useChatVoiceCtx()
-  const {
-    settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
-    filesOpen, setFilesOpen,
-    chatNameInput, setChatNameInput,
-    envKeys, envKeysLoading,
-    newKeyName, setNewKeyName,
-    newKeyValue, setNewKeyValue,
-    newKeyScope, setNewKeyScope,
-    keySaveMsg, setKeySaveMsg,
-    saveEnvKey, deleteEnvKey,
-    currentVoice, selectVoice, saveRoomName,
-  } = useChatSettingsCtx()
-  const {
-    replyTo, setReplyTo,
-    needsVerificationIds,
-    lastActionToast,
-    handleMessageFollowUp,
-    handleMessageNeedsVerification,
-    handleMessageResearch,
-    handleMessageSendTo,
-  } = useChatContextMenuCtx()
-
-  const msgMenuHook = useThreadMsgMenu()
-  const switcher = useThreadQuickSwitcher()
-  const { respondedSet, awaitingResponse } = useThreadMessageStatus(messages)
-  const { resetState, handleResetAgent } = useThreadResetAgent(selectedAgent)
-
-  const selectedAgentRecord = agents?.find((agent) => String(agent?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
-  const selectedAgentPrimarySkill = selectedAgentRecord?.primary_skill || selectedAgent?.primary_skill || 'AI Agent'
-
-  const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
-    (a.name || '').localeCompare(b.name || '')
-  )
+  const { isVoiceActive } = useChatVoiceCtx()
+  const { isRecording, isTranscribing } = useChatRecordingCtx()
+  const { filesOpen, settingsOpen } = useChatSettingsCtx()
+  const { lastActionToast } = useChatContextMenuCtx()
 
   return (
     <div style={{
@@ -96,161 +36,21 @@ export default function ThreadView() {
     }}>
       <TaskStatusCardStyles />
 
-      <ThreadHeader
-        selectedAgent={selectedAgent}
-        selectedAgentPrimarySkill={selectedAgentPrimarySkill}
-        setSelectedAgent={setSelectedAgent}
-        setMessages={setMessages}
-        setInlineProject={setInlineProject}
-        onBack={onBack}
-        onSelectAgent={onSelectAgent}
-        onSelectProject={onSelectProject}
-        isVoiceActive={isVoiceActive}
-        setIsVoiceActive={setIsVoiceActive}
-        setVoiceMinimized={setVoiceMinimized}
-        voiceMinimizedAgent={voiceMinimizedAgent}
-        isRecording={isRecording}
-        handleMicToggle={handleMicToggle}
-        filesOpen={filesOpen}
-        setFilesOpen={setFilesOpen}
-        settingsOpen={settingsOpen}
-        setSettingsOpen={setSettingsOpen}
-        agents={agents}
-        sortedSwitcherProjects={sortedSwitcherProjects}
-        switcherOpen={switcher.switcherOpen}
-        setSwitcherOpen={switcher.setSwitcherOpen}
-        switcherRef={switcher.switcherRef}
-      />
+      <ThreadHeader />
 
-      {filesOpen && <FilesPanel messages={messages} />}
+      {filesOpen && <FilesPanel />}
 
-      {isVoiceActive && (
-        <VoiceChatHost
-          voiceChatRef={voiceChatRef}
-          selectedAgent={selectedAgent}
-          worldId={worldId}
-          currentVoice={currentVoice}
-          selectVoice={selectVoice}
-          setVoiceTranscriptText={setVoiceTranscriptText}
-          setMessages={setMessages}
-          userIdentity={userIdentity}
-          setVoiceStatus={setVoiceStatus}
-          setIsVoiceActive={setIsVoiceActive}
-          setVoiceMuted={setVoiceMuted}
-          setVoiceVolume={setVoiceVolume}
-        />
-      )}
+      {isVoiceActive && <VoiceChatHost />}
 
-      <MessageList
-        messages={messages}
-        loadingMsgs={loadingMsgs}
-        selectedAgent={selectedAgent}
-        currentUser={currentUser}
-        displayName={displayName}
-        userProfiles={userProfiles}
-        allTasks={allTasks}
-        respondedSet={respondedSet}
-        awaitingResponse={awaitingResponse}
-        sending={sending}
-        isAgentTyping={isAgentTyping}
-        needsVerificationIds={needsVerificationIds}
-        messagesEndRef={messagesEndRef}
-        sendAgentTextRef={sendAgentTextRef}
-        openMsgMenu={msgMenuHook.openMsgMenu}
-        startLongPress={msgMenuHook.startLongPress}
-        cancelLongPress={msgMenuHook.cancelLongPress}
-      />
+      <MessageList />
 
-      {isVoiceActive && (
-        <VoiceModeBar
-          voiceChatRef={voiceChatRef}
-          voiceStatus={voiceStatus}
-          voiceTranscriptText={voiceTranscriptText}
-          voiceMuted={voiceMuted}
-          setVoiceMuted={setVoiceMuted}
-          setIsVoiceActive={setIsVoiceActive}
-          setVoiceTranscriptText={setVoiceTranscriptText}
-        />
-      )}
+      {isVoiceActive && <VoiceModeBar />}
 
-      {(isRecording || isTranscribing) && (
-        <RecordingStatusBar
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          recordingElapsed={recordingElapsed}
-          handleMicToggle={handleMicToggle}
-          micError={micError}
-        />
-      )}
+      {(isRecording || isTranscribing) && <RecordingStatusBar />}
 
-      {!isVoiceActive && (
-        <ThreadInputBar
-          input={input}
-          setInput={setInput}
-          inputRef={inputRef}
-          fileInputRef={fileInputRef}
-          chatInputFocused={chatInputFocused}
-          setChatInputFocused={setChatInputFocused}
-          handleKeyDown={handleKeyDown}
-          handleSend={handleSend}
-          handleFileSelection={handleFileSelection}
-          sending={sending}
-          uploading={uploading}
-          selectedAgent={selectedAgent}
-          replyTo={replyTo}
-          setReplyTo={setReplyTo}
-          isVoiceActive={isVoiceActive}
-          setIsVoiceActive={setIsVoiceActive}
-          voiceChatRef={voiceChatRef}
-          setVoiceMuted={setVoiceMuted}
-          setVoiceTranscriptText={setVoiceTranscriptText}
-        />
-      )}
+      {!isVoiceActive && <ThreadInputBar />}
 
-      {settingsOpen && (
-        <ThreadSettingsModal
-          selectedAgent={selectedAgent}
-          selectedProject={selectedProject}
-          worldId={worldId}
-          VOICE_OPTIONS={VOICE_OPTIONS}
-          settingsTab={settingsTab}
-          setSettingsTab={setSettingsTab}
-          setSettingsOpen={setSettingsOpen}
-          chatNameInput={chatNameInput}
-          setChatNameInput={setChatNameInput}
-          saveRoomName={saveRoomName}
-          currentVoice={currentVoice}
-          selectVoice={selectVoice}
-          envKeys={envKeys}
-          envKeysLoading={envKeysLoading}
-          newKeyName={newKeyName}
-          setNewKeyName={setNewKeyName}
-          newKeyValue={newKeyValue}
-          setNewKeyValue={setNewKeyValue}
-          newKeyScope={newKeyScope}
-          setNewKeyScope={setNewKeyScope}
-          keySaveMsg={keySaveMsg}
-          setKeySaveMsg={setKeySaveMsg}
-          saveEnvKey={saveEnvKey}
-          deleteEnvKey={deleteEnvKey}
-          resetState={resetState}
-          handleResetAgent={handleResetAgent}
-        />
-      )}
-
-      {/* Right-click context menu for messages */}
-      <MessageContextMenu
-        open={!!msgMenuHook.msgMenu}
-        x={msgMenuHook.msgMenu?.x || 0}
-        y={msgMenuHook.msgMenu?.y || 0}
-        message={msgMenuHook.msgMenu?.message || null}
-        agents={agents || []}
-        onClose={() => msgMenuHook.setMsgMenu(null)}
-        onFollowUp={(m) => handleMessageFollowUp?.(m)}
-        onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
-        onResearch={(m) => handleMessageResearch?.(m)}
-        onSendTo={(target) => handleMessageSendTo?.(msgMenuHook.msgMenu?.message, target)}
-      />
+      {settingsOpen && <ThreadSettingsModal />}
 
       {/* Tiny bottom toast for context-menu confirmations */}
       {lastActionToast && (

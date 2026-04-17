@@ -1,38 +1,43 @@
 import { C } from '../../../lib/cv3Colors.js'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatVoiceCtx,
+  useChatRecordingCtx,
+  useChatSearchCtx,
+  useChatSettingsCtx,
+} from '../chat/ChatPanelContext.jsx'
+import useProjectChatSwitcher from './useProjectChatSwitcher.js'
 
 // Header row for the project-chat room: back button, project icon + quick
 // switcher, mic, search, files, settings. Quick-switcher dropdown lists all
 // agents and projects; clicking a target resets messages and swaps the pane.
-export default function ProjectChatHeader({
-  projColor,
-  projectId,
-  navigate,
-  selectedProject,
-  isVoiceActive,
-  setVoiceMinimized,
-  voiceMinimizedAgent,
-  onBack,
-  setMessages,
-  setInlineProject,
-  setSelectedAgent,
-  onSelectAgent,
-  onSelectProject,
-  isRecording,
-  handleMicToggle,
-  chatSearchOpen,
-  setChatSearchOpen,
-  setChatSearchQuery,
-  setChatSearchResults,
-  filesOpen,
-  setFilesOpen,
-  settingsOpen,
-  setSettingsOpen,
-  agents,
-  sortedSwitcherProjects,
-  switcherOpen,
-  setSwitcherOpen,
-  switcherRef,
-}) {
+export default function ProjectChatHeader() {
+  const {
+    projectId, navigate,
+    selectedProject, agents, projects,
+    onBack, onSelectAgent, onSelectProject,
+    setInlineProject, setSelectedAgent,
+  } = useChatCore()
+  const { setMessages } = useChatMessagesCtx()
+  const {
+    isVoiceActive, setVoiceMinimized, voiceMinimizedAgent,
+  } = useChatVoiceCtx()
+  const { isRecording, handleMicToggle } = useChatRecordingCtx()
+  const {
+    chatSearchOpen, setChatSearchOpen,
+    setChatSearchQuery, setChatSearchResults,
+  } = useChatSearchCtx()
+  const {
+    filesOpen, setFilesOpen, settingsOpen, setSettingsOpen,
+  } = useChatSettingsCtx()
+
+  const { switcherOpen, setSwitcherOpen, switcherRef } = useProjectChatSwitcher()
+  const projColor = selectedProject?.color || '#6B8AB0'
+  const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '')
+  )
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,

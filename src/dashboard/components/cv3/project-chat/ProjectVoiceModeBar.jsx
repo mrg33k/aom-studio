@@ -1,16 +1,14 @@
 import { C } from '../../../lib/cv3Colors.js'
+import { useChatVoiceCtx } from '../chat/ChatPanelContext.jsx'
 
 // Voice-active UI that replaces the input bar: animated waveform bars,
 // connection status line, live transcript, mute + hangup controls.
-export default function ProjectVoiceModeBar({
-  voiceStatus,
-  voiceTranscriptText,
-  voiceChatRef,
-  voiceMuted,
-  setVoiceMuted,
-  setIsVoiceActive,
-  setVoiceTranscriptText,
-}) {
+export default function ProjectVoiceModeBar() {
+  const {
+    voiceStatus, voiceTranscriptText, voiceChatRef,
+    voiceMuted, setVoiceMuted,
+    setIsVoiceActive, setVoiceTranscriptText,
+  } = useChatVoiceCtx()
   return (
     <div style={{
       padding: '14px 20px calc(20px + env(safe-area-inset-bottom, 0px))',

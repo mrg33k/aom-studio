@@ -1,29 +1,30 @@
 import { C } from '../../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 import { RESETTABLE_AGENTS } from './threadConstants.js'
+import {
+  useChatCore,
+  useChatSettingsCtx,
+} from '../chat/ChatPanelContext.jsx'
+import useThreadResetAgent from './useThreadResetAgent.js'
 
 // Full-screen chat-settings overlay: General (rename), Voice, Google,
 // Keys (env_vars keychain), and Control (hard-reset the agent's tmux).
 // Control tab only renders for agents in RESETTABLE_AGENTS.
-export default function ThreadSettingsModal({
-  selectedAgent,
-  selectedProject,
-  worldId,
-  VOICE_OPTIONS,
-  settingsTab, setSettingsTab,
-  setSettingsOpen,
-  chatNameInput, setChatNameInput,
-  saveRoomName,
-  currentVoice, selectVoice,
-  envKeys, envKeysLoading,
-  newKeyName, setNewKeyName,
-  newKeyValue, setNewKeyValue,
-  newKeyScope, setNewKeyScope,
-  keySaveMsg, setKeySaveMsg,
-  saveEnvKey, deleteEnvKey,
-  resetState,
-  handleResetAgent,
-}) {
+export default function ThreadSettingsModal() {
+  const { selectedAgent, selectedProject, worldId, VOICE_OPTIONS } = useChatCore()
+  const {
+    settingsTab, setSettingsTab, setSettingsOpen,
+    chatNameInput, setChatNameInput, saveRoomName,
+    currentVoice, selectVoice,
+    envKeys, envKeysLoading,
+    newKeyName, setNewKeyName,
+    newKeyValue, setNewKeyValue,
+    newKeyScope, setNewKeyScope,
+    keySaveMsg, setKeySaveMsg,
+    saveEnvKey, deleteEnvKey,
+  } = useChatSettingsCtx()
+  const { resetState, handleResetAgent } = useThreadResetAgent(selectedAgent)
+
   const isResettable = RESETTABLE_AGENTS.has(selectedAgent?.slug)
   const settingsTabs = isResettable
     ? ['General', 'Voice', 'Google', 'Keys', 'Control']

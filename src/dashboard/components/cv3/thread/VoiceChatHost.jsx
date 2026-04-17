@@ -1,23 +1,25 @@
 import VoiceChat from '../../VoiceChat.jsx'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatVoiceCtx,
+  useChatSettingsCtx,
+} from '../chat/ChatPanelContext.jsx'
 
 // Hidden VoiceChat host -- mounts when voice is active so the audio pipeline
 // can run while the thread UI stays in place. Voice transcripts are persisted
 // via /api/dashboard/supabase-messages. The post-call voice-summary Haiku
 // message (source='voice-summary') is what actually reaches Elon.
-export default function VoiceChatHost({
-  voiceChatRef,
-  selectedAgent,
-  worldId,
-  currentVoice,
-  selectVoice,
-  setVoiceTranscriptText,
-  setMessages,
-  userIdentity,
-  setVoiceStatus,
-  setIsVoiceActive,
-  setVoiceMuted,
-  setVoiceVolume,
-}) {
+export default function VoiceChatHost() {
+  const { selectedAgent, worldId, userIdentity } = useChatCore()
+  const { setMessages } = useChatMessagesCtx()
+  const {
+    voiceChatRef,
+    setVoiceTranscriptText, setVoiceStatus,
+    setIsVoiceActive, setVoiceMuted, setVoiceVolume,
+  } = useChatVoiceCtx()
+  const { currentVoice, selectVoice } = useChatSettingsCtx()
+
   return (
     <div style={{ display: 'none' }}>
       <VoiceChat

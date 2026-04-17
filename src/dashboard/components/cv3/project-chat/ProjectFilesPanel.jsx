@@ -1,9 +1,21 @@
 import { C } from '../../../lib/cv3Colors.js'
 import { formatFileSize, getFileMeta } from './projectChatConstants.js'
+import {
+  useChatCore,
+  useChatAttachmentsCtx,
+  useChatSettingsCtx,
+} from '../chat/ChatPanelContext.jsx'
+import useProjectChatFiles from './useProjectChatFiles.js'
 
 // Files drawer opened from the project-chat header. Lists every file uploaded
 // to this project's files bucket via /api/dashboard/files?type=text.
-export default function ProjectFilesPanel({ projectFiles, filesLoading }) {
+export default function ProjectFilesPanel() {
+  const { selectedProject } = useChatCore()
+  const { uploading } = useChatAttachmentsCtx()
+  const { filesOpen } = useChatSettingsCtx()
+  const { projectFiles, filesLoading } = useProjectChatFiles({
+    filesOpen, selectedProject, uploading,
+  })
   return (
     <div style={{
       borderBottom: '1px solid rgba(255,255,255,0.06)',

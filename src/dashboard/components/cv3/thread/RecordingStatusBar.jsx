@@ -1,13 +1,12 @@
+import { useChatRecordingCtx } from '../chat/ChatPanelContext.jsx'
+
 // Thin status bar shown while a voice message is recording or transcribing.
-// NOTE (R2c): `recordingElapsed` is referenced here but pre-split ChatPanel
-// never threaded it through ctx -- preserved verbatim, flagged for R3.
-export default function RecordingStatusBar({
-  isRecording,
-  isTranscribing,
-  recordingElapsed,
-  handleMicToggle,
-  micError,
-}) {
+// Reads recording state directly from context; the shell gates mounting on
+// (isRecording || isTranscribing), so we render unconditionally here.
+export default function RecordingStatusBar() {
+  const {
+    isRecording, isTranscribing, recordingElapsed, handleMicToggle, micError,
+  } = useChatRecordingCtx()
   return (
     <div style={{
       flexShrink: 0, padding: '8px 16px',

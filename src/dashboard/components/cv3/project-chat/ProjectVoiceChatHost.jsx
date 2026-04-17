@@ -1,27 +1,29 @@
 import VoiceChat from '../../VoiceChat.jsx'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatSendCtx,
+  useChatVoiceCtx,
+  useChatSettingsCtx,
+} from '../chat/ChatPanelContext.jsx'
 
 // Hidden VoiceChat host for the project-chat room. When voice is active, this
 // component renders the real WebRTC session, streams transcripts into the
 // messages array, and persists each voice turn to Supabase. On session end it
 // triggers a "[Voice conversation just ended]" prompt into the composer so the
 // operator can summarize + queue tasks.
-export default function ProjectVoiceChatHost({
-  voiceChatRef,
-  selectedProject,
-  worldId,
-  currentVoice,
-  selectVoice,
-  setVoiceTranscriptText,
-  setMessages,
-  userIdentity,
-  setVoiceStatus,
-  setIsVoiceActive,
-  setVoiceMuted,
-  setVoiceVolume,
-  messagesRef,
-  sendProjectText,
-  projColor,
-}) {
+export default function ProjectVoiceChatHost() {
+  const { selectedProject, worldId, userIdentity } = useChatCore()
+  const { setMessages, messagesRef } = useChatMessagesCtx()
+  const { sendProjectText } = useChatSendCtx()
+  const {
+    voiceChatRef,
+    setVoiceTranscriptText, setVoiceStatus,
+    setIsVoiceActive, setVoiceMuted, setVoiceVolume,
+  } = useChatVoiceCtx()
+  const { currentVoice, selectVoice } = useChatSettingsCtx()
+  const projColor = selectedProject?.color || '#6B8AB0'
+
   return (
     <div style={{ display: 'none' }}>
       <VoiceChat

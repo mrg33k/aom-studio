@@ -1,16 +1,15 @@
 import { C } from '../../../lib/cv3Colors.js'
+import { useChatSearchCtx } from '../chat/ChatPanelContext.jsx'
 
 // Global chat-search input below the header. Escape clears + closes.
 // Shows "Searching..." / "N result(s)" status under the input.
-export default function ProjectSearchBar({
-  chatSearchRef,
-  chatSearchQuery,
-  setChatSearchQuery,
-  setChatSearchOpen,
-  setChatSearchResults,
-  chatSearchLoading,
-  chatSearchResults,
-}) {
+export default function ProjectSearchBar() {
+  const {
+    chatSearchRef,
+    chatSearchQuery, setChatSearchQuery,
+    setChatSearchOpen, setChatSearchResults,
+    chatSearchLoading, chatSearchResults,
+  } = useChatSearchCtx()
   return (
     <div style={{
       padding: '8px 14px',

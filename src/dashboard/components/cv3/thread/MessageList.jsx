@@ -3,32 +3,40 @@ import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
-import { NeedsVerificationBadge } from '../ContextMenu.jsx'
+import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
+import useThreadMsgMenu from './useThreadMsgMenu.js'
+import useThreadMessageStatus from './useThreadMessageStatus.js'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatSendCtx,
+  useChatContextMenuCtx,
+} from '../chat/ChatPanelContext.jsx'
 
 // Scrollable messages area with all bubble variants: task status, chain card,
 // voice transcript (Gemini Live), and regular user/assistant message with
 // attachments. Also renders the loading/empty states and typing indicator.
-export default function MessageList({
-  messages,
-  loadingMsgs,
-  selectedAgent,
-  currentUser,
-  displayName,
-  userProfiles,
-  allTasks,
-  respondedSet,
-  awaitingResponse,
-  sending,
-  isAgentTyping,
-  needsVerificationIds,
-  messagesEndRef,
-  sendAgentTextRef,
-  openMsgMenu,
-  startLongPress,
-  cancelLongPress,
-}) {
+// Also owns the right-click/long-press context menu for messages.
+export default function MessageList() {
+  const {
+    selectedAgent, currentUser, displayName, allTasks, agents,
+  } = useChatCore()
+  const {
+    messages, loadingMsgs, messagesEndRef, userProfiles,
+  } = useChatMessagesCtx()
+  const { sending, isAgentTyping, sendAgentTextRef } = useChatSendCtx()
+  const {
+    needsVerificationIds,
+    handleMessageFollowUp, handleMessageNeedsVerification,
+    handleMessageResearch, handleMessageSendTo,
+  } = useChatContextMenuCtx()
+
+  const { msgMenu, setMsgMenu, openMsgMenu, startLongPress, cancelLongPress } = useThreadMsgMenu()
+  const { respondedSet, awaitingResponse } = useThreadMessageStatus(messages)
+
   return (
+    <>
     <div style={{
       flex: 1, overflowY: 'auto',
       padding: '12px 14px',
@@ -480,5 +488,20 @@ export default function MessageList({
 
       <div ref={messagesEndRef} />
     </div>
+
+    {/* Right-click / long-press context menu for messages */}
+    <MessageContextMenu
+      open={!!msgMenu}
+      x={msgMenu?.x || 0}
+      y={msgMenu?.y || 0}
+      message={msgMenu?.message || null}
+      agents={agents || []}
+      onClose={() => setMsgMenu(null)}
+      onFollowUp={(m) => handleMessageFollowUp?.(m)}
+      onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
+      onResearch={(m) => handleMessageResearch?.(m)}
+      onSendTo={(target) => handleMessageSendTo?.(msgMenu?.message, target)}
+    />
+    </>
   )
 }
