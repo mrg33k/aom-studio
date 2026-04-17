@@ -5,7 +5,10 @@
 // sendAgentText (voice-friendly), sendProjectText / handleProjectSend /
 // handleProjectKeyDown (project chat). All three paths POST to
 // /api/dashboard/chat-bridge and open an SSE stream on success.
-// Extracted from ChatPanel.jsx (R2b split).
+//
+// R3b: dropped the sendAgentTextRef/sendProjectTextRef input params —
+// the shell populates those refs from the returned callbacks so the
+// attach/recording hooks that consume the refs stay decoupled from Send.
 import { useCallback, useEffect, useRef } from 'react'
 
 export default function useChatSend({
@@ -25,10 +28,6 @@ export default function useChatSend({
   setReplyTo,
   setAgentPreviews,
   startBridgeStream,
-  // Owned by the shell so useChatAttachments + useChatRecording can share
-  // the same refs without triggering a setup-ordering cycle.
-  sendAgentTextRef,
-  sendProjectTextRef,
 }) {
   // ── Idempotency refs (block overlap + same-text within 2s) ───────────────
   const inFlightSendRef = useRef(false)
@@ -190,8 +189,6 @@ export default function useChatSend({
     }
   }, [selectedAgent, worldId, userIdentity, startBridgeStream, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, pendingAttachmentsRef, inputRef])
 
-  useEffect(() => { sendAgentTextRef.current = sendAgentText }, [sendAgentText])
-
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -270,8 +267,6 @@ export default function useChatSend({
       inputRef.current?.focus()
     }
   }, [selectedProject, worldId, userIdentity, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef])
-
-  useEffect(() => { sendProjectTextRef.current = sendProjectText }, [sendProjectText])
 
   const handleProjectSend = useCallback(async () => {
     if (!input.trim() || sending) return

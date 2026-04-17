@@ -1,12 +1,24 @@
 // ProjectChatView -- project conversation thread. Shell that wires hooks +
-// sub-pieces from ./project-chat/ into the same ctx contract the rest of
-// ChatPanel speaks.
+// sub-pieces from ./project-chat/ into the individual props the leaves
+// currently consume.
 //
-// R2d split: the pre-split ProjectChatView.jsx was 1643 LOC. Ctx contract and
-// behavior preserved exactly -- only where each piece lives has changed.
-// R3 will replace ctx with scoped hooks.
+// R3b (Apr 17, 2026): reads from the feature-sliced chat contexts instead
+// of destructuring a single ctx prop. The internal split (R2d) is unchanged —
+// leaves still take individual props.
 import { TaskStatusCardStyles } from './TaskStatusCard.jsx'
 import { MessageContextMenu } from './ContextMenu.jsx'
+
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatSendCtx,
+  useChatAttachmentsCtx,
+  useChatRecordingCtx,
+  useChatVoiceCtx,
+  useChatSettingsCtx,
+  useChatSearchCtx,
+  useChatContextMenuCtx,
+} from './chat/ChatPanelContext.jsx'
 
 import useProjectChatMsgMenu from './project-chat/useProjectChatMsgMenu.js'
 import useProjectChatSwitcher from './project-chat/useProjectChatSwitcher.js'
@@ -23,35 +35,52 @@ import ProjectRecordingStatusBar from './project-chat/ProjectRecordingStatusBar.
 import ProjectInputBar from './project-chat/ProjectInputBar.jsx'
 import ProjectSettingsModal from './project-chat/ProjectSettingsModal.jsx'
 
-export default function ProjectChatView(ctx) {
+export default function ProjectChatView() {
   const {
     projectId, navigate, selectedProject, onBack,
-    isVoiceActive, setVoiceMinimized, voiceMinimizedAgent,
-    messages, setMessages, setInlineProject, setSelectedAgent,
-    isRecording, handleMicToggle, micError, isTranscribing,
-    chatSearchOpen, setChatSearchOpen, chatSearchQuery, setChatSearchQuery,
-    chatSearchResults, setChatSearchResults, chatSearchLoading, chatSearchRef,
+    setInlineProject, setSelectedAgent,
+    worldId, currentUser, agents, projects, onSelectAgent, onSelectProject,
+    VOICE_OPTIONS, userIdentity, displayName, isMobile,
+    prefillMessage, setPrefillMessage,
+  } = useChatCore()
+  const { messages, setMessages, loadingMsgs, messagesEndRef, messagesRef, userProfiles } = useChatMessagesCtx()
+  const {
+    input, setInput, inputRef, sending,
+    sendProjectText,
+  } = useChatSendCtx()
+  const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
+  const { isRecording, recordingElapsed, handleMicToggle, micError, isTranscribing } = useChatRecordingCtx()
+  const {
+    isVoiceActive, setIsVoiceActive, voiceChatRef,
+    voiceStatus, setVoiceStatus, setVoiceVolume,
+    voiceTranscriptText, setVoiceTranscriptText,
+    voiceMuted, setVoiceMuted,
+    setVoiceMinimized, voiceMinimizedAgent,
+  } = useChatVoiceCtx()
+  const {
     settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
-    sending, input, setInput, inputRef, fileInputRef,
-    messagesEndRef, messagesRef, loadingMsgs, uploading,
-    isMobile, chatInputFocused, setChatInputFocused,
-    handleFileSelection, sendProjectText,
-    voiceChatRef, voiceStatus, setVoiceStatus,
-    setVoiceVolume, voiceTranscriptText, setVoiceTranscriptText,
-    voiceMuted, setVoiceMuted, setIsVoiceActive,
-    chatNameInput, setChatNameInput, inviteEmail, setInviteEmail,
-    inviteLoading, setInviteLoading, inviteMsg, setInviteMsg,
+    filesOpen, setFilesOpen,
+    chatNameInput, setChatNameInput,
+    inviteEmail, setInviteEmail,
+    inviteLoading, setInviteLoading,
+    inviteMsg, setInviteMsg,
     collaborators, setCollaborators,
-    envKeys, envKeysLoading, newKeyName, setNewKeyName,
-    newKeyValue, setNewKeyValue, newKeyScope, setNewKeyScope,
+    envKeys, envKeysLoading,
+    newKeyName, setNewKeyName,
+    newKeyValue, setNewKeyValue,
+    newKeyScope, setNewKeyScope,
     keySaveMsg, setKeySaveMsg,
     saveEnvKey, deleteEnvKey,
-    worldId, currentUser, agents, projects, onSelectAgent, onSelectProject, VOICE_OPTIONS,
     currentVoice, selectVoice, saveRoomName,
-    userProfiles, userIdentity,
-    displayName,
-    filesOpen, setFilesOpen,
-    prefillMessage, setPrefillMessage,
+  } = useChatSettingsCtx()
+  const { chatInputFocused, setChatInputFocused } = useChatCore()
+  const {
+    chatSearchOpen, setChatSearchOpen,
+    chatSearchQuery, setChatSearchQuery,
+    chatSearchResults, setChatSearchResults,
+    chatSearchLoading, chatSearchRef,
+  } = useChatSearchCtx()
+  const {
     replyTo, setReplyTo,
     needsVerificationIds,
     lastActionToast,
@@ -59,7 +88,8 @@ export default function ProjectChatView(ctx) {
     handleMessageNeedsVerification,
     handleMessageResearch,
     handleMessageSendTo,
-  } = ctx
+  } = useChatContextMenuCtx()
+
   const projColor = selectedProject?.color || '#6B8AB0'
 
   const msgMenuHook = useProjectChatMsgMenu()
@@ -195,7 +225,7 @@ export default function ProjectChatView(ctx) {
         <ProjectRecordingStatusBar
           isRecording={isRecording}
           isTranscribing={isTranscribing}
-          recordingElapsed={ctx.recordingElapsed}
+          recordingElapsed={recordingElapsed}
           handleMicToggle={handleMicToggle}
           micError={micError}
         />

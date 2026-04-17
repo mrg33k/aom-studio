@@ -1,9 +1,5 @@
 // Status strip shown above the composer while mic is recording or audio is
 // transcribing. Mirrors thread/RecordingStatusBar.
-// NOTE: the pre-split ProjectChatView referenced bare `recordingElapsed`
-// without destructuring it from ctx (same pre-existing bug flagged in R2c
-// finding #1). Preserved verbatim via `ctx.recordingElapsed` — currently
-// renders NaN:NaN while recording. Queued as a follow-up fix.
 export default function ProjectRecordingStatusBar({
   isRecording,
   isTranscribing,

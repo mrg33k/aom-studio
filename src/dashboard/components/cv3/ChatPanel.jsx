@@ -1,10 +1,18 @@
-// ChatPanel -- shell + ctx builder. Wires a set of focused hooks
-// (./chat/*) together into the same ctx object the sub-views
-// (ProjectChatView, ThreadView, ConversationsView) already consume.
+// ChatPanel -- shell + Provider composition root for the chat tree.
 //
-// R2b split: the pre-split ChatPanel.jsx was 1843 LOC. The ctx contract
-// and behavior are preserved exactly — the only change is where each
-// piece of state / logic lives. R3 will replace ctx with scoped hooks.
+// R3b (Apr 17, 2026): replaced the single ~80-field ctx object that was
+// prop-drilled through the three views with feature-sliced local contexts
+// (see ./chat/ChatPanelContext.jsx). The shell is now the one composition
+// scope: it runs every hook, owns the shared refs that two+ hooks needed
+// to see (inputRef, pendingAttachmentsRef, sendAgentTextRef /
+// sendProjectTextRef, voiceChatRef, messagesEndRef/Ref), and wraps the
+// three child views in nested Providers. Child views read via useChatXxx()
+// hooks — they receive no chat props.
+//
+// Cross-cutting props from CornerV3 (agents, inboxItems, worldId,
+// projectRooms, currentUser, allTasks, onSelectAgent/Project, onBack,
+// prefillMessage, setPrefillMessage) still arrive as plain props. R3d
+// collapses CornerV3's builder.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useProjects } from '../../hooks/useProjects'
@@ -23,40 +31,53 @@ import useChatAttachments from './chat/useChatAttachments.js'
 import useChatRecording from './chat/useChatRecording.js'
 import useChatSend from './chat/useChatSend.js'
 import useChatContextMenu from './chat/useChatContextMenu.js'
+import {
+  ChatCoreProvider,
+  ChatMessagesProvider,
+  ChatSendProvider,
+  ChatAttachmentsProvider,
+  ChatRecordingProvider,
+  ChatVoiceProvider,
+  ChatSettingsProvider,
+  ChatSearchProvider,
+  ChatContextMenuProvider,
+  ChatConversationsProvider,
+  ChatPrefsProvider,
+} from './chat/ChatPanelContext.jsx'
 
 export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [], prefillMessage, setPrefillMessage }) {
   const { projectId } = useParams()
   const navigate = useNavigate()
 
-  // ── Local shell state ─────────────────────────────────────────────────────
+  // ── Shared refs (shell owns these so hooks can see the same mutable slot) ─
+  // pendingAttachmentsRef + sendAgentTextRef/sendProjectTextRef are the
+  // former "circular ref" between useChatAttachments and useChatSend;
+  // allocating them here and populating from the hook returns keeps both
+  // sides decoupled without feature change.
+  const inputRef = useRef(null)
+  const voiceChatRef = useRef(null)
+  const voiceMinimizedAgent = useRef(null) // { type: 'agent'|'project', data }
+  const sendAgentTextRef = useRef(null)
+  const sendProjectTextRef = useRef(null)
+  const chatSearchRef = useRef(null)
+
+  // ── Shell selection + composer state ──────────────────────────────────────
   const [selectedAgent, setSelectedAgent] = useState(initialAgent || null)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [chatInputFocused, setChatInputFocused] = useState(false)
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [conversationFilter, setConversationFilter] = useState('all')
-  const [customizeTarget, setCustomizeTarget] = useState(null) // { agent, type: 'photo'|'color' }
-  const customizeFileRef = useRef(null)
-  const inputRef = useRef(null)
 
-  // NOTE (R2b): projectFiles / projectFilesLoading are declared but never
-  // used in this file. Preserved verbatim from pre-split ChatPanel for
-  // zero behavior change; flagged as dead state for follow-up cleanup.
-  const [projectFiles, setProjectFiles] = useState([])
-  const [projectFilesLoading, setProjectFilesLoading] = useState(false)
-
-  // ── Voice chat state ──────────────────────────────────────────────────────
+  // ── Voice slice (shell-local state) ───────────────────────────────────────
   const [isVoiceActive, setIsVoiceActive] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
   const [voiceVolume, setVoiceVolume] = useState(0)
   const [voiceTranscriptText, setVoiceTranscriptText] = useState('')
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [voiceMinimized, setVoiceMinimized] = useState(false)
-  const voiceMinimizedAgent = useRef(null)  // { type: 'agent'|'project', data: agent/project }
-  const voiceChatRef = useRef(null)
 
-  // ── Mobile breakpoint + rotating greeting ─────────────────────────────────
+  // ── Mobile + rotating greeting ────────────────────────────────────────────
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 480)
@@ -65,8 +86,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
   }, [])
   const [greetingIdx] = useState(() => Math.floor(Math.random() * GREETINGS.length))
 
-  // Memoize on user ID so the displayed name stays stable during tab switches
-  // and agent selection — it only re-derives when the user identity changes.
   const displayName = useMemo(() =>
     currentUser?.user_metadata?.full_name?.split(' ')[0] ||
     currentUser?.email?.split('@')[0] ||
@@ -79,14 +98,8 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
   }), [currentUser?.id])
 
-  // ── Projects (useProjects + projectRooms merge) ───────────────────────────
-  // Merge projects from useProjects (projects table) with projectRooms from
-  // agent_status. For non-AOM worlds, agent_status project rooms surface
-  // projects that may not exist in the projects table for this world. When
-  // a slug appears in both, the projects-table row wins so its isShared
-  // flag (derived from project_access) isn't clobbered by the hardcoded
-  // isShared:false that useDataPipe stamps on every agent_status room.
-  const { isLoading: projectsLoading, isError: projectsError, projects: dbProjects } = useProjects(worldId)
+  // ── Projects merge (dbProjects + agent_status projectRooms) ───────────────
+  const { projects: dbProjects } = useProjects(worldId)
   const projects = useMemo(() => {
     if (projectRooms && projectRooms.length > 0) {
       const roomsBySlug = Object.fromEntries(projectRooms.map(r => [r.slug, r]))
@@ -108,7 +121,9 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
 
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
 
-  // ── Hooks: prefs, conversation list, messages, bridge stream ──────────────
+  // ── Hooks: prefs → conversations → messages → bridge → ctx-menu →
+  //          attachments → send → recording → settings. Order matters because
+  //          later hooks consume refs/state from earlier ones (or the shell).
   const prefs = useChatPrefs({ worldId })
 
   const conv = useChatConversations({
@@ -131,11 +146,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
 
   const bridge = useBridgeStream({ setMessages: msgs.setMessages })
 
-  // ── Send refs shared across hooks (attachments auto-ack, recording) ───────
-  const sendAgentTextRef = useRef(null)
-  const sendProjectTextRef = useRef(null)
-
-  // ── Context menu (replyTo / ctxMenu / action handlers) ────────────────────
   const cmenu = useChatContextMenu({
     worldId,
     selectedProject,
@@ -143,7 +153,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     inputRef,
   })
 
-  // ── Attachments (pendingAttachments + legacy upload-as-message) ───────────
   const attach = useChatAttachments({
     selectedAgent,
     selectedProject,
@@ -153,7 +162,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     sendProjectTextRef,
   })
 
-  // ── Send paths ────────────────────────────────────────────────────────────
   const send = useChatSend({
     input, setInput,
     sending, setSending,
@@ -166,15 +174,13 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     setReplyTo: cmenu.setReplyTo,
     setAgentPreviews: conv.setAgentPreviews,
     startBridgeStream: bridge.startBridgeStream,
-    sendAgentTextRef,
-    sendProjectTextRef,
   })
-  // Populate the send refs so voice transcription and the attachments
-  // auto-ack can reach the latest callback without circular deps.
+  // Populate the shared send refs from the returned callbacks — consumed
+  // by useChatAttachments (auto-ack after upload) and useChatRecording
+  // (voice transcript routing).
   useEffect(() => { sendAgentTextRef.current = send.sendAgentText }, [send.sendAgentText])
   useEffect(() => { sendProjectTextRef.current = send.sendProjectText }, [send.sendProjectText])
 
-  // ── Recording (mic → transcribe → route to active chat) ───────────────────
   const recording = useChatRecording({
     selectedAgent,
     selectedProject,
@@ -182,7 +188,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     sendProjectTextRef,
   })
 
-  // ── Settings / env keys / per-chat voice ──────────────────────────────────
   const settings = useChatSettings({
     selectedAgent,
     selectedProject,
@@ -191,12 +196,11 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     currentChatKey,
   })
 
-  // ── In-chat history search ─────────────────────────────────────────────────
+  // ── In-chat history search (shell-local — small slice, no scoped hook) ────
   const [chatSearchOpen, setChatSearchOpen] = useState(false)
   const [chatSearchQuery, setChatSearchQuery] = useState('')
   const [chatSearchResults, setChatSearchResults] = useState(null)
   const [chatSearchLoading, setChatSearchLoading] = useState(false)
-  const chatSearchRef = useRef(null)
 
   const handleChatSearch = useCallback(async (query) => {
     if (!query || query.length < 2) { setChatSearchResults(null); return }
@@ -236,40 +240,84 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     settings.setSettingsOpen(false)
   }, [selectedAgent])
 
-  // ── Build shared ctx for sub-components ────────────────────────────────────
-  const ctx = {
-    // Props from parent
-    agents, inboxItems, worldId, onSelectAgent, onSelectProject, onBack, currentUser, allTasks,
-    // Router
-    projectId, navigate,
-    // Core state
+  // ── Memoized Provider values (one per slice) ──────────────────────────────
+  const coreValue = useMemo(() => ({
+    agents, inboxItems, allTasks, projects, chattableAgents: conv.chattableAgents,
     selectedAgent, setSelectedAgent,
-    messages: msgs.messages, setMessages: msgs.setMessages,
-    input, setInput, sending, setSending,
-    loadingMsgs: msgs.loadingMsgs,
-    uploading: attach.uploading,
+    selectedProject, inlineProject, setInlineProject,
+    currentChatKey,
+    worldId, currentUser, userIdentity, displayName, lastLoginText,
+    isMobile, greetingIdx, GREETINGS, VOICE_OPTIONS,
+    projectId, navigate,
+    onBack, onSelectAgent, onSelectProject,
+    prefillMessage, setPrefillMessage,
     chatInputFocused, setChatInputFocused,
-    inputRef,
-    fileInputRef: attach.fileInputRef,
+  }), [
+    agents, inboxItems, allTasks, projects, conv.chattableAgents,
+    selectedAgent, selectedProject, inlineProject, currentChatKey,
+    worldId, currentUser, userIdentity, displayName, lastLoginText,
+    isMobile, greetingIdx, projectId, navigate,
+    onBack, onSelectAgent, onSelectProject, prefillMessage, setPrefillMessage,
+    chatInputFocused,
+  ])
+
+  const messagesValue = useMemo(() => ({
+    messages: msgs.messages, setMessages: msgs.setMessages,
+    loadingMsgs: msgs.loadingMsgs,
     messagesEndRef: msgs.messagesEndRef,
     messagesRef: msgs.messagesRef,
-    // Voice
-    isVoiceActive, setIsVoiceActive, voiceChatRef,
-    voiceStatus, setVoiceStatus, voiceVolume, setVoiceVolume,
-    voiceTranscriptText, setVoiceTranscriptText,
-    voiceMuted, setVoiceMuted, voiceMinimized, setVoiceMinimized,
-    voiceMinimizedAgent,
-    // Recording
+    userProfiles: msgs.userProfiles,
+  }), [msgs.messages, msgs.setMessages, msgs.loadingMsgs, msgs.messagesEndRef, msgs.messagesRef, msgs.userProfiles])
+
+  const sendValue = useMemo(() => ({
+    input, setInput, inputRef,
+    sending, setSending,
+    handleSend: send.handleSend,
+    handleKeyDown: send.handleKeyDown,
+    sendAgentText: send.sendAgentText,
+    sendProjectText: send.sendProjectText,
+    handleProjectSend: send.handleProjectSend,
+    handleProjectKeyDown: send.handleProjectKeyDown,
+    sendAgentTextRef, sendProjectTextRef,
+    isAgentTyping: bridge.isAgentTyping,
+  }), [
+    input, sending, send.handleSend, send.handleKeyDown, send.sendAgentText,
+    send.sendProjectText, send.handleProjectSend, send.handleProjectKeyDown,
+    bridge.isAgentTyping,
+  ])
+
+  const attachValue = useMemo(() => ({
+    pendingAttachments: attach.pendingAttachments,
+    setPendingAttachments: attach.setPendingAttachments,
+    pendingAttachmentsRef: attach.pendingAttachmentsRef,
+    stagingFiles: attach.stagingFiles,
+    uploading: attach.uploading,
+    fileInputRef: attach.fileInputRef,
+    handleFileSelection: attach.handleFileSelection,
+    stageFiles: attach.stageFiles,
+    addPendingAttachment: attach.addPendingAttachment,
+    removePendingAttachment: attach.removePendingAttachment,
+  }), [attach.pendingAttachments, attach.stagingFiles, attach.uploading, attach.handleFileSelection, attach.stageFiles, attach.addPendingAttachment, attach.removePendingAttachment, attach.setPendingAttachments, attach.fileInputRef, attach.pendingAttachmentsRef])
+
+  const recordingValue = useMemo(() => ({
     isRecording: recording.isRecording,
     recordingElapsed: recording.recordingElapsed,
     handleMicToggle: recording.handleMicToggle,
     micError: recording.micError,
     isTranscribing: recording.isTranscribing,
-    // Search
-    chatSearchOpen, setChatSearchOpen, chatSearchQuery, setChatSearchQuery,
-    chatSearchResults, setChatSearchResults, chatSearchLoading, chatSearchRef,
-    handleChatSearch,
-    // Settings
+  }), [recording.isRecording, recording.recordingElapsed, recording.handleMicToggle, recording.micError, recording.isTranscribing])
+
+  const voiceValue = useMemo(() => ({
+    isVoiceActive, setIsVoiceActive, voiceChatRef,
+    voiceStatus, setVoiceStatus,
+    voiceVolume, setVoiceVolume,
+    voiceTranscriptText, setVoiceTranscriptText,
+    voiceMuted, setVoiceMuted,
+    voiceMinimized, setVoiceMinimized,
+    voiceMinimizedAgent,
+  }), [isVoiceActive, voiceStatus, voiceVolume, voiceTranscriptText, voiceMuted, voiceMinimized])
+
+  const settingsValue = useMemo(() => ({
     settingsOpen: settings.settingsOpen, setSettingsOpen: settings.setSettingsOpen,
     settingsTab: settings.settingsTab, setSettingsTab: settings.setSettingsTab,
     filesOpen: settings.filesOpen, setFilesOpen: settings.setFilesOpen,
@@ -284,45 +332,29 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     newKeyScope: settings.newKeyScope, setNewKeyScope: settings.setNewKeyScope,
     keySaveMsg: settings.keySaveMsg, setKeySaveMsg: settings.setKeySaveMsg,
     agentVoices: settings.agentVoices, setAgentVoices: settings.setAgentVoices,
-    currentChatKey,
-    // Project
-    inlineProject, setInlineProject, selectedProject,
-    prefillMessage, setPrefillMessage,
-    // User
-    userProfiles: msgs.userProfiles, displayName, userIdentity, lastLoginText,
-    isMobile, greetingIdx, GREETINGS, VOICE_OPTIONS,
-    // Conversations
-    searchQuery, setSearchQuery, conversationFilter, setConversationFilter,
-    pinnedItems: conv.pinnedItems,
-    filteredPinnedItems: conv.filteredPinnedItems,
-    conversationItems: conv.conversationItems,
-    isFav: prefs.isFav, toggleFav: prefs.toggleFav,
-    isMuted: prefs.isMuted, toggleMute: prefs.toggleMute,
-    unreadMap: conv.unreadMap, unreadCounts: conv.unreadCounts,
-    projectPreviews: conv.projectPreviews,
-    filteredVisibleAgents: conv.filteredVisibleAgents,
-    filteredVisibleProjects: conv.filteredVisibleProjects,
-    sectionStates: prefs.sectionStates, toggleSection: prefs.toggleSection,
-    toggleHidden: prefs.toggleHidden,
-    projects, chattableAgents: conv.chattableAgents,
-    // Customize
-    customizeTarget, setCustomizeTarget, customizeFileRef,
-    // Bridge streaming
-    isAgentTyping: bridge.isAgentTyping,
-    // Handlers
-    handleProjectSend: send.handleProjectSend,
-    handleProjectKeyDown: send.handleProjectKeyDown,
-    handleSend: send.handleSend,
-    handleKeyDown: send.handleKeyDown,
-    handleFileSelection: attach.handleFileSelection,
-    sendProjectText: send.sendProjectText,
-    sendAgentText: send.sendAgentText,
-    sendProjectTextRef, sendAgentTextRef,
-    // Settings helpers
     currentVoice: settings.currentVoice, selectVoice: settings.selectVoice,
     saveRoomName: settings.saveRoomName,
     saveEnvKey: settings.saveEnvKey, deleteEnvKey: settings.deleteEnvKey,
-    // Right-click context menus
+  }), [
+    settings.settingsOpen, settings.settingsTab, settings.filesOpen,
+    settings.chatNameInput, settings.inviteEmail, settings.inviteLoading,
+    settings.inviteMsg, settings.collaborators, settings.envKeys,
+    settings.envKeysLoading, settings.newKeyName, settings.newKeyValue,
+    settings.newKeyScope, settings.keySaveMsg, settings.agentVoices,
+    settings.currentVoice, settings.selectVoice, settings.saveRoomName,
+    settings.saveEnvKey, settings.deleteEnvKey,
+  ])
+
+  const searchValue = useMemo(() => ({
+    chatSearchOpen, setChatSearchOpen,
+    chatSearchQuery, setChatSearchQuery,
+    chatSearchResults, setChatSearchResults,
+    chatSearchLoading,
+    chatSearchRef,
+    handleChatSearch,
+  }), [chatSearchOpen, chatSearchQuery, chatSearchResults, chatSearchLoading, handleChatSearch])
+
+  const ctxMenuValue = useMemo(() => ({
     replyTo: cmenu.replyTo, setReplyTo: cmenu.setReplyTo,
     ctxMenu: cmenu.ctxMenu, setCtxMenu: cmenu.setCtxMenu,
     needsVerificationIds: cmenu.needsVerificationIds,
@@ -335,18 +367,70 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     handleTaskNeedsVerification: cmenu.handleTaskNeedsVerification,
     handleTaskResearch: cmenu.handleTaskResearch,
     handleTaskMoveTo: cmenu.handleTaskMoveTo,
-  }
+  }), [
+    cmenu.replyTo, cmenu.ctxMenu, cmenu.needsVerificationIds, cmenu.lastActionToast,
+    cmenu.handleMessageFollowUp, cmenu.handleMessageNeedsVerification,
+    cmenu.handleMessageResearch, cmenu.handleMessageSendTo,
+    cmenu.handleTaskFollowUp, cmenu.handleTaskNeedsVerification,
+    cmenu.handleTaskResearch, cmenu.handleTaskMoveTo,
+  ])
 
-  // ── Project view ───────────────────────────────────────────────────────────
-  if ((projectId || inlineProject) && !selectedAgent) {
-    return <ProjectChatView {...ctx} />
-  }
+  const conversationsValue = useMemo(() => ({
+    searchQuery, setSearchQuery,
+    pinnedItems: conv.pinnedItems,
+    filteredPinnedItems: conv.filteredPinnedItems,
+    conversationItems: conv.conversationItems,
+    unreadMap: conv.unreadMap, unreadCounts: conv.unreadCounts,
+    projectPreviews: conv.projectPreviews,
+    filteredVisibleAgents: conv.filteredVisibleAgents,
+    filteredVisibleProjects: conv.filteredVisibleProjects,
+  }), [
+    searchQuery,
+    conv.pinnedItems, conv.filteredPinnedItems, conv.conversationItems,
+    conv.unreadMap, conv.unreadCounts, conv.projectPreviews,
+    conv.filteredVisibleAgents, conv.filteredVisibleProjects,
+  ])
 
-  // ── Agent list / Conversations ─────────────────────────────────────────────
-  if (!selectedAgent) {
-    return <ConversationsView {...ctx} />
-  }
+  const prefsValue = useMemo(() => ({
+    isFav: prefs.isFav, toggleFav: prefs.toggleFav,
+    isMuted: prefs.isMuted, toggleMute: prefs.toggleMute,
+    toggleHidden: prefs.toggleHidden,
+    sectionStates: prefs.sectionStates, toggleSection: prefs.toggleSection,
+  }), [prefs.isFav, prefs.toggleFav, prefs.isMuted, prefs.toggleMute, prefs.toggleHidden, prefs.sectionStates, prefs.toggleSection])
 
-  // ── Thread view ────────────────────────────────────────────────────────────
-  return <ThreadView {...ctx} />
+  // ── Child view ────────────────────────────────────────────────────────────
+  let view
+  if ((projectId || inlineProject) && !selectedAgent) view = <ProjectChatView />
+  else if (!selectedAgent) view = <ConversationsView />
+  else view = <ThreadView />
+
+  // Provider nesting: Core is outermost (everything reads it); Prefs is next
+  // because Conversations derives from isFav/isHidden; then everything else
+  // in a readable order. Nesting order doesn't affect React semantics, only
+  // reading order for future maintainers.
+  return (
+    <ChatCoreProvider value={coreValue}>
+      <ChatPrefsProvider value={prefsValue}>
+        <ChatConversationsProvider value={conversationsValue}>
+          <ChatMessagesProvider value={messagesValue}>
+            <ChatVoiceProvider value={voiceValue}>
+              <ChatRecordingProvider value={recordingValue}>
+                <ChatAttachmentsProvider value={attachValue}>
+                  <ChatSendProvider value={sendValue}>
+                    <ChatSettingsProvider value={settingsValue}>
+                      <ChatSearchProvider value={searchValue}>
+                        <ChatContextMenuProvider value={ctxMenuValue}>
+                          {view}
+                        </ChatContextMenuProvider>
+                      </ChatSearchProvider>
+                    </ChatSettingsProvider>
+                  </ChatSendProvider>
+                </ChatAttachmentsProvider>
+              </ChatRecordingProvider>
+            </ChatVoiceProvider>
+          </ChatMessagesProvider>
+        </ChatConversationsProvider>
+      </ChatPrefsProvider>
+    </ChatCoreProvider>
+  )
 }

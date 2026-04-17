@@ -1,11 +1,21 @@
 // ThreadView -- agent conversation thread. Shell that wires hooks + sub-pieces
-// from ./thread/ into the same ctx contract the rest of ChatPanel speaks.
+// from ./thread/ into the individual props the leaves consume.
 //
-// R2c split: the pre-split ThreadView.jsx was 1743 LOC. Ctx contract and
-// behavior preserved exactly -- only where each piece lives has changed.
-// R3 will replace ctx with scoped hooks.
+// R3b (Apr 17, 2026): reads from the feature-sliced chat contexts instead of
+// destructuring a single ctx prop. The internal split (R2c) is unchanged.
 import { TaskStatusCardStyles } from './TaskStatusCard.jsx'
 import { MessageContextMenu } from './ContextMenu.jsx'
+
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatSendCtx,
+  useChatAttachmentsCtx,
+  useChatRecordingCtx,
+  useChatVoiceCtx,
+  useChatSettingsCtx,
+  useChatContextMenuCtx,
+} from './chat/ChatPanelContext.jsx'
 
 import useThreadMessageStatus from './thread/useThreadMessageStatus.js'
 import useThreadResetAgent from './thread/useThreadResetAgent.js'
@@ -20,34 +30,44 @@ import RecordingStatusBar from './thread/RecordingStatusBar.jsx'
 import ThreadInputBar from './thread/ThreadInputBar.jsx'
 import ThreadSettingsModal from './thread/ThreadSettingsModal.jsx'
 
-export default function ThreadView(ctx) {
+export default function ThreadView() {
   const {
     selectedAgent, setSelectedAgent, onBack,
-    messages, setMessages, input, setInput, inputRef, fileInputRef,
-    messagesEndRef, loadingMsgs, sending, uploading,
     chatInputFocused, setChatInputFocused,
+    worldId, currentUser, agents, projects, VOICE_OPTIONS,
+    userIdentity, displayName, allTasks,
+    selectedProject, setInlineProject,
+    onSelectAgent, onSelectProject,
+  } = useChatCore()
+  const { messages, setMessages, loadingMsgs, messagesEndRef, userProfiles } = useChatMessagesCtx()
+  const {
+    input, setInput, inputRef, sending,
+    handleSend, handleKeyDown,
+    sendAgentTextRef,
+    isAgentTyping,
+  } = useChatSendCtx()
+  const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
+  const { isRecording, recordingElapsed, handleMicToggle, micError, isTranscribing } = useChatRecordingCtx()
+  const {
     isVoiceActive, setIsVoiceActive, voiceChatRef,
     voiceStatus, setVoiceStatus, setVoiceVolume,
     voiceTranscriptText, setVoiceTranscriptText,
-    voiceMuted, setVoiceMuted, setVoiceMinimized, voiceMinimizedAgent,
-    isRecording, handleMicToggle, micError, isTranscribing,
+    voiceMuted, setVoiceMuted,
+    setVoiceMinimized, voiceMinimizedAgent,
+  } = useChatVoiceCtx()
+  const {
     settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
     filesOpen, setFilesOpen,
-    handleSend, handleKeyDown, handleFileSelection,
     chatNameInput, setChatNameInput,
-    envKeys, envKeysLoading, newKeyName, setNewKeyName,
-    newKeyValue, setNewKeyValue, newKeyScope, setNewKeyScope,
+    envKeys, envKeysLoading,
+    newKeyName, setNewKeyName,
+    newKeyValue, setNewKeyValue,
+    newKeyScope, setNewKeyScope,
     keySaveMsg, setKeySaveMsg,
     saveEnvKey, deleteEnvKey,
-    worldId, currentUser, agents, VOICE_OPTIONS,
     currentVoice, selectVoice, saveRoomName,
-    userProfiles, displayName, sendAgentTextRef,
-    userIdentity,
-    selectedProject, setInlineProject,
-    onSelectAgent, onSelectProject,
-    projects,
-    allTasks,
-    isAgentTyping,
+  } = useChatSettingsCtx()
+  const {
     replyTo, setReplyTo,
     needsVerificationIds,
     lastActionToast,
@@ -55,7 +75,7 @@ export default function ThreadView(ctx) {
     handleMessageNeedsVerification,
     handleMessageResearch,
     handleMessageSendTo,
-  } = ctx
+  } = useChatContextMenuCtx()
 
   const msgMenuHook = useThreadMsgMenu()
   const switcher = useThreadQuickSwitcher()
@@ -157,7 +177,7 @@ export default function ThreadView(ctx) {
         <RecordingStatusBar
           isRecording={isRecording}
           isTranscribing={isTranscribing}
-          recordingElapsed={ctx.recordingElapsed}
+          recordingElapsed={recordingElapsed}
           handleMicToggle={handleMicToggle}
           micError={micError}
         />

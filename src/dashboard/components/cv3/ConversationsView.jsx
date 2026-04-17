@@ -2,9 +2,8 @@
 // R4 (Apr 15): added top-level search bar. Below 2 chars -> normal home.
 // At >= 2 chars -> grouped filtered results (Messages, Tasks, Agents, Projects).
 //
-// R2e split: the pre-split ConversationsView.jsx was 849 LOC. Behavior and
-// ctx contract preserved exactly -- only where each piece lives has changed.
-// R3 will replace ctx with scoped hooks.
+// R3b (Apr 17, 2026): reads from feature-sliced chat contexts instead of a
+// single ctx prop. The internal split (R2e) is unchanged.
 import { getStatusColor } from './shared.jsx'
 
 import { ACTIVE_STATUSES, CONVERSATIONS_KEYFRAMES } from './conversations/conversationsConstants.js'
@@ -17,16 +16,28 @@ import ElonHeroCard from './conversations/ElonHeroCard.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
 import ProjectsList from './conversations/ProjectsList.jsx'
 
-export default function ConversationsView(ctx) {
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatVoiceCtx,
+  useChatConversationsCtx,
+} from './chat/ChatPanelContext.jsx'
+
+export default function ConversationsView() {
   const {
-    agents, onSelectAgent, onSelectProject,
-    selectedAgent, setSelectedAgent, setMessages, setInlineProject,
+    agents, projects, allTasks,
+    onSelectAgent, onSelectProject,
+    setSelectedAgent, setInlineProject,
     displayName, greetingIdx, GREETINGS, lastLoginText,
+  } = useChatCore()
+  const { setMessages } = useChatMessagesCtx()
+  const {
     unreadMap, unreadCounts, projectPreviews,
-    projects, allTasks,
+  } = useChatConversationsCtx()
+  const {
     isVoiceActive, voiceMinimized, voiceMinimizedAgent,
     setVoiceMinimized,
-  } = ctx
+  } = useChatVoiceCtx()
 
   const search = useHomeSearch({ agents, projects })
   const {
