@@ -69,9 +69,7 @@
 - `api/dashboard/task-action.js`
 - `api/dashboard/unstuck.js`
 - `api/dashboard/v2-gemini-chat.js`
-- `api/dashboard/v2-task-create.js`
 - `api/dashboard/v2-task-list.js`
-- `api/dashboard/v2-task-reorder.js`
 - `api/dashboard/v2-task-update.js`
 
 ### Pages
