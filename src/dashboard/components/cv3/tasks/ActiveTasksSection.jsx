@@ -1,21 +1,25 @@
 // ActiveTasksSection -- "Right Now" hero list of in-flight tasks
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
 import { NeedsVerificationBadge } from '../ContextMenu.jsx'
 import { LIFECYCLE } from './lifecycle.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
-export default function ActiveTasksSection({
-  filteredActive,
-  expandedTask,
-  toggleTaskExpand,
-  openTaskMenu,
-  startTaskLongPress,
-  cancelTaskLongPress,
-  taskVerifyIds,
-  taskProjects,
-  taskThread,
-  threadLoading,
-}) {
+export default function ActiveTasksSection() {
+  const {
+    filteredActive,
+    expandedTask,
+    toggleTaskExpand,
+    openTaskMenu,
+    startTaskLongPress,
+    cancelTaskLongPress,
+    taskVerifyIds,
+    taskProjects,
+    taskThread,
+    threadLoading,
+  } = useTasksPanelCtx()
+
   if (filteredActive.length === 0) return null
   return (
     <div style={{ marginBottom: 36 }}>

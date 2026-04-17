@@ -1,0 +1,749 @@
+// useTasksPanel -- scoped hook owning TasksPanel's internal state + derivations.
+// Introduced in R3a. Cross-cutting inputs (currentUser, worldId, task lifecycle
+// callbacks, chat navigation callbacks) still flow in from CornerV3 as props
+// and are returned through the same context object so subcomponents can read
+// everything via useTasksPanelCtx().
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { supabase } from '../../../lib/supabase.js'
+import { createTaskWithRex } from '../../../lib/rexTaskClient.js'
+import { getClientId } from '../../../lib/clientConfig.js'
+import { useProjects } from '../../../hooks/useProjects'
+
+const snippetOfTitle = (s, n = 90) => {
+  const t = String(s || '').replace(/\s+/g, ' ').trim()
+  return t.length > n ? t.slice(0, n - 1) + '…' : t
+}
+
+export function useTasksPanel({
+  queued,
+  rightNow,
+  waiting,
+  done,
+  worldId,
+  refreshTasks,
+  addOptimisticTask,
+  showToast,
+  currentUser,
+  setActiveTab,
+  setActiveConversation,
+  setPrefillMessage,
+}) {
+  // ── Filter + project pill state ────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
+  const [activeProject, setActiveProject] = useState('all')
+  const [projectDefs, setProjectDefs] = useState([]) // [{name, slug}]
+
+  // ── Create-project modal ───────────────────────────────────────────────
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
+  const [projectName, setProjectName] = useState('')
+  const [selectedColor, setSelectedColor] = useState('#10B981')
+  const [createProjectSubmitting, setCreateProjectSubmitting] = useState(false)
+  const [createProjectError, setCreateProjectError] = useState(null)
+
+  // ── Task card lifecycle ────────────────────────────────────────────────
+  const [shippedLimit, setShippedLimit] = useState(50)
+  const [expandedTask, setExpandedTask] = useState(null)
+  const [taskThread, setTaskThread] = useState([])
+  const [threadLoading, setThreadLoading] = useState(false)
+  const [insightsOpen, setInsightsOpen] = useState({})
+  const [insightsData, setInsightsData] = useState({})
+  const [insightsLoading, setInsightsLoading] = useState({})
+  const [insightsError, setInsightsError] = useState({})
+
+  // ── Task input + voice recording ───────────────────────────────────────
+  const [taskInput, setTaskInput] = useState('')
+  const [taskInputFocused, setTaskInputFocused] = useState(false)
+  const [taskSubmitting, setTaskSubmitting] = useState(false)
+  const taskInputRef = useRef(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordedBlob, setRecordedBlob] = useState(null) // eslint-disable-line no-unused-vars
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
+  const micStreamRef = useRef(null)
+
+  // ── Right-click / long-press context menu ──────────────────────────────
+  const [taskMenu, setTaskMenu] = useState(null) // { x, y, task }
+  const [taskVerifyIds, setTaskVerifyIds] = useState(() => new Set())
+  const [ctxToast, setCtxToast] = useState(null)
+  const showCtxToast = useCallback((text) => {
+    setCtxToast({ text, at: Date.now() })
+    setTimeout(() => setCtxToast(null), 2400)
+  }, [])
+  const openTaskMenu = useCallback((e, task) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setTaskMenu({ x: e.clientX, y: e.clientY, task })
+  }, [])
+  const taskLongPressRef = useRef(null)
+  const startTaskLongPress = useCallback((e, task) => {
+    if (!e.touches?.length) return
+    const t = e.touches[0]
+    const x = t.clientX, y = t.clientY
+    taskLongPressRef.current = setTimeout(() => setTaskMenu({ x, y, task }), 600)
+  }, [])
+  const cancelTaskLongPress = useCallback(() => {
+    if (taskLongPressRef.current) clearTimeout(taskLongPressRef.current)
+    taskLongPressRef.current = null
+  }, [])
+
+  // ── Files section state ────────────────────────────────────────────────
+  const [taskFilesOpen, setTaskFilesOpen] = useState(false)
+  const [taskBriefs, setTaskBriefs] = useState([])
+  const [taskAttachments, setTaskAttachments] = useState([])
+  const [taskFilesLoading, setTaskFilesLoading] = useState(false)
+  const [taskIsMobile, setTaskIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+
+  // Global Files section state (all projects view)
+  const [allBriefs, setAllBriefs] = useState([])
+  const [allBriefsLoading, setAllBriefsLoading] = useState(false)
+  const [allBriefsOpen, setAllBriefsOpen] = useState(true)
+  const [allBriefsLimit, setAllBriefsLimit] = useState(25)
+
+  // Inline brief viewer
+  const [selectedBrief, setSelectedBrief] = useState(null)
+  const [briefHtml, setBriefHtml] = useState('')
+  const [briefLoading, setBriefLoading] = useState(false)
+
+  // Live project summary card
+  const [summaryEvent, setSummaryEvent] = useState(null)
+  const [summaryJustUpdated, setSummaryJustUpdated] = useState(false)
+  const [summaryNowTick, setSummaryNowTick] = useState(0)
+
+  // Reply input for waiting tasks
+  const [waitingReply, setWaitingReply] = useState({})
+  const [waitingReplySending, setWaitingReplySending] = useState({})
+
+  // ── Task thread expansion ──────────────────────────────────────────────
+  const toggleTaskExpand = useCallback(async (taskId) => {
+    if (expandedTask === taskId) {
+      setExpandedTask(null)
+      setTaskThread([])
+      return
+    }
+    setExpandedTask(taskId)
+    setThreadLoading(true)
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('text,timestamp,role,source')
+        .eq('agent', `task:${taskId}`)
+        .order('timestamp', { ascending: true })
+        .limit(30)
+      setTaskThread(data || [])
+    } catch { setTaskThread([]) }
+    setThreadLoading(false)
+  }, [expandedTask])
+
+  // ── Per-task failure insights ──────────────────────────────────────────
+  const toggleInsights = useCallback(async (taskId) => {
+    const alreadyOpen = !!insightsOpen[taskId]
+    if (alreadyOpen) {
+      setInsightsOpen(prev => ({ ...prev, [taskId]: false }))
+      return
+    }
+    setInsightsOpen(prev => ({ ...prev, [taskId]: true }))
+
+    if (insightsData[taskId]) return
+
+    setInsightsLoading(prev => ({ ...prev, [taskId]: true }))
+    setInsightsError(prev => ({ ...prev, [taskId]: null }))
+    try {
+      if (!supabase) throw new Error('Supabase not configured')
+      const [taskRes, msgRes] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('qa_score,qa_notes,error,metadata,attempt_count,result')
+          .eq('id', taskId)
+          .maybeSingle(),
+        supabase
+          .from('messages')
+          .select('text,timestamp,role,source')
+          .eq('agent', `task:${taskId}`)
+          .order('timestamp', { ascending: false })
+          .limit(40),
+      ])
+      if (taskRes.error) throw new Error(taskRes.error.message || 'Failed to load task')
+      if (msgRes.error) throw new Error(msgRes.error.message || 'Failed to load logs')
+
+      const row = taskRes.data || {}
+      const allMsgs = msgRes.data || []
+      const failureKeywords = /\b(qa|fail|error|stuck|timeout|reject|retry|denied|exception)\b/i
+      const failureLogs = allMsgs
+        .filter(m => {
+          const src = String(m.source || m.role || '').toLowerCase()
+          if (src.includes('qa') || src.includes('error') || src.includes('fail')) return true
+          return failureKeywords.test(String(m.text || ''))
+        })
+        .slice(0, 15)
+        .reverse()
+
+      setInsightsData(prev => ({
+        ...prev,
+        [taskId]: {
+          qaScore: row.qa_score ?? null,
+          qaNotes: row.qa_notes || '',
+          error: row.error || '',
+          attemptCount: row.attempt_count || 1,
+          resultSummary: row.result || '',
+          failureLogs,
+          logCount: failureLogs.length,
+        },
+      }))
+    } catch (err) {
+      setInsightsError(prev => ({ ...prev, [taskId]: err?.message || 'Failed to load insights' }))
+    } finally {
+      setInsightsLoading(prev => ({ ...prev, [taskId]: false }))
+    }
+  }, [insightsOpen, insightsData])
+
+  const { projects: taskProjects } = useProjects()
+
+  // Auto-start runner every time Tasks tab mounts
+  useEffect(() => {
+    fetch('/api/dashboard/task-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'startRunner' }),
+    }).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Poll latest project_summary event
+  useEffect(() => {
+    if (!activeProject || activeProject === 'all') {
+      setSummaryEvent(null)
+      setSummaryJustUpdated(false)
+      return
+    }
+    let cancelled = false
+    let lastSeenTs = null
+
+    const fetchLatest = async () => {
+      try {
+        const resp = await fetch(`/api/dashboard/project-summary?slug=${encodeURIComponent(activeProject)}`)
+        if (cancelled) return
+        if (!resp.ok) return
+        const data = await resp.json().catch(() => null)
+        if (cancelled) return
+        const row = data?.event || null
+        if (!row) {
+          if (lastSeenTs !== null) setSummaryEvent(null)
+          lastSeenTs = null
+          return
+        }
+        if (row.timestamp !== lastSeenTs) {
+          const wasFirst = lastSeenTs === null
+          lastSeenTs = row.timestamp
+          setSummaryEvent(row)
+          if (!wasFirst) {
+            setSummaryJustUpdated(true)
+            window.setTimeout(() => setSummaryJustUpdated(false), 1800)
+          }
+        }
+      } catch {
+        // swallow — next tick will retry
+      }
+    }
+
+    fetchLatest()
+    const iv = window.setInterval(fetchLatest, 4000)
+    return () => { cancelled = true; window.clearInterval(iv) }
+  }, [activeProject])
+
+  // Drive "updated Ns ago" label without re-fetching
+  useEffect(() => {
+    if (!summaryEvent) return
+    const iv = window.setInterval(() => setSummaryNowTick(t => t + 1), 1000)
+    return () => window.clearInterval(iv)
+  }, [summaryEvent])
+
+  // Mobile breakpoint watcher for Files section
+  useEffect(() => {
+    const handleResize = () => setTaskIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Load per-project files when active project changes
+  useEffect(() => {
+    if (!activeProject || activeProject === 'all') {
+      setTaskBriefs([])
+      setTaskAttachments([])
+      setTaskFilesOpen(false)
+      return
+    }
+    let cancelled = false
+    setTaskFilesLoading(true)
+    Promise.all([
+      fetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(activeProject)}`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
+      fetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(activeProject)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
+      fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(activeProject)}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
+    ]).then(([textData, imgData, briefsData]) => {
+      if (cancelled) return
+      const textFiles = textData.files || []
+      const textBriefs = textFiles.filter(f => String(f.filename || f.name || '').endsWith('.md'))
+      const textAttachments = textFiles.filter(f => !String(f.filename || f.name || '').endsWith('.md'))
+      const images = (imgData.files || []).map(f => ({ ...f, filename: f.name }))
+      const indexBriefs = briefsData.briefs || []
+      const seenSlugs = new Set(indexBriefs.map(b => b.slug).filter(Boolean))
+      const mergedBriefs = [...indexBriefs, ...textBriefs.filter(b => !seenSlugs.has(b.slug))]
+      setTaskBriefs(mergedBriefs)
+      setTaskAttachments([...textAttachments, ...images])
+      const hasAny = mergedBriefs.length > 0 || textAttachments.length > 0 || images.length > 0
+      setTaskFilesOpen(hasAny)
+    }).catch(() => {
+      if (!cancelled) { setTaskBriefs([]); setTaskAttachments([]); setTaskFilesOpen(false) }
+    }).finally(() => { if (!cancelled) setTaskFilesLoading(false) })
+    return () => { cancelled = true }
+  }, [activeProject])
+
+  // Load all briefs for global Files section
+  useEffect(() => {
+    if (activeProject !== 'all') return
+    let cancelled = false
+    setAllBriefsLoading(true)
+    fetch('/api/dashboard/files?type=briefs&project=all')
+      .then(r => r.ok ? r.json() : { briefs: [] })
+      .catch(() => ({ briefs: [] }))
+      .then(data => {
+        if (!cancelled) {
+          setAllBriefs(data.briefs || [])
+          setAllBriefsLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [activeProject])
+
+  // Open brief inline viewer
+  const handleBriefClick = useCallback(async (brief) => {
+    const slug = brief.slug || (brief.filename || '').replace('.md', '')
+    setSelectedBrief(brief)
+    setBriefHtml('')
+    setBriefLoading(true)
+    try {
+      const res = await fetch(`/api/dashboard/file-content?slug=${encodeURIComponent(slug)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setBriefHtml(data.content || '')
+      } else {
+        setBriefHtml('<p style="color:#94A3B8">Brief content not available.</p>')
+      }
+    } catch {
+      setBriefHtml('<p style="color:#94A3B8">Failed to load brief.</p>')
+    }
+    setBriefLoading(false)
+  }, [])
+
+  const closeBriefViewer = useCallback(() => {
+    setSelectedBrief(null)
+    setBriefHtml('')
+  }, [])
+
+  // Instant task maker
+  const handleTaskSubmit = useCallback(async () => {
+    const text = taskInput.trim()
+    if (!text || taskSubmitting) return
+
+    setTaskSubmitting(true)
+    try {
+      const userId = currentUser?.id || null
+      const userName = currentUser?.user_metadata?.full_name || null
+      const projectSlug = (activeProject && activeProject !== 'all') ? activeProject : null
+      const result = await createTaskWithRex(text, userId, userName, {
+        projectSlug,
+        clientId: worldId || 'aom',
+      })
+      setTaskInput('')
+      if (result.task) {
+        if (addOptimisticTask) addOptimisticTask(result.task)
+      } else {
+        if (refreshTasks) refreshTasks()
+      }
+    } catch (err) {
+      if (showToast) showToast(err.message || 'Failed to create task')
+    } finally {
+      setTaskSubmitting(false)
+    }
+  }, [taskInput, taskSubmitting, currentUser, addOptimisticTask, refreshTasks, showToast, activeProject, worldId])
+
+  const handleTaskInputKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleTaskSubmit()
+    }
+  }, [handleTaskSubmit])
+
+  const toggleVoiceRecording = useCallback(async () => {
+    if (isRecording) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      micStreamRef.current = stream
+      audioChunksRef.current = []
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        setRecordedBlob(blob)
+        console.log('[voice-task] Captured audio blob:', blob, 'size:', blob.size, 'bytes')
+        micStreamRef.current?.getTracks().forEach(t => t.stop())
+        micStreamRef.current = null
+        setIsRecording(false)
+      }
+      mediaRecorder.start()
+      setIsRecording(true)
+    } catch (err) {
+      console.error('[voice-task] Mic access error:', err)
+    }
+  }, [isRecording])
+
+  // Load project definitions from Supabase
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('projects').select('name,slug').eq('is_active', true).eq('client_id', worldId).order('name')
+      .then(({ data }) => {
+        if (data) setProjectDefs(data.map(p => ({ name: p.name, slug: p.slug })))
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Derived data ───────────────────────────────────────────────────────
+  const active = [...(rightNow || []), ...(queued || [])]
+  const completed = done || []
+  const waitingTasks = waiting || []
+
+  const getTaskProject = useCallback((task) => {
+    const projectPath = task?.project_path || task?.projectPath || ''
+    const normalizedPath = String(projectPath || '').toLowerCase()
+    const projectSlug = task?.project_slug || task?.projectSlug || (normalizedPath ? normalizedPath.split('/').filter(Boolean).pop() : '')
+    return taskProjects.find((project) => {
+      const slug = String(project?.slug || '').toLowerCase()
+      const name = String(project?.name || '').toLowerCase()
+      return (projectSlug && slug === String(projectSlug).toLowerCase())
+        || (normalizedPath && slug && normalizedPath.endsWith(`/${slug}`))
+        || (normalizedPath && name && normalizedPath.includes(name))
+    }) || null
+  }, [taskProjects])
+
+  const projectPills = [{ name: 'All', slug: 'all' }, ...projectDefs]
+  const slugToName = useMemo(() => Object.fromEntries(projectDefs.map(p => [p.slug, p.name])), [projectDefs])
+
+  const filterTasks = useCallback((tasks) => {
+    return tasks.filter(t => {
+      const title = (t.title || t.text || '').toLowerCase()
+      const matchQ = !searchQuery || title.includes(searchQuery.toLowerCase())
+      if (activeProject === 'all') return matchQ
+      const taskProject = (t.project || '').toLowerCase()
+      return matchQ && taskProject === activeProject
+    })
+  }, [searchQuery, activeProject])
+
+  const filteredActive = filterTasks(active)
+  const isDismissed = t => t.metadata?.dismissed === true
+  const filteredFailed = filterTasks(completed.filter(t => t.status === 'failed' && !isDismissed(t)))
+  const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed' && !isDismissed(t)))
+
+  // Weekly bar chart counts
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const daysFromMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const weekStart = new Date(now)
+  weekStart.setHours(0, 0, 0, 0)
+  weekStart.setDate(weekStart.getDate() - daysFromMon)
+
+  const dailyCounts = [0, 0, 0, 0, 0, 0, 0]
+  for (const t of completed) {
+    const ts = t.completed_at || t.updated_at || t.created_at
+    if (!ts) continue
+    const date = new Date(ts)
+    if (date >= weekStart) {
+      const d = date.getDay()
+      const idx = d === 0 ? 6 : d - 1
+      dailyCounts[idx]++
+    }
+  }
+  const maxDailyCount = Math.max(...dailyCounts, 1)
+  const weekTotal = dailyCounts.reduce((s, c) => s + c, 0)
+
+  const weekCompleted = completed.filter(t => {
+    const ts = t.completed_at || t.updated_at || t.created_at
+    if (!ts) return false
+    return new Date(ts) >= weekStart
+  })
+  const withQA = weekCompleted.filter(t => t.qa_score || t.qaScore)
+  const avgQA = withQA.length > 0
+    ? (withQA.reduce((s, t) => s + Number(t.qa_score || t.qaScore || 0), 0) / withQA.length).toFixed(1)
+    : null
+  const passCount = withQA.filter(t => Number(t.qa_score || t.qaScore || 0) >= 8).length
+  const passRate = weekCompleted.length > 0 ? Math.round((passCount / weekCompleted.length) * 100) : null
+  const qaRatio = `${withQA.length}/${weekCompleted.length}`
+
+  const greetingHour = new Date().getHours()
+  const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening'
+
+  // ── Context-menu handlers (cross-cutting callbacks) ────────────────────
+  const currentTaskClientId = worldId || getClientId() || 'aom'
+
+  const handleTaskFollowUp = useCallback((task) => {
+    if (!task) return
+    const label = snippetOfTitle(task.title || task.id, 80)
+    const text = `Re: task "${label}" (${task.id})\n\n`
+    if (typeof setPrefillMessage === 'function') setPrefillMessage(text)
+    if (typeof setActiveTab === 'function') setActiveTab('chat')
+    showCtxToast('Opening chat with task reference…')
+  }, [setPrefillMessage, setActiveTab, showCtxToast])
+
+  const handleTaskNeedsVerification = useCallback(async (task) => {
+    if (!task) return
+    setTaskVerifyIds(prev => { const next = new Set(prev); next.add(task.id); return next })
+    try {
+      const body = `Verify task "${task.title || task.id}" output.\n\nParent task id: ${task.id}\nProject: ${task.project || '—'}\n\nRead the parent's completion payload and confirm it matches expectations.`
+      const row = {
+        title: `Verify: ${snippetOfTitle(task.title || task.id)}`,
+        text: body,
+        description: body,
+        status: 'queued',
+        source: 'corner-dashboard-task',
+        client_id: currentTaskClientId,
+        created_by: currentUser?.id || null,
+        project: task.project || null,
+        metadata: {
+          parent_task_id: task.id,
+          kind: 'verify',
+          created_via: 'context-menu',
+          model: 'sonnet',
+        },
+      }
+      await supabase.from('tasks').insert(row)
+      showCtxToast('Verify sub-task queued')
+      if (typeof refreshTasks === 'function') refreshTasks()
+    } catch (err) {
+      console.error('[TasksPanel] verify error:', err)
+      showCtxToast('Could not queue verify sub-task')
+    }
+  }, [currentTaskClientId, currentUser, refreshTasks, showCtxToast])
+
+  const handleTaskResearch = useCallback(async (task) => {
+    if (!task) return
+    try {
+      const body = `Research follow-up for task "${task.title || task.id}".\n\nParent task id: ${task.id}\nProject: ${task.project || '—'}\n\nWrite a brief in docs/briefs/ and attach it to the ${task.project || 'relevant'} project's Files section.`
+      const row = {
+        title: `Research: ${snippetOfTitle(task.title || task.id)}`,
+        text: body,
+        description: body,
+        status: 'queued',
+        source: 'corner-dashboard-task',
+        client_id: currentTaskClientId,
+        created_by: currentUser?.id || null,
+        project: task.project || null,
+        metadata: {
+          parent_task_id: task.id,
+          kind: 'research',
+          created_via: 'context-menu',
+          model: 'sonnet',
+        },
+      }
+      await supabase.from('tasks').insert(row)
+      showCtxToast('Research sub-task queued')
+      if (typeof refreshTasks === 'function') refreshTasks()
+    } catch (err) {
+      console.error('[TasksPanel] research error:', err)
+      showCtxToast('Could not queue research sub-task')
+    }
+  }, [currentTaskClientId, currentUser, refreshTasks, showCtxToast])
+
+  const handleCreateProject = useCallback(async () => {
+    const name = projectName.trim()
+    if (!name || createProjectSubmitting) return
+    const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    const clientId = worldId || getClientId() || 'aom'
+    setCreateProjectSubmitting(true)
+    setCreateProjectError(null)
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .insert({ name, slug, color: selectedColor, is_active: true, client_id: clientId })
+      if (error) throw new Error(error.message || 'Failed to create project')
+      setProjectDefs(prev => [...prev, { name, slug }].sort((a, b) => a.name.localeCompare(b.name)))
+      setActiveProject(slug)
+      setShowCreateProjectModal(false)
+      setProjectName('')
+      setSelectedColor('#10B981')
+      setCreateProjectError(null)
+    } catch (err) {
+      setCreateProjectError(err.message || 'Failed to create project')
+    } finally {
+      setCreateProjectSubmitting(false)
+    }
+  }, [projectName, selectedColor, worldId, createProjectSubmitting])
+
+  const handleTaskMoveTo = useCallback(async (task, target) => {
+    if (!task || !target?.slug) return
+    const fromSlug = task.project || null
+    if (fromSlug && String(fromSlug).toLowerCase() === String(target.slug).toLowerCase()) return
+    try {
+      const existingMeta = (task.metadata && typeof task.metadata === 'object') ? task.metadata : {}
+      const history = Array.isArray(existingMeta.move_history) ? existingMeta.move_history : []
+      const nextMeta = {
+        ...existingMeta,
+        move_history: [
+          ...history,
+          { from: fromSlug, to: target.slug, at: new Date().toISOString(), by: currentUser?.id || null },
+        ],
+      }
+      await supabase
+        .from('tasks')
+        .update({ project: target.slug, metadata: nextMeta })
+        .eq('id', task.id)
+      showCtxToast(`Moved to ${target.name || target.slug}`)
+      if (typeof refreshTasks === 'function') refreshTasks()
+    } catch (err) {
+      console.error('[TasksPanel] move error:', err)
+      showCtxToast('Could not move task')
+    }
+  }, [currentUser, refreshTasks, showCtxToast])
+
+  const handleRequeueFailedTask = useCallback((task) => {
+    const prompt = typeof task?.result === 'string' ? task.result.trim() : ''
+    const project = getTaskProject(task)
+    if (!project || !prompt) {
+      if (showToast) showToast('No linked project or prompt found for this failed task.')
+      return
+    }
+    setPrefillMessage(prompt)
+    setActiveConversation(project)
+    setActiveTab('chat')
+  }, [getTaskProject, showToast, setPrefillMessage, setActiveConversation, setActiveTab])
+
+  const closeCreateProjectModal = useCallback(() => {
+    setShowCreateProjectModal(false)
+    setProjectName('')
+    setSelectedColor('#10B981')
+    setCreateProjectError(null)
+  }, [])
+
+  const toggleCreateProjectModal = useCallback(() => {
+    setShowCreateProjectModal(prev => {
+      if (!prev) { setProjectName(''); setSelectedColor('#10B981') }
+      return !prev
+    })
+  }, [])
+
+  return {
+    // Cross-cutting passthroughs (from CornerV3, surfaced for subcomponents)
+    worldId,
+    currentUser,
+    refreshTasks,
+    addOptimisticTask,
+    showToast,
+    setActiveTab,
+    setActiveConversation,
+    setPrefillMessage,
+
+    // Search + filter
+    searchQuery, setSearchQuery,
+    searchFocused, setSearchFocused,
+    activeProject, setActiveProject,
+
+    // Projects data
+    projectDefs,
+    projectPills,
+    slugToName,
+    taskProjects,
+    getTaskProject,
+
+    // Create project modal
+    showCreateProjectModal,
+    projectName, setProjectName,
+    selectedColor, setSelectedColor,
+    createProjectSubmitting,
+    createProjectError,
+    handleCreateProject,
+    closeCreateProjectModal,
+    toggleCreateProjectModal,
+
+    // Task lists (raw + filtered)
+    active,
+    completed,
+    waitingTasks,
+    filteredActive,
+    filteredFailed,
+    filteredCompleted,
+
+    // Card lifecycle
+    shippedLimit, setShippedLimit,
+    expandedTask, toggleTaskExpand,
+    taskThread, threadLoading,
+    insightsOpen, insightsData, insightsLoading, insightsError,
+    toggleInsights,
+    taskVerifyIds,
+
+    // Context menu
+    taskMenu, setTaskMenu,
+    openTaskMenu,
+    startTaskLongPress,
+    cancelTaskLongPress,
+    handleTaskFollowUp,
+    handleTaskNeedsVerification,
+    handleTaskResearch,
+    handleTaskMoveTo,
+    handleRequeueFailedTask,
+
+    // Ctx toast
+    ctxToast,
+    showCtxToast,
+
+    // Waiting tasks replies
+    waitingReply, setWaitingReply,
+    waitingReplySending, setWaitingReplySending,
+
+    // Files sections
+    taskIsMobile,
+    taskFilesOpen, setTaskFilesOpen,
+    taskBriefs,
+    taskAttachments,
+    taskFilesLoading,
+    allBriefs,
+    allBriefsLoading,
+    allBriefsOpen, setAllBriefsOpen,
+    allBriefsLimit, setAllBriefsLimit,
+
+    // Brief viewer
+    selectedBrief,
+    briefHtml,
+    briefLoading,
+    handleBriefClick,
+    closeBriefViewer,
+
+    // Project summary card
+    summaryEvent,
+    summaryJustUpdated,
+    summaryNowTick,
+
+    // Weekly stats
+    dailyCounts,
+    maxDailyCount,
+    dayOfWeek,
+    weekTotal,
+    passRate,
+    avgQA,
+    qaRatio,
+    greeting,
+
+    // Task input + voice
+    taskInput, setTaskInput,
+    taskInputFocused, setTaskInputFocused,
+    taskSubmitting,
+    taskInputRef,
+    isRecording,
+    toggleVoiceRecording,
+    handleTaskSubmit,
+    handleTaskInputKeyDown,
+  }
+}

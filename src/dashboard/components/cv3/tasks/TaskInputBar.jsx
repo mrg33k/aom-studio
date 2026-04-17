@@ -1,19 +1,23 @@
 // TaskInputBar -- bottom task creation input + voice recording UI
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
-export default function TaskInputBar({
-  taskInput,
-  setTaskInput,
-  taskInputFocused,
-  setTaskInputFocused,
-  taskSubmitting,
-  taskInputRef,
-  isRecording,
-  toggleVoiceRecording,
-  handleTaskSubmit,
-  handleTaskInputKeyDown,
-}) {
+export default function TaskInputBar() {
+  const {
+    taskInput,
+    setTaskInput,
+    taskInputFocused,
+    setTaskInputFocused,
+    taskSubmitting,
+    taskInputRef,
+    isRecording,
+    toggleVoiceRecording,
+    handleTaskSubmit,
+    handleTaskInputKeyDown,
+  } = useTasksPanelCtx()
+
   return (
     <div style={{
       flexShrink: 0,

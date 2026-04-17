@@ -1,15 +1,19 @@
 // WaitingTasksSection -- "Needs Input" cards for tasks awaiting user reply
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
 import { LIFECYCLE } from './lifecycle.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
-export default function WaitingTasksSection({
-  waitingTasks,
-  waitingReply,
-  setWaitingReply,
-  waitingReplySending,
-  setWaitingReplySending,
-}) {
+export default function WaitingTasksSection() {
+  const {
+    waitingTasks,
+    waitingReply,
+    setWaitingReply,
+    waitingReplySending,
+    setWaitingReplySending,
+  } = useTasksPanelCtx()
+
   if (waitingTasks.length === 0) return null
 
   return (

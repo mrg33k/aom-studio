@@ -1,21 +1,30 @@
 // CreateProjectModal -- new-project naming + color picker overlay
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
 const PALETTE = ['#EAB308', '#22C55E', '#A78BFA', '#F59E0B', '#10B981', '#F97316']
 
-export default function CreateProjectModal({
-  show,
-  onClose,
-  projectName,
-  setProjectName,
-  selectedColor,
-  setSelectedColor,
-  onSubmit,
-  isSubmitting,
-  createError,
-}) {
-  if (!show) return null
+export default function CreateProjectModal() {
+  const {
+    showCreateProjectModal,
+    closeCreateProjectModal,
+    projectName,
+    setProjectName,
+    selectedColor,
+    setSelectedColor,
+    handleCreateProject,
+    createProjectSubmitting,
+    createProjectError,
+  } = useTasksPanelCtx()
+
+  if (!showCreateProjectModal) return null
+
+  const onClose = closeCreateProjectModal
+  const onSubmit = handleCreateProject
+  const isSubmitting = createProjectSubmitting
+  const createError = createProjectError
 
   return (
     <div

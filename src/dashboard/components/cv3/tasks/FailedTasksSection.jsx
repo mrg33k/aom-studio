@@ -1,30 +1,30 @@
 // FailedTasksSection -- failed task cards + per-task failure insights panel
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
 import { LIFECYCLE } from './lifecycle.js'
 import { ResultPreview } from './ResultPreview.jsx'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
-export default function FailedTasksSection({
-  filteredFailed,
-  refreshTasks,
-  expandedTask,
-  toggleTaskExpand,
-  openTaskMenu,
-  startTaskLongPress,
-  cancelTaskLongPress,
-  toggleInsights,
-  insightsOpen,
-  insightsLoading,
-  insightsError,
-  insightsData,
-  threadLoading,
-  taskThread,
-  showToast,
-  setPrefillMessage,
-  setActiveConversation,
-  setActiveTab,
-  getTaskProject,
-}) {
+export default function FailedTasksSection() {
+  const {
+    filteredFailed,
+    refreshTasks,
+    expandedTask,
+    toggleTaskExpand,
+    openTaskMenu,
+    startTaskLongPress,
+    cancelTaskLongPress,
+    toggleInsights,
+    insightsOpen,
+    insightsLoading,
+    insightsError,
+    insightsData,
+    threadLoading,
+    taskThread,
+    handleRequeueFailedTask,
+  } = useTasksPanelCtx()
+
   if (filteredFailed.length === 0) return null
 
   return (
@@ -99,15 +99,7 @@ export default function FailedTasksSection({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    const prompt = typeof t.result === 'string' ? t.result.trim() : ''
-                    const project = getTaskProject(t)
-                    if (!project || !prompt) {
-                      if (showToast) showToast('No linked project or prompt found for this failed task.')
-                      return
-                    }
-                    setPrefillMessage(prompt)
-                    setActiveConversation(project)
-                    setActiveTab('chat')
+                    handleRequeueFailedTask(t)
                   }}
                   style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                 >

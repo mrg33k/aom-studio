@@ -1,7 +1,9 @@
 // FilesSection -- per-project + all-projects file viewers
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
 export function getFileTypeInfo(filename) {
   const ext = String(filename || '').split('.').pop().toLowerCase()
@@ -55,9 +57,21 @@ export const PROJECT_LABELS = {
   'sourcing-directory': 'Sourcing',
 }
 
-export function AllFilesSection({ briefs, loading, isOpen, onToggle, limit, onShowMore, onBriefClick }) {
+export function AllFilesSection() {
+  const {
+    allBriefs: briefsFromCtx,
+    allBriefsLoading: loading,
+    allBriefsOpen: isOpen,
+    setAllBriefsOpen,
+    allBriefsLimit: limit,
+    setAllBriefsLimit,
+    handleBriefClick: onBriefClick,
+  } = useTasksPanelCtx()
+  const onToggle   = () => setAllBriefsOpen(v => !v)
+  const onShowMore = () => setAllBriefsLimit(prev => prev + 25)
+
   const [hoveredRow, setHoveredRow] = useState(null)
-  const allBriefs = briefs || []
+  const allBriefs = briefsFromCtx || []
   const visible = allBriefs.slice(0, limit)
   const hasMore = allBriefs.length > limit
 
@@ -171,7 +185,18 @@ export function AllFilesSection({ briefs, loading, isOpen, onToggle, limit, onSh
   )
 }
 
-export function ProjectFilesSection({ isMobile, isOpen, onToggle, briefs, attachments, loading, onBriefClick }) {
+export function ProjectFilesSection() {
+  const {
+    taskIsMobile: isMobile,
+    taskFilesOpen: isOpen,
+    setTaskFilesOpen,
+    taskBriefs: briefs,
+    taskAttachments: attachments,
+    taskFilesLoading: loading,
+    handleBriefClick: onBriefClick,
+  } = useTasksPanelCtx()
+  const onToggle = () => setTaskFilesOpen(v => !v)
+
   const [lightbox, setLightbox] = useState(null)
   const [hoveredRow, setHoveredRow] = useState(null)
   const [hoverBrief, setHoverBrief] = useState(null)

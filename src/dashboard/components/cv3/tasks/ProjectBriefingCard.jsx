@@ -1,19 +1,23 @@
 // ProjectBriefingCard -- daemon-driven project summary card
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 //
 // Data: project-summary-daemon → events table → /api/dashboard/project-summary.
-// Polled every 4s by the parent's useEffect. Flashes when summaryJustUpdated.
+// Polled every 4s by useTasksPanel. Flashes when summaryJustUpdated.
 import { marked } from 'marked'
 import { C } from '../../../lib/cv3Colors.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
-export default function ProjectBriefingCard({
-  activeProject,
-  summaryEvent,
-  summaryJustUpdated,
-  summaryNowTick,
-  taskProjects,
-  slugToName,
-}) {
+export default function ProjectBriefingCard() {
+  const {
+    activeProject,
+    summaryEvent,
+    summaryJustUpdated,
+    summaryNowTick,
+    taskProjects,
+    slugToName,
+  } = useTasksPanelCtx()
+
   const payload = summaryEvent?.payload || null
   const rowTs   = summaryEvent?.timestamp || null
   const rowMs   = rowTs ? Date.parse(rowTs) : null

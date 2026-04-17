@@ -1,23 +1,27 @@
 // DoneTasksSection -- "Done" cards (incl. fail-styled in done feed) + show more
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
 import { LIFECYCLE } from './lifecycle.js'
 import { getShippedCardColor } from '../shared.jsx'
 import { ResultPreview } from './ResultPreview.jsx'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
-export default function DoneTasksSection({
-  filteredCompleted,
-  shippedLimit,
-  setShippedLimit,
-  expandedTask,
-  toggleTaskExpand,
-  openTaskMenu,
-  startTaskLongPress,
-  cancelTaskLongPress,
-  taskProjects,
-  taskThread,
-  threadLoading,
-}) {
+export default function DoneTasksSection() {
+  const {
+    filteredCompleted,
+    shippedLimit,
+    setShippedLimit,
+    expandedTask,
+    toggleTaskExpand,
+    openTaskMenu,
+    startTaskLongPress,
+    cancelTaskLongPress,
+    taskProjects,
+    taskThread,
+    threadLoading,
+  } = useTasksPanelCtx()
+
   if (filteredCompleted.length === 0) return null
 
   return (

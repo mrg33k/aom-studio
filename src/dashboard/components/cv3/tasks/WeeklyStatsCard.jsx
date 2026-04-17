@@ -1,20 +1,24 @@
 // WeeklyStatsCard -- "This Week" 7-day bar chart + metrics row
-// Extracted from TasksPanel.jsx (R2a)
+// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
+// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
+import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const MIN_BAR_H  = 2
 const MAX_BAR_H  = 19
 
-export default function WeeklyStatsCard({
-  dailyCounts,
-  maxDailyCount,
-  dayOfWeek,
-  weekTotal,
-  passRate,
-  avgQA,
-  qaRatio,
-}) {
+export default function WeeklyStatsCard() {
+  const {
+    dailyCounts,
+    maxDailyCount,
+    dayOfWeek,
+    weekTotal,
+    passRate,
+    avgQA,
+    qaRatio,
+  } = useTasksPanelCtx()
+
   return (
     <div style={{
       background: 'rgba(255,255,255,0.02)',
