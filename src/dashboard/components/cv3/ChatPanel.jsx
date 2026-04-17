@@ -262,6 +262,7 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     voiceMinimizedAgent,
     // Recording
     isRecording: recording.isRecording,
+    recordingElapsed: recording.recordingElapsed,
     handleMicToggle: recording.handleMicToggle,
     micError: recording.micError,
     isTranscribing: recording.isTranscribing,
