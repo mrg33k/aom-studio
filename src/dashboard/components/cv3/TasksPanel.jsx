@@ -26,9 +26,11 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
   const [searchQuery,   setSearchQuery]   = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [activeProject, setActiveProject] = useState('all')
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
-  const [projectName,            setProjectName]            = useState('')
-  const [selectedColor,          setSelectedColor]          = useState('#10B981')
+  const [showCreateProjectModal,  setShowCreateProjectModal]  = useState(false)
+  const [projectName,             setProjectName]             = useState('')
+  const [selectedColor,           setSelectedColor]           = useState('#10B981')
+  const [createProjectSubmitting, setCreateProjectSubmitting] = useState(false)
+  const [createProjectError,      setCreateProjectError]      = useState(null)
   const [shippedLimit,           setShippedLimit]           = useState(50)
   const [projectDefs,            setProjectDefs]             = useState([])  // [{name, slug}]
   const [taskInput,              setTaskInput]              = useState('')
@@ -561,6 +563,32 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
     }
   }, [currentTaskClientId, currentUser, refreshTasks, showCtxToast])
 
+  // CreateProjectModal: insert new project row into Supabase and refresh pills
+  const handleCreateProject = useCallback(async () => {
+    const name = projectName.trim()
+    if (!name || createProjectSubmitting) return
+    const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    const clientId = worldId || getClientId() || 'aom'
+    setCreateProjectSubmitting(true)
+    setCreateProjectError(null)
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .insert({ name, slug, color: selectedColor, is_active: true, client_id: clientId })
+      if (error) throw new Error(error.message || 'Failed to create project')
+      setProjectDefs(prev => [...prev, { name, slug }].sort((a, b) => a.name.localeCompare(b.name)))
+      setActiveProject(slug)
+      setShowCreateProjectModal(false)
+      setProjectName('')
+      setSelectedColor('#10B981')
+      setCreateProjectError(null)
+    } catch (err) {
+      setCreateProjectError(err.message || 'Failed to create project')
+    } finally {
+      setCreateProjectSubmitting(false)
+    }
+  }, [projectName, selectedColor, worldId, createProjectSubmitting])
+
   // TASKS: Move to (project) → update tasks.project + push metadata.move_history entry
   const handleTaskMoveTo = useCallback(async (task, target) => {
     if (!task || !target?.slug) return
@@ -1014,11 +1042,14 @@ export default function TasksPanel({ queued, rightNow, waiting, done, worldId, r
       {/* Create Project Modal */}
       <CreateProjectModal
         show={showCreateProjectModal}
-        onClose={() => { setShowCreateProjectModal(false); setProjectName(''); setSelectedColor('#10B981') }}
+        onClose={() => { setShowCreateProjectModal(false); setProjectName(''); setSelectedColor('#10B981'); setCreateProjectError(null) }}
         projectName={projectName}
         setProjectName={setProjectName}
         selectedColor={selectedColor}
         setSelectedColor={setSelectedColor}
+        onSubmit={handleCreateProject}
+        isSubmitting={createProjectSubmitting}
+        createError={createProjectError}
       />
 
       {/* Right-click context menu for task cards */}

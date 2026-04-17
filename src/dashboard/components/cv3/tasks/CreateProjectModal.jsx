@@ -11,6 +11,9 @@ export default function CreateProjectModal({
   setProjectName,
   selectedColor,
   setSelectedColor,
+  onSubmit,
+  isSubmitting,
+  createError,
 }) {
   if (!show) return null
 
@@ -80,37 +83,47 @@ export default function CreateProjectModal({
           ))}
         </div>
 
+        {createError && (
+          <div style={{ fontSize: 12, color: '#F87171', fontFamily: "'Inter', sans-serif", lineHeight: 1.4 }}>
+            {createError}
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             style={{
               padding: '10px 20px',
               borderRadius: 12,
               fontSize: 13,
               fontWeight: 600,
-              cursor: 'pointer',
+              cursor: isSubmitting ? 'default' : 'pointer',
               border: '1px solid rgba(255,255,255,0.06)',
               background: 'none',
               color: C.text2,
               fontFamily: "'Inter', sans-serif",
               transition: 'background 0.15s',
+              opacity: isSubmitting ? 0.5 : 1,
             }}
           >Cancel</button>
           <button
-            onClick={() => onClose()}
+            onClick={onSubmit}
+            disabled={isSubmitting || !projectName.trim()}
             style={{
               padding: '10px 20px',
               borderRadius: 12,
               fontSize: 13,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: (isSubmitting || !projectName.trim()) ? 'default' : 'pointer',
               border: 'none',
               background: C.accent,
               color: '#fff',
               fontFamily: "'Inter', sans-serif",
               transition: 'transform 0.15s, box-shadow 0.15s',
+              opacity: (isSubmitting || !projectName.trim()) ? 0.5 : 1,
             }}
-          >Create</button>
+          >{isSubmitting ? 'Creating…' : 'Create'}</button>
         </div>
       </div>
     </div>
