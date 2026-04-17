@@ -1,0 +1,277 @@
+// useChatConversations -- previews feed + derived conversation lists.
+// Combines agent/project message previews (initial fetch + realtime INSERT
+// subscription) with search/pin/hide filters to produce the sorted lists
+// the sidebar renders. Extracted from ChatPanel.jsx (R2b split).
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../../../lib/supabase.js'
+
+export default function useChatConversations({
+  agents,
+  projects,
+  inboxItems,
+  worldId,
+  searchQuery,
+  allTasks,
+  isFav,
+  isHidden,
+}) {
+  // ── Unread counts per agent ──────────────────────────────────────────────
+  const unreadCounts = useMemo(() => {
+    const counts = {}
+    for (const item of (inboxItems || [])) {
+      if (item.agent && item.isUnread) counts[item.agent] = (counts[item.agent] || 0) + 1
+    }
+    return counts
+  }, [inboxItems])
+
+  // ── Agent previews: latest message per agent (baseline + realtime) ───────
+  const [agentPreviews, setAgentPreviews] = useState({})
+  useEffect(() => {
+    if (!supabase || !worldId || !agents?.length) return
+    const slugs = agents.filter(a => a.slug).map(a => a.slug)
+    if (slugs.length === 0) return
+
+    Promise.all(slugs.map(slug =>
+      supabase
+        .from('messages')
+        .select('agent, text, timestamp, id, role')
+        .eq('client_id', worldId)
+        .eq('agent', slug)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .then(({ data }) => data?.[0] || null)
+    )).then(results => {
+      const previews = {}
+      for (const msg of results) {
+        if (msg?.agent) {
+          previews[msg.agent] = {
+            agent: msg.agent,
+            text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
+            timestamp: msg.timestamp,
+            id: msg.id,
+            isUnread: msg.role !== 'user',
+          }
+        }
+      }
+      setAgentPreviews(previews)
+    })
+  }, [agents, worldId])
+
+  useEffect(() => {
+    if (!supabase || !worldId) return
+    const channel = supabase
+      .channel(`cv3-previews-${worldId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        (payload) => {
+          const msg = payload.new
+          if (!msg?.agent) return
+          const preview = {
+            agent: msg.agent,
+            text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
+            timestamp: msg.timestamp,
+            id: msg.id,
+            isUnread: msg.role !== 'user',
+          }
+          setAgentPreviews(prev => {
+            const existing = prev[msg.agent]
+            if (existing && existing.timestamp > msg.timestamp) return prev
+            return { ...prev, [msg.agent]: preview }
+          })
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [worldId])
+
+  // ── Project previews: latest message per project ─────────────────────────
+  const [projectPreviews, setProjectPreviews] = useState({})
+  useEffect(() => {
+    if (!supabase || !worldId || !projects?.length) return
+    const projList = projects.filter(p => p.slug)
+    if (!projList.length) return
+    Promise.all(projList.map(p => {
+      const cid = p.isShared ? `shared:${p.slug}` : worldId
+      return supabase.from('messages').select('agent, text, timestamp')
+        .eq('client_id', cid).eq('agent', `project:${p.slug}`)
+        .order('timestamp', { ascending: false }).limit(1)
+        .then(({ data }) => data?.[0] || null)
+    })).then(results => {
+      const previews = {}
+      for (const msg of results) {
+        if (msg?.agent) previews[msg.agent] = { text: (msg.text || '').slice(0, 80), timestamp: msg.timestamp }
+      }
+      setProjectPreviews(previews)
+    })
+  }, [projects, worldId])
+
+  // ── unreadMap: merges agentPreviews + inboxItems, newest wins ────────────
+  const unreadMap = useMemo(() => {
+    const m = {}
+    for (const [slug, preview] of Object.entries(agentPreviews)) {
+      m[slug] = preview
+    }
+    for (const item of (inboxItems || [])) {
+      if (!item.agent) continue
+      const existing = m[item.agent]
+      if (!existing || (item.timestamp && item.timestamp > existing.timestamp)) {
+        m[item.agent] = item
+      }
+    }
+    return m
+  }, [inboxItems, agentPreviews])
+
+  // ── Sorted agent list (iMessage-style: most recent first) ────────────────
+  const chattableAgents = useMemo(() => {
+    return (agents || [])
+      .filter(a => a.slug && a.name && !isHidden(a.slug))
+      .sort((a, b) => {
+        const aMsg = unreadMap[a.slug]
+        const bMsg = unreadMap[b.slug]
+        const aTime = aMsg?.timestamp || ''
+        const bTime = bMsg?.timestamp || ''
+        if (aTime && bTime) return bTime > aTime ? 1 : bTime < aTime ? -1 : 0
+        if (aTime && !bTime) return -1
+        if (!aTime && bTime) return 1
+        const aAct = a.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        const bAct = b.status?.toUpperCase() !== 'IDLE' ? 0 : 1
+        return aAct - bAct
+      })
+  }, [agents, unreadMap, isHidden])
+
+  // ── Pinned items (favorites) -- max 5, sorted by most recent ─────────────
+  const pinnedItems = useMemo(() => {
+    const items = []
+    for (const agent of (agents || [])) {
+      if (!agent.slug || !agent.name || !isFav('agent', agent.slug)) continue
+      const lastMsg = unreadMap[agent.slug]
+      items.push({ type: 'agent', data: agent, timestamp: lastMsg?.timestamp || '' })
+    }
+    for (const project of (projects || [])) {
+      if (!project.slug || !isFav('project', project.slug)) continue
+      const lastMsg = unreadMap[`project:${project.slug}`]
+      items.push({ type: 'project', data: project, timestamp: lastMsg?.timestamp || '' })
+    }
+    items.sort((a, b) => {
+      if (a.timestamp && b.timestamp) return a.timestamp < b.timestamp ? 1 : a.timestamp > b.timestamp ? -1 : 0
+      if (a.timestamp && !b.timestamp) return -1
+      if (!a.timestamp && b.timestamp) return 1
+      return 0
+    })
+    return items.slice(0, 5)
+  }, [agents, projects, isFav, unreadMap])
+
+  const topAgentSlugs = useMemo(() => new Set(
+    pinnedItems.filter(i => i.type === 'agent').map(i => i.data.slug)
+  ), [pinnedItems])
+
+  const topProjectSlugs = useMemo(() => new Set(
+    pinnedItems.filter(i => i.type === 'project').map(i => i.data.slug)
+  ), [pinnedItems])
+
+  // ── Agent-project association map (from tasks history) ───────────────────
+  const agentProjectIds = useMemo(() => {
+    const map = {}
+    for (const task of (allTasks || [])) {
+      const slug = task.agent_identity || task.agentIdentity
+      if (!slug) continue
+      if (!map[slug]) map[slug] = new Set()
+      if (task.project_id) map[slug].add(String(task.project_id))
+    }
+    return map
+  }, [allTasks])
+
+  // ── Search-filtered lists (exclude pinned items from base) ───────────────
+  const filteredVisibleAgents = useMemo(() => {
+    const base = chattableAgents.filter(a => !topAgentSlugs.has(a.slug))
+    if (!searchQuery) return base
+    const q = searchQuery.toLowerCase()
+    const matchingProjectIds = new Set(
+      (projects || []).filter(p => (p.name || '').toLowerCase().includes(q)).map(p => String(p.id))
+    )
+    return base.filter(a => {
+      if ((a.name || '').toLowerCase().includes(q)) return true
+      if ((a.role || '').toLowerCase().includes(q)) return true
+      const preview = unreadMap[a.slug]
+      if (preview?.text?.toLowerCase().includes(q)) return true
+      if (matchingProjectIds.size > 0) {
+        const agentProjs = agentProjectIds[a.slug]
+        if (agentProjs) {
+          for (const pid of matchingProjectIds) { if (agentProjs.has(pid)) return true }
+        }
+      }
+      return false
+    })
+  }, [chattableAgents, topAgentSlugs, searchQuery, unreadMap, projects, agentProjectIds])
+
+  const filteredVisibleProjects = useMemo(() => {
+    const base = (projects || []).filter(p => !topProjectSlugs.has(p.slug))
+    if (!searchQuery) return base
+    const q = searchQuery.toLowerCase()
+    return base.filter(p => {
+      if ((p.name || '').toLowerCase().includes(q)) return true
+      if ((p.slug || '').toLowerCase().includes(q)) return true
+      const preview = projectPreviews[`project:${p.slug}`]
+      if (preview?.text?.toLowerCase().includes(q)) return true
+      return false
+    })
+  }, [projects, topProjectSlugs, searchQuery, projectPreviews])
+
+  const filteredPinnedItems = useMemo(() => {
+    if (!searchQuery) return pinnedItems
+    const q = searchQuery.toLowerCase()
+    return pinnedItems.filter(item => {
+      if (item.type === 'agent') {
+        const a = item.data
+        if ((a.name || '').toLowerCase().includes(q)) return true
+        if ((a.role || '').toLowerCase().includes(q)) return true
+        const preview = unreadMap[a.slug]
+        if (preview?.text?.toLowerCase().includes(q)) return true
+        return false
+      }
+      if (item.type === 'project') {
+        const p = item.data
+        if ((p.name || '').toLowerCase().includes(q)) return true
+        if ((p.slug || '').toLowerCase().includes(q)) return true
+        const preview = projectPreviews[`project:${p.slug}`]
+        if (preview?.text?.toLowerCase().includes(q)) return true
+        return false
+      }
+      return false
+    })
+  }, [pinnedItems, searchQuery, unreadMap, projectPreviews])
+
+  // ── Unified Conversations list: agents + projects sorted by recency ──────
+  const conversationItems = useMemo(() => {
+    const items = []
+    for (const agent of filteredVisibleAgents) {
+      const lastMsg = unreadMap[agent.slug]
+      items.push({ type: 'agent', data: agent, timestamp: lastMsg?.timestamp || '' })
+    }
+    for (const project of filteredVisibleProjects) {
+      const preview = projectPreviews[`project:${project.slug}`]
+      items.push({ type: 'project', data: project, timestamp: preview?.timestamp || '' })
+    }
+    items.sort((a, b) => {
+      if (a.timestamp && b.timestamp) return a.timestamp < b.timestamp ? 1 : a.timestamp > b.timestamp ? -1 : 0
+      if (a.timestamp && !b.timestamp) return -1
+      if (!a.timestamp && b.timestamp) return 1
+      const aName = (a.data.name || '').toLowerCase()
+      const bName = (b.data.name || '').toLowerCase()
+      return aName < bName ? -1 : aName > bName ? 1 : 0
+    })
+    return items
+  }, [filteredVisibleAgents, filteredVisibleProjects, unreadMap, projectPreviews])
+
+  return {
+    agentPreviews, setAgentPreviews,
+    projectPreviews,
+    unreadMap, unreadCounts,
+    chattableAgents,
+    pinnedItems, topAgentSlugs, topProjectSlugs,
+    agentProjectIds,
+    filteredVisibleAgents, filteredVisibleProjects, filteredPinnedItems,
+    conversationItems,
+  }
+}
