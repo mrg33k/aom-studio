@@ -1,8 +1,9 @@
 // useChatMessages -- thread messages + realtime subscriptions.
 // Loads the last 200 messages for the selected agent or project, subscribes
 // to postgres INSERTs (with dedup against temp / bridge-stream / voice
-// entries), cross-posts tagged messages to the shared project thread, and
-// fetches avatars for collaborators in shared chats.
+// entries), and fetches avatars for collaborators in shared chats.
+// [project:slug] cross-posting is server-side (see api/_lib/crosspost.js) —
+// used to run here and raced across browser tabs.
 // Extracted from ChatPanel.jsx (R2b split).
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
@@ -12,7 +13,6 @@ export default function useChatMessages({
   selectedProject,
   worldId,
   currentUser,
-  projectsRef,
 }) {
   const [messages, setMessages] = useState([])
   const [loadingMsgs, setLoadingMsgs] = useState(false)
@@ -96,43 +96,12 @@ export default function useChatMessages({
               }
               return [...prev, msg]
             })
-            // Cross-post messages that mention a project to the shared project
-            // thread. Server-side crossposts already have a project field set,
-            // so only trigger here when the message arrived without one (e.g.
-            // Elon's direct Supabase writes from AOM-EA). source='crosspost'
-            // is always skipped.
-            if (msg.source !== 'crosspost' && !msg.project) {
-              let taggedProject = null
-              const tagMatch = (msg.text || '').match(/\[project:([a-z0-9_-]+)\]/i)
-              if (tagMatch) taggedProject = tagMatch[1].toLowerCase()
-              if (!taggedProject && projectsRef?.current?.length) {
-                const lt = (msg.text || '').toLowerCase()
-                for (const p of projectsRef.current) {
-                  if (p.slug && lt.includes(p.slug.toLowerCase())) { taggedProject = p.slug; break }
-                  if (p.name && p.name.length > 2 && lt.includes(p.name.toLowerCase())) { taggedProject = p.slug; break }
-                }
-              }
-              if (taggedProject) {
-                fetch('/api/dashboard/supabase-messages', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    agent: msg.agent,
-                    text: msg.text,
-                    role: msg.role,
-                    source: 'crosspost',
-                    project: taggedProject,
-                    client_id: `shared:${taggedProject}`,
-                  }),
-                }).catch(() => {})
-              }
-            }
           }
         }
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [selectedAgent, worldId, projectsRef])
+  }, [selectedAgent, worldId])
 
   // ── Load project messages when a project is selected ──────────────────────
   // R6: filter on the `project` column instead of the legacy

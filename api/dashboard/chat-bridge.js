@@ -10,6 +10,7 @@
 //   BRIDGE_ENABLED     -- Kill switch (default: true)
 
 import crypto from 'crypto'
+import { detectProjectFromText, crossPostToProjectThread } from '../_lib/crosspost.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -36,14 +37,28 @@ function supabaseHeaders() {
 
 async function writeFallbackToSupabase(body) {
   // Fallback: persist message directly to Supabase (existing relay path handles response)
+  const messageText = (body.message || '').trim()
+
+  // Project tag detection runs here too so a user's `[project:slug]` mention
+  // gets the `project` field + shared-thread crosspost without round-tripping
+  // through the browser. See api/_lib/crosspost.js.
+  let resolvedProject = (body.project && body.project.trim()) ? body.project.trim() : null
+  if (!resolvedProject) {
+    resolvedProject = await detectProjectFromText({
+      text: messageText,
+      supabaseUrl: SUPABASE_URL,
+      headers: supabaseHeaders(),
+    })
+  }
+
   const payload = {
     id: body.id || crypto.randomUUID(),
     agent: body.agent || 'elon',
     role: 'user',
-    text: (body.message || '').trim(),
+    text: messageText,
     source: 'corner-dashboard',
     client_id: body.client_id || 'aom',
-    ...(body.project ? { project: body.project } : {}),
+    ...(resolvedProject ? { project: resolvedProject } : {}),
     ...(body.user_id ? { user_id: body.user_id } : {}),
     ...(body.user_name ? { user_name: body.user_name } : {}),
   }
@@ -55,7 +70,18 @@ async function writeFallbackToSupabase(body) {
     body: JSON.stringify(payload),
   })
   const inserted = sbRes.ok ? await sbRes.json() : null
-  return { ok: sbRes.ok, message: inserted?.[0] || payload }
+  const insertedRow = inserted?.[0] || payload
+
+  if (resolvedProject) {
+    await crossPostToProjectThread({
+      supabaseUrl: SUPABASE_URL,
+      headers: supabaseHeaders(),
+      sourceMessage: insertedRow,
+      project: resolvedProject,
+    })
+  }
+
+  return { ok: sbRes.ok, message: insertedRow }
 }
 
 // Detect ">>" chain operator and create N linked tasks. Returns null if no chain.

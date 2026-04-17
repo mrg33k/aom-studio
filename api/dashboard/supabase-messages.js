@@ -8,6 +8,7 @@
 // Default client_id = 'aom'. Pass ?client= on GET or client_id in POST body.
 
 import crypto from 'crypto'
+import { detectProjectFromText, crossPostToProjectThread } from '../_lib/crosspost.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -97,6 +98,8 @@ export default async function handler(req, res) {
       user_id, user_name,
       // Attachment fields (optional)
       attachment_url, file_mime_type, file_size,
+      // Threading + context-menu metadata (right-click Follow-up / verify / research / crosspost)
+      reply_to, metadata,
     } = req.body || {}
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
@@ -106,42 +109,15 @@ export default async function handler(req, res) {
       : DEFAULT_CLIENT_ID
 
     // --- Project auto-detection ---
-    // Priority: explicit project field > [project:slug] tag in text > null
+    // Priority: explicit project field > [project:slug] tag in text > slug/name
+    // lookup. Shared with chat-bridge via api/_lib/crosspost.js.
     let resolvedProject = (project && project.trim()) ? project.trim() : null
-    let autoDetectedProject = false
-
     if (!resolvedProject) {
-      // Check for [project:slug] tag in message text (set by dashboard context)
-      const tagMatch = text.match(/\[project:([a-z0-9_-]+)\]/i)
-      if (tagMatch) {
-        resolvedProject = tagMatch[1].toLowerCase()
-        autoDetectedProject = true
-      }
-    }
-
-    // --- Fetch project list for name-based detection (if no tag found) ---
-    if (!resolvedProject && SUPABASE_URL && SUPABASE_KEY) {
-      try {
-        const projUrl = `${SUPABASE_URL}/rest/v1/projects?select=slug,name&is_active=eq.true`
-        const projRes = await fetch(projUrl, { headers: supabaseHeaders() })
-        if (projRes.ok) {
-          const projects = await projRes.json()
-          const lowerText = text.toLowerCase()
-          // Match project name or slug mentioned in the message text
-          for (const p of projects) {
-            if (p.slug && lowerText.includes(p.slug.toLowerCase())) {
-              resolvedProject = p.slug
-              autoDetectedProject = true
-              break
-            }
-            if (p.name && p.name.length > 2 && lowerText.includes(p.name.toLowerCase())) {
-              resolvedProject = p.slug
-              autoDetectedProject = true
-              break
-            }
-          }
-        }
-      } catch (_) { /* project detection is best-effort */ }
+      resolvedProject = await detectProjectFromText({
+        text,
+        supabaseUrl: SUPABASE_URL,
+        headers: supabaseHeaders(),
+      })
     }
 
     const payload = {
@@ -163,6 +139,10 @@ export default async function handler(req, res) {
       ...(attachment_url ? { attachment_url } : {}),
       ...(file_mime_type ? { file_mime_type } : {}),
       ...(file_size != null ? { file_size } : {}),
+      // Threading (Follow-up right-click menu)
+      ...(reply_to ? { reply_to } : {}),
+      // Extensible metadata (needs_verification flag, parent_task_id, crosspost source, etc.)
+      ...(metadata && typeof metadata === 'object' ? { metadata } : {}),
     }
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
@@ -178,38 +158,21 @@ export default async function handler(req, res) {
     }
 
     const inserted = await sbRes.json()
+    const insertedRow = (Array.isArray(inserted) ? inserted[0] : inserted) || payload
 
     // --- Cross-post to shared project thread ---
-    // When a project is tagged and the message isn't already in that project's
-    // shared thread, insert a copy so it appears in the project chat view.
-    // Skip if: already a crosspost, or client_id is already the shared thread.
-    if (resolvedProject && source !== 'crosspost' && resolvedClientId !== `shared:${resolvedProject}`) {
-      try {
-        const crosspostPayload = {
-          id: crypto.randomUUID(),
-          agent,
-          role,
-          text: text.trim(),
-          source: 'crosspost',
-          client_id: `shared:${resolvedProject}`,
-          project: resolvedProject,
-          ...(sender_role ? { sender_role } : {}),
-          ...(world_id ? { world_id } : {}),
-          ...(user_id ? { user_id } : {}),
-          ...(user_name ? { user_name } : {}),
-          ...(attachment_url ? { attachment_url } : {}),
-          ...(file_mime_type ? { file_mime_type } : {}),
-          ...(file_size != null ? { file_size } : {}),
-        }
-        await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-          method: 'POST',
-          headers: supabaseHeaders(),
-          body: JSON.stringify(crosspostPayload),
-        })
-      } catch (_) { /* cross-post is best-effort */ }
+    // Single source-of-truth writer. Idempotent by (source_message_id, project)
+    // so retries/reruns don't double-insert. See api/_lib/crosspost.js.
+    if (resolvedProject) {
+      await crossPostToProjectThread({
+        supabaseUrl: SUPABASE_URL,
+        headers: supabaseHeaders(),
+        sourceMessage: insertedRow,
+        project: resolvedProject,
+      })
     }
 
-    return res.status(200).json({ ok: true, message: inserted[0] || payload })
+    return res.status(200).json({ ok: true, message: insertedRow })
   }
 
   // ---- DELETE: clear all messages for a client_id (world switch fresh-start) ------

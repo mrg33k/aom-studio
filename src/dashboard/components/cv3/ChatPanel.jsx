@@ -106,9 +106,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     return projects.find(p => String(p.id) === String(projectId)) || null
   }, [projectId, projects, inlineProject])
 
-  const projectsRef = useRef(projects)
-  useEffect(() => { projectsRef.current = projects }, [projects])
-
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
 
   // ── Hooks: prefs, conversation list, messages, bridge stream ──────────────
@@ -130,7 +127,6 @@ export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, i
     selectedProject,
     worldId,
     currentUser,
-    projectsRef,
   })
 
   const bridge = useBridgeStream({ setMessages: msgs.setMessages })
