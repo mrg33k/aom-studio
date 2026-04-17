@@ -1,33 +1,29 @@
 // useTasksPanel -- scoped hook owning TasksPanel's internal state + derivations.
-// Introduced in R3a. Cross-cutting inputs (currentUser, worldId, task lifecycle
-// callbacks, chat navigation callbacks) still flow in from CornerV3 as props
-// and are returned through the same context object so subcomponents can read
-// everything via useTasksPanelCtx().
+// Introduced in R3a. R3d (Apr 17, 2026): cross-cutting inputs (currentUser,
+// worldId, task pipes, chat-nav callbacks) now come from the top-level
+// CornerContext (auth/data/nav slices) instead of props; the shell calls
+// useTasksPanel() with no arguments and the hook resolves everything via
+// useCornerAuth / useCornerData / useCornerNav.
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 import { createTaskWithRex } from '../../../lib/rexTaskClient.js'
 import { getClientId } from '../../../lib/clientConfig.js'
 import { useProjects } from '../../../hooks/useProjects'
+import { useCornerAuth, useCornerData, useCornerNav } from '../../../CornerContext.jsx'
 
 const snippetOfTitle = (s, n = 90) => {
   const t = String(s || '').replace(/\s+/g, ' ').trim()
   return t.length > n ? t.slice(0, n - 1) + '…' : t
 }
 
-export function useTasksPanel({
-  queued,
-  rightNow,
-  waiting,
-  done,
-  worldId,
-  refreshTasks,
-  addOptimisticTask,
-  showToast,
-  currentUser,
-  setActiveTab,
-  setActiveConversation,
-  setPrefillMessage,
-}) {
+export function useTasksPanel() {
+  const { currentUser, worldId, showToast } = useCornerAuth()
+  const { queued, rightNow, waiting, done, refreshTasks, addOptimisticTask } = useCornerData()
+  const {
+    setTab: setActiveTab,
+    handleSelectProject: setActiveConversation,
+    setPrefillMessage,
+  } = useCornerNav()
   // ── Filter + project pill state ────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)

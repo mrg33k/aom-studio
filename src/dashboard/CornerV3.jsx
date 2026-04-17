@@ -28,6 +28,11 @@ import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import VoiceChat from './components/VoiceChat.jsx'
+import {
+  CornerAuthProvider,
+  CornerDataProvider,
+  CornerNavProvider,
+} from './CornerContext.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -336,6 +341,30 @@ export default function CornerV3() {
   const ROW1_H = 44
   const ROW2_H = 36
   const NAV_H  = ROW1_H + ROW2_H
+
+  // ── Memoized provider values for CornerContext ───────────────────────────
+  // Sliced by update cadence so consumers don't re-render on unrelated changes.
+  // Auth: stable across the session (login + world switch). Data: realtime
+  // pipes. Nav: per-click selection + composer prefill.
+  const authValue = useMemo(() => ({
+    currentUser, setCurrentUser,
+    worldId,
+    showToast,
+  }), [currentUser, worldId, showToast])
+
+  const dataValue = useMemo(() => ({
+    agents, inboxItems, projectRooms,
+    queued, rightNow, waiting, done, allTasks,
+    refreshTasks, addOptimisticTask,
+  }), [agents, inboxItems, projectRooms, queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask])
+
+  const navValue = useMemo(() => ({
+    tab, setTab, handleTabChange,
+    selectedAgent, conversationTarget,
+    handleSelectAgent, handleSelectProject, handleBackFromConversation,
+    prefillMessage, setPrefillMessage,
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage])
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Wait for auth to resolve AND world to be set before rendering
@@ -356,6 +385,9 @@ export default function CornerV3() {
   }
 
   return (
+    <CornerAuthProvider value={authValue}>
+      <CornerDataProvider value={dataValue}>
+        <CornerNavProvider value={navValue}>
     <div style={{
       width: '100%',
       height: '100dvh',
@@ -459,8 +491,8 @@ export default function CornerV3() {
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'tasks' && <TasksPanel queued={queued} rightNow={rightNow} waiting={waiting} done={done} worldId={worldId} refreshTasks={refreshTasks} addOptimisticTask={addOptimisticTask} showToast={showToast} currentUser={currentUser} setActiveTab={setTab} setActiveConversation={handleSelectProject} setPrefillMessage={setPrefillMessage} />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} agents={agents} inboxItems={inboxItems} worldId={worldId} projectRooms={projectRooms} initialAgent={selectedAgent} onSelectAgent={handleSelectAgent} onSelectProject={handleSelectProject} onBack={handleBackFromConversation} currentUser={currentUser} allTasks={allTasks} prefillMessage={prefillMessage} setPrefillMessage={setPrefillMessage} />}
+        {tab === 'tasks' && <TasksPanel />}
+        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
       </div>
 
       {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
@@ -688,5 +720,8 @@ export default function CornerV3() {
       />
 
     </div>
+        </CornerNavProvider>
+      </CornerDataProvider>
+    </CornerAuthProvider>
   )
 }

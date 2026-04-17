@@ -9,14 +9,16 @@
 // three child views in nested Providers. Child views read via useChatXxx()
 // hooks — they receive no chat props.
 //
-// Cross-cutting props from CornerV3 (agents, inboxItems, worldId,
-// projectRooms, currentUser, allTasks, onSelectAgent/Project, onBack,
-// prefillMessage, setPrefillMessage) still arrive as plain props. R3d
-// collapses CornerV3's builder.
+// R3d (Apr 17, 2026): cross-cutting state (auth/world/data/nav) now flows
+// in via the top-level CornerContext (see src/dashboard/CornerContext.jsx)
+// instead of plain props. ChatPanel takes zero cross-cutting props — it
+// reads useCornerAuth/Data/Nav at the top and feeds the values into the
+// scoped hooks + memoized provider values exactly as before.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useProjects } from '../../hooks/useProjects'
 import { formatRelativeTime } from '../../timeUtils'
+import { useCornerAuth, useCornerData, useCornerNav } from '../../CornerContext.jsx'
 import ProjectChatView from './ProjectChatView.jsx'
 import ConversationsView from './ConversationsView.jsx'
 import ThreadView from './ThreadView.jsx'
@@ -45,7 +47,17 @@ import {
   ChatPrefsProvider,
 } from './chat/ChatPanelContext.jsx'
 
-export default function ChatPanel({ agents, inboxItems, worldId, projectRooms, initialAgent, onSelectAgent, onSelectProject, onBack, currentUser, allTasks = [], prefillMessage, setPrefillMessage }) {
+export default function ChatPanel() {
+  const { currentUser, worldId } = useCornerAuth()
+  const { agents, inboxItems, projectRooms, allTasks = [] } = useCornerData()
+  const {
+    selectedAgent: initialAgent,
+    handleSelectAgent: onSelectAgent,
+    handleSelectProject: onSelectProject,
+    handleBackFromConversation: onBack,
+    prefillMessage,
+    setPrefillMessage,
+  } = useCornerNav()
   const { projectId } = useParams()
   const navigate = useNavigate()
 

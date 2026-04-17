@@ -5,7 +5,9 @@
 // R2a (Apr 16, 2026): split the 2774 LOC component into shell + ./tasks/ pieces.
 // R3a (Apr 17, 2026): moved state routing into useTasksPanel + TasksPanelContext.
 // Subcomponents now read via useTasksPanelCtx() instead of being prop-drilled.
-// Cross-cutting props from CornerV3 still flow in here unchanged (R3d handles them).
+// R3d (Apr 17, 2026): cross-cutting state (currentUser, worldId, task pipes,
+// chat-nav callbacks) now flows in via CornerContext, not props. The shell
+// takes zero props -- useTasksPanel reads CornerAuth/Data/Nav internally.
 import { C } from '../../lib/cv3Colors.js'
 import { TaskContextMenu } from './ContextMenu.jsx'
 
@@ -21,8 +23,8 @@ import CreateProjectModal from './tasks/CreateProjectModal.jsx'
 import { TasksPanelProvider, useTasksPanelCtx } from './tasks/TasksPanelContext.jsx'
 import { useTasksPanel } from './tasks/useTasksPanel.js'
 
-export default function TasksPanel(props) {
-  const ctx = useTasksPanel(props)
+export default function TasksPanel() {
+  const ctx = useTasksPanel()
   return (
     <TasksPanelProvider value={ctx}>
       <TasksPanelBody />
