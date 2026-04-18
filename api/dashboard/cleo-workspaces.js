@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
   try {
     if (slug) {
-      const url = `${SUPABASE_URL}/rest/v1/events?type=eq.video_workspace&payload->>slug=eq.${encodeURIComponent(slug)}&order=created_at.desc&limit=1`
+      const url = `${SUPABASE_URL}/rest/v1/events?event_type=eq.video_workspace&payload->>slug=eq.${encodeURIComponent(slug)}&order=timestamp.desc&limit=1`
       const r = await fetch(url, { headers: dbHeaders() })
       if (!r.ok) {
         const text = await r.text()
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     }
 
     // List: fetch latest 500 events, group by slug, keep latest per slug
-    const url = `${SUPABASE_URL}/rest/v1/events?type=eq.video_workspace&order=created_at.desc&limit=500`
+    const url = `${SUPABASE_URL}/rest/v1/events?event_type=eq.video_workspace&order=timestamp.desc&limit=500`
     const r = await fetch(url, { headers: dbHeaders() })
     if (!r.ok) {
       const text = await r.text()
