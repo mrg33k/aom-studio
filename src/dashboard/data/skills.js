@@ -21,6 +21,10 @@ const SKILLS = [
   { name: 'Storyboard', trigger: '/storyboard', description: 'Generate visual storyboard frames from script', category: 'Video' },
   { name: 'Butter Method', trigger: '/butter-method', description: 'AI assistant editor: picks clips, builds timeline', category: 'Video' },
   { name: 'Watch and Learn', trigger: '/watch-and-learn', description: 'Reference-based editing: analyze, plan, push to Resolve', category: 'Video' },
+  { name: 'Workspace Init', trigger: '/video-workspace-init', description: 'Scaffold a shoot workspace: source/bins/sequences + BRIEF.md + PHONEBOOK.md', category: 'Video' },
+  { name: 'Transcript Tools', trigger: '/video-transcript-tools', description: 'Work with transcript JSON: jq patterns, word-boundary verification', category: 'Video' },
+  { name: 'Proxy Create', trigger: '/video-proxy-create', description: 'Create H.264 proxies from heavy source (MXF/BRAW/R3D), multi-channel audio', category: 'Video' },
+  { name: 'Ad Build', trigger: '/video-ad-build', description: 'Short-form ad build: Hook/Body/CTA, one angle per ad, brand isolation', category: 'Video' },
 
   // Audio
   { name: 'ElevenLabs Voice', trigger: '/elevenlabs-voice', description: 'Generate voiceover from script', category: 'Audio' },
