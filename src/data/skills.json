@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-16T16:14:38.440Z",
+  "generatedAt": "2026-04-18T00:13:59.856Z",
   "source": ".claude/skills/INDEX.md",
   "skills": [
     {
@@ -145,7 +145,35 @@
     {
       "name": "/video-edit-patterns",
       "alias": "/edit-patterns",
-      "description": "Analyze and apply edit patterns",
+      "description": "Core editing rules (framing, cuts, continuity) + pacing rubric extraction",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-transcript-tools",
+      "alias": null,
+      "description": "Work with transcript JSON (jq patterns, word-boundary verification)",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-proxy-create",
+      "alias": null,
+      "description": "Create H.264 proxies from heavy source (MXF/BRAW/R3D). Multi-channel audio. Explicit only.",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-ad-build",
+      "alias": null,
+      "description": "Short-form ads: Hook/Body/CTA, one angle per ad, brand isolation, UGC verification",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-workspace-init",
+      "alias": null,
+      "description": "Scaffold a shoot workspace: source/bins/sequences/renders + BRIEF.md + PHONEBOOK.md",
       "category": "video",
       "categoryLabel": "Video / Content Production"
     },
@@ -300,6 +328,34 @@
       "name": "/brand-thumbnail",
       "alias": "/thumbnail",
       "description": "Generate social thumbnail from topic",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-identity",
+      "alias": null,
+      "description": "Build full brand identity from scratch (logo, colors, typography, design system)",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-social-kit",
+      "alias": null,
+      "description": "Build social template kit (9:16, 1:1, 16:9, lower thirds)",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-guidelines",
+      "alias": null,
+      "description": "Generate full brand guidelines page with usage rules and specimens",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/brand-logo-explore",
+      "alias": null,
+      "description": "Generate multiple logo directions with live exploration page",
       "category": "brand",
       "categoryLabel": "Brand / Design"
     },
@@ -720,6 +776,13 @@
       "name": "/sys-chrome-scrape",
       "alias": "/chrome-scrape",
       "description": "CDP browser automation",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/sys-todos",
+      "alias": null,
+      "description": "Turn a list of items into tracked rounds (investigate > fix > verify per item)",
       "category": "sys",
       "categoryLabel": "System / Infrastructure"
     },
