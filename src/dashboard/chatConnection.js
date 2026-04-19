@@ -16,109 +16,6 @@ export const V2_CHAT_ENABLED = typeof import.meta !== 'undefined'
 const IS_LOCAL = typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-// SSE Connection (fallback, current production path)
-class SSEConnection {
-  constructor(onMessage, onDone, onError) {
-    this.onMessage = onMessage
-    this.onDone = onDone
-    this.onError = onError
-    this.abortController = null
-  }
-
-  async send({ slug, message, history }) {
-    this.abortController = new AbortController()
-
-    // Detect Safari: fetch ReadableStream doesn't support incremental reads
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-
-    try {
-      const res = await fetch('/api/dashboard/haiku-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(isSafari ? { 'X-No-Stream': '1' } : {}),
-        },
-        body: JSON.stringify({ slug, message, history }),
-        signal: this.abortController.signal,
-      })
-
-      const contentType = res.headers.get('content-type') || ''
-
-      if (contentType.includes('text/event-stream') && !isSafari) {
-        // Chrome/Firefox: stream chunks incrementally
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.type === 'text') {
-                this.onMessage(data.text)
-              } else if (data.type === 'done') {
-                this.onDone()
-              } else if (data.type === 'error') {
-                this.onError(data.error)
-              }
-            } catch {}
-          }
-        }
-      } else if (contentType.includes('text/event-stream') && isSafari) {
-        // Safari: read the full buffered response then parse all events at once
-        const text = await res.text()
-        const lines = text.split('\n')
-        let fullText = ''
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const data = JSON.parse(line.slice(6))
-            if (data.type === 'text') {
-              fullText += data.text
-            } else if (data.type === 'error') {
-              this.onError(data.error)
-              return
-            }
-          } catch {}
-        }
-
-        if (fullText) {
-          this.onMessage(fullText)
-          this.onDone()
-        }
-      } else {
-        const data = await res.json()
-        if (data.reply) {
-          this.onMessage(data.reply)
-          this.onDone()
-        } else if (data.error) {
-          this.onError(data.error)
-        }
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        this.onError(err.message)
-      }
-    }
-  }
-
-  disconnect() {
-    if (this.abortController) {
-      this.abortController.abort()
-      this.abortController = null
-    }
-  }
-}
-
 // WebSocket Connection (C3 primary path)
 class WebSocketConnection {
   constructor(onMessage, onDone, onError) {
@@ -175,6 +72,120 @@ class WebSocketConnection {
     if (this.ws) {
       this.ws.close()
       this.ws = null
+    }
+  }
+}
+
+// Bridge Connection (direct to super agent tmux via local SSE bridge)
+// send(): POSTs to chat-bridge, then opens EventSource for SSE streaming
+// Falls back to Supabase if bridge is unreachable
+export class BridgeConnection {
+  constructor(onMessage, onDone, onError, onTyping) {
+    this.onMessage = onMessage
+    this.onDone = onDone
+    this.onError = onError
+    this.onTyping = onTyping || (() => {})
+    this.eventSource = null
+    this.abortController = null
+  }
+
+  async send({ slug, message, room, clientId, project, userId, userName }) {
+    this.disconnect()
+
+    const resolvedRoom = room || (project ? `project:${project}` : slug)
+
+    try {
+      const res = await fetch('/api/dashboard/chat-bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: slug,
+          message,
+          room: resolvedRoom,
+          project: project || '',
+          client_id: clientId || 'aom',
+          user_id: userId || '',
+          user_name: userName || '',
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.fallback) {
+        // Bridge unreachable -- message already written to Supabase.
+        // Response will arrive via Supabase Realtime (existing subscription in ChatPanel).
+        // Signal done so the UI doesn't hang waiting for bridge stream.
+        this.onDone()
+        return
+      }
+
+      // Bridge is up -- open SSE stream for response
+      const messageId = data.messageId
+      if (!messageId) {
+        this.onDone()
+        return
+      }
+
+      this.abortController = new AbortController()
+
+      const streamRes = await fetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
+        signal: this.abortController.signal,
+      })
+
+      if (!streamRes.ok || !streamRes.body) {
+        this.onDone()
+        return
+      }
+
+      const reader = streamRes.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const event = JSON.parse(line.slice(6))
+            if (event.type === 'chunk' && event.text) {
+              this.onMessage(event.text)
+            } else if (event.type === 'typing') {
+              this.onTyping()
+            } else if (event.type === 'done') {
+              this.onDone()
+              return
+            } else if (event.type === 'error') {
+              this.onError(event.error || 'bridge stream error')
+              return
+            } else if (event.type === 'fallback') {
+              // Bridge gave up, response will come via Supabase Realtime
+              this.onDone()
+              return
+            }
+          } catch {}
+        }
+      }
+
+      // Stream ended without explicit done event
+      this.onDone()
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        // Bridge failed -- message still persisted to Supabase, response arrives via Realtime
+        this.onDone()
+      }
+    }
+  }
+
+  disconnect() {
+    if (this.abortController) {
+      this.abortController.abort()
+      this.abortController = null
     }
   }
 }
@@ -242,16 +253,26 @@ export class SupabaseConnection {
   }
 }
 
+// Bridge feature flag: enabled by default, disable with VITE_BRIDGE_ENABLED=false
+const BRIDGE_ENABLED = typeof import.meta !== 'undefined'
+  ? (import.meta.env?.VITE_BRIDGE_ENABLED !== 'false')
+  : true
+
 // Factory: returns the right connection based on config
-// Priority: V2 (Supabase) > WebSocket (local) > SSE (default)
-export function createChatConnection(onMessage, onDone, onError, supabaseClient) {
+// Priority: Bridge (direct to tmux) > V2 (Supabase) > WebSocket (local)
+// Bridge always writes to Supabase too, so Realtime subscriptions still work as backup receiver
+export function createChatConnection(onMessage, onDone, onError, supabaseClient, onTyping) {
+  if (BRIDGE_ENABLED) {
+    return new BridgeConnection(onMessage, onDone, onError, onTyping)
+  }
   if (V2_CHAT_ENABLED && supabaseClient) {
     return new SupabaseConnection(onMessage, onDone, onError, supabaseClient)
   }
   if (WS_ENABLED && IS_LOCAL) {
     return new WebSocketConnection(onMessage, onDone, onError)
   }
-  return new SSEConnection(onMessage, onDone, onError)
+  // Bridge is enabled by default; if all flags are off, fall through to Supabase direct
+  return new SupabaseConnection(onMessage, onDone, onError, supabaseClient)
 }
 
-export const CONNECTION_TYPE = V2_CHAT_ENABLED ? 'supabase-v2' : (WS_ENABLED && IS_LOCAL) ? 'websocket' : 'sse'
+export const CONNECTION_TYPE = BRIDGE_ENABLED ? 'bridge' : V2_CHAT_ENABLED ? 'supabase-v2' : (WS_ENABLED && IS_LOCAL) ? 'websocket' : 'supabase-v2'

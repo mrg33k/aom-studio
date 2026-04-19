@@ -102,6 +102,8 @@ export default function CornerV3() {
   const [rootVoiceMuted, setRootVoiceMuted]   = useState(false)
   const [rootVoiceTranscript, setRootVoiceTranscript] = useState('')
   const rootVoiceChatRef = useRef(null)
+  // Wired by ChatPanel to sendAgentText so voice-end summary reaches the agent thread.
+  const rootVoiceSummaryRef = useRef(null)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
   const [toast, setToast] = useState({ visible: false, message: '' })
   const showToast = useCallback((message) => setToast({ visible: true, message }), [])
@@ -140,7 +142,7 @@ export default function CornerV3() {
   }), [currentUser?.id])
 
   // Fetch projects at the top level so we can derive shared slugs for useTasks
-  const { projects: topLevelProjects } = useProjects()
+  const { projects: topLevelProjects } = useProjects(worldId)
   const sharedSlugs = useMemo(() =>
     (topLevelProjects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
     [topLevelProjects]
@@ -271,12 +273,18 @@ export default function CornerV3() {
   const handleEnterWorld = useCallback((world) => {
     setWorldOverride(world.world)
     setWorldId(world.world)
+    setSelectedAgent(null)
+    setConversationTarget(null)
+    prevDoneIdsRef.current = null
   }, [])
 
   const handleReturnToMyWorld = useCallback(() => {
     setWorldOverride(null)
     const myWorld = getUserWorld()
     setWorldId(myWorld)
+    setSelectedAgent(null)
+    setConversationTarget(null)
+    prevDoneIdsRef.current = null
   }, [])
 
   // ── Input bar handlers ────────────────────────────────────────────────────
@@ -363,7 +371,8 @@ export default function CornerV3() {
     selectedAgent, conversationTarget,
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage])
+    rootVoiceSummaryRef,
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, rootVoiceSummaryRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -451,15 +460,16 @@ export default function CornerV3() {
         }}>
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 2 }}>
-            {conversationTarget && (
-              <Tab
-                label="Chat"
-                icon={<ChatIcon color={tab === 'chat' && conversationTarget ? C.text : C.muted} />}
-                active={tab === 'chat' && !!conversationTarget}
-                onClick={() => { setTab('chat'); setUnreadChat(0) }}
-                badge={<Badge count={unreadChat} />}
-              />
-            )}
+            <Tab
+              label={conversationTarget ? 'Chat' : 'Home'}
+              icon={conversationTarget
+                ? <ChatIcon color={tab === 'chat' ? C.text : C.muted} />
+                : <HomeIcon color={tab === 'chat' ? C.text : C.muted} />
+              }
+              active={tab === 'chat'}
+              onClick={() => handleTabChange('chat')}
+              badge={<Badge count={unreadChat} />}
+            />
             <Tab
               label="Tasks"
               icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
@@ -518,12 +528,11 @@ export default function CornerV3() {
                   const rex = agents?.find(a => a.slug === 'rex') || agents?.[0]
                   if (rex) {
                     setSelectedAgent(rex)
-                    setSelectedProject(null)
                     setConversationTarget({ name: rex.name, type: 'agent' })
                     setTab('chat')
                     setTimeout(() => {
-                      if (sendAgentTextRef.current) {
-                        sendAgentTextRef.current('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
+                      if (rootVoiceSummaryRef.current) {
+                        rootVoiceSummaryRef.current('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
                       }
                     }, 2000)
                   }

@@ -57,6 +57,7 @@ export default function ChatPanel() {
     handleBackFromConversation: onBack,
     prefillMessage,
     setPrefillMessage,
+    rootVoiceSummaryRef,
   } = useCornerNav()
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -192,6 +193,8 @@ export default function ChatPanel() {
   // (voice transcript routing).
   useEffect(() => { sendAgentTextRef.current = send.sendAgentText }, [send.sendAgentText])
   useEffect(() => { sendProjectTextRef.current = send.sendProjectText }, [send.sendProjectText])
+  // Expose sendAgentText to CornerV3's root-voice summary dispatch via the shared ref.
+  useEffect(() => { if (rootVoiceSummaryRef) rootVoiceSummaryRef.current = send.sendAgentText }, [send.sendAgentText, rootVoiceSummaryRef])
 
   const recording = useChatRecording({
     selectedAgent,

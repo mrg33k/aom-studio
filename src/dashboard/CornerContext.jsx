@@ -50,6 +50,7 @@ export const useCornerData = data.useSlice
 //   selectedAgent, conversationTarget
 //   handleSelectAgent, handleSelectProject, handleBackFromConversation
 //   prefillMessage, setPrefillMessage
+//   rootVoiceSummaryRef -- wired by ChatPanel to sendAgentText; CornerV3 root-voice writes here on session end
 const nav = makeSlice('useCornerNav')
 export const CornerNavProvider = nav.Provider
 export const useCornerNav = nav.useSlice
