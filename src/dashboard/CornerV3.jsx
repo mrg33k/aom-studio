@@ -18,7 +18,6 @@ import {
 } from './lib/clientConfig.js'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
-import { useProjects } from './hooks/useProjects'
 import { C } from './lib/cv3Colors.js'
 import { AomLogo } from './components/cv3/icons.jsx'
 import { Badge, Tab, BellIcon } from './components/cv3/shared.jsx'
@@ -141,13 +140,7 @@ export default function CornerV3() {
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
   }), [currentUser?.id])
 
-  // Fetch projects at the top level so we can derive shared slugs for useTasks
-  const { projects: topLevelProjects } = useProjects(worldId)
-  const sharedSlugs = useMemo(() =>
-    (topLevelProjects || []).filter(p => p.isShared && p.slug).map(p => p.slug),
-    [topLevelProjects]
-  )
-  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks, addOptimisticTask } = useTasks(worldId, sharedSlugs)
+  const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks, addOptimisticTask } = useTasks(worldId)
 
   // ── Toast: detect newly completed tasks ──────────────────────────────────────
   useEffect(() => {
