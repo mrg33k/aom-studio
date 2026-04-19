@@ -13,6 +13,7 @@ import { TaskContextMenu } from './ContextMenu.jsx'
 
 import { AllFilesSection, ProjectFilesSection } from './tasks/FilesSection.jsx'
 import ProjectBriefingCard from './tasks/ProjectBriefingCard.jsx'
+import ProjectCardsList from './tasks/ProjectCardsList.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
 import FailedTasksSection from './tasks/FailedTasksSection.jsx'
@@ -294,6 +295,7 @@ function TasksPanelBody() {
 
         {/* Project briefing card */}
         {activeProject && activeProject !== 'all' && <ProjectBriefingCard />}
+        {(!activeProject || activeProject === 'all') && <ProjectCardsList />}
 
         {/* ── Files sections ───────────────────────────────────── */}
         {activeProject && activeProject !== 'all' && <ProjectFilesSection />}
