@@ -95,6 +95,9 @@ export class BridgeConnection {
     const resolvedRoom = room || (project ? `project:${project}` : slug)
 
     try {
+      // Bound the initial bridge call so a slow bridge doesn't leave the UI
+      // spinning. If it times out, the catch below calls onDone() and the
+      // response arrives via the Supabase Realtime subscription in ChatPanel.
       const res = await fetch('/api/dashboard/chat-bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,6 +110,7 @@ export class BridgeConnection {
           user_id: userId || '',
           user_name: userName || '',
         }),
+        signal: AbortSignal.timeout(15000),
       })
 
       const data = await res.json()

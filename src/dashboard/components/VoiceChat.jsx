@@ -700,17 +700,39 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                   if (!projSlug) {
                     result = { error: 'update_context only works in project chats' }
                   } else {
-                    const ragResp = await fetch(`${window.location.protocol}//${window.location.host}/api/dashboard/voice-context-update`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ slug: projSlug, section: args.section, content: args.content, action: args.action || 'append' }),
-                    }).catch(() => null)
+                    let ragResp = null
+                    let fetchErr = null
+                    try {
+                      ragResp = await fetch(`${window.location.protocol}//${window.location.host}/api/dashboard/voice-context-update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ slug: projSlug, section: args.section, content: args.content, action: args.action || 'append' }),
+                      })
+                    } catch (e) {
+                      fetchErr = e
+                    }
 
                     if (ragResp?.ok) {
                       result = { updated: true, section: args.section, message: `Context updated: ${args.section}` }
                       addSystemMessage(`Updated project context: ${args.section}`)
                     } else {
-                      result = { updated: false, error: 'Failed to update context' }
+                      // Surface the real failure reason (network / permission /
+                      // RAG down / 5xx) instead of a generic toast.
+                      let reason = ''
+                      if (fetchErr) {
+                        reason = `Network error: ${fetchErr.message || fetchErr.name || 'fetch failed'}`
+                      } else if (ragResp) {
+                        try {
+                          const body = await ragResp.json()
+                          reason = body?.error || body?.message || `HTTP ${ragResp.status}`
+                        } catch {
+                          reason = `HTTP ${ragResp.status}`
+                        }
+                      } else {
+                        reason = 'No response from voice-context-update endpoint'
+                      }
+                      result = { updated: false, error: `Failed to update context: ${reason}` }
+                      addSystemMessage(`Context update failed: ${reason}`)
                     }
                   }
                 } catch (err) {

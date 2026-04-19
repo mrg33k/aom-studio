@@ -353,6 +353,12 @@ export default function CornerV3() {
   // Sliced by update cadence so consumers don't re-render on unrelated changes.
   // Auth: stable across the session (login + world switch). Data: realtime
   // pipes. Nav: per-click selection + composer prefill.
+  //
+  // R4d audit (2026-04-19): verified slices are truly independent. All
+  // non-state deps are stable: showToast is useCallback([]), handle*/refresh*/
+  // addOptimisticTask are useCallback, *Ref values are useRef. So auth value
+  // identity only bumps on login/world switch, data only on pipe updates, nav
+  // only on nav clicks / prefill. No cascades observed.
   const authValue = useMemo(() => ({
     currentUser, setCurrentUser,
     worldId,

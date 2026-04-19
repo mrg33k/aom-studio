@@ -30,8 +30,32 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     }
 
-    return res.status(ragResp.status).json({ error: `RAG server returned ${ragResp.status}` });
+    // Preserve the RAG server's own error text so the client can surface the
+    // real reason (permission denied, invalid section, etc.) instead of a
+    // generic status code.
+    let detail = '';
+    try {
+      const body = await ragResp.text();
+      if (body) {
+        try {
+          const parsed = JSON.parse(body);
+          detail = parsed.error || parsed.message || body;
+        } catch {
+          detail = body;
+        }
+      }
+    } catch {}
+
+    return res.status(ragResp.status).json({
+      error: `RAG server returned ${ragResp.status}${detail ? `: ${detail}` : ''}`,
+    });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    // Classify fetch-level failures (timeout, DNS, refused) so the client
+    // toast tells the user what went wrong rather than just "Failed".
+    const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
+    const reason = isTimeout
+      ? `RAG server did not respond within 5s (${err.name})`
+      : err.message || String(err);
+    return res.status(502).json({ error: reason });
   }
 }
