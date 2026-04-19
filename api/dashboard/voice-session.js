@@ -297,7 +297,7 @@ ${BASE_INSTRUCTION}`;
       outputAudioTranscription: {},
       tools: [{
         functionDeclarations: [
-          {
+          ...(agentSlug.startsWith('project:') ? [{
             name: 'update_context',
             description: 'Update the project context file with new information learned during conversation. Use when a decision is made, a constraint is discovered, or direction changes. This writes directly to the project CONTEXT.md -- the source of truth that all future conversations read.',
             parameters: {
@@ -309,7 +309,7 @@ ${BASE_INSTRUCTION}`;
               },
               required: ['section', 'content'],
             },
-          },
+          }] : []),
         ],
       }],
     },

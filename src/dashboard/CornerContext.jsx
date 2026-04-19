@@ -51,6 +51,7 @@ export const useCornerData = data.useSlice
 //   handleSelectAgent, handleSelectProject, handleBackFromConversation
 //   prefillMessage, setPrefillMessage
 //   rootVoiceSummaryRef -- wired by ChatPanel to sendAgentText; CornerV3 root-voice writes here on session end
+//   stageFilesRef -- wired by ChatPanel to useChatAttachments.stageFiles; home-tab Attach button writes files here
 const nav = makeSlice('useCornerNav')
 export const CornerNavProvider = nav.Provider
 export const useCornerNav = nav.useSlice

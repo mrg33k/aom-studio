@@ -9,6 +9,7 @@
 // All styling is inline -- no CSS modules.
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import skillsData from '../data/skills.json'
 import { supabase } from './lib/supabase.js'
 import {
   getClientId,
@@ -103,6 +104,11 @@ export default function CornerV3() {
   const rootVoiceChatRef = useRef(null)
   // Wired by ChatPanel to sendAgentText so voice-end summary reaches the agent thread.
   const rootVoiceSummaryRef = useRef(null)
+  // Attach: stageFilesRef is set by ChatPanel to its useChatAttachments.stageFiles;
+  // homeFileInputRef triggers the OS file picker from the home-tab toolbar.
+  const stageFilesRef = useRef(null)
+  const homeFileInputRef = useRef(null)
+  const [showCommandsModal, setShowCommandsModal] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
   const [toast, setToast] = useState({ visible: false, message: '' })
   const showToast = useCallback((message) => setToast({ visible: true, message }), [])
@@ -365,7 +371,8 @@ export default function CornerV3() {
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
     rootVoiceSummaryRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, rootVoiceSummaryRef])
+    stageFilesRef,
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, rootVoiceSummaryRef, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -647,26 +654,47 @@ export default function CornerV3() {
           />
           {/* Action buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Hidden file input for home-tab attach flow */}
+            <input
+              type="file"
+              multiple
+              ref={homeFileInputRef}
+              style={{ display: 'none' }}
+              onChange={e => {
+                if (e.target.files?.length) {
+                  stageFilesRef.current?.(e.target.files)
+                  setTab('chat')
+                  setUnreadChat(0)
+                }
+                e.target.value = ''
+              }}
+            />
             {/* Attach */}
-            <button title="Attach" style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'none', border: 'none',
-              color: C.muted, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
+            <button
+              title="Attach"
+              onClick={() => homeFileInputRef.current?.click()}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
               </svg>
             </button>
             {/* Commands */}
-            <button title="Commands" style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'none', border: 'none',
-              color: C.muted, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
+            <button
+              title="Commands"
+              onClick={() => setShowCommandsModal(true)}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
               </svg>
@@ -713,6 +741,85 @@ export default function CornerV3() {
           )}
         </div>
       </div>
+
+      {/* ── COMMANDS PALETTE MODAL ───────────────────────────────────────── */}
+      {showCommandsModal && (
+        <div
+          onClick={() => setShowCommandsModal(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(0,0,0,0.65)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            paddingBottom: 80,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 560,
+              background: C.s1,
+              border: '1px solid ' + C.border2,
+              borderRadius: 18,
+              boxShadow: '0 16px 64px rgba(0,0,0,0.6)',
+              overflow: 'hidden',
+              maxHeight: '60vh',
+              display: 'flex', flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 16px 10px',
+              borderBottom: '1px solid ' + C.border,
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+                Slash Commands
+              </span>
+              <button
+                onClick={() => setShowCommandsModal(false)}
+                style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
+              >×</button>
+            </div>
+            {/* List */}
+            <div style={{ overflowY: 'auto', padding: 6 }}>
+              {skillsData.skills.map(skill => (
+                <button
+                  key={skill.name}
+                  onClick={() => {
+                    setInputBarText(skill.name + ' ')
+                    setShowCommandsModal(false)
+                    handleInputBarFocus()
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', textAlign: 'left',
+                    padding: '8px 10px', borderRadius: 10,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.10)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                >
+                  <span style={{
+                    fontSize: 13, fontWeight: 600, color: C.accent2,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    flexShrink: 0, minWidth: 0,
+                  }}>{skill.name}</span>
+                  <span style={{
+                    fontSize: 11, color: C.text2,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    flex: 1,
+                  }}>{skill.description}</span>
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+                    textTransform: 'uppercase', color: C.muted, flexShrink: 0,
+                  }}>{skill.category}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── TOAST NOTIFICATION ────────────────────────────────────────────── */}
       <TaskCompletionToast
