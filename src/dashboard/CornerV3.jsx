@@ -19,6 +19,7 @@ import {
 } from './lib/clientConfig.js'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
+import useTelephone from './hooks/useTelephone'
 import { C } from './lib/cv3Colors.js'
 import { AomLogo } from './components/cv3/icons.jsx'
 import { Badge, Tab, BellIcon } from './components/cv3/shared.jsx'
@@ -27,7 +28,6 @@ import UserAvatar from './components/cv3/UserAvatar.jsx'
 import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
-import VoiceChat from './components/VoiceChat.jsx'
 import {
   CornerAuthProvider,
   CornerDataProvider,
@@ -97,13 +97,6 @@ export default function CornerV3() {
   const [inputBarText, setInputBarText] = useState('')
   const [inputBarSending, setInputBarSending] = useState(false)
   const [inputBarFocused, setInputBarFocused] = useState(false)
-  const [rootVoiceActive, setRootVoiceActive] = useState(false)
-  const [rootVoiceStatus, setRootVoiceStatus] = useState('idle')
-  const [rootVoiceMuted, setRootVoiceMuted]   = useState(false)
-  const [rootVoiceTranscript, setRootVoiceTranscript] = useState('')
-  const rootVoiceChatRef = useRef(null)
-  // Wired by ChatPanel to sendAgentText so voice-end summary reaches the agent thread.
-  const rootVoiceSummaryRef = useRef(null)
   // Attach: stageFilesRef is set by ChatPanel to its useChatAttachments.stageFiles;
   // homeFileInputRef triggers the OS file picker from the home-tab toolbar.
   const stageFilesRef = useRef(null)
@@ -168,6 +161,15 @@ export default function CornerV3() {
   }, [done])
   // useDataPipe provides agents (with realtime status), inboxItems, projectRooms (from agent_status)
   const { agents, inboxItems, projectRooms } = useDataPipe(null, worldId)
+
+  // Telephone mode (long-form record → transcribe → post to active super-agent).
+  // Lives at this level so recording survives Home/Tasks/Chat navigation.
+  const telephone = useTelephone({
+    worldId,
+    agents,
+    selectedAgent,
+    userIdentity: parentUserIdentity,
+  })
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
@@ -376,9 +378,8 @@ export default function CornerV3() {
     selectedAgent, conversationTarget,
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
-    rootVoiceSummaryRef,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, rootVoiceSummaryRef, stageFilesRef])
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -511,121 +512,65 @@ export default function CornerV3() {
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
       </div>
 
-      {/* ── ROOT VOICE MODE (replaces input bar when active on home/tasks tabs) */}
-      {rootVoiceActive && tab !== 'chat' && (
+      {/* ── TELEPHONE STATUS BAR (visible across all tabs while recording) ── */}
+      {(telephone.isRecording || telephone.isTranscribing || telephone.micError) && (
         <>
-          <style>{`@keyframes vw-root { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }`}</style>
-          {/* Hidden VoiceChat for audio logic */}
-          <div style={{ display: 'none' }}>
-            <VoiceChat
-              ref={rootVoiceChatRef}
-              agentSlug={(selectedAgent || agents?.find(a => a.slug === 'rex') || agents?.[0])?.slug || 'rex'}
-              agentColor={C.accent}
-              clientId={worldId}
-              autoStart={true}
-              onTranscript={(text) => setRootVoiceTranscript(text)}
-              onStatusChange={(s) => {
-                setRootVoiceStatus(s)
-                if (s === 'idle') {
-                  setRootVoiceActive(false)
-                  setRootVoiceMuted(false)
-                  setRootVoiceTranscript('')
-                  // Voice ended from root -- navigate to Rex and send summary request
-                  const rex = agents?.find(a => a.slug === 'rex') || agents?.[0]
-                  if (rex) {
-                    setSelectedAgent(rex)
-                    setConversationTarget({ name: rex.name, type: 'agent' })
-                    setTab('chat')
-                    setTimeout(() => {
-                      if (rootVoiceSummaryRef.current) {
-                        rootVoiceSummaryRef.current('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
-                      }
-                    }, 2000)
-                  }
-                }
-              }}
-            />
-          </div>
-          {/* Voice mode UI */}
+          <style>{`@keyframes tel-pulse { 0%,100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.25); } }`}</style>
           <div style={{
             flexShrink: 0,
-            padding: '14px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+            padding: '10px 16px',
             background: C.bg2,
             borderTop: '1px solid ' + C.border,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            justifyContent: 'center',
           }}>
-            {/* Waveform bars */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, height: 40, marginBottom: 8 }}>
-              {[
-                { h: 14, d: '0s' }, { h: 26, d: '.08s' }, { h: 38, d: '.16s' },
-                { h: 30, d: '.24s' }, { h: 18, d: '.32s' }, { h: 34, d: '.12s' },
-                { h: 22, d: '.20s' }, { h: 40, d: '.28s' }, { h: 16, d: '.36s' },
-              ].map((bar, i) => (
-                <div key={i} style={{
-                  width: 3, height: bar.h, borderRadius: 2,
-                  background: C.accent,
-                  animation: `vw-root 1s ease-in-out ${bar.d} infinite`,
+            {telephone.isRecording && (
+              <>
+                <span style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: C.red, flexShrink: 0,
+                  animation: 'tel-pulse 1.2s ease-in-out infinite',
                 }} />
-              ))}
-            </div>
-            {/* Status */}
-            <div style={{
-              textAlign: 'center', fontSize: 12, fontWeight: 600,
-              color: C.accent, fontFamily: "'JetBrains Mono', monospace",
-              marginBottom: 4,
-            }}>
-              {rootVoiceStatus === 'connecting' ? 'Connecting...'
-                : rootVoiceStatus === 'speaking' ? 'Speaking...'
-                : rootVoiceStatus === 'error' ? 'Error'
-                : 'Listening...'}
-            </div>
-            {/* Transcript */}
-            <div style={{
-              fontSize: 13, color: C.text2, textAlign: 'center',
-              minHeight: 18, padding: '0 20px',
-            }}>
-              {rootVoiceTranscript ? `"${rootVoiceTranscript}"` : ''}
-            </div>
-            {/* Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 10 }}>
-              {/* Mute */}
-              <button
-                onClick={() => { rootVoiceChatRef.current?.toggleMute(); setRootVoiceMuted(v => !v) }}
-                style={{
-                  width: 42, height: 42, borderRadius: '50%',
-                  border: '1px solid ' + C.border,
-                  background: rootVoiceMuted ? 'rgba(239,68,68,0.15)' : C.s2,
-                  color: rootVoiceMuted ? '#F87171' : C.muted,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 15, fontWeight: 700, transition: 'transform 0.15s',
-                }}
-              >M</button>
-              {/* End */}
-              <button
-                onClick={() => {
-                  rootVoiceChatRef.current?.stop()
-                  setRootVoiceActive(false)
-                  setRootVoiceMuted(false)
-                  setRootVoiceTranscript('')
-                }}
-                style={{
-                  width: 42, height: 42, borderRadius: '50%', border: 'none',
-                  background: C.red, color: '#fff',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 15, fontWeight: 700, transition: 'transform 0.15s',
-                }}
-              >&#x00D7;</button>
-            </div>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.text2, fontFamily: "'JetBrains Mono', monospace" }}>
+                  Telephone · {String(Math.floor(telephone.elapsed / 60)).padStart(2, '0')}:{String(telephone.elapsed % 60).padStart(2, '0')}
+                </span>
+                <button
+                  onClick={telephone.toggle}
+                  title="Stop recording"
+                  style={{
+                    marginLeft: 8,
+                    padding: '6px 14px', borderRadius: 14, border: 'none',
+                    background: C.red, color: '#fff',
+                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: "'Inter', sans-serif",
+                  }}>
+                  Stop
+                </button>
+              </>
+            )}
+            {!telephone.isRecording && telephone.isTranscribing && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.accent, fontFamily: "'JetBrains Mono', monospace" }}>
+                Transcribing…
+              </span>
+            )}
+            {!telephone.isRecording && !telephone.isTranscribing && telephone.micError && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#F87171', fontFamily: "'Inter', sans-serif" }}>
+                {telephone.micError}
+              </span>
+            )}
           </div>
         </>
       )}
 
-      {/* ── INPUT BAR (persistent -- hidden on chat tab or when root voice is active) */}
+      {/* ── INPUT BAR (persistent -- hidden on chat / tasks tabs) ────────── */}
       <div style={{
         flexShrink: 0,
         padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
         background: C.bg,
         borderTop: '1px solid ' + C.border,
-        display: (tab === 'chat' || tab === 'tasks' || rootVoiceActive) ? 'none' : undefined,
+        display: (tab === 'chat' || tab === 'tasks') ? 'none' : undefined,
       }}>
         <div style={{
           display: 'flex',
@@ -706,20 +651,25 @@ export default function CornerV3() {
               </svg>
             </button>
           </div>
-          {/* Mic (hidden when text present) */}
+          {/* Telephone (long-form record → transcribe → post to super-agent) */}
           {!inputBarText.trim() && (
-            <button title="Voice" onClick={() => setRootVoiceActive(true)} style={{
-              width: 42, height: 42, borderRadius: '50%',
-              background: C.accent, border: 'none',
-              color: '#000', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-              transition: 'transform 0.15s, box-shadow 0.2s',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <rect x="9" y="2" width="6" height="12" rx="3"/>
-                <path d="M5 10a7 7 0 0014 0"/>
-                <line x1="12" y1="19" x2="12" y2="22"/>
+            <button
+              title={telephone.isRecording ? 'Stop telephone recording' : 'Start telephone recording'}
+              onClick={telephone.toggle}
+              disabled={telephone.isTranscribing}
+              style={{
+                width: 42, height: 42, borderRadius: '50%',
+                background: telephone.isRecording ? C.red : C.accent,
+                border: 'none',
+                color: telephone.isRecording ? '#fff' : '#000',
+                cursor: telephone.isTranscribing ? 'default' : 'pointer',
+                opacity: telephone.isTranscribing ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'transform 0.15s, background 0.2s',
+              }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
               </svg>
             </button>
           )}

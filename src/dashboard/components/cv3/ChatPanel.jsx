@@ -57,7 +57,6 @@ export default function ChatPanel() {
     handleBackFromConversation: onBack,
     prefillMessage,
     setPrefillMessage,
-    rootVoiceSummaryRef,
     stageFilesRef,
   } = useCornerNav()
   const { projectId } = useParams()
@@ -194,8 +193,6 @@ export default function ChatPanel() {
   // (voice transcript routing).
   useEffect(() => { sendAgentTextRef.current = send.sendAgentText }, [send.sendAgentText])
   useEffect(() => { sendProjectTextRef.current = send.sendProjectText }, [send.sendProjectText])
-  // Expose sendAgentText to CornerV3's root-voice summary dispatch via the shared ref.
-  useEffect(() => { if (rootVoiceSummaryRef) rootVoiceSummaryRef.current = send.sendAgentText }, [send.sendAgentText, rootVoiceSummaryRef])
   // Expose stageFiles to the home-tab Attach button via CornerContext nav ref.
   useEffect(() => { if (stageFilesRef) stageFilesRef.current = attach.stageFiles }, [attach.stageFiles, stageFilesRef])
 
