@@ -75,6 +75,7 @@ const SKIP_PATTERNS = [
   'AGENT.md',
   'latest-result.md',
   'last-conversation.md',
+  'incoming-tasks.md',
   'CLAUDE.md',
   'MEMORY.md',
   'README.md',
