@@ -13,8 +13,46 @@
 // gated send refs.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { blobToBase64 } from '../components/cv3/shared.jsx'
+import { supabase } from '../lib/supabase'
 
 const TRANSCRIPT_PREFIX = '[telephone transcript] '
+const PHONE_AUDIO_BUCKET = 'phone-audio'
+
+async function uploadPhoneAudio(blob, worldId) {
+  if (!supabase) return null
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const path = `${worldId || 'default'}/${stamp}.webm`
+  try {
+    const { error } = await supabase.storage
+      .from(PHONE_AUDIO_BUCKET)
+      .upload(path, blob, { contentType: blob.type || 'audio/webm', upsert: false })
+    if (error) {
+      console.warn('[telephone] audio upload failed:', error.message)
+      return null
+    }
+    return `${PHONE_AUDIO_BUCKET}/${path}`
+  } catch (err) {
+    console.warn('[telephone] audio upload threw:', err)
+    return null
+  }
+}
+
+async function emitPhoneTranscriptEvent({ agentSlug, audioRef, transcriptText, worldId }) {
+  if (!supabase) return
+  try {
+    await supabase.from('events').insert({
+      agent: agentSlug || 'system',
+      event_type: 'phone_transcript',
+      payload: {
+        audio_ref: audioRef,
+        transcript_text: transcriptText,
+        client_id: worldId || 'default',
+      },
+    })
+  } catch (err) {
+    console.warn('[telephone] event emit failed:', err)
+  }
+}
 
 export default function useTelephone({ worldId, agents, selectedAgent, userIdentity }) {
   const mediaRecorderRef = useRef(null)
@@ -85,7 +123,10 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
         if (!blob.size) return
         setIsTranscribing(true)
         try {
-          const base64 = await blobToBase64(blob)
+          const [base64, audioRef] = await Promise.all([
+            blobToBase64(blob),
+            uploadPhoneAudio(blob, worldId),
+          ])
           const res = await fetch('/api/dashboard/v2-transcribe-audio', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -95,6 +136,12 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
           const data = await res.json()
           const text = (data.text || '').trim()
           if (text) {
+            await emitPhoneTranscriptEvent({
+              agentSlug: targetAgentRef.current?.slug,
+              audioRef,
+              transcriptText: text,
+              worldId,
+            })
             await postTranscript(text)
           } else {
             setMicError('No speech detected. Try again.')

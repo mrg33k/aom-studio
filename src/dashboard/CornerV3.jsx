@@ -654,6 +654,7 @@ export default function CornerV3() {
           {/* Telephone (long-form record → transcribe → post to super-agent) */}
           {!inputBarText.trim() && (
             <button
+              data-testid="phone-icon"
               title={telephone.isRecording ? 'Stop telephone recording' : 'Start telephone recording'}
               onClick={telephone.toggle}
               disabled={telephone.isTranscribing}
