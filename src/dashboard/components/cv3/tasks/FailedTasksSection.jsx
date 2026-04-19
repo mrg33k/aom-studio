@@ -23,6 +23,8 @@ export default function FailedTasksSection() {
     threadLoading,
     taskThread,
     handleRequeueFailedTask,
+    handleRetryFailedTask,
+    retryingTaskIds,
   } = useTasksPanelCtx()
 
   if (filteredFailed.length === 0) return null
@@ -57,6 +59,8 @@ export default function FailedTasksSection() {
       {filteredFailed.map((t) => {
         const qa = t.qa_score || t.qaScore
         const agent = t.agent_identity || t.agentIdentity
+        const failureReason = (t.error || t.metadata?.failure_reason || '').trim()
+        const isRetrying = retryingTaskIds instanceof Set && retryingTaskIds.has(t.id)
         return (
           <div
             key={t.id}
@@ -90,6 +94,24 @@ export default function FailedTasksSection() {
                 }}>
                   {t.title || t.text || 'Untitled task'}
                 </div>
+                {failureReason && (
+                  <div
+                    data-test-id="failed-task-reason"
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: '#FCA5A5',
+                      lineHeight: 1.4,
+                      marginTop: 4,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: expandedTask === t.id ? 'pre-wrap' : 'nowrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {failureReason}
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                   {agent && <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(240,244,255,0.25)' }}>{agent}</span>}
                   {qa && <span style={{ fontSize: 11, fontWeight: 700, color: LIFECYCLE.failed }}>QA {qa}/10</span>}
@@ -97,13 +119,26 @@ export default function FailedTasksSection() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                 <button
+                  data-test-id={`failed-task-retry-${t.id}`}
+                  disabled={isRetrying}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isRetrying) return
+                    handleRetryFailedTask(t)
+                  }}
+                  style={{ fontSize: 11, fontWeight: 700, color: isRetrying ? 'rgba(34,197,94,0.5)' : '#22C55E', cursor: isRetrying ? 'default' : 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
+                >
+                  {isRetrying ? 'Retrying…' : 'Retry'}
+                </button>
+                <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
+                <button
                   onClick={(e) => {
                     e.stopPropagation()
                     handleRequeueFailedTask(t)
                   }}
-                  style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
+                  style={{ fontSize: 11, fontWeight: 600, color: 'rgba(240,244,255,0.45)', cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
                 >
-                  Requeue
+                  In chat
                 </button>
                 <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
                 <button

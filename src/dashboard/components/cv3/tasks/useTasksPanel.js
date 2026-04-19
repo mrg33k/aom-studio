@@ -617,6 +617,31 @@ export function useTasksPanel() {
     setActiveTab('chat')
   }, [getTaskProject, showToast, setPrefillMessage, setActiveConversation, setActiveTab])
 
+  // R5b: one-click retry for failed tasks. POSTs to /api/dashboard/retry-task
+  // which inserts a NEW queued row inheriting title/body/model/project/agent
+  // from the failed row and links back via metadata.parent_id.
+  const [retryingTaskIds, setRetryingTaskIds] = useState(() => new Set())
+  const handleRetryFailedTask = useCallback(async (task) => {
+    if (!task?.id) return
+    setRetryingTaskIds(prev => { const next = new Set(prev); next.add(task.id); return next })
+    try {
+      const resp = await fetch('/api/dashboard/retry-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: task.id }),
+      })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok || data.error) throw new Error(data.error || `Retry failed (${resp.status})`)
+      if (showToast) showToast('Task re-queued')
+      if (typeof refreshTasks === 'function') refreshTasks()
+    } catch (err) {
+      console.error('[TasksPanel] retry error:', err)
+      if (showToast) showToast(err?.message || 'Could not retry task')
+    } finally {
+      setRetryingTaskIds(prev => { const next = new Set(prev); next.delete(task.id); return next })
+    }
+  }, [refreshTasks, showToast])
+
   const closeCreateProjectModal = useCallback(() => {
     setShowCreateProjectModal(false)
     setProjectName('')
@@ -690,6 +715,8 @@ export function useTasksPanel() {
     handleTaskResearch,
     handleTaskMoveTo,
     handleRequeueFailedTask,
+    handleRetryFailedTask,
+    retryingTaskIds,
 
     // Ctx toast
     ctxToast,
