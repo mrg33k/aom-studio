@@ -35,6 +35,7 @@ export default function AgentCard({ agent, lastMessage, unreadCount, onClick, is
   return (
     <div
       ref={cardRef}
+      data-testid={`agent-card-${agent.slug}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={(e) => {
@@ -162,12 +163,15 @@ export default function AgentCard({ agent, lastMessage, unreadCount, onClick, is
 
       {/* Right: status + unread count */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 3,
-          fontSize: 9, fontWeight: 600,
-          fontFamily: "'JetBrains Mono', monospace",
-          color: statusColor,
-        }}>
+        <div
+          data-testid="status-badge"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 3,
+            fontSize: 9, fontWeight: 600,
+            fontFamily: "'JetBrains Mono', monospace",
+            color: statusColor,
+          }}
+        >
           <div style={{
             width: 5, height: 5, borderRadius: '50%',
             background: statusColor,
