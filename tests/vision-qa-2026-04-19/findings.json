@@ -1,0 +1,62 @@
+[
+  {
+    "probe": 1,
+    "title": "EA 100% reliable to talk to (no silence)",
+    "severity": 5,
+    "pass_fail": "FAIL (3/3 silent)",
+    "detail": "3 messages to Elon via dashboard chat. Latencies (s): silent, silent, silent",
+    "data": [
+      {
+        "i": 1,
+        "body": "vqa-probe1-1-1776643983990",
+        "latency_s": null,
+        "silent": true
+      },
+      {
+        "i": 2,
+        "body": "vqa-probe1-2-1776644045199",
+        "latency_s": null,
+        "silent": true
+      },
+      {
+        "i": 3,
+        "body": "vqa-probe1-3-1776644106461",
+        "latency_s": null,
+        "silent": true
+      }
+    ],
+    "screenshots": [
+      "03-elon-after-3-messages.png",
+      "02-elon-chat-entered.png"
+    ],
+    "vision_commitment": "EA is 100% reliable to talk to. No silence. No dropped messages."
+  },
+  {
+    "probe": 2,
+    "title": "Create projects through conversation",
+    "severity": 5,
+    "pass_fail": "FAIL",
+    "detail": "NO projects row \"vqa-probe-1776644167780\" after 30s. Conversational create path did not scaffold. (Note: VISION says EA should call new-project via chat intent — \"/new-project\" + \"make me a project for X\" patterns. This is likely backed by a super-agent skill, not a dashboard API call.)",
+    "screenshots": [
+      "04-after-create-attempt.png"
+    ],
+    "vision_commitment": "Can create projects through conversation."
+  },
+  {
+    "probe": 3,
+    "title": "Voice-first onboarding",
+    "severity": 5,
+    "pass_fail": "FAIL",
+    "detail": "phone-icon not present on dashboard. R7b-real flipped DONE but UI is missing.",
+    "screenshots": [
+      "05-home-phone-check.png"
+    ],
+    "vision_commitment": "Onboards users via voice-first when context is missing."
+  },
+  {
+    "probe": 0,
+    "title": "harness crash",
+    "severity": 5,
+    "detail": "Failed to parse URL from \"https://mcngatprgluexjjcqpkp.supabase.co\"/rest/v1/tasks?select=id,status,error,title,created_at&order=created_at.desc&limit=50"
+  }
+]
