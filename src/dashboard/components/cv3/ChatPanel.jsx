@@ -209,6 +209,7 @@ export default function ChatPanel() {
     input, setInput,
     sending, setSending,
     selectedAgent, selectedProject, worldId, userIdentity,
+    agents,
     inputRef,
     setMessages: msgs.setMessages,
     pendingAttachmentsRef: attach.pendingAttachmentsRef,

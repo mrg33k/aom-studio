@@ -20,6 +20,7 @@ export default function useChatSend({
   selectedProject,
   worldId,
   userIdentity,
+  agents,
   inputRef,
   setMessages,
   pendingAttachmentsRef,
@@ -203,12 +204,18 @@ export default function useChatSend({
   const sendProjectText = useCallback(async (rawText) => {
     if (!rawText?.trim() || !selectedProject || !worldId) return
     const trimmed = rawText.trim()
-    // R6: the project chat pseudo-agent ('project:<slug>') is dead. Project
-    // messages now go out as agent='elon' with project=<slug> so Elon's
-    // tmux listener routes them and his queue-task.py can auto-pick the
-    // right repo. agentKey is still used for the temp optimistic message so
-    // the fetch/subscribe filters below can find it during the swap.
-    const agentKey = 'elon'
+    // R14e-3: project chat still routes through the tenant's EA (same
+    // envelope pattern R6 introduced — agent=<ea_slug>, project=<slug> —
+    // so the EA's tmux listener + queue-task.py picks the right repo),
+    // but the EA is resolved from role flags on the agents payload
+    // instead of the hardcoded 'elon' literal. In Patrik's world this
+    // still resolves to 'elon'; in Ben's world it resolves to his EA.
+    // Fallback to 'elon' only when the agents payload hasn't loaded —
+    // prevents a blank agent slug in the optimistic POST during cold
+    // boot. Once agents are in, the role-based lookup wins.
+    const agentKey = agents?.find(a => a.is_ea && a.is_terminal)?.slug
+      || agents?.find(a => a.is_ea)?.slug
+      || 'elon'
     const projectSlug = selectedProject.slug
     const attSnapshot = pendingAttachmentsRef.current
     const sig = `${agentKey}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
@@ -270,7 +277,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [selectedProject, worldId, userIdentity, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef, onMessageSent])
+  }, [selectedProject, worldId, userIdentity, agents, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef, onMessageSent])
 
   const handleProjectSend = useCallback(async () => {
     if (!input.trim() || sending) return
