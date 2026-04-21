@@ -46,6 +46,8 @@ export default function ProjectsList({
             return (
               <button
                 key={project.id || project.slug}
+                data-testid={`project-card-${project.slug}`}
+                data-project-slug={project.slug}
                 onClick={() => {
                   setInlineProject(project)
                   setMessages([])

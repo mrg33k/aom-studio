@@ -72,6 +72,7 @@ export default function ProjectInputBar() {
           <input
             ref={inputRef}
             type="text"
+            data-testid="project-chat-input"
             value={input}
             onChange={e => { setInput(e.target.value); updateCaret(e) }}
             onKeyDown={(e) => {
