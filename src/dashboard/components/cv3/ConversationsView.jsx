@@ -78,7 +78,10 @@ export default function ConversationsView() {
     searching, q, showSearch,
   } = search
 
-  const eaAgent = agents?.find(a => a.is_ea)
+  // Hero = the full-powered EA for this world. is_ea alone is too permissive
+  // (secondary EAs like rex carry is_ea for default-send/fallback lookups);
+  // is_ea && is_terminal uniquely identifies the primary hero.
+  const eaAgent = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea)
   const eaLastMsg = eaAgent ? unreadMap[eaAgent.slug] : null
   const eaUnread = eaAgent ? (unreadCounts[eaAgent.slug] || 0) : 0
   const eaStatusInfo = eaAgent ? getStatusColor(eaAgent.status) : { dot: '#506480', glow: 'none' }
