@@ -89,6 +89,9 @@ export default async function handler(req, res) {
       statusSource: a.status_source || null,
       statusSetAt: a.status_set_at || null,
       is_super: a.is_super || false,
+      is_ea: a.is_ea || false,
+      is_terminal: a.is_terminal || false,
+      is_owner: a.is_owner || false,
     }));
 
     // Build throughput from recent messages
