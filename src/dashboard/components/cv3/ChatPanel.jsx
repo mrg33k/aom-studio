@@ -109,11 +109,8 @@ export default function ChatPanel() {
     })
   }, [])
 
-  // Reset counter when conversation changes
-  useEffect(() => {
-    setExchangeCount(0)
-    setShowHandoffNudge(false)
-  }, [selectedAgent?.slug, selectedProject?.slug])
+  // (Session-hygiene reset effect moved below selectedProject useMemo; it
+  //  referenced selectedProject before declaration and threw a TDZ in prod.)
 
   // ── Mobile + rotating greeting ────────────────────────────────────────────
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
@@ -156,6 +153,14 @@ export default function ChatPanel() {
     if (!projectId || !projects?.length) return null
     return projects.find(p => String(p.id) === String(projectId)) || null
   }, [projectId, projects, inlineProject])
+
+  // Reset session-hygiene counters when conversation changes (agent OR project).
+  // Must come AFTER selectedProject is defined above — referencing it in a dep
+  // array before its useMemo declaration throws TDZ in the prod build.
+  useEffect(() => {
+    setExchangeCount(0)
+    setShowHandoffNudge(false)
+  }, [selectedAgent?.slug, selectedProject?.slug])
 
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
 
