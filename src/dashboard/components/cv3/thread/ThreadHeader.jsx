@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import {
   useChatCore,
@@ -15,8 +16,28 @@ export default function ThreadHeader() {
     agents, projects,
     onBack, onSelectAgent, onSelectProject,
     setInlineProject,
+    worldId,
+    resetExchangeCount,
   } = useChatCore()
   const { setMessages } = useChatMessagesCtx()
+
+  const [clearStage, setClearStage] = useState('idle') // idle | confirm | working | done
+
+  async function handleClearContext() {
+    if (clearStage === 'idle') { setClearStage('confirm'); return }
+    if (clearStage !== 'confirm') return
+    setClearStage('working')
+    try {
+      await fetch('/api/dashboard/clear-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: selectedAgent.slug, client_id: worldId || 'aom' }),
+      })
+    } catch (_) {}
+    resetExchangeCount?.()
+    setClearStage('done')
+    setTimeout(() => setClearStage('idle'), 2500)
+  }
   const {
     isVoiceActive, setIsVoiceActive,
     setVoiceMinimized, voiceMinimizedAgent,
@@ -232,6 +253,59 @@ export default function ThreadHeader() {
           </div>
         )}
       </div>
+      {/* Clear context button -- only for super agents */}
+      {selectedAgent?.is_super && (
+        clearStage === 'confirm' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>
+            <button
+              onClick={handleClearContext}
+              style={{
+                height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
+                background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)',
+                cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#F87171',
+              }}
+            >Yes</button>
+            <button
+              onClick={() => setClearStage('idle')}
+              style={{
+                height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                cursor: 'pointer', fontSize: 11, color: C.muted,
+              }}
+            >No</button>
+          </div>
+        ) : (
+          <button
+            onClick={handleClearContext}
+            title={clearStage === 'done' ? 'Context cleared' : 'Clear agent context'}
+            data-testid={`clear-context-${selectedAgent?.slug}`}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: clearStage === 'done' ? 'rgba(16,185,129,0.15)' : clearStage === 'working' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+              border: clearStage === 'done' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+              cursor: clearStage === 'working' ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: clearStage === 'done' ? '#6EE7B7' : C.muted,
+              transition: 'all 0.15s',
+            }}
+          >
+            {clearStage === 'working' ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            ) : clearStage === 'done' ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+              </svg>
+            )}
+          </button>
+        )
+      )}
       {/* Telephone button in header -- long-form recording mode */}
       <button
         onClick={handleMicToggle}

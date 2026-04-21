@@ -1,18 +1,11 @@
-// ProjectChatView -- project conversation thread. Shell that wires hooks +
-// sub-pieces from ./project-chat/ into the individual props the leaves
-// currently consume.
-//
-// R3b (Apr 17, 2026): reads from the feature-sliced chat contexts instead
-// of destructuring a single ctx prop. The internal split (R2d) is unchanged —
-// leaves still take individual props.
+// ProjectChatView -- project conversation thread. Shell that composes the
+// ./project-chat/ leaves. Each leaf reads its own slice of ChatPanelContext
+// directly, so the shell only needs to read the flags that gate which
+// leaves mount (voice/recording/files/search/settings/toast).
 import { TaskStatusCardStyles } from './TaskStatusCard.jsx'
-import { MessageContextMenu } from './ContextMenu.jsx'
 
 import {
   useChatCore,
-  useChatMessagesCtx,
-  useChatSendCtx,
-  useChatAttachmentsCtx,
   useChatRecordingCtx,
   useChatVoiceCtx,
   useChatSettingsCtx,
@@ -20,10 +13,6 @@ import {
   useChatContextMenuCtx,
 } from './chat/ChatPanelContext.jsx'
 
-import useProjectChatMsgMenu from './project-chat/useProjectChatMsgMenu.js'
-import useProjectChatSwitcher from './project-chat/useProjectChatSwitcher.js'
-import useProjectChatFiles from './project-chat/useProjectChatFiles.js'
-import useProjectChatPrefill from './project-chat/useProjectChatPrefill.js'
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
 import ProjectSearchBar from './project-chat/ProjectSearchBar.jsx'
@@ -36,80 +25,12 @@ import ProjectInputBar from './project-chat/ProjectInputBar.jsx'
 import ProjectSettingsModal from './project-chat/ProjectSettingsModal.jsx'
 
 export default function ProjectChatView() {
-  const {
-    projectId, navigate, selectedProject, onBack,
-    setInlineProject, setSelectedAgent,
-    worldId, currentUser, agents, projects, onSelectAgent, onSelectProject,
-    VOICE_OPTIONS, userIdentity, displayName, isMobile,
-    prefillMessage, setPrefillMessage,
-  } = useChatCore()
-  const { messages, setMessages, loadingMsgs, messagesEndRef, messagesRef, userProfiles } = useChatMessagesCtx()
-  const {
-    input, setInput, inputRef, sending,
-    sendProjectText,
-  } = useChatSendCtx()
-  const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
-  const { isRecording, recordingElapsed, handleMicToggle, micError, isTranscribing } = useChatRecordingCtx()
-  const {
-    isVoiceActive, setIsVoiceActive, voiceChatRef,
-    voiceStatus, setVoiceStatus, setVoiceVolume,
-    voiceTranscriptText, setVoiceTranscriptText,
-    voiceMuted, setVoiceMuted,
-    setVoiceMinimized, voiceMinimizedAgent,
-  } = useChatVoiceCtx()
-  const {
-    settingsOpen, setSettingsOpen, settingsTab, setSettingsTab,
-    filesOpen, setFilesOpen,
-    chatNameInput, setChatNameInput,
-    inviteEmail, setInviteEmail,
-    inviteLoading, setInviteLoading,
-    inviteMsg, setInviteMsg,
-    collaborators, setCollaborators,
-    envKeys, envKeysLoading,
-    newKeyName, setNewKeyName,
-    newKeyValue, setNewKeyValue,
-    newKeyScope, setNewKeyScope,
-    keySaveMsg, setKeySaveMsg,
-    saveEnvKey, deleteEnvKey,
-    currentVoice, selectVoice, saveRoomName,
-  } = useChatSettingsCtx()
-  const { chatInputFocused, setChatInputFocused } = useChatCore()
-  const {
-    chatSearchOpen, setChatSearchOpen,
-    chatSearchQuery, setChatSearchQuery,
-    chatSearchResults, setChatSearchResults,
-    chatSearchLoading, chatSearchRef,
-  } = useChatSearchCtx()
-  const {
-    replyTo, setReplyTo,
-    needsVerificationIds,
-    lastActionToast,
-    handleMessageFollowUp,
-    handleMessageNeedsVerification,
-    handleMessageResearch,
-    handleMessageSendTo,
-  } = useChatContextMenuCtx()
-
-  const projColor = selectedProject?.color || '#6B8AB0'
-
-  const msgMenuHook = useProjectChatMsgMenu()
-  const switcher = useProjectChatSwitcher()
-  const { projectFiles, filesLoading } = useProjectChatFiles({
-    filesOpen,
-    selectedProject,
-    uploading,
-  })
-  useProjectChatPrefill({
-    prefillMessage,
-    selectedProject,
-    setInput,
-    setPrefillMessage,
-    inputRef,
-  })
-
-  const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
-    (a.name || '').localeCompare(b.name || '')
-  )
+  const { showHandoffNudge, dismissHandoffNudge } = useChatCore()
+  const { isRecording, isTranscribing } = useChatRecordingCtx()
+  const { isVoiceActive } = useChatVoiceCtx()
+  const { filesOpen, settingsOpen } = useChatSettingsCtx()
+  const { chatSearchOpen, chatSearchResults } = useChatSearchCtx()
+  const { lastActionToast } = useChatContextMenuCtx()
 
   return (
     <div style={{
@@ -118,189 +39,52 @@ export default function ProjectChatView() {
     }}>
       <TaskStatusCardStyles />
 
-      <ProjectChatHeader
-        projColor={projColor}
-        projectId={projectId}
-        navigate={navigate}
-        selectedProject={selectedProject}
-        isVoiceActive={isVoiceActive}
-        setVoiceMinimized={setVoiceMinimized}
-        voiceMinimizedAgent={voiceMinimizedAgent}
-        onBack={onBack}
-        setMessages={setMessages}
-        setInlineProject={setInlineProject}
-        setSelectedAgent={setSelectedAgent}
-        onSelectAgent={onSelectAgent}
-        onSelectProject={onSelectProject}
-        isRecording={isRecording}
-        handleMicToggle={handleMicToggle}
-        chatSearchOpen={chatSearchOpen}
-        setChatSearchOpen={setChatSearchOpen}
-        setChatSearchQuery={setChatSearchQuery}
-        setChatSearchResults={setChatSearchResults}
-        filesOpen={filesOpen}
-        setFilesOpen={setFilesOpen}
-        settingsOpen={settingsOpen}
-        setSettingsOpen={setSettingsOpen}
-        agents={agents}
-        sortedSwitcherProjects={sortedSwitcherProjects}
-        switcherOpen={switcher.switcherOpen}
-        setSwitcherOpen={switcher.setSwitcherOpen}
-        switcherRef={switcher.switcherRef}
-      />
+      <ProjectChatHeader />
 
-      {filesOpen && (
-        <ProjectFilesPanel
-          projectFiles={projectFiles}
-          filesLoading={filesLoading}
-        />
-      )}
+      {filesOpen && <ProjectFilesPanel />}
 
-      {chatSearchOpen && (
-        <ProjectSearchBar
-          chatSearchRef={chatSearchRef}
-          chatSearchQuery={chatSearchQuery}
-          setChatSearchQuery={setChatSearchQuery}
-          setChatSearchOpen={setChatSearchOpen}
-          setChatSearchResults={setChatSearchResults}
-          chatSearchLoading={chatSearchLoading}
-          chatSearchResults={chatSearchResults}
-        />
-      )}
+      {chatSearchOpen && <ProjectSearchBar />}
 
       {chatSearchOpen && chatSearchResults && chatSearchResults.length > 0 && (
-        <ProjectSearchResults chatSearchResults={chatSearchResults} />
+        <ProjectSearchResults />
       )}
 
-      <ProjectMessageList
-        messages={messages}
-        loadingMsgs={loadingMsgs}
-        selectedProject={selectedProject}
-        projColor={projColor}
-        displayName={displayName}
-        currentUser={currentUser}
-        userProfiles={userProfiles}
-        needsVerificationIds={needsVerificationIds}
-        sending={sending}
-        messagesEndRef={messagesEndRef}
-        hidden={chatSearchOpen && chatSearchResults && chatSearchResults.length > 0}
-        openMsgMenu={msgMenuHook.openMsgMenu}
-        startLongPress={msgMenuHook.startLongPress}
-        cancelLongPress={msgMenuHook.cancelLongPress}
-      />
+      <ProjectMessageList />
 
-      {isVoiceActive && (
-        <ProjectVoiceChatHost
-          voiceChatRef={voiceChatRef}
-          selectedProject={selectedProject}
-          worldId={worldId}
-          currentVoice={currentVoice}
-          selectVoice={selectVoice}
-          setVoiceTranscriptText={setVoiceTranscriptText}
-          setMessages={setMessages}
-          userIdentity={userIdentity}
-          setVoiceStatus={setVoiceStatus}
-          setIsVoiceActive={setIsVoiceActive}
-          setVoiceMuted={setVoiceMuted}
-          setVoiceVolume={setVoiceVolume}
-          messagesRef={messagesRef}
-          sendProjectText={sendProjectText}
-          projColor={projColor}
-        />
+      {isVoiceActive && <ProjectVoiceChatHost />}
+
+      {isVoiceActive && <ProjectVoiceModeBar />}
+
+      {(isRecording || isTranscribing) && <ProjectRecordingStatusBar />}
+
+      {showHandoffNudge && (
+        <div
+          data-testid="handoff-nudge"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 14px',
+            background: 'rgba(99,102,241,0.1)',
+            borderTop: '1px solid rgba(99,102,241,0.2)',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: 12, color: '#A5B4FC', fontFamily: "'Inter', sans-serif" }}>
+            Might be a good idea to write a handoff and clear context.
+          </span>
+          <button
+            onClick={dismissHandoffNudge}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(165,180,252,0.6)', fontSize: 16, lineHeight: 1,
+              padding: '0 4px', flexShrink: 0,
+            }}
+          >×</button>
+        </div>
       )}
 
-      {isVoiceActive && (
-        <ProjectVoiceModeBar
-          voiceStatus={voiceStatus}
-          voiceTranscriptText={voiceTranscriptText}
-          voiceChatRef={voiceChatRef}
-          voiceMuted={voiceMuted}
-          setVoiceMuted={setVoiceMuted}
-          setIsVoiceActive={setIsVoiceActive}
-          setVoiceTranscriptText={setVoiceTranscriptText}
-        />
-      )}
+      {!isVoiceActive && <ProjectInputBar />}
 
-      {(isRecording || isTranscribing) && (
-        <ProjectRecordingStatusBar
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          recordingElapsed={recordingElapsed}
-          handleMicToggle={handleMicToggle}
-          micError={micError}
-        />
-      )}
-
-      {!isVoiceActive && (
-        <ProjectInputBar
-          input={input}
-          setInput={setInput}
-          inputRef={inputRef}
-          fileInputRef={fileInputRef}
-          chatInputFocused={chatInputFocused}
-          setChatInputFocused={setChatInputFocused}
-          sending={sending}
-          uploading={uploading}
-          selectedProject={selectedProject}
-          sendProjectText={sendProjectText}
-          handleFileSelection={handleFileSelection}
-          setIsVoiceActive={setIsVoiceActive}
-          isVoiceActive={isVoiceActive}
-          replyTo={replyTo}
-          setReplyTo={setReplyTo}
-        />
-      )}
-
-      {settingsOpen && (
-        <ProjectSettingsModal
-          isMobile={isMobile}
-          selectedProject={selectedProject}
-          settingsTab={settingsTab}
-          setSettingsTab={setSettingsTab}
-          setSettingsOpen={setSettingsOpen}
-          chatNameInput={chatNameInput}
-          setChatNameInput={setChatNameInput}
-          saveRoomName={saveRoomName}
-          VOICE_OPTIONS={VOICE_OPTIONS}
-          currentVoice={currentVoice}
-          selectVoice={selectVoice}
-          collaborators={collaborators}
-          setCollaborators={setCollaborators}
-          inviteEmail={inviteEmail}
-          setInviteEmail={setInviteEmail}
-          inviteLoading={inviteLoading}
-          setInviteLoading={setInviteLoading}
-          inviteMsg={inviteMsg}
-          setInviteMsg={setInviteMsg}
-          worldId={worldId}
-          envKeys={envKeys}
-          envKeysLoading={envKeysLoading}
-          newKeyName={newKeyName}
-          setNewKeyName={setNewKeyName}
-          newKeyValue={newKeyValue}
-          setNewKeyValue={setNewKeyValue}
-          newKeyScope={newKeyScope}
-          setNewKeyScope={setNewKeyScope}
-          keySaveMsg={keySaveMsg}
-          setKeySaveMsg={setKeySaveMsg}
-          saveEnvKey={saveEnvKey}
-          deleteEnvKey={deleteEnvKey}
-        />
-      )}
-
-      {/* Right-click context menu for project messages */}
-      <MessageContextMenu
-        open={!!msgMenuHook.msgMenu}
-        x={msgMenuHook.msgMenu?.x || 0}
-        y={msgMenuHook.msgMenu?.y || 0}
-        message={msgMenuHook.msgMenu?.message || null}
-        agents={agents || []}
-        onClose={() => msgMenuHook.setMsgMenu(null)}
-        onFollowUp={(m) => handleMessageFollowUp?.(m)}
-        onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
-        onResearch={(m) => handleMessageResearch?.(m)}
-        onSendTo={(target) => handleMessageSendTo?.(msgMenuHook.msgMenu?.message, target)}
-      />
+      {settingsOpen && <ProjectSettingsModal />}
 
       {lastActionToast && (
         <div

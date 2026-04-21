@@ -347,6 +347,7 @@ export function useDataPipe(parsePunchList, worldId) {
             section: 'general',
             tasks: [],
             isClient: false,
+            status: p.status ? p.status.toUpperCase() : 'IDLE',
           })))
         }
 
@@ -560,7 +561,9 @@ export function useDataPipe(parsePunchList, worldId) {
 
   useEffect(() => {
     fetchAll()
-    const timer = setInterval(fetchAll, 10000) // 10s for faster status + RNB updates
+    // Poll is a fallback only. Supabase Realtime below does the heavy lifting;
+    // this catches state after a dropped subscription. 60s keeps the bill sane.
+    const timer = setInterval(fetchAll, 60000)
 
     // Supabase Realtime subscriptions -- instant updates without waiting for poll.
     // Only active where supabase client is configured (production + local with env vars).
@@ -670,6 +673,7 @@ export function useDataPipe(parsePunchList, worldId) {
         status,
         color: sb?.color || grid?.color || '#60A5FA',
         updatedAt: sb?.updatedAt || null,
+        is_super: sb?.is_super || false,
       }
     })
   } else {
@@ -681,6 +685,7 @@ export function useDataPipe(parsePunchList, worldId) {
       status: a.status ? a.status.toUpperCase() : 'IDLE',
       color: a.color || '#60A5FA',
       updatedAt: a.updatedAt || null,
+      is_super: a.is_super || false,
     }))
   }
 

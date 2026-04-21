@@ -28,6 +28,7 @@ export default function useChatSend({
   setReplyTo,
   setAgentPreviews,
   startBridgeStream,
+  onMessageSent,
 }) {
   // ── Idempotency refs (block overlap + same-text within 2s) ───────────────
   const inFlightSendRef = useRef(false)
@@ -109,6 +110,7 @@ export default function useChatSend({
           startBridgeStream(bridgeResult.messageId, selectedAgent.slug)
         }
       }
+      onMessageSent?.()
     } catch (err) {
       console.error('[ChatPanel] send error:', err)
     } finally {
@@ -116,7 +118,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [input, sending, selectedAgent, worldId, userIdentity, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, startBridgeStream, pendingAttachmentsRef, inputRef])
+  }, [input, sending, selectedAgent, worldId, userIdentity, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, startBridgeStream, pendingAttachmentsRef, inputRef, onMessageSent])
 
   // ── sendAgentText: programmatic (voice transcription) ────────────────────
   const sendAgentText = useCallback(async (rawText) => {
@@ -180,6 +182,7 @@ export default function useChatSend({
           startBridgeStream(bridgeResult.messageId, selectedAgent.slug)
         }
       }
+      onMessageSent?.()
     } catch (err) {
       console.error('[ChatPanel] agent send error:', err)
     } finally {
@@ -187,7 +190,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [selectedAgent, worldId, userIdentity, startBridgeStream, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, pendingAttachmentsRef, inputRef])
+  }, [selectedAgent, worldId, userIdentity, startBridgeStream, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, pendingAttachmentsRef, inputRef, onMessageSent])
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -259,6 +262,7 @@ export default function useChatSend({
           startBridgeStream(bridgeResult.messageId, agentKey)
         }
       }
+      onMessageSent?.()
     } catch (err) {
       console.error('[ChatPanel] project send error:', err)
     } finally {
@@ -266,7 +270,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [selectedProject, worldId, userIdentity, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef])
+  }, [selectedProject, worldId, userIdentity, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef, onMessageSent])
 
   const handleProjectSend = useCallback(async () => {
     if (!input.trim() || sending) return

@@ -90,6 +90,31 @@ export default function ChatPanel() {
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [voiceMinimized, setVoiceMinimized] = useState(false)
 
+  // ── Session hygiene: exchange counter + handoff nudge ─────────────────────
+  const [exchangeCount, setExchangeCount] = useState(0)
+  const [showHandoffNudge, setShowHandoffNudge] = useState(false)
+
+  const resetExchangeCount = useCallback(() => {
+    setExchangeCount(0)
+    setShowHandoffNudge(false)
+  }, [])
+
+  const dismissHandoffNudge = useCallback(() => setShowHandoffNudge(false), [])
+
+  const onMessageSent = useCallback(() => {
+    setExchangeCount(prev => {
+      const next = prev + 1
+      if (next > 0 && next % 10 === 0) setShowHandoffNudge(true)
+      return next
+    })
+  }, [])
+
+  // Reset counter when conversation changes
+  useEffect(() => {
+    setExchangeCount(0)
+    setShowHandoffNudge(false)
+  }, [selectedAgent?.slug, selectedProject?.slug])
+
   // ── Mobile + rotating greeting ────────────────────────────────────────────
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
   useEffect(() => {
@@ -187,6 +212,7 @@ export default function ChatPanel() {
     setReplyTo: cmenu.setReplyTo,
     setAgentPreviews: conv.setAgentPreviews,
     startBridgeStream: bridge.startBridgeStream,
+    onMessageSent,
   })
   // Populate the shared send refs from the returned callbacks — consumed
   // by useChatAttachments (auto-ack after upload) and useChatRecording
@@ -267,6 +293,7 @@ export default function ChatPanel() {
     onBack, onSelectAgent, onSelectProject,
     prefillMessage, setPrefillMessage,
     chatInputFocused, setChatInputFocused,
+    showHandoffNudge, dismissHandoffNudge, resetExchangeCount,
   }), [
     agents, inboxItems, allTasks, projects, conv.chattableAgents,
     selectedAgent, selectedProject, inlineProject, currentChatKey,
@@ -274,6 +301,7 @@ export default function ChatPanel() {
     isMobile, greetingIdx, projectId, navigate,
     onBack, onSelectAgent, onSelectProject, prefillMessage, setPrefillMessage,
     chatInputFocused,
+    showHandoffNudge, dismissHandoffNudge, resetExchangeCount,
   ])
 
   const messagesValue = useMemo(() => ({
