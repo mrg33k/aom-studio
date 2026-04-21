@@ -17,6 +17,8 @@ export default function ElonHeroCard({
   if (!elonAgent) return null
   return (
     <button
+      data-testid={`agent-card-${elonAgent.slug}`}
+      data-agent-status={(elonAgent.status || 'idle').toLowerCase()}
       onClick={() => { setSelectedAgent(elonAgent); onSelectAgent?.(elonAgent) }}
       style={{
         width: '100%',
@@ -60,12 +62,15 @@ export default function ElonHeroCard({
             <span style={{ fontSize: 18, fontWeight: 800, color: C.text, fontFamily: "'Inter', sans-serif" }}>
               {elonAgent.name || 'Elon'}
             </span>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontSize: 10, fontWeight: 600,
-              fontFamily: "'JetBrains Mono', monospace",
-              color: elonIsActive ? '#60A5FA' : C.dim,
-            }}>
+            <div
+              data-testid="status-badge"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 10, fontWeight: 600,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: elonIsActive ? '#60A5FA' : C.dim,
+              }}
+            >
               <div style={{
                 width: 6, height: 6, borderRadius: '50%',
                 background: elonStatusInfo.dot,

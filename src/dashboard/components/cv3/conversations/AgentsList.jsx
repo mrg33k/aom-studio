@@ -46,6 +46,8 @@ export default function AgentsList({
           return (
             <button
               key={agent.slug}
+              data-testid={`agent-card-${agent.slug}`}
+              data-agent-status={agentStatus || 'idle'}
               onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12,
@@ -115,12 +117,15 @@ export default function AgentsList({
                 )}
               </div>
               <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 3,
-                  fontSize: 9, fontWeight: 600,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: isActive ? C.accent : agentStatus === 'building' ? C.yellow : C.dim,
-                }}>
+                <div
+                  data-testid="status-badge"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 3,
+                    fontSize: 9, fontWeight: 600,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: isActive ? C.accent : agentStatus === 'building' ? C.yellow : C.dim,
+                  }}
+                >
                   <div style={{
                     width: 5, height: 5, borderRadius: '50%',
                     background: statusInfo.dot,
