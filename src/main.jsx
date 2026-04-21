@@ -1,60 +1,61 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
-import Login from './pages/Login.jsx'
-import ChangePassword from './pages/ChangePassword.jsx'
 import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
-import BrandGuidelines from './pages/BrandGuidelines.jsx'
-import BrandsHub from './pages/BrandsHub.jsx'
-import Brands from './pages/Brands.jsx'
-import S3CBrand from './pages/S3CBrand.jsx'
-import V2VBrand from './pages/V2VBrand.jsx'
-import ValorBrand from './pages/ValorBrand.jsx'
-import SpaceRisingBrand from './pages/SpaceRisingBrand.jsx'
-import AmbitionBrandGuidelines from './pages/AmbitionBrandGuidelines.jsx'
-import AmbitionBrandGuidelinesV2 from './pages/AmbitionBrandGuidelinesV2.jsx'
-import Social from './pages/Social.jsx'
-import ResearchHVAC from './pages/ResearchHVAC.jsx'
-import BrandGuidelinesV4 from './pages/BrandGuidelinesV4.jsx'
-import BriefsHub from './pages/BriefsHub.jsx'
-import BriefAIAdvisory from './pages/BriefAIAdvisory.jsx'
-import BriefPartnerships from './pages/BriefPartnerships.jsx'
-import BriefMasterplan from './pages/BriefMasterplan.jsx'
-import BriefSecurity from './pages/BriefSecurity.jsx'
-import BriefCompetitors from './pages/BriefCompetitors.jsx'
-import BriefVelocity from './pages/BriefVelocity.jsx'
-import BriefSprintPlan from './pages/BriefSprintPlan.jsx'
-import BriefFullscreenSite from './pages/BriefFullscreenSite.jsx'
-import BriefIdeasTracker from './pages/BriefIdeasTracker.jsx'
-import BriefAuditOnboarding from './pages/BriefAuditOnboarding.jsx'
-import BriefROICalculator from './pages/BriefROICalculator.jsx'
-import BriefWebDesignUpgrade from './pages/BriefWebDesignUpgrade.jsx'
-import BriefAmbitionSections from './pages/BriefAmbitionSections.jsx'
-import BriefAmbitionLinkedIn from './pages/BriefAmbitionLinkedIn.jsx'
-import BriefAmbitionStrategy from './pages/BriefAmbitionStrategy.jsx'
-import AuditTest from './pages/AuditTest.jsx'
-import IdeasTracker from './pages/IdeasTracker.jsx'
-import GuidesHub from './pages/GuidesHub.jsx'
-import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
-import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
-import ROICalculator from './pages/ROICalculator.jsx'
-import CaseStudy from './pages/CaseStudy.jsx'
-import Gemma4Brief from './pages/Gemma4Brief.jsx'
-import Gemma4BriefGemini from './pages/Gemma4BriefGemini.jsx'
-import Gemma4BriefDeepseek from './pages/Gemma4BriefDeepseek.jsx'
-import AmbitionPerformance from './pages/AmbitionPerformance.jsx'
-import AmbitionPerformanceV2 from './pages/AmbitionPerformanceV2.jsx'
-import Corner from './pages/Corner.jsx'
-import CornerV3 from './dashboard/CornerV3.jsx'
-import BriefPage from './pages/BriefPage.jsx'
-import ISAShootScript from './pages/ISAShootScript.jsx'
-import ISABrandBible from './pages/ISABrandBible.jsx'
-import Skills from './pages/Skills.jsx'
-import Settings from './pages/Settings.jsx'
-import Onboarding from './pages/Onboarding.jsx'
-import AcceptInvite from './pages/AcceptInvite.jsx'
+// Everything else lazy-loaded so non-home routes don't bloat the main bundle.
+const Login = lazy(() => import('./pages/Login.jsx'))
+const ChangePassword = lazy(() => import('./pages/ChangePassword.jsx'))
+const BrandsHub = lazy(() => import('./pages/BrandsHub.jsx'))
+const S3CBrand = lazy(() => import('./pages/S3CBrand.jsx'))
+const V2VBrand = lazy(() => import('./pages/V2VBrand.jsx'))
+const ValorBrand = lazy(() => import('./pages/ValorBrand.jsx'))
+const SpaceRisingBrand = lazy(() => import('./pages/SpaceRisingBrand.jsx'))
+const AmbitionBrandGuidelines = lazy(() => import('./pages/AmbitionBrandGuidelines.jsx'))
+const AmbitionBrandGuidelinesV2 = lazy(() => import('./pages/AmbitionBrandGuidelinesV2.jsx'))
+const Social = lazy(() => import('./pages/Social.jsx'))
+const ResearchHVAC = lazy(() => import('./pages/ResearchHVAC.jsx'))
+const BrandGuidelinesV4 = lazy(() => import('./pages/BrandGuidelinesV4.jsx'))
+const BriefsHub = lazy(() => import('./pages/BriefsHub.jsx'))
+const BriefAIAdvisory = lazy(() => import('./pages/BriefAIAdvisory.jsx'))
+const BriefPartnerships = lazy(() => import('./pages/BriefPartnerships.jsx'))
+const BriefMasterplan = lazy(() => import('./pages/BriefMasterplan.jsx'))
+const BriefSecurity = lazy(() => import('./pages/BriefSecurity.jsx'))
+const BriefCompetitors = lazy(() => import('./pages/BriefCompetitors.jsx'))
+const BriefVelocity = lazy(() => import('./pages/BriefVelocity.jsx'))
+const BriefSprintPlan = lazy(() => import('./pages/BriefSprintPlan.jsx'))
+const BriefFullscreenSite = lazy(() => import('./pages/BriefFullscreenSite.jsx'))
+const BriefIdeasTracker = lazy(() => import('./pages/BriefIdeasTracker.jsx'))
+const BriefAuditOnboarding = lazy(() => import('./pages/BriefAuditOnboarding.jsx'))
+const BriefROICalculator = lazy(() => import('./pages/BriefROICalculator.jsx'))
+const BriefWebDesignUpgrade = lazy(() => import('./pages/BriefWebDesignUpgrade.jsx'))
+const BriefAmbitionSections = lazy(() => import('./pages/BriefAmbitionSections.jsx'))
+const BriefAmbitionLinkedIn = lazy(() => import('./pages/BriefAmbitionLinkedIn.jsx'))
+const BriefAmbitionStrategy = lazy(() => import('./pages/BriefAmbitionStrategy.jsx'))
+const AuditTest = lazy(() => import('./pages/AuditTest.jsx'))
+const IdeasTracker = lazy(() => import('./pages/IdeasTracker.jsx'))
+const GuidesHub = lazy(() => import('./pages/GuidesHub.jsx'))
+const GuideAmbitionCrown = lazy(() => import('./pages/GuideAmbitionCrown.jsx'))
+const GuideAmbitionMemorialTower = lazy(() => import('./pages/GuideAmbitionMemorialTower.jsx'))
+const ROICalculator = lazy(() => import('./pages/ROICalculator.jsx'))
+const CaseStudy = lazy(() => import('./pages/CaseStudy.jsx'))
+const Gemma4Brief = lazy(() => import('./pages/Gemma4Brief.jsx'))
+const Gemma4BriefGemini = lazy(() => import('./pages/Gemma4BriefGemini.jsx'))
+const Gemma4BriefDeepseek = lazy(() => import('./pages/Gemma4BriefDeepseek.jsx'))
+const AmbitionPerformance = lazy(() => import('./pages/AmbitionPerformance.jsx'))
+const AmbitionPerformanceV2 = lazy(() => import('./pages/AmbitionPerformanceV2.jsx'))
+const Corner = lazy(() => import('./pages/Corner.jsx'))
+const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
+const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
+const CleoWorkspaceDetail = lazy(() => import('./dashboard/components/cv3/CleoWorkspaceDetail.jsx'))
+const BriefPage = lazy(() => import('./pages/BriefPage.jsx'))
+const ISAShootScript = lazy(() => import('./pages/ISAShootScript.jsx'))
+const ISABrandBible = lazy(() => import('./pages/ISABrandBible.jsx'))
+const Skills = lazy(() => import('./pages/Skills.jsx'))
+const Settings = lazy(() => import('./pages/Settings.jsx'))
+const Onboarding = lazy(() => import('./pages/Onboarding.jsx'))
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
 const MunicipalityDirectory = lazy(() => import('./pages/MunicipalityDirectory.jsx'))
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
@@ -249,6 +250,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
+          <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
         </Routes>
       </Suspense>
     </BrowserRouter>

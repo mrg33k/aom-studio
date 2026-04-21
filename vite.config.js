@@ -2581,6 +2581,24 @@ export default defineConfig({
         'proposals-isa': resolve(__dirname, 'proposals-isa.html'),
         'proposals-quentin': resolve(__dirname, 'proposals-quentin.html'),
       },
+      output: {
+        // Split heavy vendor libs into their own chunks so main stays under
+        // Vite's 500 kB warning threshold. Without this, firebase + framer-motion +
+        // supabase + react-router all roll into main and push it past 2.7 MB.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('/firebase/') || id.includes('/@firebase/')) return 'vendor-firebase'
+          if (id.includes('/framer-motion/')) return 'vendor-framer'
+          if (id.includes('/@supabase/')) return 'vendor-supabase'
+          if (id.includes('/react-router')) return 'vendor-router'
+          if (id.includes('/react-dom/') || id.match(/\/react\/(?!.*node_modules)/)) return 'vendor-react'
+          if (id.includes('/d3-force/')) return 'vendor-d3'
+          if (id.includes('/html-to-image/')) return 'vendor-html2img'
+          if (id.includes('/marked/')) return 'vendor-marked'
+          if (id.includes('/lucide-react/')) return 'vendor-lucide'
+          return 'vendor'
+        },
+      },
     },
   },
 })
