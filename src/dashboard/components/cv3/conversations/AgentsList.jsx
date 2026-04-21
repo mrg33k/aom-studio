@@ -11,7 +11,12 @@ export default function AgentsList({
   activeAgentSlugs,
   setSelectedAgent,
   onSelectAgent,
+  heroSlug,
 }) {
+  // Dedup: the hero card (EA) renders above this list, so filter it out here.
+  // Non-hero is_ea agents (e.g. rex alongside elon in Patrik's world) stay
+  // visible in the list.
+  const isHero = (a) => heroSlug ? a.slug === heroSlug : false
   return (
     <div style={{ marginBottom: 28 }}>
       <div style={{
@@ -27,11 +32,11 @@ export default function AgentsList({
           borderRadius: 8, padding: '1px 6px',
           letterSpacing: '0.02em',
         }}>
-          {(agents || []).filter(a => a.slug !== 'elon').length}
+          {(agents || []).filter(a => !isHero(a)).length}
         </span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {(agents || []).filter(agent => agent.slug !== 'elon').map(agent => {
+        {(agents || []).filter(agent => !isHero(agent)).map(agent => {
           const lastMsg = unreadMap[agent.slug]
           const unreadCount = unreadCounts[agent.slug] || 0
           const agentStatus = (agent.status || '').toLowerCase()

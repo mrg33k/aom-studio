@@ -5,6 +5,8 @@
 // R3b (Apr 17, 2026): reads from feature-sliced chat contexts instead of a
 // single ctx prop. The internal split (R2e) is unchanged.
 import { getStatusColor } from './shared.jsx'
+import { useNavigate } from 'react-router-dom'
+import { C, agentColors } from '../../lib/cv3Colors.js'
 
 import { ACTIVE_STATUSES, CONVERSATIONS_KEYFRAMES } from './conversations/conversationsConstants.js'
 import useHomeSearch from './conversations/useHomeSearch.js'
@@ -12,7 +14,7 @@ import CallInProgressBanner from './conversations/CallInProgressBanner.jsx'
 import GreetingHero from './conversations/GreetingHero.jsx'
 import HomeSearchBar from './conversations/HomeSearchBar.jsx'
 import SearchResults from './conversations/SearchResults.jsx'
-import ElonHeroCard from './conversations/ElonHeroCard.jsx'
+import EaHeroCard from './conversations/EaHeroCard.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
 import ProjectsList from './conversations/ProjectsList.jsx'
 
@@ -22,6 +24,35 @@ import {
   useChatVoiceCtx,
   useChatConversationsCtx,
 } from './chat/ChatPanelContext.jsx'
+
+const CLEO = agentColors.cleo
+
+function CleoWorkspacesLink() {
+  const navigate = useNavigate()
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: C.muted,
+        letterSpacing: '0.1em', textTransform: 'uppercase',
+        marginBottom: 10,
+      }}>Tools</div>
+      <button
+        onClick={() => navigate('/dashboard/cleo/workspaces')}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          width: '100%', padding: '11px 14px',
+          borderRadius: 12, background: C.s1,
+          border: `1px solid rgba(244,114,182,0.15)`,
+          cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: CLEO, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: C.text2 }}>Cleo Workspaces</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: C.muted }}>→</span>
+      </button>
+    </div>
+  )
+}
 
 export default function ConversationsView() {
   const {
@@ -47,11 +78,11 @@ export default function ConversationsView() {
     searching, q, showSearch,
   } = search
 
-  const elonAgent = agents?.find(a => a.slug === 'elon')
-  const elonLastMsg = elonAgent ? unreadMap[elonAgent.slug] : null
-  const elonUnread = elonAgent ? (unreadCounts[elonAgent.slug] || 0) : 0
-  const elonStatusInfo = elonAgent ? getStatusColor(elonAgent.status) : { dot: '#506480', glow: 'none' }
-  const elonIsActive = elonAgent?.status?.toUpperCase() !== 'IDLE'
+  const eaAgent = agents?.find(a => a.is_ea)
+  const eaLastMsg = eaAgent ? unreadMap[eaAgent.slug] : null
+  const eaUnread = eaAgent ? (unreadCounts[eaAgent.slug] || 0) : 0
+  const eaStatusInfo = eaAgent ? getStatusColor(eaAgent.status) : { dot: '#506480', glow: 'none' }
+  const eaIsActive = eaAgent?.status?.toUpperCase() !== 'IDLE'
 
   const activeAgentSlugs = new Set(
     (allTasks || []).filter(t => ACTIVE_STATUSES.has(t.status)).map(t => t.agent_identity).filter(Boolean)
@@ -124,12 +155,12 @@ export default function ConversationsView() {
 
       {!showSearch && (
         <>
-          <ElonHeroCard
-            elonAgent={elonAgent}
-            elonLastMsg={elonLastMsg}
-            elonUnread={elonUnread}
-            elonStatusInfo={elonStatusInfo}
-            elonIsActive={elonIsActive}
+          <EaHeroCard
+            eaAgent={eaAgent}
+            eaLastMsg={eaLastMsg}
+            eaUnread={eaUnread}
+            eaStatusInfo={eaStatusInfo}
+            eaIsActive={eaIsActive}
             activeAgentSlugs={activeAgentSlugs}
             setSelectedAgent={setSelectedAgent}
             onSelectAgent={onSelectAgent}
@@ -140,6 +171,7 @@ export default function ConversationsView() {
             unreadMap={unreadMap}
             unreadCounts={unreadCounts}
             activeAgentSlugs={activeAgentSlugs}
+            heroSlug={eaAgent?.slug}
             setSelectedAgent={setSelectedAgent}
             onSelectAgent={onSelectAgent}
           />
@@ -153,6 +185,8 @@ export default function ConversationsView() {
             setSelectedAgent={setSelectedAgent}
             onSelectProject={onSelectProject}
           />
+
+          <CleoWorkspacesLink />
         </>
       )}
 
