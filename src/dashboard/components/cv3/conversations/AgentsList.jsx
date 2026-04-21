@@ -27,11 +27,11 @@ export default function AgentsList({
           borderRadius: 8, padding: '1px 6px',
           letterSpacing: '0.02em',
         }}>
-          {(agents || []).length}
+          {(agents || []).filter(a => a.slug !== 'elon').length}
         </span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {(agents || []).map(agent => {
+        {(agents || []).filter(agent => agent.slug !== 'elon').map(agent => {
           const lastMsg = unreadMap[agent.slug]
           const unreadCount = unreadCounts[agent.slug] || 0
           const agentStatus = (agent.status || '').toLowerCase()
