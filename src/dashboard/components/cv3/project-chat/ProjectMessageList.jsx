@@ -39,7 +39,7 @@ export default function ProjectMessageList() {
 
   return (
     <>
-    <div style={{
+    <div data-testid="project-message-list" style={{
       flex: 1, overflowY: 'auto',
       padding: '12px 14px',
       display: hidden ? 'none' : 'flex',
