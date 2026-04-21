@@ -674,6 +674,9 @@ export function useDataPipe(parsePunchList, worldId) {
         color: sb?.color || grid?.color || '#60A5FA',
         updatedAt: sb?.updatedAt || null,
         is_super: sb?.is_super || false,
+        is_ea: sb?.is_ea || false,
+        is_terminal: sb?.is_terminal || false,
+        is_owner: sb?.is_owner || false,
       }
     })
   } else {
@@ -686,6 +689,9 @@ export function useDataPipe(parsePunchList, worldId) {
       color: a.color || '#60A5FA',
       updatedAt: a.updatedAt || null,
       is_super: a.is_super || false,
+      is_ea: a.is_ea || false,
+      is_terminal: a.is_terminal || false,
+      is_owner: a.is_owner || false,
     }))
   }
 
