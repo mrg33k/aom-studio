@@ -10,6 +10,7 @@
 // the shell populates those refs from the returned callbacks so the
 // attach/recording hooks that consume the refs stay decoupled from Send.
 import { useCallback, useEffect, useRef } from 'react'
+import { useCornerData } from '../../../CornerContext.jsx'
 
 export default function useChatSend({
   input,
@@ -20,7 +21,6 @@ export default function useChatSend({
   selectedProject,
   worldId,
   userIdentity,
-  agents,
   inputRef,
   setMessages,
   pendingAttachmentsRef,
@@ -31,6 +31,10 @@ export default function useChatSend({
   startBridgeStream,
   onMessageSent,
 }) {
+  // R14e-3: read agents from CornerContext so sendProjectText can resolve the
+  // EA slug from role flags instead of hardcoding 'elon'. Read here (not
+  // threaded via props) to keep all R14e-3 surface area inside cv3/chat/.
+  const { agents } = useCornerData()
   // ── Idempotency refs (block overlap + same-text within 2s) ───────────────
   const inFlightSendRef = useRef(false)
   const lastSendSigRef = useRef({ sig: '', ts: 0 })
