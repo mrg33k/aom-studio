@@ -157,6 +157,12 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   // Store parsePunchList in a ref so the callback doesn't re-create on every render
   const parseFnRef = useRef(parsePunchList)
   parseFnRef.current = parsePunchList
+  // R14e-4: currentUserSlug is a prop that resolves asynchronously (async
+  // tenant_users fetch). fetchAll is a useCallback with empty deps so it
+  // stays stable across renders; without a ref, the closure would capture
+  // the initial null value forever and personal-todos would never populate.
+  const currentUserSlugRef = useRef(currentUserSlug)
+  currentUserSlugRef.current = currentUserSlug
 
   const fetchAll = useCallback(async () => {
     if (IS_LOCAL) {
@@ -174,24 +180,27 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
+            // R14e-4: read the freshest viewer slug from the ref -- this
+            // fetchAll closure was captured on mount with slug=null.
+            const slug = currentUserSlugRef.current
             if (sbData.tasks) {
               // Done tasks awaiting approval (exclude viewer's own tasks; agents review theirs elsewhere)
               const doneEntries = sbData.tasks
-                .filter(t => t.status === 'done' && t.agent !== currentUserSlug)
+                .filter(t => t.status === 'done' && t.agent !== slug)
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
               mergedTasks.push(...doneEntries)
 
               // Todo tasks for To Do pill (exclude viewer's own tasks; those render in Personal Todos)
               const todoEntries = sbData.tasks
-                .filter(t => t.status === 'todo' && t.agent !== currentUserSlug)
+                .filter(t => t.status === 'todo' && t.agent !== slug)
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
               setTodoItems(todoEntries)
 
               // Viewer's personal tasks (null-safe: empty when slug is unknown)
-              const ownerEntries = currentUserSlug
+              const ownerEntries = slug
                 ? sbData.tasks
-                    .filter(t => t.agent === currentUserSlug && t.status !== 'completed' && t.status !== 'done')
-                    .map(t => ({ text: t.text || '', agent: currentUserSlug, taskId: t.id, done: false, project: t.project }))
+                    .filter(t => t.agent === slug && t.status !== 'completed' && t.status !== 'done')
+                    .map(t => ({ text: t.text || '', agent: slug, taskId: t.id, done: false, project: t.project }))
                 : []
               setPersonalTodos(ownerEntries)
             }
@@ -288,23 +297,25 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           }
 
           // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
+          // R14e-4: read fresh slug from ref (fetchAll closure captured mount-time value).
+          const slug = currentUserSlugRef.current
           if (data.tasks) {
             const doneEntries = data.tasks
-              .filter(t => t.status === 'done' && t.agent !== currentUserSlug)
+              .filter(t => t.status === 'done' && t.agent !== slug)
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
 
             // Todo tasks for To Do pill (never shown in Right Now)
             const todoEntries = data.tasks
-              .filter(t => t.status === 'todo' && t.agent !== currentUserSlug)
+              .filter(t => t.status === 'todo' && t.agent !== slug)
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
             setTodoItems(todoEntries)
 
             // Viewer's personal tasks (null-safe: empty when slug is unknown)
-            const ownerEntries = currentUserSlug
+            const ownerEntries = slug
               ? data.tasks
-                  .filter(t => t.agent === currentUserSlug && t.status !== 'completed' && t.status !== 'done')
-                  .map(t => ({ text: t.text || '', agent: currentUserSlug, taskId: t.id, done: false, project: t.project }))
+                  .filter(t => t.agent === slug && t.status !== 'completed' && t.status !== 'done')
+                  .map(t => ({ text: t.text || '', agent: slug, taskId: t.id, done: false, project: t.project }))
               : []
             setPersonalTodos(ownerEntries)
           }
