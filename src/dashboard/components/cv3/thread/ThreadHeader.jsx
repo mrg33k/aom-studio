@@ -52,7 +52,13 @@ export default function ThreadHeader() {
   const { switcherOpen, setSwitcherOpen, switcherRef } = useThreadQuickSwitcher()
 
   const selectedAgentRecord = agents?.find((agent) => String(agent?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
+    || agents?.find((agent) => agent?.slug === selectedAgent?.slug)
   const selectedAgentPrimarySkill = selectedAgentRecord?.primary_skill || selectedAgent?.primary_skill || 'AI Agent'
+  // R27e: selectedAgent may be a stale snapshot captured from a click that
+  // fired before agents finished loading (is_super would be false). Fall
+  // back to the fresh record from the agents array so the clear-context
+  // button renders correctly for super agents.
+  const isSuperAgent = Boolean(selectedAgentRecord?.is_super || selectedAgent?.is_super)
 
   const sortedSwitcherProjects = [...(projects || [])].sort((a, b) =>
     (a.name || '').localeCompare(b.name || '')
@@ -255,11 +261,14 @@ export default function ThreadHeader() {
           </div>
         )}
       </div>
-      {/* Context fullness meter + clear control -- super agents only */}
-      {selectedAgent?.is_super && (
-        <ContextFullnessMeter agentSlug={selectedAgent?.slug} />
+      {/* Context fullness meter -- renders for any selected agent so users
+          always have the glance-ability affordance. The clear-context button
+          below is gated on is_super (only super-agents have persistent
+          tmux context worth clearing). */}
+      {selectedAgent?.slug && (
+        <ContextFullnessMeter agentSlug={selectedAgent.slug} />
       )}
-      {selectedAgent?.is_super && (
+      {isSuperAgent && (
         clearStage === 'confirm' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
             <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>
