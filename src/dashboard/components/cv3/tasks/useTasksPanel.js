@@ -18,7 +18,7 @@ const snippetOfTitle = (s, n = 90) => {
 
 export function useTasksPanel() {
   const { currentUser, worldId, showToast } = useCornerAuth()
-  const { queued, rightNow, waiting, done, refreshTasks, addOptimisticTask } = useCornerData()
+  const { queued, rightNow, waiting, done, refreshTasks, addOptimisticTask, ownerSlug, personalTodos } = useCornerData()
   const {
     setTab: setActiveTab,
     handleSelectProject: setActiveConversation,
@@ -242,7 +242,7 @@ export function useTasksPanel() {
     }
 
     fetchLatest()
-    const iv = window.setInterval(fetchLatest, 4000)
+    const iv = window.setInterval(fetchLatest, 60000)
     return () => { cancelled = true; window.clearInterval(iv) }
   }, [activeProject])
 
@@ -766,5 +766,9 @@ export function useTasksPanel() {
     toggleVoiceRecording,
     handleTaskSubmit,
     handleTaskInputKeyDown,
+
+    // R14e-4: tenant owner slug + owner's personal todos
+    ownerSlug,
+    personalTodos: personalTodos || [],
   }
 }

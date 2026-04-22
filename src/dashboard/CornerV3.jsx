@@ -159,8 +159,9 @@ export default function CornerV3() {
     }
     prevDoneIdsRef.current = new Set(done.map(t => t.id))
   }, [done])
-  // useDataPipe provides agents (with realtime status), inboxItems, projectRooms (from agent_status)
-  const { agents, inboxItems, projectRooms } = useDataPipe(null, worldId)
+  // useDataPipe provides agents (with realtime status), inboxItems, projectRooms (from agent_status),
+  // ownerSlug (R14e-4: human owner of this tenant; null when unset)
+  const { agents, inboxItems, projectRooms, ownerSlug, personalTodos } = useDataPipe(null, worldId)
 
   // Telephone mode (long-form record → transcribe → post to active super-agent).
   // Lives at this level so recording survives Home/Tasks/Chat navigation.
@@ -371,7 +372,8 @@ export default function CornerV3() {
     agents, inboxItems, projectRooms,
     queued, rightNow, waiting, done, allTasks,
     refreshTasks, addOptimisticTask,
-  }), [agents, inboxItems, projectRooms, queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask])
+    ownerSlug, personalTodos,
+  }), [agents, inboxItems, projectRooms, queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask, ownerSlug, personalTodos])
 
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,

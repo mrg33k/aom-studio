@@ -172,7 +172,10 @@ export function useSectionMappings() {
 // sectionMap / clientSubsectionMap are optional -- callers should pass the values
 // returned by useSectionMappings() so React re-renders drive fresh data immediately.
 // Falls back to module-level cache then hardcoded fallback if not provided.
-export function parsePunchList(markdown, sectionMap, clientSubsectionMap) {
+// R14e-4: ownerSlug (4th arg, optional, null default) resolves the tenant's
+// human owner; checkbox tags that match the owner's name are attributed to
+// the owner slug. When ownerSlug is null, no special owner attribution applies.
+export function parsePunchList(markdown, sectionMap, clientSubsectionMap, ownerSlug = null) {
   if (!markdown) return { projects: [], todayTasks: [] }
 
   const lines = markdown.split('\n')
@@ -305,8 +308,9 @@ export function parsePunchList(markdown, sectionMap, clientSubsectionMap) {
           const found = AGENTS.find(a => a.name.toLowerCase() === name.toLowerCase() || a.slug === name.toLowerCase())
           if (found) agent = found.slug
           if (!agent) {
-            if (name.toLowerCase() === 'patrik') agent = 'patrik'
-            else if (name.toLowerCase() === 'ash') agent = 'ash'
+            const normalized = name.toLowerCase()
+            if (ownerSlug && normalized === ownerSlug) agent = ownerSlug
+            else if (normalized === 'ash') agent = 'ash'
           }
         }
 

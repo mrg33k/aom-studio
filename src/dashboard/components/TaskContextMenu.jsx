@@ -933,7 +933,10 @@ export function supabasePatchTaskStatus(task, status) {
 
 // ---- Context menu action handler (shared logic, call from parent) ----
 // All state changes go to Supabase via fire-and-forget. No localStorage.
-export function handleTaskContextAction(action, task, payload, setCheckedTasks) {
+// R14e-4: ownerSlug (5th arg, optional, null default) resolves the tenant's
+// human owner; used by the `addToRightNow` path to mark owner-authored tasks
+// as blocked for agent pickup. Callers without ownerSlug context pass null.
+export function handleTaskContextAction(action, task, payload, setCheckedTasks, ownerSlug = null) {
   if (action === 'toggle') {
     if (setCheckedTasks) {
       const key = task.text
@@ -987,7 +990,7 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
             task: task.text,
             agent: task.agent || undefined,
             project: task.projectSection || undefined,
-            blocked: task.agent === 'patrik',
+            blocked: Boolean(ownerSlug) && task.agent === ownerSlug,
           }),
         }).catch(() => {})
       } catch {}

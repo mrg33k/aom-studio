@@ -15,6 +15,7 @@ import { AllFilesSection, ProjectFilesSection } from './tasks/FilesSection.jsx'
 import ProjectCardsList from './tasks/ProjectCardsList.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
+import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
 import FailedTasksSection from './tasks/FailedTasksSection.jsx'
 import DoneTasksSection from './tasks/DoneTasksSection.jsx'
@@ -301,6 +302,9 @@ function TasksPanelBody() {
         {/* ── Files sections ───────────────────────────────────── */}
         {activeProject && activeProject !== 'all' && <ProjectFilesSection />}
         {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
+
+        {/* ── Owner's Personal Todos (R14e-4) ──────────────────── */}
+        <PersonalTodosSection />
 
         {/* ── RIGHT NOW — Hero section ─────────────────────────── */}
         <ActiveTasksSection />
