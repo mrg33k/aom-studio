@@ -12,10 +12,28 @@ export default function PersonalTodosSection() {
   const { personalTodos, currentUserSlug } = useTasksPanelCtx()
   if (!currentUserSlug) return null
   const todos = Array.isArray(personalTodos) ? personalTodos : []
-  if (todos.length === 0) return null
+  // Always render the container when a viewer slug is known. Empty state
+  // collapses visually (zero-height, no title) but the testid remains
+  // attached so acceptance + future tooling can observe "viewer known,
+  // just nothing to do." Presence of data-count=0 means "empty by design."
+  if (todos.length === 0) {
+    return (
+      <div
+        data-testid="personal-todos"
+        data-viewer-slug={currentUserSlug}
+        data-count="0"
+        style={{ display: 'none' }}
+      />
+    )
+  }
 
   return (
-    <div style={{ marginBottom: 28 }} data-testid="personal-todos">
+    <div
+      style={{ marginBottom: 28 }}
+      data-testid="personal-todos"
+      data-viewer-slug={currentUserSlug}
+      data-count={todos.length}
+    >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
         <h2 style={{
           fontSize: 18,
