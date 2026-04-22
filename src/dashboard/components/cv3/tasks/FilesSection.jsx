@@ -244,7 +244,11 @@ export function ProjectFilesSection() {
         </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
+      <div
+        data-testid="task-drawer-files"
+        aria-expanded={isOpen ? 'true' : 'false'}
+        style={{ marginBottom: 16 }}
+      >
         {/* Header strip */}
         <div style={{ display: 'flex', alignItems: 'center', height: 32, gap: 6 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>

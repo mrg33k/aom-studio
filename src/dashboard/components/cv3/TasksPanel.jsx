@@ -12,8 +12,8 @@ import { C } from '../../lib/cv3Colors.js'
 import { TaskContextMenu } from './ContextMenu.jsx'
 
 import { AllFilesSection, ProjectFilesSection } from './tasks/FilesSection.jsx'
-import ProjectBriefingCard from './tasks/ProjectBriefingCard.jsx'
 import ProjectCardsList from './tasks/ProjectCardsList.jsx'
+import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
 import FailedTasksSection from './tasks/FailedTasksSection.jsx'
@@ -256,6 +256,7 @@ function TasksPanelBody() {
               return (
                 <button
                   key={p.slug}
+                  data-testid={`project-pill-${p.slug}`}
                   onClick={() => setActiveProject(p.slug)}
                   style={{
                     padding: '6px 14px',
@@ -293,8 +294,8 @@ function TasksPanelBody() {
           </div>
         </div>
 
-        {/* Project briefing card */}
-        {activeProject && activeProject !== 'all' && <ProjectBriefingCard />}
+        {/* Project summary paragraph (task-view drawer, R14e-8) */}
+        {activeProject && activeProject !== 'all' && <TaskDrawerProjectSummary />}
         {(!activeProject || activeProject === 'all') && <ProjectCardsList />}
 
         {/* ── Files sections ───────────────────────────────────── */}

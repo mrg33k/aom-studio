@@ -285,8 +285,6 @@ export function useTasksPanel() {
       const mergedBriefs = [...indexBriefs, ...textBriefs.filter(b => !seenSlugs.has(b.slug))]
       setTaskBriefs(mergedBriefs)
       setTaskAttachments([...textAttachments, ...images])
-      const hasAny = mergedBriefs.length > 0 || textAttachments.length > 0 || images.length > 0
-      setTaskFilesOpen(hasAny)
     }).catch(() => {
       if (!cancelled) { setTaskBriefs([]); setTaskAttachments([]); setTaskFilesOpen(false) }
     }).finally(() => { if (!cancelled) setTaskFilesLoading(false) })
