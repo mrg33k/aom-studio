@@ -441,15 +441,19 @@ export function ProjectFilesSection() {
 // sub-project keyed by agent='<parent>:<mission>' in the scaffold events.
 // Clicking a row drills into the mission mini Command Center (R39-4 wires
 // the handler; R39-3 ships the row + testids).
-export function ProjectMissionsSection({ onMissionClick }) {
+export function ProjectMissionsSection({ onMissionClick: onMissionClickProp }) {
   const {
     taskMissions: missions,
     taskMissionsOpen: isOpen,
     setTaskMissionsOpen,
     taskMissionsLoading: loading,
+    setActiveMissionPath,
   } = useTasksPanelCtx()
   const onToggle = () => setTaskMissionsOpen(v => !v)
   const [hoveredRow, setHoveredRow] = useState(null)
+  // R39-4: default click handler pushes the mission path onto the drawer
+  // scope so the mini Command Center takes over. Callers can override.
+  const handleMissionClick = onMissionClickProp || ((m) => setActiveMissionPath(m.path))
 
   const count = missions.length
 
@@ -525,7 +529,7 @@ export function ProjectMissionsSection({ onMissionClick }) {
               data-mission-slug={m.slug}
               data-mission-path={m.path}
               data-file-count={m.file_count}
-              onClick={() => onMissionClick && onMissionClick(m)}
+              onClick={() => handleMissionClick(m)}
               onMouseEnter={() => setHoveredRow(m.path)}
               onMouseLeave={() => setHoveredRow(null)}
               style={{
@@ -568,6 +572,95 @@ export function ProjectMissionsSection({ onMissionClick }) {
       </div>
 
       <div style={{ height: 1, background: C.border, marginTop: isOpen ? 12 : 6 }} />
+    </div>
+  )
+}
+
+// R39-4 — breadcrumb for the mission mini Command Center.
+// Renders at the top of the drawer body when activeMissionPath is set.
+// Each segment is clickable: clicking a segment pops back to that depth.
+// The "Back" button goes up exactly one level.
+function titleFromSlug(slug) {
+  return String(slug || '')
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+export function MissionBreadcrumb() {
+  const {
+    activeProject,
+    activeMissionPath,
+    setActiveMissionPath,
+  } = useTasksPanelCtx()
+  if (!activeMissionPath) return null
+  const missionSegments = activeMissionPath.startsWith(activeProject + ':')
+    ? activeMissionPath.slice(activeProject.length + 1).split(':')
+    : activeMissionPath.split(':')
+
+  const segments = [
+    { label: titleFromSlug(activeProject), path: '' },
+    ...missionSegments.map((slug, i) => ({
+      label: titleFromSlug(slug),
+      path: `${activeProject}:${missionSegments.slice(0, i + 1).join(':')}`,
+    })),
+  ]
+
+  return (
+    <div
+      data-testid="mission-breadcrumb"
+      data-mission-path={activeMissionPath}
+      style={{
+        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6,
+        marginTop: 8, marginBottom: 8,
+        fontFamily: "'Inter', sans-serif",
+      }}
+    >
+      <button
+        data-testid="mission-back"
+        onClick={() => {
+          const next = segments[segments.length - 2]?.path ?? ''
+          setActiveMissionPath(next)
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          height: 24, padding: '0 8px',
+          fontSize: 11, fontWeight: 600, color: C.muted,
+          background: 'rgba(255,255,255,0.04)',
+          border: 'none', borderRadius: 6, cursor: 'pointer',
+          fontFamily: "'Inter', sans-serif", letterSpacing: '0.02em',
+        }}
+        title="Back one level"
+      >
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+      {segments.map((seg, i) => {
+        const isLast = i === segments.length - 1
+        return (
+          <span key={seg.path || 'root'} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {i > 0 && (
+              <span style={{ color: C.dim, fontSize: 11 }}>›</span>
+            )}
+            <button
+              data-testid={`mission-breadcrumb-segment-${i}`}
+              data-segment-path={seg.path}
+              onClick={() => setActiveMissionPath(seg.path)}
+              style={{
+                fontSize: 12, fontWeight: isLast ? 700 : 500,
+                color: isLast ? C.text : C.text2,
+                background: 'none', border: 'none', padding: 0,
+                cursor: isLast ? 'default' : 'pointer',
+                fontFamily: "'Inter', sans-serif",
+              }}
+              disabled={isLast}
+            >{seg.label}</button>
+          </span>
+        )
+      })}
     </div>
   )
 }

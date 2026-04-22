@@ -94,6 +94,13 @@ export function useTasksPanel() {
   const [taskMissions, setTaskMissions] = useState([])
   const [taskMissionsOpen, setTaskMissionsOpen] = useState(true)
   const [taskMissionsLoading, setTaskMissionsLoading] = useState(false)
+  // R39-4: mission mini Command Center. When set, drawer body swaps to a
+  // mission-scoped view. Russian-doll: clicking a mission row inside a
+  // mission view appends ':<slug>' (e.g. 'corner:music-pack:drum-kit').
+  // Reset whenever activeProject changes (different pill = fresh drawer).
+  const [activeMissionPath, setActiveMissionPath] = useState('')
+  useEffect(() => { setActiveMissionPath('') }, [activeProject])
+  const drawerScope = activeMissionPath || activeProject
   const [taskIsMobile, setTaskIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
 
   // Global Files section state (all projects view)
@@ -266,9 +273,12 @@ export function useTasksPanel() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Load per-project files when active project changes
+  // Load per-project (or per-mission) files when drawer scope changes.
+  // drawerScope = activeMissionPath || activeProject (R39-4). Image listings
+  // still key on the raw project slug because mission assets aren't under
+  // the mission prefix in Storage yet.
   useEffect(() => {
-    if (!activeProject || activeProject === 'all') {
+    if (!drawerScope || drawerScope === 'all') {
       setTaskBriefs([])
       setTaskAttachments([])
       setTaskFilesOpen(false)
@@ -280,31 +290,36 @@ export function useTasksPanel() {
     // rows; text was the legacy text_files path and returning scaffold rows
     // there caused duplicate drawer entries (slug-based dedup couldn't catch
     // them because text-path rows carry no slug field).
+    const imgPrefix = activeProject
     Promise.all([
-      fetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(activeProject)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
-      fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(activeProject)}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
+      fetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(imgPrefix)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
+      fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(drawerScope)}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
     ]).then(([imgData, briefsData]) => {
       if (cancelled) return
       const images = (imgData.files || []).map(f => ({ ...f, filename: f.name }))
       const briefs = briefsData.briefs || []
       setTaskBriefs(briefs)
-      setTaskAttachments(images)
+      // Attachments only relevant at project root; mission view doesn't own
+      // Storage assets. Avoids showing the parent's images in every mission.
+      setTaskAttachments(activeMissionPath ? [] : images)
     }).catch(() => {
       if (!cancelled) { setTaskBriefs([]); setTaskAttachments([]); setTaskFilesOpen(false) }
     }).finally(() => { if (!cancelled) setTaskFilesLoading(false) })
     return () => { cancelled = true }
-  }, [activeProject])
+  }, [drawerScope, activeProject, activeMissionPath])
 
-  // R39-3: load missions for the active project. Separate effect so mission
-  // state doesn't churn when the files response lands.
+  // R39-3/R39-4: load missions for the current drawer scope. Same endpoint
+  // works for projects (project=corner) and mission paths (project=corner:
+  // music-pack) — it matches any agent with that prefix and returns the
+  // direct-child level.
   useEffect(() => {
-    if (!activeProject || activeProject === 'all') {
+    if (!drawerScope || drawerScope === 'all') {
       setTaskMissions([])
       return
     }
     let cancelled = false
     setTaskMissionsLoading(true)
-    fetch(`/api/dashboard/missions?project=${encodeURIComponent(activeProject)}`)
+    fetch(`/api/dashboard/missions?project=${encodeURIComponent(drawerScope)}`)
       .then(r => r.ok ? r.json() : { missions: [] })
       .catch(() => ({ missions: [] }))
       .then(data => {
@@ -312,7 +327,7 @@ export function useTasksPanel() {
       })
       .finally(() => { if (!cancelled) setTaskMissionsLoading(false) })
     return () => { cancelled = true }
-  }, [activeProject])
+  }, [drawerScope])
 
   // Load all briefs for global Files section
   useEffect(() => {
@@ -779,10 +794,12 @@ export function useTasksPanel() {
     allBriefsOpen, setAllBriefsOpen,
     allBriefsLimit, setAllBriefsLimit,
 
-    // Missions section (R39-3)
+    // Missions section (R39-3) + mini Command Center (R39-4)
     taskMissions,
     taskMissionsOpen, setTaskMissionsOpen,
     taskMissionsLoading,
+    activeMissionPath, setActiveMissionPath,
+    drawerScope,
 
     // Brief viewer
     selectedBrief,

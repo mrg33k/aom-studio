@@ -11,7 +11,7 @@
 import { C } from '../../lib/cv3Colors.js'
 import { TaskContextMenu } from './ContextMenu.jsx'
 
-import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection } from './tasks/FilesSection.jsx'
+import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb } from './tasks/FilesSection.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
@@ -37,6 +37,7 @@ function TasksPanelBody() {
   const {
     searchQuery, setSearchQuery, searchFocused, setSearchFocused,
     activeProject, setActiveProject,
+    activeMissionPath,
     projectPills,
     toggleCreateProjectModal,
     filteredActive, filteredCompleted,
@@ -348,12 +349,19 @@ function TasksPanelBody() {
           </div>
         </div>
 
-        {/* Project summary paragraph (task-view drawer, R14e-8) */}
-        {activeProject && activeProject !== 'all' && <TaskDrawerProjectSummary />}
+        {/* R39-4: breadcrumb appears when the drawer is in mission scope */}
+        {activeMissionPath && (
+          <div data-testid="mission-view" data-mission-path={activeMissionPath}>
+            <MissionBreadcrumb />
+            <ProjectMissionsSection />
+            <ProjectFilesSection />
+          </div>
+        )}
 
-        {/* ── Missions (R39-3) + Files sections ─────────────────── */}
-        {activeProject && activeProject !== 'all' && <ProjectMissionsSection />}
-        {activeProject && activeProject !== 'all' && <ProjectFilesSection />}
+        {/* Project scope (no mission drilled in) */}
+        {!activeMissionPath && activeProject && activeProject !== 'all' && <TaskDrawerProjectSummary />}
+        {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectMissionsSection />}
+        {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectFilesSection />}
         {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
 
         {/* ── Owner's Personal Todos (R14e-4) ──────────────────── */}
