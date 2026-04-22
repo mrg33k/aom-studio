@@ -88,6 +88,12 @@ export function useTasksPanel() {
   const [taskBriefs, setTaskBriefs] = useState([])
   const [taskAttachments, setTaskAttachments] = useState([])
   const [taskFilesLoading, setTaskFilesLoading] = useState(false)
+  // R39-3: missions = sub-projects nested under activeProject. Data flows from
+  // /api/dashboard/missions?project=<slug> (rolls up scaffold_file events
+  // keyed by agent='<project>:<mission>'). R39-4 handles drill-in.
+  const [taskMissions, setTaskMissions] = useState([])
+  const [taskMissionsOpen, setTaskMissionsOpen] = useState(true)
+  const [taskMissionsLoading, setTaskMissionsLoading] = useState(false)
   const [taskIsMobile, setTaskIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
 
   // Global Files section state (all projects view)
@@ -286,6 +292,25 @@ export function useTasksPanel() {
     }).catch(() => {
       if (!cancelled) { setTaskBriefs([]); setTaskAttachments([]); setTaskFilesOpen(false) }
     }).finally(() => { if (!cancelled) setTaskFilesLoading(false) })
+    return () => { cancelled = true }
+  }, [activeProject])
+
+  // R39-3: load missions for the active project. Separate effect so mission
+  // state doesn't churn when the files response lands.
+  useEffect(() => {
+    if (!activeProject || activeProject === 'all') {
+      setTaskMissions([])
+      return
+    }
+    let cancelled = false
+    setTaskMissionsLoading(true)
+    fetch(`/api/dashboard/missions?project=${encodeURIComponent(activeProject)}`)
+      .then(r => r.ok ? r.json() : { missions: [] })
+      .catch(() => ({ missions: [] }))
+      .then(data => {
+        if (!cancelled) setTaskMissions(Array.isArray(data.missions) ? data.missions : [])
+      })
+      .finally(() => { if (!cancelled) setTaskMissionsLoading(false) })
     return () => { cancelled = true }
   }, [activeProject])
 
@@ -753,6 +778,11 @@ export function useTasksPanel() {
     allBriefsLoading,
     allBriefsOpen, setAllBriefsOpen,
     allBriefsLimit, setAllBriefsLimit,
+
+    // Missions section (R39-3)
+    taskMissions,
+    taskMissionsOpen, setTaskMissionsOpen,
+    taskMissionsLoading,
 
     // Brief viewer
     selectedBrief,

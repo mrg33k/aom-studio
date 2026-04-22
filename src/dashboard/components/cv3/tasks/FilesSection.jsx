@@ -435,3 +435,138 @@ export function ProjectFilesSection() {
     </>
   )
 }
+
+// R39-3 — missions as first-class list inside the per-project drawer.
+// Data comes from /api/dashboard/missions?project=<slug>; each mission is a
+// sub-project keyed by agent='<parent>:<mission>' in the scaffold events.
+// Clicking a row drills into the mission mini Command Center (R39-4 wires
+// the handler; R39-3 ships the row + testids).
+export function ProjectMissionsSection({ onMissionClick }) {
+  const {
+    taskMissions: missions,
+    taskMissionsOpen: isOpen,
+    setTaskMissionsOpen,
+    taskMissionsLoading: loading,
+  } = useTasksPanelCtx()
+  const onToggle = () => setTaskMissionsOpen(v => !v)
+  const [hoveredRow, setHoveredRow] = useState(null)
+
+  const count = missions.length
+
+  return (
+    <div
+      data-testid="task-drawer-missions"
+      aria-expanded={isOpen ? 'true' : 'false'}
+      style={{ marginBottom: 16 }}
+    >
+      {/* Header strip (matches FilesSection header) */}
+      <div style={{ display: 'flex', alignItems: 'center', height: 32, gap: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+          Missions
+        </span>
+        <span style={{
+          fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif",
+          background: C.dim + '40', padding: '2px 7px', borderRadius: 10,
+          opacity: loading || count > 0 ? 1 : 0,
+        }}>
+          {loading ? '…' : count}
+        </span>
+        <div style={{ flex: 1 }} />
+        <button
+          data-testid="project-missions-toggle"
+          onClick={onToggle}
+          style={{
+            width: 24, height: 24, borderRadius: 8, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+            background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg
+            width={14} height={14} viewBox="0 0 24 24" fill="none"
+            stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ height: 1, background: C.border }} />
+
+      <div style={{ maxHeight: isOpen ? 99999 : 0, overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
+        {loading && (
+          <div style={{ padding: '20px 0', textAlign: 'center' }}>
+            <span style={{ fontSize: 12, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</span>
+          </div>
+        )}
+
+        {!loading && count === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0 20px', gap: 4 }}>
+            <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="2" fill={C.dim} />
+            </svg>
+            <div style={{ fontSize: 13, color: C.muted, fontFamily: "'Inter', sans-serif", marginTop: 4 }}>No missions yet</div>
+            <div style={{ fontSize: 12, color: C.dim, fontFamily: "'Inter', sans-serif", textAlign: 'center', lineHeight: 1.4 }}>
+              Scope an initiative,<br/>it becomes a mission
+            </div>
+          </div>
+        )}
+
+        {!loading && missions.map((m, idx) => {
+          const isLast = idx === missions.length - 1
+          const date = m.updated_at
+            ? new Date(m.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : ''
+          const isHov = hoveredRow === m.path
+          return (
+            <div
+              key={m.path}
+              data-testid={`project-missions-entry-${m.slug}`}
+              data-mission-slug={m.slug}
+              data-mission-path={m.path}
+              onClick={() => onMissionClick && onMissionClick(m)}
+              onMouseEnter={() => setHoveredRow(m.path)}
+              onMouseLeave={() => setHoveredRow(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                height: 44, padding: '0 4px',
+                cursor: 'pointer', borderRadius: 6,
+                background: isHov ? 'rgba(255,255,255,0.03)' : 'transparent',
+                borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
+                transition: 'background 0.15s ease',
+              }}
+            >
+              {/* Folder-with-dot icon — visually distinct from file icons but shape-parallel */}
+              <svg
+                width={14} height={14} viewBox="0 0 24 24" fill="none"
+                stroke={C.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                style={{ flexShrink: 0 }}
+              >
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="2" fill={C.accent} />
+              </svg>
+              <span style={{
+                flex: 1, fontSize: 13, fontWeight: 500, color: C.text,
+                fontFamily: "'Inter', sans-serif",
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+              }}>{m.name}</span>
+              {m.file_count > 0 && (
+                <span style={{
+                  fontSize: 10, fontWeight: 600, color: C.dim,
+                  background: 'rgba(255,255,255,0.06)', padding: '2px 6px',
+                  borderRadius: 6, flexShrink: 0, fontFamily: "'Inter', sans-serif",
+                  textTransform: 'uppercase', letterSpacing: '0.05em',
+                }}>{m.file_count} {m.file_count === 1 ? 'file' : 'files'}</span>
+              )}
+              {date && (
+                <span style={{ fontSize: 11, color: C.dim, fontFamily: "'Inter', sans-serif", flexShrink: 0, minWidth: 42, textAlign: 'right' }}>{date}</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ height: 1, background: C.border, marginTop: isOpen ? 12 : 6 }} />
+    </div>
+  )
+}

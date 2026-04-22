@@ -11,7 +11,7 @@
 import { C } from '../../lib/cv3Colors.js'
 import { TaskContextMenu } from './ContextMenu.jsx'
 
-import { AllFilesSection, ProjectFilesSection } from './tasks/FilesSection.jsx'
+import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection } from './tasks/FilesSection.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
@@ -351,7 +351,8 @@ function TasksPanelBody() {
         {/* Project summary paragraph (task-view drawer, R14e-8) */}
         {activeProject && activeProject !== 'all' && <TaskDrawerProjectSummary />}
 
-        {/* ── Files sections ───────────────────────────────────── */}
+        {/* ── Missions (R39-3) + Files sections ─────────────────── */}
+        {activeProject && activeProject !== 'all' && <ProjectMissionsSection />}
         {activeProject && activeProject !== 'all' && <ProjectFilesSection />}
         {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
 
