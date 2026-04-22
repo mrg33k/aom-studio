@@ -18,6 +18,54 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const BUCKET = 'corner-files'
 const TEXT_TABLE = 'text_files'
+const EVENTS_TABLE = 'events'
+const SCAFFOLD_EVENT_TYPE = 'scaffold_file'
+
+// R30: pull scaffold .md rows from the `events` table (schema-free, no-DDL
+// storage per the AOM Supabase rule). Returns brief-shaped objects so the
+// dashboard Files/AllFiles readers can consume them alongside INDEX.json +
+// text_files rows. When `slug` is null, returns rows for every project.
+async function fetchScaffoldBriefs(slug) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return []
+  const parts = [
+    `event_type=eq.${encodeURIComponent(SCAFFOLD_EVENT_TYPE)}`,
+    'select=id,agent,payload,timestamp',
+    'order=timestamp.desc',
+    'limit=500',
+  ]
+  if (slug) parts.unshift(`agent=eq.${encodeURIComponent(slug)}`)
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${EVENTS_TABLE}?${parts.join('&')}`, {
+      headers: dbHeaders(),
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    return (Array.isArray(rows) ? rows : [])
+      .map(row => {
+        const payload = row.payload || {}
+        const filename = String(payload.filename || '')
+        if (!filename.endsWith('.md')) return null
+        const title = filename
+        const derivedSlug = filename.replace(/^.*\//, '').replace(/\.md$/, '')
+        const ts = payload.updated_at || row.timestamp || null
+        const dateFormatted = ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
+        return {
+          id: row.id,
+          title,
+          filename,
+          slug: derivedSlug,
+          project: row.agent || null,
+          source: 'scaffold',
+          content: payload.content || '',
+          updated_at: ts,
+          dateFormatted,
+        }
+      })
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
 
 function storageHeaders(extra = {}) {
   return {
@@ -44,19 +92,56 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  // ---- GET briefs from INDEX.json (no Supabase needed) -----------------
+  // ---- GET briefs from INDEX.json (+ scaffold merge) -------------------
   if (req.method === 'GET' && req.query.type === 'briefs') {
     const project = req.query.project
     if (!project) return res.status(400).json({ error: 'project required' })
+
+    // INDEX.json (human-authored briefs) — same read as before
+    let index = {}
     try {
       const indexPath = join(process.cwd(), 'docs', 'briefs', 'INDEX.json')
-      const raw = readFileSync(indexPath, 'utf-8')
-      const index = JSON.parse(raw)
-      const briefs = index[project] || []
-      return res.status(200).json({ briefs })
-    } catch {
-      return res.status(200).json({ briefs: [] })
+      index = JSON.parse(readFileSync(indexPath, 'utf-8'))
+    } catch { index = {} }
+
+    if (project === 'all') {
+      const fromIndex = Object.entries(index).flatMap(([slug, entries]) =>
+        (Array.isArray(entries) ? entries : []).map(b => ({ ...b, project: slug }))
+      )
+
+      // R30 — scaffold output (VISION / BUILD / RESEARCH / CONTEXT / last-
+      // conversation + research/*) is stored as `events` rows with
+      // event_type='scaffold_file'. Merge across all projects.
+      const fromScaffold = await fetchScaffoldBriefs(null)
+
+      // Dedupe: prefer INDEX entries; skip scaffold rows that duplicate slug/filename within the same project
+      const seen = new Set(fromIndex.map(b => `${b.project || ''}::${b.slug || b.filename || b.title || ''}`))
+      const merged = [
+        ...fromIndex,
+        ...fromScaffold.filter(s => !seen.has(`${s.project || ''}::${s.slug || s.filename || ''}`)),
+      ]
+      merged.sort((a, b) => {
+        const da = a.updated_at || a.created_at || ''
+        const db = b.updated_at || b.created_at || ''
+        return String(db).localeCompare(String(da))
+      })
+      return res.status(200).json({ briefs: merged })
     }
+
+    // Per-project: INDEX.json entries + this project's scaffold rows.
+    const fromIndex = index[project] || []
+    const fromScaffold = await fetchScaffoldBriefs(project)
+    const seen = new Set(fromIndex.map(b => b.slug || b.filename || b.title || ''))
+    const merged = [
+      ...fromIndex,
+      ...fromScaffold.filter(s => !seen.has(s.slug || s.filename || '')),
+    ]
+    merged.sort((a, b) => {
+      const da = a.updated_at || a.created_at || ''
+      const db = b.updated_at || b.created_at || ''
+      return String(db).localeCompare(String(da))
+    })
+    return res.status(200).json({ briefs: merged })
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -98,14 +183,35 @@ export default async function handler(req, res) {
 
     if (type === 'text') {
       const clientId = client || 'aom'
-      const url = `${SUPABASE_URL}/rest/v1/${TEXT_TABLE}?client_id=eq.${encodeURIComponent(clientId)}&order=created_at.desc&limit=100`
-      const sbRes = await fetch(url, { headers: dbHeaders() })
-      if (!sbRes.ok) {
-        const err = await sbRes.text()
-        return res.status(sbRes.status).json({ error: err })
-      }
-      const rows = await sbRes.json()
-      return res.status(200).json({ files: rows })
+      // Legacy text_files read (best-effort; the table was never migrated in
+      // the current Supabase project so this is usually empty). Primary
+      // source of truth for scaffold MDs is the `events` table via
+      // fetchScaffoldBriefs — see R30.
+      let rows = []
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/${TEXT_TABLE}?client_id=eq.${encodeURIComponent(clientId)}&order=created_at.desc&limit=100`
+        const sbRes = await fetch(url, { headers: dbHeaders() })
+        if (sbRes.ok) {
+          const parsed = await sbRes.json()
+          if (Array.isArray(parsed)) rows = parsed
+        }
+      } catch { /* best-effort */ }
+
+      const scaffolds = await fetchScaffoldBriefs(clientId)
+      const seen = new Set(rows.map(r => r.filename || r.name || ''))
+      const merged = [
+        ...rows,
+        ...scaffolds.filter(s => !seen.has(s.filename)).map(s => ({
+          id: s.id,
+          client_id: s.project,
+          filename: s.filename,
+          content: s.content,
+          type: 'text',
+          created_at: s.updated_at,
+          updated_at: s.updated_at,
+        })),
+      ]
+      return res.status(200).json({ files: merged })
     }
 
     return res.status(400).json({ error: 'type required (images or text)' })

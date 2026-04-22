@@ -93,7 +93,7 @@ export function useTasksPanel() {
   // Global Files section state (all projects view)
   const [allBriefs, setAllBriefs] = useState([])
   const [allBriefsLoading, setAllBriefsLoading] = useState(false)
-  const [allBriefsOpen, setAllBriefsOpen] = useState(true)
+  const [allBriefsOpen, setAllBriefsOpen] = useState(false)
   const [allBriefsLimit, setAllBriefsLimit] = useState(25)
 
   // Inline brief viewer
@@ -564,6 +564,15 @@ export function useTasksPanel() {
         .from('projects')
         .insert({ name, slug, color: selectedColor, is_active: true, client_id: clientId })
       if (error) throw new Error(error.message || 'Failed to create project')
+      // R30 — fire the scaffold endpoint so VISION/RESEARCH/BUILD/CONTEXT/
+      // last-conversation + research/README stubs land in text_files for this
+      // project. Best-effort: if the endpoint fails the project row still
+      // exists and the scaffold can be re-run later.
+      fetch('/api/dashboard/scaffold-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, name, description: '' }),
+      }).catch(() => {})
       setProjectDefs(prev => [...prev, { name, slug }].sort((a, b) => a.name.localeCompare(b.name)))
       setActiveProject(slug)
       setShowCreateProjectModal(false)

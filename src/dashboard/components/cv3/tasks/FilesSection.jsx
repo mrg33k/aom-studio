@@ -76,7 +76,11 @@ export function AllFilesSection() {
   const hasMore = allBriefs.length > limit
 
   return (
-    <div style={{ marginTop: 24, marginBottom: 8 }}>
+    <div
+      data-testid="all-files"
+      aria-expanded={isOpen ? 'true' : 'false'}
+      style={{ marginTop: 24, marginBottom: 8 }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', height: 32, gap: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
           Files
@@ -90,6 +94,7 @@ export function AllFilesSection() {
         </span>
         <div style={{ flex: 1 }} />
         <button
+          data-testid="all-files-toggle"
           onClick={onToggle}
           style={{
             width: 24, height: 24, borderRadius: 8, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
@@ -128,7 +133,10 @@ export function AllFilesSection() {
           const isHov = hoveredRow === slug
           return (
             <div
-              key={slug}
+              key={`${project}::${slug}::${idx}`}
+              data-testid={`all-files-entry-${project || 'unknown'}-${slug}`}
+              data-project={project || ''}
+              data-filename={brief.filename || title || ''}
               onClick={() => onBriefClick && onBriefClick(brief)}
               onMouseEnter={() => setHoveredRow(slug)}
               onMouseLeave={() => setHoveredRow(null)}
