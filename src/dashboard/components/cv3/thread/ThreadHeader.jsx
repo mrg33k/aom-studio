@@ -8,6 +8,7 @@ import {
   useChatSettingsCtx,
 } from '../chat/ChatPanelContext.jsx'
 import useThreadQuickSwitcher from './useThreadQuickSwitcher.js'
+import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
 
 // Thread header: back button, agent avatar + name + quick switcher, mic/files/settings buttons.
 export default function ThreadHeader() {
@@ -35,6 +36,7 @@ export default function ThreadHeader() {
       })
     } catch (_) {}
     resetExchangeCount?.()
+    resetContextMeter(selectedAgent?.slug)
     setClearStage('done')
     setTimeout(() => setClearStage('idle'), 2500)
   }
@@ -253,7 +255,10 @@ export default function ThreadHeader() {
           </div>
         )}
       </div>
-      {/* Clear context button -- only for super agents */}
+      {/* Context fullness meter + clear control -- super agents only */}
+      {selectedAgent?.is_super && (
+        <ContextFullnessMeter agentSlug={selectedAgent?.slug} />
+      )}
       {selectedAgent?.is_super && (
         clearStage === 'confirm' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>

@@ -9,6 +9,7 @@ import {
   useChatSettingsCtx,
 } from '../chat/ChatPanelContext.jsx'
 import useProjectChatSwitcher from './useProjectChatSwitcher.js'
+import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
 
 // Header row for the project-chat room: back button, project icon + quick
 // switcher, mic, search, files, settings. Quick-switcher dropdown lists all
@@ -38,6 +39,7 @@ export default function ProjectChatHeader() {
       })
     } catch (_) {}
     resetExchangeCount?.()
+    resetContextMeter('elon')
     setClearStage('done')
     setTimeout(() => setClearStage('idle'), 2500)
   }
@@ -257,7 +259,8 @@ export default function ProjectChatHeader() {
           </div>
         )}
       </div>
-      {/* Clear context button -- project chats target elon */}
+      {/* Context fullness meter + clear -- project chats target elon */}
+      <ContextFullnessMeter agentSlug="elon" />
       {clearStage === 'confirm' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>

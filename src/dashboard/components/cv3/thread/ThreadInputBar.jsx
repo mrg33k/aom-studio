@@ -84,6 +84,7 @@ export default function ThreadInputBar() {
       }}>
         <input
           ref={inputRef}
+          data-testid="thread-chat-input"
           type="text"
           value={input}
           onChange={e => { setInput(e.target.value); updateCaret(e) }}

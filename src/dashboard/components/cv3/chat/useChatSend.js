@@ -11,6 +11,7 @@
 // attach/recording hooks that consume the refs stay decoupled from Send.
 import { useCallback, useEffect, useRef } from 'react'
 import { useCornerData } from '../../../CornerContext.jsx'
+import { bumpContextMeter } from '../session/ContextFullnessMeter.jsx'
 
 export default function useChatSend({
   input,
@@ -81,6 +82,8 @@ export default function useChatSend({
       source: 'corner-dashboard',
       ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
     }])
+    // R27e: bump the context-fullness meter on each user send (agent chat).
+    bumpContextMeter(selectedAgent.slug)
 
     const previewText = 'You: ' + (text.length > 70 ? text.slice(0, 70) + '...' : text)
     setAgentPreviews(prev => ({
@@ -161,6 +164,8 @@ export default function useChatSend({
       source: 'corner-dashboard',
       ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
     }])
+    // R27e: bump the context-fullness meter on each user send (voice path).
+    bumpContextMeter(selectedAgent.slug)
     const previewText = 'You: ' + (text.length > 70 ? text.slice(0, 70) + '...' : text)
     setAgentPreviews(prev => ({
       ...prev,
@@ -251,6 +256,8 @@ export default function useChatSend({
       source: 'corner-dashboard',
       ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
     }])
+    // R27e: bump the context-fullness meter on each user send (project chat).
+    bumpContextMeter(agentKey)
 
     try {
       const bridgeResult = await fetch('/api/dashboard/chat-bridge', {
