@@ -207,19 +207,18 @@ export function ProjectFilesSection() {
 
   const [lightbox, setLightbox] = useState(null)
   const [hoveredRow, setHoveredRow] = useState(null)
-  const [hoverBrief, setHoverBrief] = useState(null)
   const [attachBtnHover, setAttachBtnHover] = useState(false)
 
   const totalCount = briefs.length + attachments.length
   const hasBriefs = briefs.length > 0
   const hasAttachments = attachments.length > 0
-  const showSubLabels = hasBriefs && hasAttachments
 
-  const subLabelStyle = {
-    fontSize: 9, fontWeight: 700, color: C.dim,
-    textTransform: 'uppercase', letterSpacing: '0.08em',
-    marginBottom: 6, fontFamily: "'Inter', sans-serif",
-  }
+  // R37a: collapse to a single-column row list matching AllFilesSection.
+  // Briefs + attachments render as one continuous list, briefs first.
+  const rowEntries = [
+    ...briefs.map((b, idx) => ({ kind: 'brief', data: b, key: b.id || `b-${idx}` })),
+    ...attachments.map((f, idx) => ({ kind: 'attachment', data: f, key: f.id || `a-${idx}` })),
+  ]
 
   const handleAttachmentClick = (file) => {
     const { type } = getFileTypeInfo(file.name || file.filename || '')
@@ -288,6 +287,7 @@ export function ProjectFilesSection() {
             </button>
           )}
           <button
+            data-testid="project-files-toggle"
             onClick={onToggle}
             style={{
               width: 24, height: 24, borderRadius: 8, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
@@ -309,137 +309,124 @@ export function ProjectFilesSection() {
         <div style={{ height: 1, background: C.border }} />
 
         {/* Collapsible body */}
-        <div style={{ maxHeight: isOpen ? 800 : 0, overflow: 'hidden', transition: 'max-height 0.2s ease' }}>
-          <div style={{ padding: '12px 0 4px' }}>
+        <div style={{ maxHeight: isOpen ? 99999 : 0, overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
+          {loading && (
+            <div style={{ padding: '20px 0', textAlign: 'center' }}>
+              <span style={{ fontSize: 12, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</span>
+            </div>
+          )}
 
-            {/* Empty state */}
-            {!loading && !hasBriefs && !hasAttachments && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0 20px', gap: 4 }}>
-                <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                <div style={{ fontSize: 13, color: C.muted, fontFamily: "'Inter', sans-serif", marginTop: 4 }}>No files yet</div>
-                <div style={{ fontSize: 12, color: C.dim, fontFamily: "'Inter', sans-serif", textAlign: 'center', lineHeight: 1.4 }}>
-                  Drop a brief or attach<br/>files from chat
-                </div>
+          {!loading && rowEntries.length === 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0 20px', gap: 4 }}>
+              <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              <div style={{ fontSize: 13, color: C.muted, fontFamily: "'Inter', sans-serif", marginTop: 4 }}>No files yet</div>
+              <div style={{ fontSize: 12, color: C.dim, fontFamily: "'Inter', sans-serif", textAlign: 'center', lineHeight: 1.4 }}>
+                Drop a brief or attach<br/>files from chat
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Briefs row */}
-            {hasBriefs && (
-              <div style={{ marginBottom: hasAttachments ? 14 : 4 }}>
-                {showSubLabels && <div style={subLabelStyle}>Briefs</div>}
-                <div style={{
-                  display: 'flex', gap: 8,
-                  overflowX: isMobile ? 'auto' : 'visible',
-                  flexWrap: isMobile ? 'nowrap' : 'wrap',
-                  WebkitOverflowScrolling: 'touch',
-                  scrollbarWidth: 'none',
+          {!loading && rowEntries.map((entry, idx) => {
+            const isLast = idx === rowEntries.length - 1
+            if (entry.kind === 'brief') {
+              const brief = entry.data
+              const slug = brief.slug || (brief.filename || '').replace('.md', '') || String(idx)
+              const title = brief.title || brief.filename || 'Brief'
+              const date = brief.dateFormatted || brief.updated_at
+                || (brief.created_at ? new Date(brief.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '')
+              const project = brief.project || ''
+              const projectLabel = PROJECT_LABELS[project] || project || ''
+              const filename = brief.filename || `${slug}.md`
+              const isHov = hoveredRow === entry.key
+              return (
+                <div
+                  key={entry.key}
+                  data-testid={`project-files-entry-${filename}`}
+                  data-filename={filename}
+                  data-project={project || ''}
+                  data-source={brief.source || 'brief'}
+                  onClick={() => onBriefClick && onBriefClick(brief)}
+                  onMouseEnter={() => setHoveredRow(entry.key)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    height: 44, padding: '0 4px',
+                    cursor: 'pointer', borderRadius: 6,
+                    background: isHov ? 'rgba(255,255,255,0.03)' : 'transparent',
+                    borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span style={{
+                    flex: 1, fontSize: 13, fontWeight: 500, color: C.text,
+                    fontFamily: "'Inter', sans-serif",
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+                  }}>{title}</span>
+                  {projectLabel && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, color: C.dim,
+                      background: 'rgba(255,255,255,0.06)', padding: '2px 6px',
+                      borderRadius: 6, flexShrink: 0, fontFamily: "'Inter', sans-serif",
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                    }}>{projectLabel}</span>
+                  )}
+                  {date && (
+                    <span style={{ fontSize: 11, color: C.dim, fontFamily: "'Inter', sans-serif", flexShrink: 0, minWidth: 42, textAlign: 'right' }}>{date}</span>
+                  )}
+                </div>
+              )
+            }
+            // attachment
+            const file = entry.data
+            const filename = file.name || file.filename || 'File'
+            const sizeBytes = file.size || (file.content ? new Blob([file.content]).size : null)
+            const isHov = hoveredRow === entry.key
+            return (
+              <div
+                key={entry.key}
+                data-testid={`project-files-entry-${filename}`}
+                data-filename={filename}
+                data-source="attachment"
+                onClick={() => handleAttachmentClick(file)}
+                onMouseEnter={() => setHoveredRow(entry.key)}
+                onMouseLeave={() => setHoveredRow(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  height: 44, padding: '0 4px',
+                  cursor: 'pointer', borderRadius: 6,
+                  background: isHov ? 'rgba(255,255,255,0.03)' : 'transparent',
+                  borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <FileTypeChip filename={filename} />
+                <span style={{
+                  flex: 1, fontSize: 13, fontWeight: 500, color: C.text, fontFamily: "'Inter', sans-serif",
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
                 }}>
-                  {briefs.map((brief, idx) => {
-                    const slug = brief.slug || (brief.filename || '').replace('.md', '') || String(idx)
-                    const title = brief.title || brief.filename || 'Brief'
-                    const agent = brief.agent || ''
-                    const date = brief.dateFormatted || (brief.created_at ? new Date(brief.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '')
-                    const isHov = hoverBrief === (brief.id || idx)
-                    return (
-                      <div
-                        key={brief.id || idx}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onBriefClick && onBriefClick(brief)}
-                        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onBriefClick && onBriefClick(brief)}
-                        onMouseEnter={() => setHoverBrief(brief.id || idx)}
-                        onMouseLeave={() => setHoverBrief(null)}
-                        style={{
-                          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                          width: isMobile ? 160 : 200,
-                          minWidth: isMobile ? 160 : 200,
-                          height: isMobile ? 72 : 80,
-                          borderRadius: 10, flexShrink: 0,
-                          background: isHov ? C.s3 : C.s2,
-                          border: isHov ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                          padding: '10px 12px 10px 15px',
-                          cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                          transition: 'background 0.15s ease, border-color 0.15s ease',
-                          userSelect: 'none',
-                        }}
-                      >
-                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: C.accent, borderRadius: '10px 0 0 10px' }} />
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                          </svg>
-                          {date && <span style={{ fontSize: 10, color: C.dim, fontFamily: "'Inter', sans-serif" }}>{date}</span>}
-                        </div>
-                        <div style={{
-                          fontSize: 13, fontWeight: 600, color: C.text, fontFamily: "'Inter', sans-serif",
-                          lineHeight: 1.3, overflow: 'hidden',
-                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis',
-                        }}>
-                          {title}
-                        </div>
-                        {agent && !isMobile && (
-                          <div style={{ fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {agent}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                  {filename}
+                </span>
+                {sizeBytes != null && (
+                  <span style={{ fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif", flexShrink: 0 }}>
+                    {formatFileSize(sizeBytes)}
+                  </span>
+                )}
+                {(isMobile || isHov) && (
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                )}
               </div>
-            )}
-
-            {/* Attachments list */}
-            {hasAttachments && (
-              <div>
-                {showSubLabels && <div style={subLabelStyle}>Attachments</div>}
-                {attachments.map((file, idx) => {
-                  const filename = file.name || file.filename || 'File'
-                  const sizeBytes = file.size || (file.content ? new Blob([file.content]).size : null)
-                  const isLast = idx === attachments.length - 1
-                  const isRowHov = hoveredRow === (file.id || idx)
-                  return (
-                    <div
-                      key={file.id || idx}
-                      onClick={() => handleAttachmentClick(file)}
-                      onMouseEnter={() => setHoveredRow(file.id || idx)}
-                      onMouseLeave={() => setHoveredRow(null)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        height: 40, padding: '0 4px', cursor: 'pointer', borderRadius: 6,
-                        background: isRowHov ? 'rgba(255,255,255,0.03)' : 'transparent',
-                        borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
-                        transition: 'background 0.15s ease',
-                      }}
-                    >
-                      <FileTypeChip filename={filename} />
-                      <span style={{
-                        flex: 1, fontSize: 13, fontWeight: 500, color: C.text, fontFamily: "'Inter', sans-serif",
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
-                      }}>
-                        {filename}
-                      </span>
-                      {sizeBytes != null && (
-                        <span style={{ fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif", flexShrink: 0 }}>
-                          {formatFileSize(sizeBytes)}
-                        </span>
-                      )}
-                      {(isMobile || isRowHov) && (
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="7 10 12 15 17 10"/>
-                          <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+            )
+          })}
         </div>
 
         {/* Bottom separator (between Files block and tasks below) */}

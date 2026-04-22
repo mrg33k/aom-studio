@@ -309,13 +309,25 @@ export function useTasksPanel() {
   }, [activeProject])
 
   // Open brief inline viewer
+  // R37b: scaffold-source briefs (event_type=scaffold_file) are looked up by
+  // (project, filename) — their slugs contain caps (e.g. "VISION") and aren't
+  // build-time briefs. The endpoint renders MD→HTML server-side via `marked`.
   const handleBriefClick = useCallback(async (brief) => {
-    const slug = brief.slug || (brief.filename || '').replace('.md', '')
     setSelectedBrief(brief)
     setBriefHtml('')
     setBriefLoading(true)
     try {
-      const res = await fetch(`/api/dashboard/file-content?slug=${encodeURIComponent(slug)}`)
+      const isScaffold = brief.source === 'scaffold' || (brief.project && brief.filename)
+      let url
+      if (isScaffold) {
+        const project = encodeURIComponent(brief.project || '')
+        const filename = encodeURIComponent(brief.filename || '')
+        url = `/api/dashboard/file-content?project=${project}&filename=${filename}`
+      } else {
+        const slug = brief.slug || (brief.filename || '').replace('.md', '')
+        url = `/api/dashboard/file-content?slug=${encodeURIComponent(slug)}`
+      }
+      const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
         setBriefHtml(data.content || '')
