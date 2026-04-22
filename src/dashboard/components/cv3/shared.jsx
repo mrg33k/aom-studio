@@ -26,10 +26,11 @@ export function Badge({ count, color }) {
   )
 }
 
-export function Tab({ label, icon, active, onClick, badge }) {
+export function Tab({ label, icon, active, onClick, badge, testid }) {
   return (
     <button
       onClick={onClick}
+      data-testid={testid || `tab-${String(label || '').toLowerCase()}`}
       style={{
         position: 'relative',
         display: 'flex',
