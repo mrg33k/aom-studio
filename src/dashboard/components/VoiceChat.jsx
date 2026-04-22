@@ -350,7 +350,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     } catch (_) {}
   }, [playNextChunk])
 
-  const stopSession = useCallback(() => {
+  const stopSession = useCallback(async () => {
     // Flush any pending transcripts BEFORE tearing down (prevents message loss)
     const pendingInput = inputAccRef.current?.trim()
     if (pendingInput) {
@@ -367,17 +367,22 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       onTranscript?.(pendingOutput, 'model')
     }
 
-    // Terminal rooms: build the final transcript from transcriptRef (mirror of
-    // state) PLUS the two pending chunks we just flushed, then POST the whole
-    // thing to /api/dashboard/voice-summary. Claude Haiku summarizes and writes
-    // ONE message to supabase-messages (source='voice-summary'), and the
-    // supabase-listener forwards that to the terminal relay inbox.
+    // R28 (2026-04-21): close the loop so the agent actually learns what was
+    // said. Every voice call -- terminal room or not -- AWAITS a POST to
+    // /api/dashboard/voice-handoff before tearing down. The endpoint writes
+    // a messages row with source='voice-handoff'; supabase-listener forwards
+    // it to the agent's relay inbox. No fire-and-forget -- that was the bug
+    // (typing indicator fires, nothing reaches the agent).
+    //
+    // Terminal rooms (elon, gary) ALSO get the existing voice-summary
+    // fire-and-forget call for the richer Haiku summary. If that lands,
+    // great. If not, voice-handoff guaranteed a baseline delivery.
     //
     // Idempotency: stopSession can fire multiple times (mute toggle, agent
-    // swap, component unmount cleanup effect). Guard the POST with a ref
-    // keyed off sessionIdRef so we only summarize a given call once. The guard
-    // clears in startSession when a fresh session id is minted.
-    if (TERMINAL_AGENTS.has(agentSlug) && sessionIdRef.current && !summaryPostedRef.current) {
+    // swap, component unmount cleanup). Guard the POST with summaryPostedRef
+    // keyed off sessionIdRef. The guard clears in startSession on a fresh
+    // session id.
+    if (sessionIdRef.current && !summaryPostedRef.current) {
       const base = Array.isArray(transcriptRef.current) ? transcriptRef.current : []
       const finalTranscript = [...base]
       if (pendingInput) finalTranscript.push({ role: 'user', text: pendingInput })
@@ -385,16 +390,41 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
       const hasContent = finalTranscript.some(t => t && typeof t.text === 'string' && t.text.trim())
       if (hasContent) {
         summaryPostedRef.current = true
-        fetch('/api/dashboard/voice-summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent: agentSlug,
-            client_id: clientId,
-            duration_secs: sessionSecs,
-            transcript: finalTranscript.map(t => ({ role: t.role, text: t.text })),
-          }),
-        }).catch(err => console.warn('[VoiceChat] voice-summary POST failed:', err))
+        updateStatus('wrapping-up')
+        const transcriptBody = finalTranscript.map(t => ({ role: t.role, text: t.text }))
+
+        // Terminal rooms: fire-and-forget the richer Haiku summary in parallel.
+        if (TERMINAL_AGENTS.has(agentSlug)) {
+          fetch('/api/dashboard/voice-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agent: agentSlug,
+              client_id: clientId,
+              duration_secs: sessionSecs,
+              transcript: transcriptBody,
+            }),
+          }).catch(err => console.warn('[VoiceChat] voice-summary POST failed:', err))
+        }
+
+        // Awaited: the guaranteed handoff. Tear-down does NOT race ahead.
+        try {
+          const resp = await fetch('/api/dashboard/voice-handoff', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agent: agentSlug,
+              client_id: clientId,
+              duration_secs: sessionSecs,
+              transcript: transcriptBody,
+            }),
+          })
+          if (!resp.ok) {
+            console.warn('[VoiceChat] voice-handoff non-200:', resp.status, await resp.text().catch(() => ''))
+          }
+        } catch (err) {
+          console.warn('[VoiceChat] voice-handoff POST failed:', err)
+        }
       }
     }
 
@@ -1011,6 +1041,9 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
 
         {/* Mic button */}
         <button
+          data-testid="voice-toggle"
+          data-voice-status={status}
+          data-voice-agent={agentSlug}
           onClick={toggleSession}
           disabled={status === 'connecting'}
           style={{
