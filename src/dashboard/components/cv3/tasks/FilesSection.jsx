@@ -524,6 +524,7 @@ export function ProjectMissionsSection({ onMissionClick }) {
               data-testid={`project-missions-entry-${m.slug}`}
               data-mission-slug={m.slug}
               data-mission-path={m.path}
+              data-file-count={m.file_count}
               onClick={() => onMissionClick && onMissionClick(m)}
               onMouseEnter={() => setHoveredRow(m.path)}
               onMouseLeave={() => setHoveredRow(null)}
