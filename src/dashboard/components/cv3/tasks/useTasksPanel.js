@@ -270,21 +270,19 @@ export function useTasksPanel() {
     }
     let cancelled = false
     setTaskFilesLoading(true)
+    // R39-1: dropped ?type=text — post-R30 the briefs endpoint covers scaffold
+    // rows; text was the legacy text_files path and returning scaffold rows
+    // there caused duplicate drawer entries (slug-based dedup couldn't catch
+    // them because text-path rows carry no slug field).
     Promise.all([
-      fetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(activeProject)}`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
       fetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(activeProject)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
       fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(activeProject)}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
-    ]).then(([textData, imgData, briefsData]) => {
+    ]).then(([imgData, briefsData]) => {
       if (cancelled) return
-      const textFiles = textData.files || []
-      const textBriefs = textFiles.filter(f => String(f.filename || f.name || '').endsWith('.md'))
-      const textAttachments = textFiles.filter(f => !String(f.filename || f.name || '').endsWith('.md'))
       const images = (imgData.files || []).map(f => ({ ...f, filename: f.name }))
-      const indexBriefs = briefsData.briefs || []
-      const seenSlugs = new Set(indexBriefs.map(b => b.slug).filter(Boolean))
-      const mergedBriefs = [...indexBriefs, ...textBriefs.filter(b => !seenSlugs.has(b.slug))]
-      setTaskBriefs(mergedBriefs)
-      setTaskAttachments([...textAttachments, ...images])
+      const briefs = briefsData.briefs || []
+      setTaskBriefs(briefs)
+      setTaskAttachments(images)
     }).catch(() => {
       if (!cancelled) { setTaskBriefs([]); setTaskAttachments([]); setTaskFilesOpen(false) }
     }).finally(() => { if (!cancelled) setTaskFilesLoading(false) })
