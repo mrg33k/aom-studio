@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   try {
-    const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done, tenantRows] = await Promise.all([
+    const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done] = await Promise.all([
       supabaseGet('agent_status', `order=slug${clientFilter}`),
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
       // Non-completed, non-blocked tasks (legacy statuses only -- queued, active, todo, working, done, rejected, failed)
@@ -60,11 +60,7 @@ export default async function handler(req, res) {
       supabaseGet('tasks', `status=in.(queued,classifying,planning,building,qa)&order=priority.desc,sort_order.asc,created_at.asc&limit=100${clientFilter}`).catch(() => []),
       // V2 done/failed tasks for completed section
       supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => []),
-      // R14e-4: owner slug for this tenant (see migration 20260421000002_tenants_owner_slug.sql).
-      // patrik has no agent_status row -- owner identity lives on tenants.owner_slug.
-      supabaseGet('tenants', `id=eq.${encodeURIComponent(clientId)}&select=owner_slug`).catch(() => []),
     ]);
-    const ownerSlug = (Array.isArray(tenantRows) && tenantRows[0]?.owner_slug) || null;
     const tasks = [...activeTasks, ...recentDone];
 
     // Architecture v2: task-runner tasks (building/qa = Right Now, queued/planning = queue)
@@ -129,7 +125,6 @@ export default async function handler(req, res) {
       lastUpdated: new Date().toISOString(),
       source: 'supabase',
       clientId,   // echo back which tenant was served
-      ownerSlug,  // R14e-4: human owner of this tenant (e.g. 'patrik' for 'aom'); null if unset
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

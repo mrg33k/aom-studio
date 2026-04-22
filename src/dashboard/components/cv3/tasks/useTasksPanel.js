@@ -18,7 +18,7 @@ const snippetOfTitle = (s, n = 90) => {
 
 export function useTasksPanel() {
   const { currentUser, worldId, showToast } = useCornerAuth()
-  const { queued, rightNow, waiting, done, refreshTasks, addOptimisticTask, ownerSlug, personalTodos } = useCornerData()
+  const { queued, rightNow, waiting, done, refreshTasks, addOptimisticTask, currentUserSlug, personalTodos } = useCornerData()
   const {
     setTab: setActiveTab,
     handleSelectProject: setActiveConversation,
@@ -767,8 +767,8 @@ export function useTasksPanel() {
     handleTaskSubmit,
     handleTaskInputKeyDown,
 
-    // R14e-4: tenant owner slug + owner's personal todos
-    ownerSlug,
+    // R14e-4: viewing user's slug inside this tenant + their personal todos
+    currentUserSlug,
     personalTodos: personalTodos || [],
   }
 }

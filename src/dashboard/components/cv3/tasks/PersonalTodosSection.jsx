@@ -1,14 +1,16 @@
-// R14e-4: owner's personal todos -- renders tasks in the tasks table where
-// `agent` matches tenants.owner_slug (e.g. 'patrik' for the 'aom' tenant).
-// Source of truth: useDataPipe -> CornerContext.data -> useTasksPanel.personalTodos.
-// Hidden when there are no owner tasks (collapses cleanly; no placeholder).
+// R14e-4: viewer's personal todos -- renders tasks in the tasks table where
+// `agent` matches the current viewer's slug inside this tenant. Source of
+// truth: useCurrentUserSlug(currentUser, worldId) → CornerContext.data →
+// useTasksPanel.personalTodos (pre-filtered by slug upstream).
+// Hidden when viewer has no slug in this tenant or when list is empty.
+// "Your Todos" in a team tenant means YOUR own, not the team's.
 import { C } from '../../../lib/cv3Colors.js'
 import { LIFECYCLE } from './lifecycle.js'
 import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
 export default function PersonalTodosSection() {
-  const { personalTodos, ownerSlug } = useTasksPanelCtx()
-  if (!ownerSlug) return null
+  const { personalTodos, currentUserSlug } = useTasksPanelCtx()
+  if (!currentUserSlug) return null
   const todos = Array.isArray(personalTodos) ? personalTodos : []
   if (todos.length === 0) return null
 

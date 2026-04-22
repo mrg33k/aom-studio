@@ -19,6 +19,7 @@ import {
 } from './lib/clientConfig.js'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
+import { useCurrentUserSlug } from './hooks/useCurrentUserSlug'
 import useTelephone from './hooks/useTelephone'
 import { C } from './lib/cv3Colors.js'
 import { AomLogo } from './components/cv3/icons.jsx'
@@ -159,9 +160,15 @@ export default function CornerV3() {
     }
     prevDoneIdsRef.current = new Set(done.map(t => t.id))
   }, [done])
-  // useDataPipe provides agents (with realtime status), inboxItems, projectRooms (from agent_status),
-  // ownerSlug (R14e-4: human owner of this tenant; null when unset)
-  const { agents, inboxItems, projectRooms, ownerSlug, personalTodos } = useDataPipe(null, worldId)
+  // R14e-4 (viewing-user model): the viewer's slug inside this tenant.
+  // Resolved from `tenant_users.slug` keyed on auth.uid() + current worldId.
+  // AOM tenant: Patrik → 'patrik', Ash → 'ash'. Future personal tenants:
+  // each viewer gets their own slug in their own tenant_users row.
+  const currentUserSlug = useCurrentUserSlug(currentUser, worldId)
+
+  // useDataPipe provides agents, inboxItems, projectRooms (from agent_status),
+  // and filters personal/non-personal tasks by the viewer's slug.
+  const { agents, inboxItems, projectRooms, personalTodos } = useDataPipe(null, worldId, currentUserSlug)
 
   // Telephone mode (long-form record → transcribe → post to active super-agent).
   // Lives at this level so recording survives Home/Tasks/Chat navigation.
@@ -372,8 +379,8 @@ export default function CornerV3() {
     agents, inboxItems, projectRooms,
     queued, rightNow, waiting, done, allTasks,
     refreshTasks, addOptimisticTask,
-    ownerSlug, personalTodos,
-  }), [agents, inboxItems, projectRooms, queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask, ownerSlug, personalTodos])
+    currentUserSlug, personalTodos,
+  }), [agents, inboxItems, projectRooms, queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask, currentUserSlug, personalTodos])
 
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,

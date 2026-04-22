@@ -124,7 +124,7 @@ function deriveProjectProgress(punchData) {
 // Returns: { rightNow, completedFeed, yourTodos, finishThese, schedule, projectProgress,
 //            pillCounts, isAutoChecked, punchData, punchLoading, lastUpdated, refetch }
 // =============================================================================
-export function useDataPipe(parsePunchList, worldId) {
+export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
@@ -138,10 +138,6 @@ export function useDataPipe(parsePunchList, worldId) {
   // Project rooms from agent_status (type=project) — used for non-AOM worlds where
   // the projects table may be empty but agent_status has project room entries.
   const [supabaseProjectRooms, setSupabaseProjectRooms] = useState([])
-  // R14e-4: human owner of this tenant (e.g. 'patrik' for 'aom'). null if unset.
-  // Sourced from tenants.owner_slug via api/dashboard/supabase-status. Replaces
-  // hardcoded 'patrik' literals. Null-safe: when unknown, owner filters match nothing.
-  const [ownerSlug, setOwnerSlug] = useState(null)
   // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
   // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
   const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
@@ -178,27 +174,24 @@ export function useDataPipe(parsePunchList, worldId) {
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
-            // R14e-4: capture tenant owner slug (null in worlds with no owner configured).
-            const currentOwnerSlug = sbData.ownerSlug || null
-            setOwnerSlug(currentOwnerSlug)
             if (sbData.tasks) {
-              // Done tasks awaiting approval
+              // Done tasks awaiting approval (exclude viewer's own tasks; agents review theirs elsewhere)
               const doneEntries = sbData.tasks
-                .filter(t => t.status === 'done' && t.agent !== currentOwnerSlug)
+                .filter(t => t.status === 'done' && t.agent !== currentUserSlug)
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
               mergedTasks.push(...doneEntries)
 
-              // Todo tasks for To Do pill
+              // Todo tasks for To Do pill (exclude viewer's own tasks; those render in Personal Todos)
               const todoEntries = sbData.tasks
-                .filter(t => t.status === 'todo' && t.agent !== currentOwnerSlug)
+                .filter(t => t.status === 'todo' && t.agent !== currentUserSlug)
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
               setTodoItems(todoEntries)
 
-              // Owner's personal tasks (null-safe: empty when ownerSlug is null)
-              const ownerEntries = currentOwnerSlug
+              // Viewer's personal tasks (null-safe: empty when slug is unknown)
+              const ownerEntries = currentUserSlug
                 ? sbData.tasks
-                    .filter(t => t.agent === currentOwnerSlug && t.status !== 'completed' && t.status !== 'done')
-                    .map(t => ({ text: t.text || '', agent: currentOwnerSlug, taskId: t.id, done: false, project: t.project }))
+                    .filter(t => t.agent === currentUserSlug && t.status !== 'completed' && t.status !== 'done')
+                    .map(t => ({ text: t.text || '', agent: currentUserSlug, taskId: t.id, done: false, project: t.project }))
                 : []
               setPersonalTodos(ownerEntries)
             }
@@ -278,9 +271,6 @@ export function useDataPipe(parsePunchList, worldId) {
         if (!res.ok) return
         const data = await res.json()
         const activeAgentsData = null // active_processes table dependency removed
-        // R14e-4: capture tenant owner slug (null in worlds with no owner configured).
-        const currentOwnerSlug = data.ownerSlug || null
-        setOwnerSlug(currentOwnerSlug)
 
         // Map Supabase data to Right Now format
         // Primary source: agent_status table (status='working' + current_task non-empty).
@@ -300,21 +290,21 @@ export function useDataPipe(parsePunchList, worldId) {
           // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
           if (data.tasks) {
             const doneEntries = data.tasks
-              .filter(t => t.status === 'done' && t.agent !== currentOwnerSlug)
+              .filter(t => t.status === 'done' && t.agent !== currentUserSlug)
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
 
             // Todo tasks for To Do pill (never shown in Right Now)
             const todoEntries = data.tasks
-              .filter(t => t.status === 'todo' && t.agent !== currentOwnerSlug)
+              .filter(t => t.status === 'todo' && t.agent !== currentUserSlug)
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
             setTodoItems(todoEntries)
 
-            // Owner's personal tasks (null-safe: empty when ownerSlug is null)
-            const ownerEntries = currentOwnerSlug
+            // Viewer's personal tasks (null-safe: empty when slug is unknown)
+            const ownerEntries = currentUserSlug
               ? data.tasks
-                  .filter(t => t.agent === currentOwnerSlug && t.status !== 'completed' && t.status !== 'done')
-                  .map(t => ({ text: t.text || '', agent: currentOwnerSlug, taskId: t.id, done: false, project: t.project }))
+                  .filter(t => t.agent === currentUserSlug && t.status !== 'completed' && t.status !== 'done')
+                  .map(t => ({ text: t.text || '', agent: currentUserSlug, taskId: t.id, done: false, project: t.project }))
               : []
             setPersonalTodos(ownerEntries)
           }
@@ -726,7 +716,6 @@ export function useDataPipe(parsePunchList, worldId) {
     lastUpdated,
     agents,
     projectRooms: supabaseProjectRooms,
-    ownerSlug,
     refetch: fetchAll,
   }
 }
