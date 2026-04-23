@@ -187,7 +187,11 @@ export default function CornerV3() {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!supabase) return
+    if (!supabase) {
+      // No Supabase configured (local dev without env vars) -- allow through.
+      setAuthReady(true)
+      return
+    }
 
     // getSession() reads from localStorage (near-instant) rather than making a network
     // request like getUser() does. This seeds currentUser before the first paint cycle.
@@ -394,7 +398,7 @@ export default function CornerV3() {
 
   // Wait for auth to resolve AND world to be set before rendering
   // This prevents hooks from fetching with the wrong client_id (e.g. 'aom' default)
-  if (!authReady || (!currentUser && typeof window !== 'undefined')) {
+  if (!authReady || (!!supabase && !currentUser && typeof window !== 'undefined')) {
     return (
       <div style={{ width: '100%', height: '100dvh', background: '#060A14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
         <style>{`@keyframes cvLoaderBar { 0% { width: 0%; } 100% { width: 100%; } } @keyframes cvSpin { to { transform: rotate(360deg); } }`}</style>

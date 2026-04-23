@@ -2350,6 +2350,115 @@ function localDashboardPlugin() {
           res.end(JSON.stringify({ error: err.message }))
         }
       })
+
+      // ---- LOCAL CREATE-PROJECT-TASK PROXY ----
+      // POST /api/dashboard/create-project-task (R21c)
+      // Mirrors the production handler. Reads Supabase service-role key from
+      // ~/.config/supabase/corner.env so local dev can create tasks in the real DB.
+      server.middlewares.use('/api/dashboard/create-project-task', async (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.setHeader('Content-Type', 'application/json')
+
+        if (req.method === 'OPTIONS') { res.statusCode = 200; res.end(); return }
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: 'POST only' })); return }
+
+        function loadCreds() {
+          const envPath = resolve(os.homedir(), '.config', 'supabase', 'corner.env')
+          if (!fs.existsSync(envPath)) return {}
+          const creds = {}
+          for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+            const m = line.match(/^([A-Z_]+)=(.+)$/)
+            if (m) creds[m[1]] = m[2].trim()
+          }
+          return creds
+        }
+        const creds = loadCreds()
+        const SB_URL = creds.SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+        const SB_KEY = creds.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+
+        if (!SB_URL || !SB_KEY) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: 'Supabase not configured for local dev. Add creds to ~/.config/supabase/corner.env' }))
+          return
+        }
+
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', async () => {
+          try {
+            let parsed = {}
+            try { parsed = JSON.parse(body) } catch { }
+            const { text, projectSlug, clientId, userId } = parsed
+
+            if (!text || typeof text !== 'string' || !text.trim()) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'text is required' }))
+              return
+            }
+            const slug = (projectSlug || '').toString().trim().toLowerCase() || null
+            if (!slug) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'projectSlug is required' }))
+              return
+            }
+            if (!/^[a-z0-9][a-z0-9-_]{0,64}$/.test(slug)) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'invalid projectSlug' }))
+              return
+            }
+
+            const rawTitle = text.trim().replace(/\s+/g, ' ')
+            const title = rawTitle.length > 140 ? rawTitle.slice(0, 137) + '…' : rawTitle
+            const client = clientId && /^[a-z0-9][a-z0-9-_:]{0,64}$/i.test(clientId) ? clientId : 'aom'
+
+            let repoPath = ''
+            try {
+              const r = await fetch(
+                `${SB_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&select=repo_path&limit=1`,
+                { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } },
+              )
+              if (r.ok) {
+                const rows = await r.json()
+                repoPath = (Array.isArray(rows) && rows[0] && rows[0].repo_path) || ''
+              }
+            } catch (_) { /* best effort */ }
+
+            const row = {
+              title, text: text.trim(), description: text.trim(),
+              status: 'queued', source: 'corner-dashboard-task',
+              client_id: client, created_by: userId || null,
+              project: slug, project_path: repoPath,
+              metadata: { repo: slug, created_via: 'r21c-in-chat', model: 'sonnet' },
+            }
+            const resp = await fetch(`${SB_URL}/rest/v1/tasks`, {
+              method: 'POST',
+              headers: {
+                apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
+                'Content-Type': 'application/json', Prefer: 'return=representation',
+              },
+              body: JSON.stringify(row),
+            })
+            if (!resp.ok) {
+              const t = await resp.text().catch(() => '')
+              res.statusCode = 502
+              res.end(JSON.stringify({ error: `Supabase insert failed: ${t.slice(0, 200)}` }))
+              return
+            }
+            const inserted = await resp.json()
+            const task = (Array.isArray(inserted) && inserted[0]) || null
+            res.statusCode = 200
+            res.end(JSON.stringify({
+              ok: true,
+              task: task ? { id: task.id, title: task.title, status: task.status, project: task.project } : null,
+            }))
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err?.message || 'unknown error' }))
+          }
+        })
+      })
     },
   }
 }

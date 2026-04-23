@@ -150,15 +150,19 @@ export default function ChatPanel() {
 
   const selectedProject = useMemo(() => {
     if (inlineProject) return inlineProject
-    if (!projectId || !projects?.length) return null
+    if (!projectId) return null
+    if (projects?.length) {
+      const found =
+        projects.find(p => String(p.id) === String(projectId)) ||
+        projects.find(p => String(p.slug).toLowerCase() === String(projectId).toLowerCase())
+      if (found) return found
+    }
     // Match by id first (legacy /dashboard/project/:projectId), then by
     // slug (R21a /dashboard/projects/:slug/chat). Both routes hand us the
     // same useParams key so one lookup covers both shapes.
-    return (
-      projects.find(p => String(p.id) === String(projectId)) ||
-      projects.find(p => String(p.slug).toLowerCase() === String(projectId).toLowerCase()) ||
-      null
-    )
+    // Synthetic fallback: if projects haven't loaded yet (e.g. Supabase loading),
+    // still resolve the project from the URL slug so the input bar is usable.
+    return { id: projectId, slug: projectId, name: projectId }
   }, [projectId, projects, inlineProject])
 
   // Reset session-hygiene counters when conversation changes (agent OR project).
