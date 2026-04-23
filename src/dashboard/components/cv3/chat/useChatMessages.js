@@ -43,6 +43,11 @@ export default function useChatMessages({
   }, [selectedAgent, worldId])
 
   // ── Realtime: watch for new messages in the agent thread ──────────────────
+  // R53: channel isolation. Supabase postgres_changes filter accepts only ONE
+  // column expression, so we use client_id server-side and enforce
+  // agent-slug match client-side. Any mismatch is an isolation leak — we
+  // drop it AND log loud so leaks are traceable in production. The gate
+  // seeds cross-agent messages to prove no mismatched payload renders.
   useEffect(() => {
     if (!selectedAgent || !supabase || !worldId) return
     const channel = supabase
@@ -52,7 +57,23 @@ export default function useChatMessages({
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
         (payload) => {
           const msg = payload.new
-          if (msg.agent === selectedAgent.slug) {
+          // Hard isolation: client_id + agent must both match.
+          if (msg.client_id !== worldId) {
+            // Shouldn't happen given the server-side filter, but logging it
+            // would surface any realtime misrouting immediately.
+            console.warn('[R53] dropped cross-tenant message', { expected: worldId, got: msg.client_id, id: msg.id })
+            return
+          }
+          if (msg.agent !== selectedAgent.slug) {
+            // This is the bleed Patrik saw. Drop + log so the gate can
+            // detect cross-agent misrouting.
+            if (typeof window !== 'undefined') {
+              window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+              window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
+            }
+            return
+          }
+          {
             setMessages(prev => {
               // Deduplicate: skip if we already have this id (from optimistic insert)
               if (prev.some(m => m.id === msg.id)) return prev
@@ -127,6 +148,9 @@ export default function useChatMessages({
   }, [worldId, selectedProject, selectedAgent])
 
   // ── Realtime subscription for project messages ───────────────────────────
+  // R53: channel isolation. Same hard-filter principle as the agent thread:
+  // client_id + project match; any mismatch is logged and dropped so the
+  // gate can prove isolation.
   useEffect(() => {
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
     const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
@@ -137,12 +161,21 @@ export default function useChatMessages({
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
         (payload) => {
           const msg = payload.new
-          // R6: match either new shape (project column set) or legacy shape
-          // (agent='project:<slug>') so mid-migration history keeps flowing.
+          if (msg.client_id !== projCid) {
+            console.warn('[R53] dropped cross-tenant project message', { expected: projCid, got: msg.client_id, id: msg.id })
+            return
+          }
           const isForThisProject =
             msg.project === selectedProject.slug ||
             msg.agent === `project:${selectedProject.slug}`
-          if (isForThisProject) {
+          if (!isForThisProject) {
+            if (typeof window !== 'undefined') {
+              window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+              window.__R53_BLEED_LOG__.push({ side: 'project-thread', expected: selectedProject.slug, got: msg.project, agent: msg.agent, id: msg.id, ts: Date.now() })
+            }
+            return
+          }
+          {
             setMessages(prev => {
               if (prev.some(m => m.id === msg.id)) return prev
               const tempIdx = prev.findIndex(m =>
