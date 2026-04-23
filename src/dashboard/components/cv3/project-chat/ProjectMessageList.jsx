@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -12,6 +13,15 @@ import {
   useChatSearchCtx,
   useChatContextMenuCtx,
 } from '../chat/ChatPanelContext.jsx'
+
+function isKickoffMessage(m) {
+  const meta = m?.metadata
+  if (!meta) return false
+  if (typeof meta === 'string') {
+    try { return !!JSON.parse(meta)?.kickoff_sweep } catch { return false }
+  }
+  return !!meta.kickoff_sweep
+}
 
 // Scrollable messages area for project chat. Renders:
 // - Task status cards for task-* / checkpoint messages (via TaskStatusCard)
@@ -36,6 +46,28 @@ export default function ProjectMessageList() {
   const { msgMenu, setMsgMenu, openMsgMenu, startLongPress, cancelLongPress } = useProjectChatMsgMenu()
   const projColor = selectedProject?.color || '#6B8AB0'
   const hidden = chatSearchOpen && chatSearchResults && chatSearchResults.length > 0
+
+  // R50b: partition around the most-recent kickoff message so pre-ratification
+  // chatter collapses under a "show earlier messages" affordance.
+  const { preKickoff, postKickoff, hasCutoff } = useMemo(() => {
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return { preKickoff: [], postKickoff: [], hasCutoff: false }
+    }
+    let cutoffIdx = -1
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (isKickoffMessage(messages[i])) { cutoffIdx = i; break }
+    }
+    if (cutoffIdx <= 0) {
+      return { preKickoff: [], postKickoff: messages, hasCutoff: cutoffIdx === 0 }
+    }
+    return {
+      preKickoff: messages.slice(0, cutoffIdx),
+      postKickoff: messages.slice(cutoffIdx),
+      hasCutoff: true,
+    }
+  }, [messages])
+
+  const [earlierExpanded, setEarlierExpanded] = useState(false)
 
   return (
     <>
@@ -74,7 +106,34 @@ export default function ProjectMessageList() {
           <span style={{ fontSize: 12, color: C.muted }}>Start a conversation</span>
         </div>
       )}
-      {messages.map(msg => {
+      {hasCutoff && preKickoff.length > 0 && (
+        <button
+          type="button"
+          data-testid="show-earlier-messages"
+          data-expanded={earlierExpanded ? 'true' : 'false'}
+          onClick={() => setEarlierExpanded(v => !v)}
+          style={{
+            alignSelf: 'center',
+            margin: '4px auto 8px',
+            padding: '6px 14px',
+            fontSize: 12,
+            color: C.muted,
+            background: 'transparent',
+            border: `1px solid ${C.muted}33`,
+            borderRadius: 14,
+            cursor: 'pointer',
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          {earlierExpanded
+            ? `Hide earlier messages (${preKickoff.length})`
+            : `Show earlier messages (${preKickoff.length})`}
+        </button>
+      )}
+      {(hasCutoff
+        ? (earlierExpanded ? [...preKickoff, ...postKickoff] : postKickoff)
+        : messages
+      ).map(msg => {
         // Task status cards: render task-completion / task-runner / checkpoint
         // messages as the CV3 card (Steffen's design) instead of a plain bubble.
         // Mirrors ThreadView so project-room crossposts also get the card.
