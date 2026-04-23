@@ -15,6 +15,7 @@ import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBr
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
+import LivingParagraphCard from './tasks/LivingParagraphCard.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
 import FailedTasksSection from './tasks/FailedTasksSection.jsx'
@@ -51,6 +52,7 @@ function TasksPanelBody() {
     handleTaskNeedsVerification,
     handleTaskResearch,
     handleTaskMoveTo,
+    worldId,
   } = useTasksPanelCtx()
 
   return (
@@ -420,6 +422,13 @@ function TasksPanelBody() {
         )}
         {/* ── Owner's Personal Todos (R14e-4) ──────────────────── */}
         <PersonalTodosSection />
+
+        {/* ── R62: living greeting-paragraph above the stats + hero stack.
+               "All" filter → roundup across projects; project pill → scoped.
+               Read-more expands detail sourced from the same endpoint. */}
+        {!searchQuery && !activeMissionPath && (
+          <LivingParagraphCard world={worldId} activeProject={activeProject} />
+        )}
 
         {/* ── RIGHT NOW — Hero section ─────────────────────────── */}
         <ActiveTasksSection />
