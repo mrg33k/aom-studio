@@ -7,14 +7,11 @@
 // top, unpinned items fall into the main list."
 //
 // Generalizes R19e's EA-only `aom_ea_hero_hidden` flag. The EA slug is
-// included in the default pinned set for a fresh user so the EA still
-// reads as pinned by default (R19e VISION: "The EA hero pin is a default,
-// not a fixture"). Users who unpin the EA end up with a pinned set that
-// excludes it.
-//
-// Storage keys are world-scoped so Ben's world has different pins than
-// Patrik's AOM world without leaking either direction.
-import { useCallback, useEffect, useState } from 'react'
+// seeded into the pinned set on first mount so a fresh user sees the EA
+// pinned by default (R19e VISION: "The EA hero pin is a default, not a
+// fixture"). Because `agents` loads async, the seed is deferred to an
+// effect that waits for defaultEaSlug to become known.
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const AGENTS_KEY = (world) => `aom_pinned_agents_${world || 'default'}`
 const PROJECTS_KEY = (world) => `aom_pinned_projects_${world || 'default'}`
@@ -45,22 +42,40 @@ function readLegacyEaHidden() {
 
 export function usePinnedAgents({ world, defaultEaSlug }) {
   const key = AGENTS_KEY(world)
-  const [pinned, setPinned] = useState(() => {
-    const stored = readSet(key)
-    if (stored) return stored
-    // First-load migration: if the legacy R19e flag said "hidden", the EA
-    // starts unpinned; otherwise the EA is pinned by default. Either way we
-    // persist so the legacy flag becomes irrelevant going forward.
-    const legacyHidden = readLegacyEaHidden()
-    const seed = new Set()
-    if (defaultEaSlug && !legacyHidden) seed.add(defaultEaSlug)
-    return seed
-  })
+  const [pinned, setPinned] = useState(() => readSet(key) || new Set())
 
-  useEffect(() => { writeSet(key, pinned) }, [key, pinned])
+  // Seed the EA on first mount IF storage was empty AND defaultEaSlug is
+  // known. Because agents load async, we defer seeding to an effect that
+  // watches defaultEaSlug. `seededRef` starts true when storage already
+  // has a value — the user has an explicit pin state and we respect it.
+  const seededRef = useRef(readSet(key) !== null)
+  useEffect(() => {
+    if (seededRef.current) return
+    if (!defaultEaSlug) return
+    seededRef.current = true
+    const legacyHidden = readLegacyEaHidden()
+    if (!legacyHidden) {
+      setPinned(prev => {
+        if (prev.has(defaultEaSlug)) return prev
+        const next = new Set(prev); next.add(defaultEaSlug); return next
+      })
+    }
+    // If legacy says "hidden", leave the empty set alone; that's
+    // "EA unpinned" in the new schema.
+  }, [defaultEaSlug])
+
+  useEffect(() => {
+    // Don't overwrite storage before the seed runs. Before the first
+    // effect fires, `seededRef.current` is false only when we had no
+    // stored value AND no defaultEaSlug yet; in that window the set is
+    // empty so skipping the write just delays persistence by a tick.
+    if (!seededRef.current) return
+    writeSet(key, pinned)
+  }, [key, pinned])
 
   const pin = useCallback((slug) => {
     if (!slug) return
+    seededRef.current = true
     setPinned(prev => {
       if (prev.has(slug)) return prev
       const next = new Set(prev); next.add(slug); return next
@@ -68,6 +83,7 @@ export function usePinnedAgents({ world, defaultEaSlug }) {
   }, [])
   const unpin = useCallback((slug) => {
     if (!slug) return
+    seededRef.current = true
     setPinned(prev => {
       if (!prev.has(slug)) return prev
       const next = new Set(prev); next.delete(slug); return next
