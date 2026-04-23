@@ -4,9 +4,26 @@
 //
 // R3b (Apr 17, 2026): reads from feature-sliced chat contexts instead of a
 // single ctx prop. The internal split (R2e) is unchanged.
+import { useEffect, useState } from 'react'
 import { getStatusColor } from './shared.jsx'
 import { useNavigate } from 'react-router-dom'
 import { C, agentColors } from '../../lib/cv3Colors.js'
+
+// R19e: EA hero is an opinion, not a fixture. The user can unpin it so
+// the EA falls through to AgentsList and other agents can sit where the
+// hero was. Restore is surfaced via a small "Pin EA hero" affordance.
+const EA_HERO_HIDDEN_KEY = 'aom_ea_hero_hidden'
+function readEaHeroHidden() {
+  if (typeof window === 'undefined') return false
+  try { return localStorage.getItem(EA_HERO_HIDDEN_KEY) === '1' } catch { return false }
+}
+function writeEaHeroHidden(hidden) {
+  if (typeof window === 'undefined') return
+  try {
+    if (hidden) localStorage.setItem(EA_HERO_HIDDEN_KEY, '1')
+    else localStorage.removeItem(EA_HERO_HIDDEN_KEY)
+  } catch {}
+}
 
 import { ACTIVE_STATUSES, CONVERSATIONS_KEYFRAMES } from './conversations/conversationsConstants.js'
 import useHomeSearch from './conversations/useHomeSearch.js'
@@ -70,6 +87,10 @@ export default function ConversationsView() {
     isVoiceActive, voiceMinimized, voiceMinimizedAgent,
     setVoiceMinimized,
   } = useChatVoiceCtx()
+
+  // R19e: EA hero unpin state, persisted in localStorage.
+  const [eaHeroHidden, setEaHeroHidden] = useState(readEaHeroHidden)
+  useEffect(() => { writeEaHeroHidden(eaHeroHidden) }, [eaHeroHidden])
 
   const search = useHomeSearch({ agents, projects })
   const {
@@ -188,17 +209,41 @@ export default function ConversationsView() {
 
       {!showSearch && (
         <>
-          <EaHeroCard
-            eaAgent={eaAgent}
-            eaLastMsg={eaLastMsg}
-            eaUnread={eaUnread}
-            eaStatusInfo={eaStatusInfo}
-            eaIsActive={eaIsActive}
-            activeAgentSlugs={activeAgentSlugs}
-            latestFailedTask={eaAgent ? latestFailedByAgent[eaAgent.slug] || null : null}
-            setSelectedAgent={setSelectedAgent}
-            onSelectAgent={onSelectAgent}
-          />
+          {!eaHeroHidden && (
+            <EaHeroCard
+              eaAgent={eaAgent}
+              eaLastMsg={eaLastMsg}
+              eaUnread={eaUnread}
+              eaStatusInfo={eaStatusInfo}
+              eaIsActive={eaIsActive}
+              activeAgentSlugs={activeAgentSlugs}
+              latestFailedTask={eaAgent ? latestFailedByAgent[eaAgent.slug] || null : null}
+              setSelectedAgent={setSelectedAgent}
+              onSelectAgent={onSelectAgent}
+              onUnpin={() => setEaHeroHidden(true)}
+            />
+          )}
+          {eaHeroHidden && eaAgent && (
+            <button
+              type="button"
+              data-testid="ea-hero-restore"
+              onClick={() => setEaHeroHidden(false)}
+              style={{
+                marginBottom: 18,
+                padding: '8px 14px',
+                borderRadius: 10,
+                border: '1px solid rgba(96,165,250,0.25)',
+                background: 'rgba(96,165,250,0.06)',
+                color: '#60A5FA',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              Pin {eaAgent.name || 'EA'} back to hero
+            </button>
+          )}
 
           <AgentsList
             agents={agents}
@@ -206,7 +251,7 @@ export default function ConversationsView() {
             unreadCounts={unreadCounts}
             activeAgentSlugs={activeAgentSlugs}
             latestFailedByAgent={latestFailedByAgent}
-            heroSlug={eaAgent?.slug}
+            heroSlug={eaHeroHidden ? null : eaAgent?.slug}
             setSelectedAgent={setSelectedAgent}
             onSelectAgent={onSelectAgent}
           />

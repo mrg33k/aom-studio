@@ -4,6 +4,10 @@
 // role-driven (is_ea) in R14e-2. R14a (2026-04-22): renders an
 // AgentFailureSurface strip below the hero when the EA's latest task is
 // failed -- same component as AgentsList uses.
+// R19e (2026-04-23): EA hero is an opinion, not a fixture. The card
+// carries an unpin toggle that hides the hero slot; when hidden, the EA
+// falls through to AgentsList as a regular card. Restore is surfaced
+// by the parent via EaHeroRestore below.
 import { C } from '../../../lib/cv3Colors.js'
 import { formatChatTime } from '../shared.jsx'
 import AgentFailureSurface from './AgentFailureSurface.jsx'
@@ -18,11 +22,43 @@ export default function EaHeroCard({
   latestFailedTask = null,
   setSelectedAgent,
   onSelectAgent,
+  onUnpin,
 }) {
   if (!eaAgent) return null
   const avatarLetter = (eaAgent.name || '?')[0].toUpperCase()
   return (
-    <div data-agent-slug={eaAgent.slug} style={{ marginBottom: 28 }}>
+    <div data-agent-slug={eaAgent.slug} data-testid="ea-hero-card" style={{ marginBottom: 28, position: 'relative' }}>
+    {onUnpin && (
+      <button
+        type="button"
+        data-testid="ea-hero-unpin"
+        aria-label="Unpin EA hero"
+        onClick={(e) => { e.stopPropagation(); onUnpin() }}
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 12,
+          zIndex: 2,
+          width: 26,
+          height: 26,
+          borderRadius: 8,
+          border: '1px solid rgba(96,165,250,0.25)',
+          background: 'rgba(10,12,20,0.6)',
+          color: C.muted,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+          lineHeight: 1,
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        title="Unpin — the EA falls into the agents list below. You can pin other agents alongside."
+      >
+        ×
+      </button>
+    )}
     <button
       data-testid={`agent-card-${eaAgent.slug}`}
       data-agent-slug={eaAgent.slug}
