@@ -11,7 +11,7 @@
 import { C } from '../../lib/cv3Colors.js'
 import { TaskContextMenu } from './ContextMenu.jsx'
 
-import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb } from './tasks/FilesSection.jsx'
+import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from './tasks/FilesSection.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
@@ -352,10 +352,14 @@ function TasksPanelBody() {
           </div>
         </div>
 
-        {/* R39-4: breadcrumb appears when the drawer is in mission scope */}
+        {/* R39-4: breadcrumb appears when the drawer is in mission scope.
+            R51: inside a mission, show the six-file scaffold for THAT
+            mission FIRST, then any nested sub-missions, then the free-form
+            file list. The scaffold is the shape; sub-missions nest under it. */}
         {activeMissionPath && (
           <div data-testid="mission-view" data-mission-path={activeMissionPath}>
             <MissionBreadcrumb />
+            <MissionScaffoldSection />
             <ProjectMissionsSection />
             <ProjectFilesSection />
           </div>

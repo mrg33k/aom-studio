@@ -436,6 +436,136 @@ export function ProjectFilesSection() {
   )
 }
 
+// R51 — MissionScaffoldSection (2026-04-22 session 18).
+// Renders the six canonical scaffold files FOR THE CURRENT MISSION as a
+// single-column list: VISION / RESEARCH / BUILD / CONTEXT /
+// last-conversation / research (the directory). Click a row → opens that
+// file via the same /api/dashboard/file-content endpoint the project
+// drawer uses. Missing files render with "not yet created" affordance —
+// the scaffold is the SHAPE users see even when files are stubs.
+//
+// Only renders when activeMissionPath is set. R39-4 shipped the
+// breadcrumb + drill-in plumbing; R51 fills the file surface inside a
+// drilled-in mission.
+const MISSION_SCAFFOLD_ENTRIES = [
+  { filename: 'VISION.md',             label: 'Vision',           color: '#A78BFA' },
+  { filename: 'RESEARCH.md',           label: 'Research',         color: '#6EE7B7' },
+  { filename: 'BUILD.md',              label: 'Build',            color: '#FBBF24' },
+  { filename: 'CONTEXT.md',            label: 'Context',          color: '#60A5FA' },
+  { filename: 'last-conversation.md',  label: 'Last conversation', color: '#F9A8D4' },
+  { filename: 'research/',             label: 'research/',        color: '#94A3B8', isDir: true },
+]
+
+export function MissionScaffoldSection() {
+  const {
+    activeMissionPath,
+    handleBriefClick,
+  } = useTasksPanelCtx()
+  const [hoveredRow, setHoveredRow] = useState(null)
+  const [isOpen, setIsOpen] = useState(true)
+  if (!activeMissionPath) return null
+
+  const onClickRow = (entry) => {
+    if (entry.isDir || !handleBriefClick) return
+    handleBriefClick({
+      project: activeMissionPath,
+      filename: entry.filename,
+      source: 'scaffold',
+      title: `${entry.label} — ${activeMissionPath}`,
+    })
+  }
+
+  return (
+    <div
+      data-testid="mission-scaffold"
+      data-mission-path={activeMissionPath}
+      aria-expanded={isOpen ? 'true' : 'false'}
+      style={{ marginBottom: 16 }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', height: 32, gap: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+          Scaffold
+        </span>
+        <span style={{
+          fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif",
+          background: C.dim + '40', padding: '2px 7px', borderRadius: 10,
+        }}>
+          {MISSION_SCAFFOLD_ENTRIES.length}
+        </span>
+        <div style={{ flex: 1 }} />
+        <button
+          data-testid="mission-scaffold-toggle"
+          onClick={() => setIsOpen(v => !v)}
+          style={{
+            width: 24, height: 24, borderRadius: 8, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+            background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg
+            width={14} height={14} viewBox="0 0 24 24" fill="none"
+            stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ height: 1, background: C.border }} />
+
+      <div style={{ maxHeight: isOpen ? 99999 : 0, overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
+        {MISSION_SCAFFOLD_ENTRIES.map((entry, idx) => {
+          const isLast = idx === MISSION_SCAFFOLD_ENTRIES.length - 1
+          const isHov = hoveredRow === entry.filename
+          return (
+            <div
+              key={entry.filename}
+              data-testid={`mission-scaffold-entry-${entry.filename}`}
+              data-filename={entry.filename}
+              data-is-dir={entry.isDir ? 'true' : 'false'}
+              onClick={() => onClickRow(entry)}
+              onMouseEnter={() => setHoveredRow(entry.filename)}
+              onMouseLeave={() => setHoveredRow(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                height: 44, padding: '0 4px',
+                cursor: entry.isDir ? 'default' : 'pointer',
+                borderRadius: 6,
+                background: isHov ? 'rgba(255,255,255,0.03)' : 'transparent',
+                borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
+                transition: 'background 0.15s ease',
+              }}
+            >
+              {entry.isDir ? (
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={entry.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+              ) : (
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={entry.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              )}
+              <span style={{
+                flex: 1, fontSize: 13, fontWeight: 500, color: C.text,
+                fontFamily: "'Inter', sans-serif",
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+              }}>{entry.label}</span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: C.dim,
+                fontFamily: "'JetBrains Mono', monospace",
+                flexShrink: 0,
+              }}>{entry.filename}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ height: 1, background: C.border, marginTop: isOpen ? 12 : 6 }} />
+    </div>
+  )
+}
+
 // R39-3 — missions as first-class list inside the per-project drawer.
 // Data comes from /api/dashboard/missions?project=<slug>; each mission is a
 // sub-project keyed by agent='<parent>:<mission>' in the scaffold events.
