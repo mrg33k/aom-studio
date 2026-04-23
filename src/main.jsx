@@ -65,6 +65,7 @@ const IncludedHealthBrand = lazy(() => import('./pages/IncludedHealthBrand.jsx')
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
 const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 const TenantSignupPage = lazy(() => import('./pages/TenantSignupPage.jsx'))
+const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 import './index.css'
 
 function ConstructionRedirect() {
@@ -242,6 +243,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/settings" element={<Settings />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
+          <Route path="/design/r65-live-thread" element={<R65LiveThread />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
