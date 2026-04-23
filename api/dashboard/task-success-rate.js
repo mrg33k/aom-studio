@@ -1,9 +1,13 @@
-// GET /api/dashboard/task-success-rate?world=<client_id>[&window=50]
+// GET /api/dashboard/task-success-rate?world=<client_id>[&window=50][&days=7]
 //
 // Returns a live success-rate readout for the dashboard chip (R18a). The
-// rate is computed over the most recent N closed tasks (default 50) in a
-// given tenant. A task is "closed" when status is in {done, failed}. The
-// rate = done / (done + failed).
+// rate is computed over the most recent N closed tasks (default 50)
+// completed within the last M days (default 7) in a given tenant. A task
+// is "closed" when status is in {done, failed}. The rate = done / (done + failed).
+//
+// R52 (session 18): the `days` window is new. Color is picked by CURRENT
+// state, not historical — old failures age out of the window so the chip
+// reflects what's actively happening. Red now means actively broken.
 //
 // Thresholds from the R18 spec:
 //   >= 98%  => green
@@ -16,24 +20,21 @@
 //   rate_pct: 96,
 //   state: 'green' | 'amber' | 'red' | 'unknown',
 //   window: 50,
+//   days: 7,
 //   closed_count: 50,
 //   done_count: 48,
 //   failed_count: 2,
 //   red_since: '2026-04-22T15:30:00Z' | null,
 //   amber_since: '2026-04-22T15:30:00Z' | null,
 // }
-//
-// red_since/amber_since are derived by scanning backwards through the
-// closed window: for each task (newest -> oldest), recompute the rolling
-// rate; the earliest timestamp where the state matches the current state
-// is the "since" anchor. This is enough for the R18c foreman halt rule
-// ("red for > 1h") without requiring a dedicated timeseries table.
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const DEFAULT_WINDOW = 50;
 const MAX_WINDOW = 200;
+const DEFAULT_DAYS = 7;
+const MAX_DAYS = 90;
 
 function stateFor(pct) {
   if (pct >= 98) return 'green';
@@ -57,11 +58,19 @@ export default async function handler(req, res) {
   const windowN = Number.isFinite(requestedWindow)
     ? Math.max(5, Math.min(MAX_WINDOW, requestedWindow))
     : DEFAULT_WINDOW;
+  const requestedDays = parseInt(req.query.days, 10);
+  const daysN = Number.isFinite(requestedDays)
+    ? Math.max(1, Math.min(MAX_DAYS, requestedDays))
+    : DEFAULT_DAYS;
+  const sinceIso = new Date(Date.now() - daysN * 24 * 60 * 60 * 1000).toISOString();
 
   try {
+    // R52: only consider tasks closed within the last `daysN` days. Old failures
+    // age out of the window, so the chip reflects current state, not historical tail.
     const url = `${SUPABASE_URL}/rest/v1/tasks` +
       `?client_id=eq.${encodeURIComponent(world)}` +
       `&status=in.(done,failed)` +
+      `&or=(completed_at.gte.${sinceIso},and(completed_at.is.null,created_at.gte.${sinceIso}))` +
       `&select=id,status,completed_at,created_at` +
       `&order=completed_at.desc.nullslast` +
       `&limit=${windowN}`;
@@ -88,6 +97,7 @@ export default async function handler(req, res) {
         rate_pct: null,
         state: 'unknown',
         window: windowN,
+        days: daysN,
         closed_count: 0,
         done_count: 0,
         failed_count: 0,
@@ -136,6 +146,7 @@ export default async function handler(req, res) {
       rate_pct: ratePct,
       state,
       window: windowN,
+      days: daysN,
       closed_count: closed,
       done_count: doneCount,
       failed_count: failedCount,

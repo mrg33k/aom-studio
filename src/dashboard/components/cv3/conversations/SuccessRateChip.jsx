@@ -57,8 +57,8 @@ export default function SuccessRateChip({ worldId: worldIdProp }) {
       data-closed-count={data?.closed_count != null ? String(data.closed_count) : ''}
       title={
         pct != null
-          ? `Task success rate: ${pct}% over last ${data.closed_count} closed tasks (${data.done_count} done / ${data.failed_count} failed)`
-          : 'Task success rate: not enough data yet'
+          ? `Task success rate: ${pct}% over last ${data.closed_count} closed tasks in the last ${data.days ?? 7} days (${data.done_count} done / ${data.failed_count} failed)`
+          : `Task success rate: no closed tasks in the last ${data?.days ?? 7} days`
       }
       style={{
         display: 'inline-flex',

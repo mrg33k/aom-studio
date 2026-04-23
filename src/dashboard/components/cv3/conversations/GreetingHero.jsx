@@ -28,29 +28,34 @@ export default function GreetingHero({ lastLoginText, GREETINGS, greetingIdx, di
   const name = displayName || 'there'
   return (
     <div style={{ paddingBottom: 16 }}>
+      {/* R52: last-login dot + greeting on the SAME horizontal row. */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        fontSize: 12, fontWeight: 500, color: C.muted, marginBottom: 6,
+        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+        marginBottom: 6,
       }}>
         <div style={{
-          width: 7, height: 7, borderRadius: '50%',
-          background: C.accent,
-          boxShadow: `0 0 6px ${C.accent}`,
-        }} />
-        {lastLoginText ? `Last login: ${lastLoginText}` : 'Online now'}
-      </div>
-      <div
-        data-testid="greeting"
-        data-variant={variant}
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: C.text2,
-          marginBottom: 6,
-          letterSpacing: '-0.01em',
-        }}
-      >
-        {variantCopy(variant, name)}
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 12, fontWeight: 500, color: C.muted,
+        }}>
+          <div style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: C.accent,
+            boxShadow: `0 0 6px ${C.accent}`,
+          }} />
+          {lastLoginText ? `Last login: ${lastLoginText}` : 'Online now'}
+        </div>
+        <div
+          data-testid="greeting"
+          data-variant={variant}
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: C.muted,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {variantCopy(variant, name)}
+        </div>
       </div>
       <h1 style={{
         fontSize: 'clamp(26px, 5.5vw, 40px)',
