@@ -16,10 +16,10 @@ export default function SearchResults({
   setMessages,
 }) {
   return (
-    <div>
+    <div data-testid="search-results">
       {/* Agents */}
       {agentHits.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
+        <div data-testid="search-section" data-section="agents" style={{ marginBottom: 22 }}>
           <div style={{
             fontSize: 11, fontWeight: 700, color: C.muted,
             letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -36,6 +36,9 @@ export default function SearchResults({
             {agentHits.slice(0, 6).map(a => (
               <button
                 key={`srch-a-${a.slug}`}
+                data-testid="search-result"
+                data-result-type="agent"
+                data-result-slug={a.slug}
                 onClick={() => { setSearchQuery(''); setSelectedAgent(a); onSelectAgent?.(a) }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
@@ -62,7 +65,7 @@ export default function SearchResults({
 
       {/* Projects */}
       {projectHits.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
+        <div data-testid="search-section" data-section="projects" style={{ marginBottom: 22 }}>
           <div style={{
             fontSize: 11, fontWeight: 700, color: C.muted,
             letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -81,6 +84,9 @@ export default function SearchResults({
               return (
                 <button
                   key={`srch-p-${p.id || p.slug}`}
+                  data-testid="search-result"
+                  data-result-type="project"
+                  data-result-slug={p.slug}
                   onClick={() => {
                     setSearchQuery('')
                     setInlineProject(p)
@@ -116,7 +122,7 @@ export default function SearchResults({
 
       {/* Tasks */}
       {taskHits.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
+        <div data-testid="search-section" data-section="tasks" style={{ marginBottom: 22 }}>
           <div style={{
             fontSize: 11, fontWeight: 700, color: C.muted,
             letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -133,6 +139,8 @@ export default function SearchResults({
             {taskHits.map(t => (
               <div
                 key={`srch-t-${t.id}`}
+                data-testid="search-result"
+                data-result-type="task"
                 style={{
                   padding: '9px 12px', borderRadius: 10,
                   background: C.s1, border: `1px solid ${C.border}`,
@@ -168,7 +176,7 @@ export default function SearchResults({
 
       {/* Messages */}
       {msgHits.length > 0 && (
-        <div style={{ marginBottom: 22 }}>
+        <div data-testid="search-section" data-section="messages" style={{ marginBottom: 22 }}>
           <div style={{
             fontSize: 11, fontWeight: 700, color: C.muted,
             letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -187,6 +195,8 @@ export default function SearchResults({
               return (
                 <button
                   key={`srch-m-${m.id}`}
+                  data-testid="search-result"
+                  data-result-type="message"
                   onClick={() => {
                     setSearchQuery('')
                     // Jump to the conversation scope this message belongs to

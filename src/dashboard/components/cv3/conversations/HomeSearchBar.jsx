@@ -28,6 +28,7 @@ export default function HomeSearchBar({
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
+          data-testid="search-input"
           type="text"
           placeholder="Search messages, tasks, agents, projects…"
           value={searchQuery}
