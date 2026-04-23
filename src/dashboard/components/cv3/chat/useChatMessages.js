@@ -25,6 +25,11 @@ export default function useChatMessages({
   const fetchedProfileIds = useRef(new Set())
 
   // ── Load message history for an agent thread ──────────────────────────────
+  // R63: exclude messages with a project set. Per-project observations
+  // (kickoff-sweep, stale-project pings, project-scoped updates) are written
+  // with agent='elon' + project='<slug>' so they render in the project chat;
+  // they must NOT appear in Elon's 1:1 thread. VISION commits to "Elon's 1:1
+  // stays clean of per-project routing."
   useEffect(() => {
     if (!selectedAgent || !supabase || !worldId) return
     setLoadingMsgs(true)
@@ -34,6 +39,7 @@ export default function useChatMessages({
       .select('*')
       .eq('client_id', worldId)
       .eq('agent', selectedAgent.slug)
+      .is('project', null)
       .order('timestamp', { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
@@ -70,6 +76,17 @@ export default function useChatMessages({
             if (typeof window !== 'undefined') {
               window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
               window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
+            }
+            return
+          }
+          // R63: per-project observations (agent='elon' + project='<slug>')
+          // must land in the project chat, NOT in the agent's 1:1 thread.
+          // Same R53 log channel; new side tag so the R53 gate filters by
+          // side and the R63 gate can detect these drops specifically.
+          if (msg.project) {
+            if (typeof window !== 'undefined') {
+              window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+              window.__R53_BLEED_LOG__.push({ side: 'agent-thread-project', expected: selectedAgent.slug, got: msg.agent, project: msg.project, id: msg.id, ts: Date.now() })
             }
             return
           }
