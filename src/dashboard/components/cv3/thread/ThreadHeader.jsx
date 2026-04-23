@@ -47,6 +47,7 @@ export default function ThreadHeader() {
   const { isRecording, handleMicToggle } = useChatRecordingCtx()
   const {
     filesOpen, setFilesOpen, settingsOpen, setSettingsOpen,
+    profileOpen, setProfileOpen,
   } = useChatSettingsCtx()
 
   const { switcherOpen, setSwitcherOpen, switcherRef } = useThreadQuickSwitcher()
@@ -261,6 +262,36 @@ export default function ThreadHeader() {
           </div>
         )}
       </div>
+      {/* R40: agent info-icon.
+          Placed HERE -- right next to the agent's identity block (avatar +
+          name + primary skill) and a visible gap BEFORE the action icon
+          group (meter / clear / mic / search / files / settings). The
+          placement is its own affordance, not blended into the group. */}
+      {selectedAgent?.slug && (
+        <button
+          onClick={() => setProfileOpen(o => !o)}
+          data-testid={`agent-info-${selectedAgent.slug}`}
+          title={`About ${selectedAgent.name}`}
+          aria-label={`About ${selectedAgent.name}`}
+          aria-pressed={profileOpen ? 'true' : 'false'}
+          style={{
+            width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+            background: profileOpen ? 'rgba(59,158,255,0.15)' : 'transparent',
+            border: `1px solid ${profileOpen ? 'rgba(59,158,255,0.45)' : 'rgba(255,255,255,0.22)'}`,
+            color: profileOpen ? '#3B9EFF' : 'rgba(255,255,255,0.65)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: "'Georgia', 'Times New Roman', serif",
+            fontSize: 13, fontWeight: 700, lineHeight: 1,
+            transition: 'all 0.15s',
+            marginLeft: 2,
+          }}
+        >
+          i
+        </button>
+      )}
+      {/* Visible breathing room before the action icon group (R40) */}
+      {selectedAgent?.slug && <div style={{ width: 8, flexShrink: 0 }} />}
       {/* Context fullness meter -- renders for any selected agent so users
           always have the glance-ability affordance. The clear-context button
           below is gated on is_super (only super-agents have persistent

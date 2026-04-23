@@ -15,6 +15,10 @@ export default function useChatSettings({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('Keys')
   const [filesOpen, setFilesOpen] = useState(false)
+  // R40: agent profile overlay (info-icon target).
+  const [profileOpen, setProfileOpen] = useState(false)
+  // R41: recipes book flyout.
+  const [recipesOpen, setRecipesOpen] = useState(false)
 
   // ── Rename ───────────────────────────────────────────────────────────────
   const [chatNameInput, setChatNameInput] = useState('')
@@ -159,6 +163,8 @@ export default function useChatSettings({
     settingsOpen, setSettingsOpen,
     settingsTab, setSettingsTab,
     filesOpen, setFilesOpen,
+    profileOpen, setProfileOpen,
+    recipesOpen, setRecipesOpen,
     chatNameInput, setChatNameInput,
     inviteEmail, setInviteEmail,
     inviteLoading, setInviteLoading,

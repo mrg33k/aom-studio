@@ -16,6 +16,7 @@ import {
 } from './chat/ChatPanelContext.jsx'
 
 import ThreadHeader from './thread/ThreadHeader.jsx'
+import AgentProfileOverlay from './thread/AgentProfileOverlay.jsx'
 import FilesPanel from './thread/FilesPanel.jsx'
 import VoiceChatHost from './thread/VoiceChatHost.jsx'
 import MessageList from './thread/MessageList.jsx'
@@ -28,18 +29,29 @@ export default function ThreadView() {
   const { selectedAgent, showHandoffNudge, dismissHandoffNudge } = useChatCore()
   const { isVoiceActive } = useChatVoiceCtx()
   const { isRecording, isTranscribing } = useChatRecordingCtx()
-  const { filesOpen, settingsOpen } = useChatSettingsCtx()
+  const { filesOpen, settingsOpen, profileOpen, setProfileOpen } = useChatSettingsCtx()
   const { lastActionToast } = useChatContextMenuCtx()
   const isSuperAgentChat = selectedAgent?.is_super
 
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      position: 'relative',
       fontFamily: "'Inter', sans-serif",
     }}>
       <TaskStatusCardStyles />
 
       <ThreadHeader />
+
+      {/* R40: agent profile overlay. Mounts at the ThreadView level so the
+          info-icon in ThreadHeader can toggle it; the overlay covers the
+          whole thread area via position:absolute + parent relative. */}
+      {profileOpen && selectedAgent && (
+        <AgentProfileOverlay
+          agent={selectedAgent}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
 
       {filesOpen && <FilesPanel />}
 
