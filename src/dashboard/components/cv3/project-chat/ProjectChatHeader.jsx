@@ -10,6 +10,7 @@ import {
 } from '../chat/ChatPanelContext.jsx'
 import useProjectChatSwitcher from './useProjectChatSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
+import OnboardingTooltip from '../session/OnboardingTooltip.jsx'
 
 // Header row for the project-chat room: back button, project icon + quick
 // switcher, mic, search, files, settings. Quick-switcher dropdown lists all
@@ -259,6 +260,17 @@ export default function ProjectChatHeader() {
           </div>
         )}
       </div>
+      {/* Onboarding CTA (R33) -- tenant-agnostic; renders only when checklist non-empty. */}
+      <OnboardingTooltip
+        tenant={worldId || 'aom'}
+        onResume={(item) => {
+          // Drop a prompt into the chat so the EA picks up the next item.
+          // Owner wiring lives in a follow-up; this is the click target.
+          if (item && item.key) {
+            window.dispatchEvent(new CustomEvent('onboarding:resume', { detail: item }))
+          }
+        }}
+      />
       {/* Context fullness meter + clear -- project chats target elon */}
       <ContextFullnessMeter agentSlug="elon" />
       {clearStage === 'confirm' ? (
