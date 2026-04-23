@@ -1,4 +1,4 @@
-// Corner Test Pass 12: R21 Acceptance -- Canonical Project-Chat URL + In-Chat Task Button
+// Corner Test Pass 19: R21 Acceptance -- Canonical Project-Chat URL + In-Chat Task Button
 //
 // R21 added three things:
 //   R21 (slice)  -- /dashboard/projects/:slug/chat canonical URL + in-chat create-task button
@@ -66,18 +66,28 @@ async function run() {
       log('T0-LOGIN', 'PASS', 'No password gate (Supabase session or open)')
     }
     await page.waitForTimeout(2000)
-    await page.screenshot({ path: `${DIR}/p12-00-dashboard.png` })
+
+    // If redirected to Supabase /login, do email+password auth
+    if (page.url().includes('/login') && process.env.DASHBOARD_TEST_EMAIL) {
+      const emailInput = await page.$('input[type="email"]')
+      if (emailInput) {
+        await emailInput.fill(process.env.DASHBOARD_TEST_EMAIL)
+        const passInput2 = await page.$('input[type="password"]')
+        if (passInput2) await passInput2.fill(process.env.DASHBOARD_TEST_PASSWORD || '')
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(5000)
+        log('T0-SUPABASE-LOGIN', 'PASS', `Supabase auth: ${process.env.DASHBOARD_TEST_EMAIL}`)
+      }
+    }
+    await page.screenshot({ path: `${DIR}/p19-00-dashboard.png` })
 
     // ── Discover a valid project slug from the loaded page ───────────────────
-    // We look for navigation links or data attributes that expose project slugs.
     const discoveredSlug = await page.evaluate(() => {
-      // Look for links that match /dashboard/projects/:slug
       const anchors = document.querySelectorAll('a[href*="/dashboard/projects/"]')
       for (const a of anchors) {
         const m = a.href.match(/\/dashboard\/projects\/([^/?#]+)/)
         if (m && m[1]) return m[1]
       }
-      // Fall back: data-slug attributes on project cards
       const slugEls = document.querySelectorAll('[data-slug],[data-project-slug]')
       for (const el of slugEls) {
         const slug = el.dataset.slug || el.dataset.projectSlug
@@ -100,7 +110,7 @@ async function run() {
 
     log('T1-CANONICAL-URL', (!has404 && urlOk) ? 'PASS' : 'FAIL',
       `URL: ${page.url()} | 404=${has404} | title="${pageTitle}"`)
-    await page.screenshot({ path: `${DIR}/p12-01-project-chat.png` })
+    await page.screenshot({ path: `${DIR}/p19-01-project-chat.png` })
 
     // ── T2: project-chat-input testid present ────────────────────────────────
     const inputEl = await page.$('[data-testid="project-chat-input"]')
@@ -113,12 +123,10 @@ async function run() {
       btnEl ? 'data-testid="chat-create-task" found' : 'MISSING')
 
     if (!inputEl || !btnEl) {
-      // Auth wall or wrong view -- try navigating via the home tab to a project
       log('T3b-NAV-FALLBACK', 'INFO', 'Attempting nav via sidebar project links')
       await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle', timeout: 15000 })
       await page.waitForTimeout(2000)
 
-      // Click the first visible project link
       const projectClicked = await page.evaluate(() => {
         const links = document.querySelectorAll('a[href*="/dashboard/projects/"]')
         for (const a of links) {
@@ -130,7 +138,7 @@ async function run() {
       if (projectClicked) {
         await page.waitForTimeout(2500)
         log('T3b-NAV-FALLBACK', 'INFO', `Clicked: ${projectClicked}`)
-        await page.screenshot({ path: `${DIR}/p12-02-project-via-nav.png` })
+        await page.screenshot({ path: `${DIR}/p19-02-project-via-nav.png` })
       }
     }
 
@@ -156,7 +164,6 @@ async function run() {
     const typedOk = await page.evaluate((text) => {
       const input = document.querySelector('[data-testid="project-chat-input"]')
       if (!input) return false
-      // Trigger React synthetic event
       const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
       nativeSetter.call(input, text)
       input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -179,7 +186,7 @@ async function run() {
       log('T5-BTN-ENABLED-AFTER-TYPE', (!btnEnabledAfterTyping.disabled && typedOk) ? 'PASS' : 'WARN',
         `typed="${typedText.slice(0,20)}" | disabled=${btnEnabledAfterTyping.disabled} | inputValue="${btnEnabledAfterTyping.inputValue.slice(0,20)}"`)
     }
-    await page.screenshot({ path: `${DIR}/p12-03-input-filled.png` })
+    await page.screenshot({ path: `${DIR}/p19-03-input-filled.png` })
 
     // ── T6 + T7: click create-task, verify request fires + input clears ──────
     const beforeClickCount = createTaskRequests.length
@@ -191,7 +198,7 @@ async function run() {
       return true
     })
 
-    await page.waitForTimeout(2000) // allow the async fetch to fire
+    await page.waitForTimeout(2000)
 
     const afterClickCount = createTaskRequests.length
     const requestFired = afterClickCount > beforeClickCount
@@ -213,7 +220,7 @@ async function run() {
     log('T7-INPUT-CLEARS', inputAfterCreate === '' ? 'PASS' : 'WARN',
       `Input value after create: "${inputAfterCreate ?? 'null (input gone)'}"`)
 
-    await page.screenshot({ path: `${DIR}/p12-04-after-create.png` })
+    await page.screenshot({ path: `${DIR}/p19-04-after-create.png` })
 
     // ── T8: API smoke test -- valid POST ─────────────────────────────────────
     const apiSmoke = await page.evaluate(async () => {
@@ -259,7 +266,6 @@ async function run() {
       `status=${apiBadSlug.status} error="${apiBadSlug.error}"`)
 
     // ── T11: Regression -- Enter key still sends normal chat message ──────────
-    // Type text and press Enter; this should invoke sendProjectText (NOT create-task)
     const chatBefore = createTaskRequests.length
     await page.evaluate((text) => {
       const input = document.querySelector('[data-testid="project-chat-input"]')
@@ -273,7 +279,6 @@ async function run() {
     await page.keyboard.press('Enter')
     await page.waitForTimeout(1000)
     const chatAfter = createTaskRequests.length
-    // Enter should NOT fire create-project-task (only the button does)
     log('T11-ENTER-SENDS-CHAT', chatBefore === chatAfter ? 'PASS' : 'WARN',
       `create-task calls: before=${chatBefore} after=${chatAfter} (Enter should not trigger create-task)`)
 
@@ -281,17 +286,17 @@ async function run() {
     log('T12-CONSOLE-ERRORS', pageErrors.length === 0 ? 'PASS' : 'WARN',
       `${pageErrors.length} errors${pageErrors.length > 0 ? ': ' + pageErrors.slice(0,3).map(e => e.slice(0,80)).join(' | ') : ''}`)
 
-    await page.screenshot({ path: `${DIR}/p12-05-final.png` })
+    await page.screenshot({ path: `${DIR}/p19-05-final.png` })
 
   } catch (err) {
     log('RUNTIME', 'FAIL', err.message.slice(0, 200))
-    await page.screenshot({ path: `${DIR}/p12-error.png` }).catch(() => {})
+    await page.screenshot({ path: `${DIR}/p19-error.png` }).catch(() => {})
   }
 
   await browser.close()
 
   // ── Summary ────────────────────────────────────────────────────────────────
-  console.log('\n=== PASS 12 RESULTS (R21 Acceptance) ===\n')
+  console.log('\n=== PASS 19 RESULTS (R21 Acceptance Test) ===\n')
   const pass = R.filter(r => r.status === 'PASS').length
   const fail = R.filter(r => r.status === 'FAIL').length
   const warn = R.filter(r => r.status === 'WARN').length
@@ -302,16 +307,16 @@ async function run() {
   // R21 acceptance gate
   console.log('\n=== R21 ACCEPTANCE GATE ===\n')
   const gate = {
-    'Canonical URL loads':    R.find(r => r.test === 'T1-CANONICAL-URL')?.status === 'PASS',
-    'Input testid present':   R.find(r => r.test === 'T2-INPUT-TESTID')?.status === 'PASS',
-    'Button testid present':  R.find(r => r.test === 'T3-CREATE-TASK-BTN')?.status === 'PASS',
+    'Canonical URL loads':      R.find(r => r.test === 'T1-CANONICAL-URL')?.status === 'PASS',
+    'Input testid present':     R.find(r => r.test === 'T2-INPUT-TESTID')?.status === 'PASS',
+    'Button testid present':    R.find(r => r.test === 'T3-CREATE-TASK-BTN')?.status === 'PASS',
     'Button disabled on empty': R.find(r => r.test === 'T4-BTN-DISABLED-EMPTY')?.status === 'PASS',
-    'Button enables on type': R.find(r => r.test === 'T5-BTN-ENABLED-AFTER-TYPE')?.status === 'PASS',
-    'API call fires on click': R.find(r => r.test === 'T6-API-CALL-FIRED')?.status === 'PASS',
-    'Input clears on success': R.find(r => r.test === 'T7-INPUT-CLEARS')?.status === 'PASS',
-    'API smoke (valid body)':  (['PASS','WARN'].includes(R.find(r => r.test === 'T8-API-SMOKE-VALID')?.status)),
-    'API rejects empty text':  R.find(r => r.test === 'T9-API-REJECTS-EMPTY-TEXT')?.status === 'PASS',
-    'API rejects no slug':     R.find(r => r.test === 'T10-API-REJECTS-NO-SLUG')?.status === 'PASS',
+    'Button enables on type':   R.find(r => r.test === 'T5-BTN-ENABLED-AFTER-TYPE')?.status === 'PASS',
+    'API call fires on click':  R.find(r => r.test === 'T6-API-CALL-FIRED')?.status === 'PASS',
+    'Input clears on success':  R.find(r => r.test === 'T7-INPUT-CLEARS')?.status === 'PASS',
+    'API smoke (valid body)':   (['PASS','WARN'].includes(R.find(r => r.test === 'T8-API-SMOKE-VALID')?.status)),
+    'API rejects empty text':   R.find(r => r.test === 'T9-API-REJECTS-EMPTY-TEXT')?.status === 'PASS',
+    'API rejects no slug':      R.find(r => r.test === 'T10-API-REJECTS-NO-SLUG')?.status === 'PASS',
   }
   const gatePassed = Object.values(gate).filter(Boolean).length
   for (const [k, v] of Object.entries(gate)) console.log(`  ${v ? 'PASS' : 'FAIL'} ${k}`)
@@ -326,9 +331,9 @@ async function run() {
     commitHash = execSync('git -C /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio rev-parse --short HEAD').toString().trim()
   } catch {}
 
-  const outPath = `${DIR}/pass12-results.json`
+  const outPath = `${DIR}/pass19-results.json`
   fs.writeFileSync(outPath, JSON.stringify({
-    pass: 12,
+    pass: 19,
     round: 'R21',
     commit: commitHash,
     tests: R,
