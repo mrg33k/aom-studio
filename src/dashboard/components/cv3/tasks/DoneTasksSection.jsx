@@ -27,14 +27,18 @@ export default function DoneTasksSection() {
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
-        <h2 style={{
-          fontSize: 20,
-          fontWeight: 800,
-          color: C.text,
-          letterSpacing: '-0.02em',
-          margin: 0,
-          lineHeight: 1,
-        }}>
+        <h2
+          data-testid="task-column-header"
+          data-column="done"
+          style={{
+            fontSize: 20,
+            fontWeight: 800,
+            color: C.text,
+            letterSpacing: '-0.02em',
+            margin: 0,
+            lineHeight: 1,
+          }}
+        >
           Done
         </h2>
         <span style={{

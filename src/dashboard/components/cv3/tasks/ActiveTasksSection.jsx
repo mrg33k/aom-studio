@@ -24,14 +24,18 @@ export default function ActiveTasksSection() {
   return (
     <div style={{ marginBottom: 36 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
-        <h2 style={{
-          fontSize: 20,
-          fontWeight: 800,
-          color: C.text,
-          letterSpacing: '-0.02em',
-          margin: 0,
-          lineHeight: 1,
-        }}>
+        <h2
+          data-testid="task-column-header"
+          data-column="right_now"
+          style={{
+            fontSize: 20,
+            fontWeight: 800,
+            color: C.text,
+            letterSpacing: '-0.02em',
+            margin: 0,
+            lineHeight: 1,
+          }}
+        >
           Right Now
         </h2>
         <span style={{
@@ -50,8 +54,11 @@ export default function ActiveTasksSection() {
         return (
         <div
           key={t.id}
-          data-test-id="task-card-active"
+          data-testid="task-card"
           data-task-id={t.id}
+          data-task-status={t.status}
+          aria-expanded={expandedTask === t.id ? 'true' : 'false'}
+          aria-controls={`task-accordion-${t.id}`}
           onClick={() => toggleTaskExpand(t.id)}
           onContextMenu={(e) => openTaskMenu(e, t)}
           onTouchStart={(e) => startTaskLongPress(e, t)}
@@ -158,9 +165,13 @@ export default function ActiveTasksSection() {
               </div>
             </div>
           </div>
-          {/* Expandable thread */}
+          {/* Expandable thread -- R20b accordion surface. */}
           {expandedTask === t.id && (
-            <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+            <div
+              id={`task-accordion-${t.id}`}
+              data-testid="task-brief-accordion"
+              style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}
+            >
               {threadLoading ? (
                 <div style={{ fontSize: 12, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading...</div>
               ) : taskThread.length === 0 ? (

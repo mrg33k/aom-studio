@@ -18,15 +18,19 @@ export default function WaitingTasksSection() {
 
   return (
     <div style={{ marginBottom: 36 }}>
-      <h2 style={{
-        fontSize: 20,
-        fontWeight: 800,
-        color: LIFECYCLE.waiting,
-        letterSpacing: '-0.02em',
-        margin: '0 0 16px',
-        lineHeight: 1,
-      }}>
-        Needs Input
+      <h2
+        data-testid="task-column-header"
+        data-column="inbox"
+        style={{
+          fontSize: 20,
+          fontWeight: 800,
+          color: LIFECYCLE.waiting,
+          letterSpacing: '-0.02em',
+          margin: '0 0 16px',
+          lineHeight: 1,
+        }}
+      >
+        Inbox
       </h2>
       {waitingTasks.map((t) => {
         const agent = t.agent_identity || t.agentIdentity || 'agent'

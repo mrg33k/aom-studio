@@ -32,14 +32,18 @@ export default function FailedTasksSection() {
   return (
     <div data-testid="failed-section" style={{ marginBottom: 36 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{
-          fontSize: 18,
-          fontWeight: 800,
-          color: LIFECYCLE.failed,
-          letterSpacing: '-0.02em',
-          margin: 0,
-          lineHeight: 1,
-        }}>
+        <h2
+          data-testid="task-column-header"
+          data-column="failed"
+          style={{
+            fontSize: 18,
+            fontWeight: 800,
+            color: LIFECYCLE.failed,
+            letterSpacing: '-0.02em',
+            margin: 0,
+            lineHeight: 1,
+          }}
+        >
           Failed
         </h2>
         <button
