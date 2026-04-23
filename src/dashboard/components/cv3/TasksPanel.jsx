@@ -359,27 +359,29 @@ function TasksPanelBody() {
           </div>
         )}
 
-        {/* Project scope (no mission drilled in) */}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && <TaskDrawerProjectSummary />}
-        {/* R31 -- FAQ surface: Vision + Research bullets above Missions + Files. */}
+        {/* Project scope (no mission drilled in). R15: whole block is a
+            single project-card per VISION Pillar 2. Testid surfaces the card
+            as a unit so acceptance gates can find it + its freshness dot. */}
         {!activeMissionPath && activeProject && activeProject !== 'all' && (
-          <TaskDrawerFileFAQ
-            filename="VISION.md"
-            label="Vision"
-            testid="task-drawer-vision-faq"
-            iconColor="#A78BFA"
-          />
+          <div data-testid="project-card" data-slug={activeProject}>
+            <TaskDrawerProjectSummary />
+            {/* R31 -- FAQ surface: Vision + Research bullets above Missions + Files. */}
+            <TaskDrawerFileFAQ
+              filename="VISION.md"
+              label="Vision"
+              testid="task-drawer-vision-faq"
+              iconColor="#A78BFA"
+            />
+            <TaskDrawerFileFAQ
+              filename="RESEARCH.md"
+              label="Research"
+              testid="task-drawer-research-faq"
+              iconColor="#6EE7B7"
+            />
+            <ProjectMissionsSection />
+            <ProjectFilesSection />
+          </div>
         )}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && (
-          <TaskDrawerFileFAQ
-            filename="RESEARCH.md"
-            label="Research"
-            testid="task-drawer-research-faq"
-            iconColor="#6EE7B7"
-          />
-        )}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectMissionsSection />}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectFilesSection />}
         {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
 
         {/* ── Owner's Personal Todos (R14e-4) ──────────────────── */}
