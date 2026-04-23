@@ -11,6 +11,7 @@ import {
 import useProjectChatSwitcher from './useProjectChatSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
 import OnboardingTooltip from '../session/OnboardingTooltip.jsx'
+import HeaderActionsDrawer from '../shared/HeaderActionsDrawer.jsx'
 
 // Header row for the project-chat room: back button, project icon + quick
 // switcher, mic, search, files, settings. Quick-switcher dropdown lists all
@@ -276,59 +277,7 @@ export default function ProjectChatHeader() {
           }
         }}
       />
-      {/* Context fullness meter + clear -- project chats target elon */}
-      <ContextFullnessMeter agentSlug="elon" />
-      {clearStage === 'confirm' ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>
-          <button
-            onClick={handleClearContext}
-            style={{
-              height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
-              background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)',
-              cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#F87171',
-            }}
-          >Yes</button>
-          <button
-            onClick={() => setClearStage('idle')}
-            style={{
-              height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              cursor: 'pointer', fontSize: 11, color: C.muted,
-            }}
-          >No</button>
-        </div>
-      ) : (
-        <button
-          onClick={handleClearContext}
-          title={clearStage === 'done' ? 'Context cleared' : 'Clear agent context'}
-          data-testid="clear-context-project"
-          style={{
-            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            background: clearStage === 'done' ? 'rgba(16,185,129,0.15)' : clearStage === 'working' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-            border: clearStage === 'done' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
-            cursor: clearStage === 'working' ? 'default' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: clearStage === 'done' ? '#6EE7B7' : C.muted,
-            transition: 'all 0.15s',
-          }}
-        >
-          {clearStage === 'working' ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-            </svg>
-          ) : clearStage === 'done' ? (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-            </svg>
-          )}
-        </button>
-      )}
-      {/* Telephone button in project header */}
+      {/* Telephone -- PRIMARY voice action, lives outside the drawer. R46. */}
       <button
         onClick={handleMicToggle}
         title={isRecording ? 'Stop recording' : 'Record voice message'}
@@ -349,64 +298,118 @@ export default function ProjectChatHeader() {
           </svg>
         )}
       </button>
-      {/* Search button */}
-      <button
-        onClick={() => { setChatSearchOpen(o => !o); setChatSearchQuery(''); setChatSearchResults(null) }}
-        title="Search chat history"
-        style={{
-          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-          background: chatSearchOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: chatSearchOpen ? C.text : C.muted,
-          transition: 'all 0.15s',
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-      </button>
-      {/* Files button */}
-      <button
-        onClick={() => setFilesOpen(o => !o)}
-        title="Files shared in this chat"
-        style={{
-          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-          background: filesOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: filesOpen ? C.text : C.muted,
-          transition: 'all 0.15s',
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-        </svg>
-      </button>
-      {/* R41: flask icon -- recipes book. Part of the action group next to
-          files/settings. Click opens a full recipe menu (not a chat). */}
-      <button
-        onClick={() => setRecipesOpen(o => !o)}
-        data-testid={`project-recipes-${selectedProject?.slug || 'all'}`}
-        title="Recipes"
-        aria-label="Recipes book"
-        aria-pressed={recipesOpen ? 'true' : 'false'}
-        style={{
-          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-          background: recipesOpen ? 'rgba(249,168,212,0.15)' : 'rgba(255,255,255,0.05)',
-          border: recipesOpen ? '1px solid rgba(249,168,212,0.4)' : '1px solid rgba(255,255,255,0.08)',
-          color: recipesOpen ? '#F9A8D4' : C.muted,
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.15s',
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3" />
-        </svg>
-      </button>
-      {/* Settings button */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+      {/* R46: consolidated actions drawer -- context meter, clear, search,
+          files, recipes, settings all behind a single toggle. */}
+      <HeaderActionsDrawer testid={`project-chat-header-drawer-${selectedProject?.slug || 'all'}`}>
+        {/* Context meter (project chats route through elon) */}
+        <ContextFullnessMeter agentSlug="elon" />
+        {/* Clear context */}
+        {clearStage === 'confirm' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>
+            <button
+              onClick={handleClearContext}
+              style={{
+                height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
+                background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)',
+                cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#F87171',
+              }}
+            >Yes</button>
+            <button
+              onClick={() => setClearStage('idle')}
+              style={{
+                height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                cursor: 'pointer', fontSize: 11, color: C.muted,
+              }}
+            >No</button>
+          </div>
+        ) : (
+          <button
+            onClick={handleClearContext}
+            title={clearStage === 'done' ? 'Context cleared' : 'Clear agent context'}
+            data-testid="clear-context-project"
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: clearStage === 'done' ? 'rgba(16,185,129,0.15)' : clearStage === 'working' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+              border: clearStage === 'done' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+              cursor: clearStage === 'working' ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: clearStage === 'done' ? '#6EE7B7' : C.muted,
+              transition: 'all 0.15s',
+            }}
+          >
+            {clearStage === 'working' ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            ) : clearStage === 'done' ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+              </svg>
+            )}
+          </button>
+        )}
+        {/* Search */}
+        <button
+          onClick={() => { setChatSearchOpen(o => !o); setChatSearchQuery(''); setChatSearchResults(null) }}
+          title="Search chat history"
+          style={{
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            background: chatSearchOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: chatSearchOpen ? C.text : C.muted,
+            transition: 'all 0.15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
+        {/* Files */}
+        <button
+          onClick={() => setFilesOpen(o => !o)}
+          title="Files shared in this chat"
+          style={{
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            background: filesOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: filesOpen ? C.text : C.muted,
+            transition: 'all 0.15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+        {/* Flask / recipes (R41) */}
+        <button
+          onClick={() => setRecipesOpen(o => !o)}
+          data-testid={`project-recipes-${selectedProject?.slug || 'all'}`}
+          title="Recipes"
+          aria-label="Recipes book"
+          aria-pressed={recipesOpen ? 'true' : 'false'}
+          style={{
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            background: recipesOpen ? 'rgba(249,168,212,0.15)' : 'rgba(255,255,255,0.05)',
+            border: recipesOpen ? '1px solid rgba(249,168,212,0.4)' : '1px solid rgba(255,255,255,0.08)',
+            color: recipesOpen ? '#F9A8D4' : C.muted,
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3" />
+          </svg>
+        </button>
+        {/* Settings */}
         <button
           onClick={() => setSettingsOpen(o => !o)}
           title="Settings"
@@ -423,7 +426,7 @@ export default function ProjectChatHeader() {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-      </div>
+      </HeaderActionsDrawer>
     </div>
   )
 }

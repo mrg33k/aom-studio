@@ -9,6 +9,7 @@ import {
 } from '../chat/ChatPanelContext.jsx'
 import useThreadQuickSwitcher from './useThreadQuickSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
+import HeaderActionsDrawer from '../shared/HeaderActionsDrawer.jsx'
 
 // Thread header: back button, agent avatar + name + quick switcher, mic/files/settings buttons.
 export default function ThreadHeader() {
@@ -263,96 +264,8 @@ export default function ThreadHeader() {
           </div>
         )}
       </div>
-      {/* R40: agent info-icon.
-          Placed HERE -- right next to the agent's identity block (avatar +
-          name + primary skill) and a visible gap BEFORE the action icon
-          group (meter / clear / mic / search / files / settings). The
-          placement is its own affordance, not blended into the group. */}
-      {selectedAgent?.slug && (
-        <button
-          onClick={() => setProfileOpen(o => !o)}
-          data-testid={`agent-info-${selectedAgent.slug}`}
-          title={`About ${selectedAgent.name}`}
-          aria-label={`About ${selectedAgent.name}`}
-          aria-pressed={profileOpen ? 'true' : 'false'}
-          style={{
-            width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-            background: profileOpen ? 'rgba(59,158,255,0.15)' : 'transparent',
-            border: `1px solid ${profileOpen ? 'rgba(59,158,255,0.45)' : 'rgba(255,255,255,0.22)'}`,
-            color: profileOpen ? '#3B9EFF' : 'rgba(255,255,255,0.65)',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: "'Georgia', 'Times New Roman', serif",
-            fontSize: 13, fontWeight: 700, lineHeight: 1,
-            transition: 'all 0.15s',
-            marginLeft: 2,
-          }}
-        >
-          i
-        </button>
-      )}
-      {/* Visible breathing room before the action icon group (R40) */}
-      {selectedAgent?.slug && <div style={{ width: 8, flexShrink: 0 }} />}
-      {/* Context fullness meter -- renders for any selected agent so users
-          always have the glance-ability affordance. The clear-context button
-          below is gated on is_super (only super-agents have persistent
-          tmux context worth clearing). */}
-      {selectedAgent?.slug && (
-        <ContextFullnessMeter agentSlug={selectedAgent.slug} />
-      )}
-      {isSuperAgent && (
-        clearStage === 'confirm' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-            <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>
-            <button
-              onClick={handleClearContext}
-              style={{
-                height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
-                background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)',
-                cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#F87171',
-              }}
-            >Yes</button>
-            <button
-              onClick={() => setClearStage('idle')}
-              style={{
-                height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                cursor: 'pointer', fontSize: 11, color: C.muted,
-              }}
-            >No</button>
-          </div>
-        ) : (
-          <button
-            onClick={handleClearContext}
-            title={clearStage === 'done' ? 'Context cleared' : 'Clear agent context'}
-            data-testid={`clear-context-${selectedAgent?.slug}`}
-            style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: clearStage === 'done' ? 'rgba(16,185,129,0.15)' : clearStage === 'working' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-              border: clearStage === 'done' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
-              cursor: clearStage === 'working' ? 'default' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: clearStage === 'done' ? '#6EE7B7' : C.muted,
-              transition: 'all 0.15s',
-            }}
-          >
-            {clearStage === 'working' ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-              </svg>
-            ) : clearStage === 'done' ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-              </svg>
-            )}
-          </button>
-        )
-      )}
-      {/* Telephone button in header -- long-form recording mode */}
+      {/* Telephone button -- PRIMARY voice action, stays outside the drawer
+          so it's always one tap away during a call. R46 (2026-04-22). */}
       <button
         onClick={handleMicToggle}
         title={isRecording ? 'Stop recording' : 'Record voice message'}
@@ -373,49 +286,131 @@ export default function ThreadHeader() {
           </svg>
         )}
       </button>
-      {/* Files button */}
-      <button
-        onClick={() => setFilesOpen(o => !o)}
-        title="Files shared in this chat"
-        style={{
-          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-          background: filesOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: filesOpen ? C.text : C.muted,
-          transition: 'all 0.15s',
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-        </svg>
-      </button>
-      {/* R41: flask icon -- recipes book. Part of the action group next to
-          files/settings. Click opens a full recipe menu (not a chat). */}
-      {selectedAgent?.slug && (
+      {/* R46: every secondary action collapses into a single drawer that
+          expands LEFTWARD. Info, context meter, clear, files, recipes,
+          settings -- consistent style, one place. */}
+      <HeaderActionsDrawer testid={`thread-header-drawer-${selectedAgent?.slug || 'unknown'}`}>
+        {/* Info (R40) */}
+        {selectedAgent?.slug && (
+          <button
+            onClick={() => setProfileOpen(o => !o)}
+            data-testid={`agent-info-${selectedAgent.slug}`}
+            title={`About ${selectedAgent.name}`}
+            aria-label={`About ${selectedAgent.name}`}
+            aria-pressed={profileOpen ? 'true' : 'false'}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: profileOpen ? 'rgba(59,158,255,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${profileOpen ? 'rgba(59,158,255,0.45)' : 'rgba(255,255,255,0.08)'}`,
+              color: profileOpen ? '#3B9EFF' : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: "'Georgia', 'Times New Roman', serif",
+              fontSize: 14, fontWeight: 700, lineHeight: 1,
+              transition: 'all 0.15s',
+            }}
+          >
+            i
+          </button>
+        )}
+        {/* Context fullness meter -- renders inside the drawer per R46 VISION. */}
+        {selectedAgent?.slug && (
+          <ContextFullnessMeter agentSlug={selectedAgent.slug} />
+        )}
+        {/* Clear context (super agents only) */}
+        {isSuperAgent && (
+          clearStage === 'confirm' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <span style={{ fontSize: 11, color: '#F87171', whiteSpace: 'nowrap' }}>Clear context?</span>
+              <button
+                onClick={handleClearContext}
+                style={{
+                  height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
+                  background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)',
+                  cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#F87171',
+                }}
+              >Yes</button>
+              <button
+                onClick={() => setClearStage('idle')}
+                style={{
+                  height: 26, padding: '0 8px', borderRadius: 6, flexShrink: 0,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer', fontSize: 11, color: C.muted,
+                }}
+              >No</button>
+            </div>
+          ) : (
+            <button
+              onClick={handleClearContext}
+              title={clearStage === 'done' ? 'Context cleared' : 'Clear agent context'}
+              data-testid={`clear-context-${selectedAgent?.slug}`}
+              style={{
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                background: clearStage === 'done' ? 'rgba(16,185,129,0.15)' : clearStage === 'working' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+                border: clearStage === 'done' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                cursor: clearStage === 'working' ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: clearStage === 'done' ? '#6EE7B7' : C.muted,
+                transition: 'all 0.15s',
+              }}
+            >
+              {clearStage === 'working' ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              ) : clearStage === 'done' ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                </svg>
+              )}
+            </button>
+          )
+        )}
+        {/* Files */}
         <button
-          onClick={() => setRecipesOpen(o => !o)}
-          data-testid={`agent-recipes-${selectedAgent.slug}`}
-          title={`Recipes ${selectedAgent.name} can run`}
-          aria-label={`Recipes for ${selectedAgent.name}`}
-          aria-pressed={recipesOpen ? 'true' : 'false'}
+          onClick={() => setFilesOpen(o => !o)}
+          title="Files shared in this chat"
           style={{
             width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            background: recipesOpen ? 'rgba(249,168,212,0.15)' : 'rgba(255,255,255,0.05)',
-            border: recipesOpen ? '1px solid rgba(249,168,212,0.4)' : '1px solid rgba(255,255,255,0.08)',
-            color: recipesOpen ? '#F9A8D4' : C.muted,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: filesOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: filesOpen ? C.text : C.muted,
             transition: 'all 0.15s',
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3" />
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
         </button>
-      )}
-      {/* Settings button */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+        {/* Flask / recipes (R41) */}
+        {selectedAgent?.slug && (
+          <button
+            onClick={() => setRecipesOpen(o => !o)}
+            data-testid={`agent-recipes-${selectedAgent.slug}`}
+            title={`Recipes ${selectedAgent.name} can run`}
+            aria-label={`Recipes for ${selectedAgent.name}`}
+            aria-pressed={recipesOpen ? 'true' : 'false'}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: recipesOpen ? 'rgba(249,168,212,0.15)' : 'rgba(255,255,255,0.05)',
+              border: recipesOpen ? '1px solid rgba(249,168,212,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              color: recipesOpen ? '#F9A8D4' : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3" />
+            </svg>
+          </button>
+        )}
+        {/* Settings */}
         <button
           onClick={() => setSettingsOpen(o => !o)}
           title="Settings"
@@ -432,7 +427,7 @@ export default function ThreadHeader() {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-      </div>
+      </HeaderActionsDrawer>
     </div>
   )
 }
