@@ -715,6 +715,29 @@ export function useTasksPanel() {
     })
   }, [])
 
+  // R49 (2026-04-23 session 18): conversational project creation. Clicking
+  // "+ project" drops the user into the EA chat with a recipe prompt
+  // instead of opening the name/color modal. The EA asks what the project
+  // is, what the first thing to build is, and who's on it — one question
+  // at a time — then fires project creation via the existing task path
+  // (server endpoint /api/dashboard/create-project-task). The R24 modal
+  // stays as a fallback for power users; this handler is the default.
+  const startConversationalProjectCreation = useCallback(() => {
+    const recipe = [
+      '/new-project',
+      '',
+      'Let\'s start a new project together. Ask me one question at a time:',
+      '1. What\'s this project about — a sentence is fine.',
+      '2. What\'s the first concrete thing we should build or learn?',
+      '3. Who\'s involved?',
+      '',
+      'When you have enough, create the project as a task so it shows up with its own scaffold.',
+    ].join('\n')
+    if (typeof setPrefillMessage === 'function') setPrefillMessage(recipe)
+    if (typeof setActiveTab === 'function') setActiveTab('chat')
+    if (typeof showCtxToast === 'function') showCtxToast('Starting a new-project recipe with your EA…')
+  }, [setPrefillMessage, setActiveTab, showCtxToast])
+
   return {
     // Cross-cutting passthroughs (from CornerV3, surfaced for subcomponents)
     worldId,
@@ -738,8 +761,9 @@ export function useTasksPanel() {
     taskProjects,
     getTaskProject,
 
-    // Create project modal
+    // Create project modal + R49 recipe flow
     showCreateProjectModal,
+    startConversationalProjectCreation,
     projectName, setProjectName,
     selectedColor, setSelectedColor,
     createProjectSubmitting,

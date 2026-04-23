@@ -41,6 +41,7 @@ function TasksPanelBody() {
     activeMissionPath,
     projectPills,
     toggleCreateProjectModal,
+    startConversationalProjectCreation,
     filteredActive, filteredCompleted,
     selectedBrief, briefHtml, briefLoading, closeBriefViewer,
     ctxToast,
@@ -331,10 +332,17 @@ function TasksPanelBody() {
                 >{p.name}</button>
               )
             })}
+            {/* R49: default "+ project" click starts the conversational
+                recipe with the EA. Shift-click (or right-click) falls back
+                to the R24 modal for power users who want direct input. */}
             <button
-              data-testid="open-create-project-modal"
-              title="Create project"
-              onClick={toggleCreateProjectModal}
+              data-testid="start-new-project-recipe"
+              title="Create project — guided by your EA"
+              onClick={(e) => {
+                if (e.shiftKey || e.altKey) { toggleCreateProjectModal(); return }
+                startConversationalProjectCreation()
+              }}
+              onContextMenu={(e) => { e.preventDefault(); toggleCreateProjectModal() }}
               style={{
                 padding: '6px 12px',
                 borderRadius: 20,
@@ -349,6 +357,28 @@ function TasksPanelBody() {
                 fontFamily: "'Inter', sans-serif",
               }}
             >+</button>
+            {/* R24 modal fallback — kept as a secondary affordance so the
+                gate + power users can open the form directly. */}
+            <button
+              data-testid="open-create-project-modal"
+              title="Create project (direct form)"
+              aria-label="Create project via direct form"
+              onClick={toggleCreateProjectModal}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 500,
+                lineHeight: 1,
+                cursor: 'pointer',
+                flexShrink: 0,
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'transparent',
+                color: C.muted,
+                fontFamily: "'Inter', sans-serif",
+                opacity: 0.6,
+              }}
+            >+ form</button>
           </div>
         </div>
 
