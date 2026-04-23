@@ -39,7 +39,7 @@ export default function useChatMessages({
       .select('*')
       .eq('client_id', worldId)
       .eq('agent', selectedAgent.slug)
-      .is('project', null)
+      .or('project.is.null,project.eq.')
       .order('timestamp', { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
