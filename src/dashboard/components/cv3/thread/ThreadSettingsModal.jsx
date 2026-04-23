@@ -10,8 +10,12 @@ import useThreadResetAgent from './useThreadResetAgent.js'
 // Full-screen chat-settings overlay: General (rename), Voice, Google,
 // Keys (env_vars keychain), and Control (hard-reset the agent's tmux).
 // Control tab only renders for agents in RESETTABLE_AGENTS.
+// R47 (2026-04-22 session 18): mobile layout collapses the 220px left
+// pane into a horizontal tab strip and adds a prominent back arrow in
+// the header so there's always a visible escape path from a 390px
+// iPhone webapp.
 export default function ThreadSettingsModal() {
-  const { selectedAgent, selectedProject, worldId, VOICE_OPTIONS } = useChatCore()
+  const { selectedAgent, selectedProject, worldId, VOICE_OPTIONS, isMobile } = useChatCore()
   const {
     settingsTab, setSettingsTab, setSettingsOpen,
     chatNameInput, setChatNameInput, saveRoomName,
@@ -32,37 +36,75 @@ export default function ThreadSettingsModal() {
 
   return (
     <div
+      data-testid="thread-settings-overlay"
+      data-mobile={isMobile ? 'true' : 'false'}
       style={{
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(0,0,0,0.85)',
+        background: isMobile ? C.s1 : 'rgba(0,0,0,0.85)',
         zIndex: 9999,
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
       }}
     >
-      {/* Left pane */}
+      {/* Left pane (desktop) / top strip (mobile) */}
       <div style={{
-        width: 220,
-        flexShrink: 0,
+        ...(isMobile
+          ? { width: '100%', flexShrink: 0 }
+          : { width: 220, flexShrink: 0, borderRight: '1px solid ' + C.border2 }),
         background: C.bg2,
-        borderRight: '1px solid ' + C.border2,
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid ' + C.border }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>Settings</span>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: isMobile ? '12px 14px' : '28px 20px 20px',
+          ...(!isMobile && { borderBottom: '1px solid ' + C.border }),
+        }}>
+          {isMobile && (
+            <button
+              data-testid="thread-settings-back"
+              onClick={() => setSettingsOpen(false)}
+              title="Back"
+              aria-label="Back to chat"
+              style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid ' + C.border,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: C.text, fontSize: 20, lineHeight: 1,
+              }}
+            >
+              &#x2190;
+            </button>
+          )}
+          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif", flex: 1 }}>Settings</span>
         </div>
-        <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div
+          data-testid="thread-settings-tabs"
+          style={{
+            padding: isMobile ? '8px 12px 12px' : '12px 8px',
+            display: 'flex',
+            flexDirection: isMobile ? 'row' : 'column',
+            gap: isMobile ? 6 : 2,
+            ...(isMobile && { overflowX: 'auto', WebkitOverflowScrolling: 'touch' }),
+          }}
+        >
           {settingsTabs.map(item => (
             <button
               key={item}
               onClick={() => setSettingsTab(item)}
+              data-testid={`thread-settings-tab-${item.toLowerCase()}`}
               style={{
-                padding: '7px 12px', fontSize: 13,
+                padding: isMobile ? '8px 16px' : '7px 12px', fontSize: 13,
                 color: settingsTab === item ? C.text : C.text2,
                 fontFamily: "'Inter', sans-serif", borderRadius: 6,
                 background: settingsTab === item ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                border: 'none', cursor: 'pointer', textAlign: 'left',
+                whiteSpace: isMobile ? 'nowrap' : 'normal',
+                width: isMobile ? 'auto' : '100%',
+                flexShrink: 0,
               }}
             >{item}</button>
           ))}
@@ -70,41 +112,44 @@ export default function ThreadSettingsModal() {
       </div>
       {/* Right pane */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.s1, overflow: 'hidden' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderBottom: '1px solid ' + C.border,
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
-            {settingsTab}
-          </span>
-          <button
-            onClick={() => setSettingsOpen(false)}
-            style={{
-              width: 28, height: 28,
-              borderRadius: 8,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid ' + C.border,
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: C.text2,
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
+        {!isMobile && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 24px',
+            borderBottom: '1px solid ' + C.border,
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+              {settingsTab}
+            </span>
+            <button
+              data-testid="thread-settings-close"
+              onClick={() => setSettingsOpen(false)}
+              style={{
+                width: 28, height: 28,
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid ' + C.border,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: C.text2,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        )}
         {/* Modal body */}
         <div style={{
-          padding: 24,
+          padding: isMobile ? '16px 16px' : 24,
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: isMobile ? 16 : 20,
           overflowY: 'auto',
           flex: 1,
         }}>

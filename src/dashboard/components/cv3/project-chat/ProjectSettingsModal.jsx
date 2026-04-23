@@ -28,6 +28,8 @@ export default function ProjectSettingsModal() {
   } = useChatSettingsCtx()
   return (
     <div
+      data-testid="project-settings-overlay"
+      data-mobile={isMobile ? 'true' : 'false'}
       style={{
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
@@ -49,26 +51,28 @@ export default function ProjectSettingsModal() {
           ...(!isMobile && { borderBottom: '1px solid ' + C.border }),
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>Settings</span>
           {isMobile && (
             <button
+              data-testid="project-settings-back"
               onClick={() => setSettingsOpen(false)}
+              title="Back"
+              aria-label="Back to chat"
               style={{
-                width: 44, height: 44,
+                width: 36, height: 36,
                 borderRadius: 10,
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid ' + C.border,
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: C.text2, flexShrink: 0,
+                color: C.text, flexShrink: 0,
+                fontSize: 20, lineHeight: 1,
+                marginRight: 10,
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
+              &#x2190;
             </button>
           )}
+          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif", flex: 1 }}>Settings</span>
         </div>
         <div style={{
           padding: isMobile ? '8px 12px 12px' : '12px 8px',
