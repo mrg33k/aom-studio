@@ -10,7 +10,6 @@ import {
   useChatContextMenuCtx,
 } from '../chat/ChatPanelContext.jsx'
 import useProjectChatPrefill from './useProjectChatPrefill.js'
-import { createTaskWithRex } from '../../../lib/rexTaskClient.js'
 
 // The CV3-pill input bar for the project-chat room. Handles slash-command
 // autocomplete (via caret tracking), file attach button, voice start/send
@@ -37,13 +36,23 @@ export default function ProjectInputBar() {
     const text = input.trim()
     if (!text || !selectedProject) return
     try {
-      await createTaskWithRex(text, currentUser?.id || null, currentUser?.user_metadata?.full_name || null, {
-        projectSlug: selectedProject.slug,
-        clientId: worldId || 'aom',
+      // R21c uses /api/dashboard/create-project-task (service-role) so the
+      // insert isn't blocked by RLS on dependent tables. Client-direct
+      // createTaskWithRex failed on the events trigger in prod.
+      const resp = await fetch('/api/dashboard/create-project-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          projectSlug: selectedProject.slug,
+          clientId: worldId || 'aom',
+          userId: currentUser?.id || null,
+        }),
       })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`)
       setInput('')
     } catch (err) {
-      // surface failures inline in the future; for now silent + keep input.
       console.error('[R21c] create-task error:', err)
     }
   }, [input, selectedProject, currentUser, worldId, setInput])
