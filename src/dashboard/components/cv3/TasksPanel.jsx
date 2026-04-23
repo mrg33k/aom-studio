@@ -382,8 +382,6 @@ function TasksPanelBody() {
             <ProjectFilesSection />
           </div>
         )}
-        {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
-
         {/* ── Owner's Personal Todos (R14e-4) ──────────────────── */}
         <PersonalTodosSection />
 
@@ -398,6 +396,11 @@ function TasksPanelBody() {
 
         {/* ── Failed ──────────────────────────────────────────── */}
         <FailedTasksSection />
+
+        {/* R14b: Files drop below failed + active on the 'all' view so
+            actionable state (failed, active) lives above archival state
+            (files). Files section is already count-only + expand per R30. */}
+        {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
 
         {/* ── Done ────────────────────────────────────────────── */}
         <DoneTasksSection />

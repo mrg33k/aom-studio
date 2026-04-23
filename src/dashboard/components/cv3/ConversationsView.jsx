@@ -94,6 +94,29 @@ export default function ConversationsView() {
     (allTasks || []).filter(t => ACTIVE_STATUSES.has(t.status)).map(t => t.metadata?.project).filter(Boolean)
   )
 
+  // R14a: for each agent whose LATEST activity is a failed task, stash the
+  // task so AgentsList + EaHeroCard can render the failure surface strip.
+  // "Latest" = most recent updated_at across all that agent's tasks; if it
+  // happens to be failed, the strip shows. An older failure superseded by a
+  // newer queued/running/done task does NOT show -- only the most recent.
+  const latestFailedByAgent = (() => {
+    const latestByAgent = {}
+    for (const t of (allTasks || [])) {
+      const slug = t?.agent_identity || t?.agent
+      if (!slug) continue
+      const ts = t.updated_at || t.completed_at || t.created_at || ''
+      const prev = latestByAgent[slug]
+      if (!prev || String(ts) > String(prev._ts)) {
+        latestByAgent[slug] = { ...t, _ts: ts }
+      }
+    }
+    const out = {}
+    for (const [slug, t] of Object.entries(latestByAgent)) {
+      if (t.status === 'failed') out[slug] = t
+    }
+    return out
+  })()
+
   const sortedProjects = [...(projects || [])].sort((a, b) =>
     (a.name || '').localeCompare(b.name || '')
   )
@@ -165,6 +188,7 @@ export default function ConversationsView() {
             eaStatusInfo={eaStatusInfo}
             eaIsActive={eaIsActive}
             activeAgentSlugs={activeAgentSlugs}
+            latestFailedTask={eaAgent ? latestFailedByAgent[eaAgent.slug] || null : null}
             setSelectedAgent={setSelectedAgent}
             onSelectAgent={onSelectAgent}
           />
@@ -174,6 +198,7 @@ export default function ConversationsView() {
             unreadMap={unreadMap}
             unreadCounts={unreadCounts}
             activeAgentSlugs={activeAgentSlugs}
+            latestFailedByAgent={latestFailedByAgent}
             heroSlug={eaAgent?.slug}
             setSelectedAgent={setSelectedAgent}
             onSelectAgent={onSelectAgent}

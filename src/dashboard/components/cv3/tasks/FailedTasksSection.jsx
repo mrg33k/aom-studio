@@ -30,7 +30,7 @@ export default function FailedTasksSection() {
   if (filteredFailed.length === 0) return null
 
   return (
-    <div style={{ marginBottom: 36 }}>
+    <div data-testid="failed-section" style={{ marginBottom: 36 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{
           fontSize: 18,

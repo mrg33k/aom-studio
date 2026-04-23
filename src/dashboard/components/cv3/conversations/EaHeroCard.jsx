@@ -1,9 +1,12 @@
 // EA focus card — the prominent first card on the home view that links
 // straight into the current world's EA chat. Status info + unread badge +
 // last message. Extracted from ConversationsView during R2e split; made
-// role-driven (is_ea) in R14e-2.
+// role-driven (is_ea) in R14e-2. R14a (2026-04-22): renders an
+// AgentFailureSurface strip below the hero when the EA's latest task is
+// failed -- same component as AgentsList uses.
 import { C } from '../../../lib/cv3Colors.js'
 import { formatChatTime } from '../shared.jsx'
+import AgentFailureSurface from './AgentFailureSurface.jsx'
 
 export default function EaHeroCard({
   eaAgent,
@@ -12,12 +15,14 @@ export default function EaHeroCard({
   eaStatusInfo,
   eaIsActive,
   activeAgentSlugs,
+  latestFailedTask = null,
   setSelectedAgent,
   onSelectAgent,
 }) {
   if (!eaAgent) return null
   const avatarLetter = (eaAgent.name || '?')[0].toUpperCase()
   return (
+    <div data-agent-slug={eaAgent.slug} style={{ marginBottom: 28 }}>
     <button
       data-testid={`agent-card-${eaAgent.slug}`}
       data-agent-slug={eaAgent.slug}
@@ -33,7 +38,6 @@ export default function EaHeroCard({
         cursor: 'pointer',
         textAlign: 'left',
         transition: 'all 200ms ease',
-        marginBottom: 28,
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -133,5 +137,7 @@ export default function EaHeroCard({
         </svg>
       </div>
     </button>
+    {latestFailedTask && <AgentFailureSurface failedTask={latestFailedTask} />}
+    </div>
   )
 }

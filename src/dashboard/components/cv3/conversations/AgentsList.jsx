@@ -1,14 +1,18 @@
 // Agents list section -- one button per agent, status dot, unread badge,
 // and a live-dots indicator when the agent has an active task. Extracted
-// verbatim from ConversationsView during R2e split.
+// verbatim from ConversationsView during R2e split. R14a (2026-04-22)
+// adds an AgentFailureSurface strip below any row whose agent's latest
+// task is failed.
 import { C } from '../../../lib/cv3Colors.js'
 import { formatChatTime, getStatusColor } from '../shared.jsx'
+import AgentFailureSurface from './AgentFailureSurface.jsx'
 
 export default function AgentsList({
   agents,
   unreadMap,
   unreadCounts,
   activeAgentSlugs,
+  latestFailedByAgent = {},
   setSelectedAgent,
   onSelectAgent,
   heroSlug,
@@ -48,9 +52,10 @@ export default function AgentsList({
             : agentStatus === 'queued' ? 'Queued'
             : isActive ? 'Online' : 'Idle'
 
+          const failedTask = latestFailedByAgent[agent.slug] || null
           return (
+            <div key={agent.slug} data-agent-slug={agent.slug}>
             <button
-              key={agent.slug}
               data-testid={`agent-card-${agent.slug}`}
               data-agent-status={agentStatus || 'idle'}
               onClick={() => { setSelectedAgent(agent); onSelectAgent?.(agent) }}
@@ -152,6 +157,8 @@ export default function AgentsList({
                 )}
               </div>
             </button>
+            {failedTask && <AgentFailureSurface failedTask={failedTask} />}
+            </div>
           )
         })}
       </div>
