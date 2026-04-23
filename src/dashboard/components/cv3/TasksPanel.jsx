@@ -332,6 +332,8 @@ function TasksPanelBody() {
               )
             })}
             <button
+              data-testid="open-create-project-modal"
+              title="Create project"
               onClick={toggleCreateProjectModal}
               style={{
                 padding: '6px 12px',

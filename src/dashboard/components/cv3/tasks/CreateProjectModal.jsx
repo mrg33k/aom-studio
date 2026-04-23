@@ -28,6 +28,7 @@ export default function CreateProjectModal() {
 
   return (
     <div
+      data-testid="create-project-modal"
       style={{
         position: 'absolute', inset: 0, zIndex: 100,
         background: 'rgba(0,0,0,0.7)',
@@ -53,6 +54,7 @@ export default function CreateProjectModal() {
         </div>
 
         <input
+          data-testid="project-name-input"
           type="text"
           placeholder="Project name..."
           value={projectName}
@@ -117,6 +119,7 @@ export default function CreateProjectModal() {
             }}
           >Cancel</button>
           <button
+            data-testid="create-project-confirm"
             onClick={onSubmit}
             disabled={isSubmitting || !projectName.trim()}
             style={{
