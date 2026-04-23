@@ -249,6 +249,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          {/* R21a: canonical per-project chat URL ("/dashboard/projects/<slug>/chat"). */}
+          <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/dashboard/projects/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />

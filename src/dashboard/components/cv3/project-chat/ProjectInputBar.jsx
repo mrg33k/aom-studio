@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
@@ -10,6 +10,7 @@ import {
   useChatContextMenuCtx,
 } from '../chat/ChatPanelContext.jsx'
 import useProjectChatPrefill from './useProjectChatPrefill.js'
+import { createTaskWithRex } from '../../../lib/rexTaskClient.js'
 
 // The CV3-pill input bar for the project-chat room. Handles slash-command
 // autocomplete (via caret tracking), file attach button, voice start/send
@@ -19,6 +20,7 @@ export default function ProjectInputBar() {
     selectedProject,
     chatInputFocused, setChatInputFocused,
     prefillMessage, setPrefillMessage,
+    worldId, currentUser,
   } = useChatCore()
   const {
     input, setInput, inputRef, sending, sendProjectText,
@@ -30,6 +32,21 @@ export default function ProjectInputBar() {
   useProjectChatPrefill({
     prefillMessage, selectedProject, setInput, setPrefillMessage, inputRef,
   })
+
+  const handleCreateTask = useCallback(async () => {
+    const text = input.trim()
+    if (!text || !selectedProject) return
+    try {
+      await createTaskWithRex(text, currentUser?.id || null, currentUser?.user_metadata?.full_name || null, {
+        projectSlug: selectedProject.slug,
+        clientId: worldId || 'aom',
+      })
+      setInput('')
+    } catch (err) {
+      // surface failures inline in the future; for now silent + keep input.
+      console.error('[R21c] create-task error:', err)
+    }
+  }, [input, selectedProject, currentUser, worldId, setInput])
 
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
@@ -130,6 +147,29 @@ export default function ProjectInputBar() {
             }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+            </button>
+            {/* R21c: project-scoped task creation straight from the chat
+                input. Takes the current input text + selectedProject.slug
+                and hits the same path the Tasks panel uses. No prompt,
+                no slug picker. */}
+            <button
+              data-testid="chat-create-task"
+              title="Create task from this message"
+              onClick={handleCreateTask}
+              disabled={!input.trim() || !selectedProject || sending}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'none', border: 'none',
+                color: !input.trim() || !selectedProject ? C.dim : C.muted,
+                cursor: !input.trim() || !selectedProject ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'all 0.15s',
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
               </svg>
             </button>
           </div>

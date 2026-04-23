@@ -65,13 +65,17 @@ export default function ProjectChatHeader() {
   )
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '10px 14px',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      background: 'rgba(8,14,28,0.95)',
-      flexShrink: 0,
-    }}>
+    <div
+      data-testid="project-chat-header"
+      data-project-slug={selectedProject?.slug || ''}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(8,14,28,0.95)',
+        flexShrink: 0,
+      }}
+    >
       <button
         onClick={() => {
           if (isVoiceActive) {
