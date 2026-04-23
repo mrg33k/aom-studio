@@ -1,31 +1,37 @@
-// HeaderActionsDrawer -- R46 (2026-04-22 session 18).
+// HeaderActionsDrawer -- R46 (2026-04-22 session 18), rearranged R60 (session 20).
 //
 // Consolidates every secondary action icon in a chat header into a single
 // drawer button on the right that expands LEFTWARD. One style, one layout,
-// every chat surface. Reverses R40's "info icon placed apart" direction --
-// live review said the scattered icons feel disorganized and the info icon
-// is too close to the agent profile picture.
+// every chat surface.
+//
+// R60 (session 20): phone icon moves INTO the drawer (no longer a primary
+// outside slot); context meter moves OUTSIDE the drawer via the new
+// `outsideWhenClosed` slot, which renders only when the drawer is closed.
+// The outside slot is the only always-on indicator the user glances at;
+// everything else is an action and lives inside the drawer (VISION
+// "drawer-vs-outside split: phone inside, context meter outside").
 //
 // Usage:
-//   <HeaderActionsDrawer testid="thread-header-drawer">
-//     <button>...</button>
+//   <HeaderActionsDrawer
+//     testid="thread-header-drawer"
+//     outsideWhenClosed={<ContextFullnessMeter agentSlug={...} />}
+//   >
 //     <button>...</button>
 //   </HeaderActionsDrawer>
-//
-// The children are the action icons themselves -- the drawer doesn't care
-// what they do, only that they render consistently when open.
 //
 // Testid contract:
 //   [data-testid="<testid>"] on the drawer container
 //   [data-testid="<testid>-toggle"] on the toggle button
 //   [data-testid="<testid>-tray"] on the expanded action tray (only present
 //                                 when open)
+//   [data-testid="<testid>-outside"] on the outside-when-closed wrapper
+//                                 (only present when closed + outside given)
 //   [data-open] reflects the open/closed state on the container.
 
 import { useEffect, useRef, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 
-export default function HeaderActionsDrawer({ testid, children, title = 'Actions' }) {
+export default function HeaderActionsDrawer({ testid, children, title = 'Actions', outsideWhenClosed = null }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -62,6 +68,14 @@ export default function HeaderActionsDrawer({ testid, children, title = 'Actions
           }}
         >
           {children}
+        </div>
+      )}
+      {!open && outsideWhenClosed && (
+        <div
+          data-testid={testid ? `${testid}-outside` : undefined}
+          style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
+        >
+          {outsideWhenClosed}
         </div>
       )}
       <button
