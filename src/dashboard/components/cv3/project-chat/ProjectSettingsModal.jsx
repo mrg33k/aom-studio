@@ -1,6 +1,7 @@
 import { C } from '../../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
+import AvatarUploader from '../shared/AvatarUploader.jsx'
 
 // Full-screen settings overlay for the project-chat room. Tabs:
 //   General (room name)
@@ -143,6 +144,35 @@ export default function ProjectSettingsModal() {
           flex: 1,
           WebkitOverflowScrolling: 'touch',
         }}>
+          {/* R64: project avatar uploader. Click-to-upload sits at the top
+              of the General tab, mirroring the agent info avatar slot. */}
+          {settingsTab === 'General' && selectedProject?.slug && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 4 }}>
+            <AvatarUploader
+              world={worldId}
+              kind="project"
+              slug={selectedProject.slug}
+              size={56}
+              fallback={(
+                <div style={{
+                  width: '100%', height: '100%', borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${selectedProject.color || '#6B8AB0'}55, ${selectedProject.color || '#6B8AB0'}22)`,
+                  border: `1px solid ${selectedProject.color || '#6B8AB0'}44`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: 4,
+                    background: selectedProject.color || '#6B8AB0',
+                    boxShadow: `0 0 10px ${selectedProject.color || '#6B8AB0'}77`,
+                  }} />
+                </div>
+              )}
+            />
+            <div style={{ fontSize: 12, color: C.muted, fontFamily: "'Inter', sans-serif" }}>
+              Click to change profile picture
+            </div>
+          </div>
+          )}
           {/* Room rename */}
           {settingsTab === 'General' && (
           <div>

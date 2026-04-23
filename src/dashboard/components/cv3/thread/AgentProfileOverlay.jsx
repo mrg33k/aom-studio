@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import AvatarUploader from '../shared/AvatarUploader.jsx'
+import { useChatCore } from '../chat/ChatPanelContext.jsx'
 
 // R40 -- Agent profile screen via info-icon.
 //
@@ -125,6 +127,8 @@ export default function AgentProfileOverlay({ agent, onClose }) {
   if (!agent) return null
   const slug = agent.slug
   const color = agent.color || '#3B9EFF'
+  let worldId = ''
+  try { worldId = useChatCore()?.worldId || '' } catch {}
 
   return (
     <div
@@ -146,16 +150,23 @@ export default function AgentProfileOverlay({ agent, onClose }) {
         borderBottom: `1px solid ${C.border2}`,
         background: 'rgba(8, 14, 28, 0.95)',
       }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: color,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 16, fontWeight: 800, color: 'white', lineHeight: 1 }}>
-            {(agent.name || '?')[0].toUpperCase()}
-          </span>
-        </div>
+        <AvatarUploader
+          world={worldId}
+          kind="agent"
+          slug={slug}
+          size={40}
+          fallback={(
+            <div style={{
+              width: '100%', height: '100%', borderRadius: '50%',
+              background: color,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: 'white', lineHeight: 1 }}>
+                {(agent.name || '?')[0].toUpperCase()}
+              </span>
+            </div>
+          )}
+        />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 15, fontWeight: 700, color: C.text,
