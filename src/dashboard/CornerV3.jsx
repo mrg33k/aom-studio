@@ -96,6 +96,16 @@ export default function CornerV3() {
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
   const [prefillMessage, setPrefillMessage] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
+
+  // R49 (2026-04-23): when setPrefillMessage is fired from TasksPanel
+  // (new-project recipe), drop it into the home input bar and clear
+  // the pending prefill so it doesn't fire twice.
+  useEffect(() => {
+    if (prefillMessage && tab === 'chat' && !selectedAgent && !conversationTarget) {
+      setInputBarText(prefillMessage)
+      setPrefillMessage(null)
+    }
+  }, [prefillMessage, tab, selectedAgent, conversationTarget])
   const [inputBarSending, setInputBarSending] = useState(false)
   const [inputBarFocused, setInputBarFocused] = useState(false)
   // Attach: stageFilesRef is set by ChatPanel to its useChatAttachments.stageFiles;
