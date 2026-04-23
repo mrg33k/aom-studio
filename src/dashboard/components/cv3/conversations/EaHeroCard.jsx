@@ -4,13 +4,14 @@
 // role-driven (is_ea) in R14e-2. R14a (2026-04-22): renders an
 // AgentFailureSurface strip below the hero when the EA's latest task is
 // failed -- same component as AgentsList uses.
-// R19e (2026-04-23): EA hero is an opinion, not a fixture. The card
-// carries an unpin toggle that hides the hero slot; when hidden, the EA
-// falls through to AgentsList as a regular card. Restore is surfaced
-// by the parent via EaHeroRestore below.
+// R19e (2026-04-23): EA hero is an opinion, not a fixture. R58 (session
+// 20) generalized the pin/unpin pattern — the EA card now uses the same
+// PinMenu every other agent card carries. The old R19e ea-hero-unpin "×"
+// button + ea-hero-restore CTA are retired; the menu replaces both.
 import { C } from '../../../lib/cv3Colors.js'
 import { formatChatTime } from '../shared.jsx'
 import AgentFailureSurface from './AgentFailureSurface.jsx'
+import PinMenu from './PinMenu.jsx'
 
 export default function EaHeroCard({
   eaAgent,
@@ -29,35 +30,14 @@ export default function EaHeroCard({
   return (
     <div data-agent-slug={eaAgent.slug} data-testid="ea-hero-card" style={{ marginBottom: 28, position: 'relative' }}>
     {onUnpin && (
-      <button
-        type="button"
-        data-testid="ea-hero-unpin"
-        aria-label="Unpin EA hero"
-        onClick={(e) => { e.stopPropagation(); onUnpin() }}
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 12,
-          zIndex: 2,
-          width: 26,
-          height: 26,
-          borderRadius: 8,
-          border: '1px solid rgba(96,165,250,0.25)',
-          background: 'rgba(10,12,20,0.6)',
-          color: C.muted,
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-          lineHeight: 1,
-          padding: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        title="Unpin — the EA falls into the agents list below. You can pin other agents alongside."
-      >
-        ×
-      </button>
+      <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 2 }}>
+        <PinMenu
+          kind="agent"
+          slug={eaAgent.slug}
+          isPinned={true}
+          onUnpin={() => onUnpin()}
+        />
+      </div>
     )}
     <button
       data-testid={`agent-card-${eaAgent.slug}`}

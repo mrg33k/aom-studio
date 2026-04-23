@@ -4,26 +4,14 @@
 //
 // R3b (Apr 17, 2026): reads from feature-sliced chat contexts instead of a
 // single ctx prop. The internal split (R2e) is unchanged.
-import { useEffect, useState } from 'react'
 import { getStatusColor } from './shared.jsx'
 import { useNavigate } from 'react-router-dom'
 import { C, agentColors } from '../../lib/cv3Colors.js'
 
-// R19e: EA hero is an opinion, not a fixture. The user can unpin it so
-// the EA falls through to AgentsList and other agents can sit where the
-// hero was. Restore is surfaced via a small "Pin EA hero" affordance.
-const EA_HERO_HIDDEN_KEY = 'aom_ea_hero_hidden'
-function readEaHeroHidden() {
-  if (typeof window === 'undefined') return false
-  try { return localStorage.getItem(EA_HERO_HIDDEN_KEY) === '1' } catch { return false }
-}
-function writeEaHeroHidden(hidden) {
-  if (typeof window === 'undefined') return
-  try {
-    if (hidden) localStorage.setItem(EA_HERO_HIDDEN_KEY, '1')
-    else localStorage.removeItem(EA_HERO_HIDDEN_KEY)
-  } catch {}
-}
+// R58 (session 20): pin state for the EA hero + every other agent and
+// every project lives in the universal usePinned hooks. The legacy
+// `aom_ea_hero_hidden` key is read once on first load as a migration
+// seed and then superseded by `aom_pinned_agents_<world>`.
 
 import { ACTIVE_STATUSES, CONVERSATIONS_KEYFRAMES } from './conversations/conversationsConstants.js'
 import useHomeSearch from './conversations/useHomeSearch.js'
@@ -34,6 +22,7 @@ import SearchResults from './conversations/SearchResults.jsx'
 import EaHeroCard from './conversations/EaHeroCard.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
 import ProjectsList from './conversations/ProjectsList.jsx'
+import { usePinnedAgents, usePinnedProjects } from './conversations/usePinned.js'
 
 import {
   useChatCore,
@@ -76,7 +65,7 @@ export default function ConversationsView() {
     agents, projects, allTasks,
     onSelectAgent, onSelectProject,
     setSelectedAgent, setInlineProject,
-    displayName, greetingIdx, GREETINGS,
+    displayName, greetingIdx, GREETINGS, worldId,
   } = useChatCore()
   const { setMessages } = useChatMessagesCtx()
   const {
@@ -86,10 +75,6 @@ export default function ConversationsView() {
     isVoiceActive, voiceMinimized, voiceMinimizedAgent,
     setVoiceMinimized,
   } = useChatVoiceCtx()
-
-  // R19e: EA hero unpin state, persisted in localStorage.
-  const [eaHeroHidden, setEaHeroHidden] = useState(readEaHeroHidden)
-  useEffect(() => { writeEaHeroHidden(eaHeroHidden) }, [eaHeroHidden])
 
   const search = useHomeSearch({ agents, projects })
   const {
@@ -107,6 +92,13 @@ export default function ConversationsView() {
   const eaUnread = eaAgent ? (unreadCounts[eaAgent.slug] || 0) : 0
   const eaStatusInfo = eaAgent ? getStatusColor(eaAgent.status) : { dot: '#506480', glow: 'none' }
   const eaIsActive = eaAgent?.status?.toUpperCase() !== 'IDLE'
+
+  // R58 (session 20): universal pin state for agents + projects. EA is
+  // pinned by default for fresh users; migration from R19e's legacy
+  // `aom_ea_hero_hidden` flag runs inside usePinnedAgents.
+  const pinnedAgents = usePinnedAgents({ world: worldId, defaultEaSlug: eaAgent?.slug })
+  const pinnedProjects = usePinnedProjects({ world: worldId })
+  const eaHeroHidden = eaAgent ? !pinnedAgents.isPinned(eaAgent.slug) : true
 
   const activeAgentSlugs = new Set(
     (allTasks || []).filter(t => ACTIVE_STATUSES.has(t.status)).map(t => t.agent_identity).filter(Boolean)
@@ -215,30 +207,11 @@ export default function ConversationsView() {
               latestFailedTask={eaAgent ? latestFailedByAgent[eaAgent.slug] || null : null}
               setSelectedAgent={setSelectedAgent}
               onSelectAgent={onSelectAgent}
-              onUnpin={() => setEaHeroHidden(true)}
+              onUnpin={() => pinnedAgents.unpin(eaAgent.slug)}
             />
           )}
-          {eaHeroHidden && eaAgent && (
-            <button
-              type="button"
-              data-testid="ea-hero-restore"
-              onClick={() => setEaHeroHidden(false)}
-              style={{
-                marginBottom: 18,
-                padding: '8px 14px',
-                borderRadius: 10,
-                border: '1px solid rgba(96,165,250,0.25)',
-                background: 'rgba(96,165,250,0.06)',
-                color: '#60A5FA',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: "'Inter', sans-serif",
-              }}
-            >
-              Pin {eaAgent.name || 'EA'} back to hero
-            </button>
-          )}
+          {/* R58 retires the ea-hero-restore CTA — the EA can be pinned back
+              via the same PinMenu every other agent card carries. */}
 
           <AgentsList
             agents={agents}
@@ -249,6 +222,9 @@ export default function ConversationsView() {
             heroSlug={eaHeroHidden ? null : eaAgent?.slug}
             setSelectedAgent={setSelectedAgent}
             onSelectAgent={onSelectAgent}
+            pinnedSlugs={pinnedAgents.pinned}
+            pinAgent={pinnedAgents.pin}
+            unpinAgent={pinnedAgents.unpin}
           />
 
           <ProjectsList
@@ -259,6 +235,9 @@ export default function ConversationsView() {
             setMessages={setMessages}
             setSelectedAgent={setSelectedAgent}
             onSelectProject={onSelectProject}
+            pinnedSlugs={pinnedProjects.pinned}
+            pinProject={pinnedProjects.pin}
+            unpinProject={pinnedProjects.unpin}
           />
 
           <CleoWorkspacesLink />
