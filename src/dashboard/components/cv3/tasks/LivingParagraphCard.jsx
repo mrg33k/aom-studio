@@ -1,58 +1,134 @@
-// LivingParagraphCard -- R62 (session 20). Context-aware 2-3 sentence
-// paragraph that sits above the WeeklyStatsCard + ActiveTasksSection
-// stack on the tasks view. VISION Pillar 2 living greeting-paragraph.
+// LivingParagraphCard -- R62 + R62-writer.
 //
-// "All" scope → roundup across every project in the last 7 days.
-// Project pill selected → scoped 14-day summary for that project.
-// Read-more toggle expands a detail block (recent messages, scaffold
-// events, open tasks) sourced from the same endpoint with expanded=1.
+// Shows a story-form paragraph above WeeklyStatsCard + ActiveTasksSection on
+// the tasks view. VISION Pillar 2 living paragraph; R62-writer (session 21)
+// switched the source from a template-synthesis endpoint to an LLM-composed
+// narrative written to the events table (event_type='project_narrative').
 //
-// Backend: /api/dashboard/project-paragraph (R62 endpoint). A deferred
-// R62-writer sub-round will move this to a daemon-written project_state_
-// summary cache table; today every request recomposes from source.
+// Load order:
+//   1. Fetch /api/dashboard/project-narrative (R62-writer cache).
+//      - empty → fall back to /api/dashboard/project-paragraph template.
+//      - populated → render the overview; show "read more" that expands details.
+//   2. Subscribe to Supabase realtime on events table for event_type='project_
+//      narrative'. When a new row arrives that matches scope + tenant, update
+//      paragraph + details in place. No polling.
+//
+// "All" scope → tenant-wide narrative. Project pill selected → scoped.
 import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../../../lib/supabase.js'
 import { C } from '../../../lib/cv3Colors.js'
 
 export default function LivingParagraphCard({ world, activeProject }) {
   const scope = !activeProject || activeProject === 'all' ? 'all' : activeProject
-  const [paragraph, setParagraph] = useState('')
+  const [overview, setOverview] = useState('')
+  const [details, setDetails] = useState('')
+  const [composedAt, setComposedAt] = useState(null)
+  const [usingFallback, setUsingFallback] = useState(false)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [detail, setDetail] = useState(null)
+  const [fallbackDetail, setFallbackDetail] = useState(null)
   const [error, setError] = useState(null)
 
-  // Fetch the paragraph when scope changes.
+  // Initial load: try narrative cache first, then fall back to template endpoint.
   useEffect(() => {
     if (!world) return
     let active = true
     setLoading(true)
     setError(null)
     setExpanded(false)
-    setDetail(null)
-    fetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(data => { if (active) { setParagraph(data?.paragraph || ''); setLoading(false) } })
-      .catch(err => { if (active) { setError(err.message || 'fetch failed'); setLoading(false) } })
+    setFallbackDetail(null)
+
+    const loadNarrative = async () => {
+      try {
+        const resp = await fetch(`/api/dashboard/project-narrative?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        const data = await resp.json()
+        if (!active) return
+        if (data?.empty) {
+          // fall back to template endpoint
+          const fb = await fetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
+          if (fb.ok) {
+            const fbData = await fb.json()
+            if (active) {
+              setOverview(fbData?.paragraph || '')
+              setDetails('')
+              setComposedAt(fbData?.updated_at || null)
+              setUsingFallback(true)
+            }
+          } else {
+            if (active) setOverview('')
+          }
+        } else {
+          setOverview(data?.overview || '')
+          setDetails(data?.details || '')
+          setComposedAt(data?.composed_at || null)
+          setUsingFallback(false)
+        }
+      } catch (err) {
+        if (active) setError(err.message || 'fetch failed')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    loadNarrative()
     return () => { active = false }
   }, [world, scope])
 
-  // Lazy fetch the detail block on first expand.
+  // Realtime: subscribe to project_narrative event inserts for this tenant+scope.
+  // Supabase channel filter is single-column, so we filter by agent (scope
+  // signal) server-side and validate tenant + event_type client-side.
   useEffect(() => {
-    if (!expanded || detail || !world) return
+    if (!world || !supabase) return
+    const chan = supabase
+      .channel(`r62w-narrative-${world}-${scope}`)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'events', filter: `agent=eq.${scope}` },
+        (payload) => {
+          const row = payload?.new
+          if (!row) return
+          if (row.event_type !== 'project_narrative') return
+          const p = row.payload || {}
+          if ((p.tenant_id || '') !== world) return
+          // Ignore stale inserts (should not happen since realtime is monotonic).
+          const nextAt = p.composed_at || row.timestamp
+          if (composedAt && nextAt && new Date(nextAt) < new Date(composedAt)) return
+          setOverview(p.overview || '')
+          setDetails(p.details || '')
+          setComposedAt(nextAt || null)
+          setUsingFallback(false)
+          setExpanded(false)
+          setError(null)
+        })
+      .subscribe()
+    return () => {
+      try { supabase.removeChannel(chan) } catch (_) {}
+    }
+  }, [world, scope, composedAt])
+
+  // Lazy fetch fallback detail block on first expand (only for template-path paragraphs).
+  useEffect(() => {
+    if (!expanded || !usingFallback || fallbackDetail || !world) return
     fetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}&expanded=1`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.detail) setDetail(data.detail) })
+      .then(data => { if (data?.detail) setFallbackDetail(data.detail) })
       .catch(() => {})
-  }, [expanded, detail, world, scope])
+  }, [expanded, usingFallback, fallbackDetail, world, scope])
 
-  const showParagraph = useMemo(() => {
-    if (error) return `(living paragraph unavailable — ${error})`
-    if (loading && !paragraph) return 'Loading…'
-    return paragraph || '—'
-  }, [error, loading, paragraph])
+  const showOverview = useMemo(() => {
+    if (error && !overview) return `(living paragraph unavailable — ${error})`
+    if (loading && !overview) return 'Loading…'
+    return overview || '—'
+  }, [error, loading, overview])
+
+  const hasDetails = (!usingFallback && !!details) || usingFallback
 
   return (
-    <div data-testid="living-paragraph" data-scope={scope} style={{ marginBottom: 28 }}>
+    <div
+      data-testid="living-paragraph"
+      data-scope={scope}
+      data-source={usingFallback ? 'template' : 'narrative'}
+      style={{ marginBottom: 28 }}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{
           width: 9, height: 9, borderRadius: '50%',
@@ -72,11 +148,12 @@ export default function LivingParagraphCard({ world, activeProject }) {
               color: C.text,
               margin: 0,
               fontFamily: "'Inter', sans-serif",
+              whiteSpace: 'pre-wrap',
             }}
           >
-            {showParagraph}
+            {showOverview}
           </p>
-          {paragraph && (
+          {overview && hasDetails && (
             <button
               type="button"
               data-testid="living-paragraph-read-more"
@@ -110,9 +187,12 @@ export default function LivingParagraphCard({ world, activeProject }) {
                 lineHeight: 1.55,
                 color: C.text2,
                 fontFamily: "'Inter', sans-serif",
+                whiteSpace: 'pre-wrap',
               }}
             >
-              <DetailBlock detail={detail} />
+              {usingFallback
+                ? <FallbackDetailBlock detail={fallbackDetail} />
+                : (details || 'No additional detail yet.')}
             </div>
           )}
         </div>
@@ -121,7 +201,7 @@ export default function LivingParagraphCard({ world, activeProject }) {
   )
 }
 
-function DetailBlock({ detail }) {
+function FallbackDetailBlock({ detail }) {
   if (!detail) return <span style={{ color: C.muted }}>Loading detail…</span>
   const entries = []
   if (Array.isArray(detail.recent_messages) && detail.recent_messages.length) {
