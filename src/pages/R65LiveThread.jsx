@@ -5,6 +5,9 @@ import {
   Globe, FileText, Search, Cpu, BookOpen, Pen,
   Monitor, Smartphone,
 } from 'lucide-react'
+import { marked } from 'marked'
+
+marked.setOptions({ breaks: true, gfm: true })
 
 // Corner V3 color palette (self-contained copy — do not wire to production)
 const C = {
@@ -72,6 +75,21 @@ const KEYFRAMES = `
   .r65-scroll::-webkit-scrollbar { width: 4px; }
   .r65-scroll::-webkit-scrollbar-track { background: transparent; }
   .r65-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
+
+  .r65-answer-md { font-size: 15px; color: #F1F5F9; font-family: 'Space Grotesk', sans-serif; line-height: 1.6; }
+  .r65-answer-md p { margin: 0 0 10px; }
+  .r65-answer-md p:last-child { margin-bottom: 0; }
+  .r65-answer-md p:first-child { font-size: 16px; font-weight: 500; line-height: 1.5; }
+  .r65-answer-md strong { color: #F1F5F9; font-weight: 600; }
+  .r65-answer-md a { color: #60A5FA; text-decoration: none; }
+  .r65-answer-md a:hover { text-decoration: underline; }
+  .r65-answer-md ul, .r65-answer-md ol { margin: 8px 0; padding-left: 20px; }
+  .r65-answer-md li { margin-bottom: 5px; }
+  .r65-answer-md h1, .r65-answer-md h2, .r65-answer-md h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; color: #F1F5F9; }
+  @media (max-width: 480px) {
+    .r65-answer-md { font-size: 14px; }
+    .r65-answer-md p:first-child { font-size: 15px; }
+  }
 `
 
 // ─── Demo scripts ──────────────────────────────────────────────────────────────
@@ -92,7 +110,7 @@ const SCRIPTS = {
     ],
     timing:   [1300, 2700, 4200, 5500],
     settleAt: 6400,
-    answer: "Corner uses a live-thread model where every thinking step is visible as it happens. The key insight from Manny and Claude Coworker: visible steps create trust. The chain should breathe — active steps pulse while completed ones recede quietly.",
+    answer: "Corner uses a **live-thread model** where every thinking step is visible as it happens.\n\nThe key insight from Manny and Claude Coworker: visible steps create trust. The chain should breathe — active steps pulse while completed ones recede quietly.",
   },
   medium: {
     label: 'Medium',
@@ -110,7 +128,7 @@ const SCRIPTS = {
     ],
     timing:   [1100, 2400, 3900, 5400, 7100],
     settleAt: 8300,
-    answer: "Recommendation: pulsing connector as default with fade settle. Dotted lines carry a TCP/IP 'waiting' signal that conflicts with agentic flow. Solid lines read as finished/static. The pulsing segment maps to how computation actually feels — signal flowing through a circuit.",
+    answer: "**Recommendation: pulsing connector** as default with fade settle.\n\nDotted lines carry a TCP/IP 'waiting' signal that conflicts with agentic flow. Solid lines read as finished/static. The pulsing segment maps to how computation actually feels — signal flowing through a circuit.",
   },
   long: {
     label: 'Long',
@@ -129,7 +147,7 @@ const SCRIPTS = {
     ],
     timing:   [900, 2000, 3500, 5600, 7800, 10200],
     settleAt: 11500,
-    answer: "Full brief: Pulsing connector as primary — most 'alive' feel, avoids waiting-signal confusion. Fade settle as default; collapse settle for dense analytical threads. Mobile: vertical connectors stay vertical, tighten step height to 36 px. Working dot: 8 px, agent color, 2 s breathe cycle. Done steps dim to 45% with checkmark. Tap expands inline detail. Ready for R65-impl.",
+    answer: "**Full design brief — ready for R65-impl.**\n\n- **Connector:** pulsing as primary — most 'alive' feel, avoids waiting-signal confusion\n- **Settle:** fade as default; collapse for dense analytical threads\n- **Mobile:** vertical connectors stay vertical, tighten step height to 36 px\n- **Working dot:** 8 px, agent color, 2 s breathe cycle\n- **Done steps:** dim to 45% with checkmark; tap expands inline detail",
   },
 }
 
@@ -566,18 +584,22 @@ function ThreadMockup({ script, connectorStyle, settleStyle, runState, stepState
               {/* Final answer */}
               {isSettled && (
                 <motion.div
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.45, ease: 'easeOut' }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
                   style={{
-                    marginTop: settleStyle === 'fade' ? 10 : 0,
-                    fontSize: 13,
-                    color: C.text,
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    lineHeight: 1.65,
+                    marginTop: settleStyle === 'fade' ? 28 : 16,
+                    background: C.s2,
+                    border: `1px solid ${C.border2}`,
+                    borderRadius: 10,
+                    padding: '16px 18px',
+                    boxShadow: '0 2px 14px rgba(0,0,0,0.28)',
                   }}
                 >
-                  {script.answer}
+                  <div
+                    className="r65-answer-md"
+                    dangerouslySetInnerHTML={{ __html: marked.parse(script.answer) }}
+                  />
                 </motion.div>
               )}
             </div>
