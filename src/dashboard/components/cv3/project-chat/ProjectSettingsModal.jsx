@@ -1,5 +1,6 @@
 import { C } from '../../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../../lib/typeScale.js'
+import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
 
 // Full-screen settings overlay for the project-chat room. Tabs:
 //   General (room name)
@@ -8,40 +9,23 @@ import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 //   Google (calendar + gmail OAuth)
 //   Keys (user + project env keys keychain)
 // Mobile flips the layout horizontally and shows the tabs as a scrolling strip.
-export default function ProjectSettingsModal({
-  isMobile,
-  selectedProject,
-  settingsTab,
-  setSettingsTab,
-  setSettingsOpen,
-  chatNameInput,
-  setChatNameInput,
-  saveRoomName,
-  VOICE_OPTIONS,
-  currentVoice,
-  selectVoice,
-  collaborators,
-  setCollaborators,
-  inviteEmail,
-  setInviteEmail,
-  inviteLoading,
-  setInviteLoading,
-  inviteMsg,
-  setInviteMsg,
-  worldId,
-  envKeys,
-  envKeysLoading,
-  newKeyName,
-  setNewKeyName,
-  newKeyValue,
-  setNewKeyValue,
-  newKeyScope,
-  setNewKeyScope,
-  keySaveMsg,
-  setKeySaveMsg,
-  saveEnvKey,
-  deleteEnvKey,
-}) {
+export default function ProjectSettingsModal() {
+  const { selectedProject, isMobile, worldId, VOICE_OPTIONS } = useChatCore()
+  const {
+    settingsTab, setSettingsTab, setSettingsOpen,
+    chatNameInput, setChatNameInput, saveRoomName,
+    currentVoice, selectVoice,
+    collaborators, setCollaborators,
+    inviteEmail, setInviteEmail,
+    inviteLoading, setInviteLoading,
+    inviteMsg, setInviteMsg,
+    envKeys, envKeysLoading,
+    newKeyName, setNewKeyName,
+    newKeyValue, setNewKeyValue,
+    newKeyScope, setNewKeyScope,
+    keySaveMsg, setKeySaveMsg,
+    saveEnvKey, deleteEnvKey,
+  } = useChatSettingsCtx()
   return (
     <div
       style={{
