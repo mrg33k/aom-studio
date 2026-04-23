@@ -294,7 +294,7 @@ export default function TaskQueueFAB({ isNightMode }) {
     }
     setLoading(true)
     load()
-    intervalRef.current = setInterval(load, 5000)
+    intervalRef.current = setInterval(load, 60000)
     return () => clearInterval(intervalRef.current)
   }, [open, load])
 

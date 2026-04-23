@@ -13,3 +13,7 @@ dist
 test-screenshots/
 *.png
 !public/images/**/*.png
+
+# session 15/16 hygiene
+supabase/.temp/
+scripts/.enrich-progress.json

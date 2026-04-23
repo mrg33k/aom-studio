@@ -474,7 +474,7 @@ export default function ISABrandBible() {
 
           {/* Hunter's Selects */}
           <div style={{ marginBottom: '60px' }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '20px', color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.875rem' }}>
+            <h3 style={{ fontWeight: 900, marginBottom: '20px', color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.875rem' }}>
               Hunter's Selects
             </h3>
             <div style={{ display: 'grid', gap: '16px' }}>
@@ -486,7 +486,7 @@ export default function ISABrandBible() {
 
           {/* Skylar's Selects */}
           <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '20px', color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.875rem' }}>
+            <h3 style={{ fontWeight: 900, marginBottom: '20px', color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.15em', fontSize: '0.875rem' }}>
               Skylar's Selects
             </h3>
             <div style={{ display: 'grid', gap: '16px' }}>
