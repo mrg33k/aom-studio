@@ -76,19 +76,19 @@ const KEYFRAMES = `
   .r65-scroll::-webkit-scrollbar-track { background: transparent; }
   .r65-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
 
-  .r65-answer-md { font-size: 15px; color: #F1F5F9; font-family: 'Space Grotesk', sans-serif; line-height: 1.6; }
+  .r65-answer-md { font-size: 14px; color: #F1F5F9; font-family: 'Space Grotesk', sans-serif; line-height: 1.6; }
   .r65-answer-md p { margin: 0 0 10px; }
   .r65-answer-md p:last-child { margin-bottom: 0; }
-  .r65-answer-md p:first-child { font-size: 16px; font-weight: 500; line-height: 1.5; }
+  .r65-answer-md p:first-child { font-size: 15px; font-weight: 400; line-height: 1.5; }
   .r65-answer-md strong { color: #F1F5F9; font-weight: 600; }
   .r65-answer-md a { color: #60A5FA; text-decoration: none; }
   .r65-answer-md a:hover { text-decoration: underline; }
   .r65-answer-md ul, .r65-answer-md ol { margin: 8px 0; padding-left: 20px; }
   .r65-answer-md li { margin-bottom: 5px; }
-  .r65-answer-md h1, .r65-answer-md h2, .r65-answer-md h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; color: #F1F5F9; }
+  .r65-answer-md h1, .r65-answer-md h2, .r65-answer-md h3 { font-size: 14px; font-weight: 600; margin: 0 0 8px; color: #F1F5F9; }
   @media (max-width: 480px) {
-    .r65-answer-md { font-size: 14px; }
-    .r65-answer-md p:first-child { font-size: 15px; }
+    .r65-answer-md { font-size: 13px; }
+    .r65-answer-md p:first-child { font-size: 14px; }
   }
 `
 
@@ -588,12 +588,10 @@ function ThreadMockup({ script, connectorStyle, settleStyle, runState, stepState
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
                   style={{
-                    marginTop: settleStyle === 'fade' ? 28 : 16,
-                    background: C.s2,
+                    marginTop: settleStyle === 'fade' ? 20 : 12,
                     border: `1px solid ${C.border2}`,
-                    borderRadius: 10,
-                    padding: '16px 18px',
-                    boxShadow: '0 2px 14px rgba(0,0,0,0.28)',
+                    borderRadius: 8,
+                    padding: '12px 14px',
                   }}
                 >
                   <div
