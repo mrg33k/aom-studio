@@ -10,7 +10,7 @@ import { formatChatTime, getStatusColor } from '../shared.jsx'
 import AgentFailureSurface from './AgentFailureSurface.jsx'
 import PinMenu from './PinMenu.jsx'
 
-function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFailedByAgent, setSelectedAgent, onSelectAgent, isPinned, onPin, onUnpin }) {
+function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFailedByAgent, setSelectedAgent, onSelectAgent, isPinned, onPin, onUnpin, onReorder }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const lastMsg = unreadMap[agent.slug]
   const unreadCount = unreadCounts[agent.slug] || 0
@@ -35,8 +35,34 @@ function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFail
     if (trigger) trigger.click()
   }
 
+  const handleDragStart = (e) => {
+    e.dataTransfer?.setData('text/x-aom-agent-slug', agent.slug)
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+  }
+  const handleDragOver = (e) => {
+    if (e.dataTransfer?.types?.includes('text/x-aom-agent-slug')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+  const handleDrop = (e) => {
+    const fromSlug = e.dataTransfer?.getData('text/x-aom-agent-slug')
+    if (fromSlug && fromSlug !== agent.slug) {
+      e.preventDefault()
+      onReorder?.(fromSlug, agent.slug)
+    }
+  }
+
   return (
-    <div data-agent-slug={agent.slug} onContextMenu={handleContextMenu} style={{ position: 'relative' }}>
+    <div
+      data-agent-slug={agent.slug}
+      onContextMenu={handleContextMenu}
+      draggable={typeof onReorder === 'function'}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      style={{ position: 'relative' }}
+    >
       <button
         data-testid={`agent-card-${agent.slug}`}
         data-agent-status={agentStatus || 'idle'}
@@ -166,6 +192,7 @@ export default function AgentsList({
   pinnedSlugs,
   pinAgent,
   unpinAgent,
+  reorderAgent,
 }) {
   const isHero = (a) => heroSlug ? a.slug === heroSlug : false
   const nonHero = (agents || []).filter(a => !isHero(a))
@@ -185,6 +212,7 @@ export default function AgentsList({
       isPinned={!!(pinnedSlugs && pinnedSlugs.has(agent.slug))}
       onPin={pinAgent}
       onUnpin={unpinAgent}
+      onReorder={reorderAgent}
     />
   )
 

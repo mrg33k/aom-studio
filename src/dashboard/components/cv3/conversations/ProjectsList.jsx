@@ -7,7 +7,7 @@ import { C } from '../../../lib/cv3Colors.js'
 import { formatChatTime } from '../shared.jsx'
 import PinMenu from './PinMenu.jsx'
 
-function ProjectRow({ project, projectPreviews, activeProjectSlugs, setInlineProject, setMessages, setSelectedAgent, onSelectProject, isPinned, onPin, onUnpin }) {
+function ProjectRow({ project, projectPreviews, activeProjectSlugs, setInlineProject, setMessages, setSelectedAgent, onSelectProject, isPinned, onPin, onUnpin, onReorder }) {
   const pColor = project.color || '#6B8AB0'
   const pPreview = projectPreviews[`project:${project.slug}`]
 
@@ -17,8 +17,33 @@ function ProjectRow({ project, projectPreviews, activeProjectSlugs, setInlinePro
     if (trigger) trigger.click()
   }
 
+  const handleDragStart = (e) => {
+    e.dataTransfer?.setData('text/x-aom-project-slug', project.slug)
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+  }
+  const handleDragOver = (e) => {
+    if (e.dataTransfer?.types?.includes('text/x-aom-project-slug')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+  const handleDrop = (e) => {
+    const fromSlug = e.dataTransfer?.getData('text/x-aom-project-slug')
+    if (fromSlug && fromSlug !== project.slug) {
+      e.preventDefault()
+      onReorder?.(fromSlug, project.slug)
+    }
+  }
+
   return (
-    <div onContextMenu={handleContextMenu} style={{ position: 'relative' }}>
+    <div
+      onContextMenu={handleContextMenu}
+      draggable={typeof onReorder === 'function'}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      style={{ position: 'relative' }}
+    >
       <button
         data-testid={`project-card-${project.slug}`}
         data-project-slug={project.slug}
@@ -121,6 +146,7 @@ export default function ProjectsList({
   pinnedSlugs,
   pinProject,
   unpinProject,
+  reorderProject,
 }) {
   const pinned = (sortedProjects || []).filter(p => pinnedSlugs && pinnedSlugs.has(p.slug))
   const rest = (sortedProjects || []).filter(p => !(pinnedSlugs && pinnedSlugs.has(p.slug)))
@@ -138,6 +164,7 @@ export default function ProjectsList({
       isPinned={!!(pinnedSlugs && pinnedSlugs.has(project.slug))}
       onPin={pinProject}
       onUnpin={unpinProject}
+      onReorder={reorderProject}
     />
   )
 

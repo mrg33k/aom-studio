@@ -23,6 +23,7 @@ import EaHeroCard from './conversations/EaHeroCard.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
 import ProjectsList from './conversations/ProjectsList.jsx'
 import { usePinnedAgents, usePinnedProjects } from './conversations/usePinned.js'
+import { useAgentOrder, useProjectOrder, applyOrder } from './conversations/useListOrder.js'
 
 import {
   useChatCore,
@@ -98,6 +99,8 @@ export default function ConversationsView() {
   // `aom_ea_hero_hidden` flag runs inside usePinnedAgents.
   const pinnedAgents = usePinnedAgents({ world: worldId, defaultEaSlug: eaAgent?.slug })
   const pinnedProjects = usePinnedProjects({ world: worldId })
+  const agentOrder = useAgentOrder(worldId)
+  const projectOrder = useProjectOrder(worldId)
   const eaHeroHidden = eaAgent ? !pinnedAgents.isPinned(eaAgent.slug) : true
 
   const activeAgentSlugs = new Set(
@@ -135,7 +138,7 @@ export default function ConversationsView() {
   // the preview update) both push an item to the top of its list.
   // Fallback sort for items with no messages yet: agents alpha by name /
   // projects alpha by name so the list stays stable for a fresh user.
-  const chronoAgents = [...(agents || [])].sort((a, b) => {
+  const chronoAgentsBase = [...(agents || [])].sort((a, b) => {
     const aTime = unreadMap[a.slug]?.timestamp || ''
     const bTime = unreadMap[b.slug]?.timestamp || ''
     if (aTime && bTime) return bTime > aTime ? 1 : bTime < aTime ? -1 : 0
@@ -143,8 +146,11 @@ export default function ConversationsView() {
     if (!aTime && bTime) return 1
     return (a.name || '').localeCompare(b.name || '')
   })
+  // R59: drag-override. Apply the stored order on top of the chrono sort
+  // so manual reorders win; untouched items keep their chrono position.
+  const chronoAgents = applyOrder(chronoAgentsBase, agentOrder.order)
 
-  const sortedProjects = [...(projects || [])].sort((a, b) => {
+  const chronoProjectsBase = [...(projects || [])].sort((a, b) => {
     const aTime = projectPreviews[`project:${a.slug}`]?.timestamp || ''
     const bTime = projectPreviews[`project:${b.slug}`]?.timestamp || ''
     if (aTime && bTime) return bTime > aTime ? 1 : bTime < aTime ? -1 : 0
@@ -152,6 +158,7 @@ export default function ConversationsView() {
     if (!aTime && bTime) return 1
     return (a.name || '').localeCompare(b.name || '')
   })
+  const sortedProjects = applyOrder(chronoProjectsBase, projectOrder.order)
 
   const totalResults = msgHits.length + taskHits.length + agentHits.length + projectHits.length
 
@@ -244,6 +251,7 @@ export default function ConversationsView() {
             pinnedSlugs={pinnedAgents.pinned}
             pinAgent={pinnedAgents.pin}
             unpinAgent={pinnedAgents.unpin}
+            reorderAgent={agentOrder.move}
           />
 
           <ProjectsList
@@ -257,6 +265,7 @@ export default function ConversationsView() {
             pinnedSlugs={pinnedProjects.pinned}
             pinProject={pinnedProjects.pin}
             unpinProject={pinnedProjects.unpin}
+            reorderProject={projectOrder.move}
           />
 
           <CleoWorkspacesLink />
