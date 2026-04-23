@@ -520,13 +520,15 @@ export function useTasksPanel() {
     if (!ts) return false
     return new Date(ts) >= weekStart
   })
-  const withQA = weekCompleted.filter(t => t.qa_score || t.qaScore)
-  const avgQA = withQA.length > 0
-    ? (withQA.reduce((s, t) => s + Number(t.qa_score || t.qaScore || 0), 0) / withQA.length).toFixed(1)
-    : null
-  const passCount = withQA.filter(t => Number(t.qa_score || t.qaScore || 0) >= 8).length
-  const passRate = weekCompleted.length > 0 ? Math.round((passCount / weekCompleted.length) * 100) : null
-  const qaRatio = `${withQA.length}/${weekCompleted.length}`
+  // R48 (2026-04-22): retire the QA-score concept on this card — most tasks
+  // never carried a qa_score so avgQA/passRate-from-QA read '--' forever.
+  // Swap to pass-rate derived from status (done vs done+failed), and replace
+  // the "QAd" slot with "Days active" — count of weekdays that saw activity.
+  const weekDone = weekCompleted.filter(t => t.status === 'done').length
+  const weekFailed = weekCompleted.filter(t => t.status === 'failed').length
+  const closedCount = weekDone + weekFailed
+  const passRate = closedCount > 0 ? Math.round((weekDone / closedCount) * 100) : null
+  const daysActive = dailyCounts.filter(n => n > 0).length
 
   const greetingHour = new Date().getHours()
   const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening'
@@ -819,8 +821,8 @@ export function useTasksPanel() {
     dayOfWeek,
     weekTotal,
     passRate,
-    avgQA,
-    qaRatio,
+    daysActive,
+    closedCount,
     greeting,
 
     // Task input + voice

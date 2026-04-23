@@ -1,6 +1,7 @@
 // WeeklyStatsCard -- "This Week" 7-day bar chart + metrics row
-// R2a (Apr 16, 2026): extracted from TasksPanel.jsx
-// R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
+// R48 (Apr 22, 2026): retire the QA-score metrics that never carried real
+// data. Metrics row now reads from status-derived pass-rate and days-active
+// instead of qa_score columns that were mostly empty.
 import { C } from '../../../lib/cv3Colors.js'
 import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
@@ -15,17 +16,21 @@ export default function WeeklyStatsCard() {
     dayOfWeek,
     weekTotal,
     passRate,
-    avgQA,
-    qaRatio,
+    daysActive,
+    closedCount,
   } = useTasksPanelCtx()
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.02)',
-      borderRadius: 16,
-      padding: '18px 20px',
-      marginBottom: 36,
-    }}>
+    <div
+      data-testid="weekly-stats-card"
+      data-closed-count={String(closedCount ?? 0)}
+      style={{
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: 16,
+        padding: '18px 20px',
+        marginBottom: 36,
+      }}
+    >
       <h3 style={{
         fontSize: 14,
         fontWeight: 700,
@@ -61,7 +66,8 @@ export default function WeeklyStatsCard() {
         })}
       </div>
 
-      {/* Metrics row */}
+      {/* Metrics row -- 3 real metrics. QA slots retired; see R48 in
+          projects/corner/refactor-plan.md. */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -69,21 +75,17 @@ export default function WeeklyStatsCard() {
         paddingTop: 14,
         borderTop: '1px solid rgba(255,255,255,0.04)',
       }}>
-        <div>
+        <div data-testid="weekly-metric" data-metric="tasks">
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{weekTotal}</div>
           <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Tasks</div>
         </div>
-        <div>
+        <div data-testid="weekly-metric" data-metric="pass-rate">
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{passRate !== null ? passRate + '%' : '--'}</div>
           <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Pass Rate</div>
         </div>
-        <div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{avgQA !== null ? avgQA : '--'}</div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Avg QA</div>
-        </div>
-        <div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{qaRatio}</div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>QAd</div>
+        <div data-testid="weekly-metric" data-metric="days-active">
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 18, fontWeight: 800, textAlign: 'center', color: C.text }}>{daysActive}<span style={{ fontSize: 13, color: C.muted, fontWeight: 600 }}>/7</span></div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, textAlign: 'center', marginTop: 2 }}>Days Active</div>
         </div>
       </div>
     </div>
