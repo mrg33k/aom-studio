@@ -32,10 +32,16 @@ function isKickoffMessage(m) {
 // Also owns the right-click/long-press context menu for messages.
 export default function ProjectMessageList() {
   const {
-    selectedProject, displayName, currentUser, agents,
+    selectedProject, displayName, currentUser, agents, worldId,
   } = useChatCore()
   const { messages, loadingMsgs, messagesEndRef, userProfiles } = useChatMessagesCtx()
-  const { sending } = useChatSendCtx()
+  const { sending, setSending, isAgentTyping, setIsAgentTyping } = useChatSendCtx()
+
+  // R73: stall CTA clears typing state so the indicator unmounts.
+  const handleTypingStall = () => {
+    setSending?.(false)
+    setIsAgentTyping?.(false)
+  }
   const { chatSearchOpen, chatSearchResults } = useChatSearchCtx()
   const {
     needsVerificationIds,
@@ -237,7 +243,15 @@ export default function ProjectMessageList() {
       })}
       {sending && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
-          <TypingIndicatorV2 streaming={true} agentColor={projColor} compact={false} />
+          <TypingIndicatorV2
+            streaming={true}
+            agentColor={projColor}
+            agentSlug={selectedProject?.slug || 'project'}
+            agentName={selectedProject?.name}
+            onStall={handleTypingStall}
+            worldId={worldId || 'aom'}
+            compact={false}
+          />
         </div>
       )}
       <div ref={messagesEndRef} />

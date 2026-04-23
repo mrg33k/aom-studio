@@ -20,12 +20,22 @@ import {
 // Also owns the right-click/long-press context menu for messages.
 export default function MessageList() {
   const {
-    selectedAgent, currentUser, displayName, allTasks, agents,
+    selectedAgent, currentUser, displayName, allTasks, agents, worldId,
   } = useChatCore()
   const {
     messages, loadingMsgs, messagesEndRef, userProfiles,
   } = useChatMessagesCtx()
-  const { sending, isAgentTyping, sendAgentTextRef } = useChatSendCtx()
+  const {
+    sending, setSending, isAgentTyping, setIsAgentTyping, sendAgentTextRef,
+  } = useChatSendCtx()
+
+  // R73: invoked by TypingIndicatorV2 after the stall-CTA hits
+  // /api/dashboard/clear-context. Unmount the typing UI so the user sees
+  // an unmistakable reset instead of an indefinite spin.
+  const handleTypingStall = () => {
+    setSending?.(false)
+    setIsAgentTyping?.(false)
+  }
   const {
     needsVerificationIds,
     handleMessageFollowUp, handleMessageNeedsVerification,
@@ -481,6 +491,8 @@ export default function MessageList() {
             agentName={selectedAgent?.name}
             agentSlug={selectedAgent?.slug}
             onPoke={(text) => sendAgentTextRef?.current?.(text)}
+            onStall={handleTypingStall}
+            worldId={worldId || 'aom'}
             compact={false}
           />
         </div>

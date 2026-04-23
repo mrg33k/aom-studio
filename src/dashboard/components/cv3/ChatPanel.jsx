@@ -339,10 +339,13 @@ export default function ChatPanel() {
     handleProjectKeyDown: send.handleProjectKeyDown,
     sendAgentTextRef, sendProjectTextRef,
     isAgentTyping: bridge.isAgentTyping,
+    // R73: expose setters so TypingIndicatorV2's stall-clear CTA can unmount
+    // itself after firing /api/dashboard/clear-context.
+    setIsAgentTyping: bridge.setIsAgentTyping,
   }), [
     input, sending, send.handleSend, send.handleKeyDown, send.sendAgentText,
     send.sendProjectText, send.handleProjectSend, send.handleProjectKeyDown,
-    bridge.isAgentTyping,
+    bridge.isAgentTyping, bridge.setIsAgentTyping,
   ])
 
   const attachValue = useMemo(() => ({
