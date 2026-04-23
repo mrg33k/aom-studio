@@ -77,11 +77,11 @@ export default function ConversationsView() {
     setVoiceMinimized,
   } = useChatVoiceCtx()
 
-  const search = useHomeSearch({ agents, projects })
+  const search = useHomeSearch({ agents, projects, world: worldId })
   const {
     searchQuery, setSearchQuery,
     searchFocused, setSearchFocused,
-    msgHits, taskHits, agentHits, projectHits,
+    msgHits, taskHits, agentHits, projectHits, fileHits,
     searching, q, showSearch,
   } = search
 
@@ -160,7 +160,7 @@ export default function ConversationsView() {
   })
   const sortedProjects = applyOrder(chronoProjectsBase, projectOrder.order)
 
-  const totalResults = msgHits.length + taskHits.length + agentHits.length + projectHits.length
+  const totalResults = msgHits.length + taskHits.length + agentHits.length + projectHits.length + fileHits.length
 
   return (
     <div style={{
@@ -209,6 +209,7 @@ export default function ConversationsView() {
           projectHits={projectHits}
           taskHits={taskHits}
           msgHits={msgHits}
+          fileHits={fileHits}
           agents={agents}
           projects={projects}
           setSearchQuery={setSearchQuery}

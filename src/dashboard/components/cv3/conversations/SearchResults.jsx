@@ -8,7 +8,7 @@ import { formatChatTime } from '../shared.jsx'
 export default function SearchResults({
   q,
   searching,
-  agentHits, projectHits, taskHits, msgHits,
+  agentHits, projectHits, taskHits, msgHits, fileHits = [],
   agents, projects,
   setSearchQuery,
   setSelectedAgent, onSelectAgent,
@@ -257,8 +257,85 @@ export default function SearchResults({
         </div>
       )}
 
+      {/* Files (R68) */}
+      {fileHits.length > 0 && (
+        <div data-testid="search-section" data-section="files" style={{ marginBottom: 22 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: C.muted,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            marginBottom: 8, display: 'flex', gap: 6,
+          }}>
+            <span>Files</span>
+            <span style={{
+              fontSize: 10, color: C.muted,
+              background: 'rgba(255,255,255,0.06)', borderRadius: 8,
+              padding: '1px 6px',
+            }}>{fileHits.length}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {fileHits.map(f => {
+              const proj = (projects || []).find(p => p.slug === (f.parent || f.project))
+              const projectLabel = f.parent ? `#${f.parent}/${f.project}` : `#${f.project}`
+              return (
+                <button
+                  key={`srch-f-${f.id}`}
+                  data-testid="search-result"
+                  data-result-type="file"
+                  data-result-project={f.parent || f.project}
+                  data-result-filename={f.filename}
+                  onClick={() => {
+                    // Open the project the file belongs to; deep link into file
+                    // selection is a later sub-round.
+                    if (proj) {
+                      setSearchQuery('')
+                      setInlineProject(proj)
+                      setMessages([])
+                      setSelectedAgent(null)
+                      onSelectProject?.(proj)
+                    }
+                  }}
+                  style={{
+                    padding: '9px 12px', borderRadius: 10,
+                    background: C.s1, border: `1px solid ${C.border}`,
+                    cursor: 'pointer', textAlign: 'left', width: '100%',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <span style={{
+                      fontSize: 10, color: C.accent,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}>📄</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600, color: C.text,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      flex: 1, minWidth: 0,
+                    }}>{f.filename}</span>
+                    <span style={{
+                      fontSize: 9, color: C.dim,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      flexShrink: 0,
+                    }}>{projectLabel}</span>
+                  </div>
+                  {f.preview && (
+                    <div style={{
+                      fontSize: 11, color: C.text2,
+                      overflow: 'hidden', textOverflow: 'ellipsis',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    }}>
+                      {f.preview}
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {!searching && msgHits.length + taskHits.length + agentHits.length + projectHits.length === 0 && (
+      {!searching && msgHits.length + taskHits.length + agentHits.length + projectHits.length + fileHits.length === 0 && (
         <div style={{
           fontSize: 13, color: C.muted, textAlign: 'center',
           padding: '40px 0',
