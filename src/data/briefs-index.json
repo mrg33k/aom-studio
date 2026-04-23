@@ -1,19 +1,9 @@
 {
-  "generated": "2026-04-16T20:05:04.997862Z",
+  "generated": "2026-04-22T19:25:07.000Z",
   "categories": [
     {
       "name": "Strategy",
       "items": [
-        {
-          "title": "Notion Competitors Deep Dive",
-          "slug": "notion-competitors",
-          "agent": "research-competitor",
-          "date": "2026-04-16",
-          "dateFormatted": "Apr 16",
-          "summary": "Overview of Notion's main competitors including Obsidian, Coda, and Linear",
-          "path": "/briefs/notion-competitors",
-          "hasPage": true
-        },
         {
           "title": "Corner: Founder Pilot Mode -- First 3 Customers Without Waiting",
           "slug": "corner-pilot-mode",
@@ -1713,6 +1703,16 @@
     {
       "name": "Technical",
       "items": [
+        {
+          "title": "Cleo Educational YouTube: Motion Graphics Stack Research",
+          "slug": "cleo-educational-yt-research",
+          "agent": "Elon",
+          "date": "2026-04-16",
+          "dateFormatted": "Apr 16",
+          "summary": "Research on programmatic motion graphics frameworks, icon tooling, and reference pipelines for Cleo to make Fireship/Kurzgesagt/Primer-style educational YouTube videos driven through Claude Code.",
+          "path": "/briefs/cleo-educational-yt-research",
+          "hasPage": true
+        },
         {
           "title": "Corner Signup Flow: Technical Spec",
           "slug": "corner-signup-flow-spec",
