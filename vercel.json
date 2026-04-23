@@ -41,6 +41,7 @@
     { "source": "/dashboard/v2", "destination": "/index.html" },
     { "source": "/dashboard/project/:path*", "destination": "/index.html" },
     { "source": "/dashboard/projects/:path*", "destination": "/index.html" },
+    { "source": "/dashboard/welcome", "destination": "/index.html" },
     { "source": "/dashboard/cleo/workspaces", "destination": "/index.html" },
     { "source": "/dashboard/cleo/workspaces/:slug", "destination": "/index.html" },
     { "source": "/skills", "destination": "/index.html" },
