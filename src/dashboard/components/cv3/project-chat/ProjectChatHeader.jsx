@@ -261,30 +261,6 @@ export default function ProjectChatHeader() {
           </div>
         )}
       </div>
-      {/* R41: flask icon -- project-chat recipes book in GRAND view (no agent
-          filter). Visually distinct from the action icon group below via a
-          small spacer. */}
-      <button
-        onClick={() => setRecipesOpen(o => !o)}
-        data-testid={`project-recipes-${selectedProject?.slug || 'all'}`}
-        title="Recipes"
-        aria-label="Recipes book"
-        aria-pressed={recipesOpen ? 'true' : 'false'}
-        style={{
-          width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-          background: recipesOpen ? 'rgba(249,168,212,0.18)' : 'transparent',
-          border: `1px solid ${recipesOpen ? 'rgba(249,168,212,0.5)' : 'rgba(255,255,255,0.22)'}`,
-          color: recipesOpen ? '#F9A8D4' : 'rgba(255,255,255,0.65)',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginLeft: 2,
-        }}
-      >
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3" />
-        </svg>
-      </button>
-      <div style={{ width: 8, flexShrink: 0 }} />
       {/* Onboarding CTA (R33) -- tenant-agnostic; renders only when checklist non-empty. */}
       <OnboardingTooltip
         tenant={worldId || 'aom'}
@@ -401,6 +377,28 @@ export default function ProjectChatHeader() {
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+      </button>
+      {/* R41: flask icon -- recipes book. Part of the action group next to
+          files/settings. Click opens a full recipe menu (not a chat). */}
+      <button
+        onClick={() => setRecipesOpen(o => !o)}
+        data-testid={`project-recipes-${selectedProject?.slug || 'all'}`}
+        title="Recipes"
+        aria-label="Recipes book"
+        aria-pressed={recipesOpen ? 'true' : 'false'}
+        style={{
+          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+          background: recipesOpen ? 'rgba(249,168,212,0.15)' : 'rgba(255,255,255,0.05)',
+          border: recipesOpen ? '1px solid rgba(249,168,212,0.4)' : '1px solid rgba(255,255,255,0.08)',
+          color: recipesOpen ? '#F9A8D4' : C.muted,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.15s',
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3" />
         </svg>
       </button>
       {/* Settings button */}
