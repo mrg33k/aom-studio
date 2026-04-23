@@ -1,8 +1,15 @@
-// "Last login" subtitle + dynamic greeting headline. Extracted verbatim
-// from ConversationsView during R2e split. R19a (2026-04-22) adds a
-// small time-aware hello above the playful headline, tagged with
-// [data-testid=greeting][data-variant=morning|afternoon|evening|late_night]
-// so the Playwright gate can assert the variant pivots with the clock.
+// R57: home hero hygiene — only the rotating greeting + a green live-dot
+// sit at the top of home. No last-login stamp, no time-aware "Good morning"
+// sub-line, no success-rate chip (that one lives in ConversationsView).
+// Pillar 1 VISION: "rotating greetings with the green 'live' dot are the
+// whole top of home; everything else above the agents list is noise."
+//
+// Historical: R19a parked [data-testid=greeting] + [data-variant] on a
+// time-aware hello line; R52b collocated it with the last-login row. R57
+// retires both sub-lines. The testid + variant attribute now sit on the
+// H1 rotating-greeting element itself so R19's variant check still passes;
+// the copy-check against "good morning / afternoon / …" is gone with the
+// retired line.
 import { C } from '../../../lib/cv3Colors.js'
 
 function timeVariant(d = new Date()) {
@@ -13,59 +20,29 @@ function timeVariant(d = new Date()) {
   return 'late_night'
 }
 
-function variantCopy(variant, name) {
-  switch (variant) {
-    case 'morning':    return `Good morning, ${name}`
-    case 'afternoon':  return `Good afternoon, ${name}`
-    case 'evening':    return `Good evening, ${name}`
-    case 'late_night': return `Still up, ${name}?`
-    default:           return `Hi, ${name}`
-  }
-}
-
-export default function GreetingHero({ lastLoginText, GREETINGS, greetingIdx, displayName }) {
+export default function GreetingHero({ GREETINGS, greetingIdx, displayName }) {
   const variant = timeVariant()
-  const name = displayName || 'there'
   return (
-    <div style={{ paddingBottom: 16 }}>
-      {/* R52: last-login dot + greeting on the SAME horizontal row. */}
+    <div style={{ paddingBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-        marginBottom: 6,
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 12, fontWeight: 500, color: C.muted,
-        }}>
-          <div style={{
-            width: 7, height: 7, borderRadius: '50%',
-            background: C.accent,
-            boxShadow: `0 0 6px ${C.accent}`,
-          }} />
-          {lastLoginText ? `Last login: ${lastLoginText}` : 'Online now'}
-        </div>
-        <div
-          data-testid="greeting"
-          data-variant={variant}
-          style={{
-            fontSize: 12,
-            fontWeight: 500,
-            color: C.muted,
-            letterSpacing: '-0.01em',
-          }}
-        >
-          {variantCopy(variant, name)}
-        </div>
-      </div>
-      <h1 style={{
-        fontSize: 'clamp(26px, 5.5vw, 40px)',
-        fontWeight: 800,
-        lineHeight: 1.08,
-        letterSpacing: '-0.04em',
-        color: C.text,
-        margin: 0,
-        fontFamily: "'Inter', sans-serif",
-      }}>
+        width: 9, height: 9, borderRadius: '50%',
+        background: C.accent,
+        boxShadow: `0 0 8px ${C.accent}`,
+        flexShrink: 0,
+      }} />
+      <h1
+        data-testid="greeting"
+        data-variant={variant}
+        style={{
+          fontSize: 'clamp(26px, 5.5vw, 40px)',
+          fontWeight: 800,
+          lineHeight: 1.08,
+          letterSpacing: '-0.04em',
+          color: C.text,
+          margin: 0,
+          fontFamily: "'Inter', sans-serif",
+        }}
+      >
         {GREETINGS[greetingIdx](displayName)}
       </h1>
     </div>

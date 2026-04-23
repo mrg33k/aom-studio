@@ -34,7 +34,6 @@ import SearchResults from './conversations/SearchResults.jsx'
 import EaHeroCard from './conversations/EaHeroCard.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
 import ProjectsList from './conversations/ProjectsList.jsx'
-import SuccessRateChip from './conversations/SuccessRateChip.jsx'
 
 import {
   useChatCore,
@@ -77,7 +76,7 @@ export default function ConversationsView() {
     agents, projects, allTasks,
     onSelectAgent, onSelectProject,
     setSelectedAgent, setInlineProject,
-    displayName, greetingIdx, GREETINGS, lastLoginText,
+    displayName, greetingIdx, GREETINGS,
   } = useChatCore()
   const { setMessages } = useChatMessagesCtx()
   const {
@@ -165,14 +164,10 @@ export default function ConversationsView() {
         setVoiceMinimized={setVoiceMinimized}
       />
 
-      {/* R18b: live success-rate chip, top-right of home. Self-contained;
-          reads worldId via getClientId so it doesn't need ChatCore wiring. */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-        <SuccessRateChip />
-      </div>
-
+      {/* R57: success-rate chip + last-login + time-aware "Good morning"
+          variant all retired. The top of home is just the rotating greeting
+          + a green live-dot (Pillar 1 VISION). */}
       <GreetingHero
-        lastLoginText={lastLoginText}
         GREETINGS={GREETINGS}
         greetingIdx={greetingIdx}
         displayName={displayName}

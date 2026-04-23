@@ -1,12 +1,7 @@
 // Chat constants extracted from ChatPanel.jsx (R2b split)
 // Rotating greetings and Gemini voice options used by ChatPanel + sub-views.
-
-const _timeOfDay = () => {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
+// R57: retired the time-of-day variant entry ("Good ${morning/afternoon/...}, Patrik")
+// per VISION Pillar 1 (home hero hygiene) — no "Good morning, Patrik" line.
 
 export const GREETINGS = [
   (name) => `Hey ${name}, what are we working on?`,
@@ -16,7 +11,6 @@ export const GREETINGS = [
   (name) => `Ready when you are, ${name}.`,
   (name) => `What's the move, ${name}?`,
   (name) => `Back at it, ${name}. What's first?`,
-  (name) => `Good ${_timeOfDay()}, ${name}. Let's go.`,
 ]
 
 export const VOICE_OPTIONS = [
