@@ -24,8 +24,11 @@ export default function useChatConversations({
     return counts
   }, [inboxItems])
 
-  // ── Agent previews: latest message per agent (baseline + realtime) ───────
+  // ── Agent + project preview state (R61: realtime handler below updates
+  // both from the same channel; declaring setProjectPreviews up here keeps
+  // the closure TDZ-free for the combined handler below).
   const [agentPreviews, setAgentPreviews] = useState({})
+  const [projectPreviews, setProjectPreviews] = useState({})
   useEffect(() => {
     if (!supabase || !worldId || !agents?.length) return
     const slugs = agents.filter(a => a.slug).map(a => a.slug)
@@ -74,19 +77,54 @@ export default function useChatConversations({
             id: msg.id,
             isUnread: msg.role !== 'user',
           }
-          setAgentPreviews(prev => {
-            const existing = prev[msg.agent]
-            if (existing && existing.timestamp > msg.timestamp) return prev
-            return { ...prev, [msg.agent]: preview }
-          })
+          // R61: ONLY non-project messages update agent previews. Project-
+          // scoped rows (agent='elon' + project='<slug>') bump project
+          // previews instead so they don't inflate an agent's last_message_at
+          // and leak routing into the chronological agent list.
+          if (!msg.project) {
+            setAgentPreviews(prev => {
+              const existing = prev[msg.agent]
+              if (existing && existing.timestamp > msg.timestamp) return prev
+              return { ...prev, [msg.agent]: preview }
+            })
+          }
+          // R61: project preview realtime. Any message with msg.project set
+          // bumps that project's last_message_at so the projects list
+          // resorts to the top.
+          if (msg.project) {
+            setProjectPreviews(prev => {
+              const key = `project:${msg.project}`
+              const existing = prev[key]
+              if (existing && existing.timestamp > msg.timestamp) return prev
+              return {
+                ...prev,
+                [key]: {
+                  text: (msg.text || '').slice(0, 80),
+                  timestamp: msg.timestamp,
+                },
+              }
+            })
+          } else if (typeof msg.agent === 'string' && msg.agent.startsWith('project:')) {
+            // Legacy project convention (pre-R6): agent='project:<slug>'.
+            setProjectPreviews(prev => {
+              const existing = prev[msg.agent]
+              if (existing && existing.timestamp > msg.timestamp) return prev
+              return {
+                ...prev,
+                [msg.agent]: {
+                  text: (msg.text || '').slice(0, 80),
+                  timestamp: msg.timestamp,
+                },
+              }
+            })
+          }
         }
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [worldId])
 
-  // ── Project previews: latest message per project ─────────────────────────
-  const [projectPreviews, setProjectPreviews] = useState({})
+  // ── Project previews: initial fetch ─────────────────────────────────────
   useEffect(() => {
     if (!supabase || !worldId || !projects?.length) return
     const projList = projects.filter(p => p.slug)

@@ -130,9 +130,28 @@ export default function ConversationsView() {
     return out
   })()
 
-  const sortedProjects = [...(projects || [])].sort((a, b) =>
-    (a.name || '').localeCompare(b.name || '')
-  )
+  // R61 (session 20): chronological sort by last message. Inbound (realtime
+  // INSERT bumps the preview) and outbound (user send inserts, also fires
+  // the preview update) both push an item to the top of its list.
+  // Fallback sort for items with no messages yet: agents alpha by name /
+  // projects alpha by name so the list stays stable for a fresh user.
+  const chronoAgents = [...(agents || [])].sort((a, b) => {
+    const aTime = unreadMap[a.slug]?.timestamp || ''
+    const bTime = unreadMap[b.slug]?.timestamp || ''
+    if (aTime && bTime) return bTime > aTime ? 1 : bTime < aTime ? -1 : 0
+    if (aTime && !bTime) return -1
+    if (!aTime && bTime) return 1
+    return (a.name || '').localeCompare(b.name || '')
+  })
+
+  const sortedProjects = [...(projects || [])].sort((a, b) => {
+    const aTime = projectPreviews[`project:${a.slug}`]?.timestamp || ''
+    const bTime = projectPreviews[`project:${b.slug}`]?.timestamp || ''
+    if (aTime && bTime) return bTime > aTime ? 1 : bTime < aTime ? -1 : 0
+    if (aTime && !bTime) return -1
+    if (!aTime && bTime) return 1
+    return (a.name || '').localeCompare(b.name || '')
+  })
 
   const totalResults = msgHits.length + taskHits.length + agentHits.length + projectHits.length
 
@@ -214,7 +233,7 @@ export default function ConversationsView() {
               via the same PinMenu every other agent card carries. */}
 
           <AgentsList
-            agents={agents}
+            agents={chronoAgents}
             unreadMap={unreadMap}
             unreadCounts={unreadCounts}
             activeAgentSlugs={activeAgentSlugs}
