@@ -3,6 +3,7 @@ import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
+import StepThread from '../shared/StepThread.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import useProjectChatMsgMenu from './useProjectChatMsgMenu.js'
@@ -34,7 +35,7 @@ export default function ProjectMessageList() {
   const {
     selectedProject, displayName, currentUser, agents, worldId,
   } = useChatCore()
-  const { messages, loadingMsgs, messagesEndRef, userProfiles } = useChatMessagesCtx()
+  const { messages, loadingMsgs, messagesEndRef, userProfiles, stepsByMessageId = {} } = useChatMessagesCtx()
   const { sending, setSending, isAgentTyping, setIsAgentTyping } = useChatSendCtx()
 
   // R73: stall CTA clears typing state so the indicator unmounts.
@@ -188,6 +189,17 @@ export default function ProjectMessageList() {
               {isUser && isOtherUser && (
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
                   {msg.user_name}
+                </div>
+              )}
+              {/* R65-impl: live-thread step chain for assistant replies. */}
+              {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
+                <div style={{ marginBottom: msg.text ? 10 : 0 }}>
+                  <StepThread
+                    steps={stepsByMessageId[msg.id]}
+                    settled={Boolean(msg.text)}
+                    isError={msg.metadata?.status === 'error'}
+                    agentColor={projColor}
+                  />
                 </div>
               )}
               <div style={{

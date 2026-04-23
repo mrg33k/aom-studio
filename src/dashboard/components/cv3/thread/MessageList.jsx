@@ -2,6 +2,7 @@ import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
+import StepThread from '../shared/StepThread.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
@@ -24,6 +25,7 @@ export default function MessageList() {
   } = useChatCore()
   const {
     messages, loadingMsgs, messagesEndRef, userProfiles,
+    stepsByMessageId = {},
   } = useChatMessagesCtx()
   const {
     sending, setSending, isAgentTyping, setIsAgentTyping, sendAgentTextRef,
@@ -329,6 +331,19 @@ export default function MessageList() {
               </div>
             )}
             <div style={{ maxWidth: isUser ? '75%' : '85%', minWidth: 0 }}>
+              {/* R65-impl: live-thread step chain. Renders above the final
+                  reply while steps accumulate; settles dim once the parent
+                  message.text is non-empty. */}
+              {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
+                <div style={{ marginBottom: msg.text ? 10 : 0 }}>
+                  <StepThread
+                    steps={stepsByMessageId[msg.id]}
+                    settled={Boolean(msg.text)}
+                    isError={msg.metadata?.status === 'error'}
+                    agentColor={selectedAgent?.color || '#3B82F6'}
+                  />
+                </div>
+              )}
               {/* Text bubble -- hidden when text is only the attachment label */}
               {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (
                 <div style={{

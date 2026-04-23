@@ -326,7 +326,8 @@ export default function ChatPanel() {
     messagesEndRef: msgs.messagesEndRef,
     messagesRef: msgs.messagesRef,
     userProfiles: msgs.userProfiles,
-  }), [msgs.messages, msgs.setMessages, msgs.loadingMsgs, msgs.messagesEndRef, msgs.messagesRef, msgs.userProfiles])
+    stepsByMessageId: msgs.stepsByMessageId || {},  // R65-impl
+  }), [msgs.messages, msgs.setMessages, msgs.loadingMsgs, msgs.messagesEndRef, msgs.messagesRef, msgs.userProfiles, msgs.stepsByMessageId])
 
   const sendValue = useMemo(() => ({
     input, setInput, inputRef,

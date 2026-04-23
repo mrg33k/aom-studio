@@ -24,6 +24,15 @@ export default function useChatMessages({
   const [userProfiles, setUserProfiles] = useState({})
   const fetchedProfileIds = useRef(new Set())
 
+  // R65-impl: live-thread message_step subscription per current surface.
+  // Storage model: events table, event_type='message_step', agent=<slug>,
+  // payload={parent_message_id, step_index, text, status, client_id,
+  // world_id, agent_name?}. Server-side filter is client_id; agent +
+  // event_type are enforced client-side (postgres_changes only accepts
+  // one column). Steps are grouped by parent_message_id so MessageList
+  // can render a StepThread under the matching assistant bubble.
+  const [stepsByMessageId, setStepsByMessageId] = useState({})
+
   // ── Load message history for an agent thread ──────────────────────────────
   // R63: exclude messages with a project set. Per-project observations
   // (kickoff-sweep, stale-project pings, project-scoped updates) are written
@@ -228,6 +237,92 @@ export default function useChatMessages({
     return () => { supabase.removeChannel(channel) }
   }, [worldId, selectedProject, selectedAgent])
 
+  // ── R65-impl: subscribe to message_step events for the active surface ────
+  // Fetches an initial history window (last 20 step events for the current
+  // agent or project) so steps persist across re-renders / page reloads,
+  // then opens a realtime channel. Groups by parent_message_id.
+  useEffect(() => {
+    if (!supabase || !worldId) return
+    const surfaceAgent = selectedAgent?.slug || null
+    const surfaceProject = selectedProject?.slug || null
+    if (!surfaceAgent && !surfaceProject) return
+
+    let active = true
+    setStepsByMessageId({})
+
+    // Initial fetch: last 20 step events for this world + surface.
+    const agentFilter = surfaceAgent ? `agent=eq.${surfaceAgent}` : null
+    const qs = [
+      'select=id,agent,payload,timestamp',
+      'event_type=eq.message_step',
+      'order=timestamp.desc',
+      'limit=20',
+    ]
+    if (agentFilter) qs.push(agentFilter)
+    supabase
+      .from('events')
+      .select('id,agent,payload,timestamp')
+      .eq('event_type', 'message_step')
+      .order('timestamp', { ascending: false })
+      .limit(20)
+      .then(({ data, error }) => {
+        if (error || !active || !Array.isArray(data)) return
+        const next = {}
+        for (const row of data) {
+          const p = row?.payload || {}
+          if ((p.client_id || worldId) !== worldId) continue
+          if (surfaceAgent && row.agent !== surfaceAgent) continue
+          if (surfaceProject && (p.project || '') !== surfaceProject) continue
+          const pid = p.parent_message_id
+          if (!pid) continue
+          if (!next[pid]) next[pid] = []
+          next[pid].push({
+            id: row.id,
+            step_index: p.step_index ?? 0,
+            text: p.text || '',
+            status: p.status || 'in_progress',
+            timestamp: row.timestamp,
+          })
+        }
+        setStepsByMessageId(next)
+      })
+
+    // Realtime — server-side filter uses client_id (single-column limit),
+    // agent + event_type + project filtered client-side.
+    const channel = supabase
+      .channel(`cv3-steps-${worldId}-${surfaceAgent || surfaceProject}`)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'events' },
+        (payload) => {
+          const row = payload?.new
+          if (!row) return
+          if (row.event_type !== 'message_step') return
+          const p = row.payload || {}
+          if ((p.client_id || '') !== worldId) return
+          if (surfaceAgent && row.agent !== surfaceAgent) return
+          if (surfaceProject && (p.project || '') !== surfaceProject) return
+          const pid = p.parent_message_id
+          if (!pid) return
+          setStepsByMessageId(prev => {
+            const existing = prev[pid] || []
+            if (existing.some(s => s.id === row.id)) return prev
+            const next = [...existing, {
+              id: row.id,
+              step_index: p.step_index ?? 0,
+              text: p.text || '',
+              status: p.status || 'in_progress',
+              timestamp: row.timestamp,
+            }]
+            return { ...prev, [pid]: next }
+          })
+        })
+      .subscribe()
+    return () => {
+      active = false
+      try { supabase.removeChannel(channel) } catch (_) {}
+    }
+  }, [worldId, selectedAgent?.slug, selectedProject?.slug])
+
   // ── Auto-scroll to bottom on new messages ────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -254,5 +349,6 @@ export default function useChatMessages({
     loadingMsgs,
     messagesEndRef, messagesRef,
     userProfiles,
+    stepsByMessageId,
   }
 }
