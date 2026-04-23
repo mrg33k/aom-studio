@@ -52,19 +52,28 @@ export function useProjects(worldId) {
         .from('project_access')
         .select('project_id, projects(id, slug, name, color, is_active)')
         .eq('client_id', clientId),
-      supabase
-        .from('project_access')
-        .select('project_id'),
-    ]).then(([ownedResult, sharedResult, allAccessResult]) => {
+    ]).then(async ([ownedResult, sharedResult]) => {
         if (cancelled) return
         if (ownedResult.error && sharedResult.error) {
           setIsError(true)
           setIsLoading(false)
           return
         }
-        const sharedProjectIds = new Set(
-          (allAccessResult.data || []).map(r => r.project_id)
-        )
+
+        // Fetch which owned projects have project_access entries via server-side API
+        // (browser can't query project_access for other users due to RLS)
+        const ownedIds = (ownedResult.data || []).map(p => p.id)
+        let sharedProjectIds = new Set()
+        if (ownedIds.length) {
+          try {
+            const r = await fetch(`/api/dashboard/project-shared?project_ids=${ownedIds.join(',')}`)
+            if (r.ok) {
+              const data = await r.json()
+              sharedProjectIds = new Set(data.shared || [])
+            }
+          } catch (_) {}
+        }
+
         const owned = (ownedResult.data || []).map(p => ({
           ...p,
           isShared: sharedProjectIds.has(p.id),
@@ -79,8 +88,10 @@ export function useProjects(worldId) {
           if (!seen.has(p.id)) { seen.add(p.id); all.push(p) }
         }
         all.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-        setProjects(all.map(mapRow))
-        setIsLoading(false)
+        if (!cancelled) {
+          setProjects(all.map(mapRow))
+          setIsLoading(false)
+        }
       })
 
     return () => { cancelled = true }

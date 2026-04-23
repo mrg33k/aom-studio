@@ -22,6 +22,37 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { getClientId } from '../lib/clientConfig'
 
+// ── Shared-slug fetch ────────────────────────────────────────────────────────
+// Fetches slugs of all projects that should be subscribed to via shared:slug
+// client_ids: projects shared inward (project_access) + owned projects shared outward.
+
+async function fetchSharedSlugs(clientId) {
+  if (!supabase || !clientId) return []
+  const [ownedResult, sharedResult] = await Promise.all([
+    supabase.from('projects').select('id, slug').eq('is_active', true).eq('client_id', clientId),
+    supabase.from('project_access').select('projects(slug, is_active)').eq('client_id', clientId),
+  ])
+  const slugs = new Set()
+  const ownedIds = (ownedResult.data || []).map(p => p.id)
+  if (ownedIds.length) {
+    try {
+      const r = await fetch(`/api/dashboard/project-shared?project_ids=${ownedIds.join(',')}`)
+      if (r.ok) {
+        const { shared = [] } = await r.json()
+        const sharedSet = new Set(shared)
+        for (const p of (ownedResult.data || [])) {
+          if (sharedSet.has(p.id) && p.slug) slugs.add(p.slug)
+        }
+      }
+    } catch (_) {}
+  }
+  for (const row of (sharedResult.data || [])) {
+    const p = row.projects
+    if (p && p.is_active && p.slug) slugs.add(p.slug)
+  }
+  return [...slugs]
+}
+
 // ── Constants ────────────────────────────────────────────────────────────────
 
 // Right Now bar: ONLY tasks in these statuses. Zero tolerance for anything else.
@@ -74,7 +105,7 @@ function toRightNowPill(task) {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useTasks(worldId, sharedSlugs = []) {
+export function useTasks(worldId) {
   const [allTasks, setAllTasks]   = useState([])
   const [loading,  setLoading]    = useState(true)
   const [error,    setError]      = useState(null)
@@ -86,9 +117,8 @@ export function useTasks(worldId, sharedSlugs = []) {
   // Unique channel name per hook instance (avoid name collisions when mounted multiple times)
   const channelIdRef = useRef(`tasks-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
 
-  // Stable ref for sharedSlugs to use in fetch without causing re-renders
-  const sharedSlugsRef = useRef(sharedSlugs)
-  sharedSlugsRef.current = sharedSlugs
+  // Shared slugs fetched internally on world change
+  const sharedSlugsRef = useRef([])
 
   const fetchTasks = useCallback(async ({ silent = false } = {}) => {
     if (!supabase) {
@@ -182,59 +212,66 @@ export function useTasks(worldId, sharedSlugs = []) {
     setAllTasks([])
     setLoading(true)
 
-    // Initial fetch
-    fetchTasks()
+    let cancelled = false
+    let visibilityHandler = null
+    let pollInterval = null
 
-    // Subscribe to realtime changes on the tasks table (scoped by client_id)
-    const clientId = getClientId()
-    // Fresh channel name on every world switch to avoid stale subscriptions
-    const channelName = `tasks-${clientId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${clientId}` },
-        handleRealtimeChange,
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          fetchTasks({ silent: true })
-        }
-      })
+    async function setup() {
+      const clientId = getClientId()
 
-    channelRef.current = channel
+      // Fetch shared slugs internally (replaces the useProjects call in CornerV3)
+      sharedSlugsRef.current = await fetchSharedSlugs(clientId)
+      if (cancelled) return
 
-    // Also subscribe to shared project task changes
-    const sharedChannels = []
-    for (const slug of sharedSlugsRef.current) {
-      const sharedCid = `shared:${slug}`
-      const sharedCh = supabase
-        .channel(`tasks-${sharedCid}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
+      // Initial fetch (uses sharedSlugsRef.current)
+      await fetchTasks()
+      if (cancelled) return
+
+      // Subscribe to realtime changes on the tasks table (scoped by client_id)
+      const channelName = `tasks-${clientId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const channel = supabase
+        .channel(channelName)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${sharedCid}` },
+          { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${clientId}` },
           handleRealtimeChange,
         )
-        .subscribe()
-      sharedChannels.push(sharedCh)
-    }
-    sharedChannelsRef.current = sharedChannels
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            fetchTasks({ silent: true })
+          }
+        })
+      channelRef.current = channel
 
-    // Safari/iPad kills WebSockets when tab backgrounds.
-    // Refetch when user returns to the tab.
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        fetchTasks({ silent: true })
+      // Subscribe to shared project task changes
+      sharedChannelsRef.current = []
+      for (const slug of sharedSlugsRef.current) {
+        const sharedCid = `shared:${slug}`
+        const sharedCh = supabase
+          .channel(`tasks-${sharedCid}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'tasks', filter: `client_id=eq.${sharedCid}` },
+            handleRealtimeChange,
+          )
+          .subscribe()
+        sharedChannelsRef.current.push(sharedCh)
       }
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
 
-    // Fallback poll every 30s -- catches gaps from dropped realtime connections
-    const pollInterval = setInterval(() => {
-      fetchTasks({ silent: true })
-    }, 30000)
+      // Safari/iPad kills WebSockets when tab backgrounds.
+      visibilityHandler = () => {
+        if (document.visibilityState === 'visible') fetchTasks({ silent: true })
+      }
+      document.addEventListener('visibilitychange', visibilityHandler)
+
+      // Fallback poll every 30s -- catches gaps from dropped realtime connections
+      pollInterval = setInterval(() => fetchTasks({ silent: true }), 30000)
+    }
+
+    setup()
 
     return () => {
+      cancelled = true
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current)
         channelRef.current = null
@@ -243,8 +280,8 @@ export function useTasks(worldId, sharedSlugs = []) {
         supabase.removeChannel(ch)
       }
       sharedChannelsRef.current = []
-      document.removeEventListener('visibilitychange', handleVisibility)
-      clearInterval(pollInterval)
+      if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
+      if (pollInterval) clearInterval(pollInterval)
     }
   }, [fetchTasks, handleRealtimeChange, worldId])
 
