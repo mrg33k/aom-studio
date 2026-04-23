@@ -11,9 +11,11 @@ import {
   useChatSettingsCtx,
   useChatSearchCtx,
   useChatContextMenuCtx,
+  useChatSendCtx,
 } from './chat/ChatPanelContext.jsx'
 
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
+import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
 import ProjectSearchBar from './project-chat/ProjectSearchBar.jsx'
 import ProjectSearchResults from './project-chat/ProjectSearchResults.jsx'
@@ -25,21 +27,40 @@ import ProjectInputBar from './project-chat/ProjectInputBar.jsx'
 import ProjectSettingsModal from './project-chat/ProjectSettingsModal.jsx'
 
 export default function ProjectChatView() {
-  const { showHandoffNudge, dismissHandoffNudge } = useChatCore()
+  const { showHandoffNudge, dismissHandoffNudge, selectedProject } = useChatCore()
   const { isRecording, isTranscribing } = useChatRecordingCtx()
   const { isVoiceActive } = useChatVoiceCtx()
-  const { filesOpen, settingsOpen } = useChatSettingsCtx()
+  const {
+    filesOpen, settingsOpen,
+    recipesOpen, setRecipesOpen,
+  } = useChatSettingsCtx()
   const { chatSearchOpen, chatSearchResults } = useChatSearchCtx()
   const { lastActionToast } = useChatContextMenuCtx()
+  const { sendProjectText } = useChatSendCtx()
 
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      position: 'relative',
       fontFamily: "'Inter', sans-serif",
     }}>
       <TaskStatusCardStyles />
 
       <ProjectChatHeader />
+
+      {/* R41: recipes book in GRAND view -- project chat surface doesn't
+          scope to a single agent. Every recipe, organized by category, with
+          in-place search. */}
+      {recipesOpen && (
+        <RecipesBookOverlay
+          mode="project"
+          onClose={() => setRecipesOpen(false)}
+          onFire={({ recipe, input }) => {
+            const text = `${recipe.name}${input ? ' ' + input : ''}`.trim()
+            try { sendProjectText?.(text) } catch (_) {}
+          }}
+        />
+      )}
 
       {filesOpen && <ProjectFilesPanel />}
 

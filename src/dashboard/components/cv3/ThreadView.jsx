@@ -13,10 +13,12 @@ import {
   useChatRecordingCtx,
   useChatSettingsCtx,
   useChatContextMenuCtx,
+  useChatSendCtx,
 } from './chat/ChatPanelContext.jsx'
 
 import ThreadHeader from './thread/ThreadHeader.jsx'
 import AgentProfileOverlay from './thread/AgentProfileOverlay.jsx'
+import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
 import FilesPanel from './thread/FilesPanel.jsx'
 import VoiceChatHost from './thread/VoiceChatHost.jsx'
 import MessageList from './thread/MessageList.jsx'
@@ -29,8 +31,13 @@ export default function ThreadView() {
   const { selectedAgent, showHandoffNudge, dismissHandoffNudge } = useChatCore()
   const { isVoiceActive } = useChatVoiceCtx()
   const { isRecording, isTranscribing } = useChatRecordingCtx()
-  const { filesOpen, settingsOpen, profileOpen, setProfileOpen } = useChatSettingsCtx()
+  const {
+    filesOpen, settingsOpen,
+    profileOpen, setProfileOpen,
+    recipesOpen, setRecipesOpen,
+  } = useChatSettingsCtx()
   const { lastActionToast } = useChatContextMenuCtx()
+  const { sendAgentText } = useChatSendCtx()
   const isSuperAgentChat = selectedAgent?.is_super
 
   return (
@@ -50,6 +57,19 @@ export default function ThreadView() {
         <AgentProfileOverlay
           agent={selectedAgent}
           onClose={() => setProfileOpen(false)}
+        />
+      )}
+
+      {/* R41: recipes book -- filtered to this agent's domain in thread view. */}
+      {recipesOpen && selectedAgent && (
+        <RecipesBookOverlay
+          mode="agent"
+          agentSlug={selectedAgent.slug}
+          onClose={() => setRecipesOpen(false)}
+          onFire={({ recipe, input }) => {
+            const text = `${recipe.name}${input ? ' ' + input : ''}`.trim()
+            try { sendAgentText?.(text) } catch (_) {}
+          }}
         />
       )}
 
