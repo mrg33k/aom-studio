@@ -13,6 +13,7 @@ import { TaskContextMenu } from './ContextMenu.jsx'
 
 import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb } from './tasks/FilesSection.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
+import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
@@ -360,6 +361,23 @@ function TasksPanelBody() {
 
         {/* Project scope (no mission drilled in) */}
         {!activeMissionPath && activeProject && activeProject !== 'all' && <TaskDrawerProjectSummary />}
+        {/* R31 -- FAQ surface: Vision + Research bullets above Missions + Files. */}
+        {!activeMissionPath && activeProject && activeProject !== 'all' && (
+          <TaskDrawerFileFAQ
+            filename="VISION.md"
+            label="Vision"
+            testid="task-drawer-vision-faq"
+            iconColor="#A78BFA"
+          />
+        )}
+        {!activeMissionPath && activeProject && activeProject !== 'all' && (
+          <TaskDrawerFileFAQ
+            filename="RESEARCH.md"
+            label="Research"
+            testid="task-drawer-research-faq"
+            iconColor="#6EE7B7"
+          />
+        )}
         {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectMissionsSection />}
         {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectFilesSection />}
         {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
