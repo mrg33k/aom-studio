@@ -20,11 +20,34 @@ const C = {
   border: 'rgba(255,255,255,0.06)',
 }
 
+// R22c welcome state machine.
+const WELCOME_STATES = ['intro', 'voice_intake', 'first_agent', 'skills', 'payment', 'done']
+const STORAGE_KEY = 'corner:welcome-state'
+
+function loadState() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (raw && WELCOME_STATES.includes(raw)) return raw
+  } catch (_) { /* best effort */ }
+  return 'intro'
+}
+
+function saveState(next) {
+  try { window.localStorage.setItem(STORAGE_KEY, next) } catch (_) { /* best effort */ }
+}
+
 export default function DashboardWelcome() {
   const navigate = useNavigate()
   const [checking, setChecking] = useState(true)
   const [hasProjects, setHasProjects] = useState(null)
   const [displayName, setDisplayName] = useState('')
+  const [welcomeState, setWelcomeState] = useState(() => loadState())
+  const advance = (next) => {
+    if (!WELCOME_STATES.includes(next)) return
+    setWelcomeState(next)
+    saveState(next)
+    if (next === 'done') navigate('/dashboard', { replace: true })
+  }
 
   // Redirect to /dashboard if the viewer already has projects -- welcome
   // is a one-shot surface, not a route a returning user lands on.
@@ -138,7 +161,7 @@ export default function DashboardWelcome() {
 
         <div
           data-testid="welcome-state"
-          data-state="intro"
+          data-state={welcomeState}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}
         >
           {/* Phone primary -- R17a. Large, branded, first-class action. */}
@@ -198,28 +221,94 @@ export default function DashboardWelcome() {
           </button>
         </div>
 
+        {/* R22c: skip affordance advances the welcome state machine instead
+            of leaving the page. Each state has its own skip path. */}
         <div
           style={{
-            marginTop: 56,
+            marginTop: 36,
             fontSize: 12,
             color: C.dim,
             letterSpacing: '0.02em',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
+          {welcomeState === 'intro' && (
+            <button
+              data-testid="skip-voice-intake"
+              onClick={() => advance('first_agent')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: C.muted,
+                cursor: 'pointer',
+                fontSize: 12,
+                textDecoration: 'underline',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              Skip — I'll type instead
+            </button>
+          )}
+          {welcomeState === 'first_agent' && (
+            <button
+              data-testid="skip-first-agent"
+              onClick={() => advance('skills')}
+              style={{
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                fontSize: 12, textDecoration: 'underline',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              Skip — use the default EA
+            </button>
+          )}
+          {welcomeState === 'skills' && (
+            <button
+              data-testid="skip-skills"
+              onClick={() => advance('payment')}
+              style={{
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                fontSize: 12, textDecoration: 'underline',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              Skip skills setup
+            </button>
+          )}
+          {welcomeState === 'payment' && (
+            <button
+              data-testid="skip-payment"
+              onClick={() => advance('done')}
+              style={{
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                fontSize: 12, textDecoration: 'underline',
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              Skip — stay on free tier
+            </button>
+          )}
+
           <button
             data-testid="welcome-skip-to-dashboard"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => { saveState('done'); navigate('/dashboard') }}
             style={{
               background: 'none',
               border: 'none',
-              color: C.muted,
+              color: C.dim,
               cursor: 'pointer',
-              fontSize: 12,
+              fontSize: 11,
               textDecoration: 'underline',
               fontFamily: "'Inter', sans-serif",
             }}
           >
-            Skip for now — take me to the dashboard
+            Or just take me to the dashboard
           </button>
         </div>
       </div>

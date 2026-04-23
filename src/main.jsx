@@ -57,6 +57,7 @@ const Settings = lazy(() => import('./pages/Settings.jsx'))
 const Onboarding = lazy(() => import('./pages/Onboarding.jsx'))
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
+const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
 const MunicipalityDirectory = lazy(() => import('./pages/MunicipalityDirectory.jsx'))
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
@@ -250,6 +251,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/welcome" element={<AuthGuard><DashboardWelcome /></AuthGuard>} />
+          <Route path="/dashboard/settings/invites" element={<AuthGuard><DashboardSettingsInvites /></AuthGuard>} />
           <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           {/* R21a: canonical per-project chat URL ("/dashboard/projects/<slug>/chat"). */}
           <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><CornerV3 /></AuthGuard>} />
