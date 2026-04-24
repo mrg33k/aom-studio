@@ -202,23 +202,48 @@ export default function ProjectMessageList() {
                   />
                 </div>
               )}
-              <div style={{
-                padding: isUser ? '10px 16px' : '2px 0',
-                borderRadius: isUser ? '18px 18px 4px 18px' : 0,
-                fontSize: 14, lineHeight: 1.6,
-                color: isUser ? '#fff' : '#E2E8F0',
-                background: isUser ? senderColor : 'transparent',
-                border: 'none',
-                wordBreak: 'break-word',
-                fontFamily: "'Inter', sans-serif",
-                letterSpacing: '-0.01em',
-                ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
-              }}>
-                {isUser
-                  ? <LinkifyText text={msg.text} />
-                  : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
+              {/* R75-r65-c: assistant replies under a settled step chain get
+                  the R65-design v3 container. Plain replies stay bare. */}
+              {(() => {
+                const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+                if (isUser) {
+                  return (
+                    <div style={{
+                      padding: '10px 16px',
+                      borderRadius: '18px 18px 4px 18px',
+                      fontSize: 14, lineHeight: 1.6,
+                      color: '#fff',
+                      background: senderColor,
+                      border: 'none',
+                      wordBreak: 'break-word',
+                      fontFamily: "'Inter', sans-serif",
+                      letterSpacing: '-0.01em',
+                      whiteSpace: 'pre-wrap',
+                    }}>
+                      <LinkifyText text={msg.text} />
+                    </div>
+                  )
                 }
-              </div>
+                return (
+                  <div
+                    data-testid={hasChain ? 'assistant-final-message' : undefined}
+                    style={{
+                      padding: hasChain ? '12px 14px' : '2px 0',
+                      borderRadius: hasChain ? 8 : 0,
+                      border: hasChain ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                      marginTop: hasChain ? 8 : 0,
+                      fontSize: 14, lineHeight: 1.6,
+                      color: '#E2E8F0',
+                      background: 'transparent',
+                      wordBreak: 'break-word',
+                      fontFamily: "'Inter', sans-serif",
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
+                  </div>
+                )
+              })()}
               <div style={{
                 fontSize: 11, color: 'rgba(120,140,165,0.4)',
                 marginTop: 4,

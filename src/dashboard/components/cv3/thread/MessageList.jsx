@@ -344,26 +344,52 @@ export default function MessageList() {
                   />
                 </div>
               )}
-              {/* Text bubble -- hidden when text is only the attachment label */}
-              {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (
-                <div style={{
-                  padding: isUser ? '10px 16px' : '2px 0',
-                  borderRadius: isUser ? '18px 18px 4px 18px' : 0,
-                  fontSize: 14, lineHeight: 1.6,
-                  color: isUser ? '#fff' : '#E2E8F0',
-                  background: isUser ? agSenderColor : 'transparent',
-                  border: 'none',
-                  wordBreak: 'break-word',
-                  fontFamily: "'Inter', sans-serif",
-                  letterSpacing: '-0.01em',
-                  ...(isUser ? { whiteSpace: 'pre-wrap' } : {}),
-                }}>
-                  {isUser
-                    ? <LinkifyText text={msg.text} />
-                    : <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
-                  }
-                </div>
-              )}
+              {/* Text bubble -- hidden when text is only the attachment label.
+                  R75-r65-c: assistant replies that have a settled step chain
+                  above them get the R65-design v3 container treatment
+                  (border + radius 8 + padding) so the final message reads as
+                  the anchor Steffen designed. Plain assistant replies (no
+                  chain) stay bare. User bubbles unchanged. */}
+              {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (() => {
+                const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+                if (isUser) {
+                  return (
+                    <div style={{
+                      padding: '10px 16px',
+                      borderRadius: '18px 18px 4px 18px',
+                      fontSize: 14, lineHeight: 1.6,
+                      color: '#fff',
+                      background: agSenderColor,
+                      border: 'none',
+                      wordBreak: 'break-word',
+                      fontFamily: "'Inter', sans-serif",
+                      letterSpacing: '-0.01em',
+                      whiteSpace: 'pre-wrap',
+                    }}>
+                      <LinkifyText text={msg.text} />
+                    </div>
+                  )
+                }
+                return (
+                  <div
+                    data-testid={hasChain ? 'assistant-final-message' : undefined}
+                    style={{
+                      padding: hasChain ? '12px 14px' : '2px 0',
+                      borderRadius: hasChain ? 8 : 0,
+                      border: hasChain ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                      marginTop: hasChain ? 8 : 0,
+                      fontSize: 14, lineHeight: 1.6,
+                      color: '#E2E8F0',
+                      background: 'transparent',
+                      wordBreak: 'break-word',
+                      fontFamily: "'Inter', sans-serif",
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
+                  </div>
+                )
+              })()}
               {isUser && msg.user_name && msg.user_name !== displayName && (
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#A78BFA', textAlign: 'right', marginBottom: 3, marginTop: -2, fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}>
                   {msg.user_name}
