@@ -255,6 +255,18 @@ export default function ProjectMessageList() {
       })}
       {sending && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+          {/* R75-r65: live-thread chain (same pattern as 1:1 MessageList). */}
+          <StepThread
+            steps={[{
+              id: 'synthetic-thinking',
+              step_index: 0,
+              text: `${selectedProject?.name || 'Project'} agent is thinking…`,
+              status: 'in_progress',
+            }]}
+            settled={false}
+            isError={false}
+            agentColor={projColor}
+          />
           <TypingIndicatorV2
             streaming={true}
             agentColor={projColor}
@@ -262,7 +274,7 @@ export default function ProjectMessageList() {
             agentName={selectedProject?.name}
             onStall={handleTypingStall}
             worldId={worldId || 'aom'}
-            compact={false}
+            compact={true}
           />
         </div>
       )}

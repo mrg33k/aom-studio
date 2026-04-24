@@ -500,6 +500,24 @@ export default function MessageList() {
       })}
       {(sending || awaitingResponse || isAgentTyping) && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+          {/* R75-r65: live-thread chain. The first slice shows a synthetic
+              step while the reply is in flight so the user sees the R65
+              design immediately — the chain + pulsing dot is the feel,
+              replacing the bare "typing…" experience. When worker emission
+              lands richer steps (via relay-emit-step.py), they'll render
+              in this slot too. TypingIndicatorV2 stays below for the R73
+              fail-loud stall CTA at 45s. */}
+          <StepThread
+            steps={[{
+              id: 'synthetic-thinking',
+              step_index: 0,
+              text: `${selectedAgent?.name || 'Agent'} is thinking…`,
+              status: 'in_progress',
+            }]}
+            settled={false}
+            isError={false}
+            agentColor={selectedAgent?.color || '#3B82F6'}
+          />
           <TypingIndicatorV2
             streaming={true}
             agentColor={selectedAgent?.color || '#3B82F6'}
@@ -508,7 +526,7 @@ export default function MessageList() {
             onPoke={(text) => sendAgentTextRef?.current?.(text)}
             onStall={handleTypingStall}
             worldId={worldId || 'aom'}
-            compact={false}
+            compact={true}
           />
         </div>
       )}
