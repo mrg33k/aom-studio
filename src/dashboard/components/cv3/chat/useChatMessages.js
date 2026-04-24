@@ -5,8 +5,64 @@
 // [project:slug] cross-posting is server-side (see api/_lib/crosspost.js) —
 // used to run here and raced across browser tabs.
 // Extracted from ChatPanel.jsx (R2b split).
+//
+// R74: self-healing subscriptions. Every channel now (a) reports status via
+// subscribe callback, (b) auto-reconnects with exponential backoff on
+// CHANNEL_ERROR / TIMED_OUT / CLOSED, and (c) refetches history on
+// (re-)SUBSCRIBE and on window focus / tab visibility. Before R74, a single
+// realtime hiccup silently froze the chat panel — the row was in Supabase,
+// Telegram fired, but the panel never rendered. Now every surface is
+// template-identical and self-heals.
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
+
+// Merge new rows into existing messages, dedup by id, preserve any optimistic
+// temp-/bridge-stream-/voice- entries that don't yet have a real server row.
+function mergeServerRows(prev, serverRows) {
+  if (!Array.isArray(serverRows) || serverRows.length === 0) return prev
+  const byId = new Map()
+  for (const m of prev) byId.set(m.id, m)
+  for (const row of serverRows) {
+    byId.set(row.id, row)
+  }
+  // Preserve optimistic entries that have no matching real row (by temp id).
+  const preservedTempIds = new Set()
+  for (const m of prev) {
+    if (typeof m.id === 'string' && (m.id.startsWith('temp-') || m.id.startsWith('bridge-stream-') || m.id.startsWith('voice-'))) {
+      // If any server row matches this temp by role+text+agent, drop the temp.
+      const matched = serverRows.find(r => r.role === m.role && r.text === m.text && r.agent === m.agent)
+      if (!matched) preservedTempIds.add(m.id)
+    }
+  }
+  // Rebuild, sorted by timestamp ascending.
+  const out = []
+  for (const m of prev) {
+    if (preservedTempIds.has(m.id)) out.push(m)
+  }
+  for (const row of serverRows) out.push(row)
+  out.sort((a, b) => {
+    const ta = new Date(a.timestamp || 0).getTime()
+    const tb = new Date(b.timestamp || 0).getTime()
+    return ta - tb
+  })
+  // Final dedup pass by id.
+  const seen = new Set()
+  const dedup = []
+  for (const m of out) {
+    if (seen.has(m.id)) continue
+    seen.add(m.id)
+    dedup.push(m)
+  }
+  return dedup
+}
+
+// Schedule a reconnect with exponential backoff.
+function scheduleReconnect(attemptRef, resubscribe) {
+  const attempt = attemptRef.current
+  const delay = Math.min(30_000, 1_000 * Math.pow(2, attempt))
+  attemptRef.current = attempt + 1
+  return setTimeout(resubscribe, delay)
+}
 
 export default function useChatMessages({
   selectedAgent,
@@ -55,100 +111,136 @@ export default function useChatMessages({
         setLoadingMsgs(false)
         if (!error && data) setMessages(data.reverse())
       })
-  }, [selectedAgent, worldId])
+  }, [selectedAgent?.slug, worldId])
 
-  // ── Realtime: watch for new messages in the agent thread ──────────────────
-  // R53: channel isolation. Supabase postgres_changes filter accepts only ONE
-  // column expression, so we use client_id server-side and enforce
-  // agent-slug match client-side. Any mismatch is an isolation leak — we
-  // drop it AND log loud so leaks are traceable in production. The gate
-  // seeds cross-agent messages to prove no mismatched payload renders.
+  // ── Realtime + self-heal: agent thread ───────────────────────────────────
+  // R53: channel isolation. R74: self-healing — reconnect + history refetch
+  // on CHANNEL_ERROR / TIMED_OUT / CLOSED / focus / visibilitychange.
   useEffect(() => {
     if (!selectedAgent || !supabase || !worldId) return
-    const channel = supabase
-      .channel(`cv3-thread-${worldId}-${selectedAgent.slug}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
-        (payload) => {
-          const msg = payload.new
-          // Hard isolation: client_id + agent must both match.
-          if (msg.client_id !== worldId) {
-            // Shouldn't happen given the server-side filter, but logging it
-            // would surface any realtime misrouting immediately.
-            console.warn('[R53] dropped cross-tenant message', { expected: worldId, got: msg.client_id, id: msg.id })
-            return
-          }
-          if (msg.agent !== selectedAgent.slug) {
-            // This is the bleed Patrik saw. Drop + log so the gate can
-            // detect cross-agent misrouting.
-            if (typeof window !== 'undefined') {
-              window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
-              window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
-            }
-            return
-          }
-          // R63: per-project observations (agent='elon' + project='<slug>')
-          // must land in the project chat, NOT in the agent's 1:1 thread.
-          // Same R53 log channel; new side tag so the R53 gate filters by
-          // side and the R63 gate can detect these drops specifically.
-          if (msg.project) {
-            if (typeof window !== 'undefined') {
-              window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
-              window.__R53_BLEED_LOG__.push({ side: 'agent-thread-project', expected: selectedAgent.slug, got: msg.agent, project: msg.project, id: msg.id, ts: Date.now() })
-            }
-            return
-          }
-          {
-            setMessages(prev => {
-              // Deduplicate: skip if we already have this id (from optimistic insert)
-              if (prev.some(m => m.id === msg.id)) return prev
-              // Replace temp optimistic message with real DB row
-              const tempIdx = prev.findIndex(m =>
-                typeof m.id === 'string' && m.id.startsWith('temp-') &&
-                m.role === msg.role &&
-                m.text === msg.text
-              )
-              if (tempIdx !== -1) {
-                const next = [...prev]
-                next[tempIdx] = msg
-                return next
-              }
-              // Bridge stream dedup: SSE placeholder -> real Supabase row
-              if (msg.role === 'assistant') {
-                const bridgeIdx = prev.findIndex(m =>
-                  typeof m.id === 'string' && m.id.startsWith('bridge-stream-') &&
-                  m.role === 'assistant' && m.agent === msg.agent
-                )
-                if (bridgeIdx !== -1) {
-                  const next = [...prev]
-                  next[bridgeIdx] = msg
-                  return next
-                }
-              }
-              // Voice messages: replace temp voice entry
-              if (msg.source === 'voice') {
-                const tempRole = msg.role === 'user' ? 'user' : 'agent'
-                const voiceIdx = prev.findIndex(m =>
-                  m.source === 'voice' &&
-                  m.text === msg.text &&
-                  m.role === tempRole &&
-                  typeof m.id === 'string' && m.id.startsWith('voice-')
-                )
-                if (voiceIdx !== -1) {
-                  const next = [...prev]
-                  next[voiceIdx] = msg
-                  return next
-                }
-              }
-              return [...prev, msg]
-            })
+    let active = true
+    let channel = null
+    let retryTimer = null
+    const retryAttemptRef = { current: 0 }
+
+    const refetchHistory = async () => {
+      if (!active) return
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('client_id', worldId)
+          .eq('agent', selectedAgent.slug)
+          .or('project.is.null,project.eq.')
+          .order('timestamp', { ascending: false })
+          .limit(200)
+        if (!active || error || !Array.isArray(data)) return
+        const ordered = data.reverse()
+        setMessages(prev => mergeServerRows(prev, ordered))
+      } catch (_) { /* best-effort */ }
+    }
+
+    const handleInsert = (payload) => {
+      const msg = payload.new
+      if (msg.client_id !== worldId) {
+        console.warn('[R53] dropped cross-tenant message', { expected: worldId, got: msg.client_id, id: msg.id })
+        return
+      }
+      if (msg.agent !== selectedAgent.slug) {
+        if (typeof window !== 'undefined') {
+          window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+          window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
+        }
+        return
+      }
+      if (msg.project) {
+        if (typeof window !== 'undefined') {
+          window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+          window.__R53_BLEED_LOG__.push({ side: 'agent-thread-project', expected: selectedAgent.slug, got: msg.agent, project: msg.project, id: msg.id, ts: Date.now() })
+        }
+        return
+      }
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev
+        const tempIdx = prev.findIndex(m =>
+          typeof m.id === 'string' && m.id.startsWith('temp-') &&
+          m.role === msg.role &&
+          m.text === msg.text
+        )
+        if (tempIdx !== -1) {
+          const next = [...prev]
+          next[tempIdx] = msg
+          return next
+        }
+        if (msg.role === 'assistant') {
+          const bridgeIdx = prev.findIndex(m =>
+            typeof m.id === 'string' && m.id.startsWith('bridge-stream-') &&
+            m.role === 'assistant' && m.agent === msg.agent
+          )
+          if (bridgeIdx !== -1) {
+            const next = [...prev]
+            next[bridgeIdx] = msg
+            return next
           }
         }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [selectedAgent, worldId])
+        if (msg.source === 'voice') {
+          const tempRole = msg.role === 'user' ? 'user' : 'agent'
+          const voiceIdx = prev.findIndex(m =>
+            m.source === 'voice' &&
+            m.text === msg.text &&
+            m.role === tempRole &&
+            typeof m.id === 'string' && m.id.startsWith('voice-')
+          )
+          if (voiceIdx !== -1) {
+            const next = [...prev]
+            next[voiceIdx] = msg
+            return next
+          }
+        }
+        return [...prev, msg]
+      })
+    }
+
+    const subscribe = () => {
+      if (!active) return
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      channel = supabase
+        .channel(`cv3-thread-${worldId}-${selectedAgent.slug}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+          handleInsert,
+        )
+        .subscribe((status) => {
+          if (!active) return
+          if (status === 'SUBSCRIBED') {
+            retryAttemptRef.current = 0
+            refetchHistory()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`[R74] agent-thread channel status=${status}, reconnecting…`)
+            retryTimer = scheduleReconnect(retryAttemptRef, subscribe)
+          }
+        })
+    }
+
+    subscribe()
+
+    const onFocus = () => { if (active) refetchHistory() }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', onFocus)
+      document.addEventListener('visibilitychange', onFocus)
+    }
+
+    return () => {
+      active = false
+      if (retryTimer) clearTimeout(retryTimer)
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', onFocus)
+        document.removeEventListener('visibilitychange', onFocus)
+      }
+    }
+  }, [selectedAgent?.slug, worldId])
 
   // ── Load project messages when a project is selected ──────────────────────
   // R6: filter on the `project` column instead of the legacy
@@ -171,76 +263,136 @@ export default function useChatMessages({
         setLoadingMsgs(false)
         if (!error && data) setMessages(data.reverse())
       })
-  }, [worldId, selectedProject, selectedAgent])
+  }, [worldId, selectedProject?.slug, selectedProject?.isShared, selectedAgent?.slug])
 
-  // ── Realtime subscription for project messages ───────────────────────────
-  // R53: channel isolation. Same hard-filter principle as the agent thread:
-  // client_id + project match; any mismatch is logged and dropped so the
-  // gate can prove isolation.
+  // ── Realtime + self-heal: project chat ───────────────────────────────────
   useEffect(() => {
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
     const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
-    const channel = supabase
-      .channel(`cv3-project-${projCid}-${selectedProject.slug}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
-        (payload) => {
-          const msg = payload.new
-          if (msg.client_id !== projCid) {
-            console.warn('[R53] dropped cross-tenant project message', { expected: projCid, got: msg.client_id, id: msg.id })
-            return
-          }
-          const isForThisProject =
-            msg.project === selectedProject.slug ||
-            msg.agent === `project:${selectedProject.slug}`
-          if (!isForThisProject) {
-            if (typeof window !== 'undefined') {
-              window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
-              window.__R53_BLEED_LOG__.push({ side: 'project-thread', expected: selectedProject.slug, got: msg.project, agent: msg.agent, id: msg.id, ts: Date.now() })
-            }
-            return
-          }
-          {
-            setMessages(prev => {
-              if (prev.some(m => m.id === msg.id)) return prev
-              const tempIdx = prev.findIndex(m =>
-                typeof m.id === 'string' && m.id.startsWith('temp-') &&
-                m.role === msg.role &&
-                m.text === msg.text
-              )
-              if (tempIdx !== -1) {
-                const next = [...prev]
-                next[tempIdx] = msg
-                return next
-              }
-              if (msg.source === 'voice') {
-                const tempRole = msg.role === 'user' ? 'user' : 'agent'
-                const voiceIdx = prev.findIndex(m =>
-                  m.source === 'voice' &&
-                  m.text === msg.text &&
-                  m.role === tempRole &&
-                  typeof m.id === 'string' && m.id.startsWith('voice-')
-                )
-                if (voiceIdx !== -1) {
-                  const next = [...prev]
-                  next[voiceIdx] = msg
-                  return next
-                }
-              }
-              return [...prev, msg]
-            })
+    let active = true
+    let channel = null
+    let retryTimer = null
+    const retryAttemptRef = { current: 0 }
+
+    const refetchHistory = async () => {
+      if (!active) return
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('client_id', projCid)
+          .or(`project.eq.${selectedProject.slug},agent.eq.project:${selectedProject.slug}`)
+          .order('timestamp', { ascending: false })
+          .limit(200)
+        if (!active || error || !Array.isArray(data)) return
+        const ordered = data.reverse()
+        setMessages(prev => mergeServerRows(prev, ordered))
+      } catch (_) { /* best-effort */ }
+    }
+
+    const handleInsert = (payload) => {
+      const msg = payload.new
+      if (msg.client_id !== projCid) {
+        console.warn('[R53] dropped cross-tenant project message', { expected: projCid, got: msg.client_id, id: msg.id })
+        return
+      }
+      const isForThisProject =
+        msg.project === selectedProject.slug ||
+        msg.agent === `project:${selectedProject.slug}`
+      if (!isForThisProject) {
+        if (typeof window !== 'undefined') {
+          window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+          window.__R53_BLEED_LOG__.push({ side: 'project-thread', expected: selectedProject.slug, got: msg.project, agent: msg.agent, id: msg.id, ts: Date.now() })
+        }
+        return
+      }
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev
+        const tempIdx = prev.findIndex(m =>
+          typeof m.id === 'string' && m.id.startsWith('temp-') &&
+          m.role === msg.role &&
+          m.text === msg.text
+        )
+        if (tempIdx !== -1) {
+          const next = [...prev]
+          next[tempIdx] = msg
+          return next
+        }
+        if (msg.role === 'assistant') {
+          const bridgeIdx = prev.findIndex(m =>
+            typeof m.id === 'string' && m.id.startsWith('bridge-stream-') &&
+            m.role === 'assistant' && m.agent === msg.agent
+          )
+          if (bridgeIdx !== -1) {
+            const next = [...prev]
+            next[bridgeIdx] = msg
+            return next
           }
         }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [worldId, selectedProject, selectedAgent])
+        if (msg.source === 'voice') {
+          const tempRole = msg.role === 'user' ? 'user' : 'agent'
+          const voiceIdx = prev.findIndex(m =>
+            m.source === 'voice' &&
+            m.text === msg.text &&
+            m.role === tempRole &&
+            typeof m.id === 'string' && m.id.startsWith('voice-')
+          )
+          if (voiceIdx !== -1) {
+            const next = [...prev]
+            next[voiceIdx] = msg
+            return next
+          }
+        }
+        return [...prev, msg]
+      })
+    }
+
+    const subscribe = () => {
+      if (!active) return
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      channel = supabase
+        .channel(`cv3-project-${projCid}-${selectedProject.slug}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
+          handleInsert,
+        )
+        .subscribe((status) => {
+          if (!active) return
+          if (status === 'SUBSCRIBED') {
+            retryAttemptRef.current = 0
+            refetchHistory()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`[R74] project-thread channel status=${status}, reconnecting…`)
+            retryTimer = scheduleReconnect(retryAttemptRef, subscribe)
+          }
+        })
+    }
+
+    subscribe()
+
+    const onFocus = () => { if (active) refetchHistory() }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', onFocus)
+      document.addEventListener('visibilitychange', onFocus)
+    }
+
+    return () => {
+      active = false
+      if (retryTimer) clearTimeout(retryTimer)
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', onFocus)
+        document.removeEventListener('visibilitychange', onFocus)
+      }
+    }
+  }, [worldId, selectedProject?.slug, selectedProject?.isShared, selectedAgent?.slug])
 
   // ── R65-impl: subscribe to message_step events for the active surface ────
   // Fetches an initial history window (last 20 step events for the current
   // agent or project) so steps persist across re-renders / page reloads,
   // then opens a realtime channel. Groups by parent_message_id.
+  // R74: self-healing — same reconnect pattern.
   useEffect(() => {
     if (!supabase || !worldId) return
     const surfaceAgent = selectedAgent?.slug || null
@@ -248,24 +400,20 @@ export default function useChatMessages({
     if (!surfaceAgent && !surfaceProject) return
 
     let active = true
+    let channel = null
+    let retryTimer = null
+    const retryAttemptRef = { current: 0 }
     setStepsByMessageId({})
 
-    // Initial fetch: last 20 step events for this world + surface.
-    const agentFilter = surfaceAgent ? `agent=eq.${surfaceAgent}` : null
-    const qs = [
-      'select=id,agent,payload,timestamp',
-      'event_type=eq.message_step',
-      'order=timestamp.desc',
-      'limit=20',
-    ]
-    if (agentFilter) qs.push(agentFilter)
-    supabase
-      .from('events')
-      .select('id,agent,payload,timestamp')
-      .eq('event_type', 'message_step')
-      .order('timestamp', { ascending: false })
-      .limit(20)
-      .then(({ data, error }) => {
+    const refetchSteps = async () => {
+      if (!active) return
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('id,agent,payload,timestamp')
+          .eq('event_type', 'message_step')
+          .order('timestamp', { ascending: false })
+          .limit(20)
         if (error || !active || !Array.isArray(data)) return
         const next = {}
         for (const row of data) {
@@ -285,41 +433,69 @@ export default function useChatMessages({
           })
         }
         setStepsByMessageId(next)
-      })
+      } catch (_) { /* best-effort */ }
+    }
 
-    // Realtime — server-side filter uses client_id (single-column limit),
-    // agent + event_type + project filtered client-side.
-    const channel = supabase
-      .channel(`cv3-steps-${worldId}-${surfaceAgent || surfaceProject}`)
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'events' },
-        (payload) => {
-          const row = payload?.new
-          if (!row) return
-          if (row.event_type !== 'message_step') return
-          const p = row.payload || {}
-          if ((p.client_id || '') !== worldId) return
-          if (surfaceAgent && row.agent !== surfaceAgent) return
-          if (surfaceProject && (p.project || '') !== surfaceProject) return
-          const pid = p.parent_message_id
-          if (!pid) return
-          setStepsByMessageId(prev => {
-            const existing = prev[pid] || []
-            if (existing.some(s => s.id === row.id)) return prev
-            const next = [...existing, {
-              id: row.id,
-              step_index: p.step_index ?? 0,
-              text: p.text || '',
-              status: p.status || 'in_progress',
-              timestamp: row.timestamp,
-            }]
-            return { ...prev, [pid]: next }
-          })
+    const handleInsert = (payload) => {
+      const row = payload?.new
+      if (!row) return
+      if (row.event_type !== 'message_step') return
+      const p = row.payload || {}
+      if ((p.client_id || '') !== worldId) return
+      if (surfaceAgent && row.agent !== surfaceAgent) return
+      if (surfaceProject && (p.project || '') !== surfaceProject) return
+      const pid = p.parent_message_id
+      if (!pid) return
+      setStepsByMessageId(prev => {
+        const existing = prev[pid] || []
+        if (existing.some(s => s.id === row.id)) return prev
+        const next = [...existing, {
+          id: row.id,
+          step_index: p.step_index ?? 0,
+          text: p.text || '',
+          status: p.status || 'in_progress',
+          timestamp: row.timestamp,
+        }]
+        return { ...prev, [pid]: next }
+      })
+    }
+
+    const subscribe = () => {
+      if (!active) return
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      channel = supabase
+        .channel(`cv3-steps-${worldId}-${surfaceAgent || surfaceProject}-${Date.now()}`)
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'events' },
+          handleInsert)
+        .subscribe((status) => {
+          if (!active) return
+          if (status === 'SUBSCRIBED') {
+            retryAttemptRef.current = 0
+            refetchSteps()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`[R74] steps channel status=${status}, reconnecting…`)
+            retryTimer = scheduleReconnect(retryAttemptRef, subscribe)
+          }
         })
-      .subscribe()
+    }
+
+    subscribe()
+
+    const onFocus = () => { if (active) refetchSteps() }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', onFocus)
+      document.addEventListener('visibilitychange', onFocus)
+    }
+
     return () => {
       active = false
-      try { supabase.removeChannel(channel) } catch (_) {}
+      if (retryTimer) clearTimeout(retryTimer)
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', onFocus)
+        document.removeEventListener('visibilitychange', onFocus)
+      }
     }
   }, [worldId, selectedAgent?.slug, selectedProject?.slug])
 

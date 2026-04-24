@@ -60,68 +60,114 @@ export default function useChatConversations({
     })
   }, [agents, worldId])
 
+  // R74: self-healing previews subscription — same pattern as useChatMessages.
   useEffect(() => {
     if (!supabase || !worldId) return
-    const channel = supabase
-      .channel(`cv3-previews-${worldId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
-        (payload) => {
-          const msg = payload.new
-          if (!msg?.agent) return
-          const preview = {
-            agent: msg.agent,
-            text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
-            timestamp: msg.timestamp,
-            id: msg.id,
-            isUnread: msg.role !== 'user',
+    let active = true
+    let channel = null
+    let retryTimer = null
+    let retryAttempt = 0
+
+    const applyMsg = (msg) => {
+      if (!msg?.agent) return
+      const preview = {
+        agent: msg.agent,
+        text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
+        timestamp: msg.timestamp,
+        id: msg.id,
+        isUnread: msg.role !== 'user',
+      }
+      if (!msg.project) {
+        setAgentPreviews(prev => {
+          const existing = prev[msg.agent]
+          if (existing && existing.timestamp > msg.timestamp) return prev
+          return { ...prev, [msg.agent]: preview }
+        })
+      }
+      if (msg.project) {
+        setProjectPreviews(prev => {
+          const key = `project:${msg.project}`
+          const existing = prev[key]
+          if (existing && existing.timestamp > msg.timestamp) return prev
+          return {
+            ...prev,
+            [key]: {
+              text: (msg.text || '').slice(0, 80),
+              timestamp: msg.timestamp,
+            },
           }
-          // R61: ONLY non-project messages update agent previews. Project-
-          // scoped rows (agent='elon' + project='<slug>') bump project
-          // previews instead so they don't inflate an agent's last_message_at
-          // and leak routing into the chronological agent list.
-          if (!msg.project) {
-            setAgentPreviews(prev => {
-              const existing = prev[msg.agent]
-              if (existing && existing.timestamp > msg.timestamp) return prev
-              return { ...prev, [msg.agent]: preview }
-            })
+        })
+      } else if (typeof msg.agent === 'string' && msg.agent.startsWith('project:')) {
+        setProjectPreviews(prev => {
+          const existing = prev[msg.agent]
+          if (existing && existing.timestamp > msg.timestamp) return prev
+          return {
+            ...prev,
+            [msg.agent]: {
+              text: (msg.text || '').slice(0, 80),
+              timestamp: msg.timestamp,
+            },
           }
-          // R61: project preview realtime. Any message with msg.project set
-          // bumps that project's last_message_at so the projects list
-          // resorts to the top.
-          if (msg.project) {
-            setProjectPreviews(prev => {
-              const key = `project:${msg.project}`
-              const existing = prev[key]
-              if (existing && existing.timestamp > msg.timestamp) return prev
-              return {
-                ...prev,
-                [key]: {
-                  text: (msg.text || '').slice(0, 80),
-                  timestamp: msg.timestamp,
-                },
-              }
-            })
-          } else if (typeof msg.agent === 'string' && msg.agent.startsWith('project:')) {
-            // Legacy project convention (pre-R6): agent='project:<slug>'.
-            setProjectPreviews(prev => {
-              const existing = prev[msg.agent]
-              if (existing && existing.timestamp > msg.timestamp) return prev
-              return {
-                ...prev,
-                [msg.agent]: {
-                  text: (msg.text || '').slice(0, 80),
-                  timestamp: msg.timestamp,
-                },
-              }
-            })
+        })
+      }
+    }
+
+    const refetchPreviews = async () => {
+      if (!active) return
+      try {
+        // Pull the most recent message per agent + project in this tenant.
+        const { data } = await supabase
+          .from('messages')
+          .select('agent,text,timestamp,id,role,project')
+          .eq('client_id', worldId)
+          .order('timestamp', { ascending: false })
+          .limit(400)
+        if (!active || !Array.isArray(data)) return
+        // Apply newest-first; applyMsg's timestamp-gate handles idempotency.
+        for (const msg of data) applyMsg(msg)
+      } catch (_) { /* best-effort */ }
+    }
+
+    const subscribe = () => {
+      if (!active) return
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      channel = supabase
+        .channel(`cv3-previews-${worldId}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+          (payload) => applyMsg(payload.new),
+        )
+        .subscribe((status) => {
+          if (!active) return
+          if (status === 'SUBSCRIBED') {
+            retryAttempt = 0
+            refetchPreviews()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`[R74] previews channel status=${status}, reconnecting…`)
+            const delay = Math.min(30_000, 1_000 * Math.pow(2, retryAttempt))
+            retryAttempt += 1
+            retryTimer = setTimeout(subscribe, delay)
           }
-        }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+        })
+    }
+    subscribe()
+
+    const onFocus = () => { if (active) refetchPreviews() }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', onFocus)
+      document.addEventListener('visibilitychange', onFocus)
+    }
+
+    return () => {
+      active = false
+      if (retryTimer) clearTimeout(retryTimer)
+      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', onFocus)
+        document.removeEventListener('visibilitychange', onFocus)
+      }
+    }
   }, [worldId])
 
   // ── Project previews: initial fetch ─────────────────────────────────────
