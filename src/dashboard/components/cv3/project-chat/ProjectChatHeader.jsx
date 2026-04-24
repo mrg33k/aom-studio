@@ -33,11 +33,15 @@ export default function ProjectChatHeader() {
     if (clearStage !== 'confirm') return
     setClearStage('working')
     try {
-      // Project chats route through elon; clear elon's context
+      // R75-b2: clear the project's actual EA (is_ea + is_terminal) — no
+      // more hardcoded 'elon' so non-AOM worlds reset the right tmux.
+      const eaSlug = agents?.find(a => a.is_ea && a.is_terminal)?.slug
+        || agents?.find(a => a.is_ea)?.slug
+        || 'elon'
       await fetch('/api/dashboard/clear-context', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: 'elon', client_id: worldId || 'aom' }),
+        body: JSON.stringify({ agent: eaSlug, client_id: worldId || 'aom' }),
       })
     } catch (_) {}
     resetExchangeCount?.()
@@ -283,7 +287,15 @@ export default function ProjectChatHeader() {
           at without clicking. */}
       <HeaderActionsDrawer
         testid={`project-chat-header-drawer-${selectedProject?.slug || 'all'}`}
-        outsideWhenClosed={<ContextFullnessMeter agentSlug="elon" />}
+        outsideWhenClosed={(() => {
+          // R75-b1: pick the active EA slug from the agents list (is_ea +
+          // is_terminal) instead of hardcoding 'elon' — so project chats in
+          // non-AOM worlds (Ben's, future tenants) show the correct meter.
+          const eaSlug = agents?.find(a => a.is_ea && a.is_terminal)?.slug
+            || agents?.find(a => a.is_ea)?.slug
+            || 'elon'
+          return <ContextFullnessMeter agentSlug={eaSlug} />
+        })()}
       >
         {/* R60: telephone now lives inside the drawer (no longer primary). */}
         <button
