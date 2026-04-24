@@ -427,7 +427,7 @@ export default function CornerV3() {
     <CornerAuthProvider value={authValue}>
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
-    <div style={{
+    <div data-testid="dashboard-home-root" style={{
       width: '100%',
       height: '100dvh',
       background: C.bg,
