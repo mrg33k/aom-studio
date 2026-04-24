@@ -407,32 +407,36 @@ export default function useChatMessages({
 
     const refetchSteps = async () => {
       if (!active) return
+      // R75-r65-d: proxy through server-side API because the events table has
+      // RLS that blocks anon/authed reads from the browser. Before R75-r65-d
+      // this fetch returned 0 rows silently (RLS filter drops everything),
+      // so StepThread never rendered even when baseline step events existed
+      // in the table. The endpoint uses the service-role key, applies the
+      // same client-side filter rules, and returns the scoped step list.
       try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('id,agent,payload,timestamp')
-          .eq('event_type', 'message_step')
-          .order('timestamp', { ascending: false })
-          .limit(20)
-        if (error || !active || !Array.isArray(data)) return
+        const qs = new URLSearchParams({
+          client_id: worldId,
+          limit: '40',
+        })
+        if (surfaceAgent) qs.set('agent', surfaceAgent)
+        if (surfaceProject) qs.set('project', surfaceProject)
+        const r = await fetch(`/api/dashboard/message-steps?${qs.toString()}`)
+        if (!r.ok || !active) return
+        const payload = await r.json()
         const next = {}
-        for (const row of data) {
-          const p = row?.payload || {}
-          if ((p.client_id || worldId) !== worldId) continue
-          if (surfaceAgent && row.agent !== surfaceAgent) continue
-          if (surfaceProject && (p.project || '') !== surfaceProject) continue
-          const pid = p.parent_message_id
+        for (const row of payload.steps || []) {
+          const pid = row.parent_message_id
           if (!pid) continue
           if (!next[pid]) next[pid] = []
           next[pid].push({
             id: row.id,
-            step_index: p.step_index ?? 0,
-            text: p.text || '',
-            status: p.status || 'in_progress',
+            step_index: row.step_index ?? 0,
+            text: row.text || '',
+            status: row.status || 'in_progress',
             timestamp: row.timestamp,
           })
         }
-        setStepsByMessageId(next)
+        if (active) setStepsByMessageId(next)
       } catch (_) { /* best-effort */ }
     }
 
