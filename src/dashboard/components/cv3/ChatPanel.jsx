@@ -90,23 +90,24 @@ export default function ChatPanel() {
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [voiceMinimized, setVoiceMinimized] = useState(false)
 
-  // ── Session hygiene: exchange counter + handoff nudge ─────────────────────
+  // ── Session hygiene: exchange counter + handoff nudge (R75-b3) ────────────
+  // Target turn randomised in [10, 15] so the nudge doesn't always land on 10.
+  // Snooze bumps the target by +5 to +10. Dismiss persists per (world, chat)
+  // so the user isn't nagged again after an explicit ×.
+  const pickNudgeTarget = () => 10 + Math.floor(Math.random() * 6) // 10-15 inclusive
+  const pickSnoozeDelta = () => 5 + Math.floor(Math.random() * 6)  // 5-10 inclusive
   const [exchangeCount, setExchangeCount] = useState(0)
-  const [showHandoffNudge, setShowHandoffNudge] = useState(false)
+  const [nudgeTargetTurn, setNudgeTargetTurn] = useState(pickNudgeTarget)
+  const [nudgeDismissed, setNudgeDismissed] = useState(false)
 
   const resetExchangeCount = useCallback(() => {
     setExchangeCount(0)
-    setShowHandoffNudge(false)
+    setNudgeTargetTurn(pickNudgeTarget())
+    setNudgeDismissed(false)
   }, [])
 
-  const dismissHandoffNudge = useCallback(() => setShowHandoffNudge(false), [])
-
   const onMessageSent = useCallback(() => {
-    setExchangeCount(prev => {
-      const next = prev + 1
-      if (next > 0 && next % 10 === 0) setShowHandoffNudge(true)
-      return next
-    })
+    setExchangeCount(prev => prev + 1)
   }, [])
 
   // (Session-hygiene reset effect moved below selectedProject useMemo; it
@@ -170,10 +171,51 @@ export default function ChatPanel() {
   // array before its useMemo declaration throws TDZ in the prod build.
   useEffect(() => {
     setExchangeCount(0)
-    setShowHandoffNudge(false)
+    setNudgeTargetTurn(pickNudgeTarget())
+    setNudgeDismissed(false)
   }, [selectedAgent?.slug, selectedProject?.slug])
 
-  const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : null)
+  const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : 'home')
+
+  // Dismiss persistence -- restore on chat switch, write on dismiss.
+  // Keyed by (worldId, chatKey) so multiple worlds and chats each get their own
+  // sticky dismiss. Wrapped in try/catch for SSR / disabled-storage environments.
+  useEffect(() => {
+    try {
+      const key = `aom_handoff_nudge_dismissed_${worldId || 'x'}:${currentChatKey}`
+      if (localStorage.getItem(key) === '1') setNudgeDismissed(true)
+    } catch {}
+  }, [worldId, currentChatKey])
+
+  const dismissHandoffNudge = useCallback(() => {
+    setNudgeDismissed(true)
+    try {
+      const key = `aom_handoff_nudge_dismissed_${worldId || 'x'}:${currentChatKey}`
+      localStorage.setItem(key, '1')
+    } catch {}
+  }, [worldId, currentChatKey])
+
+  const snoozeHandoffNudge = useCallback(() => {
+    setNudgeTargetTurn(t => Math.max(t, exchangeCount) + pickSnoozeDelta())
+  }, [exchangeCount])
+
+  const acceptHandoffNudge = useCallback(() => {
+    // Fire-and-forget event record so a future worker can pick this up and
+    // actually write last-conversation.md. Endpoint may not exist yet -- the
+    // UI "fresh start" below is the primary signal.
+    try {
+      fetch('/api/dashboard/session-handoff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world_id: worldId, chat_key: currentChatKey }),
+      }).catch(() => {})
+    } catch {}
+    setExchangeCount(0)
+    setNudgeTargetTurn(pickNudgeTarget())
+    setNudgeDismissed(false)
+  }, [worldId, currentChatKey])
+
+  const showHandoffNudge = exchangeCount >= nudgeTargetTurn && !nudgeDismissed
 
   // ── Hooks: prefs → conversations → messages → bridge → ctx-menu →
   //          attachments → send → recording → settings. Order matters because
@@ -309,7 +351,7 @@ export default function ChatPanel() {
     onBack, onSelectAgent, onSelectProject,
     prefillMessage, setPrefillMessage,
     chatInputFocused, setChatInputFocused,
-    showHandoffNudge, dismissHandoffNudge, resetExchangeCount,
+    showHandoffNudge, acceptHandoffNudge, snoozeHandoffNudge, dismissHandoffNudge, resetExchangeCount,
   }), [
     agents, inboxItems, allTasks, projects, conv.chattableAgents,
     selectedAgent, selectedProject, inlineProject, currentChatKey,
@@ -317,7 +359,7 @@ export default function ChatPanel() {
     isMobile, greetingIdx, projectId, navigate,
     onBack, onSelectAgent, onSelectProject, prefillMessage, setPrefillMessage,
     chatInputFocused,
-    showHandoffNudge, dismissHandoffNudge, resetExchangeCount,
+    showHandoffNudge, acceptHandoffNudge, snoozeHandoffNudge, dismissHandoffNudge, resetExchangeCount,
   ])
 
   const messagesValue = useMemo(() => ({

@@ -25,9 +25,10 @@ import ProjectVoiceModeBar from './project-chat/ProjectVoiceModeBar.jsx'
 import ProjectRecordingStatusBar from './project-chat/ProjectRecordingStatusBar.jsx'
 import ProjectInputBar from './project-chat/ProjectInputBar.jsx'
 import ProjectSettingsModal from './project-chat/ProjectSettingsModal.jsx'
+import HandoffNudge from './shared/HandoffNudge.jsx'
 
 export default function ProjectChatView() {
-  const { showHandoffNudge, dismissHandoffNudge, selectedProject } = useChatCore()
+  const { selectedProject } = useChatCore()
   const { isRecording, isTranscribing } = useChatRecordingCtx()
   const { isVoiceActive } = useChatVoiceCtx()
   const {
@@ -78,30 +79,8 @@ export default function ProjectChatView() {
 
       {(isRecording || isTranscribing) && <ProjectRecordingStatusBar />}
 
-      {showHandoffNudge && (
-        <div
-          data-testid="handoff-nudge"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 14px',
-            background: 'rgba(99,102,241,0.1)',
-            borderTop: '1px solid rgba(99,102,241,0.2)',
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontSize: 12, color: '#A5B4FC', fontFamily: "'Inter', sans-serif" }}>
-            Might be a good idea to write a handoff and clear context.
-          </span>
-          <button
-            onClick={dismissHandoffNudge}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'rgba(165,180,252,0.6)', fontSize: 16, lineHeight: 1,
-              padding: '0 4px', flexShrink: 0,
-            }}
-          >×</button>
-        </div>
-      )}
+      <HandoffNudge />
+
 
       {!isVoiceActive && <ProjectInputBar />}
 

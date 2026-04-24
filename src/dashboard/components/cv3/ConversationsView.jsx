@@ -18,6 +18,7 @@ import useHomeSearch from './conversations/useHomeSearch.js'
 import CallInProgressBanner from './conversations/CallInProgressBanner.jsx'
 import GreetingHero from './conversations/GreetingHero.jsx'
 import HomeSearchBar from './conversations/HomeSearchBar.jsx'
+import HandoffNudge from './shared/HandoffNudge.jsx'
 import SearchResults from './conversations/SearchResults.jsx'
 import EaHeroCard from './conversations/EaHeroCard.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
@@ -200,6 +201,11 @@ export default function ConversationsView() {
         searching={searching}
         totalResults={totalResults}
       />
+
+      {/* R75-b3 -- session-hygiene nudge on home EA surface (parity with
+          ThreadView + ProjectChatView). Only renders if the home chat has
+          accumulated enough turns and the user hasn't dismissed. */}
+      <HandoffNudge />
 
       {showSearch && (
         <SearchResults
