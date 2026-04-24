@@ -29,35 +29,55 @@ export default function useChatConversations({
   // the closure TDZ-free for the combined handler below).
   const [agentPreviews, setAgentPreviews] = useState({})
   const [projectPreviews, setProjectPreviews] = useState({})
+
+  // R75-a1: initial agent-preview fetch MERGES with timestamp-gate instead
+  // of replacing state wholesale. Before R75-a1 a remount of this hook
+  // (e.g. ChatPanel re-mount after tab nav) called setAgentPreviews(previews)
+  // as a full replace, which could clobber fresher previews that only the
+  // realtime handler knew about — the "home feed reverted to old messages
+  // after navigating to tasks and back" bug.
+  //
+  // Extra: R61 says project-scoped rows (agent='<slug>' + project='<x>')
+  // must NOT bump an agent preview. The initial fetch now enforces that
+  // too; before R75-a1 it pulled the newest row per agent regardless of
+  // project, which could seed the preview with a project-scoped message.
   useEffect(() => {
     if (!supabase || !worldId || !agents?.length) return
     const slugs = agents.filter(a => a.slug).map(a => a.slug)
     if (slugs.length === 0) return
 
+    let cancelled = false
     Promise.all(slugs.map(slug =>
       supabase
         .from('messages')
-        .select('agent, text, timestamp, id, role')
+        .select('agent, text, timestamp, id, role, project')
         .eq('client_id', worldId)
         .eq('agent', slug)
+        .or('project.is.null,project.eq.')
         .order('timestamp', { ascending: false })
         .limit(1)
         .then(({ data }) => data?.[0] || null)
     )).then(results => {
-      const previews = {}
-      for (const msg of results) {
-        if (msg?.agent) {
-          previews[msg.agent] = {
+      if (cancelled) return
+      setAgentPreviews(prev => {
+        const next = { ...prev }
+        for (const msg of results) {
+          if (!msg?.agent) continue
+          const preview = {
             agent: msg.agent,
             text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
             timestamp: msg.timestamp,
             id: msg.id,
             isUnread: msg.role !== 'user',
           }
+          const existing = next[msg.agent]
+          if (existing && existing.timestamp > preview.timestamp) continue
+          next[msg.agent] = preview
         }
-      }
-      setAgentPreviews(previews)
+        return next
+      })
     })
+    return () => { cancelled = true }
   }, [agents, worldId])
 
   // R74: self-healing previews subscription — same pattern as useChatMessages.
@@ -171,23 +191,46 @@ export default function useChatConversations({
   }, [worldId])
 
   // ── Project previews: initial fetch ─────────────────────────────────────
+  // R75-a1: merge-with-timestamp-gate instead of full replace, same reason
+  // as agent previews. Also broaden the query: R6 project-tagged rows
+  // (project=<slug>) are more common than the legacy agent='project:<slug>'
+  // shape, so pull whichever is latest per project and apply the preview
+  // under the canonical key (`project:<slug>`). That aligns initial state
+  // with the realtime handler's applyMsg output.
   useEffect(() => {
     if (!supabase || !worldId || !projects?.length) return
     const projList = projects.filter(p => p.slug)
     if (!projList.length) return
-    Promise.all(projList.map(p => {
+    let cancelled = false
+    Promise.all(projList.map(async p => {
       const cid = p.isShared ? `shared:${p.slug}` : worldId
-      return supabase.from('messages').select('agent, text, timestamp')
-        .eq('client_id', cid).eq('agent', `project:${p.slug}`)
-        .order('timestamp', { ascending: false }).limit(1)
-        .then(({ data }) => data?.[0] || null)
+      const { data } = await supabase
+        .from('messages')
+        .select('agent, text, timestamp, project')
+        .eq('client_id', cid)
+        .or(`project.eq.${p.slug},agent.eq.project:${p.slug}`)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+      return { slug: p.slug, msg: data?.[0] || null }
     })).then(results => {
-      const previews = {}
-      for (const msg of results) {
-        if (msg?.agent) previews[msg.agent] = { text: (msg.text || '').slice(0, 80), timestamp: msg.timestamp }
-      }
-      setProjectPreviews(previews)
+      if (cancelled) return
+      setProjectPreviews(prev => {
+        const next = { ...prev }
+        for (const { slug, msg } of results) {
+          if (!msg) continue
+          const key = `project:${slug}`
+          const preview = {
+            text: (msg.text || '').slice(0, 80),
+            timestamp: msg.timestamp,
+          }
+          const existing = next[key]
+          if (existing && existing.timestamp > preview.timestamp) continue
+          next[key] = preview
+        }
+        return next
+      })
     })
+    return () => { cancelled = true }
   }, [projects, worldId])
 
   // ── unreadMap: merges agentPreviews + inboxItems, newest wins ────────────
