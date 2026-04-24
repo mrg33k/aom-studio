@@ -14,6 +14,7 @@ import { TaskContextMenu } from './ContextMenu.jsx'
 import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from './tasks/FilesSection.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
+import DocUpdatesStripe from './shared/DocUpdateCard.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import LivingParagraphCard from './tasks/LivingParagraphCard.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
@@ -403,6 +404,9 @@ function TasksPanelBody() {
         {!activeMissionPath && activeProject && activeProject !== 'all' && (
           <div data-testid="project-card" data-slug={activeProject}>
             <TaskDrawerProjectSummary />
+            {/* R75-h4 -- live project-state feed: recent doc edits + mission creates.
+                Reuses DocUpdatesStripe already live in project-chat (h1/h2). */}
+            <DocUpdatesStripe project={activeProject} limit={5} />
             {/* R31 -- FAQ surface: Vision + Research bullets above Missions + Files. */}
             <TaskDrawerFileFAQ
               filename="VISION.md"
