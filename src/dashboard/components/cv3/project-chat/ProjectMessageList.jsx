@@ -4,6 +4,7 @@ import { LinkifyText, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
 import StepThread from '../shared/StepThread.jsx'
+import DocUpdatesStripe from '../shared/DocUpdateCard.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import useProjectChatMsgMenu from './useProjectChatMsgMenu.js'
@@ -84,6 +85,11 @@ export default function ProjectMessageList() {
       display: hidden ? 'none' : 'flex',
       flexDirection: 'column', gap: 6,
     }}>
+      {/* R75-h1: surface recent VISION/BUILD/CONTEXT/RESEARCH edits for this project. */}
+      {selectedProject?.slug && (
+        <DocUpdatesStripe project={selectedProject.slug} />
+      )}
+
       {loadingMsgs && (
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
           <span style={{ fontSize: 12, color: C.muted }}>Loading…</span>
