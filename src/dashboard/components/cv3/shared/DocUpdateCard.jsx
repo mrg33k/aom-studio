@@ -19,8 +19,13 @@ function docIcon(type) {
     case 'BUILD': return '🔨'
     case 'CONTEXT': return '📍'
     case 'RESEARCH': return '🔬'
+    case 'MISSION': return '🎯'
     default: return '📝'
   }
+}
+
+function docLabel(type) {
+  return type === 'MISSION' ? 'New mission' : `${type} updated`
 }
 
 function relTime(iso) {
@@ -36,32 +41,59 @@ function relTime(iso) {
 
 export default function DocUpdatesStripe({ project, mission = '', limit = 5, compact = true }) {
   const [updates, setUpdates] = useState([])
+  const [missions, setMissions] = useState([])
   const [expanded, setExpanded] = useState(!compact)
 
   useEffect(() => {
     if (!project) return
     let cancelled = false
-    const fetchUpdates = async () => {
+    const fetchAll = async () => {
       try {
         const qs = new URLSearchParams({ project, limit: String(limit) })
         if (mission) qs.set('mission', mission)
-        const r = await fetch(`/api/dashboard/doc-updates?${qs.toString()}`)
-        if (!r.ok) return
-        const j = await r.json()
-        if (!cancelled) setUpdates(Array.isArray(j.updates) ? j.updates : [])
+        const [docsR, missR] = await Promise.all([
+          fetch(`/api/dashboard/doc-updates?${qs.toString()}`),
+          fetch(`/api/dashboard/missions-created?project=${project}&limit=5`),
+        ])
+        if (!cancelled) {
+          if (docsR.ok) {
+            const j = await docsR.json()
+            setUpdates(Array.isArray(j.updates) ? j.updates : [])
+          }
+          if (missR.ok) {
+            const j = await missR.json()
+            setMissions(Array.isArray(j.missions) ? j.missions : [])
+          }
+        }
       } catch (_) {}
     }
-    fetchUpdates()
-    const id = setInterval(fetchUpdates, 15_000)
-    const visHandler = () => { if (document.visibilityState === 'visible') fetchUpdates() }
+    fetchAll()
+    const id = setInterval(fetchAll, 15_000)
+    const visHandler = () => { if (document.visibilityState === 'visible') fetchAll() }
     document.addEventListener('visibilitychange', visHandler)
     return () => { cancelled = true; clearInterval(id); document.removeEventListener('visibilitychange', visHandler) }
   }, [project, mission, limit])
 
-  if (!updates.length) return null
+  // Merge mission_created into updates with a synthetic doc_type='MISSION' so the
+  // stripe renders one unified feed.
+  const merged = [
+    ...missions.map(m => ({
+      id: `mission-${m.id}`,
+      doc_type: 'MISSION',
+      summary: m.description || `New mission: ${m.mission}`,
+      file: m.mission,
+      project: m.project,
+      mission: m.mission,
+      file_count: m.file_count,
+      timestamp: m.timestamp,
+    })),
+    ...updates,
+  ].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, limit)
 
-  const latest = updates[0]
-  const extra = updates.length - 1
+  if (!merged.length) return null
+
+  const latest = merged[0]
+  const extra = merged.length - 1
 
   if (compact && !expanded) {
     return (
@@ -80,7 +112,7 @@ export default function DocUpdatesStripe({ project, mission = '', limit = 5, com
         }}
       >
         <span style={{ fontSize: 16 }}>{docIcon(latest.doc_type)}</span>
-        <span style={{ fontWeight: 600 }}>{latest.doc_type}</span>
+        <span style={{ fontWeight: 600 }}>{docLabel(latest.doc_type)}</span>
         <span style={{ color: C.muted, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {latest.summary}
         </span>
@@ -99,13 +131,13 @@ export default function DocUpdatesStripe({ project, mission = '', limit = 5, com
           onClick={() => setExpanded(false)}
           style={{ cursor: 'pointer', fontSize: 11, color: C.muted, padding: '0 4px' }}
         >
-          recent doc updates · click to collapse
+          recent doc + mission updates · click to collapse
         </div>
       )}
-      {updates.map((u) => (
+      {merged.map((u) => (
         <div
           key={u.id}
-          data-testid="doc-update-card"
+          data-testid={u.doc_type === 'MISSION' ? 'mission-created-card' : 'doc-update-card'}
           data-doc-type={u.doc_type}
           style={{
             border: `1px solid ${C.border}`,
@@ -119,8 +151,12 @@ export default function DocUpdatesStripe({ project, mission = '', limit = 5, com
           <span style={{ fontSize: 16, lineHeight: '18px' }}>{docIcon(u.doc_type)}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 600 }}>{u.doc_type} updated</span>
-              <span style={{ color: C.muted, fontSize: 11 }}>{u.mission ? `${u.project}/${u.mission}` : u.project}</span>
+              <span style={{ fontWeight: 600 }}>{docLabel(u.doc_type)}</span>
+              <span style={{ color: C.muted, fontSize: 11 }}>
+                {u.doc_type === 'MISSION'
+                  ? `${u.project}/${u.mission}${u.file_count ? ` · ${u.file_count} files` : ''}`
+                  : (u.mission ? `${u.project}/${u.mission}` : u.project)}
+              </span>
               <span style={{ color: C.muted, fontSize: 11, marginLeft: 'auto' }}>{relTime(u.timestamp)}</span>
             </div>
             <div style={{ color: C.muted, marginTop: 2, wordBreak: 'break-word' }}>{u.summary}</div>
