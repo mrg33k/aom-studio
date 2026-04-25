@@ -142,11 +142,14 @@ export default function useChatMessages({
 
     const handleInsert = (payload) => {
       const msg = payload.new
+      console.debug('[useChatMessages] agent-thread INSERT', { id: msg?.id, agent: msg?.agent, role: msg?.role, client_id: msg?.client_id, project: msg?.project })
       if (msg.client_id !== worldId) {
+        console.debug('[useChatMessages] agent-thread DROP: client_id mismatch', { expected: worldId, got: msg.client_id })
         console.warn('[R53] dropped cross-tenant message', { expected: worldId, got: msg.client_id, id: msg.id })
         return
       }
       if (msg.agent !== selectedAgent.slug) {
+        console.debug('[useChatMessages] agent-thread DROP: agent mismatch', { expected: selectedAgent.slug, got: msg.agent })
         if (typeof window !== 'undefined') {
           window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
           window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
@@ -154,12 +157,14 @@ export default function useChatMessages({
         return
       }
       if (msg.project) {
+        console.debug('[useChatMessages] agent-thread DROP: project-tagged message in agent thread', { project: msg.project })
         if (typeof window !== 'undefined') {
           window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
           window.__R53_BLEED_LOG__.push({ side: 'agent-thread-project', expected: selectedAgent.slug, got: msg.agent, project: msg.project, id: msg.id, ts: Date.now() })
         }
         return
       }
+      console.debug('[useChatMessages] agent-thread ACCEPT → setMessages', { id: msg.id, role: msg.role })
       setMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev
         const tempIdx = prev.findIndex(m =>
@@ -292,7 +297,9 @@ export default function useChatMessages({
 
     const handleInsert = (payload) => {
       const msg = payload.new
+      console.debug('[useChatMessages] project-thread INSERT', { id: msg?.id, agent: msg?.agent, role: msg?.role, client_id: msg?.client_id, project: msg?.project })
       if (msg.client_id !== projCid) {
+        console.debug('[useChatMessages] project-thread DROP: client_id mismatch', { expected: projCid, got: msg.client_id })
         console.warn('[R53] dropped cross-tenant project message', { expected: projCid, got: msg.client_id, id: msg.id })
         return
       }
@@ -300,12 +307,14 @@ export default function useChatMessages({
         msg.project === selectedProject.slug ||
         msg.agent === `project:${selectedProject.slug}`
       if (!isForThisProject) {
+        console.debug('[useChatMessages] project-thread DROP: not for this project', { expected: selectedProject.slug, gotProject: msg.project, gotAgent: msg.agent })
         if (typeof window !== 'undefined') {
           window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
           window.__R53_BLEED_LOG__.push({ side: 'project-thread', expected: selectedProject.slug, got: msg.project, agent: msg.agent, id: msg.id, ts: Date.now() })
         }
         return
       }
+      console.debug('[useChatMessages] project-thread ACCEPT → setMessages', { id: msg.id, role: msg.role })
       setMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev
         const tempIdx = prev.findIndex(m =>
@@ -502,6 +511,58 @@ export default function useChatMessages({
       }
     }
   }, [worldId, selectedAgent?.slug, selectedProject?.slug])
+
+  // ── Safety-net: refetch if a real user message has no response after 4s ──
+  // Covers the silent-SUBSCRIBED failure mode: Supabase Realtime shows the
+  // channel as SUBSCRIBED but stops delivering INSERT events. R74's reconnect
+  // logic only triggers on CHANNEL_ERROR / TIMED_OUT / CLOSED — it misses this
+  // case. Before R74, accidental parent re-renders would re-subscribe and heal
+  // it; after R74's narrowed deps that free ride is gone. This effect fires the
+  // same refetchHistory query the channel fires on SUBSCRIBED, restoring any
+  // row that landed in Supabase while the silent failure was active.
+  useEffect(() => {
+    if (!supabase || !worldId || !messages.length) return
+    // Find the last real (non-temp/non-bridge-stream/non-voice) message.
+    let lastRealIdx = -1
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const id = String(messages[i].id)
+      if (!id.startsWith('temp-') && !id.startsWith('bridge-stream-') && !id.startsWith('voice-')) {
+        lastRealIdx = i; break
+      }
+    }
+    if (lastRealIdx === -1) return
+    if (messages[lastRealIdx].role !== 'user') return
+    // Already have an assistant response after this user message — nothing to heal.
+    const hasResponse = messages.slice(lastRealIdx + 1).some(m => m.role === 'assistant')
+    if (hasResponse) return
+
+    const agentSlug = selectedAgent?.slug || null
+    const projSlug = selectedProject?.slug || null
+    const projIsShared = selectedProject?.isShared || false
+
+    const timer = setTimeout(async () => {
+      console.debug('[useChatMessages] safety-net refetch — no response within 4s', { agentSlug, projSlug, worldId })
+      try {
+        if (agentSlug) {
+          const { data, error } = await supabase
+            .from('messages').select('*')
+            .eq('client_id', worldId).eq('agent', agentSlug)
+            .or('project.is.null,project.eq.')
+            .order('timestamp', { ascending: false }).limit(200)
+          if (!error && Array.isArray(data)) setMessages(prev => mergeServerRows(prev, data.reverse()))
+        } else if (projSlug) {
+          const projCid = projIsShared ? `shared:${projSlug}` : worldId
+          const { data, error } = await supabase
+            .from('messages').select('*')
+            .eq('client_id', projCid)
+            .or(`project.eq.${projSlug},agent.eq.project:${projSlug}`)
+            .order('timestamp', { ascending: false }).limit(200)
+          if (!error && Array.isArray(data)) setMessages(prev => mergeServerRows(prev, data.reverse()))
+        }
+      } catch (_) { /* best-effort */ }
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [messages, selectedAgent?.slug, selectedProject?.slug, selectedProject?.isShared, worldId])
 
   // ── Auto-scroll to bottom on new messages ────────────────────────────────
   useEffect(() => {

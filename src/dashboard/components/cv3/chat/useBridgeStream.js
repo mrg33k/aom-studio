@@ -66,6 +66,9 @@ export default function useBridgeStream({ setMessages }) {
           } catch {}
         }
       }
+      // Stream ended without explicit done/fallback — clear streaming flag so
+      // the render gate doesn't permanently hide the placeholder.
+      setMessages(prev => prev.map(m => m.id === tempAsstId ? { ...m, _streaming: false } : m))
       setIsAgentTyping(false)
     }).catch(() => {
       setIsAgentTyping(false)
