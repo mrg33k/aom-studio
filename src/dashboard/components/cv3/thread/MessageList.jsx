@@ -1,3 +1,4 @@
+import React from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -308,9 +309,12 @@ export default function MessageList() {
         }
 
         const msgFlagged = needsVerificationIds?.has?.(msg.id)
+        const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+          ? stepsByMessageId[msg.id]
+          : null
         return (
+          <React.Fragment key={msg.id}>
           <div
-            key={msg.id}
             data-test-id="chat-message"
             data-message-id={msg.id}
             onContextMenu={(e) => openMsgMenu(e, msg)}
@@ -323,7 +327,7 @@ export default function MessageList() {
               justifyContent: isUser ? 'flex-end' : 'flex-start',
               alignItems: 'flex-end',
               gap: 10,
-              marginBottom: isUser ? 4 : 12,
+              marginBottom: userBubbleSteps ? 0 : (isUser ? 4 : 12),
             }}
           >
             {!isUser && (
@@ -510,21 +514,6 @@ export default function MessageList() {
               {isUser && msg.status && !String(msg.id).startsWith('temp-') && (
                 <MessageStatusLabel status={msg.status} replied={respondedSet.has(msg.id)} />
               )}
-              {/* R75-r65-e: live-thread step chain UNDER user bubble while
-                  the agent is working on the reply. Steps emitted via
-                  relay-emit-step.py with parent_message_id=<user_msg_id>
-                  show up here as in_progress ladder, then settle dim once
-                  the assistant reply lands. */}
-              {isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
-                <div style={{ marginTop: 8, marginRight: 0 }}>
-                  <StepThread
-                    steps={stepsByMessageId[msg.id]}
-                    settled={respondedSet.has(msg.id)}
-                    isError={false}
-                    agentColor={selectedAgent?.color || '#3B82F6'}
-                  />
-                </div>
-              )}
             </div>
             {isUser && (
               <div title={agSenderName || 'User'} style={{
@@ -541,6 +530,21 @@ export default function MessageList() {
               </div>
             )}
           </div>
+          {/* R75-r65-f: under-user chain rendered as a separate left-aligned
+              row beneath the message — full-width, indented to match the
+              agent-avatar column (38px) so it visually starts where an
+              assistant reply would. Settles dim once the agent has replied. */}
+          {userBubbleSteps && (
+            <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
+              <StepThread
+                steps={userBubbleSteps}
+                settled={respondedSet.has(msg.id)}
+                isError={false}
+                agentColor={selectedAgent?.color || '#3B82F6'}
+              />
+            </div>
+          )}
+          </React.Fragment>
         )
       })}
       {(sending || awaitingResponse || isAgentTyping) && (

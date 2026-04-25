@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -164,9 +164,15 @@ export default function ProjectMessageList() {
         const senderProfile = msg.user_id ? (msg.user_id === currentUser?.id ? { avatar_url: currentUser?.user_metadata?.avatar_url } : userProfiles[msg.user_id]) : null
         const senderAvatar = senderProfile?.avatar_url || null
         const msgFlagged = needsVerificationIds?.has?.(msg.id)
+        const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+          ? stepsByMessageId[msg.id]
+          : null
+        const userRepliedAfter = userBubbleSteps
+          ? arr.slice(idx + 1).some(m => m.role === 'assistant')
+          : false
         return (
+          <React.Fragment key={msg.id}>
           <div
-            key={msg.id}
             data-test-id="chat-message"
             data-message-id={msg.id}
             onContextMenu={(e) => openMsgMenu(e, msg)}
@@ -179,7 +185,7 @@ export default function ProjectMessageList() {
               justifyContent: isUser ? 'flex-end' : 'flex-start',
               alignItems: 'flex-end',
               gap: 10,
-              marginBottom: isUser ? 4 : 12,
+              marginBottom: userBubbleSteps ? 0 : (isUser ? 4 : 12),
             }}
           >
             {!isUser && (
@@ -268,23 +274,6 @@ export default function ProjectMessageList() {
                   <NeedsVerificationBadge testId={`msg-verify-badge-${msg.id}`} label="Needs QA" />
                 )}
               </div>
-              {/* R75-r65-e: live-thread step chain UNDER user bubble while
-                  the project agent is working. Steps emitted with
-                  parent_message_id=<user_msg_id>. Settled when an assistant
-                  message after this user msg exists in the thread. */}
-              {isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (() => {
-                const replied = arr.slice(idx + 1).some(m => m.role === 'assistant')
-                return (
-                  <div style={{ marginTop: 8 }}>
-                    <StepThread
-                      steps={stepsByMessageId[msg.id]}
-                      settled={replied}
-                      isError={false}
-                      agentColor={projColor}
-                    />
-                  </div>
-                )
-              })()}
             </div>
             {isUser && (
               <div title={senderName || 'User'} style={{
@@ -301,6 +290,21 @@ export default function ProjectMessageList() {
               </div>
             )}
           </div>
+          {/* R75-r65-f: under-user chain rendered as a separate left-aligned
+              row beneath the message — full-width, indented to match the
+              project-avatar column (38px). Settles dim once an assistant
+              message appears after this user msg in the thread. */}
+          {userBubbleSteps && (
+            <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
+              <StepThread
+                steps={userBubbleSteps}
+                settled={userRepliedAfter}
+                isError={false}
+                agentColor={projColor}
+              />
+            </div>
+          )}
+          </React.Fragment>
         )
       })}
       {sending && (
