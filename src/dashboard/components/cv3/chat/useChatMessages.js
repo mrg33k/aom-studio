@@ -636,5 +636,6 @@ export default function useChatMessages({
     messagesEndRef, messagesRef,
     userProfiles,
     stepsByMessageId,
+    refetchStepsRef,
   }
 }

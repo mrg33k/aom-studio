@@ -242,6 +242,35 @@ export default function ChatPanel() {
 
   const bridge = useBridgeStream({ setMessages: msgs.setMessages })
 
+  // Poll /api/dashboard/message-steps while waiting for a reply.
+  // RLS blocks realtime step delivery to the browser, so relay-emit-step.py
+  // events only arrive via explicit refetch. Without polling they all appear
+  // in one batch 300ms after the reply lands (the existing post-reply trigger).
+  // With 1s polling, steps emitted by relay-respond.py or relay-emit-step.py
+  // are picked up progressively while the user watches — fulfilling the R65
+  // "each state lands as it happens" design.
+  const _awaitingStepPollRef = useRef(false)
+  useEffect(() => {
+    const arr = msgs.messages
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const id = String(arr[i].id)
+      if (id.startsWith('temp-') || id.startsWith('bridge-stream-') || id.startsWith('voice-')) continue
+      _awaitingStepPollRef.current = arr[i].role === 'user'
+      return
+    }
+    _awaitingStepPollRef.current = false
+  }, [msgs.messages])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (_awaitingStepPollRef.current || bridge.isAgentTyping) {
+        msgs.refetchStepsRef?.current?.()
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // intentionally stable — reads state through refs
+
   const cmenu = useChatContextMenu({
     worldId,
     selectedProject,
