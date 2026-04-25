@@ -13,18 +13,28 @@
 // scripts/relay-respond.py + any rich steps emitted via relay-emit-step.py)
 // rendered above the assistant bubble in settled-dim form.
 //
+// c76e17f9: isFirstTurn=false skips "Read your message" (turn 1 already
+// established context) and starts from "Reading context", giving the chain
+// a continuation feel rather than resetting to the beginning each turn.
+//
 import { useEffect, useState } from 'react'
 
-const PHASES = [
+const PHASES_FIRST_TURN = [
   { offset: 0,    text: 'Read your message' },
   { offset: 1500, text: 'Reading context' },
   { offset: 3500, text: 'Composing reply' },
   { offset: 7500, text: 'Still working' },
 ]
 
+const PHASES_CONTINUING = [
+  { offset: 0,    text: 'Reading context' },
+  { offset: 2000, text: 'Composing reply' },
+  { offset: 6000, text: 'Still working' },
+]
+
 const TICK_MS = 250
 
-export default function useSyntheticChain(active) {
+export default function useSyntheticChain(active, isFirstTurn = true) {
   const [, forceTick] = useState(0)
   const [startTs, setStartTs] = useState(null)
 
@@ -40,6 +50,7 @@ export default function useSyntheticChain(active) {
 
   if (!active || !startTs) return []
 
+  const PHASES = isFirstTurn ? PHASES_FIRST_TURN : PHASES_CONTINUING
   const elapsed = Date.now() - startTs
   const steps = []
   for (let i = 0; i < PHASES.length; i++) {

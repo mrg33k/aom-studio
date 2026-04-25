@@ -41,7 +41,14 @@ export default function ProjectMessageList() {
   const { sending, setSending, isAgentTyping, setIsAgentTyping } = useChatSendCtx()
   // R75-r65-g: progressive synthetic chain while a reply is in flight.
   const inFlight = sending || isAgentTyping
-  const syntheticSteps = useSyntheticChain(inFlight)
+  // c76e17f9: turn-aware synthetic phases — skip "Read your message" on turn 2+.
+  const isFirstTurn = !messages.some(m =>
+    m.role === 'assistant' &&
+    !String(m.id).startsWith('temp-') &&
+    !String(m.id).startsWith('bridge-stream-') &&
+    !String(m.id).startsWith('voice-')
+  )
+  const syntheticSteps = useSyntheticChain(inFlight, isFirstTurn)
 
   // R73: stall CTA clears typing state so the indicator unmounts.
   const handleTypingStall = () => {
@@ -161,6 +168,9 @@ export default function ProjectMessageList() {
           return <div key={msg.id}>{taskCard}</div>
         }
         const isUser = msg.role === 'user'
+        // c76e17f9: detect turn boundary — user message that follows an agent reply.
+        const prevMsg = idx > 0 ? arr[idx - 1] : null
+        const isNewTurn = isUser && prevMsg?.role === 'assistant'
         const senderName = msg.user_name || (isUser ? displayName : null)
         const senderInitial = senderName ? senderName[0].toUpperCase() : 'U'
         const isOtherUser = isUser && msg.user_name && msg.user_name !== displayName
@@ -176,6 +186,14 @@ export default function ProjectMessageList() {
           : false
         return (
           <React.Fragment key={msg.id}>
+          {/* c76e17f9: inter-turn spine connector — parity with MessageList. */}
+          {isNewTurn && (
+            <div aria-hidden="true" style={{ paddingLeft: 28, display: 'flex', height: 18 }}>
+              <div style={{ width: 20, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.05)' }} />
+              </div>
+            </div>
+          )}
           <div
             data-test-id="chat-message"
             data-message-id={msg.id}
@@ -306,6 +324,14 @@ export default function ProjectMessageList() {
                 isError={false}
                 agentColor={projColor}
               />
+            </div>
+          )}
+          {/* c76e17f9: bridge from last user bubble to synthetic chain on turn 2+. */}
+          {isUser && !isFirstTurn && inFlight && idx === arr.length - 1 && !userBubbleSteps && (
+            <div aria-hidden="true" style={{ paddingLeft: 28, display: 'flex', height: 12 }}>
+              <div style={{ width: 20, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.06)' }} />
+              </div>
             </div>
           )}
           </React.Fragment>

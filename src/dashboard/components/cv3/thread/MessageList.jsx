@@ -51,7 +51,15 @@ export default function MessageList() {
   const { respondedSet, awaitingResponse } = useThreadMessageStatus(messages)
   // R75-r65-g: progressive synthetic chain while a reply is in flight.
   const inFlight = sending || awaitingResponse || isAgentTyping
-  const syntheticSteps = useSyntheticChain(inFlight)
+  // c76e17f9: track whether this is the first turn so the synthetic chain can
+  // skip "Read your message" on turn 2+ (context already established).
+  const isFirstTurn = !messages.some(m =>
+    m.role === 'assistant' &&
+    !String(m.id).startsWith('temp-') &&
+    !String(m.id).startsWith('bridge-stream-') &&
+    !String(m.id).startsWith('voice-')
+  )
+  const syntheticSteps = useSyntheticChain(inFlight, isFirstTurn)
 
   return (
     <>
@@ -81,8 +89,11 @@ export default function MessageList() {
         </div>
       )}
 
-      {messages.filter(m => !(m.source === 'bridge-stream' && m._streaming && !m.text)).map(msg => {
+      {messages.filter(m => !(m.source === 'bridge-stream' && m._streaming && !m.text)).map((msg, idx, arr) => {
         const isUser = msg.role === 'user'
+        // c76e17f9: detect turn boundary — user message that follows an agent reply.
+        const prevMsg = idx > 0 ? arr[idx - 1] : null
+        const isNewTurn = isUser && prevMsg?.role === 'assistant'
         const agSenderName = msg.user_name || (isUser ? displayName : null)
         const agSenderInitial = agSenderName ? agSenderName[0].toUpperCase() : 'U'
         const agIsOtherUser = isUser && msg.user_name && msg.user_name !== displayName
@@ -318,6 +329,16 @@ export default function MessageList() {
           : null
         return (
           <React.Fragment key={msg.id}>
+          {/* c76e17f9: inter-turn spine — thin connector in the step-dot column
+              between a settled agent reply and the next user message. Gives the
+              impression of one continuous thread rather than isolated per-turn chains. */}
+          {isNewTurn && (
+            <div aria-hidden="true" style={{ paddingLeft: 28, display: 'flex', height: 18 }}>
+              <div style={{ width: 20, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.05)' }} />
+              </div>
+            </div>
+          )}
           <div
             data-test-id="chat-message"
             data-message-id={msg.id}
@@ -546,6 +567,16 @@ export default function MessageList() {
                 isError={false}
                 agentColor={selectedAgent?.color || '#3B82F6'}
               />
+            </div>
+          )}
+          {/* c76e17f9: bridge from user bubble down to the synthetic chain that
+              floats at the bottom on turn 2+. Only shown when in-flight with
+              no real steps yet, so the active chain feels attached to the bubble. */}
+          {isUser && !isFirstTurn && inFlight && idx === arr.length - 1 && !userBubbleSteps && (
+            <div aria-hidden="true" style={{ paddingLeft: 28, display: 'flex', height: 12 }}>
+              <div style={{ width: 20, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.06)' }} />
+              </div>
             </div>
           )}
           </React.Fragment>
