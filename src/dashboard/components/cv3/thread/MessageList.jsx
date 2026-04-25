@@ -510,6 +510,21 @@ export default function MessageList() {
               {isUser && msg.status && !String(msg.id).startsWith('temp-') && (
                 <MessageStatusLabel status={msg.status} replied={respondedSet.has(msg.id)} />
               )}
+              {/* R75-r65-e: live-thread step chain UNDER user bubble while
+                  the agent is working on the reply. Steps emitted via
+                  relay-emit-step.py with parent_message_id=<user_msg_id>
+                  show up here as in_progress ladder, then settle dim once
+                  the assistant reply lands. */}
+              {isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
+                <div style={{ marginTop: 8, marginRight: 0 }}>
+                  <StepThread
+                    steps={stepsByMessageId[msg.id]}
+                    settled={respondedSet.has(msg.id)}
+                    isError={false}
+                    agentColor={selectedAgent?.color || '#3B82F6'}
+                  />
+                </div>
+              )}
             </div>
             {isUser && (
               <div title={agSenderName || 'User'} style={{

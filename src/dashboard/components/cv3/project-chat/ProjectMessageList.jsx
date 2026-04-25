@@ -143,10 +143,12 @@ export default function ProjectMessageList() {
             : `Show earlier messages (${preKickoff.length})`}
         </button>
       )}
-      {(hasCutoff
-        ? (earlierExpanded ? [...preKickoff, ...postKickoff] : postKickoff)
-        : messages
-      ).map(msg => {
+      {(() => {
+        const renderedMessages = hasCutoff
+          ? (earlierExpanded ? [...preKickoff, ...postKickoff] : postKickoff)
+          : messages
+        return renderedMessages
+      })().map((msg, idx, arr) => {
         // Task status cards: render task-completion / task-runner / checkpoint
         // messages as the CV3 card (Steffen's design) instead of a plain bubble.
         // Mirrors ThreadView so project-room crossposts also get the card.
@@ -266,6 +268,23 @@ export default function ProjectMessageList() {
                   <NeedsVerificationBadge testId={`msg-verify-badge-${msg.id}`} label="Needs QA" />
                 )}
               </div>
+              {/* R75-r65-e: live-thread step chain UNDER user bubble while
+                  the project agent is working. Steps emitted with
+                  parent_message_id=<user_msg_id>. Settled when an assistant
+                  message after this user msg exists in the thread. */}
+              {isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (() => {
+                const replied = arr.slice(idx + 1).some(m => m.role === 'assistant')
+                return (
+                  <div style={{ marginTop: 8 }}>
+                    <StepThread
+                      steps={stepsByMessageId[msg.id]}
+                      settled={replied}
+                      isError={false}
+                      agentColor={projColor}
+                    />
+                  </div>
+                )
+              })()}
             </div>
             {isUser && (
               <div title={senderName || 'User'} style={{
