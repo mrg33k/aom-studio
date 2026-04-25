@@ -33,7 +33,7 @@ const AGENT_CATEGORIES = {
   steffen: ['brand'],
   tony: ['social'],
   jacob: ['outreach'],
-  alex: ['biz'],
+  alex: ['biz', 'research'],
   steve: ['ops'],
   elon: ['sys', 'ops', 'collab'],
   // Default: any agent can see the cross-cutting all-agents skills.

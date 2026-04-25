@@ -26,6 +26,7 @@ const CAT_COLORS = {
   Collab: '#22D3EE',
   Utility: '#A3A3A3',
   Resolve: '#E879F9',
+  Research: '#34D399',
 }
 
 /**

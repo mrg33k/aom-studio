@@ -883,6 +883,76 @@
       "description": "Queue a task for the Mac when running away",
       "category": "collab",
       "categoryLabel": "Collaboration / Communication"
+    },
+    {
+      "name": "/research-deeply",
+      "alias": null,
+      "description": "Reddit + forums + web deep dive on any topic",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-deeply-webpage",
+      "alias": null,
+      "description": "Deep dive + publish brief to aheadofmarket.com/briefs/<slug>",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-youtube",
+      "alias": null,
+      "description": "Find 5 best YouTube videos, pull transcripts, synthesize",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-add",
+      "alias": null,
+      "description": "Research + inject brief into one or all agents' knowledge folders",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-competitor",
+      "alias": null,
+      "description": "Single competitor: site + social + press + pricing + positioning",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-market",
+      "alias": null,
+      "description": "Market sizing, trends, key players, timing. TAM/SAM style.",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-person",
+      "alias": null,
+      "description": "Profile a prospect or founder for outreach or meeting prep",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-pattern",
+      "alias": null,
+      "description": "Pull 10 examples of best-in-class, extract shared pattern",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-x-community",
+      "alias": null,
+      "description": "X/Twitter community map: influential voices + current conversation",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/research-podcast",
+      "alias": null,
+      "description": "Find best podcast episodes, pull transcripts, synthesize",
+      "category": "research",
+      "categoryLabel": "Research / Intelligence"
     }
   ]
 }

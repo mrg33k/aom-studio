@@ -137,6 +137,18 @@ const SKILLS = [
   { name: 'B-Roll Fill', trigger: '/broll-fill', description: 'Fill visual gaps with contextual b-roll', category: 'Resolve' },
   { name: 'Sync Reader', trigger: '/sync-reader', description: 'Bulk read all CamAudioSync offsets', category: 'Resolve' },
   { name: 'Story Chain', trigger: '/story-chain', description: 'Build cohesive VO chain from interview transcripts', category: 'Resolve' },
+
+  // Research / Intelligence
+  { name: 'Research Deeply', trigger: '/research-deeply', description: 'Reddit + forums + web deep dive on any topic', category: 'Research' },
+  { name: 'Research + Publish', trigger: '/research-deeply-webpage', description: 'Deep dive + publish brief to aheadofmarket.com', category: 'Research' },
+  { name: 'Research YouTube', trigger: '/research-youtube', description: 'Find 5 best YouTube videos, pull transcripts, synthesize', category: 'Research' },
+  { name: 'Research + Add to Agent', trigger: '/research-add', description: 'Research + inject brief into one or all agents', category: 'Research' },
+  { name: 'Research Competitor', trigger: '/research-competitor', description: 'Single competitor: site + social + press + pricing', category: 'Research' },
+  { name: 'Research Market', trigger: '/research-market', description: 'Market sizing, trends, key players. TAM/SAM style.', category: 'Research' },
+  { name: 'Research Person', trigger: '/research-person', description: 'Profile a prospect or founder for outreach or meeting prep', category: 'Research' },
+  { name: 'Research Pattern', trigger: '/research-pattern', description: 'Pull 10 best-in-class examples, extract shared pattern', category: 'Research' },
+  { name: 'Research X Community', trigger: '/research-x-community', description: 'X/Twitter: influential voices + current conversation', category: 'Research' },
+  { name: 'Research Podcast', trigger: '/research-podcast', description: 'Find best podcast episodes, pull transcripts, synthesize', category: 'Research' },
 ]
 
 export default SKILLS
