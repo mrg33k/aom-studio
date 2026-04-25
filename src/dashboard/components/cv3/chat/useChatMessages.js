@@ -88,6 +88,9 @@ export default function useChatMessages({
   // one column). Steps are grouped by parent_message_id so MessageList
   // can render a StepThread under the matching assistant bubble.
   const [stepsByMessageId, setStepsByMessageId] = useState({})
+  // Ref to hold the current refetchSteps fn so other effects can trigger it
+  // without depending on the steps-subscription closure's scope.
+  const refetchStepsRef = useRef(null)
 
   // ── Load message history for an agent thread ──────────────────────────────
   // R63: exclude messages with a project set. Per-project observations
@@ -470,6 +473,7 @@ export default function useChatMessages({
         if (active) setStepsByMessageId(next)
       } catch (_) { /* best-effort */ }
     }
+    refetchStepsRef.current = refetchSteps
 
     const handleInsert = (payload) => {
       const row = payload?.new
@@ -585,6 +589,25 @@ export default function useChatMessages({
     }, 4000)
     return () => clearTimeout(timer)
   }, [messages, selectedAgent?.slug, selectedProject?.slug, selectedProject?.isShared, worldId])
+
+  // ── Re-fetch steps when a new settled assistant message arrives without steps ─
+  // events RLS blocks realtime postgres_changes delivery to the browser, so the
+  // step INSERT in handleInsert (above) never fires for new replies. refetchSteps
+  // runs once on subscribe (historical window) but misses new replies written
+  // while the page is open. This effect bridges that gap: when a new real
+  // assistant message lands with no steps yet, schedule a refetch 300ms later
+  // (giving the DB write a moment to settle). Cancels if steps already populated.
+  useEffect(() => {
+    if (!messages.length || !refetchStepsRef.current) return
+    const lastReal = [...messages].reverse().find(m => {
+      const id = String(m.id)
+      return !id.startsWith('temp-') && !id.startsWith('bridge-stream-') && !id.startsWith('voice-')
+    })
+    if (!lastReal || lastReal.role !== 'assistant') return
+    if (stepsByMessageId[lastReal.id] && stepsByMessageId[lastReal.id].length > 0) return
+    const timer = setTimeout(() => { refetchStepsRef.current?.() }, 300)
+    return () => clearTimeout(timer)
+  }, [messages, stepsByMessageId])
 
   // ── Auto-scroll to bottom on new messages ────────────────────────────────
   useEffect(() => {
