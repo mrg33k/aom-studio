@@ -74,7 +74,7 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const { id, status } = req.body || {}
     if (!id || !status) return res.status(400).json({ error: 'id and status required' })
-    const allowed = ['sent', 'delivered', 'read']
+    const allowed = ['sent', 'delivered', 'read', 'composing']
     if (!allowed.includes(status)) return res.status(400).json({ error: 'invalid status' })
 
     const url = `${SUPABASE_URL}/rest/v1/messages?id=eq.${encodeURIComponent(id)}`

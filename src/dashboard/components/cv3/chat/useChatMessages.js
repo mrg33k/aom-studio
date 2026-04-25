@@ -206,6 +206,12 @@ export default function useChatMessages({
       })
     }
 
+    const handleUpdate = (payload) => {
+      const msg = payload.new
+      if (!msg?.id) return
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, ...msg } : m))
+    }
+
     const subscribe = () => {
       if (!active) return
       try { if (channel) supabase.removeChannel(channel) } catch (_) {}
@@ -215,6 +221,11 @@ export default function useChatMessages({
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
           handleInsert,
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+          handleUpdate,
         )
         .subscribe((status) => {
           if (!active) return
@@ -356,6 +367,12 @@ export default function useChatMessages({
       })
     }
 
+    const handleUpdate = (payload) => {
+      const msg = payload.new
+      if (!msg?.id) return
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, ...msg } : m))
+    }
+
     const subscribe = () => {
       if (!active) return
       try { if (channel) supabase.removeChannel(channel) } catch (_) {}
@@ -365,6 +382,11 @@ export default function useChatMessages({
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
           handleInsert,
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
+          handleUpdate,
         )
         .subscribe((status) => {
           if (!active) return

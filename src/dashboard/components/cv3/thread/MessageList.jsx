@@ -6,6 +6,7 @@ import StepThread from '../shared/StepThread.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
+import MessageStatusLabel from './MessageStatusLabel.jsx'
 import useThreadMsgMenu from './useThreadMsgMenu.js'
 import useThreadMessageStatus from './useThreadMessageStatus.js'
 import {
@@ -506,6 +507,9 @@ export default function MessageList() {
                   </span>
                 )}
               </div>
+              {isUser && msg.status && !String(msg.id).startsWith('temp-') && !respondedSet.has(msg.id) && (
+                <MessageStatusLabel status={msg.status} />
+              )}
             </div>
             {isUser && (
               <div title={agSenderName || 'User'} style={{
