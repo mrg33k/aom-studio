@@ -507,8 +507,8 @@ export default function MessageList() {
                   </span>
                 )}
               </div>
-              {isUser && msg.status && !String(msg.id).startsWith('temp-') && !respondedSet.has(msg.id) && (
-                <MessageStatusLabel status={msg.status} />
+              {isUser && msg.status && !String(msg.id).startsWith('temp-') && (
+                <MessageStatusLabel status={msg.status} replied={respondedSet.has(msg.id)} />
               )}
             </div>
             {isUser && (

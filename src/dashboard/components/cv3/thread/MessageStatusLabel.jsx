@@ -1,21 +1,78 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // iMessage-style status label under user message bubbles.
-// 'composing': shows "Read" for 800ms then transitions to animated dots.
-// 'read': shows "Read" persistently.
-// Renders nothing when already responded (caller guards with respondedSet).
-export default function MessageStatusLabel({ status }) {
+// Cascades: Read (≥300ms) → Composing animated dots → hidden.
+//
+// `replied` decouples visibility from the parent's respondedSet guard so that
+// even when the agent reply lands in the same React batch as the status=composing
+// UPDATE, the label still plays the full ladder instead of being silently skipped.
+export default function MessageStatusLabel({ status, replied }) {
   const [showDots, setShowDots] = useState(false)
+  const [visible, setVisible] = useState(true)
+  const phaseRef = useRef('read') // 'read' | 'composing' | 'gone'
+  const timerRef = useRef(null)
+  const composingTimerRef = useRef(null)
 
+  // Read → Composing transition when status becomes 'composing'
   useEffect(() => {
+    clearTimeout(composingTimerRef.current)
     if (status === 'composing') {
       setShowDots(false)
-      const t = setTimeout(() => setShowDots(true), 800)
-      return () => clearTimeout(t)
+      phaseRef.current = 'read'
+      composingTimerRef.current = setTimeout(() => {
+        setShowDots(true)
+        phaseRef.current = 'composing'
+      }, 800)
+    } else {
+      setShowDots(false)
+      phaseRef.current = 'read'
     }
-    setShowDots(false)
   }, [status])
 
+  // When reply arrives: enforce minimum dwell so the ladder is always visible
+  useEffect(() => {
+    if (!replied) {
+      clearTimeout(timerRef.current)
+      setVisible(true)
+      return
+    }
+    // Reply has landed — cancel any pending composing transition and schedule hide
+    clearTimeout(composingTimerRef.current)
+    clearTimeout(timerRef.current)
+
+    const phase = phaseRef.current
+    if (phase === 'composing') {
+      // Already showing Composing dots — hold 300ms then hide
+      timerRef.current = setTimeout(() => {
+        setVisible(false)
+        phaseRef.current = 'gone'
+      }, 300)
+    } else if (status === 'composing') {
+      // Still in Read phase of a composing sequence — flash Read 300ms,
+      // then Composing 300ms, then hide so the user sees the full ladder
+      timerRef.current = setTimeout(() => {
+        setShowDots(true)
+        phaseRef.current = 'composing'
+        timerRef.current = setTimeout(() => {
+          setVisible(false)
+          phaseRef.current = 'gone'
+        }, 300)
+      }, 300)
+    } else {
+      // status='read' (persistent) — show 300ms then hide
+      timerRef.current = setTimeout(() => {
+        setVisible(false)
+        phaseRef.current = 'gone'
+      }, 300)
+    }
+  }, [replied]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => () => {
+    clearTimeout(timerRef.current)
+    clearTimeout(composingTimerRef.current)
+  }, [])
+
+  if (!visible) return null
   if (status !== 'read' && status !== 'composing') return null
 
   const label = (
@@ -28,7 +85,7 @@ export default function MessageStatusLabel({ status }) {
     </span>
   )
 
-  if (status === 'read' || !showDots) {
+  if (!showDots) {
     return (
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
         {label}
