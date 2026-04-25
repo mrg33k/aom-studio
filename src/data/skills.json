@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-18T00:13:59.856Z",
+  "generatedAt": "2026-04-25T05:26:45.190Z",
   "source": ".claude/skills/INDEX.md",
   "skills": [
     {
@@ -171,9 +171,37 @@
       "categoryLabel": "Video / Content Production"
     },
     {
+      "name": "/video-template",
+      "alias": null,
+      "description": "Named video templates A/B/C/D/E/F/G/H/I/J/K (continues A1, B1… after Z). Brand-neutral forms; agent adapts each to current brand at call time.",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
       "name": "/video-workspace-init",
       "alias": null,
       "description": "Scaffold a shoot workspace: source/bins/sequences/renders + BRIEF.md + PHONEBOOK.md",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-pipeline",
+      "alias": null,
+      "description": "Umbrella router for video work: asks a few questions, picks the right sub-skill chain, runs it",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-stabilize",
+      "alias": "/stabilize",
+      "description": "Stabilize a clip: probes embedded gyro (Gyroflow) first, falls back to ffmpeg deshake",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/footage-tagging",
+      "alias": null,
+      "description": "Browser-based tool for tagging footage clips (rating, room, fixes, edit purpose) before any cut",
       "category": "video",
       "categoryLabel": "Video / Content Production"
     },
@@ -787,6 +815,20 @@
       "categoryLabel": "System / Infrastructure"
     },
     {
+      "name": "/sys-organize-as-mission",
+      "alias": "/organize-as-mission",
+      "description": "Scope a new initiative inside a project into its own mission folder (Vision/Research/Build stack). Handles scaffold + moves + events emission",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/clean-file",
+      "alias": null,
+      "description": "Compact a large living markdown doc into a phonebook-style lobby index + archive (sibling -archive.md)",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
       "name": "/session-start",
       "alias": null,
       "description": "Beginning of a new work session",
@@ -832,6 +874,27 @@
       "name": "/session-wash-face",
       "alias": "/wash-your-face",
       "description": "Fresh start within a session",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/007",
+      "alias": null,
+      "description": "License to kill: flip terminal from front-desk into direct-work mode for this session",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/007-DAD",
+      "alias": null,
+      "description": "Die another day: auto-resume in-flight 007 work after /compact, no greeting needed",
+      "category": "session",
+      "categoryLabel": "Session Management"
+    },
+    {
+      "name": "/007-out",
+      "alias": null,
+      "description": "Close out a 007 session cleanly: ship notes + tape + next-session prompt",
       "category": "session",
       "categoryLabel": "Session Management"
     },
@@ -886,71 +949,71 @@
     },
     {
       "name": "/research-deeply",
-      "alias": null,
-      "description": "Reddit + forums + web deep dive on any topic",
+      "alias": "/research-deeply <topic>",
+      "description": "Reddit + forums + web deep dive. Find the communities that worship the topic.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-deeply-webpage",
-      "alias": null,
-      "description": "Deep dive + publish brief to aheadofmarket.com/briefs/<slug>",
+      "alias": "/research-deeply-webpage <topic>",
+      "description": "Same as research-deeply + publish to aheadofmarket.com/briefs/<slug>.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-youtube",
-      "alias": null,
-      "description": "Find 5 best YouTube videos, pull transcripts, synthesize",
+      "alias": "/research-youtube <topic>",
+      "description": "Find 5 best YouTube videos, pull transcripts, synthesize.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-add",
-      "alias": null,
-      "description": "Research + inject brief into one or all agents' knowledge folders",
+      "alias": "/research-add <topic> add=<agent\\",
+      "description": "all>` | Research + inject brief into one or all agents' knowledge folders.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-competitor",
-      "alias": null,
-      "description": "Single competitor: site + social + press + pricing + positioning",
+      "alias": "/research-competitor <company>",
+      "description": "Single competitor: site + social + press + pricing + positioning.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-market",
-      "alias": null,
+      "alias": "/research-market <category>",
       "description": "Market sizing, trends, key players, timing. TAM/SAM style.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-person",
-      "alias": null,
-      "description": "Profile a prospect or founder for outreach or meeting prep",
+      "alias": "/research-person \"<name>\"",
+      "description": "Profile a prospect or founder for outreach or meeting prep.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-pattern",
-      "alias": null,
-      "description": "Pull 10 examples of best-in-class, extract shared pattern",
+      "alias": "/research-pattern \"<how do best X do Y>\"",
+      "description": "Pull 10 examples, extract shared pattern.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-x-community",
-      "alias": null,
-      "description": "X/Twitter community map: influential voices + current conversation",
+      "alias": "/research-x-community <niche>",
+      "description": "X/Twitter community map: influential voices + current conversation.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     },
     {
       "name": "/research-podcast",
-      "alias": null,
-      "description": "Find best podcast episodes, pull transcripts, synthesize",
+      "alias": "/research-podcast <topic>",
+      "description": "Find best podcast episodes, pull transcripts, synthesize.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
     }

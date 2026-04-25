@@ -25,6 +25,10 @@ const SKILLS = [
   { name: 'Transcript Tools', trigger: '/video-transcript-tools', description: 'Work with transcript JSON: jq patterns, word-boundary verification', category: 'Video' },
   { name: 'Proxy Create', trigger: '/video-proxy-create', description: 'Create H.264 proxies from heavy source (MXF/BRAW/R3D), multi-channel audio', category: 'Video' },
   { name: 'Ad Build', trigger: '/video-ad-build', description: 'Short-form ad build: Hook/Body/CTA, one angle per ad, brand isolation', category: 'Video' },
+  { name: 'Video Template', trigger: '/video-template', description: 'Named video templates A-Z. Brand-neutral forms adapted at call time.', category: 'Video' },
+  { name: 'Video Pipeline', trigger: '/video-pipeline', description: 'Umbrella router for video work: picks the right sub-skill chain', category: 'Video' },
+  { name: 'Stabilize', trigger: '/video-stabilize', description: 'Stabilize a clip: Gyroflow gyro first, falls back to ffmpeg deshake', category: 'Video' },
+  { name: 'Footage Tagging', trigger: '/footage-tagging', description: 'Tag footage clips (rating, room, fixes, edit purpose) before any cut', category: 'Video' },
 
   // Audio
   { name: 'ElevenLabs Voice', trigger: '/elevenlabs-voice', description: 'Generate voiceover from script', category: 'Audio' },
@@ -104,6 +108,8 @@ const SKILLS = [
   { name: 'Little Engine', trigger: '/little-engine', description: 'Run 3 parallel agents on top queue tasks', category: 'System' },
   { name: 'Onboard Agent', trigger: '/onboard-agent', description: 'Create a new standard agent with full setup', category: 'System' },
   { name: 'Onboard Super Agent', trigger: '/onboard-super-agent', description: 'Create a new super agent with bridge and chat', category: 'System' },
+  { name: 'Organize as Mission', trigger: '/sys-organize-as-mission', description: 'Scope a new initiative into its own mission folder (Vision/Research/Build)', category: 'System' },
+  { name: 'Clean File', trigger: '/clean-file', description: 'Compact a large markdown doc into lobby index + archive', category: 'System' },
 
   // Session Management
   { name: 'Session Start', trigger: '/session-start', description: 'Beginning of a new work session', category: 'Session' },
@@ -112,6 +118,9 @@ const SKILLS = [
   { name: 'Hold That Thought', trigger: '/hold-that-thought', description: 'Capture an idea to revisit later', category: 'Session' },
   { name: 'Go Back in Time', trigger: '/go-back-in-time', description: 'Recover prior state or decision context', category: 'Session' },
   { name: 'Reprompt', trigger: '/reprompt', description: 'Reframe a stuck prompt for better results', category: 'Session' },
+  { name: '007', trigger: '/007', description: 'License to kill: flip terminal into direct-work mode', category: 'Session' },
+  { name: '007-DAD', trigger: '/007-DAD', description: 'Die another day: auto-resume in-flight 007 work after /compact', category: 'Session' },
+  { name: '007 Out', trigger: '/007-out', description: 'Close out a 007 session: ship notes + tape + next-session prompt', category: 'Session' },
 
   // Collaboration / Communication
   { name: 'Council', trigger: '/council', description: 'Multi-agent deliberation on a hard decision', category: 'Collab' },
