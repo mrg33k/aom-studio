@@ -10,7 +10,7 @@
 //   BRIDGE_ENABLED     -- Kill switch (default: true)
 
 import crypto from 'crypto'
-import { detectProjectFromText, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { detectProjectFromText, detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -44,11 +44,21 @@ async function writeFallbackToSupabase(body) {
   // through the browser. See api/_lib/crosspost.js.
   let resolvedProject = (body.project && body.project.trim()) ? body.project.trim() : null
   if (!resolvedProject) {
-    resolvedProject = await detectProjectFromText({
-      text: messageText,
-      supabaseUrl: SUPABASE_URL,
-      headers: supabaseHeaders(),
-    })
+    // Gate fuzzy project detection on project-scoped rooms. For agent 1:1 rooms
+    // (room = agent slug), only honour explicit [project:slug] tags — fuzzy name
+    // matching against message text causes messages that mention a project name to
+    // be silently tagged and then dropped from the agent thread on reload (the
+    // agent-thread query excludes rows with a non-empty project field).
+    const room = (body.room || '').trim()
+    if (room.startsWith('project:')) {
+      resolvedProject = await detectProjectFromText({
+        text: messageText,
+        supabaseUrl: SUPABASE_URL,
+        headers: supabaseHeaders(),
+      })
+    } else {
+      resolvedProject = detectProjectTag(messageText)
+    }
   }
 
   const payload = {
