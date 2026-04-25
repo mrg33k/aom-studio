@@ -4,6 +4,7 @@ import { LinkifyText, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
 import StepThread from '../shared/StepThread.jsx'
+import useSyntheticChain from '../shared/useSyntheticChain.js'
 import DocUpdatesStripe from '../shared/DocUpdateCard.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
@@ -38,6 +39,9 @@ export default function ProjectMessageList() {
   } = useChatCore()
   const { messages, loadingMsgs, messagesEndRef, userProfiles, stepsByMessageId = {} } = useChatMessagesCtx()
   const { sending, setSending, isAgentTyping, setIsAgentTyping } = useChatSendCtx()
+  // R75-r65-g: progressive synthetic chain while a reply is in flight.
+  const inFlight = sending || isAgentTyping
+  const syntheticSteps = useSyntheticChain(inFlight)
 
   // R73: stall CTA clears typing state so the indicator unmounts.
   const handleTypingStall = () => {
@@ -307,11 +311,11 @@ export default function ProjectMessageList() {
           </React.Fragment>
         )
       })}
-      {sending && (
+      {inFlight && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
-          {/* R75-r65: live-thread chain (same pattern as 1:1 MessageList). */}
+          {/* R75-r65-g: progressive synthetic chain (parity with 1:1). */}
           <StepThread
-            steps={[{
+            steps={syntheticSteps.length > 0 ? syntheticSteps : [{
               id: 'synthetic-thinking',
               step_index: 0,
               text: `${selectedProject?.name || 'Project'} agent is thinking…`,

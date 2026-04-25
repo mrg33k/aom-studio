@@ -4,6 +4,7 @@ import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
 import StepThread from '../shared/StepThread.jsx'
+import useSyntheticChain from '../shared/useSyntheticChain.js'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
@@ -48,6 +49,9 @@ export default function MessageList() {
 
   const { msgMenu, setMsgMenu, openMsgMenu, startLongPress, cancelLongPress } = useThreadMsgMenu()
   const { respondedSet, awaitingResponse } = useThreadMessageStatus(messages)
+  // R75-r65-g: progressive synthetic chain while a reply is in flight.
+  const inFlight = sending || awaitingResponse || isAgentTyping
+  const syntheticSteps = useSyntheticChain(inFlight)
 
   return (
     <>
@@ -547,17 +551,17 @@ export default function MessageList() {
           </React.Fragment>
         )
       })}
-      {(sending || awaitingResponse || isAgentTyping) && (
+      {inFlight && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
-          {/* R75-r65: live-thread chain. The first slice shows a synthetic
-              step while the reply is in flight so the user sees the R65
-              design immediately — the chain + pulsing dot is the feel,
-              replacing the bare "typing…" experience. When worker emission
-              lands richer steps (via relay-emit-step.py), they'll render
-              in this slot too. TypingIndicatorV2 stays below for the R73
-              fail-loud stall CTA at 45s. */}
+          {/* R75-r65-g: progressive synthetic chain (Read → Reading
+              context → Composing → Still working). useSyntheticChain
+              evolves the steps array on a 250ms tick while the reply is
+              in flight. When the real reply lands the chain settles dim
+              and the baseline-steps chain (relay-respond.py) takes over
+              above the assistant bubble. TypingIndicatorV2 stays below
+              for the R73 stall-CTA at 45s. */}
           <StepThread
-            steps={[{
+            steps={syntheticSteps.length > 0 ? syntheticSteps : [{
               id: 'synthetic-thinking',
               step_index: 0,
               text: `${selectedAgent?.name || 'Agent'} is thinking…`,
