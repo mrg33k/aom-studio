@@ -6,6 +6,10 @@
 //   Body: { agents: [{ slug, display_order }], client_id? }
 //   Updates display_order on each matching row in the agents table.
 //   Response: { ok: true, updated: N }
+//
+// Caller must pass Authorization: Bearer <jwt>; verifyTenant gates by tenant.
+
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,7 +51,7 @@ async function supabasePatch(slug, clientId, body) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -57,7 +61,13 @@ export default async function handler(req, res) {
 
   // ── GET: return current agent order ─────────────────────────────────────────
   if (req.method === 'GET') {
-    const clientId = (req.query.client || 'aom').toLowerCase();
+    let clientId;
+    try {
+      ({ tenant: clientId } = await verifyTenant(req.query.client || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
     try {
       const agents = await supabaseGet(
         `client_id=eq.${encodeURIComponent(clientId)}&order=display_order.asc,slug.asc&select=slug,display_order`
@@ -71,10 +81,18 @@ export default async function handler(req, res) {
 
   // ── POST: update display_order for a reordered list ─────────────────────────
   if (req.method === 'POST') {
-    const { agents, client_id = 'aom' } = req.body || {};
+    const { agents, client_id } = req.body || {};
 
     if (!Array.isArray(agents) || agents.length === 0) {
       return res.status(400).json({ error: 'agents array required' });
+    }
+
+    let tenant;
+    try {
+      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
     }
 
     // Validate each entry has slug + display_order
@@ -88,7 +106,7 @@ export default async function handler(req, res) {
       let updated = 0;
       // Update sequentially to avoid rate-limit issues on large rosters
       for (const a of agents) {
-        await supabasePatch(a.slug, client_id, { display_order: a.display_order });
+        await supabasePatch(a.slug, tenant, { display_order: a.display_order });
         updated++;
       }
       return res.status(200).json({ ok: true, updated });

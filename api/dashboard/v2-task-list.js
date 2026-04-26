@@ -1,5 +1,8 @@
 // GET /api/dashboard/v2-task-list
 // Lists v2 tasks from Supabase with optional status filter + pagination.
+// Caller must pass Authorization: Bearer <jwt>; verifyTenant gates by tenant.
+
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -40,7 +43,7 @@ function clampInt(value, fallback, min, max) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
@@ -50,9 +53,16 @@ export default async function handler(req, res) {
   }
 
   const statusParam = typeof req.query.status === 'string' ? req.query.status : '';
-  const clientId = (typeof req.query.client_id === 'string' && req.query.client_id.trim())
+  const requested = (typeof req.query.client_id === 'string' && req.query.client_id.trim())
     ? req.query.client_id.trim()
     : DEFAULT_CLIENT_ID;
+  let clientId;
+  try {
+    ({ tenant: clientId } = await verifyTenant(requested, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
   const limit = clampInt(req.query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
   const offset = clampInt(req.query.offset, 0, 0, Number.MAX_SAFE_INTEGER);
 

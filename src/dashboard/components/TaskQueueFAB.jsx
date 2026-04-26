@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { getClientId } from '../lib/clientConfig.js'
+import { authFetch } from '../lib/authFetch.js'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -21,7 +22,7 @@ const API_BASE = IS_LOCAL ? '' : ''
 
 async function fetchTasks() {
   const clientId = getClientId()
-  const resp = await fetch(`${API_BASE}/api/dashboard/v2-task-list?client_id=${encodeURIComponent(clientId)}&limit=50`)
+  const resp = await authFetch(`${API_BASE}/api/dashboard/v2-task-list?client_id=${encodeURIComponent(clientId)}&limit=50`)
   if (!resp.ok) throw new Error(`${resp.status}`)
   const data = await resp.json()
   return data.tasks || []

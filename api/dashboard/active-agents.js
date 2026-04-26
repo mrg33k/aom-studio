@@ -23,6 +23,8 @@
 //   lastUpdated: "<iso timestamp>"
 // }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -33,7 +35,7 @@ const DEFAULT_CLIENT_ID = 'aom';
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
@@ -42,10 +44,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
-  // Resolve client_id for world scoping -- matches supabase-status.js pattern.
-  const clientId = (req.query.client && req.query.client.trim())
+  // Resolve + verify tenant. JWT must prove the caller can access this world.
+  const requested = (req.query.client && req.query.client.trim())
     ? req.query.client.trim().toLowerCase()
     : DEFAULT_CLIENT_ID;
+  let clientId;
+  try {
+    ({ tenant: clientId } = await verifyTenant(requested, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
 
   // Compute stale cutoff -- any row with heartbeat older than TTL is excluded
   const staleCutoff = new Date(Date.now() - HEARTBEAT_TTL_SECONDS * 1000).toISOString();

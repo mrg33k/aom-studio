@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { authFetch } from '../lib/authFetch'
 import { getClientId } from '../lib/clientConfig'
 import { AGENTS as GRID_AGENTS } from '../gridSpec'
 import { useSystemToast } from '../SystemToast'
@@ -177,7 +178,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
 
         try {
           const clientId = getClientId()
-          const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
+          const sbRes = await authFetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
             // R14e-4: read the freshest viewer slug from the ref -- this
@@ -276,7 +277,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
 
         // Primary source: agent_status table (status, current_task, status_source, status_set_at)
         // Right Now = agent_status rows where status='working' AND current_task is non-empty.
-        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
+        const res = await authFetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
         const data = await res.json()
         const activeAgentsData = null // active_processes table dependency removed

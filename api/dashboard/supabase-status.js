@@ -2,6 +2,9 @@
 // Returns agent status, messages, and tasks from Supabase.
 // Optional ?client= query param scopes all table fetches to a specific tenant.
 // Default client_id = 'aom' (us). This is the multi-tenant isolation foundation.
+// Caller must pass Authorization: Bearer <jwt>; verifyTenant gates by tenant.
+
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -22,16 +25,24 @@ async function supabaseGet(table, params = '') {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
-  // Resolve client_id -- scopes all queries to the correct tenant.
-  // ?client=acme in the URL overrides the default.
-  const clientId = (req.query.client && req.query.client.trim())
+  // Resolve + verify tenant. Falls back to 'aom' default; verifyTenant
+  // requires a JWT and proves the caller may access that tenant.
+  const requested = (req.query.client && req.query.client.trim())
     ? req.query.client.trim().toLowerCase()
     : DEFAULT_CLIENT_ID;
+  let clientId;
+  try {
+    ({ tenant: clientId } = await verifyTenant(requested, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
 
   // Filter all queries by client_id for multi-tenant isolation.
   // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';

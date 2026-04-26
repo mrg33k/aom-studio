@@ -4,6 +4,7 @@
 // Extracted from ChatPanel.jsx (R2b split).
 import { useCallback, useEffect, useState } from 'react'
 import { getClientId } from '../../../lib/clientConfig.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function useChatPrefs({ worldId }) {
   // Supabase-backed favorites / muted / hidden lists
@@ -31,7 +32,7 @@ export default function useChatPrefs({ worldId }) {
 
   const savePref = useCallback((key, value) => {
     const cid = worldId || getClientId() || 'aom'
-    fetch('/api/dashboard/preferences', {
+    authFetch('/api/dashboard/preferences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key, client_id: cid, value }),
@@ -44,9 +45,9 @@ export default function useChatPrefs({ worldId }) {
     const loadPrefs = async () => {
       try {
         const [favRes, mutedRes, hiddenRes] = await Promise.all([
-          fetch(`/api/dashboard/preferences?key=aom_favorites&client=${cid}`).then(r => r.json()),
-          fetch(`/api/dashboard/preferences?key=aom_muted&client=${cid}`).then(r => r.json()),
-          fetch(`/api/dashboard/preferences?key=corner-hidden-slugs&client=${cid}`).then(r => r.json()),
+          authFetch(`/api/dashboard/preferences?key=aom_favorites&client=${cid}`).then(r => r.json()),
+          authFetch(`/api/dashboard/preferences?key=aom_muted&client=${cid}`).then(r => r.json()),
+          authFetch(`/api/dashboard/preferences?key=corner-hidden-slugs&client=${cid}`).then(r => r.json()),
         ])
         if (favRes.value) setFavorites(favRes.value)
         if (mutedRes.value) setMutedSlugs(mutedRes.value)
