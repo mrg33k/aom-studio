@@ -19,7 +19,7 @@ import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
 import ProjectSearchBar from './project-chat/ProjectSearchBar.jsx'
 import ProjectSearchResults from './project-chat/ProjectSearchResults.jsx'
-import ProjectMessageList from './project-chat/ProjectMessageList.jsx'
+import MessageList from './thread/MessageList.jsx'
 import ProjectVoiceChatHost from './project-chat/ProjectVoiceChatHost.jsx'
 import ProjectVoiceModeBar from './project-chat/ProjectVoiceModeBar.jsx'
 import ProjectRecordingStatusBar from './project-chat/ProjectRecordingStatusBar.jsx'
@@ -71,7 +71,7 @@ export default function ProjectChatView() {
         <ProjectSearchResults />
       )}
 
-      <ProjectMessageList />
+      <MessageList roomType="project" />
 
       {isVoiceActive && <ProjectVoiceChatHost />}
 

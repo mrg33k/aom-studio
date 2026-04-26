@@ -78,7 +78,7 @@ export default function ThreadView() {
 
       {isVoiceActive && <VoiceChatHost />}
 
-      <MessageList />
+      <MessageList roomType="agent" />
 
       {isVoiceActive && <VoiceModeBar />}
 
