@@ -154,9 +154,26 @@ export default async function handler(req, res) {
     } catch { index = {} }
 
     if (project === 'all') {
-      const fromIndex = Object.entries(index).flatMap(([slug, entries]) =>
-        (Array.isArray(entries) ? entries : []).map(b => ({ ...b, project: slug }))
-      )
+      // R77-files-isolation: scope INDEX.json + scaffold rows to the
+      // tenant's project slugs only. INDEX.json is a global file (every
+      // tenant ships with the same one) — without filtering, an arsenal
+      // caller would see corner / aom-website / ambition-mechanical
+      // briefs that belong to AOM.
+      let tenantSlugs = new Set()
+      try {
+        const projUrl = `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&select=slug`
+        const projR = await fetch(projUrl, { headers: dbHeaders() })
+        if (projR.ok) {
+          const projRows = await projR.json()
+          tenantSlugs = new Set((Array.isArray(projRows) ? projRows : []).map(p => p.slug).filter(Boolean))
+        }
+      } catch { /* leave set empty → no fromIndex briefs returned */ }
+
+      const fromIndex = Object.entries(index)
+        .filter(([slug]) => tenantSlugs.has(slug))
+        .flatMap(([slug, entries]) =>
+          (Array.isArray(entries) ? entries : []).map(b => ({ ...b, project: slug }))
+        )
 
       // R30 — scaffold output (VISION / BUILD / RESEARCH / CONTEXT / last-
       // conversation + research/*) is stored as `events` rows with
@@ -178,11 +195,22 @@ export default async function handler(req, res) {
       return res.status(200).json({ briefs: merged })
     }
 
-    // Per-project: INDEX.json entries + this project's scaffold rows.
-    // Pass clientId for symmetry; fetchScaffoldBriefs(slug, clientId)
-    // currently scopes by slug only (slug→tenant is 1:1 today), but the
-    // tenant arg is forwarded for the future audit pass that will assert
-    // the requested project belongs to the requesting tenant.
+    // Per-project: assert the project belongs to the requesting tenant.
+    // Slug→tenant is 1:1 today (per R77-t10 cleanup) but enforce explicitly
+    // so a `?project=corner&client=arsenal` URL doesn't leak AOM's corner
+    // briefs into an arsenal session.
+    let tenantOwnsProject = false
+    try {
+      const ownUrl = `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&slug=eq.${encodeURIComponent(project)}&select=slug&limit=1`
+      const ownR = await fetch(ownUrl, { headers: dbHeaders() })
+      if (ownR.ok) {
+        const ownRows = await ownR.json()
+        tenantOwnsProject = Array.isArray(ownRows) && ownRows.length > 0
+      }
+    } catch { /* leave false */ }
+    if (!tenantOwnsProject) {
+      return res.status(200).json({ briefs: [] })
+    }
     const fromIndex = index[project] || []
     const fromScaffold = await fetchScaffoldBriefs(project, clientId)
     const seen = new Set(fromIndex.map(b => b.slug || b.filename || b.title || ''))
