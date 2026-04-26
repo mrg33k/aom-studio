@@ -5,6 +5,8 @@
 //   VITE_WS_ENABLED=true  -> WebSocket path (local only)
 //   VITE_V2_CHAT=true     -> Supabase direct write + Realtime subscription (24/7, no tmux)
 
+import { authFetch } from './lib/authFetch.js'
+
 const WS_ENABLED = typeof import.meta !== 'undefined'
   ? (import.meta.env?.VITE_WS_ENABLED === 'true')
   : false
@@ -98,7 +100,7 @@ export class BridgeConnection {
       // Bound the initial bridge call so a slow bridge doesn't leave the UI
       // spinning. If it times out, the catch below calls onDone() and the
       // response arrives via the Supabase Realtime subscription in ChatPanel.
-      const res = await fetch('/api/dashboard/chat-bridge', {
+      const res = await authFetch('/api/dashboard/chat-bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,7 +134,7 @@ export class BridgeConnection {
 
       this.abortController = new AbortController()
 
-      const streamRes = await fetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
+      const streamRes = await authFetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
         signal: this.abortController.signal,
       })
 

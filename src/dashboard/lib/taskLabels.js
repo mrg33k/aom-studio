@@ -3,6 +3,8 @@
 // Storage: localStorage (instant) + Supabase (when UUID available)
 // Keys: task UUID preferred; falls back to text-based key for punch-list tasks
 
+import { authFetch } from './authFetch.js'
+
 export const TASK_LABELS = [
   { id: 'urgent',  name: 'Urgent',  color: '#EF4444', bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.35)'  },
   { id: 'blocked', name: 'Blocked', color: '#F97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.35)' },
@@ -53,7 +55,7 @@ export function setTaskLabel(taskId, taskText, labelId) {
 
   // Fire-and-forget Supabase persist (only when we have a real UUID)
   if (taskId && typeof taskId === 'string' && /^[0-9a-f-]{36}$/i.test(taskId)) {
-    fetch('/api/dashboard/task-action', {
+    authFetch('/api/dashboard/task-action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'setLabel', taskId, taskText, payload: labelId || null }),

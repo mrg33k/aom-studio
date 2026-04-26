@@ -6,6 +6,7 @@
 // useCornerAuth / useCornerData / useCornerNav.
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { supabase } from '../../../lib/supabase.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import { createTaskWithRex } from '../../../lib/rexTaskClient.js'
 import { getClientId } from '../../../lib/clientConfig.js'
 import { useProjects } from '../../../hooks/useProjects'
@@ -210,12 +211,12 @@ export function useTasksPanel() {
 
   // Auto-start runner every time Tasks tab mounts
   useEffect(() => {
-    fetch('/api/dashboard/task-action', {
+    authFetch('/api/dashboard/task-action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'startRunner' }),
+      body: JSON.stringify({ action: 'startRunner', clientId: worldId || getClientId() || 'aom' }),
     }).catch(() => {})
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [worldId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll latest project_summary event
   useEffect(() => {
@@ -617,10 +618,10 @@ export function useTasksPanel() {
       // last-conversation + research/README stubs land in text_files for this
       // project. Best-effort: if the endpoint fails the project row still
       // exists and the scaffold can be re-run later.
-      fetch('/api/dashboard/scaffold-project', {
+      authFetch('/api/dashboard/scaffold-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name, description: '' }),
+        body: JSON.stringify({ slug, name, description: '', tenant: clientId }),
       }).catch(() => {})
       setProjectDefs(prev => [...prev, { name, slug }].sort((a, b) => a.name.localeCompare(b.name)))
       setActiveProject(slug)

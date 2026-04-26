@@ -29,7 +29,7 @@ async function fetchTasks() {
 }
 
 async function taskAction(taskId, action, body = {}) {
-  const resp = await fetch(`${API_BASE}/api/dashboard/task-action`, {
+  const resp = await authFetch(`${API_BASE}/api/dashboard/task-action`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, taskId, clientId: getClientId(), ...body }),

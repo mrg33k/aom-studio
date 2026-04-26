@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { supabase } from '../lib/supabase.js'
+import { authFetch } from '../lib/authFetch.js'
 
 // ---- Constants ----
 const ASSIGNABLE_AGENTS_FALLBACK = AGENTS.filter(a =>
@@ -893,7 +894,7 @@ const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 
 // ---- Fire-and-forget Supabase task action via /api/dashboard/task-action ----
 function supabaseTaskAction(action, task, payload) {
   try {
-    fetch('/api/dashboard/task-action', {
+    authFetch('/api/dashboard/task-action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

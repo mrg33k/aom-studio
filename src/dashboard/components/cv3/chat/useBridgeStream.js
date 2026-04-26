@@ -4,6 +4,7 @@
 // messages array as a temp assistant entry, which the Realtime subscription
 // later swaps for the real Supabase row.
 import { useCallback, useRef, useState } from 'react'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function useBridgeStream({ setMessages }) {
   const [isAgentTyping, setIsAgentTyping] = useState(false)
@@ -27,7 +28,7 @@ export default function useBridgeStream({ setMessages }) {
     const controller = new AbortController()
     bridgeAbortRef.current = controller
 
-    fetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
+    authFetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
       signal: controller.signal,
     }).then(async (res) => {
       if (!res.ok || !res.body) {

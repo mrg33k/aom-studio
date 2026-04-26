@@ -18,6 +18,8 @@
 //
 // Idempotent same as scaffold-project: lookup → PATCH or INSERT per filename.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const EVENTS_TABLE = 'events'
@@ -137,7 +139,7 @@ Scaffolded ${d}.
   }
 }
 
-async function upsertScaffoldStub({ agentKey, filename, content }) {
+async function upsertScaffoldStub({ agentKey, filename, content, tenantId }) {
   const q = `event_type=eq.${encodeURIComponent(SCAFFOLD_EVENT_TYPE)}&agent=eq.${encodeURIComponent(agentKey)}&payload->>filename=eq.${encodeURIComponent(filename)}&select=id&limit=1`
   const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/${EVENTS_TABLE}?${q}`, {
     headers: dbHeaders(),
@@ -146,7 +148,8 @@ async function upsertScaffoldStub({ agentKey, filename, content }) {
     throw new Error(`scaffold-mission: lookup ${filename} failed ${existingRes.status}: ${await existingRes.text()}`)
   }
   const existing = await existingRes.json()
-  const payload = { filename, content, updated_at: new Date().toISOString() }
+  // tenant_id stamped from verifyTenant — file-search.js filters on this.
+  const payload = { filename, content, updated_at: new Date().toISOString(), tenant_id: tenantId }
   if (Array.isArray(existing) && existing[0]?.id) {
     const id = existing[0].id
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${EVENTS_TABLE}?id=eq.${encodeURIComponent(id)}`, {
@@ -176,7 +179,7 @@ async function upsertScaffoldStub({ agentKey, filename, content }) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -188,7 +191,7 @@ export default async function handler(req, res) {
 
   // parent_slug accepts a single project slug OR a colon-joined mission path
   // for nested missions ('corner:music-pack' is a valid parent for a deeper mission).
-  const { parent_slug, mission_slug, description, name } = req.body || {}
+  const { parent_slug, mission_slug, description, name, tenant: rawTenant } = req.body || {}
   if (!parent_slug || typeof parent_slug !== 'string' || !PARENT_PATH_RE.test(parent_slug) || parent_slug.length > 200) {
     return res.status(400).json({ error: 'parent_slug must match ^[a-z][a-z0-9-]*(:[a-z][a-z0-9-]*)*$ and be ≤200 chars' })
   }
@@ -197,13 +200,23 @@ export default async function handler(req, res) {
   }
   const agentKey = `${parent_slug}:${mission_slug}`
 
+  // tenant body param (defaults to 'aom') gates who can scaffold + tags rows.
+  const requestedTenant = (rawTenant || 'aom').toString().trim().toLowerCase()
+  let tenantId
+  try {
+    ({ tenant: tenantId } = await verifyTenant(requestedTenant, req))
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
+  }
+
   try {
     const stubs = missionStubs(mission_slug, parent_slug, name, description)
     const results = []
     for (const [filename, content] of Object.entries(stubs)) {
-      results.push(await upsertScaffoldStub({ agentKey, filename, content }))
+      results.push(await upsertScaffoldStub({ agentKey, filename, content, tenantId }))
     }
-    return res.status(200).json({ ok: true, agent: agentKey, parent: parent_slug, mission: mission_slug, files: results })
+    return res.status(200).json({ ok: true, agent: agentKey, parent: parent_slug, mission: mission_slug, tenant: tenantId, files: results })
   } catch (err) {
     return res.status(500).json({ error: err?.message || String(err) })
   }

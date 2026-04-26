@@ -81,7 +81,7 @@ export default function useChatAttachments({
               reader.readAsDataURL(file)
             })
           }
-          const uploadRes = await fetch('/api/dashboard/file-upload', {
+          const uploadRes = await authFetch('/api/dashboard/file-upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -156,7 +156,7 @@ export default function useChatAttachments({
           })
         }
 
-        const uploadRes = await fetch('/api/dashboard/file-upload', {
+        const uploadRes = await authFetch('/api/dashboard/file-upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

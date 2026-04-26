@@ -2,6 +2,7 @@
 // R2a (Apr 16, 2026): extracted from TasksPanel.jsx
 // R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import { LIFECYCLE } from './lifecycle.js'
 import { useTasksPanelCtx } from './TasksPanelContext.jsx'
 
@@ -80,7 +81,7 @@ export default function WaitingTasksSection() {
                 onKeyDown={async e => {
                   if (e.key === 'Enter' && replyText.trim() && !sending) {
                     setWaitingReplySending(prev => ({ ...prev, [t.id]: true }))
-                    await fetch('/api/dashboard/task-action', {
+                    await authFetch('/api/dashboard/task-action', {
                       method: 'POST', headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ action: 'resume', taskId: t.id, payload: { answer: replyText.trim() } }),
                     })
@@ -102,7 +103,7 @@ export default function WaitingTasksSection() {
                 onClick={async () => {
                   if (!replyText.trim() || sending) return
                   setWaitingReplySending(prev => ({ ...prev, [t.id]: true }))
-                  await fetch('/api/dashboard/task-action', {
+                  await authFetch('/api/dashboard/task-action', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'resume', taskId: t.id, payload: { answer: replyText.trim() } }),
                   })

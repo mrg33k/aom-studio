@@ -10,6 +10,7 @@ import { X, Check, GripVertical } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { PALETTE, HUD, IS_LOCAL } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
+import { authFetch } from '../lib/authFetch.js'
 import { getClientId } from '../lib/clientConfig.js'
 import { useLongPress } from '../hooks/useLongPress.js'
 
@@ -280,7 +281,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
       } else if (task.id || task.text) {
         // PRODUCTION: persist via Supabase task-action API
         const clientId = getClientId()
-        const res = await fetch('/api/dashboard/task-action', {
+        const res = await authFetch('/api/dashboard/task-action', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

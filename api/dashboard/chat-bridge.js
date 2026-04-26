@@ -11,6 +11,7 @@
 
 import crypto from 'crypto'
 import { detectProjectFromText, detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -236,7 +237,7 @@ async function maybeCreateChain(body) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -245,6 +246,12 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const messageId = req.query.stream
     if (!messageId) return res.status(400).json({ error: 'stream parameter required' })
+
+    // JWT-only gate: stream is keyed by an opaque crypto.randomUUID messageId
+    // that's not tenant-scoped at the bridge protocol level. Per-message tenant
+    // binding (look up the message's client_id and verify) is a follow-up; for
+    // now require a valid session — blocks unauthenticated stream scraping.
+    if (!extractJwt(req)) return res.status(401).json({ error: 'jwt required' })
 
     if (!BRIDGE_ENABLED) {
       return res.status(503).json({ error: 'bridge disabled', fallback: true })
@@ -291,6 +298,19 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const body = req.body || {}
     const message = (body.message || '').trim()
+    const requestedTenant = (body.client_id || 'aom').toString().trim().toLowerCase()
+
+    // JWT-gate: verify caller can write to client_id before any bridge dispatch
+    // or Supabase write. Replaces the previously-trusted body.client_id with
+    // the verified tenant for downstream code paths.
+    let verifiedTenant
+    try {
+      ({ tenant: verifiedTenant } = await verifyTenant(requestedTenant, req))
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+      throw err
+    }
+    body.client_id = verifiedTenant
 
     // Project-owned rooms route to the owner's EA, not the default AOM dispatcher.
     // Patrik is a guest in Ben's rooms — the host agent answers, not Elon.

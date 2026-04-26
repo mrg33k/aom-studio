@@ -11,6 +11,7 @@
 // attach/recording hooks that consume the refs stay decoupled from Send.
 import { useCallback, useEffect, useRef } from 'react'
 import { useCornerData } from '../../../CornerContext.jsx'
+import { authFetch } from '../../../lib/authFetch.js'
 import { bumpContextMeter } from '../session/ContextFullnessMeter.jsx'
 
 export default function useChatSend({
@@ -106,7 +107,7 @@ export default function useChatSend({
     }))
 
     try {
-      const bridgeResult = await fetch('/api/dashboard/chat-bridge', {
+      const bridgeResult = await authFetch('/api/dashboard/chat-bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -180,7 +181,7 @@ export default function useChatSend({
       [selectedAgent.slug]: { agent: selectedAgent.slug, text: previewText, timestamp: now, id: tempUserId, isUnread: false },
     }))
     try {
-      const bridgeResult = await fetch('/api/dashboard/chat-bridge', {
+      const bridgeResult = await authFetch('/api/dashboard/chat-bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -274,7 +275,7 @@ export default function useChatSend({
     bumpContextMeter(agentKey)
 
     try {
-      const bridgeResult = await fetch('/api/dashboard/chat-bridge', {
+      const bridgeResult = await authFetch('/api/dashboard/chat-bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

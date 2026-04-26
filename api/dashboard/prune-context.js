@@ -17,6 +17,8 @@
 // slug for audit. No 'if user == "ben"' anywhere. Any future tenant inherits
 // this on day one.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -63,7 +65,7 @@ async function insertEvent(row) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -72,11 +74,19 @@ export default async function handler(req, res) {
 
   const body = req.body || {}
   const agent = (body.agent || '').toString().trim().toLowerCase()
-  const tenant = (body.tenant || body.client_id || 'aom').toString().trim().toLowerCase()
+  const requestedTenant = (body.tenant || body.client_id || 'aom').toString().trim().toLowerCase()
   const helloText = (body.cleanup_hello || DEFAULT_HELLO).toString()
 
   if (!validSlug(agent)) return res.status(400).json({ error: 'valid agent required' })
-  if (!validSlug(tenant)) return res.status(400).json({ error: 'valid tenant required' })
+  if (!validSlug(requestedTenant)) return res.status(400).json({ error: 'valid tenant required' })
+
+  let tenant
+  try {
+    ({ tenant } = await verifyTenant(requestedTenant, req))
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
+  }
 
   try {
     const crypto = await import('crypto')

@@ -13,6 +13,8 @@
 // A sixth live surface is the project's tasks queue — queued separately by
 // whichever flow calls this endpoint; not written here.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const EVENTS_TABLE = 'events'
@@ -163,7 +165,7 @@ Scaffolded ${today()}.
   }
 }
 
-async function upsertScaffoldStub({ slug, filename, content }) {
+async function upsertScaffoldStub({ slug, filename, content, tenantId }) {
   // Idempotent: query on (event_type, agent, payload->>filename), then PATCH or INSERT.
   // PostgREST supports JSON path filters like `payload->>filename=eq.<v>`.
   const q = `event_type=eq.${encodeURIComponent(SCAFFOLD_EVENT_TYPE)}&agent=eq.${encodeURIComponent(slug)}&payload->>filename=eq.${encodeURIComponent(filename)}&select=id&limit=1`
@@ -174,7 +176,8 @@ async function upsertScaffoldStub({ slug, filename, content }) {
     throw new Error(`scaffold-project: lookup ${filename} failed ${existingRes.status}: ${await existingRes.text()}`)
   }
   const existing = await existingRes.json()
-  const payload = { filename, content, updated_at: new Date().toISOString() }
+  // tenant_id stamped from verifyTenant — file-search.js filters on this.
+  const payload = { filename, content, updated_at: new Date().toISOString(), tenant_id: tenantId }
   if (Array.isArray(existing) && existing[0]?.id) {
     const id = existing[0].id
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${EVENTS_TABLE}?id=eq.${encodeURIComponent(id)}`, {
@@ -204,7 +207,7 @@ async function upsertScaffoldStub({ slug, filename, content }) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -214,7 +217,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' })
   }
 
-  const { slug, name, description } = req.body || {}
+  const { slug, name, description, tenant: rawTenant } = req.body || {}
   if (!slug || typeof slug !== 'string') {
     return res.status(400).json({ error: 'slug required' })
   }
@@ -222,13 +225,23 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'slug must match ^[a-z][a-z0-9-]*$ and be <=50 chars' })
   }
 
+  // tenant body param (defaults to 'aom') gates who can scaffold + tags rows.
+  const requestedTenant = (rawTenant || 'aom').toString().trim().toLowerCase()
+  let tenantId
+  try {
+    ({ tenant: tenantId } = await verifyTenant(requestedTenant, req))
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
+  }
+
   try {
     const stubs = stubContent(slug, name, description)
     const results = []
     for (const [filename, content] of Object.entries(stubs)) {
-      results.push(await upsertScaffoldStub({ slug, filename, content }))
+      results.push(await upsertScaffoldStub({ slug, filename, content, tenantId }))
     }
-    return res.status(200).json({ ok: true, slug, files: results })
+    return res.status(200).json({ ok: true, slug, tenant: tenantId, files: results })
   } catch (err) {
     return res.status(500).json({ error: err?.message || String(err) })
   }

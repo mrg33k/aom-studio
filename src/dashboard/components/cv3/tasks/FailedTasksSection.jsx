@@ -2,6 +2,7 @@
 // R2a (Apr 16, 2026): extracted from TasksPanel.jsx
 // R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import { LIFECYCLE } from './lifecycle.js'
 import { ResultPreview } from './ResultPreview.jsx'
 import { useTasksPanelCtx } from './TasksPanelContext.jsx'
@@ -49,7 +50,7 @@ export default function FailedTasksSection() {
         <button
           onClick={async () => {
             for (const t of filteredFailed) {
-              await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
+              await authFetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
             }
             refreshTasks()
           }}
@@ -159,7 +160,7 @@ export default function FailedTasksSection() {
                 <button
                   onClick={async (e) => {
                     e.stopPropagation()
-                    await fetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
+                    await authFetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
                     refreshTasks()
                   }}
                   style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
