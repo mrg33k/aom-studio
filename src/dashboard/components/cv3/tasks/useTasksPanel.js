@@ -293,7 +293,7 @@ export function useTasksPanel() {
     const imgPrefix = activeProject
     Promise.all([
       fetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(imgPrefix)}/`).then(r => r.ok ? r.json() : { files: [] }).catch(() => ({ files: [] })),
-      fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(drawerScope)}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
+      fetch(`/api/dashboard/files?type=briefs&project=${encodeURIComponent(drawerScope)}&client=${encodeURIComponent(worldId || 'aom')}`).then(r => r.ok ? r.json() : { briefs: [] }).catch(() => ({ briefs: [] })),
     ]).then(([imgData, briefsData]) => {
       if (cancelled) return
       const images = (imgData.files || []).map(f => ({ ...f, filename: f.name }))
@@ -334,7 +334,7 @@ export function useTasksPanel() {
     if (activeProject !== 'all') return
     let cancelled = false
     setAllBriefsLoading(true)
-    fetch('/api/dashboard/files?type=briefs&project=all')
+    fetch(`/api/dashboard/files?type=briefs&project=all&client=${encodeURIComponent(worldId || 'aom')}`)
       .then(r => r.ok ? r.json() : { briefs: [] })
       .catch(() => ({ briefs: [] }))
       .then(data => {
@@ -344,7 +344,7 @@ export function useTasksPanel() {
         }
       })
     return () => { cancelled = true }
-  }, [activeProject])
+  }, [activeProject, worldId])
 
   // Open brief inline viewer
   // R37b: scaffold-source briefs (event_type=scaffold_file) are looked up by

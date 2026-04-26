@@ -24,16 +24,57 @@ const SCAFFOLD_EVENT_TYPE = 'scaffold_file'
 // R30: pull scaffold .md rows from the `events` table (schema-free, no-DDL
 // storage per the AOM Supabase rule). Returns brief-shaped objects so the
 // dashboard Files/AllFiles readers can consume them alongside INDEX.json +
-// text_files rows. When `slug` is null, returns rows for every project.
-async function fetchScaffoldBriefs(slug) {
+// text_files rows.
+//
+// R77-files-isolation (2026-04-25): the `slug` parameter scopes to a single
+// project (`events.agent` = project slug). For cross-project (project=all)
+// the caller MUST pass `clientId` so we can scope to that tenant's projects
+// only — the events table has no client_id column, so we resolve tenant →
+// project slugs via the projects table first, then filter events by
+// `agent IN (slug list)`. Calling fetchScaffoldBriefs(null, null) without a
+// tenant returns []  to prevent global cross-tenant leak.
+async function fetchScaffoldBriefs(slug, clientId = null) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return []
+
+  // Resolve which agent slugs we'll filter by:
+  //   slug present       → just that one (caller already named it)
+  //   no slug + clientId → fetch the tenant's project slugs from `projects`
+  //   neither            → leak guard: return []
+  let slugFilter = null
+  if (slug) {
+    slugFilter = [slug]
+  } else if (clientId) {
+    try {
+      const projUrl = `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&select=slug`
+      const projR = await fetch(projUrl, { headers: dbHeaders() })
+      if (projR.ok) {
+        const projRows = await projR.json()
+        slugFilter = (Array.isArray(projRows) ? projRows : []).map(p => p.slug).filter(Boolean)
+      }
+    } catch {
+      slugFilter = []
+    }
+    // No projects under this tenant → no scaffolds to surface.
+    if (!slugFilter || slugFilter.length === 0) return []
+  } else {
+    // Neither a slug nor a tenant. Refuse to scan the entire events table —
+    // that's the leak path. (Pre-R77 this returned every tenant's scaffolds.)
+    return []
+  }
+
   const parts = [
     `event_type=eq.${encodeURIComponent(SCAFFOLD_EVENT_TYPE)}`,
     'select=id,agent,payload,timestamp',
     'order=timestamp.desc',
     'limit=500',
   ]
-  if (slug) parts.unshift(`agent=eq.${encodeURIComponent(slug)}`)
+  if (slugFilter.length === 1) {
+    parts.unshift(`agent=eq.${encodeURIComponent(slugFilter[0])}`)
+  } else {
+    // PostgREST `in.()` syntax — join with commas, parens around the list.
+    const inList = slugFilter.map(s => encodeURIComponent(s)).join(',')
+    parts.unshift(`agent=in.(${inList})`)
+  }
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${EVENTS_TABLE}?${parts.join('&')}`, {
       headers: dbHeaders(),
@@ -95,7 +136,15 @@ export default async function handler(req, res) {
   // ---- GET briefs from INDEX.json (+ scaffold merge) -------------------
   if (req.method === 'GET' && req.query.type === 'briefs') {
     const project = req.query.project
+    // R77-files-isolation: every briefs request must name the calling
+    // tenant (`client`). project=all WITHOUT a client used to fall through
+    // to fetchScaffoldBriefs(null), which scanned the entire events table
+    // and returned every tenant's scaffolds. Now: no client → 400.
+    // The dashboard caller sources `client` from worldId
+    // (useTasksPanel.js, briefs fetch).
+    const clientId = req.query.client
     if (!project) return res.status(400).json({ error: 'project required' })
+    if (!clientId) return res.status(400).json({ error: 'client (tenant) required for tenant scoping' })
 
     // INDEX.json (human-authored briefs) — same read as before
     let index = {}
@@ -111,8 +160,9 @@ export default async function handler(req, res) {
 
       // R30 — scaffold output (VISION / BUILD / RESEARCH / CONTEXT / last-
       // conversation + research/*) is stored as `events` rows with
-      // event_type='scaffold_file'. Merge across all projects.
-      const fromScaffold = await fetchScaffoldBriefs(null)
+      // event_type='scaffold_file'.
+      // R77-files-isolation: scope to clientId's project slugs only.
+      const fromScaffold = await fetchScaffoldBriefs(null, clientId)
 
       // Dedupe: prefer INDEX entries; skip scaffold rows that duplicate slug/filename within the same project
       const seen = new Set(fromIndex.map(b => `${b.project || ''}::${b.slug || b.filename || b.title || ''}`))
@@ -129,8 +179,12 @@ export default async function handler(req, res) {
     }
 
     // Per-project: INDEX.json entries + this project's scaffold rows.
+    // Pass clientId for symmetry; fetchScaffoldBriefs(slug, clientId)
+    // currently scopes by slug only (slug→tenant is 1:1 today), but the
+    // tenant arg is forwarded for the future audit pass that will assert
+    // the requested project belongs to the requesting tenant.
     const fromIndex = index[project] || []
-    const fromScaffold = await fetchScaffoldBriefs(project)
+    const fromScaffold = await fetchScaffoldBriefs(project, clientId)
     const seen = new Set(fromIndex.map(b => b.slug || b.filename || b.title || ''))
     const merged = [
       ...fromIndex,
