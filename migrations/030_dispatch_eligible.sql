@@ -9,7 +9,7 @@
 -- from R-sh2-template-audit-v2 (commit 553ffa23b).
 --
 -- chat.js queries: SELECT slug FROM agent_status
---   WHERE client_id = 'aom' AND dispatch_eligible = true AND active = true
+--   WHERE client_id = 'aom' AND dispatch_eligible = true AND hidden = false
 --
 -- DO NOT run against prod without Patrik's explicit go.
 -- ============================================================

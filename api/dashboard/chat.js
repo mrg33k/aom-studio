@@ -56,7 +56,7 @@ async function fetchAgentRegistry() {
   if (_agentMetaCache && (now - _agentMetaCacheAt) < REGISTRY_TTL_MS) return _agentMetaCache
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return _agentMetaCache || {}
   try {
-    const url = `${SUPABASE_URL}/rest/v1/agent_status?select=slug,name,role,project_folder&client_id=eq.aom&active=eq.true`
+    const url = `${SUPABASE_URL}/rest/v1/agent_status?select=slug,name,role,project_folder&client_id=eq.aom&hidden=eq.false`
     const res = await fetch(url, {
       headers: {
         apikey: SUPABASE_SERVICE_KEY,
@@ -82,7 +82,7 @@ async function fetchDispatchAgents() {
   if (_dispatchCache && (now - _dispatchCacheAt) < REGISTRY_TTL_MS) return _dispatchCache
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return _dispatchCache || new Set(['elon', 'gary', 'mom'])
   try {
-    const url = `${SUPABASE_URL}/rest/v1/agent_status?select=slug&client_id=eq.aom&dispatch_eligible=eq.true&active=eq.true`
+    const url = `${SUPABASE_URL}/rest/v1/agent_status?select=slug&client_id=eq.aom&dispatch_eligible=eq.true&hidden=eq.false`
     const res = await fetch(url, {
       headers: {
         apikey: SUPABASE_SERVICE_KEY,
