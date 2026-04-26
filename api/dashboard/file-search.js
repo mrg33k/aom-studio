@@ -107,12 +107,12 @@ export default async function handler(req, res) {
       const content = row?.payload?.content || '';
       const { project, parent } = parseAgent(row.agent);
       if (!filename || !project) continue;
-      // Tenant scope: scaffold_file rows aren't tenant-tagged today (writer
-      // is scripts/surface-md-events.py — no tenant_id in payload). Phase 2
-      // gates the request via verifyTenant (no JWT = 401), but cross-tenant
-      // file leakage via file-search is residual until the writer tags rows.
-      // Tracked separately; do NOT silently filter here or we hide files.
-      void tenant;
+      // Tenant scope: writers tag payload.tenant_id (AOM-EA scripts hardcode
+      // 'aom' since the repo IS AOM's). Pre-tagging rows are treated as 'aom'
+      // — every existing scaffold_file row was authored from AOM-EA before the
+      // tagging change shipped. Cross-tenant search is blocked here.
+      const rowTenant = row?.payload?.tenant_id || 'aom';
+      if (rowTenant !== tenant) continue;
       // Belt-and-suspenders: confirm a real text match (ilike is case-
       // insensitive Postgres; we verify in JS too so the preview is accurate).
       const haystack = `${filename} ${content}`.toLowerCase();
