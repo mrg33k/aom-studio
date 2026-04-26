@@ -35,6 +35,44 @@ import {
 
 const CLEO = agentColors.cleo
 
+function EmptyRoomPlaceholder() {
+  return (
+    <div style={{ padding: '28px 0' }}>
+      <div style={{
+        background: C.s1,
+        border: `1px solid ${C.border}`,
+        borderRadius: 16,
+        padding: '32px 24px',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: C.s2,
+          border: `1px solid ${C.border2}`,
+          margin: '0 auto 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{ width: 12, height: 12, borderRadius: 3, background: C.dim }} />
+        </div>
+        <div style={{
+          fontSize: 13, fontWeight: 600, color: C.text2,
+          fontFamily: "'Inter', sans-serif",
+          marginBottom: 6,
+        }}>
+          nothing here yet
+        </div>
+        <div style={{
+          fontSize: 12, color: C.muted,
+          fontFamily: "'Inter', sans-serif",
+          lineHeight: 1.5,
+        }}>
+          Your workspace will appear here once rooms are set up.
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CleoWorkspacesLink() {
   const navigate = useNavigate()
   return (
@@ -246,34 +284,40 @@ export default function ConversationsView() {
           {/* R58 retires the ea-hero-restore CTA — the EA can be pinned back
               via the same PinMenu every other agent card carries. */}
 
-          <AgentsList
-            agents={chronoAgents}
-            unreadMap={unreadMap}
-            unreadCounts={unreadCounts}
-            activeAgentSlugs={activeAgentSlugs}
-            latestFailedByAgent={latestFailedByAgent}
-            heroSlug={eaHeroHidden ? null : eaAgent?.slug}
-            setSelectedAgent={setSelectedAgent}
-            onSelectAgent={onSelectAgent}
-            pinnedSlugs={pinnedAgents.pinned}
-            pinAgent={pinnedAgents.pin}
-            unpinAgent={pinnedAgents.unpin}
-            reorderAgent={agentOrder.move}
-          />
+          {(agents || []).length === 0 && (sortedProjects || []).length === 0 ? (
+            <EmptyRoomPlaceholder />
+          ) : (
+            <>
+              <AgentsList
+                agents={chronoAgents}
+                unreadMap={unreadMap}
+                unreadCounts={unreadCounts}
+                activeAgentSlugs={activeAgentSlugs}
+                latestFailedByAgent={latestFailedByAgent}
+                heroSlug={eaHeroHidden ? null : eaAgent?.slug}
+                setSelectedAgent={setSelectedAgent}
+                onSelectAgent={onSelectAgent}
+                pinnedSlugs={pinnedAgents.pinned}
+                pinAgent={pinnedAgents.pin}
+                unpinAgent={pinnedAgents.unpin}
+                reorderAgent={agentOrder.move}
+              />
 
-          <ProjectsList
-            sortedProjects={sortedProjects}
-            projectPreviews={projectPreviews}
-            activeProjectSlugs={activeProjectSlugs}
-            setInlineProject={setInlineProject}
-            setMessages={setMessages}
-            setSelectedAgent={setSelectedAgent}
-            onSelectProject={onSelectProject}
-            pinnedSlugs={pinnedProjects.pinned}
-            pinProject={pinnedProjects.pin}
-            unpinProject={pinnedProjects.unpin}
-            reorderProject={projectOrder.move}
-          />
+              <ProjectsList
+                sortedProjects={sortedProjects}
+                projectPreviews={projectPreviews}
+                activeProjectSlugs={activeProjectSlugs}
+                setInlineProject={setInlineProject}
+                setMessages={setMessages}
+                setSelectedAgent={setSelectedAgent}
+                onSelectProject={onSelectProject}
+                pinnedSlugs={pinnedProjects.pinned}
+                pinProject={pinnedProjects.pin}
+                unpinProject={pinnedProjects.unpin}
+                reorderProject={projectOrder.move}
+              />
+            </>
+          )}
 
           <CleoWorkspacesLink />
         </>
