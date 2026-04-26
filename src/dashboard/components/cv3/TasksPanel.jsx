@@ -258,9 +258,6 @@ function TasksPanelBody() {
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px 24px' }}>
 
-        {/* ── Greeting header ─────────────────────────────────────── */}
-        <GreetingHeader />
-
         {/* ── Search + Project filters ────────────────────────────── */}
         <div style={{ marginBottom: 28 }}>
           {/* Search input — minimal */}
@@ -528,20 +525,3 @@ function TasksPanelBody() {
   )
 }
 
-function GreetingHeader() {
-  const { greeting } = useTasksPanelCtx()
-  return (
-    <div style={{ marginBottom: 28 }}>
-      <h1 style={{
-        fontSize: 26,
-        fontWeight: 800,
-        color: C.text,
-        letterSpacing: '-0.03em',
-        lineHeight: 1.15,
-        margin: 0,
-      }}>
-        {greeting}<span style={{ color: C.accent }}>.</span>
-      </h1>
-    </div>
-  )
-}

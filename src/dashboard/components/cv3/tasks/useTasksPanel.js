@@ -530,9 +530,6 @@ export function useTasksPanel() {
   const passRate = closedCount > 0 ? Math.round((weekDone / closedCount) * 100) : null
   const daysActive = dailyCounts.filter(n => n > 0).length
 
-  const greetingHour = new Date().getHours()
-  const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening'
-
   // ── Context-menu handlers (cross-cutting callbacks) ────────────────────
   const currentTaskClientId = worldId || getClientId() || 'aom'
 
@@ -847,7 +844,6 @@ export function useTasksPanel() {
     passRate,
     daysActive,
     closedCount,
-    greeting,
 
     // Task input + voice
     taskInput, setTaskInput,
