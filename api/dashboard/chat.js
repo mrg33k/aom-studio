@@ -38,25 +38,68 @@ async function writeToSupabase(role, agent, text, source = 'dashboard', replyTo 
   return id
 }
 
-const AGENT_META = {
-  bobby:   { name: 'Bobby',   role: 'Web Dev',           folder: 'bobby' },
-  colton:  { name: 'Colton',  role: 'Backup Builder',    folder: 'colton' },
-  elmo:    { name: 'Elmo',    role: 'QA Gate',           folder: null },
-  steffen: { name: 'Steffen', role: 'Creative Director', folder: 'steffen' },
-  jacob:   { name: 'Jacob',   role: 'Outreach',          folder: 'jacob' },
-  elon:    { name: 'Elon',    role: 'Systems',           folder: 'sys' },
-  alex:    { name: 'Alex',    role: 'Strategy',          folder: 'aom-strategy' },
-  steve:   { name: 'Steve',   role: 'AI Advisory',       folder: 'steve' },
-  cleo:    { name: 'Cleo',    role: 'Content',           folder: 'content-agent' },
-  tony:    { name: 'Tony',    role: 'Social Media',      folder: 'tony' },
-  paige:   { name: 'Paige',   role: 'Client Success',    folder: 'paige' },
-  pixel:   { name: 'Pixel',   role: 'Extension',         folder: 'pixel' },
-  mom:     { name: 'Mom',     role: 'Orchestrator',      folder: 'mom' },
+// ─── Agent registry (K6: was AGENT_META hardcoded dict) ──────────────────────
+// Fetched from agent_status at request time; TTL-cached at module level.
+let _agentMetaCache = null
+let _agentMetaCacheAt = 0
+
+// ─── Dispatch eligibility (K7: was DISPATCH_AGENTS hardcoded set) ─────────────
+// Derived from agent_status.dispatch_eligible column (migration 030).
+// Falls back to the previous hardcoded list until the column migration runs.
+let _dispatchCache = null
+let _dispatchCacheAt = 0
+
+const REGISTRY_TTL_MS = 60_000
+
+async function fetchAgentRegistry() {
+  const now = Date.now()
+  if (_agentMetaCache && (now - _agentMetaCacheAt) < REGISTRY_TTL_MS) return _agentMetaCache
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return _agentMetaCache || {}
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/agent_status?select=slug,name,role,project_folder&client_id=eq.aom&active=eq.true`
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    })
+    if (!res.ok) return _agentMetaCache || {}
+    const rows = await res.json()
+    const cache = {}
+    for (const row of rows) {
+      cache[row.slug] = { name: row.name || row.slug, role: row.role || '', folder: row.project_folder || null }
+    }
+    _agentMetaCache = cache
+    _agentMetaCacheAt = now
+    return cache
+  } catch {
+    return _agentMetaCache || {}
+  }
 }
 
-// Agents that can dispatch work to fresh tmux workers via the tasks table.
-// Everyone else stays in plain-streaming mode (no tools).
-const DISPATCH_AGENTS = new Set(['elon', 'gary', 'mom'])
+async function fetchDispatchAgents() {
+  const now = Date.now()
+  if (_dispatchCache && (now - _dispatchCacheAt) < REGISTRY_TTL_MS) return _dispatchCache
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return _dispatchCache || new Set(['elon', 'gary', 'mom'])
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/agent_status?select=slug&client_id=eq.aom&dispatch_eligible=eq.true&active=eq.true`
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    })
+    // Pre-migration: column doesn't exist yet → Supabase returns 4xx; fall back to hardcoded list
+    if (!res.ok) return _dispatchCache || new Set(['elon', 'gary', 'mom'])
+    const rows = await res.json()
+    const set = new Set(rows.map(r => r.slug))
+    _dispatchCache = set
+    _dispatchCacheAt = now
+    return set
+  } catch {
+    return _dispatchCache || new Set(['elon', 'gary', 'mom'])
+  }
+}
 
 // ─── Tools for dispatcher agents ─────────────────────────────────────
 const TOOLS = [
@@ -270,8 +313,7 @@ async function fetchFile(path) {
   } catch { return null }
 }
 
-async function loadAgentContext(slug) {
-  const meta = AGENT_META[slug]
+async function loadAgentContext(slug, meta) {
   if (!meta || !meta.folder) return { meta, agentMd: null, lastConvo: null, priorities: null }
 
   const [agentMd, lastConvo, priorities] = await Promise.all([
@@ -352,7 +394,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'slug and message required' })
   }
 
-  const meta = AGENT_META[slug]
+  // Fetch agent registry + dispatch-eligibility list in parallel (TTL-cached)
+  const [agentRegistry, dispatchAgents] = await Promise.all([
+    fetchAgentRegistry(),
+    fetchDispatchAgents(),
+  ])
+
+  const meta = agentRegistry[slug]
   if (!meta) {
     return res.status(404).json({ error: `Unknown agent: ${slug}` })
   }
@@ -372,11 +420,11 @@ export default async function handler(req, res) {
     const userMsgId = crypto.randomUUID()
     writeToSupabase('user', slug, message, 'dashboard', '', resolvedClientId).catch(() => {})
 
-    const hasTools = DISPATCH_AGENTS.has(slug)
+    const hasTools = dispatchAgents.has(slug)
 
     // Load agent context from GitHub + recent task status updates (dispatchers only)
     const [{ agentMd, lastConvo, priorities }, taskUpdateRows] = await Promise.all([
-      loadAgentContext(slug),
+      loadAgentContext(slug, meta),
       hasTools ? fetchRecentTaskUpdates(slug, resolvedClientId) : Promise.resolve([]),
     ])
     const taskUpdatesBlock = formatTaskUpdatesForPrompt(taskUpdateRows)
