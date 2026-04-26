@@ -182,7 +182,7 @@ export default function ProjectMessageList() {
           ? stepsByMessageId[msg.id]
           : null
         const userRepliedAfter = userBubbleSteps
-          ? arr.slice(idx + 1).some(m => m.role === 'assistant')
+          ? arr.slice(idx + 1).some(m => m.role === 'user')
           : false
         return (
           <React.Fragment key={msg.id}>

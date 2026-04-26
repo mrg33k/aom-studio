@@ -128,10 +128,10 @@ export function ThreadStepIndicator({ step, agentColor, settled }) {
       <span style={{
         fontSize: 12,
         color: step.status === 'error' ? '#EF4444' :
-               step.status === 'in_progress' && !settled ? agentColor :
+               step.status === 'in_progress' ? agentColor :
                '#94A3B8',
         fontFamily: "'Space Grotesk', sans-serif",
-        fontWeight: step.status === 'in_progress' && !settled ? 500 : 400,
+        fontWeight: step.status === 'in_progress' ? 500 : 400,
         opacity: dim,
         lineHeight: 1.4,
         paddingLeft: 4,

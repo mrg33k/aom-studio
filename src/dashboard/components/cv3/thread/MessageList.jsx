@@ -327,6 +327,9 @@ export default function MessageList() {
         const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
           ? stepsByMessageId[msg.id]
           : null
+        const hasNewerUserMsg = userBubbleSteps
+          ? arr.slice(idx + 1).some(m => m.role === 'user')
+          : false
         return (
           <React.Fragment key={msg.id}>
           {/* c76e17f9: inter-turn spine — thin connector in the step-dot column
@@ -563,7 +566,7 @@ export default function MessageList() {
             <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
               <StepThread
                 steps={userBubbleSteps}
-                settled={respondedSet.has(msg.id)}
+                settled={hasNewerUserMsg}
                 isError={false}
                 agentColor={selectedAgent?.color || '#3B82F6'}
               />
