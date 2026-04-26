@@ -5,6 +5,7 @@ import {
   useChatVoiceCtx,
   useChatSettingsCtx,
 } from '../chat/ChatPanelContext.jsx'
+import { authFetch } from '../../../lib/authFetch.js'
 
 // Hidden VoiceChat host -- mounts when voice is active so the audio pipeline
 // can run while the thread UI stays in place. Voice transcripts are persisted
@@ -43,7 +44,7 @@ export default function VoiceChatHost() {
             source: 'voice',
           }])
           // Persist voice transcript to DB
-          fetch('/api/dashboard/supabase-messages', {
+          authFetch('/api/dashboard/supabase-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import {
   useChatCore,
   useChatMessagesCtx,
@@ -30,7 +31,7 @@ export default function ThreadHeader() {
     if (clearStage !== 'confirm') return
     setClearStage('working')
     try {
-      await fetch('/api/dashboard/clear-context', {
+      await authFetch('/api/dashboard/clear-context', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: selectedAgent.slug, client_id: worldId || 'aom' }),

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import {
   useChatCore,
   useChatMessagesCtx,
@@ -38,7 +39,7 @@ export default function ProjectChatHeader() {
       const eaSlug = agents?.find(a => a.is_ea && a.is_terminal)?.slug
         || agents?.find(a => a.is_ea)?.slug
         || 'elon'
-      await fetch('/api/dashboard/clear-context', {
+      await authFetch('/api/dashboard/clear-context', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: eaSlug, client_id: worldId || 'aom' }),

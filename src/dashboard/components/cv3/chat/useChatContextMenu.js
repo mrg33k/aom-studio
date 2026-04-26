@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 import { getClientId } from '../../../lib/clientConfig.js'
 import { createTaskWithRex } from '../../../lib/rexTaskClient.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function useChatContextMenu({
   worldId,
@@ -65,7 +66,7 @@ export default function useChatContextMenu({
         projectSlug: selectedProject?.slug || msg.project || null,
         clientId: currentClientId,
       })
-      fetch('/api/dashboard/supabase-messages', {
+      authFetch('/api/dashboard/supabase-messages', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: msg.id, status: 'delivered' }),
@@ -98,7 +99,7 @@ export default function useChatContextMenu({
   const handleMessageSendTo = useCallback(async (msg, target) => {
     if (!msg || !target?.slug) return
     try {
-      await fetch('/api/dashboard/supabase-messages', {
+      await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

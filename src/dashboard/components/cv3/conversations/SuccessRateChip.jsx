@@ -9,6 +9,7 @@
 //   unknown (no closed tasks yet) -> muted "--" chip
 import { useEffect, useState } from 'react'
 import { getClientId } from '../../../lib/clientConfig.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 const COLORS = {
   green:  { bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.30)', text: '#34D399' },
@@ -27,7 +28,7 @@ export default function SuccessRateChip({ worldId: worldIdProp }) {
     let cancelled = false
     const tick = async () => {
       try {
-        const resp = await fetch(`/api/dashboard/task-success-rate?world=${encodeURIComponent(worldId)}`)
+        const resp = await authFetch(`/api/dashboard/task-success-rate?world=${encodeURIComponent(worldId)}`)
         if (cancelled) return
         if (!resp.ok) { setHadError(true); return }
         const j = await resp.json().catch(() => null)

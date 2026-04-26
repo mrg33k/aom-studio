@@ -6,13 +6,15 @@
 //
 // Returns { ok, cleared, reset, queueDepth, clearedTasks[], resetAgents[] }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
@@ -28,10 +30,17 @@ export default async function handler(req, res) {
     'Prefer': 'return=representation',
   };
 
-  // Multi-tenant: scope unstuck to a specific client_id
-  const clientId = (req.body && req.body.client_id && req.body.client_id.trim())
+  // Multi-tenant: scope unstuck to a specific client_id, gated by JWT.
+  const requested = (req.body && req.body.client_id && req.body.client_id.trim())
     ? req.body.client_id.trim().toLowerCase()
     : 'aom';
+  let clientId;
+  try {
+    ({ tenant: clientId } = await verifyTenant(requested, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   const now = new Date().toISOString();

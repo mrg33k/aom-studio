@@ -17,6 +17,7 @@ import {
   setWorldOverride,
   getUserWorld,
 } from './lib/clientConfig.js'
+import { authFetch } from './lib/authFetch.js'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useCurrentUserSlug } from './hooks/useCurrentUserSlug'
@@ -348,7 +349,7 @@ export default function CornerV3() {
     // supabase-messages, listener routes to Elon's tmux, his reply arrives
     // via the cv3-thread realtime subscription in ChatPanel.
     try {
-      await fetch('/api/dashboard/supabase-messages', {
+      await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

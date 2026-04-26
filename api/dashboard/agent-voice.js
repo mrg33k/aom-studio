@@ -3,6 +3,8 @@
 // PATCH /api/dashboard/agent-voice  { slug, voice, client_id }
 //   → saves voice selection for the given slug (agent or project:slug)
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -35,7 +37,7 @@ async function saveVoices(clientId, voices, headers) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,PATCH,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -49,9 +51,15 @@ export default async function handler(req, res) {
   };
 
   if (req.method === 'GET') {
-    const clientId = (req.query.client || 'aom').trim().toLowerCase();
+    let tenant;
     try {
-      const voices = await getVoices(clientId, headers);
+      ({ tenant } = await verifyTenant(req.query.client || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+    try {
+      const voices = await getVoices(tenant, headers);
       return res.status(200).json({ voices });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -61,11 +69,17 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const { slug, voice, client_id } = req.body || {};
     if (!slug || !voice) return res.status(400).json({ error: 'slug and voice required' });
-    const clientId = (client_id || 'aom').trim().toLowerCase();
+    let tenant;
     try {
-      const voices = await getVoices(clientId, headers);
+      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+    try {
+      const voices = await getVoices(tenant, headers);
       voices[slug] = voice;
-      await saveVoices(clientId, voices, headers);
+      await saveVoices(tenant, voices, headers);
       return res.status(200).json({ ok: true });
     } catch (err) {
       return res.status(500).json({ error: err.message });

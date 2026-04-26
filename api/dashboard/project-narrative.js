@@ -20,6 +20,8 @@
 // When empty, the client should render a placeholder or fall back to the
 // legacy /api/dashboard/project-paragraph endpoint.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -45,6 +47,14 @@ export default async function handler(req, res) {
   if (!SLUG_RE.test(world)) return res.status(400).json({ error: 'bad_world' });
   if (scope !== 'all' && !SLUG_RE.test(scope)) return res.status(400).json({ error: 'bad_scope' });
 
+  let tenant;
+  try {
+    ({ tenant } = await verifyTenant(world, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
+
   try {
     const agentFilter = `agent=eq.${encodeURIComponent(scope)}`;
     const rows = await supa(
@@ -54,7 +64,7 @@ export default async function handler(req, res) {
     // Match tenant via payload.tenant_id. The server-side JSONB filter
     // `payload->>tenant_id=eq.<world>` would be cleaner, but Supabase REST's
     // JSONB filter support varies; filter in JS for reliability.
-    const row = rows.find(r => (r?.payload?.tenant_id || '') === world);
+    const row = rows.find(r => (r?.payload?.tenant_id || '') === tenant);
     if (!row) {
       return res.status(200).json({ scope, empty: true });
     }

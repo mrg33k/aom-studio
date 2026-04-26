@@ -3,6 +3,7 @@
 // modal opens to refresh collaborators and env_vars for the current scope.
 // Extracted from ChatPanel.jsx (R2b split).
 import { useCallback, useEffect, useState } from 'react'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function useChatSettings({
   selectedAgent,
@@ -43,7 +44,7 @@ export default function useChatSettings({
 
   useEffect(() => {
     if (!worldId) return
-    fetch(`/api/dashboard/agent-voice?client=${encodeURIComponent(worldId)}`)
+    authFetch(`/api/dashboard/agent-voice?client=${encodeURIComponent(worldId)}`)
       .then(r => r.ok ? r.json() : { voices: {} })
       .then(({ voices }) => { if (voices) setAgentVoices(voices) })
       .catch(() => {})
@@ -52,7 +53,7 @@ export default function useChatSettings({
   const selectVoice = useCallback((voice) => {
     if (!currentChatKey) return
     setAgentVoices(prev => ({ ...prev, [currentChatKey]: voice }))
-    fetch('/api/dashboard/agent-voice', {
+    authFetch('/api/dashboard/agent-voice', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: currentChatKey, voice, client_id: worldId }),
@@ -81,7 +82,7 @@ export default function useChatSettings({
       const fetches = []
       if (currentUser?.id) {
         fetches.push(
-          fetch(`/api/dashboard/env-vars?scope=user&scope_id=${encodeURIComponent(currentUser.id)}&client=${encodeURIComponent(cid)}`)
+          authFetch(`/api/dashboard/env-vars?scope=user&scope_id=${encodeURIComponent(currentUser.id)}&client=${encodeURIComponent(cid)}`)
             .then(r => r.json()).then(d => d.keys || []).catch(() => [])
         )
       } else {
@@ -90,7 +91,7 @@ export default function useChatSettings({
       const projSlug = selectedProject?.slug
       if (projSlug) {
         fetches.push(
-          fetch(`/api/dashboard/env-vars?scope=project&scope_id=${encodeURIComponent(projSlug)}&client=${encodeURIComponent(cid)}`)
+          authFetch(`/api/dashboard/env-vars?scope=project&scope_id=${encodeURIComponent(projSlug)}&client=${encodeURIComponent(cid)}`)
             .then(r => r.json()).then(d => d.keys || []).catch(() => [])
         )
       } else {
@@ -122,7 +123,7 @@ export default function useChatSettings({
       : (currentUser?.id || '')
     if (!scopeId) { setKeySaveMsg({ type: 'err', text: 'No scope target' }); return }
     try {
-      const r = await fetch('/api/dashboard/env-vars', {
+      const r = await authFetch('/api/dashboard/env-vars', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope: newKeyScope, scope_id: scopeId, key: newKeyName.trim().toUpperCase(), value: newKeyValue.trim(), client_id: cid }),
@@ -132,7 +133,7 @@ export default function useChatSettings({
         setKeySaveMsg({ type: 'ok', text: 'Saved' })
         setNewKeyName('')
         setNewKeyValue('')
-        const listR = await fetch(`/api/dashboard/env-vars?scope=${newKeyScope}&scope_id=${encodeURIComponent(scopeId)}&client=${encodeURIComponent(cid)}`)
+        const listR = await authFetch(`/api/dashboard/env-vars?scope=${newKeyScope}&scope_id=${encodeURIComponent(scopeId)}&client=${encodeURIComponent(cid)}`)
         const listD = await listR.json()
         setEnvKeys(prev => ({ ...prev, [newKeyScope]: listD.keys || [] }))
       } else {
@@ -148,12 +149,12 @@ export default function useChatSettings({
       : (currentUser?.id || '')
     if (!scopeId) return
     try {
-      await fetch('/api/dashboard/env-vars', {
+      await authFetch('/api/dashboard/env-vars', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope, scope_id: scopeId, key, client_id: cid }),
       })
-      const listR = await fetch(`/api/dashboard/env-vars?scope=${scope}&scope_id=${encodeURIComponent(scopeId)}&client=${encodeURIComponent(cid)}`)
+      const listR = await authFetch(`/api/dashboard/env-vars?scope=${scope}&scope_id=${encodeURIComponent(scopeId)}&client=${encodeURIComponent(cid)}`)
       const listD = await listR.json()
       setEnvKeys(prev => ({ ...prev, [scope]: listD.keys || [] }))
     } catch {}

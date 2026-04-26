@@ -22,6 +22,8 @@
 //
 // Limit 15 hits. Does not paginate — this is a search surface, not an index.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -70,6 +72,15 @@ export default async function handler(req, res) {
   const qRaw = (req.query.q || '').toString().trim();
 
   if (!SLUG_RE.test(world)) return res.status(400).json({ error: 'bad_world' });
+
+  let tenant;
+  try {
+    ({ tenant } = await verifyTenant(world, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
+
   if (qRaw.length < 2 || qRaw.length > 80) {
     return res.status(200).json({ q: qRaw, hits: [] });
   }
@@ -96,6 +107,12 @@ export default async function handler(req, res) {
       const content = row?.payload?.content || '';
       const { project, parent } = parseAgent(row.agent);
       if (!filename || !project) continue;
+      // Tenant scope: scaffold_file rows aren't tenant-tagged today (writer
+      // is scripts/surface-md-events.py — no tenant_id in payload). Phase 2
+      // gates the request via verifyTenant (no JWT = 401), but cross-tenant
+      // file leakage via file-search is residual until the writer tags rows.
+      // Tracked separately; do NOT silently filter here or we hide files.
+      void tenant;
       // Belt-and-suspenders: confirm a real text match (ilike is case-
       // insensitive Postgres; we verify in JS too so the preview is accurate).
       const haystack = `${filename} ${content}`.toLowerCase();

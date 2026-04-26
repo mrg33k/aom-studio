@@ -5,6 +5,7 @@
 // the one place Patrik reaches for any document.
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function useHomeSearch({ agents, projects, world }) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -42,7 +43,7 @@ export default function useHomeSearch({ agents, projects, world }) {
             .order('created_at', { ascending: false })
             .limit(8),
           world
-            ? fetch(`/api/dashboard/file-search?world=${encodeURIComponent(world)}&q=${encodeURIComponent(q)}`)
+            ? authFetch(`/api/dashboard/file-search?world=${encodeURIComponent(world)}&q=${encodeURIComponent(q)}`)
                 .then(r => r.ok ? r.json() : { hits: [] })
                 .catch(() => ({ hits: [] }))
             : Promise.resolve({ hits: [] }),

@@ -18,9 +18,12 @@
 //   path: 'projects' | 'onboarding' | null,  // what the user chose after cleanup-hello
 // }
 //
-// This endpoint is tenant-agnostic. Caller passes tenant slug; we never check
-// if it equals a specific user. Ben is a proving case; the code does not know
-// about Ben.
+// This endpoint is tenant-agnostic in the sense that it doesn't hardcode any
+// specific tenant — but every call still requires a JWT authorized for the
+// requested tenant via verifyTenant (R3 Phase 2, 2026-04-26). Ben is a
+// proving case; the code does not know about Ben.
+
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -84,7 +87,7 @@ async function writeLatest(tenant, state) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -93,16 +96,30 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const tenant = (req.query.tenant || '').toString().trim().toLowerCase()
-      if (!validSlug(tenant)) return res.status(400).json({ error: 'valid tenant required' })
+      const requested = (req.query.tenant || '').toString().trim().toLowerCase()
+      if (!validSlug(requested)) return res.status(400).json({ error: 'valid tenant required' })
+      let tenant
+      try {
+        ({ tenant } = await verifyTenant(requested, req))
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+        throw err
+      }
       const state = await fetchLatest(tenant)
       return res.status(200).json({ tenant, state })
     }
 
     if (req.method === 'POST') {
       const body = req.body || {}
-      const tenant = (body.tenant || '').toString().trim().toLowerCase()
-      if (!validSlug(tenant)) return res.status(400).json({ error: 'valid tenant required' })
+      const requested = (body.tenant || '').toString().trim().toLowerCase()
+      if (!validSlug(requested)) return res.status(400).json({ error: 'valid tenant required' })
+      let tenant
+      try {
+        ({ tenant } = await verifyTenant(requested, req))
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+        throw err
+      }
 
       const current = await fetchLatest(tenant)
       const next = {

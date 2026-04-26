@@ -9,6 +9,7 @@
 // before the 5min legacy poke. The clear button fires the existing
 // /api/dashboard/clear-context endpoint so the agent gets a fresh shell.
 import React, { useState, useEffect, useRef } from 'react'
+import { authFetch } from '../lib/authFetch.js'
 
 const SILENCE_MS = 45_000  // 45s — R73 stall state kicks in
 const POKE_MS = 300_000    // 5min (legacy poke button, kept as deeper fallback)
@@ -81,7 +82,7 @@ export function TypingIndicatorV2({
     if (clearState === 'working') return
     setClearState('working')
     try {
-      const resp = await fetch('/api/dashboard/clear-context', {
+      const resp = await authFetch('/api/dashboard/clear-context', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: agentSlug, client_id: worldId }),

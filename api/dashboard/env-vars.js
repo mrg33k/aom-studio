@@ -7,13 +7,15 @@
 //
 // Service role only (RLS default-deny, service role bypasses).
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -32,9 +34,15 @@ export default async function handler(req, res) {
     if (!scope || !scope_id) {
       return res.status(400).json({ error: 'scope and scope_id required' });
     }
-    const clientId = client || 'aom';
+    let tenant;
     try {
-      const url = `${SUPABASE_URL}/rest/v1/env_vars?scope=eq.${encodeURIComponent(scope)}&scope_id=eq.${encodeURIComponent(scope_id)}&client_id=eq.${encodeURIComponent(clientId)}&select=key,created_at,updated_at&order=key.asc`;
+      ({ tenant } = await verifyTenant(client || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/env_vars?scope=eq.${encodeURIComponent(scope)}&scope_id=eq.${encodeURIComponent(scope_id)}&client_id=eq.${encodeURIComponent(tenant)}&select=key,created_at,updated_at&order=key.asc`;
       const r = await fetch(url, { headers });
       if (!r.ok) return res.status(500).json({ error: 'fetch failed' });
       const rows = await r.json();
@@ -53,7 +61,13 @@ export default async function handler(req, res) {
     if (!['world', 'user', 'project'].includes(scope)) {
       return res.status(400).json({ error: 'scope must be world, user, or project' });
     }
-    const clientId = client_id || 'aom';
+    let tenant;
+    try {
+      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
     try {
       const url = `${SUPABASE_URL}/rest/v1/env_vars?on_conflict=scope,scope_id,key,client_id`;
       const r = await fetch(url, {
@@ -64,7 +78,7 @@ export default async function handler(req, res) {
           scope_id,
           key,
           value,
-          client_id: clientId,
+          client_id: tenant,
           updated_at: new Date().toISOString(),
         }),
       });
@@ -80,9 +94,15 @@ export default async function handler(req, res) {
     if (!scope || !scope_id || !key) {
       return res.status(400).json({ error: 'scope, scope_id, and key required' });
     }
-    const clientId = client_id || 'aom';
+    let tenant;
     try {
-      const url = `${SUPABASE_URL}/rest/v1/env_vars?scope=eq.${encodeURIComponent(scope)}&scope_id=eq.${encodeURIComponent(scope_id)}&key=eq.${encodeURIComponent(key)}&client_id=eq.${encodeURIComponent(clientId)}`;
+      ({ tenant } = await verifyTenant(client_id || 'aom', req));
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/env_vars?scope=eq.${encodeURIComponent(scope)}&scope_id=eq.${encodeURIComponent(scope_id)}&key=eq.${encodeURIComponent(key)}&client_id=eq.${encodeURIComponent(tenant)}`;
       const r = await fetch(url, {
         method: 'DELETE',
         headers: { ...headers, 'Prefer': 'return=minimal' },

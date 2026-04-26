@@ -12,25 +12,35 @@
 // Unlike reset-agent (which kills and restarts the session), clear_context
 // only clears the Claude Code conversation history -- the session keeps running.
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const agent = ((req.body && req.body.agent) || '').toString().trim().toLowerCase()
-  const clientId = ((req.body && req.body.client_id) || 'aom').toString().trim()
+  const requested = ((req.body && req.body.client_id) || 'aom').toString().trim()
 
   if (!agent) return res.status(400).json({ error: 'agent required' })
   if (!/^[a-z][a-z0-9-]*$/.test(agent)) return res.status(400).json({ error: 'invalid agent slug' })
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: 'Supabase not configured' })
+  }
+
+  let tenant
+  try {
+    ({ tenant } = await verifyTenant(requested, req))
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
   }
 
   try {
@@ -49,7 +59,7 @@ export default async function handler(req, res) {
         role: 'system',
         source: 'clear_context',
         text: agent,
-        client_id: clientId,
+        client_id: tenant,
         timestamp: new Date().toISOString(),
       }),
     })

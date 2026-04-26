@@ -9,6 +9,19 @@
 
 import crypto from 'crypto'
 import { detectProjectFromText, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
+
+// Shared project rooms (`shared:<slug>`) are cross-tenant by design — a thread
+// any participating tenant can post to. Tenant equality doesn't apply, but we
+// still require a valid JWT so anonymous callers can't read or write. Per-room
+// membership is a follow-up; for Patrik-only today, JWT-required is the floor.
+const SHARED_PREFIX = 'shared:'
+
+async function requireJwtOnly(req, res) {
+  const jwt = extractJwt(req)
+  if (!jwt) { res.status(401).json({ error: 'jwt required' }); return false }
+  return true
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -27,7 +40,7 @@ function supabaseHeaders() {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   res.setHeader('Cache-Control', 'no-store, no-cache')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -42,9 +55,22 @@ export default async function handler(req, res) {
     if (!agent && !all) return res.status(400).json({ error: 'agent required' })
 
     // client_id filter ready for multi-tenant (add column to Supabase first)
-    const clientId = (req.query.client && req.query.client.trim())
+    const requestedClient = (req.query.client && req.query.client.trim())
       ? req.query.client.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
+    let clientId
+    if (requestedClient.startsWith(SHARED_PREFIX)) {
+      // Shared project room — JWT-required, no tenant equality.
+      if (!(await requireJwtOnly(req, res))) return
+      clientId = requestedClient
+    } else {
+      try {
+        ({ tenant: clientId } = await verifyTenant(requestedClient, req))
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+        throw err
+      }
+    }
 
     // Always filter by client_id for multi-tenant isolation.
     // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
@@ -76,6 +102,10 @@ export default async function handler(req, res) {
     if (!id || !status) return res.status(400).json({ error: 'id and status required' })
     const allowed = ['sent', 'delivered', 'read', 'composing']
     if (!allowed.includes(status)) return res.status(400).json({ error: 'invalid status' })
+    // Read-receipt is low blast-radius (status enum only) but still needs a
+    // valid JWT so anonymous tampering is denied. Per-message tenant binding
+    // is a follow-up — would require a row lookup per PATCH.
+    if (!(await requireJwtOnly(req, res))) return
 
     const url = `${SUPABASE_URL}/rest/v1/messages?id=eq.${encodeURIComponent(id)}`
     const sbRes = await fetch(url, {
@@ -104,9 +134,21 @@ export default async function handler(req, res) {
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
     // Resolve client_id: prefer body field, else default to 'aom'
-    const resolvedClientId = (client_id && client_id.trim())
+    const requestedClientId = (client_id && client_id.trim())
       ? client_id.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
+    let resolvedClientId
+    if (requestedClientId.startsWith(SHARED_PREFIX)) {
+      if (!(await requireJwtOnly(req, res))) return
+      resolvedClientId = requestedClientId
+    } else {
+      try {
+        ({ tenant: resolvedClientId } = await verifyTenant(requestedClientId, req))
+      } catch (err) {
+        if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+        throw err
+      }
+    }
 
     // --- Project auto-detection ---
     // Priority: explicit project field > [project:slug] tag in text > slug/name
@@ -177,12 +219,19 @@ export default async function handler(req, res) {
 
   // ---- DELETE: clear all messages for a client_id (world switch fresh-start) ------
   if (req.method === 'DELETE') {
-    const clientId = (req.query.client && req.query.client.trim())
+    const requestedClient = (req.query.client && req.query.client.trim())
       ? req.query.client.trim().toLowerCase()
       : null
-    if (!clientId || clientId === 'aom') {
+    if (!requestedClient || requestedClient === 'aom') {
       // Safety guard: never allow bulk-delete for aom world
       return res.status(400).json({ error: 'client required and must not be aom' })
+    }
+    let clientId
+    try {
+      ({ tenant: clientId } = await verifyTenant(requestedClient, req))
+    } catch (err) {
+      if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+      throw err
     }
     const url = `${SUPABASE_URL}/rest/v1/messages?client_id=eq.${encodeURIComponent(clientId)}`
     const sbRes = await fetch(url, {

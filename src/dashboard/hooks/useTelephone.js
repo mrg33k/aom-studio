@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { blobToBase64 } from '../components/cv3/shared.jsx'
 import { supabase } from '../lib/supabase'
+import { authFetch } from '../lib/authFetch.js'
 
 const TRANSCRIPT_PREFIX = '[telephone transcript] '
 const PHONE_AUDIO_BUCKET = 'phone-audio'
@@ -83,7 +84,7 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
     const target = targetAgentRef.current
     if (!target?.slug) { setMicError('No agent available to send transcript.'); return }
     try {
-      await fetch('/api/dashboard/supabase-messages', {
+      await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -20,6 +20,7 @@
 // Voice pipeline verified working 2026-04-07.
 
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { authFetch } from '../lib/authFetch.js'
 
 // Terminal rooms: live Claude Code sessions attached via tmux relay.
 // Text in these rooms bypasses the dashboard chat API entirely (handled by the
@@ -183,7 +184,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
     // here prevents noisy fragment messages from flooding the terminal agent's inbox
     // during the call itself.
     if (TERMINAL_AGENTS.has(agentSlug)) return
-    fetch('/api/dashboard/supabase-messages', {
+    authFetch('/api/dashboard/supabase-messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

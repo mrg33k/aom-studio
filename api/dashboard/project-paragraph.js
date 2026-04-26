@@ -20,6 +20,8 @@
 //     sources: { messages: N, events: N, projects: N, open_tasks: N }
 //   }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -192,7 +194,7 @@ async function composeProject(world, slug) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
@@ -203,8 +205,16 @@ export default async function handler(req, res) {
   if (scope !== 'all' && !SLUG_RE.test(scope)) return res.status(400).json({ error: 'invalid scope' });
   const expanded = req.query.expanded === '1' || req.query.expanded === 'true';
 
+  let tenant;
   try {
-    const composed = scope === 'all' ? await composeAll(world) : await composeProject(world, scope);
+    ({ tenant } = await verifyTenant(world, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
+
+  try {
+    const composed = scope === 'all' ? await composeAll(tenant) : await composeProject(tenant, scope);
     const body = {
       scope,
       paragraph: composed.paragraph,

@@ -15,6 +15,7 @@
 // template-identical and self-heals.
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 // Merge new rows into existing messages, dedup by id, preserve any optimistic
 // temp-/bridge-stream-/voice- entries that don't yet have a real server row.
@@ -454,7 +455,7 @@ export default function useChatMessages({
         })
         if (surfaceAgent) qs.set('agent', surfaceAgent)
         if (surfaceProject) qs.set('project', surfaceProject)
-        const r = await fetch(`/api/dashboard/message-steps?${qs.toString()}`)
+        const r = await authFetch(`/api/dashboard/message-steps?${qs.toString()}`)
         if (!r.ok || !active) return
         const payload = await r.json()
         const next = {}

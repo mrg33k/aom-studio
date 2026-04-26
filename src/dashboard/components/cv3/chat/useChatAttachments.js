@@ -5,6 +5,7 @@
 // before uploading to /api/dashboard/file-upload.
 // Extracted from ChatPanel.jsx (R2b split).
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function useChatAttachments({
   selectedAgent,
@@ -190,7 +191,7 @@ export default function useChatAttachments({
         // no attachment_url column. Ensures Gemini sees the file reference in
         // conversation history.
         const attachText = `Attached file: ${file.name}\n${publicUrl}`
-        fetch('/api/dashboard/supabase-messages', {
+        authFetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

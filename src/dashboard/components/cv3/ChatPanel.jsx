@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useProjects } from '../../hooks/useProjects'
 import { formatRelativeTime } from '../../timeUtils'
+import { authFetch } from '../../lib/authFetch.js'
 import { useCornerAuth, useCornerData, useCornerNav } from '../../CornerContext.jsx'
 import ProjectChatView from './ProjectChatView.jsx'
 import ConversationsView from './ConversationsView.jsx'
@@ -353,7 +354,7 @@ export default function ChatPanel() {
     setChatSearchLoading(true)
     try {
       const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : (worldId || 'aom')
-      const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agent)}&client=${encodeURIComponent(clientId)}&search=${encodeURIComponent(query)}&limit=500`)
+      const res = await authFetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agent)}&client=${encodeURIComponent(clientId)}&search=${encodeURIComponent(query)}&limit=500`)
       if (res.ok) {
         const data = await res.json()
         setChatSearchResults(data.messages || [])

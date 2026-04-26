@@ -7,6 +7,8 @@
 // Response shape:
 //   { steps: [{ id, agent, parent_message_id, step_index, text, status, timestamp, project }] }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -20,6 +22,7 @@ function headers() {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   res.setHeader('Cache-Control', 'no-store')
 
   if (req.method !== 'GET') {
@@ -29,7 +32,14 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' })
   }
 
-  const clientId = String(req.query.client_id || 'aom').toLowerCase()
+  let tenant
+  try {
+    ({ tenant } = await verifyTenant(req.query.client_id || 'aom', req))
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    throw err
+  }
+  const clientId = tenant
   const agent = (req.query.agent || '').toString().toLowerCase()
   const project = (req.query.project || '').toString().toLowerCase()
   const limit = Math.min(parseInt(req.query.limit, 10) || 40, 100)

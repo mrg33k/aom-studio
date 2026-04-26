@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 export default function LivingParagraphCard({ world, activeProject }) {
   const scope = !activeProject || activeProject === 'all' ? 'all' : activeProject
@@ -40,13 +41,13 @@ export default function LivingParagraphCard({ world, activeProject }) {
 
     const loadNarrative = async () => {
       try {
-        const resp = await fetch(`/api/dashboard/project-narrative?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
+        const resp = await authFetch(`/api/dashboard/project-narrative?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
         const data = await resp.json()
         if (!active) return
         if (data?.empty) {
           // fall back to template endpoint
-          const fb = await fetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
+          const fb = await authFetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}`)
           if (fb.ok) {
             const fbData = await fb.json()
             if (active) {
@@ -108,7 +109,7 @@ export default function LivingParagraphCard({ world, activeProject }) {
   // Lazy fetch fallback detail block on first expand (only for template-path paragraphs).
   useEffect(() => {
     if (!expanded || !usingFallback || fallbackDetail || !world) return
-    fetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}&expanded=1`)
+    authFetch(`/api/dashboard/project-paragraph?world=${encodeURIComponent(world)}&scope=${encodeURIComponent(scope)}&expanded=1`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.detail) setFallbackDetail(data.detail) })
       .catch(() => {})

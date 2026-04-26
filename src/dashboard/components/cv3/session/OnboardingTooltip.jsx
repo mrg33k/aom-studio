@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 // Tenant-agnostic onboarding CTA for R33.
 //
@@ -20,7 +21,7 @@ export default function OnboardingTooltip({ tenant, onResume }) {
   const refresh = useCallback(async () => {
     if (!tenant) return
     try {
-      const r = await fetch(`/api/dashboard/onboarding-state?tenant=${encodeURIComponent(tenant)}`)
+      const r = await authFetch(`/api/dashboard/onboarding-state?tenant=${encodeURIComponent(tenant)}`)
       if (!r.ok) return
       const data = await r.json()
       setState(data.state || null)

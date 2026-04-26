@@ -6,6 +6,7 @@ import {
   useChatVoiceCtx,
   useChatSettingsCtx,
 } from '../chat/ChatPanelContext.jsx'
+import { authFetch } from '../../../lib/authFetch.js'
 
 // Hidden VoiceChat host for the project-chat room. When voice is active, this
 // component renders the real WebRTC session, streams transcripts into the
@@ -49,7 +50,7 @@ export default function ProjectVoiceChatHost() {
             source: 'voice',
           }])
           // Persist voice transcript to DB
-          fetch('/api/dashboard/supabase-messages', {
+          authFetch('/api/dashboard/supabase-messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

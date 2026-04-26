@@ -28,6 +28,8 @@
 //   amber_since: '2026-04-22T15:30:00Z' | null,
 // }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -45,14 +47,21 @@ function stateFor(pct) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const world = String(req.query.world || 'aom').trim();
-  if (!/^[a-z0-9][a-z0-9-_:]{0,64}$/i.test(world)) {
+  const requestedWorld = String(req.query.world || 'aom').trim();
+  if (!/^[a-z0-9][a-z0-9-_:]{0,64}$/i.test(requestedWorld)) {
     return res.status(400).json({ error: 'invalid world' });
+  }
+  let world;
+  try {
+    ({ tenant: world } = await verifyTenant(requestedWorld, req));
+  } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    throw err;
   }
   const requestedWindow = parseInt(req.query.window, 10);
   const windowN = Number.isFinite(requestedWindow)
