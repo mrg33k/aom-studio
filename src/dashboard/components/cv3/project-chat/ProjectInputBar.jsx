@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
+import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import {
   useChatCore,
   useChatSendCtx,
@@ -23,6 +24,7 @@ export default function ProjectInputBar() {
   } = useChatCore()
   const {
     input, setInput, inputRef, sending, sendProjectText,
+    pasteChips, addPasteChip, removePasteChip,
   } = useChatSendCtx()
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
   const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx()
@@ -60,6 +62,16 @@ export default function ProjectInputBar() {
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
+  const handlePaste = useCallback((e) => {
+    const text = e.clipboardData?.getData('text') || ''
+    if (shouldChipPaste(text)) {
+      e.preventDefault()
+      addPasteChip(text)
+    }
+  }, [addPasteChip])
+
+  const hasContent = input.trim().length > 0 || (pasteChips?.length > 0)
+
   return (
     <div style={{
       flexShrink: 0,
@@ -78,6 +90,7 @@ export default function ProjectInputBar() {
       {replyTo && (
         <ReplyToChip target={replyTo} onDismiss={() => setReplyTo(null)} />
       )}
+      <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
       <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
         <SlashCommandAutocomplete
           value={input}
@@ -104,7 +117,7 @@ export default function ProjectInputBar() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                if (!input.trim() || sending) return
+                if ((!input.trim() && !pasteChips?.length) || sending) return
                 sendProjectText(input)
                 setInput('')
               }
@@ -114,6 +127,7 @@ export default function ProjectInputBar() {
             onSelect={updateCaret}
             onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
             onBlur={() => setChatInputFocused(false)}
+            onPaste={handlePaste}
             placeholder={`Message ${selectedProject?.name || 'project'}...`}
             style={{
               flex: 1,
@@ -182,7 +196,7 @@ export default function ProjectInputBar() {
               </svg>
             </button>
           </div>
-          {!input.trim() && (
+          {!hasContent && (
             <button
               title={isVoiceActive ? 'End voice' : 'Start voice'}
               onClick={() => setIsVoiceActive(true)}
@@ -205,11 +219,11 @@ export default function ProjectInputBar() {
               </svg>
             </button>
           )}
-          {input.trim() && (
+          {hasContent && (
             <button
               title="Send"
               onClick={() => {
-                if (!input.trim() || sending) return
+                if ((!input.trim() && !pasteChips?.length) || sending) return
                 sendProjectText(input)
                 setInput('')
               }}

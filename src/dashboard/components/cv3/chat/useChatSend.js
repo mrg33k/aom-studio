@@ -31,6 +31,8 @@ export default function useChatSend({
   setAgentPreviews,
   startBridgeStream,
   onMessageSent,
+  pasteChipsRef,
+  clearPasteChips,
 }) {
   // R14e-3: read agents from CornerContext so sendProjectText can resolve the
   // EA slug from role flags instead of hardcoding 'elon'. Read here (not
@@ -47,10 +49,12 @@ export default function useChatSend({
   // ── handleSend: text-input default for agent chat ─────────────────────────
   const handleSend = useCallback(async () => {
     const rawText = input.trim()
-    if (!rawText || sending || !selectedAgent) return
+    const chips = pasteChipsRef?.current || []
+    if ((!rawText && !chips.length) || sending || !selectedAgent) return
     const cleanText = rawText
     const attSnapshot = pendingAttachmentsRef.current
-    const sig = `${selectedAgent.slug}:${cleanText}:${attSnapshot.map(a => a.id).join(',')}`
+    const chipsKey = chips.map(c => c.id).join(',')
+    const sig = `${selectedAgent.slug}:${cleanText}:${chipsKey}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
     if (inFlightSendRef.current) return
     if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
@@ -59,12 +63,16 @@ export default function useChatSend({
     const attSuffix = attSnapshot.length
       ? '\n' + attSnapshot.map(a => `[Attached file: ${a.name}\n${a.url}]`).join('\n')
       : ''
+    const chipsSuffix = chips.length
+      ? '\n\n' + chips.map(c => c.text).join('\n\n')
+      : ''
     const replySnap = replyToRef.current
     const quotePrefix = replySnap?.snippet
       ? `> ${replySnap.type === 'task' ? `Re: task "${replySnap.label || ''}"` : 'Re'}: "${replySnap.snippet.length > 240 ? replySnap.snippet.slice(0, 237) + '…' : replySnap.snippet}"\n\n`
       : ''
-    const text = quotePrefix + cleanText + attSuffix
+    const text = quotePrefix + cleanText + chipsSuffix + attSuffix
     setInput('')
+    if (chips.length) clearPasteChips?.()
     if (attSnapshot.length) setPendingAttachments([])
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
@@ -211,8 +219,9 @@ export default function useChatSend({
 
   // ── sendProjectText: project chat send path ──────────────────────────────
   const sendProjectText = useCallback(async (rawText) => {
-    if (!rawText?.trim() || !selectedProject || !worldId) return
-    const trimmed = rawText.trim()
+    const chips = pasteChipsRef?.current || []
+    if ((!rawText?.trim() && !chips.length) || !selectedProject || !worldId) return
+    const trimmed = rawText?.trim() || ''
     // R14e-3: project chat still routes through the tenant's EA (same
     // envelope pattern R6 introduced — agent=<ea_slug>, project=<slug> —
     // so the EA's tmux listener + queue-task.py picks the right repo),
@@ -227,7 +236,8 @@ export default function useChatSend({
       || 'elon'
     const projectSlug = selectedProject.slug
     const attSnapshot = pendingAttachmentsRef.current
-    const sig = `${agentKey}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
+    const chipsKey = chips.map(c => c.id).join(',')
+    const sig = `${agentKey}:${trimmed}:${chipsKey}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
     if (inFlightSendRef.current) return
     if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
@@ -236,11 +246,15 @@ export default function useChatSend({
     const attSuffix = attSnapshot.length
       ? '\n' + attSnapshot.map(a => `[Attached file: ${a.name}\n${a.url}]`).join('\n')
       : ''
+    const chipsSuffix = chips.length
+      ? '\n\n' + chips.map(c => c.text).join('\n\n')
+      : ''
     const replySnap = replyToRef.current
     const quotePrefix = replySnap?.snippet
       ? `> ${replySnap.type === 'task' ? `Re: task "${replySnap.label || ''}"` : 'Re'}: "${replySnap.snippet.length > 240 ? replySnap.snippet.slice(0, 237) + '…' : replySnap.snippet}"\n\n`
       : ''
-    const text = quotePrefix + trimmed + attSuffix
+    const text = quotePrefix + trimmed + chipsSuffix + attSuffix
+    if (chips.length) clearPasteChips?.()
     if (attSnapshot.length) setPendingAttachments([])
     if (replySnap) setReplyTo(null)
     setSending(true)
@@ -291,12 +305,13 @@ export default function useChatSend({
   }, [selectedProject, worldId, userIdentity, agents, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef, onMessageSent])
 
   const handleProjectSend = useCallback(async () => {
-    if (!input.trim() || sending) return
+    const hasChips = pasteChipsRef?.current?.length > 0
+    if ((!input.trim() && !hasChips) || sending) return
     const text = input.trim()
     setInput('')
     if (inputRef.current) inputRef.current.style.height = 'auto'
     await sendProjectText(text)
-  }, [input, sending, sendProjectText, setInput, inputRef])
+  }, [input, sending, sendProjectText, setInput, inputRef, pasteChipsRef])
 
   const handleProjectKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleProjectSend() }

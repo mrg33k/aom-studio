@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
+import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import {
   useChatCore,
   useChatSendCtx,
@@ -18,6 +19,7 @@ export default function ThreadInputBar() {
   const {
     input, setInput, inputRef, sending,
     handleSend, handleKeyDown,
+    pasteChips, addPasteChip, removePasteChip,
   } = useChatSendCtx()
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
   const {
@@ -28,6 +30,16 @@ export default function ThreadInputBar() {
   // Caret position for slash-command autocomplete
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
+
+  const handlePaste = useCallback((e) => {
+    const text = e.clipboardData?.getData('text') || ''
+    if (shouldChipPaste(text)) {
+      e.preventDefault()
+      addPasteChip(text)
+    }
+  }, [addPasteChip])
+
+  const hasContent = input.trim().length > 0 || (pasteChips?.length > 0)
 
   return (
     <div style={{
@@ -48,6 +60,7 @@ export default function ThreadInputBar() {
       {replyTo && (
         <ReplyToChip target={replyTo} onDismiss={() => setReplyTo(null)} />
       )}
+      <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
       {input.includes('>>') && (() => {
         const parts = input.split('>>').map(s => s.trim()).filter(Boolean)
         if (parts.length < 2) return null
@@ -94,6 +107,7 @@ export default function ThreadInputBar() {
           onSelect={updateCaret}
           onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
           onBlur={() => setChatInputFocused(false)}
+          onPaste={handlePaste}
           placeholder={`Message ${selectedAgent.name}...`}
           style={{
             flex: 1,
@@ -142,8 +156,8 @@ export default function ThreadInputBar() {
             </svg>
           </button>
         </div>
-        {/* Mic button (hidden when text present) -- triggers Gemini Live voice chat */}
-        {!input.trim() && (
+        {/* Mic button (hidden when input or chips present) */}
+        {!hasContent && (
           <button
             title={isVoiceActive ? 'End voice' : 'Start voice'}
             onClick={() => {
@@ -175,8 +189,8 @@ export default function ThreadInputBar() {
             </svg>
           </button>
         )}
-        {/* Send button (shown when text present) */}
-        {input.trim() && (
+        {/* Send button (shown when input or chips present) */}
+        {hasContent && (
           <button
             title="Send"
             onClick={handleSend}

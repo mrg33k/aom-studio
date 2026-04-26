@@ -82,6 +82,19 @@ export default function ChatPanel() {
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // ── Paste chips (large paste → chip instead of inline text) ───────────────
+  const [pasteChips, setPasteChips] = useState([])
+  const pasteChipsRef = useRef([])
+  useEffect(() => { pasteChipsRef.current = pasteChips }, [pasteChips])
+  const addPasteChip = useCallback((text) => {
+    const lineCount = text.split('\n').length
+    setPasteChips(prev => [...prev, { id: `paste-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, text, lineCount }])
+  }, [])
+  const removePasteChip = useCallback((id) => {
+    setPasteChips(prev => prev.filter(c => c.id !== id))
+  }, [])
+  const clearPasteChips = useCallback(() => setPasteChips([]), [])
+
   // ── Voice slice (shell-local state) ───────────────────────────────────────
   const [isVoiceActive, setIsVoiceActive] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('idle')
@@ -166,13 +179,14 @@ export default function ChatPanel() {
     return { id: projectId, slug: projectId, name: projectId }
   }, [projectId, projects, inlineProject])
 
-  // Reset session-hygiene counters when conversation changes (agent OR project).
+  // Reset session-hygiene counters and paste chips when conversation changes.
   // Must come AFTER selectedProject is defined above — referencing it in a dep
   // array before its useMemo declaration throws TDZ in the prod build.
   useEffect(() => {
     setExchangeCount(0)
     setNudgeTargetTurn(pickNudgeTarget())
     setNudgeDismissed(false)
+    setPasteChips([])
   }, [selectedAgent?.slug, selectedProject?.slug])
 
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : 'home')
@@ -300,6 +314,8 @@ export default function ChatPanel() {
     setAgentPreviews: conv.setAgentPreviews,
     startBridgeStream: bridge.startBridgeStream,
     onMessageSent,
+    pasteChipsRef,
+    clearPasteChips,
   })
   // Populate the shared send refs from the returned callbacks — consumed
   // by useChatAttachments (auto-ack after upload) and useChatRecording
@@ -414,10 +430,13 @@ export default function ChatPanel() {
     // R73: expose setters so TypingIndicatorV2's stall-clear CTA can unmount
     // itself after firing /api/dashboard/clear-context.
     setIsAgentTyping: bridge.setIsAgentTyping,
+    // Paste chips: large paste collapses to chip in composer
+    pasteChips, addPasteChip, removePasteChip,
   }), [
     input, sending, send.handleSend, send.handleKeyDown, send.sendAgentText,
     send.sendProjectText, send.handleProjectSend, send.handleProjectKeyDown,
     bridge.isAgentTyping, bridge.setIsAgentTyping,
+    pasteChips, addPasteChip, removePasteChip,
   ])
 
   const attachValue = useMemo(() => ({
