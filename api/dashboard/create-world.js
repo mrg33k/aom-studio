@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         id: crypto.randomUUID(),
         agent: 'ea',
         role: 'agent',
-        text: `Hey ${displayName}! Welcome to Corner.\n\nI'm your Executive Assistant. I'll help you get everything set up and running.\n\nTo start, tell me about your business and what you're working on. I'll take it from there.`,
+        text: `Hey ${displayName} — welcome.\n\nI'm your EA. I work for you. Tell me whatever's on your mind right now — what you're working on, what's in your head, what you'd want a sharp partner helping you with — and I'll take it from there.`,
         source: 'gemini',
         client_id: worldSlug,
       }),

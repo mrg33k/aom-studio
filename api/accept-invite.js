@@ -100,6 +100,14 @@ async function addWorldMember(worldId, userId, role) {
   })
 }
 
+async function getInviterDisplayName(userId) {
+  if (!userId) return null
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`, { headers: sbHeaders() })
+  if (!r.ok) return null
+  const u = await r.json()
+  return u.user_metadata?.display_name || u.user_metadata?.full_name || u.user_metadata?.name || null
+}
+
 async function markConsumed(inviteId, userId) {
   await fetch(
     `${SUPABASE_URL}/rest/v1/invites?id=eq.${inviteId}`,
@@ -213,7 +221,27 @@ export default async function handler(req, res) {
     try { await addWorldMember(world.id, user.id, invite.role) }
     catch (err) { return res.status(502).json({ error: `membership failed: ${err.message}` }) }
 
-    // 4. Mark invite consumed
+    // 4. Seed EA greeting
+    try {
+      const inviterName = invite.invited_by ? await getInviterDisplayName(invite.invited_by) : null
+      const greetingText = invite.invited_by
+        ? `Hey ${nameForWorld} — ${inviterName || 'someone'} invited you in. Welcome.\n\nI'm your EA. Tell me what's on your mind and I'll take it from there.`
+        : `Hey ${nameForWorld} — welcome.\n\nI'm your EA. I work for you. Tell me whatever's on your mind right now — what you're working on, what's in your head, what you'd want a sharp partner helping you with — and I'll take it from there.`
+      await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+        method: 'POST',
+        headers: sbHeaders({ Prefer: 'return=minimal' }),
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          agent: 'ea',
+          role: 'agent',
+          text: greetingText,
+          source: 'gemini',
+          client_id: worldSlug,
+        }),
+      })
+    } catch (_) { /* non-fatal: user is in */ }
+
+    // 5. Mark invite consumed
     try { await markConsumed(invite.id, user.id) }
     catch (_) { /* non-fatal: user is in */ }
 
