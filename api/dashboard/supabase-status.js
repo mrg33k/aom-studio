@@ -71,9 +71,16 @@ export default async function handler(req, res) {
     // No post-filter needed -- all tenants including AOM see only their own events.
     const recentEvents = rawEvents;
 
-    // Split agents vs projects
-    const agentList = agents.filter(a => a.type === 'agent');
-    const projectList = agents.filter(a => a.type === 'project');
+    // Split agents vs projects.
+    // R77-t10 follow-up: respect agent_status.hidden — Patrik's complaint of
+    // "extra agent for arsenal in Ben's room" was the duplicate `arsenal`
+    // row (hidden=true after migration 028) still flowing through because
+    // this splitter didn't filter by hidden, and the row mapper below
+    // didn't even project the field. Now: hidden rows are dropped here
+    // so they never reach the client.
+    const visibleAgents = agents.filter(a => !a.hidden);
+    const agentList = visibleAgents.filter(a => a.type === 'agent');
+    const projectList = visibleAgents.filter(a => a.type === 'project');
 
     // Build status format matching what useDataPipe expects.
     // agent_status table is the SOLE source of truth for agent status.
