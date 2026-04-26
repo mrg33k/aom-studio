@@ -529,7 +529,7 @@ function TasksPanelBody() {
 }
 
 function GreetingHeader() {
-  const { greeting, filteredActive, waitingTasks, filteredCompleted } = useTasksPanelCtx()
+  const { greeting } = useTasksPanelCtx()
   return (
     <div style={{ marginBottom: 28 }}>
       <h1 style={{
@@ -542,19 +542,6 @@ function GreetingHeader() {
       }}>
         {greeting}<span style={{ color: C.accent }}>.</span>
       </h1>
-      <p style={{
-        fontSize: 14,
-        fontWeight: 500,
-        color: C.muted,
-        margin: '6px 0 0',
-        lineHeight: 1.4,
-      }}>
-        {filteredActive.length > 0
-          ? `${filteredActive.length} task${filteredActive.length !== 1 ? 's' : ''} in motion`
-          : 'All clear'}
-        {waitingTasks.length > 0 ? ` · ${waitingTasks.length} need${waitingTasks.length !== 1 ? '' : 's'} input` : ''}
-        {filteredCompleted.length > 0 ? ` · ${filteredCompleted.length} done` : ''}
-      </p>
     </div>
   )
 }
