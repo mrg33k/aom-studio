@@ -3,6 +3,8 @@
 // Body: { message: '...', history: [...], clientId: '...' }
 // Returns: { response }
 
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -69,12 +71,29 @@ async function saveToSupabase(role, text, clientId) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
-  const { message, history = [], clientId = 'support' } = req.body || {}
+  const { message, history = [], clientId: rawClientId = 'support' } = req.body || {}
+
+  // JWT gate: verify caller owns the requested tenant before any Supabase write.
+  // If no JWT is present we still serve the AI response — support chat is public-facing —
+  // but we skip saveToSupabase so unauthenticated callers cannot write to the messages table.
+  let verifiedClientId = null
+  try {
+    const { tenant } = await verifyTenant(rawClientId, req)
+    verifiedClientId = tenant
+  } catch (err) {
+    if (err instanceof TenantAuthError && err.status !== 401) {
+      // JWT present but forbidden (cross-tenant) — hard reject
+      return res.status(err.status).json({ error: err.message })
+    }
+    // No JWT or invalid JWT — allow AI response, skip DB writes
+  }
+
+  const clientId = verifiedClientId || rawClientId
 
   if (!message) return res.status(400).json({ error: 'message required' })
 
@@ -94,8 +113,8 @@ export default async function handler(req, res) {
   messages.push({ role: 'user', content: message })
 
   try {
-    // Save user message
-    saveToSupabase('user', message, clientId).catch(() => {})
+    // Save user message (only when JWT is verified; skip for unauthenticated callers)
+    if (verifiedClientId) saveToSupabase('user', message, verifiedClientId).catch(() => {})
 
     const res2 = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -119,8 +138,8 @@ export default async function handler(req, res) {
     const data = await res2.json()
     const response = data.content?.[0]?.text || "I'm here to help. Could you rephrase that?"
 
-    // Save assistant response
-    saveToSupabase('assistant', response, clientId).catch(() => {})
+    // Save assistant response (only when JWT is verified)
+    if (verifiedClientId) saveToSupabase('assistant', response, verifiedClientId).catch(() => {})
 
     return res.status(200).json({ response })
   } catch (err) {
