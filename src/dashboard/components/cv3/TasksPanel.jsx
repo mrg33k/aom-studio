@@ -20,6 +20,7 @@ import ForemanTasksSection from './tasks/ForemanTasksSection.jsx'
 import LivingParagraphCard from './tasks/LivingParagraphCard.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
+import BlockedTasksSection from './tasks/BlockedTasksSection.jsx'
 import FailedTasksSection from './tasks/FailedTasksSection.jsx'
 import DoneTasksSection from './tasks/DoneTasksSection.jsx'
 import WeeklyStatsCard from './tasks/WeeklyStatsCard.jsx'
@@ -443,6 +444,9 @@ function TasksPanelBody() {
 
         {/* ── Needs Input ──────────────────────────────────────── */}
         <WaitingTasksSection />
+
+        {/* ── Blocked ─────────────────────────────────────────── */}
+        <BlockedTasksSection />
 
         {/* ── Failed ──────────────────────────────────────────── */}
         <FailedTasksSection />
