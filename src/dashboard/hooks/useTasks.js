@@ -65,7 +65,7 @@ const QUEUED_STATUSES = new Set(['queued', 'classifying', 'planning'])
 const WAITING_STATUSES = new Set(['waiting'])
 
 // Terminal statuses (completed section)
-const DONE_STATUSES = new Set(['done', 'failed'])
+const DONE_STATUSES = new Set(['done', 'failed', 'blocked'])
 
 // Max tasks to fetch (guard against runaway queries)
 // Must be high enough to cover all active + recent done tasks

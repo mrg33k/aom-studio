@@ -492,7 +492,8 @@ export function useTasksPanel() {
   const filteredActive = filterTasks(active)
   const isDismissed = t => t.metadata?.dismissed === true
   const filteredFailed = filterTasks(completed.filter(t => t.status === 'failed' && !isDismissed(t)))
-  const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed' && !isDismissed(t)))
+  const filteredBlocked = filterTasks(completed.filter(t => t.status === 'blocked' && !isDismissed(t)))
+  const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed' && t.status !== 'blocked' && !isDismissed(t)))
 
   // Weekly bar chart counts
   const now = new Date()
@@ -776,6 +777,7 @@ export function useTasksPanel() {
     waitingTasks,
     filteredActive,
     filteredFailed,
+    filteredBlocked,
     filteredCompleted,
 
     // Card lifecycle
