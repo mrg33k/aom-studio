@@ -4,7 +4,7 @@
 // key so RLS on dependent tables (events triggers, etc.) doesn't block
 // the client-side insert.
 //
-// Body: { text, projectSlug, clientId?, userId? }
+// Body: { text, projectSlug, clientId?, userId?, mission_slug? }
 // Returns: { ok: true, task: { id, title, status, project } }
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -16,6 +16,29 @@ function cleanTitle(raw) {
   return s.length > 140 ? s.slice(0, 137) + '…' : s;
 }
 
+// Fire-and-forget: log mission_first_warn to events table.
+async function _logMissionWarnEvent({ project, source }) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  const now = new Date().toISOString();
+  const event = {
+    id: crypto.randomUUID(),
+    timestamp: now,
+    agent: 'corner-dashboard',
+    event_type: 'mission_first_warn',
+    payload: { project: project || '', source: source || 'create-project-task.js', timestamp: now },
+  };
+  await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify(event),
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -24,7 +47,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const { text, projectSlug, clientId, userId } = req.body || {};
+  const { text, projectSlug, clientId, userId, mission_slug: rawMission } = req.body || {};
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
@@ -32,6 +55,16 @@ export default async function handler(req, res) {
   if (!slug) return res.status(400).json({ error: 'projectSlug is required' });
   if (!/^[a-z0-9][a-z0-9-_]{0,64}$/.test(slug)) {
     return res.status(400).json({ error: 'invalid projectSlug' });
+  }
+
+  const missionSlug = (rawMission || '').toString().trim() || null;
+  if (!missionSlug) {
+    console.warn(
+      '[mission-first] WARN: no mission_slug in create-project-task request. ' +
+      'Pass mission_slug in request body. Hard error flip date: 2026-05-28.',
+    );
+    // Fire-and-forget — do not await or let failure block task creation.
+    _logMissionWarnEvent({ project: slug, source: 'create-project-task.js' }).catch(() => {});
   }
 
   const title = cleanTitle(text);
@@ -51,6 +84,13 @@ export default async function handler(req, res) {
       }
     } catch (_) { /* best effort */ }
 
+    const metadata = {
+      repo: slug,
+      created_via: 'r21c-in-chat',
+      model: 'sonnet',
+    };
+    if (missionSlug) metadata.mission_slug = missionSlug;
+
     const row = {
       title,
       text,
@@ -61,11 +101,7 @@ export default async function handler(req, res) {
       created_by: userId || null,
       project: slug,
       project_path: repoPath,
-      metadata: {
-        repo: slug,
-        created_via: 'r21c-in-chat',
-        model: 'sonnet',
-      },
+      metadata,
     };
     const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
       method: 'POST',
