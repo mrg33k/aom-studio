@@ -12,6 +12,7 @@ const S3CBrand = lazy(() => import('./pages/S3CBrand.jsx'))
 const V2VBrand = lazy(() => import('./pages/V2VBrand.jsx'))
 const ValorBrand = lazy(() => import('./pages/ValorBrand.jsx'))
 const SpaceRisingBrand = lazy(() => import('./pages/SpaceRisingBrand.jsx'))
+const SpaceRisingReports = lazy(() => import('./pages/SpaceRisingReports.jsx'))
 const AmbitionBrandGuidelines = lazy(() => import('./pages/AmbitionBrandGuidelines.jsx'))
 const AmbitionBrandGuidelinesV2 = lazy(() => import('./pages/AmbitionBrandGuidelinesV2.jsx'))
 const Social = lazy(() => import('./pages/Social.jsx'))
@@ -206,6 +207,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/v2v" element={<V2VBrand />} />
           <Route path="/brands/valor" element={<ValorBrand />} />
           <Route path="/brands/space-rising" element={<SpaceRisingBrand />} />
+          <Route path="/brands/space-rising/reports" element={<SpaceRisingReports />} />
           <Route path="/social" element={<Social />} />
           <Route path="/research/hvac-ads-arizona" element={<ResearchHVAC />} />
           <Route path="/briefs" element={<BriefsHub />} />
