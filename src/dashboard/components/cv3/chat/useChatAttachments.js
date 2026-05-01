@@ -6,6 +6,7 @@
 // Extracted from ChatPanel.jsx (R2b split).
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { authFetch } from '../../../lib/authFetch.js'
+import { useSystemToast } from '../../../SystemToast.jsx'
 
 export default function useChatAttachments({
   selectedAgent,
@@ -15,6 +16,7 @@ export default function useChatAttachments({
   setMessages,
   sendProjectTextRef,
 }) {
+  const { showToast } = useSystemToast()
   // ── Pending attachments (staged, consumed on next send) ───────────────────
   const [pendingAttachments, setPendingAttachments] = useState([])
   const [stagingFiles, setStagingFiles] = useState(false)
@@ -94,6 +96,7 @@ export default function useChatAttachments({
           const uploadData = await uploadRes.json()
           if (!uploadRes.ok) {
             console.error('[ChatPanel] stageFiles upload error:', uploadData.error)
+            showToast(`Upload failed for ${file.name}: ${uploadData.error || 'file server unavailable'}`, 'error')
             continue
           }
           addPendingAttachment({
@@ -105,12 +108,13 @@ export default function useChatAttachments({
           })
         } catch (err) {
           console.error('[ChatPanel] stageFiles error:', err)
+          showToast(`Upload failed for ${file.name}: ${err.message}`, 'error')
         }
       }
     } finally {
       setStagingFiles(false)
     }
-  }, [worldId, selectedProject, addPendingAttachment])
+  }, [worldId, selectedProject, addPendingAttachment, showToast])
 
   // Legacy flow: upload and immediately post as its own message.
   const handleFileSelection = useCallback(async (e) => {
@@ -121,6 +125,7 @@ export default function useChatAttachments({
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
     setUploading(true)
+    let successCount = 0
     for (const file of files) {
       try {
         let dataBase64, mimeType = file.type
@@ -169,8 +174,10 @@ export default function useChatAttachments({
         const uploadData = await uploadRes.json()
         if (!uploadRes.ok) {
           console.error('[ChatPanel] upload error:', uploadData.error)
+          showToast(`Upload failed for ${file.name}: ${uploadData.error || 'file server unavailable'}`, 'error')
           continue
         }
+        successCount++
         const publicUrl = uploadData.full_url
 
         // Optimistic message
@@ -212,19 +219,20 @@ export default function useChatAttachments({
           .catch(() => {})
       } catch (err) {
         console.error('[ChatPanel] file attach error:', err)
+        showToast(`Upload failed for ${file.name}: ${err.message}`, 'error')
       }
     }
     setUploading(false)
 
-    // Auto-trigger the operator to acknowledge uploaded files
-    if (files.length > 0 && selectedProject && sendProjectTextRef?.current) {
+    // Auto-trigger the operator to acknowledge uploaded files — only if at least one upload succeeded
+    if (successCount > 0 && selectedProject && sendProjectTextRef?.current) {
       const names = files.map(f => f.name).join(', ')
       const autoMsg = files.length === 1
         ? `I just uploaded ${names}. Can you confirm you got it?`
         : `I just uploaded ${files.length} files: ${names}. Can you confirm you got them?`
       setTimeout(() => sendProjectTextRef.current?.(autoMsg), 500)
     }
-  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef])
+  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, showToast])
 
   return {
     pendingAttachments, setPendingAttachments,
