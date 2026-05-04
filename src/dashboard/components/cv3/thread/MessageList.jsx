@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -75,6 +75,8 @@ export default function MessageList({ roomType = 'agent' }) {
   // where it survives any subordinate re-render. Fires when the last real user
   // message has been unanswered for 45s and the thread is still in-flight.
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const [floatMode, setFloatMode] = useState(false)
+  const lastUserMsgRef = useRef(null)
   useEffect(() => {
     if (!inFlight) return
     const tick = setInterval(() => setNowMs(Date.now()), 1000)
@@ -146,10 +148,43 @@ export default function MessageList({ roomType = 'agent' }) {
     ? (earlierExpanded ? [...preKickoff, ...postKickoff] : postKickoff)
     : messages
 
+  // Float animation: stable filtered array + last-user-msg index for opacity targeting.
+  const visibleMessages = useMemo(
+    () => renderedMessages.filter(m => !(m.source === 'bridge-stream' && m._streaming && !m.text)),
+    [renderedMessages]
+  )
+  const lastUserMsgIdx = useMemo(() => {
+    for (let i = visibleMessages.length - 1; i >= 0; i--) {
+      if (visibleMessages[i].role === 'user') return i
+    }
+    return -1
+  }, [visibleMessages])
+
+  // Activate float mode the moment a send lands; deactivate 500ms after reply arrives.
+  useEffect(() => {
+    if (inFlight) { setFloatMode(true); return }
+    const t = setTimeout(() => setFloatMode(false), 500)
+    return () => clearTimeout(t)
+  }, [inFlight])
+
+  // Scroll last user message to top of panel when float mode activates.
+  useEffect(() => {
+    if (!floatMode || !lastUserMsgRef.current) return
+    lastUserMsgRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [floatMode])
+
+  // Dev affordance for R75-r65-e gate script.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    window.__r75r65etest__ = { setFloatMode }
+    return () => { delete window.__r75r65etest__ }
+  }, [])
+
   return (
     <>
     <div
       data-testid={isProject ? 'project-message-list' : undefined}
+      data-float-mode={floatMode ? 'true' : undefined}
       style={{
         flex: 1, overflowY: 'auto',
         padding: '12px 14px',
@@ -223,15 +258,19 @@ export default function MessageList({ roomType = 'agent' }) {
         </button>
       )}
 
-      {renderedMessages
-        .filter(m => !(m.source === 'bridge-stream' && m._streaming && !m.text))
-        .map((msg, idx, arr) => {
+      {visibleMessages.map((msg, idx, arr) => {
+          const isLastUserMsg = floatMode && idx === lastUserMsgIdx
+          const fadedByFloat = floatMode && idx < lastUserMsgIdx
+          const floatStyle = fadedByFloat
+            ? { opacity: 0.12, transition: 'opacity 0.35s ease' }
+            : { transition: 'opacity 0.35s ease' }
+
           // Task status cards (Steffen's CV3 design).
           const taskCard = renderTaskCardForMessage(msg, {
             ...(!isProject && { selectedAgent }),
             formatTime: formatChatTime,
           })
-          if (taskCard) return <div key={msg.id}>{taskCard}</div>
+          if (taskCard) return <div key={msg.id} style={floatStyle}>{taskCard}</div>
 
           // Chain card (agent rooms only).
           if (!isProject && msg.source === 'chain-card') {
@@ -265,7 +304,7 @@ export default function MessageList({ roomType = 'agent' }) {
               return { c: 'rgba(148,163,184,0.55)', label: s || 'unknown', pulse: false }
             }
             return (
-              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 6 }}>
+              <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 6, ...floatStyle }}>
                 <div style={{
                   maxWidth: '85%', padding: '10px 12px', borderRadius: 12,
                   background: headerBg, border: `1px solid ${headerBorder}`,
@@ -340,6 +379,7 @@ export default function MessageList({ roomType = 'agent' }) {
                 display: 'flex',
                 justifyContent: isVoiceUser ? 'flex-end' : 'flex-start',
                 marginBottom: 6,
+                ...floatStyle,
               }}>
                 <div style={{
                   maxWidth: '80%', padding: '8px 12px', borderRadius: 12,
@@ -419,6 +459,8 @@ export default function MessageList({ roomType = 'agent' }) {
               <div
                 data-test-id="chat-message"
                 data-message-id={msg.id}
+                data-last-user-msg={isLastUserMsg ? 'true' : undefined}
+                ref={isLastUserMsg ? lastUserMsgRef : undefined}
                 onContextMenu={(e) => openMsgMenu(e, msg)}
                 onTouchStart={(e) => startLongPress(e, msg)}
                 onTouchEnd={cancelLongPress}
@@ -430,6 +472,7 @@ export default function MessageList({ roomType = 'agent' }) {
                   alignItems: 'flex-end',
                   gap: 10,
                   marginBottom: userBubbleSteps ? 0 : (isUser ? 4 : 12),
+                  ...floatStyle,
                 }}
               >
                 {/* Assistant avatar: circle for agents, square gem for projects. */}
