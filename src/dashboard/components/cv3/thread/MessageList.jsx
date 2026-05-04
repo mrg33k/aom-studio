@@ -372,8 +372,10 @@ export default function MessageList({ roomType = 'agent' }) {
           const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
             ? stepsByMessageId[msg.id]
             : null
-          const hasNewerUserMsg = userBubbleSteps
-            ? arr.slice(idx + 1).some(m => m.role === 'user')
+          // R75-b5: settle when the assistant reply arrives (not just on next user msg).
+          // This dims the chain and flips data-status to 'done' the moment the reply lands.
+          const hasAssistantReply = userBubbleSteps
+            ? arr.slice(idx + 1).some(m => m.role === 'assistant' && !String(m.id).startsWith('temp-'))
             : false
 
           return (
@@ -631,7 +633,7 @@ export default function MessageList({ roomType = 'agent' }) {
                 <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
                   <StepThread
                     steps={userBubbleSteps}
-                    settled={hasNewerUserMsg}
+                    settled={hasAssistantReply}
                     isError={false}
                     agentColor={roomColor}
                   />
