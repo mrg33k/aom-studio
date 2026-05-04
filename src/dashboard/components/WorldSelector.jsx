@@ -99,7 +99,12 @@ export default function WorldSelector({
     setLoading(false)
   }, [currentUser?.id])
 
-  // Fetch on open (lazy load)
+  // Fetch on mount to know world count before user clicks (enables canOpenPicker)
+  useEffect(() => {
+    if (currentUser?.id) fetchWorlds()
+  }, [currentUser?.id, fetchWorlds])
+
+  // Fetch on open (lazy load — no-op if mount fetch already ran)
   useEffect(() => {
     if (open && worlds.length === 0 && !loading) {
       fetchWorlds()
@@ -132,8 +137,7 @@ export default function WorldSelector({
   }, [open])
 
   const handleToggle = () => {
-    // Non-admin users can't open the dropdown (they only have one world)
-    if (!isAdmin) return
+    if (!canOpenPicker) return
     // Admin viewing another world: clicking opens dropdown with just "Return" option
     const next = !open
     setOpen(next)
@@ -156,14 +160,16 @@ export default function WorldSelector({
   const isOverriding = currentWorldId && currentWorldId !== myWorld
   const isAdmin = isSuperAdmin(currentUser?.id)
   const viewingOtherWorld = isAdmin && isAdminOverride()
+  const canOpenPicker = isAdmin || worlds.length > 1
   const activeWorld = worlds.find(w => w.world === currentWorldId)
   const activeLabel = activeWorld?.name
     || (currentWorldId === 'q' ? 'QA' : (currentWorldId || 'AOM').toUpperCase())
   const activeInitial = activeLabel[0]?.toUpperCase() || 'A'
 
-  // Non-admin: show static badge only (no dropdown)
-  // Admin viewing another world: show badge + return option only (no world list)
-  const showFullWorldList = isAdmin && !viewingOtherWorld
+  // Any user with >1 world can open the picker and see the world list
+  // Create World stays admin-only
+  const showWorldList = canOpenPicker && !isOverriding
+  const showCreateWorld = isAdmin && !viewingOtherWorld
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', flexShrink: 0 }}>
@@ -179,7 +185,7 @@ export default function WorldSelector({
           background: open ? C.s2 : C.s1,
           border: `1px solid ${open ? C.border2 : C.border}`,
           borderRadius: 10,
-          cursor: isAdmin ? 'pointer' : 'default',
+          cursor: canOpenPicker ? 'pointer' : 'default',
           transition: 'all 0.15s',
         }}
         onMouseEnter={e => {
@@ -238,8 +244,8 @@ export default function WorldSelector({
             textTransform: 'uppercase',
           }}>VIEW</span>
         )}
-        {/* ws-arrow (only for admin) */}
-        {isAdmin && (
+        {/* ws-arrow (only when picker can open) */}
+        {canOpenPicker && (
           <span style={{
             fontSize: 10,
             color: C.dim,
@@ -333,8 +339,8 @@ export default function WorldSelector({
                 </button>
               )}
 
-              {/* World list (only when admin is in own world) */}
-              {showFullWorldList && <div style={{ maxHeight: 280, overflowY: 'auto' }} role="presentation">
+              {/* World list (any multi-world user when not overriding) */}
+              {showWorldList && <div style={{ maxHeight: 280, overflowY: 'auto' }} role="presentation">
                 {loading && (
                   <div style={{
                     padding: '10px 10px',
@@ -437,7 +443,7 @@ export default function WorldSelector({
               </div>}
 
               {/* Create World button (admin only) */}
-              {showFullWorldList && (
+              {showCreateWorld && (
                 <button
                   onClick={() => { setOpen(false); setCreateOpen(true); setCreateName(''); setCreateEmail(''); setCreateResult(null); setCreateError(null) }}
                   style={{

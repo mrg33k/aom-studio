@@ -319,10 +319,15 @@ export default function CornerV3() {
   const handleEnterWorld = useCallback((world) => {
     setWorldOverride(world.world)
     setWorldId(world.world)
+    fetch(`/api/worlds/${world.world}/switch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser?.id }),
+    }).catch(() => {})
     setSelectedAgent(null)
     setConversationTarget(null)
     prevDoneIdsRef.current = null
-  }, [])
+  }, [currentUser?.id])
 
   const handleReturnToMyWorld = useCallback(() => {
     setWorldOverride(null)
