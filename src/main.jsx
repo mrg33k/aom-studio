@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
+import { LiveCallProvider } from './dashboard/providers/LiveCallProvider.jsx'
+import FloatingCallBar from './dashboard/components/cv3/voice/FloatingCallBar.jsx'
 // Everything else lazy-loaded so non-home routes don't bloat the main bundle.
 const Login = lazy(() => import('./pages/Login.jsx'))
 const ChangePassword = lazy(() => import('./pages/ChangePassword.jsx'))
@@ -188,9 +190,18 @@ function AuthGuard({ children }) {
   return authed ? children : null
 }
 
+// LiveCallProvider wraps the route tree so dashboard routes (which mount
+// CornerV3 and call useLiveCall via ChatPanel/VoiceChatHost/FloatingCallBar)
+// have the context in scope. Provider is lazy: zero cost for non-dashboard
+// routes since session stays null until startCall() fires. FloatingCallBar
+// gates its render on isActive — invisible everywhere unless a call is live.
+// This was the missing piece from R75-e2-live-call: src/dashboard/main.jsx
+// (the standalone entry mounting to #dashboard-root) had the wrap, but the
+// production entry serving / and /dashboard from #root did not.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
+      <LiveCallProvider>
       <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
           <Route path="/" element={<App />} />
@@ -265,6 +276,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
         </Routes>
       </Suspense>
+      <FloatingCallBar />
+      </LiveCallProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )
