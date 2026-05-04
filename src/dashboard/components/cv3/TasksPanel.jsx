@@ -16,6 +16,7 @@ import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
 import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
 import DocUpdatesStripe from './shared/DocUpdateCard.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
+import ForemanTasksSection from './tasks/ForemanTasksSection.jsx'
 import LivingParagraphCard from './tasks/LivingParagraphCard.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
@@ -430,6 +431,9 @@ function TasksPanelBody() {
         {!searchQuery && !activeMissionPath && (
           <LivingParagraphCard world={worldId} activeProject={activeProject} />
         )}
+
+        {/* ── FOREMAN — Parent card + grouped children ─────────── */}
+        <ForemanTasksSection />
 
         {/* ── RIGHT NOW — Hero section ─────────────────────────── */}
         <ActiveTasksSection />

@@ -20,6 +20,7 @@ export default function DoneTasksSection() {
     taskProjects,
     taskThread,
     threadLoading,
+    handleForemanResume,
   } = useTasksPanelCtx()
 
   if (filteredCompleted.length === 0) return null
@@ -57,6 +58,7 @@ export default function DoneTasksSection() {
         const project   = t.project_name || t.projectName
         const isFailed     = t.status === 'failed'
         const isDark       = isFailed
+        const isForeman    = t.metadata?.is_foreman === true
         return (
           <div
             key={t.id}
@@ -122,25 +124,48 @@ export default function DoneTasksSection() {
                   )}
                 </div>
               </div>
-              {qa && (
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{
-                    fontSize: 22, fontWeight: 800,
-                    color: isFailed ? LIFECYCLE.failed : 'rgba(0,0,0,0.5)',
-                    lineHeight: 1,
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}>
-                    {qa}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                {qa && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{
+                      fontSize: 22, fontWeight: 800,
+                      color: isFailed ? LIFECYCLE.failed : 'rgba(0,0,0,0.5)',
+                      lineHeight: 1,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      {qa}
+                    </div>
+                    <div style={{
+                      fontSize: 9, fontWeight: 600,
+                      color: isDark ? 'rgba(240,244,255,0.25)' : 'rgba(0,0,0,0.25)',
+                      textAlign: 'right', marginTop: 3,
+                    }}>
+                      QA
+                    </div>
                   </div>
-                  <div style={{
-                    fontSize: 9, fontWeight: 600,
-                    color: isDark ? 'rgba(240,244,255,0.25)' : 'rgba(0,0,0,0.25)',
-                    textAlign: 'right', marginTop: 3,
-                  }}>
-                    QA
-                  </div>
-                </div>
-              )}
+                )}
+                {isForeman && (
+                  <button
+                    data-testid="foreman-resume-btn"
+                    onClick={(e) => { e.stopPropagation(); handleForemanResume(t) }}
+                    style={{
+                      background: 'rgba(255,107,61,0.12)',
+                      border: '1px solid rgba(255,107,61,0.25)',
+                      borderRadius: 8,
+                      color: LIFECYCLE.working,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '5px 11px',
+                      cursor: 'pointer',
+                      letterSpacing: '0.02em',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,61,0.2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,107,61,0.12)'}
+                  >
+                    Restart
+                  </button>
+                )}
+              </div>
             </div>
             {/* Expandable: result summary + thread */}
             {expandedTask === t.id && (

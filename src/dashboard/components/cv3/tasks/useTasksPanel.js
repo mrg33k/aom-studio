@@ -19,7 +19,7 @@ const snippetOfTitle = (s, n = 90) => {
 
 export function useTasksPanel() {
   const { currentUser, worldId, showToast } = useCornerAuth()
-  const { queued, rightNow, waiting, done, refreshTasks, addOptimisticTask, currentUserSlug, personalTodos } = useCornerData()
+  const { queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask, currentUserSlug, personalTodos } = useCornerData()
   const {
     setTab: setActiveTab,
     handleSelectProject: setActiveConversation,
@@ -463,6 +463,16 @@ export function useTasksPanel() {
   const completed = done || []
   const waitingTasks = waiting || []
 
+  // Foreman grouping: missions that have an active foreman task driving them.
+  // Tasks whose metadata.mission_slug matches are treated as children of that foreman.
+  const activeForemanMissions = useMemo(() => {
+    const s = new Set()
+    for (const t of active) {
+      if (t.metadata?.is_foreman && t.metadata?.mission) s.add(t.metadata.mission)
+    }
+    return s
+  }, [active])
+
   const getTaskProject = useCallback((task) => {
     const projectPath = task?.project_path || task?.projectPath || ''
     const normalizedPath = String(projectPath || '').toLowerCase()
@@ -489,7 +499,11 @@ export function useTasksPanel() {
     })
   }, [searchQuery, activeProject])
 
-  const filteredActive = filterTasks(active)
+  const filteredActive = filterTasks(active.filter(t => {
+    if (t.metadata?.is_foreman) return false
+    const ms = t.metadata?.mission_slug
+    return !(ms && activeForemanMissions.has(ms))
+  }))
   const isDismissed = t => t.metadata?.dismissed === true
   const filteredFailed = filterTasks(completed.filter(t => t.status === 'failed' && !isDismissed(t)))
   const filteredCompleted = filterTasks(completed.filter(t => t.status !== 'failed' && !isDismissed(t)))
@@ -699,6 +713,23 @@ export function useTasksPanel() {
     }
   }, [refreshTasks, showToast])
 
+  const handleForemanResume = useCallback(async (task) => {
+    try {
+      const resp = await authFetch('/api/dashboard/foreman-pause', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: task.id, missionSlug: task.metadata?.mission }),
+      })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok || data.error) throw new Error(data.error || `Resume failed (${resp.status})`)
+      if (showToast) showToast('Foreman restarted')
+      if (typeof refreshTasks === 'function') refreshTasks()
+    } catch (err) {
+      console.error('[TasksPanel] foreman resume error:', err)
+      if (showToast) showToast(err?.message || 'Could not restart foreman')
+    }
+  }, [refreshTasks, showToast])
+
   const closeCreateProjectModal = useCallback(() => {
     setShowCreateProjectModal(false)
     setProjectName('')
@@ -798,6 +829,8 @@ export function useTasksPanel() {
     handleRequeueFailedTask,
     handleRetryFailedTask,
     retryingTaskIds,
+    activeForemanMissions,
+    handleForemanResume,
 
     // Ctx toast
     ctxToast,
