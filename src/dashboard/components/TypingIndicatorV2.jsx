@@ -30,6 +30,7 @@ function ensureStyles() {
 
 export function TypingIndicatorV2({
   streaming,
+  stalled = false,         // R73-fix: parent-driven stall override (wall-clock, survives remounts)
   agentSlug,
   agentColor = '#3B82F6',
   agentName,
@@ -66,7 +67,9 @@ export function TypingIndicatorV2({
 
   if (!streaming) return null
 
-  const showStall = msElapsed >= SILENCE_MS && !stallCleared
+  // R73-fix: OR with parent-driven `stalled` so wall-clock detection in
+  // MessageList can fire even when this component has remounted (timer reset).
+  const showStall = (msElapsed >= SILENCE_MS || stalled) && !stallCleared
   const showPoke = msElapsed >= POKE_MS && !pokeUsed && !showStall
 
   const handlePoke = () => {
