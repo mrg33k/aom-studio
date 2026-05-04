@@ -1,6 +1,7 @@
 // FailedTasksSection -- failed task cards + per-task failure insights panel
 // R2a (Apr 16, 2026): extracted from TasksPanel.jsx
 // R3a (Apr 17, 2026): reads from TasksPanelContext instead of props
+// PF1-recover (2026-05-04): split into "Recovering" (auto-requeued) + "Needs you" piles
 import { C } from '../../../lib/cv3Colors.js'
 import { authFetch } from '../../../lib/authFetch.js'
 import { LIFECYCLE } from './lifecycle.js'
@@ -30,38 +31,116 @@ export default function FailedTasksSection() {
 
   if (filteredFailed.length === 0) return null
 
+  // PF1-recover: split tasks into auto-recovering (already requeued) vs hard failures
+  const recovering = filteredFailed.filter(t => t.metadata?.auto_recovering === true)
+  const needsYou = filteredFailed.filter(t => !t.metadata?.auto_recovering)
+
   return (
     <div data-testid="failed-section" style={{ marginBottom: 36 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2
-          data-testid="task-column-header"
-          data-column="failed"
-          style={{
-            fontSize: 18,
-            fontWeight: 800,
-            color: LIFECYCLE.failed,
-            letterSpacing: '-0.02em',
-            margin: 0,
-            lineHeight: 1,
-          }}
-        >
-          Failed
-        </h2>
-        <button
-          onClick={async () => {
-            for (const t of filteredFailed) {
-              await authFetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
-            }
-            refreshTasks()
-          }}
-          style={{ fontSize: 12, fontWeight: 600, color: C.dim, cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
-          onMouseEnter={e => { e.currentTarget.style.color = C.muted }}
-          onMouseLeave={e => { e.currentTarget.style.color = C.dim }}
-        >
-          Clear all
-        </button>
-      </div>
-      {filteredFailed.map((t) => {
+      {/* Recovering pile: auto-requeued tasks, shown with amber "re-queuing" badge */}
+      {recovering.length > 0 && (
+        <div style={{ marginBottom: needsYou.length > 0 ? 24 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h2
+              data-testid="task-column-header"
+              data-column="recovering"
+              style={{ fontSize: 18, fontWeight: 800, color: '#F59E0B', letterSpacing: '-0.02em', margin: 0, lineHeight: 1 }}
+            >
+              Recovering
+            </h2>
+            <button
+              onClick={async () => {
+                for (const t of recovering) {
+                  await authFetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
+                }
+                refreshTasks()
+              }}
+              style={{ fontSize: 12, fontWeight: 600, color: C.dim, cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.color = C.muted }}
+              onMouseLeave={e => { e.currentTarget.style.color = C.dim }}
+            >
+              Clear all
+            </button>
+          </div>
+          {recovering.map(t => (
+            <div
+              key={t.id}
+              data-test-id="task-card-recovering"
+              data-task-id={t.id}
+              style={{
+                padding: '14px 18px',
+                marginBottom: 8,
+                borderRadius: 12,
+                background: 'rgba(245,158,11,0.05)',
+                border: '1px solid rgba(245,158,11,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(240,244,255,0.45)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t.title || t.text || 'Untitled task'}
+                </div>
+                {(t.error || t.metadata?.failure_reason) && (
+                  <div style={{ fontSize: 11, color: 'rgba(245,158,11,0.6)', lineHeight: 1.4, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {(t.error || t.metadata?.failure_reason || '').trim()}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Re-queuing</span>
+                <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11 }}>|</span>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation()
+                    await authFetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
+                    refreshTasks()
+                  }}
+                  style={{ fontSize: 11, fontWeight: 600, color: C.dim, cursor: 'pointer', padding: '4px 8px', background: 'none', border: 'none', WebkitTapHighlightColor: 'transparent' }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Needs you pile: hard failures requiring human attention */}
+      {needsYou.length > 0 && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h2
+              data-testid="task-column-header"
+              data-column="failed"
+              style={{
+                fontSize: 18,
+                fontWeight: 800,
+                color: LIFECYCLE.failed,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                lineHeight: 1,
+              }}
+            >
+              {recovering.length > 0 ? 'Needs you' : 'Failed'}
+            </h2>
+            <button
+              onClick={async () => {
+                for (const t of needsYou) {
+                  await authFetch('/api/dashboard/task-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dismiss', taskId: t.id }) })
+                }
+                refreshTasks()
+              }}
+              style={{ fontSize: 12, fontWeight: 600, color: C.dim, cursor: 'pointer', background: 'none', border: 'none', padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.color = C.muted }}
+              onMouseLeave={e => { e.currentTarget.style.color = C.dim }}
+            >
+              Clear all
+            </button>
+          </div>
+          {needsYou.map((t) => {
         const qa = t.qa_score || t.qaScore
         const agent = t.agent_identity || t.agentIdentity
         const failureReason = (t.error || t.metadata?.failure_reason || '').trim()
@@ -317,7 +396,9 @@ export default function FailedTasksSection() {
             )}
           </div>
         )
-      })}
+          })}
+        </div>
+      )}
     </div>
   )
 }
