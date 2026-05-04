@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       headers: sbHeaders({ 'Prefer': 'return=minimal' }),
       body: JSON.stringify({
         slug: 'ea',
-        name: 'EA',
+        name: `${displayName} EA`,
         status: 'idle',
         type: 'agent',
         client_id: worldSlug,

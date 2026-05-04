@@ -173,7 +173,7 @@ export default function AgentProfileOverlay({ agent, onClose }) {
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             fontFamily: "'Inter', sans-serif",
           }}>
-            {agent.name}
+            {agent.display_name || agent.name}
           </div>
           <div style={{
             fontSize: 11.5, color: C.muted, fontStyle: 'italic',

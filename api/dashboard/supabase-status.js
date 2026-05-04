@@ -99,6 +99,7 @@ export default async function handler(req, res) {
     const agentStatuses = agentList.map(a => ({
       slug: a.slug,
       name: a.name,
+      display_name: a.display_name || null,
       role: a.role,
       status: a.status || 'idle',
       currentTask: a.current_task || '',
@@ -106,6 +107,7 @@ export default async function handler(req, res) {
       updatedAt: a.updated_at || null,
       statusSource: a.status_source || null,
       statusSetAt: a.status_set_at || null,
+      last_naming_nudge_at: a.last_naming_nudge_at || null,
       is_super: a.is_super || false,
       is_ea: a.is_ea || false,
       is_terminal: a.is_terminal || false,

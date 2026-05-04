@@ -27,7 +27,8 @@ export default function EaHeroCard({
   onInfoClick,
 }) {
   if (!eaAgent) return null
-  const avatarLetter = (eaAgent.name || '?')[0].toUpperCase()
+  const eaDisplayName = eaAgent.display_name || eaAgent.name || eaAgent.slug
+  const avatarLetter = (eaDisplayName || '?')[0].toUpperCase()
   return (
     <div data-agent-slug={eaAgent.slug} data-testid="ea-hero-card" style={{ marginBottom: 28, position: 'relative' }}>
     {onInfoClick && (
@@ -35,8 +36,8 @@ export default function EaHeroCard({
         type="button"
         data-testid={`agent-info-drawer-${eaAgent.slug}`}
         onClick={(e) => { e.stopPropagation(); onInfoClick(eaAgent) }}
-        aria-label={`About ${eaAgent.name}`}
-        title={`About ${eaAgent.name}`}
+        aria-label={`About ${eaDisplayName}`}
+        title={`About ${eaDisplayName}`}
         style={{
           position: 'absolute', top: 14, right: onUnpin ? 46 : 14, zIndex: 2,
           width: 26, height: 26, borderRadius: 8,
@@ -116,8 +117,8 @@ export default function EaHeroCard({
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 18, fontWeight: 800, color: C.text, fontFamily: "'Inter', sans-serif" }}>
-              {eaAgent.name || eaAgent.slug}
+            <span data-testid="ea-display-name" style={{ fontSize: 18, fontWeight: 800, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+              {eaDisplayName}
             </span>
             <div
               data-testid="status-badge"
@@ -164,7 +165,7 @@ export default function EaHeroCard({
                 fontSize: 13, color: C.text2,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
-                {eaLastMsg?.text || `Start a conversation with ${eaAgent.name || eaAgent.slug}`}
+                {eaLastMsg?.text || `Start a conversation with ${eaDisplayName}`}
               </div>
               {eaLastMsg?.timestamp && (
                 <div style={{

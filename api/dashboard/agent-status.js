@@ -62,8 +62,9 @@ export default async function handler(req, res) {
   }
 
   // Default: agent_status update
-  // Supports: status, current_task, name (rename), client_id scoping
-  const { name, client_id: clientIdParam } = req.query;
+  // Supports: status, current_task, name (rename), display_name (EA user-set name),
+  //           last_naming_nudge_at (EA cadence tracking), client_id scoping
+  const { name, display_name, last_naming_nudge_at, client_id: clientIdParam } = req.query;
 
   // Rename-only mode: slug + name, no status required
   if (slug && name && !status) {
@@ -83,6 +84,40 @@ export default async function handler(req, res) {
       await fetch(`${SUPABASE_URL}/rest/v1/rooms?${roomFilter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
       }).catch(() => {});
+      return res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // EA display_name mode: writes user-provided name (sticky once set, required eventually).
+  // Called by the EA settings UI — slug + display_name, no status.
+  if (slug && display_name !== undefined && !status && !name) {
+    const trimmedName = display_name.trim();
+    const filter = clientIdParam
+      ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
+      : `slug=eq.${encodeURIComponent(slug)}`;
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ display_name: trimmedName || null }),
+      });
+      return res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Cadence tracking: update last_naming_nudge_at after the EA injects the naming nudge.
+  // slug + last_naming_nudge_at (ISO string or 'now'), no status.
+  if (slug && last_naming_nudge_at !== undefined && !status && !name && display_name === undefined) {
+    const ts = last_naming_nudge_at === 'now' ? new Date().toISOString() : last_naming_nudge_at;
+    const filter = clientIdParam
+      ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
+      : `slug=eq.${encodeURIComponent(slug)}`;
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ last_naming_nudge_at: ts }),
+      });
       return res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });
     } catch (err) {
       return res.status(500).json({ error: err.message });
