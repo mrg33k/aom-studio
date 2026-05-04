@@ -260,15 +260,19 @@ export default function CornerV3() {
     return () => { supabase.removeChannel(channel) }
   }, [worldId])
 
-  // Clear unread when switching to chat; Home tab always clears conversation
+  // Clear unread when switching to chat; clear conversation only when tapping
+  // Chat tab while already on chat (the "back to home" gesture). When returning
+  // from Tasks, preserve the agent/project the user was in.
   const handleTabChange = useCallback((newTab) => {
     setTab(newTab)
     if (newTab === 'chat') {
       setUnreadChat(0)
-      setSelectedAgent(null)
-      setConversationTarget(null)
+      if (tab === 'chat') {
+        setSelectedAgent(null)
+        setConversationTarget(null)
+      }
     }
-  }, [])
+  }, [tab])
 
   // Select an agent and switch to chat tab
   const handleSelectAgent = useCallback((agent) => {
@@ -413,7 +417,7 @@ export default function CornerV3() {
     return (
       <div style={{ width: '100%', height: '100dvh', background: '#060A14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
         <style>{`@keyframes cvLoaderBar { 0% { width: 0%; } 100% { width: 100%; } } @keyframes cvSpin { to { transform: rotate(360deg); } }`}</style>
-        <div style={{ fontSize: 28, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.02em', marginBottom: 32 }}>
+        <div style={{ fontFamily: "'Syne', system-ui, sans-serif", fontSize: 32, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.03em', marginBottom: 32 }}>
           Corner<span style={{ color: '#10B981' }}>.</span>
         </div>
         <div style={{ width: 200, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', marginBottom: 16 }}>
