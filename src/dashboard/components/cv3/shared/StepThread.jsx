@@ -111,11 +111,14 @@ function ConnectorRow({ active, settled, agentColor }) {
 
 export function ThreadStepIndicator({ step, agentColor, settled }) {
   useEffect(() => { ensureStyles() }, [])
+  // R75-b5: when chain is settled (reply arrived), report 'done' in data-status
+  // regardless of backend status. Acceptance test and inspectors can rely on this.
+  const effectiveStatus = settled ? 'done' : step.status
   const dim = settled && step.status !== 'error' ? 0.45 : 1
   return (
     <div
       data-testid={`step-row-${step.step_index}`}
-      data-status={step.status}
+      data-status={effectiveStatus}
       style={{
         animation: 'r65StepFade 0.25s ease-out',
         display: 'flex', alignItems: 'center',

@@ -471,6 +471,19 @@ export default function useChatMessages({
             timestamp: row.timestamp,
           })
         }
+        // R75-b5: dedup by step_index — keepalive emits in_progress at poke time,
+        // relay-respond emits done at reply time with the same step_index.
+        // Keep only the latest event per (parent_message_id, step_index).
+        for (const pid of Object.keys(next)) {
+          const byIdx = new Map()
+          for (const step of next[pid]) {
+            const existing = byIdx.get(step.step_index)
+            if (!existing || step.timestamp > existing.timestamp) {
+              byIdx.set(step.step_index, step)
+            }
+          }
+          next[pid] = [...byIdx.values()].sort((a, b) => (a.step_index ?? 0) - (b.step_index ?? 0))
+        }
         if (active) setStepsByMessageId(next)
       } catch (_) { /* best-effort */ }
     }
