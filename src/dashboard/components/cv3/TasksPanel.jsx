@@ -14,6 +14,7 @@ import { TaskContextMenu } from './ContextMenu.jsx'
 import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from './tasks/FilesSection.jsx'
 import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
+import ForemanTasksSection from './tasks/ForemanTasksSection.jsx'
 import LivingParagraphCard from './tasks/LivingParagraphCard.jsx'
 import PersonalTodosSection from './tasks/PersonalTodosSection.jsx'
 import WaitingTasksSection from './tasks/WaitingTasksSection.jsx'
@@ -429,6 +430,9 @@ function TasksPanelBody() {
         {!searchQuery && !activeMissionPath && (!activeProject || activeProject === 'all') && (
           <LivingParagraphCard world={worldId} activeProject={activeProject} />
         )}
+
+        {/* ── FOREMAN — Parent card + grouped children ─────────── */}
+        <ForemanTasksSection />
 
         {/* ── RIGHT NOW — Hero section ─────────────────────────── */}
         <ActiveTasksSection />
