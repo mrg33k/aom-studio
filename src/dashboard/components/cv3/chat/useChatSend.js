@@ -49,7 +49,9 @@ export default function useChatSend({
 
   // ── handleSend: text-input default for agent chat ─────────────────────────
   const handleSend = useCallback(async () => {
-    const rawText = input.trim()
+    // Fall back to the DOM value so programmatic input (browser automation,
+    // MCP computer.type) that bypasses React's onChange still submits.
+    const rawText = (input || inputRef.current?.value || '').trim()
     const chips = pasteChipsRef?.current || []
     if ((!rawText && !chips.length) || sending || !selectedAgent) return
     const cleanText = rawText
@@ -307,8 +309,9 @@ export default function useChatSend({
 
   const handleProjectSend = useCallback(async () => {
     const hasChips = pasteChipsRef?.current?.length > 0
-    if ((!input.trim() && !hasChips) || sending) return
-    const text = input.trim()
+    // Fall back to the DOM value for programmatic/MCP input that bypasses React onChange.
+    const text = (input || inputRef.current?.value || '').trim()
+    if ((!text && !hasChips) || sending) return
     setInput('')
     if (inputRef.current) inputRef.current.style.height = 'auto'
     await sendProjectText(text)
