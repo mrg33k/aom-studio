@@ -24,11 +24,44 @@ export default function EaHeroCard({
   setSelectedAgent,
   onSelectAgent,
   onUnpin,
+  onInfoClick,
 }) {
   if (!eaAgent) return null
   const avatarLetter = (eaAgent.name || '?')[0].toUpperCase()
   return (
     <div data-agent-slug={eaAgent.slug} data-testid="ea-hero-card" style={{ marginBottom: 28, position: 'relative' }}>
+    {onInfoClick && (
+      <button
+        type="button"
+        data-testid={`agent-info-drawer-${eaAgent.slug}`}
+        onClick={(e) => { e.stopPropagation(); onInfoClick(eaAgent) }}
+        aria-label={`About ${eaAgent.name}`}
+        title={`About ${eaAgent.name}`}
+        style={{
+          position: 'absolute', top: 14, right: onUnpin ? 46 : 14, zIndex: 2,
+          width: 26, height: 26, borderRadius: 8,
+          background: 'rgba(10,12,20,0.6)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: 'rgba(96,165,250,0.5)',
+          cursor: 'pointer', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Georgia', 'Times New Roman', serif",
+          fontSize: 13, fontWeight: 700, lineHeight: 1,
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'rgba(59,158,255,0.15)'
+          e.currentTarget.style.borderColor = 'rgba(59,158,255,0.4)'
+          e.currentTarget.style.color = '#3B9EFF'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'rgba(10,12,20,0.6)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+          e.currentTarget.style.color = 'rgba(96,165,250,0.5)'
+        }}
+      >
+        i
+      </button>
+    )}
     {onUnpin && (
       <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 2 }}>
         <PinMenu

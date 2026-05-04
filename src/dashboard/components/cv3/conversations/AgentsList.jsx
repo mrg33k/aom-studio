@@ -10,7 +10,7 @@ import { formatChatTime, getStatusColor } from '../shared.jsx'
 import AgentFailureSurface from './AgentFailureSurface.jsx'
 import PinMenu from './PinMenu.jsx'
 
-function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFailedByAgent, setSelectedAgent, onSelectAgent, isPinned, onPin, onUnpin, onReorder }) {
+function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFailedByAgent, setSelectedAgent, onSelectAgent, isPinned, onPin, onUnpin, onReorder, onInfoClick }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const lastMsg = unreadMap[agent.slug]
   const unreadCount = unreadCounts[agent.slug] || 0
@@ -70,7 +70,7 @@ function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFail
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
           width: '100%', padding: '12px 14px',
-          paddingRight: 46,
+          paddingRight: 76,
           borderRadius: 14,
           background: C.s1,
           border: `1px solid ${isActive ? 'rgba(16,185,129,0.15)' : C.border}`,
@@ -166,6 +166,38 @@ function AgentRow({ agent, unreadMap, unreadCounts, activeAgentSlugs, latestFail
           )}
         </div>
       </button>
+      {onInfoClick && (
+        <button
+          type="button"
+          data-testid={`agent-info-drawer-${agent.slug}`}
+          onClick={(e) => { e.stopPropagation(); onInfoClick(agent) }}
+          aria-label={`About ${agent.name}`}
+          title={`About ${agent.name}`}
+          style={{
+            position: 'absolute', top: 10, right: 44, zIndex: 1,
+            width: 26, height: 26, borderRadius: 8,
+            background: 'rgba(10,12,20,0.6)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: C.muted,
+            cursor: 'pointer', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: "'Georgia', 'Times New Roman', serif",
+            fontSize: 13, fontWeight: 700, lineHeight: 1,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(59,158,255,0.15)'
+            e.currentTarget.style.borderColor = 'rgba(59,158,255,0.4)'
+            e.currentTarget.style.color = '#3B9EFF'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(10,12,20,0.6)'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+            e.currentTarget.style.color = C.muted
+          }}
+        >
+          i
+        </button>
+      )}
       <div style={{ position: 'absolute', top: 10, right: 12, zIndex: 1 }}>
         <PinMenu
           kind="agent"
@@ -193,6 +225,7 @@ export default function AgentsList({
   pinAgent,
   unpinAgent,
   reorderAgent,
+  onInfoClick,
 }) {
   const isHero = (a) => heroSlug ? a.slug === heroSlug : false
   const nonHero = (agents || []).filter(a => !isHero(a))
@@ -213,6 +246,7 @@ export default function AgentsList({
       onPin={pinAgent}
       onUnpin={unpinAgent}
       onReorder={reorderAgent}
+      onInfoClick={onInfoClick}
     />
   )
 
