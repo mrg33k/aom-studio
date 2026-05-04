@@ -21,6 +21,7 @@ import HomeSearchBar from './conversations/HomeSearchBar.jsx'
 import HandoffNudge from './shared/HandoffNudge.jsx'
 import SearchResults from './conversations/SearchResults.jsx'
 import EaHeroCard from './conversations/EaHeroCard.jsx'
+import HomeStateFeed from './conversations/HomeStateFeed.jsx'
 import AgentsList from './conversations/AgentsList.jsx'
 import ProjectsList from './conversations/ProjectsList.jsx'
 import { usePinnedAgents, usePinnedProjects } from './conversations/usePinned.js'
@@ -267,6 +268,7 @@ export default function ConversationsView() {
 
       {!showSearch && (
         <>
+          <HomeStateFeed />
           {!eaHeroHidden && (
             <EaHeroCard
               eaAgent={eaAgent}
