@@ -1535,6 +1535,8 @@
       const top = target.getBoundingClientRect().top + window.scrollY - 88;
       window.scrollTo({ top, behavior: 'smooth' });
       history.replaceState(null, '', a.getAttribute('href'));
+      // Final-frame nudge: smooth-scroll may settle without firing a final scroll event
+      setTimeout(updateActive, 700);
     });
   });
 
