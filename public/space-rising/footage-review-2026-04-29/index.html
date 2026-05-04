@@ -72,7 +72,11 @@
   .hero-card .name em { color: var(--accent); font-style: normal; }
   .hero-card .role { font-size: 14px; color: var(--text-dim); line-height: 1.45; margin-bottom: 12px; }
   .hero-card .gist { font-size: 14px; color: var(--text-dim); line-height: 1.55; }
-  .hero-card .clip-count { font-size: 11px; color: var(--text-mute); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 14px; font-weight: 700; }
+  .hero-card .clip-count { font-size: 11px; color: var(--text-mute); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; }
+  .hero-card .hero-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; }
+  .hero-card .hero-transcript-link { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); text-decoration: none; white-space: nowrap; }
+  .hero-card .hero-transcript-link:hover { text-decoration: underline; }
+  .hero-card { cursor: zoom-in; }
 
   /* Sticky tab nav */
   .nav {
@@ -290,166 +294,214 @@
   <div class="stat"><div class="label">Transcripts ready</div><div class="val">40</div></div>
 </div>
 <h2 class="section" id="sec-subjects">Subjects</h2><h3 class="section-title">The people on tape.</h3><p class="section-lead">Identified by name from the interviews themselves. Click through to find each person's clips and full transcript below.</p><div class="hero-grid">
-<a class="hero-card" href="#transcript-PS528708">
+<div class="hero-card" data-lb-group="subject:Nancy Conrad" data-lb-src="thumbs/S5iiX__PS528708.jpg" data-lb-caption="Nancy Conrad. An older woman with short grey hair speaks expressively to a static camera in a medium shot, with a busy conference networking area in the background.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528708.jpg');"></div>
   <div class="body">
     <div class="name">Nancy Conrad</div>
     <div class="role">Conrad Foundation</div>
     <div class="gist">Nancy Conrad. Nancy Conrad describes the Conrad Challenge, an international competition by her foundation that empowers students (13-18) to create commercially </div>
-    <div class="clip-count">2 clips · 9:32</div>
+    <div class="hero-foot">
+      <span class="clip-count">2 clips · 9:32</span>
+      <a class="hero-transcript-link" href="#transcript-PS528708" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528692">
+<div class="hero-card" data-lb-group="subject:Eric" data-lb-src="thumbs/S5iiX__PS528692.jpg" data-lb-caption="Eric stands in a conference hall gesturing and speaking directly to a locked-off camera, with the event visible in the background.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528692.jpg');"></div>
   <div class="body">
     <div class="name">Eric</div>
     <div class="role">Teacher and Researcher, Faculty Member, ASU&#x27;s Interplanetary Initiative</div>
     <div class="gist">Eric. A researcher from ASU&#x27;s Interplanetary Initiative discusses the often-invisible impacts of space technology on Earth, such as managing water resources in </div>
-    <div class="clip-count">1 clip · 6:18</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 6:18</span>
+      <a class="hero-transcript-link" href="#transcript-PS528692" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528698">
+<div class="hero-card" data-lb-group="subject:Bart" data-lb-src="thumbs/S5iiX__PS528698.jpg" data-lb-caption="Bart gives a stand-up interview to camera in the middle of a busy conference hall.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528698.jpg');"></div>
   <div class="body">
     <div class="name">Bart</div>
     <div class="role">SLAB Systems</div>
     <div class="gist">Bart. Bart from SLAB Systems discusses his Texas-based company&#x27;s digital infrastructure for testing space technologies and his exploration of expanding to Arizo</div>
-    <div class="clip-count">1 clip · 4:48</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 4:48</span>
+      <a class="hero-transcript-link" href="#transcript-PS528698" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528691">
+<div class="hero-card" data-lb-group="subject:Drove" data-lb-src="thumbs/S5iiX__PS528691.jpg" data-lb-caption="Drove. A medium shot of a man with glasses being interviewed while standing in a busy conference networking area.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528691.jpg');"></div>
   <div class="body">
     <div class="name">Drove</div>
     <div class="role">Senior at ASU, Political Science major</div>
     <div class="gist">Drove. An ASU political science student discusses the importance of policy and investing in K-12 education to create a talent pipeline and make Arizona more att</div>
-    <div class="clip-count">1 clip · 4:30</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 4:30</span>
+      <a class="hero-transcript-link" href="#transcript-PS528691" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528683">
+<div class="hero-card" data-lb-group="subject:Quentin Weinstein" data-lb-src="thumbs/S5iiX__PS528683.jpg" data-lb-caption="Quentin Weinstein gives a stand-up interview or piece-to-camera, gesturing expressively in a large, mostly empty conference hall.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528683.jpg');"></div>
   <div class="body">
     <div class="name">Quentin Weinstein</div>
     <div class="role">Q&amp;AI</div>
     <div class="gist">Quentin Weinstein. Quentin Weinstein from Q&amp;AI, the event&#x27;s official AI sponsor, discusses the role of AI in space and the importance of the congress for buildi</div>
-    <div class="clip-count">1 clip · 4:16</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 4:16</span>
+      <a class="hero-transcript-link" href="#transcript-PS528683" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528672">
+<div class="hero-card" data-lb-group="subject:Natalie Bragg" data-lb-src="thumbs/S5iiX__PS528672.jpg" data-lb-caption="Natalie Bragg gives a testimonial or interview to a static camera in a busy conference hall, with a crew member briefly visible during setup.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528672.jpg');"></div>
   <div class="body">
     <div class="name">Natalie Bragg</div>
     <div class="role">Chief Digital Officer, Rose Law Group</div>
     <div class="gist">Natalie Bragg. Discusses her firm&#x27;s (Rose Law Group) role in space law, their goal to make Arizona a hub for space technology, and her positive experience at th</div>
-    <div class="clip-count">1 clip · 4:14</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 4:14</span>
+      <a class="hero-transcript-link" href="#transcript-PS528672" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528665">
+<div class="hero-card" data-lb-group="subject:Alexis Simon" data-lb-src="thumbs/S5iiX__PS528665.jpg" data-lb-caption="Alexis Simon is being interviewed, speaking to a static camera in a bright conference hallway with people in the background.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528665.jpg');"></div>
   <div class="body">
     <div class="name">Alexis Simon</div>
     <div class="role">Nogales High School</div>
     <div class="gist">Alexis Simon. A high school student discusses her &#x27;Higher Orbits&#x27; project (Team Icarus) that sent a green bean growth experiment to the International Space Stat</div>
-    <div class="clip-count">1 clip · 3:30</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 3:30</span>
+      <a class="hero-transcript-link" href="#transcript-PS528665" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528673">
+<div class="hero-card" data-lb-group="subject:Zachary" data-lb-src="thumbs/S5iiX__PS528673.jpg" data-lb-caption="Zachary is interviewed, speaking directly to a locked-off camera in a busy conference hall.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528673.jpg');"></div>
   <div class="body">
     <div class="name">Zachary</div>
     <div class="role">Student, Space Rising cohort / Arizona State University</div>
     <div class="gist">Zachary. An ASU mechanical engineering student from the Space Rising cohort discusses his excitement about networking with industry leaders and his interest in </div>
-    <div class="clip-count">1 clip · 3:26</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 3:26</span>
+      <a class="hero-transcript-link" href="#transcript-PS528673" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528707">
+<div class="hero-card" data-lb-group="subject:Debian Shivasov" data-lb-src="thumbs/S5iiX__PS528707.jpg" data-lb-caption="Debian Shivasov gives a stand-up interview or piece-to-camera in a busy conference hall.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528707.jpg');"></div>
   <div class="body">
     <div class="name">Debian Shivasov</div>
     <div class="role">Founder and CEO of Calix Systems / Undergraduate aerospace student at ASU</div>
     <div class="gist">Debian Shivasov. Debian Shivasov, founder of Calix Systems and an ASU aerospace student, discusses his company&#x27;s work on navigational devices for astronauts and</div>
-    <div class="clip-count">1 clip · 3:25</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 3:25</span>
+      <a class="hero-transcript-link" href="#transcript-PS528707" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528706">
+<div class="hero-card" data-lb-group="subject:Skiba" data-lb-src="thumbs/S5iiX__PS528706.jpg" data-lb-caption="Skiba stands in a busy conference networking area, speaking and gesturing directly to a locked-off camera.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528706.jpg');"></div>
   <div class="body">
     <div class="name">Skiba</div>
     <div class="role">Director of the Space Professional Society</div>
     <div class="gist">Skiba. Skiba, Director of the Space Professional Society, explains her organization&#x27;s mission to create accessible space opportunities for students and how to g</div>
-    <div class="clip-count">1 clip · 3:24</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 3:24</span>
+      <a class="hero-transcript-link" href="#transcript-PS528706" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528690">
+<div class="hero-card" data-lb-group="subject:Alexandra" data-lb-src="thumbs/S5iiX__PS528690.jpg" data-lb-caption="Alexandra stands in a conference hall and speaks directly to a static camera, gesturing with her hands.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528690.jpg');"></div>
   <div class="body">
     <div class="name">Alexandra</div>
     <div class="role">ASU Student / NASA ASU Psyche Autonomous Rover team</div>
     <div class="gist">Alexandra. An ASU engineering student named Alexandra discusses her work on the NASA Psyche Autonomous Rover team and how the conference provided answers for he</div>
-    <div class="clip-count">1 clip · 3:08</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 3:08</span>
+      <a class="hero-transcript-link" href="#transcript-PS528690" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528703">
+<div class="hero-card" data-lb-group="subject:Robert Katz" data-lb-src="thumbs/S5iiX__PS528703.jpg" data-lb-caption="Robert Katz speaks expressively to the camera from a medium shot in a busy conference networking area.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528703.jpg');"></div>
   <div class="body">
     <div class="name">Robert Katz</div>
     <div class="role">World Innovation Network</div>
     <div class="gist">Robert Katz. Explains his organization&#x27;s role in connecting industry and academia with the Space Force, and highlights the event&#x27;s importance for leveraging Ari</div>
-    <div class="clip-count">1 clip · 3:03</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 3:03</span>
+      <a class="hero-transcript-link" href="#transcript-PS528703" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528678">
+<div class="hero-card" data-lb-group="subject:Zara Ali" data-lb-src="thumbs/S5iiX__PS528678.jpg" data-lb-caption="Zara Ali. A young woman wearing a hijab is speaking directly to the camera in an interview setting, with a busy conference hall in the background.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528678.jpg');"></div>
   <div class="body">
     <div class="name">Zara Ali</div>
     <div class="role">Higher Orbits / Arizona State University</div>
     <div class="gist">Zara Ali. An ASU student and Higher Orbits participant discusses sending an experiment to the ISS and her interest in space governance and bringing more STEM op</div>
-    <div class="clip-count">1 clip · 2:30</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 2:30</span>
+      <a class="hero-transcript-link" href="#transcript-PS528678" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528699">
+<div class="hero-card" data-lb-group="subject:DeHere Lee" data-lb-src="thumbs/S5iiX__PS528699.jpg" data-lb-caption="DeHere Lee speaks directly to the camera in a medium shot, standing in a busy conference hall.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528699.jpg');"></div>
   <div class="body">
     <div class="name">DeHere Lee</div>
     <div class="role">Program Director and Professor, University Central Florida for the Space MBA</div>
     <div class="gist">DeHere Lee. A professor and entrepreneur discusses Arizona&#x27;s growing importance as a top-five state in the space economy and praises the Arizona Space Congress </div>
-    <div class="clip-count">1 clip · 2:19</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 2:19</span>
+      <a class="hero-transcript-link" href="#transcript-PS528699" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528700">
+<div class="hero-card" data-lb-group="subject:Gabriel Garcia" data-lb-src="thumbs/S5iiX__PS528700.jpg" data-lb-caption="Gabriel Garcia. A young man, likely a student, gives an on-camera interview in a busy conference hall, gesturing as he speaks, until a crew member enters the frame at the end.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528700.jpg');"></div>
   <div class="body">
     <div class="name">Gabriel Garcia</div>
     <div class="role">Student, Arizona State University</div>
     <div class="gist">Gabriel Garcia. An ASU student discusses Arizona&#x27;s historical and current role in the space industry and expresses a desire for more mission planning and traini</div>
-    <div class="clip-count">1 clip · 2:05</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 2:05</span>
+      <a class="hero-transcript-link" href="#transcript-PS528700" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
+</div>
 
-<a class="hero-card" href="#transcript-PS528677">
+<div class="hero-card" data-lb-group="subject:Ben Smith" data-lb-src="thumbs/S5iiX__PS528677.jpg" data-lb-caption="Ben Smith speaks directly to a static camera in a medium shot, with a conference audience blurred in the background.">
   <div class="thumb" style="background-image: url('thumbs/S5iiX__PS528677.jpg');"></div>
   <div class="body">
     <div class="name">Ben Smith</div>
     <div class="role">Space Rising</div>
     <div class="gist">Ben Smith. Ben Smith from Space Rising promotes their comprehensive database for the space supply chain, featuring AI-powered search, company registration, job </div>
-    <div class="clip-count">1 clip · 2:01</div>
+    <div class="hero-foot">
+      <span class="clip-count">1 clip · 2:01</span>
+      <a class="hero-transcript-link" href="#transcript-PS528677" onclick="event.stopPropagation();">Read transcript &rarr;</a>
+    </div>
   </div>
-</a>
-</div><h2 class="section" id="sec-broll">B-Roll</h2><h3 class="section-title">Everything else, sorted.</h3><p class="section-lead">All non-interview footage, grouped by type. Within each group: well-lit clips first, dimmer ones after, throwaways last. Every frame color-graded.</p><div class="bucket-section"><div class="bucket-head"><h4>Networking</h4><div class="count">58 clips · 48 on cine cam · 10 on A-cam</div></div><p class="bucket-blurb">Candid conversations between attendees — no faces at camera, just the room buzzing.</p><div class="clip-grid">
+</div>
+</div><div class="lb-pool" aria-hidden="true" style="display:none;"><div class="clip-card" data-lb-group="subject:Nancy Conrad" data-lb-src="thumbs/S5iiX__PS528708.jpg" data-lb-caption="Nancy Conrad. An older woman with short grey hair speaks expressively to a static camera in a medium shot, with a busy conference networking area in the background." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Nancy Conrad" data-lb-src="thumbs/S5iiX__PS528709.jpg" data-lb-caption="Nancy Conrad is interviewed, speaking and gesturing to a static camera with a busy networking event in the background." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Eric" data-lb-src="thumbs/S5iiX__PS528692.jpg" data-lb-caption="Eric stands in a conference hall gesturing and speaking directly to a locked-off camera, with the event visible in the background." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Bart" data-lb-src="thumbs/S5iiX__PS528698.jpg" data-lb-caption="Bart gives a stand-up interview to camera in the middle of a busy conference hall." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Drove" data-lb-src="thumbs/S5iiX__PS528691.jpg" data-lb-caption="Drove. A medium shot of a man with glasses being interviewed while standing in a busy conference networking area." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Quentin Weinstein" data-lb-src="thumbs/S5iiX__PS528683.jpg" data-lb-caption="Quentin Weinstein gives a stand-up interview or piece-to-camera, gesturing expressively in a large, mostly empty conference hall." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Natalie Bragg" data-lb-src="thumbs/S5iiX__PS528672.jpg" data-lb-caption="Natalie Bragg gives a testimonial or interview to a static camera in a busy conference hall, with a crew member briefly visible during setup." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Alexis Simon" data-lb-src="thumbs/S5iiX__PS528665.jpg" data-lb-caption="Alexis Simon is being interviewed, speaking to a static camera in a bright conference hallway with people in the background." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Zachary" data-lb-src="thumbs/S5iiX__PS528673.jpg" data-lb-caption="Zachary is interviewed, speaking directly to a locked-off camera in a busy conference hall." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Debian Shivasov" data-lb-src="thumbs/S5iiX__PS528707.jpg" data-lb-caption="Debian Shivasov gives a stand-up interview or piece-to-camera in a busy conference hall." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Skiba" data-lb-src="thumbs/S5iiX__PS528706.jpg" data-lb-caption="Skiba stands in a busy conference networking area, speaking and gesturing directly to a locked-off camera." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Alexandra" data-lb-src="thumbs/S5iiX__PS528690.jpg" data-lb-caption="Alexandra stands in a conference hall and speaks directly to a static camera, gesturing with her hands." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Robert Katz" data-lb-src="thumbs/S5iiX__PS528703.jpg" data-lb-caption="Robert Katz speaks expressively to the camera from a medium shot in a busy conference networking area." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Zara Ali" data-lb-src="thumbs/S5iiX__PS528678.jpg" data-lb-caption="Zara Ali. A young woman wearing a hijab is speaking directly to the camera in an interview setting, with a busy conference hall in the background." style="display:none;"></div><div class="clip-card" data-lb-group="subject:DeHere Lee" data-lb-src="thumbs/S5iiX__PS528699.jpg" data-lb-caption="DeHere Lee speaks directly to the camera in a medium shot, standing in a busy conference hall." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Gabriel Garcia" data-lb-src="thumbs/S5iiX__PS528700.jpg" data-lb-caption="Gabriel Garcia. A young man, likely a student, gives an on-camera interview in a busy conference hall, gesturing as he speaks, until a crew member enters the frame at the end." style="display:none;"></div><div class="clip-card" data-lb-group="subject:Ben Smith" data-lb-src="thumbs/S5iiX__PS528677.jpg" data-lb-caption="Ben Smith speaks directly to a static camera in a medium shot, with a conference audience blurred in the background." style="display:none;"></div></div><h2 class="section" id="sec-broll">B-Roll</h2><h3 class="section-title">Everything else, sorted.</h3><p class="section-lead">All non-interview footage, grouped by type. Within each group: well-lit clips first, dimmer ones after, throwaways last. Every frame color-graded.</p><div class="bucket-section"><div class="bucket-head"><h4>Networking</h4><div class="count">58 clips · 48 on cine cam · 10 on A-cam</div></div><p class="bucket-blurb">Candid conversations between attendees — no faces at camera, just the room buzzing.</p><div class="clip-grid">
 <div class="clip-card" data-lb-group="networking" data-lb-src="thumbs/A042_HL9414__A042C0125_260429_HL9414.jpg" data-lb-caption="A collection of shots showing various groups of attendees networking and conversing in a large conference hall or lobby area.">
   <div class="thumb" style="background-image: url('thumbs/A042_HL9414__A042C0125_260429_HL9414.jpg');"></div>
   <div class="body">
@@ -2586,8 +2638,17 @@
     renderLightbox();
   }
 
-  document.querySelectorAll('.clip-card[data-lb-group]').forEach(card => {
-    card.addEventListener('click', e => { e.preventDefault(); openLightbox(card); });
+  // Both grid clip-cards (b-roll) AND hero-cards (subjects) open lightbox.
+  // openLightbox queries by the group key — for subjects, the visible hero-card
+  // is the trigger but the lightbox iterates through hidden .clip-cards in the
+  // .lb-pool tagged with the same group key (one per clip the subject is in).
+  document.querySelectorAll('.clip-card[data-lb-group], .hero-card[data-lb-group]').forEach(card => {
+    card.addEventListener('click', e => {
+      // Don't hijack the explicit "Read transcript" anchor link
+      if (e.target.closest('.hero-transcript-link')) return;
+      e.preventDefault();
+      openLightbox(card);
+    });
   });
   document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
   document.getElementById('lightbox-prev').addEventListener('click', prevLightbox);
