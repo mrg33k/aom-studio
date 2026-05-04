@@ -10,6 +10,7 @@ import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
 import MessageStatusLabel from './MessageStatusLabel.jsx'
+import SummaryMessage from './SummaryMessage.jsx'
 import useThreadMsgMenu from './useThreadMsgMenu.js'
 import useThreadMessageStatus from './useThreadMessageStatus.js'
 import {
@@ -27,6 +28,31 @@ function isKickoffMessage(m) {
     try { return !!JSON.parse(meta)?.kickoff_sweep } catch { return false }
   }
   return !!meta.kickoff_sweep
+}
+
+function parseMeta(m) {
+  const meta = m?.metadata
+  if (!meta) return {}
+  if (typeof meta === 'string') { try { return JSON.parse(meta) } catch { return {} } }
+  return meta
+}
+
+// Patterns that mark the first line of a summary/ack reply from an agent.
+const SUMMARY_PREFIX_RE = /^(acked[.,\s]|ack\.|summary[:\s—]|replied with|done\.\s*$|got it\.|understood\.|noted\.|confirmed\.|logged\.|recorded\.)/i
+
+function isSummaryMessage(msg, arr, idx) {
+  if (msg.role !== 'assistant') return false
+  if (parseMeta(msg).is_summary) return true
+  // Heuristic: second consecutive assistant message within 8s whose first line
+  // matches a well-known summary prefix.
+  const prev = idx > 0 ? arr[idx - 1] : null
+  if (!prev || prev.role !== 'assistant') return false
+  const firstLine = (msg.text || '').split('\n')[0].trim()
+  if (!SUMMARY_PREFIX_RE.test(firstLine)) return false
+  const deltaMs = msg.timestamp && prev.timestamp
+    ? new Date(msg.timestamp) - new Date(prev.timestamp)
+    : Infinity
+  return deltaMs <= 8_000
 }
 
 // Unified scrollable messages area for both room types.
@@ -178,6 +204,13 @@ export default function MessageList({ roomType = 'agent' }) {
     if (!import.meta.env.DEV) return
     window.__r75r65etest__ = { setFloatMode }
     return () => { delete window.__r75r65etest__ }
+  }, [])
+
+  // Dev affordance for R75-b9 gate script.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    window.__r75b9test__ = { isSummaryMessage }
+    return () => { delete window.__r75b9test__ }
   }, [])
 
   return (
@@ -420,6 +453,12 @@ export default function MessageList({ roomType = 'agent' }) {
                 </div>
               </div>
             )
+          }
+
+          // R75-b9: summary/ack replies render compact + dimmed instead of as a
+          // normal bubble so the user can distinguish the answer from the agent note.
+          if (isSummaryMessage(msg, arr, idx)) {
+            return <SummaryMessage key={msg.id} msg={msg} floatStyle={floatStyle} />
           }
 
           const isUser = msg.role === 'user'
