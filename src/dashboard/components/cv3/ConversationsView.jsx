@@ -4,9 +4,11 @@
 //
 // R3b (Apr 17, 2026): reads from feature-sliced chat contexts instead of a
 // single ctx prop. The internal split (R2e) is unchanged.
+import { useState } from 'react'
 import { getStatusColor } from './shared.jsx'
 import { useNavigate } from 'react-router-dom'
 import { C, agentColors } from '../../lib/cv3Colors.js'
+import AgentProfileOverlay from './thread/AgentProfileOverlay.jsx'
 
 // R58 (session 20): pin state for the EA hero + every other agent and
 // every project lives in the universal usePinned hooks. The legacy
@@ -102,6 +104,8 @@ function CleoWorkspacesLink() {
 }
 
 export default function ConversationsView() {
+  const [profileAgent, setProfileAgent] = useState(null)
+
   const {
     agents, projects, allTasks,
     onSelectAgent, onSelectProject,
@@ -203,6 +207,13 @@ export default function ConversationsView() {
   const totalResults = msgHits.length + taskHits.length + agentHits.length + projectHits.length + fileHits.length
 
   return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+    {profileAgent && (
+      <AgentProfileOverlay
+        agent={profileAgent}
+        onClose={() => setProfileAgent(null)}
+      />
+    )}
     <div style={{
       flex: 1,
       overflowY: 'auto',
@@ -281,6 +292,7 @@ export default function ConversationsView() {
               setSelectedAgent={setSelectedAgent}
               onSelectAgent={onSelectAgent}
               onUnpin={() => pinnedAgents.unpin(eaAgent.slug)}
+              onInfoClick={setProfileAgent}
             />
           )}
           {/* R58 retires the ea-hero-restore CTA — the EA can be pinned back
@@ -303,6 +315,7 @@ export default function ConversationsView() {
                 pinAgent={pinnedAgents.pin}
                 unpinAgent={pinnedAgents.unpin}
                 reorderAgent={agentOrder.move}
+                onInfoClick={setProfileAgent}
               />
 
               <ProjectsList
@@ -325,6 +338,7 @@ export default function ConversationsView() {
         </>
       )}
 
+    </div>
     </div>
   )
 }
