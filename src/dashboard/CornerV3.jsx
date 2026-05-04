@@ -38,6 +38,7 @@ import {
 import { LiveCallProvider } from './providers/LiveCallProvider.jsx'
 import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
+import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -100,6 +101,8 @@ export default function CornerV3() {
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
   const [prefillMessage, setPrefillMessage] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifReadAt, setNotifReadAt] = useState({})
 
   // R49 (2026-04-23): when setPrefillMessage is fired from TasksPanel
   // (new-project recipe), drop it into the home input bar and clear
@@ -192,6 +195,15 @@ export default function CornerV3() {
     selectedAgent,
     userIdentity: parentUserIdentity,
   })
+  // Notifications: filter inboxItems by per-agent read timestamps (session-only)
+  const notifItems = useMemo(() => {
+    return (inboxItems || []).filter(item =>
+      item.agent && (!notifReadAt[item.agent] || item.timestamp > notifReadAt[item.agent])
+    )
+  }, [inboxItems, notifReadAt])
+
+  const totalUnread = notifItems.length
+
   // tabRef keeps the realtime callback fresh without resubscribing on every tab change
   const tabRef = useRef(tab)
 
@@ -283,6 +295,9 @@ export default function CornerV3() {
     setConversationTarget({ name: agent.name, type: 'agent' })
     setTab('chat')
     setUnreadChat(0)
+    if (agent?.slug) {
+      setNotifReadAt(prev => ({ ...prev, [agent.slug]: new Date().toISOString() }))
+    }
   }, [])
 
   // Called by ChatPanel when a project is selected
@@ -486,7 +501,29 @@ export default function CornerV3() {
           {/* Right: GlobalCall + Bell + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <GlobalCallButton />
-            <BellIcon hasNew={unreadChat > 0} />
+            <div style={{ position: 'relative' }}>
+              <BellIcon
+                count={totalUnread}
+                onClick={() => setNotifOpen(o => !o)}
+              />
+              {notifOpen && (
+                <NotificationsPanel
+                  items={notifItems}
+                  agents={agents}
+                  onSelectAgent={handleSelectAgent}
+                  onMarkAllRead={() => {
+                    const now = new Date().toISOString()
+                    setNotifReadAt(prev => {
+                      const next = { ...prev }
+                      for (const item of notifItems) next[item.agent] = now
+                      return next
+                    })
+                    setNotifOpen(false)
+                  }}
+                  onClose={() => setNotifOpen(false)}
+                />
+              )}
+            </div>
             <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
           </div>
         </div>

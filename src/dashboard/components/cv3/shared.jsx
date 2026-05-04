@@ -111,9 +111,10 @@ export function StatusDot({ status }) {
   )
 }
 
-export function BellIcon({ hasNew = false }) {
+export function BellIcon({ count = 0, onClick }) {
   return (
     <button
+      onClick={onClick}
       style={{
         position: 'relative',
         width: 32,
@@ -133,21 +134,33 @@ export function BellIcon({ hasNew = false }) {
       aria-label="Notifications"
     >
       <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
-        stroke={C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        stroke={count > 0 ? C.accent : C.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
       </svg>
-      {hasNew && (
+      {count > 0 && (
         <span style={{
           position: 'absolute',
-          top: 5,
-          right: 5,
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
+          top: -4,
+          right: -4,
+          minWidth: 16,
+          height: 16,
+          borderRadius: 8,
           background: C.accent,
-          border: '1.5px solid ' + C.bg,
-        }} />
+          border: '2px solid ' + C.bg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 8,
+          fontWeight: 800,
+          color: '#000',
+          fontFamily: "'JetBrains Mono', monospace",
+          padding: '0 3px',
+          lineHeight: 1,
+          pointerEvents: 'none',
+        }}>
+          {count > 99 ? '99+' : count}
+        </span>
       )}
     </button>
   )
