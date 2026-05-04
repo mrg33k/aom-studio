@@ -15,7 +15,7 @@ import {
 } from './chat/ChatPanelContext.jsx'
 
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
-import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
+import RecipeBook from './recipes/RecipeBook.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
 import ProjectSearchBar from './project-chat/ProjectSearchBar.jsx'
 import ProjectSearchResults from './project-chat/ProjectSearchResults.jsx'
@@ -28,7 +28,7 @@ import ProjectSettingsModal from './project-chat/ProjectSettingsModal.jsx'
 import HandoffNudge from './shared/HandoffNudge.jsx'
 
 export default function ProjectChatView() {
-  const { selectedProject } = useChatCore()
+  const { selectedProject, worldId } = useChatCore()
   const { isRecording, isTranscribing } = useChatRecordingCtx()
   const { isVoiceActive } = useChatVoiceCtx()
   const {
@@ -53,8 +53,9 @@ export default function ProjectChatView() {
           scope to a single agent. Every recipe, organized by category, with
           in-place search. */}
       {recipesOpen && (
-        <RecipesBookOverlay
+        <RecipeBook
           mode="project"
+          tenantId={worldId || 'aom'}
           onClose={() => setRecipesOpen(false)}
           onFire={({ recipe, input }) => {
             const text = `${recipe.name}${input ? ' ' + input : ''}`.trim()

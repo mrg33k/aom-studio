@@ -18,7 +18,7 @@ import {
 
 import ThreadHeader from './thread/ThreadHeader.jsx'
 import AgentProfileOverlay from './thread/AgentProfileOverlay.jsx'
-import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
+import RecipeBook from './recipes/RecipeBook.jsx'
 import FilesPanel from './thread/FilesPanel.jsx'
 import VoiceChatHost from './thread/VoiceChatHost.jsx'
 import MessageList from './thread/MessageList.jsx'
@@ -29,7 +29,7 @@ import ThreadSettingsModal from './thread/ThreadSettingsModal.jsx'
 import HandoffNudge from './shared/HandoffNudge.jsx'
 
 export default function ThreadView() {
-  const { selectedAgent } = useChatCore()
+  const { selectedAgent, worldId } = useChatCore()
   const { isVoiceActive } = useChatVoiceCtx()
   const { isRecording, isTranscribing } = useChatRecordingCtx()
   const {
@@ -63,9 +63,10 @@ export default function ThreadView() {
 
       {/* R41: recipes book -- filtered to this agent's domain in thread view. */}
       {recipesOpen && selectedAgent && (
-        <RecipesBookOverlay
+        <RecipeBook
           mode="agent"
           agentSlug={selectedAgent.slug}
+          tenantId={worldId || 'aom'}
           onClose={() => setRecipesOpen(false)}
           onFire={({ recipe, input }) => {
             const text = `${recipe.name}${input ? ' ' + input : ''}`.trim()
