@@ -39,6 +39,7 @@ import { LiveCallProvider } from './providers/LiveCallProvider.jsx'
 import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
+import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -195,6 +196,15 @@ export default function CornerV3() {
     selectedAgent,
     userIdentity: parentUserIdentity,
   })
+  const [phoneOverlayOpen, setPhoneOverlayOpen] = useState(false)
+
+  // Auto-close overlay 2 s after transcript dispatches, then toast.
+  useEffect(() => {
+    if (!telephone.lastTranscript || telephone.isRecording || telephone.isTranscribing) return
+    showToast('Transcript sent.')
+    const t = setTimeout(() => setPhoneOverlayOpen(false), 2000)
+    return () => clearTimeout(t)
+  }, [telephone.lastTranscript, telephone.isRecording, telephone.isTranscribing])
   // Notifications: filter inboxItems by per-agent read timestamps (session-only)
   const notifItems = useMemo(() => {
     return (inboxItems || []).filter(item =>
@@ -503,7 +513,7 @@ export default function CornerV3() {
             />
           </div>
 
-          {/* Right: GlobalCall + Bell + Avatar */}
+          {/* Right: GlobalCall + Bell + Phone + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <GlobalCallButton />
             <div style={{ position: 'relative' }}>
@@ -529,6 +539,36 @@ export default function CornerV3() {
                 />
               )}
             </div>
+            {/* Phone recording nav icon — PR1 corner:phone-recording */}
+            <button
+              data-testid="nav-phone-icon"
+              title={telephone.isRecording ? 'Stop recording' : 'Phone recording'}
+              onClick={() => {
+                if (!telephone.isRecording && !telephone.isTranscribing) {
+                  setPhoneOverlayOpen(true)
+                }
+                telephone.toggle()
+              }}
+              disabled={telephone.isTranscribing}
+              style={{
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                background: telephone.isRecording
+                  ? 'rgba(239,68,68,0.15)'
+                  : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${telephone.isRecording ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                color: telephone.isRecording ? '#EF4444' : C.muted,
+                cursor: telephone.isTranscribing ? 'default' : 'pointer',
+                opacity: telephone.isTranscribing ? 0.5 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </button>
             <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
           </div>
         </div>
@@ -586,58 +626,6 @@ export default function CornerV3() {
         {tab === 'tasks' && <TasksPanel />}
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
       </div>
-
-      {/* ── TELEPHONE STATUS BAR (visible across all tabs while recording) ── */}
-      {(telephone.isRecording || telephone.isTranscribing || telephone.micError) && (
-        <>
-          <style>{`@keyframes tel-pulse { 0%,100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.25); } }`}</style>
-          <div style={{
-            flexShrink: 0,
-            padding: '10px 16px',
-            background: C.bg2,
-            borderTop: '1px solid ' + C.border,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            justifyContent: 'center',
-          }}>
-            {telephone.isRecording && (
-              <>
-                <span style={{
-                  width: 10, height: 10, borderRadius: '50%',
-                  background: C.red, flexShrink: 0,
-                  animation: 'tel-pulse 1.2s ease-in-out infinite',
-                }} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.text2, fontFamily: "'JetBrains Mono', monospace" }}>
-                  Telephone · {String(Math.floor(telephone.elapsed / 60)).padStart(2, '0')}:{String(telephone.elapsed % 60).padStart(2, '0')}
-                </span>
-                <button
-                  onClick={telephone.toggle}
-                  title="Stop recording"
-                  style={{
-                    marginLeft: 8,
-                    padding: '6px 14px', borderRadius: 14, border: 'none',
-                    background: C.red, color: '#fff',
-                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                    fontFamily: "'Inter', sans-serif",
-                  }}>
-                  Stop
-                </button>
-              </>
-            )}
-            {!telephone.isRecording && telephone.isTranscribing && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: C.accent, fontFamily: "'JetBrains Mono', monospace" }}>
-                Transcribing…
-              </span>
-            )}
-            {!telephone.isRecording && !telephone.isTranscribing && telephone.micError && (
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#F87171', fontFamily: "'Inter', sans-serif" }}>
-                {telephone.micError}
-              </span>
-            )}
-          </div>
-        </>
-      )}
 
       {/* ── INPUT BAR (persistent -- hidden on chat / tasks tabs) ────────── */}
       <div style={{
@@ -726,29 +714,6 @@ export default function CornerV3() {
               </svg>
             </button>
           </div>
-          {/* Telephone (long-form record → transcribe → post to super-agent) */}
-          {!inputBarText.trim() && (
-            <button
-              data-testid="phone-icon"
-              title={telephone.isRecording ? 'Stop telephone recording' : 'Start telephone recording'}
-              onClick={telephone.toggle}
-              disabled={telephone.isTranscribing}
-              style={{
-                width: 42, height: 42, borderRadius: '50%',
-                background: telephone.isRecording ? C.red : C.accent,
-                border: 'none',
-                color: telephone.isRecording ? '#fff' : '#000',
-                cursor: telephone.isTranscribing ? 'default' : 'pointer',
-                opacity: telephone.isTranscribing ? 0.6 : 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-                transition: 'transform 0.15s, background 0.2s',
-              }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </button>
-          )}
           {/* Send (shown when text present) */}
           {inputBarText.trim() && (
             <button
@@ -851,6 +816,22 @@ export default function CornerV3() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── PHONE RECORDING OVERLAY ───────────────────────────────────────── */}
+      {phoneOverlayOpen && (
+        <PhoneRecordingOverlay
+          isRecording={telephone.isRecording}
+          isTranscribing={telephone.isTranscribing}
+          micError={telephone.micError}
+          elapsed={telephone.elapsed}
+          lastTranscript={telephone.lastTranscript}
+          onToggle={telephone.toggle}
+          onClose={() => {
+            setPhoneOverlayOpen(false)
+            if (telephone.isRecording) telephone.stop()
+          }}
+        />
       )}
 
       {/* ── TOAST NOTIFICATION ────────────────────────────────────────────── */}

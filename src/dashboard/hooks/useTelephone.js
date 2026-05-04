@@ -64,6 +64,7 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
   const [micError, setMicError] = useState(null)
   const [startedAt, setStartedAt] = useState(null)
   const [elapsed, setElapsed] = useState(0)
+  const [lastTranscript, setLastTranscript] = useState(null)
 
   // Resolve the target super-agent at stop-time via a ref so the user can
   // switch agents mid-recording without losing the dispatch target: selected
@@ -111,6 +112,7 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
 
   const start = useCallback(async () => {
     setMicError(null)
+    setLastTranscript(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
@@ -144,6 +146,7 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
               worldId,
             })
             await postTranscript(text)
+            setLastTranscript(text)
           } else {
             setMicError('No speech detected. Try again.')
           }
@@ -176,5 +179,5 @@ export default function useTelephone({ worldId, agents, selectedAgent, userIdent
     streamRef.current?.getTracks().forEach(t => t.stop())
   }, [])
 
-  return { isRecording, isTranscribing, micError, elapsed, toggle, stop }
+  return { isRecording, isTranscribing, micError, elapsed, lastTranscript, toggle, stop }
 }
