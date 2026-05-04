@@ -409,7 +409,7 @@ function ExecutionRecipeCard({ recipe, accentColor, isDaytime, isOpen, onToggle 
 
 // ---- Editable agent name -----------------------------------------------------
 
-function AgentNameEditor({ agentSlug, currentName, accentColor, isDaytime, onRenamed }) {
+function AgentNameEditor({ agentSlug, currentName, accentColor, isDaytime, onRenamed, isEa }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(currentName || '')
   const [saving, setSaving] = useState(false)
@@ -424,13 +424,15 @@ function AgentNameEditor({ agentSlug, currentName, accentColor, isDaytime, onRen
     setSaving(true)
     try {
       const clientId = getClientId()
-      const params = new URLSearchParams({ slug: agentSlug, name: trimmed, client_id: clientId })
+      // EAs write to display_name (user-provided, sticky); other agents write to name.
+      const paramKey = isEa ? 'display_name' : 'name'
+      const params = new URLSearchParams({ slug: agentSlug, [paramKey]: trimmed, client_id: clientId })
       const resp = await fetch(`/api/dashboard/agent-status?${params}`, { method: 'PATCH' })
       if (resp.ok) onRenamed?.(trimmed)
     } catch { /* ignore */ }
     setSaving(false)
     setEditing(false)
-  }, [agentSlug, draft, currentName, onRenamed])
+  }, [agentSlug, draft, currentName, onRenamed, isEa])
 
   if (!editing) {
     return (
@@ -570,6 +572,7 @@ export default function AgentInfoTab({
         accentColor={accent}
         isDaytime={isDaytime}
         onRenamed={onAgentRenamed}
+        isEa={agentStatus?.is_ea || false}
       />
 
       {/* ---- TAGLINE ---- */}
