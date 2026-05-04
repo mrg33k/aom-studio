@@ -66,9 +66,9 @@ export default async function handler(req, res) {
       // client_id column added by migration 010 -- filter applies to all tenants including AOM.
       supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}${clientFilter}`),
       // Architecture v2: tasks with v2 statuses (source of truth for Right Now bar).
-      // Right Now bar = ONLY status=building or status=qa. Hard rule.
+      // Right Now bar = status building | running | qa. running is set by task-runner.sh claim.
       // These rows have agent_identity + title columns (v2 schema added by migration 20260401000001).
-      supabaseGet('tasks', `status=in.(queued,classifying,planning,building,qa)&order=priority.desc,sort_order.asc,created_at.asc&limit=100${clientFilter}`).catch(() => []),
+      supabaseGet('tasks', `status=in.(queued,classifying,planning,building,running,qa)&order=priority.desc,sort_order.asc,created_at.asc&limit=100${clientFilter}`).catch(() => []),
       // V2 done/failed tasks for completed section
       supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => []),
     ]);

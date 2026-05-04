@@ -48,9 +48,9 @@ export default function ActiveTasksSection() {
         </span>
       </div>
       {filteredActive.map((t) => {
-        const isBuilding = t.status === 'building' || t.status === 'qa'
+        const isBuilding = t.status === 'building' || t.status === 'qa' || t.status === 'running'
         const cardColor = isBuilding ? LIFECYCLE.working : LIFECYCLE.queued
-        const statusLabel = t.status === 'building' ? 'Building' : t.status === 'qa' ? 'QA' : t.status === 'planning' ? 'Planning' : t.status === 'classifying' ? 'Classifying' : 'Queued'
+        const statusLabel = t.status === 'building' ? 'Building' : t.status === 'running' ? 'Running' : t.status === 'qa' ? 'QA' : t.status === 'planning' ? 'Planning' : t.status === 'classifying' ? 'Classifying' : 'Queued'
         return (
         <div
           key={t.id}

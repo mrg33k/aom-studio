@@ -207,10 +207,10 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
             }
 
             // Architecture v2: task-runner tasks (source of truth for Right Now bar).
-            // Right Now = ONLY status building or qa. Hard rule. Zero tolerance.
+            // Right Now = status building | running | qa. running is set by task-runner.sh claim.
             // Tasks clear on completion (status -> done/failed), NOT on timeout.
             if (sbData.tasksV2 && sbData.tasksV2.length > 0) {
-              const v2RightNow = sbData.tasksV2.filter(t => t.status === 'building' || t.status === 'qa')
+              const v2RightNow = sbData.tasksV2.filter(t => t.status === 'building' || t.status === 'running' || t.status === 'qa')
               for (const t of v2RightNow) {
                 mergedTasks.push({
                   agent:   t.agent_identity || 'system',
@@ -322,18 +322,18 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           }
 
           // Architecture v2: task-runner tasks (source of truth for Right Now bar).
-          // Right Now = ONLY status building or qa. Hard rule. Zero tolerance.
+          // Right Now = status building | running | qa. running is set by task-runner.sh claim.
           // Tasks clear on completion (status -> done/failed), NOT on timeout.
           // Only add tasks not already present from events table (events take priority).
           if (data.tasksV2 && data.tasksV2.length > 0) {
-            const v2RightNow = data.tasksV2.filter(t => t.status === 'building' || t.status === 'qa')
+            const v2RightNow = data.tasksV2.filter(t => t.status === 'building' || t.status === 'running' || t.status === 'qa')
             const alreadyInActive = new Set(active.map(t => t.taskId).filter(Boolean))
             for (const t of v2RightNow) {
               if (!alreadyInActive.has(t.id)) {
                 active.push({
                   agent:   t.agent_identity || 'system',
                   text:    t.title || t.description || 'Working...',
-                  isLive:  t.status === 'building',
+                  isLive:  t.status === 'building' || t.status === 'running',
                   isQA:    t.status === 'qa',
                   isQueued: false,
                   taskId:  t.id,
