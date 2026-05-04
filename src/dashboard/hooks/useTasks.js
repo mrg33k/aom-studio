@@ -140,7 +140,7 @@ export function useTasks(worldId) {
         .in('client_id', clientIds)
         .order('priority',   { ascending: false })
         .order('sort_order', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(MAX_TASKS)
 
       if (fetchError) {
