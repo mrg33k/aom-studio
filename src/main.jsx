@@ -55,6 +55,7 @@ const ISABrandBible = lazy(() => import('./pages/ISABrandBible.jsx'))
 const Skills = lazy(() => import('./pages/Skills.jsx'))
 const Settings = lazy(() => import('./pages/Settings.jsx'))
 const Onboarding = lazy(() => import('./pages/Onboarding.jsx'))
+const OnboardingVoice = lazy(() => import('./pages/OnboardingVoice.jsx'))
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
@@ -115,7 +116,7 @@ function AuthGuard({ children }) {
             sessionStorage.getItem('corner-qa-completed') !== 'true') {
           setChecked(true)
           setAuthed(true)
-          navigate('/onboarding', { replace: true })
+          navigate('/onboarding/voice', { replace: true })
           return
         }
 
@@ -149,10 +150,10 @@ function AuthGuard({ children }) {
         }
 
         if (!isOnboarded) {
-          // First-time user -- send to onboarding before dashboard
+          // First-time user -- send to voice onboarding before dashboard
           setChecked(true)
           setAuthed(false)
-          navigate('/onboarding', { replace: true })
+          navigate('/onboarding/voice', { replace: true })
         } else {
           setAuthed(true)
           setChecked(true)
@@ -250,6 +251,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/onboarding/voice" element={<OnboardingVoice />} />
           <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/welcome" element={<AuthGuard><DashboardWelcome /></AuthGuard>} />
