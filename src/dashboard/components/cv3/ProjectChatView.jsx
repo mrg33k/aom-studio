@@ -16,6 +16,7 @@ import {
 
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
 import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
+import CanonFilesPanel from './project-chat/CanonFilesPanel.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
 import ProjectSearchBar from './project-chat/ProjectSearchBar.jsx'
 import ProjectSearchResults from './project-chat/ProjectSearchResults.jsx'
@@ -34,6 +35,7 @@ export default function ProjectChatView() {
   const {
     filesOpen, settingsOpen,
     recipesOpen, setRecipesOpen,
+    canonFilesOpen,
   } = useChatSettingsCtx()
   const { chatSearchOpen, chatSearchResults } = useChatSearchCtx()
   const { lastActionToast } = useChatContextMenuCtx()
@@ -62,6 +64,8 @@ export default function ProjectChatView() {
           }}
         />
       )}
+
+      {canonFilesOpen && <CanonFilesPanel />}
 
       {filesOpen && <ProjectFilesPanel />}
 

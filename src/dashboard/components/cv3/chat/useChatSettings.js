@@ -16,6 +16,8 @@ export default function useChatSettings({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState('Keys')
   const [filesOpen, setFilesOpen] = useState(false)
+  // R79-f1: canon docs reader (VISION/RESEARCH/BUILD/CONTEXT/tape).
+  const [canonFilesOpen, setCanonFilesOpen] = useState(false)
   // R40: agent profile overlay (info-icon target).
   const [profileOpen, setProfileOpen] = useState(false)
   // R41: recipes book flyout.
@@ -164,6 +166,7 @@ export default function useChatSettings({
     settingsOpen, setSettingsOpen,
     settingsTab, setSettingsTab,
     filesOpen, setFilesOpen,
+    canonFilesOpen, setCanonFilesOpen,
     profileOpen, setProfileOpen,
     recipesOpen, setRecipesOpen,
     chatNameInput, setChatNameInput,

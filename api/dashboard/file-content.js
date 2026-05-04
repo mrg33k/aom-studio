@@ -48,6 +48,19 @@ async function fetchScaffoldRow(project, filename) {
   }
 }
 
+async function tenantOwnsProject(rootProject, clientId) {
+  if (!SUPABASE_URL || !SUPABASE_KEY || !rootProject || !clientId) return true
+  try {
+    const qs = `slug=eq.${encodeURIComponent(rootProject)}&client_id=eq.${encodeURIComponent(clientId)}&select=slug&limit=1`
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/projects?${qs}`, { headers: dbHeaders() })
+    if (!r.ok) return true
+    const rows = await r.json()
+    return Array.isArray(rows) && rows.length > 0
+  } catch {
+    return true
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -57,15 +70,22 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { slug, project, filename } = req.query
+  const { slug, project, filename, client_id } = req.query
 
   // R37b: scaffold lookup path
   if (project && filename) {
-    if (!/^[a-z][a-z0-9-]*$/.test(String(project)) || String(project).length > 50) {
+    // Allow colon-joined mission paths (e.g. 'corner:files-in-app')
+    if (!/^[a-z][a-z0-9-]*(:[a-z][a-z0-9-]*)*$/.test(String(project)) || String(project).length > 80) {
       return res.status(400).json({ error: 'Invalid project' })
     }
     if (!/^[A-Za-z0-9._/-]+$/.test(String(filename)) || String(filename).length > 80 || String(filename).includes('..')) {
       return res.status(400).json({ error: 'Invalid filename' })
+    }
+    // R79-f1: tenant gate — verify root project belongs to client_id when supplied.
+    if (client_id) {
+      const rootProject = String(project).split(':')[0]
+      const allowed = await tenantOwnsProject(rootProject, String(client_id))
+      if (!allowed) return res.status(403).json({ error: 'Access denied' })
     }
     const row = await fetchScaffoldRow(String(project), String(filename))
     if (!row) return res.status(404).json({ error: 'Scaffold file not found' })

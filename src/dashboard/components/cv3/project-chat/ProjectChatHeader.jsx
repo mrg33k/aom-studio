@@ -62,6 +62,7 @@ export default function ProjectChatHeader() {
   const {
     filesOpen, setFilesOpen, settingsOpen, setSettingsOpen,
     recipesOpen, setRecipesOpen,
+    canonFilesOpen, setCanonFilesOpen,
   } = useChatSettingsCtx()
 
   const { switcherOpen, setSwitcherOpen, switcherRef } = useProjectChatSwitcher()
@@ -389,6 +390,30 @@ export default function ProjectChatHeader() {
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </button>
+        {/* R79-f1: Project Docs (canon MD reader — VISION/RESEARCH/BUILD/CONTEXT/Tape) */}
+        {selectedProject && (
+          <button
+            onClick={() => setCanonFilesOpen(o => !o)}
+            title="Project docs (VISION · RESEARCH · BUILD · CONTEXT · Tape)"
+            data-testid="canon-files-toggle"
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: canonFilesOpen ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+              border: canonFilesOpen ? '1px solid rgba(167,139,250,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: canonFilesOpen ? '#A78BFA' : C.muted,
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </button>
+        )}
         {/* Files */}
         <button
           onClick={() => setFilesOpen(o => !o)}
