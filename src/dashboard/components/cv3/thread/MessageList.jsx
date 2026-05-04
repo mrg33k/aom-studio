@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -69,6 +69,34 @@ export default function MessageList({ roomType = 'agent' }) {
   // only had `sending || isAgentTyping`, causing the synthetic chain to collapse
   // prematurely when the POST returned but the assistant reply hadn't arrived yet.
   const inFlight = sending || awaitingResponse || isAgentTyping
+
+  // R73-fix: wall-clock stall detection. Moves silence-detection out of
+  // TypingIndicatorV2 (which resets its timer on every remount) into MessageList
+  // where it survives any subordinate re-render. Fires when the last real user
+  // message has been unanswered for 45s and the thread is still in-flight.
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => {
+    if (!inFlight) return
+    const tick = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(tick)
+  }, [inFlight])
+
+  const latestRealUserMsg = useMemo(() => {
+    if (!inFlight) return null
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i]
+      if (m.role === 'user' && !String(m.id).startsWith('temp-')) return m
+    }
+    return null
+  }, [messages, inFlight])
+
+  const msSinceUser = latestRealUserMsg?.timestamp
+    ? nowMs - new Date(latestRealUserMsg.timestamp).getTime()
+    : 0
+
+  // awaitingResponse=true means no assistant message (real or bridge-stream) has
+  // arrived yet — strictly the relay path where the agent hasn't replied at all.
+  const chainStalled = inFlight && awaitingResponse && msSinceUser >= 45_000
 
   // c76e17f9: skip "Read your message" on turn 2+ (context already established).
   const isFirstTurn = !messages.some(m =>
@@ -663,10 +691,12 @@ export default function MessageList({ roomType = 'agent' }) {
             }]}
             settled={false}
             isError={false}
+            isStalled={chainStalled}
             agentColor={roomColor}
           />
           <TypingIndicatorV2
             streaming={true}
+            stalled={chainStalled}
             agentColor={roomColor}
             agentSlug={roomSlug}
             agentName={roomName}

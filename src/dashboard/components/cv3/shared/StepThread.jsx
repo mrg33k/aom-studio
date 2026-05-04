@@ -146,7 +146,7 @@ export function ThreadStepIndicator({ step, agentColor, settled }) {
   )
 }
 
-export default function StepThread({ steps, settled, isError, agentColor = '#3B82F6' }) {
+export default function StepThread({ steps, settled, isError, isStalled = false, agentColor = '#3B82F6' }) {
   useEffect(() => { ensureStyles() }, [])
   if (!steps || steps.length === 0) return null
   const sorted = [...steps].sort((a, b) => (a.step_index ?? 0) - (b.step_index ?? 0))
@@ -155,6 +155,7 @@ export default function StepThread({ steps, settled, isError, agentColor = '#3B8
       data-testid="step-thread"
       data-settled={settled ? 'true' : 'false'}
       data-error={isError ? 'true' : 'false'}
+      data-stalled={isStalled ? 'true' : 'false'}
       style={{
         display: 'flex', flexDirection: 'column',
         padding: '4px 0',
