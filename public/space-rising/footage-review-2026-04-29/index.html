@@ -49,6 +49,7 @@
     letter-spacing: 0.10em; text-transform: uppercase;
     margin: 64px 0 8px; padding-top: 32px;
     border-top: 1px solid rgba(255,255,255,0.08);
+    scroll-margin-top: 88px;
   }
   h3.section-title { font-size: clamp(28px, 3vw, 40px); font-weight: 900; line-height: 1.1; margin: 0 0 14px; letter-spacing: -0.015em; }
   .section-lead { font-size: 17px; color: var(--text-dim); max-width: 720px; line-height: 1.55; margin: 0 0 36px; }
@@ -75,19 +76,31 @@
 
   /* Sticky tab nav */
   .nav {
-    display: flex; gap: 6px; padding: 8px; background: rgba(8, 12, 24, 0.84);
+    display: flex; gap: 4px; padding: 6px; background: rgba(8, 12, 24, 0.88);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--card-border); border-radius: 100px; margin: 0 0 28px;
-    position: sticky; top: 16px; z-index: 50; flex-wrap: wrap;
+    position: sticky; top: 16px; z-index: 50;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .nav::-webkit-scrollbar { display: none; }
   .nav a {
-    flex: 1; min-width: 90px; text-align: center; padding: 10px 16px;
+    flex: 1 1 auto; text-align: center; padding: 10px 18px;
     border-radius: 100px; color: var(--text-dim); font-size: 13px; font-weight: 600;
     text-decoration: none; transition: background 0.15s, color 0.15s;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.02em; white-space: nowrap;
   }
   .nav a:hover { color: var(--text); background: rgba(255,255,255,0.04); }
   .nav a.on { background: var(--accent); color: #fff; }
+  @media (max-width: 640px) {
+    .nav { top: 8px; }
+    .nav a { font-size: 12px; padding: 9px 14px; flex: 0 0 auto; }
+    .nav a .long { display: none; }
+    h1.hero { margin-top: 36px; }
+  }
+  @media (min-width: 641px) {
+    .nav a .short { display: none; }
+  }
 
   /* Help-us-ID callout + editable cards */
   .help-callout {
@@ -195,10 +208,10 @@
 <nav class="nav" id="nav">
   <a href="#sec-day" class="on">Overview</a>
   <a href="#sec-subjects">Subjects</a>
-  <a href="#sec-help">Help us name</a>
-  <a href="#sec-footage">All footage</a>
+  <a href="#sec-help"><span class="long">Help us name</span><span class="short">Help</span></a>
+  <a href="#sec-footage"><span class="long">All footage</span><span class="short">Footage</span></a>
   <a href="#sec-transcripts">Transcripts</a>
-  <a href="#sec-next">What's next</a>
+  <a href="#sec-next"><span class="long">What's next</span><span class="short">Next</span></a>
 </nav>
 
 <h1 class="hero">Here's what we <em>captured</em> for you.</h1>
@@ -1509,7 +1522,7 @@
       const target = document.querySelector(a.getAttribute('href'));
       if (!target) return;
       e.preventDefault();
-      const top = target.getBoundingClientRect().top + window.scrollY - 80;
+      const top = target.getBoundingClientRect().top + window.scrollY - 88;
       window.scrollTo({ top, behavior: 'smooth' });
       history.replaceState(null, '', a.getAttribute('href'));
     });
@@ -1525,10 +1538,15 @@
     navLinks[id] = a;
   });
   function updateActive() {
-    const y = window.scrollY + 140;
+    const probe = 120; // px below sticky nav — section is "active" once its top crosses this line
     let cur = sections[0]?.id;
     for (const s of sections) {
-      if (s.el.offsetTop <= y) cur = s.id;
+      const top = s.el.getBoundingClientRect().top;
+      if (top <= probe) cur = s.id;
+    }
+    // Last-section fallback: when near bottom of page, force last section active
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 80) {
+      cur = sections[sections.length - 1]?.id || cur;
     }
     Object.entries(navLinks).forEach(([id, a]) => a.classList.toggle('on', id === cur));
   }
