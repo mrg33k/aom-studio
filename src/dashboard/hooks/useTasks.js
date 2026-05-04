@@ -98,7 +98,7 @@ function toRightNowPill(task) {
     startedAt:     task.started_at || null,
     qaScore:       task.qa_score || null,
     // Derived fields for display
-    isLive:        task.status === 'building',
+    isLive:        task.status === 'building' || task.status === 'running',
     isQA:          task.status === 'qa',
   }
 }

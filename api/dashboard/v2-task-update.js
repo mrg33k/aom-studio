@@ -5,9 +5,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const TRANSITIONS = {
-  queued: ['classifying'],
+  queued: ['classifying', 'running'],
   classifying: ['planning', 'building'],
   planning: ['building'],
+  running: ['done', 'failed', 'building'],
   building: ['qa'],
   qa: ['done', 'building'],
   failed: ['queued', 'superseded'],
@@ -218,7 +219,7 @@ export default async function handler(req, res) {
       if (!isSameStatus) {
         const now = new Date().toISOString();
 
-        if (nextStatus === 'building') {
+        if (nextStatus === 'building' || nextStatus === 'running') {
           if (!current.started_at) updateBody.started_at = now;
           const prevAttempt = Number.isFinite(current.attempt_count)
             ? current.attempt_count
