@@ -35,6 +35,9 @@ import {
   CornerDataProvider,
   CornerNavProvider,
 } from './CornerContext.jsx'
+import { LiveCallProvider } from './providers/LiveCallProvider.jsx'
+import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
+import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -432,6 +435,7 @@ export default function CornerV3() {
     <CornerAuthProvider value={authValue}>
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
+          <LiveCallProvider>
     <div data-testid="dashboard-home-root" style={{
       width: '100%',
       height: '100dvh',
@@ -479,8 +483,9 @@ export default function CornerV3() {
             />
           </div>
 
-          {/* Right: Bell + Avatar */}
+          {/* Right: GlobalCall + Bell + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <GlobalCallButton />
             <BellIcon hasNew={unreadChat > 0} />
             <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
           </div>
@@ -813,7 +818,9 @@ export default function CornerV3() {
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
 
+      <FloatingCallBar />
     </div>
+          </LiveCallProvider>
         </CornerNavProvider>
       </CornerDataProvider>
     </CornerAuthProvider>
