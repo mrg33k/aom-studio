@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasks — AOM</title>
+
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/animations.css">
+  <link rel="stylesheet" href="styles/desktop.css">
+  <link rel="stylesheet" href="styles/mobile.css">
+
+  <style>
+    body {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      grid-template-rows: 1fr;
+      gap: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .tasks-main {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .tasks-header {
+      padding: var(--sp-2xl) var(--sp-xl);
+      border-bottom: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+    }
+
+    .tasks-title {
+      font-size: var(--fs-3xl);
+      font-weight: var(--fw-extrabold);
+      color: var(--c-text);
+      margin-bottom: var(--sp-lg);
+      letter-spacing: -0.04em;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: var(--sp-md);
+      border-bottom: 1px solid var(--c-border-faint);
+      padding-bottom: var(--sp-lg);
+    }
+
+    .filter-tab {
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-tab.active {
+      color: var(--c-accent);
+      border-bottom-color: var(--c-accent);
+    }
+
+    .filter-tab:hover {
+      color: var(--c-text);
+    }
+
+    .tasks-list {
+      padding: var(--sp-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-lg);
+    }
+
+    .task-card {
+      padding: var(--sp-lg);
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .task-card:hover {
+      border-color: var(--c-accent);
+      background-color: var(--c-accent-light);
+    }
+
+    .task-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--sp-md);
+    }
+
+    .task-title {
+      font-size: var(--fs-lg);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    .task-status {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background-color: var(--c-accent-light);
+      color: var(--c-accent);
+    }
+
+    .task-description {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      line-height: var(--lh-normal);
+      margin-bottom: var(--sp-md);
+    }
+
+    .task-meta {
+      display: flex;
+      gap: var(--sp-lg);
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+
+    .project-sidebar {
+      border-left: 1px solid var(--c-border);
+      background-color: var(--c-s1-faint);
+      padding: var(--sp-xl) var(--sp-lg);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2xl);
+    }
+
+    .sidebar-section-title {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-md);
+    }
+
+    .project-item {
+      padding: var(--sp-md);
+      background-color: var(--c-dim-faint);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .project-item:hover {
+      background-color: var(--c-dim-ghost);
+      border-color: var(--c-border);
+    }
+
+    .project-item.active {
+      background-color: var(--c-accent-glow);
+      border-color: var(--c-accent);
+    }
+
+    .project-name {
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+      margin-bottom: var(--sp-xs);
+    }
+
+    .project-count {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    .summary-card {
+      padding: var(--sp-lg);
+      background-color: var(--c-dim-faint);
+      border-radius: 6px;
+      border-left: 3px solid var(--c-accent);
+    }
+
+    .summary-label {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-sm);
+    }
+
+    .summary-stat {
+      font-size: var(--fs-2xl);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    @media (max-width: 1439px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      .project-sidebar {
+        display: none;
+      }
+
+      .tasks-title {
+        font-size: var(--fs-2xl);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="tasks-main">
+    <div class="tasks-header">
+      <h1 class="tasks-title">Tasks</h1>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active">Right Now (4)</button>
+        <button class="filter-tab">To Do (12)</button>
+        <button class="filter-tab">Scheduled (8)</button>
+        <button class="filter-tab">Done (24)</button>
+      </div>
+    </div>
+
+    <div class="tasks-list">
+      <a href="chat-1on1.html" class="task-card">
+        <div class="task-header">
+          <h3 class="task-title">Ambition case study refresh</h3>
+          <span class="task-status">Right Now</span>
+        </div>
+        <p class="task-description">Update the case study page with latest project data, improve visual hierarchy, align with brand guidelines.</p>
+        <div class="task-meta">
+          <div class="meta-item">Assigned to Steffen</div>
+          <div class="meta-item">Due Friday</div>
+          <div class="meta-item">Corner</div>
+        </div>
+      </a>
+
+      <a href="chat-1on1.html" class="task-card">
+        <div class="task-header">
+          <h3 class="task-title">ISA Energy pricing dashboard code review</h3>
+          <span class="task-status">Right Now</span>
+        </div>
+        <p class="task-description">Final verification pass on dashboard build. Confirm all 7 design gates pass, check responsive behavior at mobile + desktop.</p>
+        <div class="task-meta">
+          <div class="meta-item">Assigned to Cleo</div>
+          <div class="meta-item">Due Friday</div>
+          <div class="meta-item">ISA Energy</div>
+        </div>
+      </a>
+
+      <a href="chat-1on1.html" class="task-card">
+        <div class="task-header">
+          <h3 class="task-title">Skylar therapy module integration</h3>
+          <span class="task-status">Right Now</span>
+        </div>
+        <p class="task-description">Integrate the new therapy module into the care coordination view. Ensure session notes sync with the main patient record.</p>
+        <div class="task-meta">
+          <div class="meta-item">Assigned to Bobby</div>
+          <div class="meta-item">Due Thursday</div>
+          <div class="meta-item">Skylar</div>
+        </div>
+      </a>
+
+      <a href="chat-1on1.html" class="task-card">
+        <div class="task-header">
+          <h3 class="task-title">Space Rising investor deck update</h3>
+          <span class="task-status">Right Now</span>
+        </div>
+        <p class="task-description">Update the deck with Q2 metrics, latest carbon credit pricing model results, and market validation data from pilot sites.</p>
+        <div class="task-meta">
+          <div class="meta-item">Assigned to Gary</div>
+          <div class="meta-item">Due Wednesday</div>
+          <div class="meta-item">Space Rising</div>
+        </div>
+      </a>
+
+      <a href="chat-1on1.html" class="task-card">
+        <div class="task-header">
+          <h3 class="task-title">Pala events calendar redesign</h3>
+          <span class="task-status">To Do</span>
+        </div>
+        <p class="task-description">Redesign the community events calendar to highlight trending events and improve discoverability. Mobile-first approach.</p>
+        <div class="task-meta">
+          <div class="meta-item">Assigned to Steffen</div>
+          <div class="meta-item">Due in 2 weeks</div>
+          <div class="meta-item">Pala</div>
+        </div>
+      </a>
+
+      <a href="chat-1on1.html" class="task-card">
+        <div class="task-header">
+          <h3 class="task-title">Ambition portfolio gallery upgrade</h3>
+          <span class="task-status">To Do</span>
+        </div>
+        <p class="task-description">Add video showcase to the project portfolio, implement real-time sorting by client, improve filtering UX.</p>
+        <div class="task-meta">
+          <div class="meta-item">Assigned to Cleo</div>
+          <div class="meta-item">Due in 3 weeks</div>
+          <div class="meta-item">Ambition</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="project-sidebar">
+    <div>
+      <h3 class="sidebar-section-title">Projects</h3>
+
+      <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
+        <div class="project-item active">
+          <div class="project-name">Corner</div>
+          <div class="project-count">12 active tasks</div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-name">Ambition</div>
+          <div class="project-count">8 active tasks</div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-name">Skylar</div>
+          <div class="project-count">6 active tasks</div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-name">Space Rising</div>
+          <div class="project-count">4 active tasks</div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-name">ISA Energy</div>
+          <div class="project-count">5 active tasks</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="sidebar-section-title">Summary</h3>
+
+      <div class="summary-card">
+        <div class="summary-label">Right Now</div>
+        <div class="summary-stat">4</div>
+      </div>
+
+      <div class="summary-card" style="border-left-color: var(--c-info); margin-top: var(--sp-md);">
+        <div class="summary-label">To Do</div>
+        <div class="summary-stat">12</div>
+      </div>
+
+      <div class="summary-card" style="border-left-color: var(--c-warning); margin-top: var(--sp-md);">
+        <div class="summary-label">Done (this week)</div>
+        <div class="summary-stat">8</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

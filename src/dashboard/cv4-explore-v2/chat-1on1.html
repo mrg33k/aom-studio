@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat with Elon — AOM</title>
+
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/animations.css">
+  <link rel="stylesheet" href="styles/desktop.css">
+  <link rel="stylesheet" href="styles/mobile.css">
+
+  <style>
+    /* Chat-specific layout */
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .chat-header {
+      padding: var(--sp-lg) var(--sp-xl);
+      border-bottom: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-title {
+      font-size: var(--fs-xl);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    .chat-subtitle {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      margin-top: var(--sp-xs);
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: var(--sp-md);
+    }
+
+    .chat-actions button {
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: var(--c-dim);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      font-size: var(--fs-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chat-actions button:hover {
+      background-color: var(--c-dim-ghost);
+      border-color: var(--c-accent);
+    }
+
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--sp-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-lg);
+    }
+
+    .message {
+      display: flex;
+      gap: var(--sp-md);
+      animation: slide-up 0.3s ease-out;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: var(--sp-md) var(--sp-lg);
+      border-radius: 8px;
+      word-wrap: break-word;
+    }
+
+    .message.assistant .message-content {
+      background-color: var(--c-dim);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+    }
+
+    .message.user .message-content {
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+    }
+
+    .message-timestamp {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      margin-top: var(--sp-sm);
+    }
+
+    .steps-indicator {
+      display: flex;
+      gap: var(--sp-sm);
+      margin-top: var(--sp-sm);
+      padding-top: var(--sp-sm);
+      border-top: 1px solid var(--c-border-faint);
+    }
+
+    .step {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--c-muted);
+    }
+
+    .step.active {
+      background-color: var(--c-accent);
+      animation: breathing-dot 2s ease-in-out infinite;
+    }
+
+    .input-container {
+      padding: var(--sp-lg);
+      border-top: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      display: flex;
+      gap: var(--sp-md);
+    }
+
+    .input-container input {
+      flex: 1;
+      padding: var(--sp-md) var(--sp-lg);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      background-color: var(--c-input-bg);
+      color: var(--c-text);
+      font-size: var(--fs-base);
+      transition: border-color 0.2s ease;
+    }
+
+    .input-container input:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      background-color: var(--c-input-focus-bg);
+    }
+
+    .input-container button {
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      border: none;
+      border-radius: 6px;
+      font-weight: var(--fw-bold);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .input-container button:hover {
+      background-color: var(--c-accent-hover);
+    }
+
+    @media (max-width: 1439px) {
+      .messages-container {
+        padding: var(--sp-lg);
+      }
+
+      .message-content {
+        max-width: 90%;
+      }
+
+      .chat-actions {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-header">
+    <div>
+      <h1 class="chat-title">Elon</h1>
+      <p class="chat-subtitle">Systems architect & operations</p>
+    </div>
+    <div class="chat-actions">
+      <button>←</button>
+      <button>⋮</button>
+    </div>
+  </div>
+
+  <div class="messages-container">
+    <div class="message assistant">
+      <div>
+        <div class="message-content">
+          Good morning. What's on your mind today?
+        </div>
+        <div class="message-timestamp">9:42 AM</div>
+      </div>
+    </div>
+
+    <div class="message user">
+      <div>
+        <div class="message-content">
+          Ambition needs a refresh on the case study page. Can you handle that?
+        </div>
+        <div class="message-timestamp">9:43 AM</div>
+      </div>
+    </div>
+
+    <div class="message assistant">
+      <div>
+        <div class="message-content">
+          <p>Already on it. Queued a task for Steffen on the brand refresh. I'll pull the case study brief, audit the current design against our standards, and surface options.</p>
+          <p style="margin-top: var(--sp-sm);">Task ID: <code style="background: var(--c-s1-faint); padding: 2px 4px; border-radius: 3px;">A-8472</code></p>
+        </div>
+        <div class="message-timestamp">9:44 AM</div>
+        <div class="steps-indicator">
+          <div class="step active"></div>
+          <div class="step"></div>
+          <div class="step"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="message user">
+      <div>
+        <div class="message-content">
+          Good. What about the ISA Energy pricing dashboard? Is that moving?
+        </div>
+        <div class="message-timestamp">9:45 AM</div>
+      </div>
+    </div>
+
+    <div class="message assistant">
+      <div>
+        <div class="message-content">
+          <p>ISA is on track. Three missions active: pricing-model (60% done), dashboard-build (35% done), and stakeholder-alignment (waiting on investor feedback).</p>
+          <p style="margin-top: var(--sp-sm);">Bottleneck: investor call scheduled for Thursday. No blockers in engineering.</p>
+        </div>
+        <div class="message-timestamp">9:46 AM</div>
+      </div>
+    </div>
+
+    <div class="message user">
+      <div>
+        <div class="message-content">
+          Understood. What's the quality bar looking like on those?
+        </div>
+        <div class="message-timestamp">9:47 AM</div>
+      </div>
+    </div>
+
+    <div class="message assistant">
+      <div>
+        <div class="message-content">
+          <p>All three missions passed the design gate audit (7/7 checks). Code review on the dashboard is in progress — Cleo's doing the final verification pass. If that's clean, we ship Friday.</p>
+        </div>
+        <div class="message-timestamp">9:48 AM</div>
+        <div class="steps-indicator">
+          <div class="step"></div>
+          <div class="step"></div>
+          <div class="step"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-container">
+    <input type="text" placeholder="Type your message..." />
+    <button>Send</button>
+  </div>
+</body>
+</html>

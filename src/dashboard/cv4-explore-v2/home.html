@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AOM — Command Center</title>
+
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/animations.css">
+  <link rel="stylesheet" href="styles/desktop.css">
+  <link rel="stylesheet" href="styles/mobile.css">
+
+  <style>
+    /* Home-specific layout */
+    .home-hero {
+      padding: var(--sp-3xl) var(--sp-2xl);
+      background-color: var(--c-s1);
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .greeting {
+      font-size: var(--fs-4xl);
+      font-weight: var(--fw-extrabold);
+      line-height: var(--lh-tight);
+      color: var(--c-text);
+      margin-bottom: var(--sp-lg);
+      letter-spacing: -0.04em;
+    }
+
+    .subheading {
+      font-size: var(--fs-lg);
+      color: var(--c-text2);
+      margin-bottom: var(--sp-2xl);
+    }
+
+    .search-bar {
+      display: flex;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-2xl);
+    }
+
+    .search-bar input {
+      flex: 1;
+      max-width: 600px;
+      padding: var(--sp-md) var(--sp-lg);
+      font-size: var(--fs-base);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      background-color: var(--c-input-bg);
+      color: var(--c-text);
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      background-color: var(--c-input-focus-bg);
+    }
+
+    .search-bar button {
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      border: none;
+      border-radius: 8px;
+      font-weight: var(--fw-bold);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .search-bar button:hover {
+      background-color: var(--c-accent-hover);
+    }
+
+    .projects-section {
+      padding: var(--sp-2xl);
+    }
+
+    .section-label {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-lg);
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: var(--sp-xl);
+    }
+
+    .project-card {
+      padding: var(--sp-lg);
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .project-card:hover {
+      border-color: var(--c-accent);
+      background-color: var(--c-accent-light);
+    }
+
+    .project-card:active {
+      background-color: var(--c-accent-lighter);
+    }
+
+    .project-name {
+      font-size: var(--fs-lg);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+      margin-bottom: var(--sp-sm);
+    }
+
+    .project-summary {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      line-height: var(--lh-normal);
+      margin-bottom: var(--sp-md);
+    }
+
+    .project-meta {
+      display: flex;
+      gap: var(--sp-md);
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--c-accent);
+    }
+
+    @media (max-width: 1439px) {
+      .greeting {
+        font-size: var(--fs-2xl);
+      }
+
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-bar {
+        flex-direction: column;
+      }
+
+      .search-bar input {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="home-hero">
+    <h1 class="greeting">Good morning, Patrik.</h1>
+    <p class="subheading">What are you working on right now?</p>
+
+    <div class="search-bar">
+      <input
+        type="text"
+        placeholder="Search projects, tasks, agents..."
+        aria-label="Search"
+      >
+      <button aria-label="Search">→</button>
+    </div>
+  </div>
+
+  <div class="projects-section">
+    <h2 class="section-label">Active Projects</h2>
+
+    <div class="projects-grid">
+      <a href="project-chat.html?id=corner" class="project-card">
+        <h3 class="project-name">Corner</h3>
+        <p class="project-summary">Platform operating system for autonomous work. Live voice calls, task routing, real-time project state.</p>
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="status-dot"></span>
+            In Flight
+          </div>
+          <div class="meta-item">12 tasks</div>
+        </div>
+      </a>
+
+      <a href="project-chat.html?id=ambition" class="project-card">
+        <h3 class="project-name">Ambition</h3>
+        <p class="project-summary">Mechanical engineering agency website. Portfolio, case studies, team visibility.</p>
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="status-dot"></span>
+            In Flight
+          </div>
+          <div class="meta-item">8 tasks</div>
+        </div>
+      </a>
+
+      <a href="project-chat.html?id=skylar" class="project-card">
+        <h3 class="project-name">Skylar</h3>
+        <p class="project-summary">Mental health coaching platform. Real-time session notes, progress tracking, care coordination.</p>
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="status-dot"></span>
+            In Flight
+          </div>
+          <div class="meta-item">6 tasks</div>
+        </div>
+      </a>
+
+      <a href="project-chat.html?id=space-rising" class="project-card">
+        <h3 class="project-name">Space Rising</h3>
+        <p class="project-summary">Climate tech startup. Dashboard for carbon credit tracking, investor relations site.</p>
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="status-dot"></span>
+            In Flight
+          </div>
+          <div class="meta-item">4 tasks</div>
+        </div>
+      </a>
+
+      <a href="project-chat.html?id=isa-energy" class="project-card">
+        <h3 class="project-name">ISA Energy</h3>
+        <p class="project-summary">Smart grid analytics. Real-time consumption data, demand forecasting, pricing strategy.</p>
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="status-dot"></span>
+            In Flight
+          </div>
+          <div class="meta-item">5 tasks</div>
+        </div>
+      </a>
+
+      <a href="project-chat.html?id=pala" class="project-card">
+        <h3 class="project-name">Pala</h3>
+        <p class="project-summary">Community platform for cultural organizations. Events, member management, fundraising.</p>
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="status-dot"></span>
+            In Flight
+          </div>
+          <div class="meta-item">3 tasks</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="projects-section">
+    <h2 class="section-label">Recent Activity</h2>
+
+    <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
+      <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-accent); border-radius: 4px;">
+        <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Elon queued 3 tasks on Ambition</p>
+        <p style="font-size: var(--fs-xs); color: var(--c-muted);">2 hours ago</p>
+      </div>
+
+      <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-info); border-radius: 4px;">
+        <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Steffen marked 2 tasks done on Corner</p>
+        <p style="font-size: var(--fs-xs); color: var(--c-muted);">5 hours ago</p>
+      </div>
+
+      <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-accent); border-radius: 4px;">
+        <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Studio sent an update on Space Rising</p>
+        <p style="font-size: var(--fs-xs); color: var(--c-muted);">8 hours ago</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
