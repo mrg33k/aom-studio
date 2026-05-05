@@ -4,11 +4,13 @@
 //
 // R3b (Apr 17, 2026): reads from feature-sliced chat contexts instead of a
 // single ctx prop. The internal split (R2e) is unchanged.
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { getStatusColor } from './shared.jsx'
 import { useNavigate } from 'react-router-dom'
 import { C, agentColors } from '../../lib/cv3Colors.js'
 import AgentProfileOverlay from './thread/AgentProfileOverlay.jsx'
+import { supabase } from '../../lib/supabase.js'
+import { getClientId } from '../../lib/clientConfig.js'
 
 // R58 (session 20): pin state for the EA hero + every other agent and
 // every project lives in the universal usePinned hooks. The legacy
@@ -111,7 +113,28 @@ export default function ConversationsView() {
     onSelectAgent, onSelectProject,
     setSelectedAgent, setInlineProject,
     displayName, greetingIdx, GREETINGS, worldId,
+    refetchProjects,
   } = useChatCore()
+
+  const handleArchiveProject = useCallback(async (slug) => {
+    const clientId = getClientId()
+    await supabase
+      .from('projects')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('slug', slug)
+      .eq('client_id', clientId)
+    refetchProjects?.()
+  }, [refetchProjects])
+
+  const handleUnarchiveProject = useCallback(async (slug) => {
+    const clientId = getClientId()
+    await supabase
+      .from('projects')
+      .update({ archived_at: null })
+      .eq('slug', slug)
+      .eq('client_id', clientId)
+    refetchProjects?.()
+  }, [refetchProjects])
   const { setMessages } = useChatMessagesCtx()
   const {
     unreadMap, unreadCounts, projectPreviews,
@@ -330,6 +353,8 @@ export default function ConversationsView() {
                 pinProject={pinnedProjects.pin}
                 unpinProject={pinnedProjects.unpin}
                 reorderProject={projectOrder.move}
+                onArchiveProject={handleArchiveProject}
+                onUnarchiveProject={handleUnarchiveProject}
               />
             </>
           )}

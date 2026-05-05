@@ -3,10 +3,13 @@
 // popover with a single Pin or Unpin button. Pin state is controlled by
 // the parent via `isPinned` / `onPin` / `onUnpin`.
 //
+// R75-c2: added isArchived / onArchive / onUnarchive for project cards.
+//
 // Testid contract:
 //   [data-testid="pin-menu-trigger-<kind>-<slug>"] on the ⋯ button
 //   [data-testid="pin-menu-popover-<kind>-<slug>"] on the popover
 //   [data-testid="pin-menu-pin"] / "pin-menu-unpin" on the action button
+//   [data-testid="pin-menu-archive"] / "pin-menu-unarchive" on the archive button
 //
 // Right-click integration: callers can attach `menuRef.onContextMenu` to
 // the card itself. The menu will open at click coords, stop event
@@ -15,7 +18,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 
-export default function PinMenu({ kind, slug, isPinned, onPin, onUnpin }) {
+export default function PinMenu({ kind, slug, isPinned, onPin, onUnpin, isArchived, onArchive, onUnarchive }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -59,6 +62,8 @@ export default function PinMenu({ kind, slug, isPinned, onPin, onUnpin }) {
     </button>
   )
 
+  const hasArchiveActions = onArchive || onUnarchive
+
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
       {trigger}
@@ -80,26 +85,56 @@ export default function PinMenu({ kind, slug, isPinned, onPin, onUnpin }) {
             display: 'flex', flexDirection: 'column', gap: 2,
           }}
         >
-          {isPinned ? (
-            <button
-              type="button"
-              role="menuitem"
-              data-testid="pin-menu-unpin"
-              onClick={(e) => { e.stopPropagation(); onUnpin?.(slug); setOpen(false) }}
-              style={menuItemStyle}
-            >
-              Unpin
-            </button>
-          ) : (
-            <button
-              type="button"
-              role="menuitem"
-              data-testid="pin-menu-pin"
-              onClick={(e) => { e.stopPropagation(); onPin?.(slug); setOpen(false) }}
-              style={menuItemStyle}
-            >
-              Pin
-            </button>
+          {!isArchived && (
+            isPinned ? (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="pin-menu-unpin"
+                onClick={(e) => { e.stopPropagation(); onUnpin?.(slug); setOpen(false) }}
+                style={menuItemStyle}
+              >
+                Unpin
+              </button>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="pin-menu-pin"
+                onClick={(e) => { e.stopPropagation(); onPin?.(slug); setOpen(false) }}
+                style={menuItemStyle}
+              >
+                Pin
+              </button>
+            )
+          )}
+
+          {hasArchiveActions && !isArchived && (
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '2px 4px' }} />
+          )}
+
+          {hasArchiveActions && (
+            isArchived ? (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="pin-menu-unarchive"
+                onClick={(e) => { e.stopPropagation(); onUnarchive?.(slug); setOpen(false) }}
+                style={menuItemStyle}
+              >
+                Unarchive
+              </button>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="pin-menu-archive"
+                onClick={(e) => { e.stopPropagation(); onArchive?.(slug); setOpen(false) }}
+                style={{ ...menuItemStyle, color: C.muted }}
+              >
+                Archive
+              </button>
+            )
           )}
         </div>
       )}

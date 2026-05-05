@@ -149,7 +149,7 @@ export default function ChatPanel() {
   }), [currentUser?.id])
 
   // ── Projects merge (dbProjects + agent_status projectRooms) ───────────────
-  const { projects: dbProjects } = useProjects(worldId)
+  const { projects: dbProjects, refetch: refetchProjects } = useProjects(worldId)
   const projects = useMemo(() => {
     if (projectRooms && projectRooms.length > 0) {
       const roomsBySlug = Object.fromEntries(projectRooms.map(r => [r.slug, r]))
@@ -398,6 +398,7 @@ export default function ChatPanel() {
     prefillMessage, setPrefillMessage,
     chatInputFocused, setChatInputFocused,
     showHandoffNudge, acceptHandoffNudge, snoozeHandoffNudge, dismissHandoffNudge, resetExchangeCount,
+    refetchProjects,
   }), [
     agents, inboxItems, allTasks, projects, conv.chattableAgents,
     selectedAgent, selectedProject, inlineProject, currentChatKey,
@@ -406,6 +407,7 @@ export default function ChatPanel() {
     onBack, onSelectAgent, onSelectProject, prefillMessage, setPrefillMessage,
     chatInputFocused,
     showHandoffNudge, acceptHandoffNudge, snoozeHandoffNudge, dismissHandoffNudge, resetExchangeCount,
+    refetchProjects,
   ])
 
   const messagesValue = useMemo(() => ({
