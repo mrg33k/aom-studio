@@ -580,17 +580,32 @@ export default function CornerV3() {
           justifyContent: 'space-between',
           padding: '8px 16px',
         }}>
-          {/* Tabs */}
+          {/* Tabs — three pillars per VISION (Home, Chat, Tasks). Home and Chat
+              both route to tab='chat'; their active state splits on conversationTarget. */}
           <div style={{ display: 'flex', gap: 2 }}>
             <Tab
-              label={conversationTarget ? 'Chat' : 'Home'}
-              icon={conversationTarget
-                ? <ChatIcon color={tab === 'chat' ? C.text : C.muted} />
-                : <HomeIcon color={tab === 'chat' ? C.text : C.muted} />
-              }
-              active={tab === 'chat'}
-              onClick={() => handleTabChange('chat')}
-              badge={<Badge count={unreadChat} />}
+              label="Home"
+              icon={<HomeIcon color={tab === 'chat' && !conversationTarget ? C.text : C.muted} />}
+              active={tab === 'chat' && !conversationTarget}
+              onClick={() => {
+                setSelectedAgent(null)
+                setConversationTarget(null)
+                setTab('chat')
+                setUnreadChat(0)
+              }}
+              badge={!conversationTarget ? <Badge count={unreadChat} /> : null}
+            />
+            <Tab
+              label="Chat"
+              icon={<ChatIcon color={tab === 'chat' && conversationTarget ? C.text : C.muted} />}
+              active={tab === 'chat' && !!conversationTarget}
+              onClick={() => {
+                if (conversationTarget) {
+                  setTab('chat')
+                  setUnreadChat(0)
+                }
+              }}
+              badge={conversationTarget ? <Badge count={unreadChat} /> : null}
             />
             <Tab
               label="Tasks"
