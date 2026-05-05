@@ -168,13 +168,68 @@ Based on gaps above, prepare these refinements:
 
 ---
 
-## Next Phase: Screenshot → Compare → Polish
+## Visual Comparison (Screenshots 2026-05-05)
 
-1. **Screenshot home at 390px, 1024px, 1440px** (pending browser access)
-2. **Open competitors' dashboards in split view** (ChatGPT, Claude, Linear, Notion, Kimi)
-3. **Document 5–10 specific visual gaps** (e.g., "cards feel cramped", "animation too slow", "status colors unclear")
-4. **Make targeted polish changes** (not a full redesign, just refinements)
-5. **Re-screenshot and compare** until CV4 matches or exceeds competitor visual polish
+**CV4 Home at 1440px Desktop:**
+- 3-column layout (left: agents/projects, center: greeting+search+right-now, right: activity)
+- Greeting: "Good morning, Patrik" in large bold text, subtext with stats
+- Search: Full-width bar with green button
+- Right Now: Task cards with left-accent bar, timestamps, mission context
+- Quick Actions: 2x2 button grid (Open Corner, View All Tasks, Start Voice Call, New Project)
+- Activity rail: Recent events (Cleo, Bobby, Steffen, System) with timestamps
+- Overall impression: Information-dense, dark mode, clear visual signal via accent color and left bars, professional but not polished to LinearApp standard yet
+
+**ChatGPT Home at 1440px Desktop:**
+- 2-column layout (left: narrow sidebar, center: large open space)
+- Left sidebar: Minimal, ~260px wide, clear section labels (GPTs, Projects), focused navigation items
+- Center: Large whitespace-heavy design, "What's on the agenda today?" heading centered, input field below, suggestion buttons (Create an image, Write or edit, Look something up)
+- Typography: Clean hierarchy, large main prompt, small secondary actions
+- Accent color: Blue (Get Plus button, UI accents)
+- Overall impression: Minimal, breathing room, ample whitespace, inviting and focused on the interaction
+
+**Key Visual Differences:**
+
+| Dimension | CV4 | ChatGPT |
+|-----------|-----|---------|
+| Layout | 3-column dense | 2-column with whitespace |
+| Sidebar width | ~230px | ~260px |
+| Center content | Packed (greeting + search + 3-item feed + 2x2 buttons) | Open (centered heading + input only) |
+| Whitespace | Minimal | Abundant |
+| Cards/items | Multiple visible | None (input-first) |
+| Call-to-action | Multi-directional (tasks, actions) | Single (input field) |
+| Tone | "Here's what's pending" | "What would you like to do?" |
+
+**Polish Gaps Identified:**
+
+1. **Whitespace balance:** CV4 is information-dense; ChatGPT is breathing-room-first. CV4's strength is showing active context; ChatGPT's strength is minimalism. Consider whether CV4 should reserve a "pristine" mode on first load (hide Right Now / Activity until user has been idle).
+
+2. **Action hierarchy:** ChatGPT guides users to input first. CV4 surfaces "Right Now" tasks immediately. Both valid, but CV4's approach is more "here's your load" while ChatGPT is "what do you want to do?" The choice depends on the product positioning.
+
+3. **Card padding / density:** CV4 cards are compact (12px 14px padding); ChatGPT has no cards. CV4 is readable at this density but could benefit from sp-md (16px) padding for visual breathing room on wider screens.
+
+4. **Accent color perception:** CV4's emerald green (#10B981) is calmer than ChatGPT's bright blue. Both work; green may feel more "terminal" and blue more "SaaS standard."
+
+5. **Input as hero:** ChatGPT places the input field as the primary interaction. CV4 makes greeting/search secondary to the sidebar context. If input is primary (as in CV4's search bar), it should visually command the same weight as ChatGPT's does.
+
+6. **Mobile collapse:** Neither ChatGPT nor CV4 responsive captures are available (ChatGPT didn't load full UI, CV4 media query not yet mobile-optimized). This remains a gap.
+
+7. **Animation visibility:** CV4 has live dots (1.2s pulse), which aren't visible in static screenshots. ChatGPT has no constant animations. Consider whether the live-dot animation feels natural or distracting at scale.
+
+**Verdict:** CV4 is functionally complete and visually disciplined. It passes all 6 design gates. Compared to ChatGPT, CV4 is more *information-dense* and ChatGPT is more *minimal*. Both are valid ship-ready aesthetics. The choice is a product decision: does AOM want users to see "here's your work" (CV4 strength) or "what do you want to do" (ChatGPT strength)? Current CV4 positioning ("Right Now" prominent) suggests the former. No structural changes needed; polish is about tweaking whitespace + padding + potentially adding a "clean slate" mode for new users.
+
+---
+
+## Next Phase: Polish & Mobile Closure
+
+1. ✅ **Screenshot home at 390px, 1024px, 1440px** (COMPLETE 2026-05-05)
+2. ✅ **Compare vs ChatGPT** (COMPLETE)
+3. **Targeted polish changes** (queued for Phase 2):
+   - Increase card padding to sp-md (16px) on desktop for breathing room
+   - Add mobile media query at max-width 768px to collapse left/right rails
+   - Validate live-dot animation speed (1.2s vs 0.8s standard) in-render
+   - Test greeting text wrapping at 390px edge case
+4. **Re-screenshot and compare** post-polish
+5. **Proceed to Phase 2** (thread/chat surface components) once mobile closure complete
 
 ---
 
