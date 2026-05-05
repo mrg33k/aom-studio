@@ -9,12 +9,13 @@
 --   'prune' = user/admin flagged for deletion after grace period
 --
 -- Pruning policy:
---   Messages with retention='prune' AND created_at < now() - interval '7 days' are deleted
+--   Messages with retention='prune' AND timestamp < now() - interval '7 days' are deleted
 --   Pruning runs once daily via daemon: scripts/message-retention-pruner.py
 
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS retention text;
 
--- Index for pruning queries (fast lookup of expired prune-flagged messages)
-CREATE INDEX IF NOT EXISTS messages_retention_created_idx
-  ON messages(retention, created_at)
+-- Index for pruning queries (fast lookup of expired prune-flagged messages).
+-- messages uses `timestamp` not `created_at`.
+CREATE INDEX IF NOT EXISTS messages_retention_ts_idx
+  ON messages(retention, timestamp)
   WHERE retention = 'prune';
