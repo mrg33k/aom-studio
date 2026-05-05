@@ -37,6 +37,137 @@ function parseMeta(m) {
   return meta
 }
 
+// R78-p2: confirmation card for "create project from chat" flow. Extracted
+// from MessageList .map() loop so its useState calls live at component top.
+function CreateProjectCard({ msg, worldId, selectedAgent }) {
+  const cm = msg.metadata || {}
+  const { slug, name, reason } = cm
+  const [editName, setEditName] = useState(name || slug)
+  const [confirming, setConfirming] = useState(false)
+
+  const handleConfirm = async () => {
+    setConfirming(true)
+    try {
+      const createRes = await fetch('/api/dashboard/create-project-from-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          name: editName,
+          client_id: worldId,
+          agent_slug: selectedAgent?.slug || 'ea',
+        }),
+      })
+      if (!createRes.ok) {
+        const err = await createRes.json()
+        console.error('Create project failed:', err)
+        setConfirming(false)
+        return
+      }
+    } catch (err) {
+      console.error('Create project error:', err)
+      setConfirming(false)
+    }
+  }
+
+  const handleSkip = () => {}
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
+      <div style={{
+        maxWidth: '480px', padding: '12px 14px', borderRadius: 10,
+        background: 'rgba(99, 102, 241, 0.10)',
+        border: '1px solid rgba(99, 102, 241, 0.30)',
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: '#A5B4FC',
+          textTransform: 'uppercase', letterSpacing: '0.08em',
+          fontFamily: "'JetBrains Mono', monospace", marginBottom: 8,
+        }}>
+          Create Project
+        </div>
+        {reason && (
+          <div style={{
+            fontSize: 12, color: 'rgba(226, 232, 240, 0.72)',
+            marginBottom: 8, lineHeight: 1.4,
+          }}>
+            {reason}
+          </div>
+        )}
+        <div style={{
+          fontSize: 11, color: 'rgba(148, 163, 184, 0.6)',
+          marginBottom: 6, fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          Slug: {slug}
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <label style={{
+            display: 'block', fontSize: 10,
+            color: 'rgba(148, 163, 184, 0.7)', fontWeight: 600,
+            marginBottom: 3, textTransform: 'uppercase',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            Project Name
+          </label>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            disabled={confirming}
+            style={{
+              width: '100%', padding: '6px 8px', fontSize: 12,
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              borderRadius: 4, background: 'rgba(0, 0, 0, 0.2)',
+              color: 'rgba(226, 232, 240, 0.9)',
+              fontFamily: "'JetBrains Mono', monospace", outline: 'none',
+            }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={handleConfirm}
+            disabled={confirming || !editName.trim()}
+            style={{
+              flex: 1, padding: '6px 10px', fontSize: 11, fontWeight: 600,
+              color: '#fff',
+              background: !editName.trim() || confirming
+                ? 'rgba(99, 102, 241, 0.3)' : '#4F46E5',
+              border: 'none', borderRadius: 4,
+              cursor: !editName.trim() || confirming ? 'not-allowed' : 'pointer',
+              textTransform: 'uppercase',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            {confirming ? 'Creating...' : 'Confirm'}
+          </button>
+          <button
+            onClick={handleSkip}
+            disabled={confirming}
+            style={{
+              flex: 1, padding: '6px 10px', fontSize: 11, fontWeight: 600,
+              color: 'rgba(226, 232, 240, 0.6)',
+              background: 'transparent',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: 4,
+              cursor: confirming ? 'not-allowed' : 'pointer',
+              textTransform: 'uppercase',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            Skip
+          </button>
+        </div>
+        <div style={{
+          fontSize: 9, color: 'rgba(99, 102, 241, 0.45)',
+          marginTop: 6, fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          {formatChatTime(msg.timestamp)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Patterns that mark the first line of a summary/ack reply from an agent.
 const SUMMARY_PREFIX_RE = /^(acked[.,\s]|ack\.|summary[:\s—]|replied with|done\.\s*$|got it\.|understood\.|noted\.|confirmed\.|logged\.|recorded\.)/i
 
@@ -103,6 +234,11 @@ export default function MessageList({ roomType = 'agent' }) {
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [floatMode, setFloatMode] = useState(false)
   const lastUserMsgRef = useRef(null)
+
+  // R75-d3: optimistic retention overrides per message id (lifted from per-row
+  // useState which violated Rules of Hooks inside the .map() loop).
+  const [retentionOverrides, setRetentionOverrides] = useState({})
+  const [hoveredMsgId, setHoveredMsgId] = useState(null)
   useEffect(() => {
     if (!inFlight) return
     const tick = setInterval(() => setNowMs(Date.now()), 1000)
@@ -404,175 +540,15 @@ export default function MessageList({ roomType = 'agent' }) {
             )
           }
 
-          // R78-p2: Create project confirmation card
+          // R78-p2: Create project confirmation card (extracted to component)
           if (!isProject && msg.source === 'create-project-card') {
-            const cm = msg.metadata || {}
-            const { slug, name, reason } = cm
-            const [editName, setEditName] = React.useState(name || slug)
-            const [confirming, setConfirming] = React.useState(false)
-
-            const handleConfirm = async () => {
-              setConfirming(true)
-              try {
-                const createRes = await fetch('/api/dashboard/create-project-from-chat', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    slug,
-                    name: editName,
-                    client_id: worldId,
-                    agent_slug: selectedAgent?.slug || 'ea',
-                  }),
-                })
-                if (!createRes.ok) {
-                  const err = await createRes.json()
-                  console.error('Create project failed:', err)
-                  setConfirming(false)
-                  return
-                }
-                // Success — message will be auto-removed by agent routing
-              } catch (err) {
-                console.error('Create project error:', err)
-                setConfirming(false)
-              }
-            }
-
-            const handleSkip = () => {
-              // No-op; agent will respect the skip signal from chat context
-            }
-
             return (
-              <div key={msg.id} style={{
-                display: 'flex',
-                justifyContent: 'flex-start',
-                marginBottom: 8,
-              }}>
-                <div style={{
-                  maxWidth: '480px',
-                  padding: '12px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(99, 102, 241, 0.10)',
-                  border: '1px solid rgba(99, 102, 241, 0.30)',
-                }}>
-                  <div style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#A5B4FC',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    marginBottom: 8,
-                  }}>
-                    Create Project
-                  </div>
-
-                  {reason && (
-                    <div style={{
-                      fontSize: 12,
-                      color: 'rgba(226, 232, 240, 0.72)',
-                      marginBottom: 8,
-                      lineHeight: 1.4,
-                    }}>
-                      {reason}
-                    </div>
-                  )}
-
-                  <div style={{
-                    fontSize: 11,
-                    color: 'rgba(148, 163, 184, 0.6)',
-                    marginBottom: 6,
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}>
-                    Slug: {slug}
-                  </div>
-
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: 10,
-                      color: 'rgba(148, 163, 184, 0.7)',
-                      fontWeight: 600,
-                      marginBottom: 3,
-                      textTransform: 'uppercase',
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>
-                      Project Name
-                    </label>
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      disabled={confirming}
-                      style={{
-                        width: '100%',
-                        padding: '6px 8px',
-                        fontSize: 12,
-                        border: '1px solid rgba(99, 102, 241, 0.3)',
-                        borderRadius: 4,
-                        background: 'rgba(0, 0, 0, 0.2)',
-                        color: 'rgba(226, 232, 240, 0.9)',
-                        fontFamily: "'JetBrains Mono', monospace",
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    gap: 8,
-                  }}>
-                    <button
-                      onClick={handleConfirm}
-                      disabled={confirming || !editName.trim()}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: '#fff',
-                        background: !editName.trim() || confirming
-                          ? 'rgba(99, 102, 241, 0.3)'
-                          : '#4F46E5',
-                        border: 'none',
-                        borderRadius: 4,
-                        cursor: !editName.trim() || confirming ? 'not-allowed' : 'pointer',
-                        textTransform: 'uppercase',
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}
-                    >
-                      {confirming ? 'Creating...' : 'Confirm'}
-                    </button>
-                    <button
-                      onClick={handleSkip}
-                      disabled={confirming}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: 'rgba(226, 232, 240, 0.6)',
-                        background: 'transparent',
-                        border: '1px solid rgba(99, 102, 241, 0.25)',
-                        borderRadius: 4,
-                        cursor: confirming ? 'not-allowed' : 'pointer',
-                        textTransform: 'uppercase',
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}
-                    >
-                      Skip
-                    </button>
-                  </div>
-
-                  <div style={{
-                    fontSize: 9,
-                    color: 'rgba(99, 102, 241, 0.45)',
-                    marginTop: 6,
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}>
-                    {formatChatTime(msg.timestamp)}
-                  </div>
-                </div>
-              </div>
+              <CreateProjectCard
+                key={msg.id}
+                msg={msg}
+                worldId={worldId}
+                selectedAgent={selectedAgent}
+              />
             )
           }
 
@@ -652,8 +628,11 @@ export default function MessageList({ roomType = 'agent' }) {
             ? stepsByMessageId[msg.id]
             : null
           const isOwnMessage = msg.user_id === currentUser?.id
-          const [msgRetention, setMsgRetention] = React.useState(msg.retention)
-          const [hoveredMsg, setHoveredMsg] = React.useState(null)
+          const msgRetention = retentionOverrides[msg.id] !== undefined
+            ? retentionOverrides[msg.id]
+            : msg.retention
+          const setMsgRetention = (next) =>
+            setRetentionOverrides(prev => ({ ...prev, [msg.id]: next }))
           // R75-b5: settle when the assistant reply arrives (not just on next user msg).
           // This dims the chain and flips data-status to 'done' the moment the reply lands.
           const hasAssistantReply = userBubbleSteps
@@ -893,11 +872,11 @@ export default function MessageList({ roomType = 'agent' }) {
                     <div
                       style={{
                         display: 'flex', gap: 4, marginTop: 6,
-                        opacity: hoveredMsg === msg.id ? 1 : 0.5,
+                        opacity: hoveredMsgId === msg.id ? 1 : 0.5,
                         transition: 'opacity 0.15s',
                       }}
-                      onMouseEnter={() => setHoveredMsg(msg.id)}
-                      onMouseLeave={() => setHoveredMsg(null)}
+                      onMouseEnter={() => setHoveredMsgId(msg.id)}
+                      onMouseLeave={() => setHoveredMsgId(null)}
                     >
                       {msgRetention !== 'keep' && (
                         <button
