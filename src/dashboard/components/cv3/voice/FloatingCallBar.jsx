@@ -12,7 +12,7 @@ const STATUS_LABELS = {
 }
 
 export default function FloatingCallBar() {
-  const { isActive, session, status, endCall } = useLiveCall()
+  const { isActive, session, status, isMuted, endCall, toggleMute } = useLiveCall()
   if (!isActive || !session) return null
 
   const isPulsing = status === 'listening' || status === 'speaking'
@@ -55,18 +55,44 @@ export default function FloatingCallBar() {
             </span>
           )}
         </div>
-        <button
-          data-testid="floating-call-bar-hangup"
-          onClick={endCall}
-          style={{
-            padding: '6px 14px', borderRadius: 14,
-            background: C.red, border: 'none',
-            color: '#fff', fontSize: 11, fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          End
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            data-testid="floating-call-bar-mute"
+            data-muted={isMuted ? 'true' : 'false'}
+            onClick={toggleMute}
+            title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
+            aria-pressed={isMuted}
+            style={{
+              padding: '6px 12px', borderRadius: 14,
+              background: isMuted ? 'rgba(248,113,113,0.18)' : 'rgba(255,255,255,0.06)',
+              border: isMuted ? '1px solid rgba(248,113,113,0.4)' : '1px solid rgba(255,255,255,0.12)',
+              color: isMuted ? C.red : C.text,
+              fontSize: 11, fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="2" width="6" height="12" rx="3" />
+              <path d="M5 10a7 7 0 0 0 14 0" />
+              <line x1="12" y1="19" x2="12" y2="22" />
+              {isMuted && <line x1="3" y1="3" x2="21" y2="21" stroke={C.red} />}
+            </svg>
+            {isMuted ? 'Muted' : 'Mute'}
+          </button>
+          <button
+            data-testid="floating-call-bar-hangup"
+            onClick={endCall}
+            style={{
+              padding: '6px 14px', borderRadius: 14,
+              background: C.red, border: 'none',
+              color: '#fff', fontSize: 11, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            End
+          </button>
+        </div>
       </div>
     </>
   )
