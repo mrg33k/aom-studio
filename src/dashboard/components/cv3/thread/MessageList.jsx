@@ -888,6 +888,121 @@ export default function MessageList({ roomType = 'agent' }) {
                       </span>
                     )}
                   </div>
+                  {/* R75-d3: retention flag controls (hover area for own messages) */}
+                  {isUser && isOwnMessage && !String(msg.id).startsWith('temp-') && (
+                    <div
+                      style={{
+                        display: 'flex', gap: 4, marginTop: 6,
+                        opacity: hoveredMsg === msg.id ? 1 : 0.5,
+                        transition: 'opacity 0.15s',
+                      }}
+                      onMouseEnter={() => setHoveredMsg(msg.id)}
+                      onMouseLeave={() => setHoveredMsg(null)}
+                    >
+                      {msgRetention !== 'keep' && (
+                        <button
+                          onClick={() => {
+                            setMsgRetention('keep')
+                            fetch(`/api/dashboard/message-retention?id=${msg.id}&retention=keep`, {
+                              method: 'PATCH',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${localStorage.getItem('sb-auth-token') || ''}`,
+                              },
+                            }).catch(e => console.error('Failed to set keep:', e))
+                          }}
+                          title="Keep this message"
+                          style={{
+                            background: 'rgba(34,197,94,0.15)',
+                            border: '1px solid rgba(34,197,94,0.3)',
+                            color: '#22C55E',
+                            fontSize: 10, fontWeight: 600,
+                            padding: '2px 8px', borderRadius: 4,
+                            cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(34,197,94,0.25)'
+                            e.currentTarget.style.borderColor = 'rgba(34,197,94,0.5)'
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(34,197,94,0.15)'
+                            e.currentTarget.style.borderColor = 'rgba(34,197,94,0.3)'
+                          }}
+                        >
+                          Keep
+                        </button>
+                      )}
+                      {msgRetention !== 'prune' && (
+                        <button
+                          onClick={() => {
+                            setMsgRetention('prune')
+                            fetch(`/api/dashboard/message-retention?id=${msg.id}&retention=prune`, {
+                              method: 'PATCH',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${localStorage.getItem('sb-auth-token') || ''}`,
+                              },
+                            }).catch(e => console.error('Failed to set prune:', e))
+                          }}
+                          title="Mark as noise"
+                          style={{
+                            background: 'rgba(239,68,68,0.15)',
+                            border: '1px solid rgba(239,68,68,0.3)',
+                            color: '#EF4444',
+                            fontSize: 10, fontWeight: 600,
+                            padding: '2px 8px', borderRadius: 4,
+                            cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(239,68,68,0.25)'
+                            e.currentTarget.style.borderColor = 'rgba(239,68,68,0.5)'
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(239,68,68,0.15)'
+                            e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'
+                          }}
+                        >
+                          Prune
+                        </button>
+                      )}
+                      {msgRetention && (
+                        <button
+                          onClick={() => {
+                            setMsgRetention(null)
+                            fetch(`/api/dashboard/message-retention?id=${msg.id}&retention=null`, {
+                              method: 'PATCH',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${localStorage.getItem('sb-auth-token') || ''}`,
+                              },
+                            }).catch(e => console.error('Failed to clear retention:', e))
+                          }}
+                          title="Clear flag"
+                          style={{
+                            background: 'rgba(156,163,175,0.15)',
+                            border: '1px solid rgba(156,163,175,0.3)',
+                            color: '#9CA3AF',
+                            fontSize: 10, fontWeight: 600,
+                            padding: '2px 8px', borderRadius: 4,
+                            cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(156,163,175,0.25)'
+                            e.currentTarget.style.borderColor = 'rgba(156,163,175,0.5)'
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(156,163,175,0.15)'
+                            e.currentTarget.style.borderColor = 'rgba(156,163,175,0.3)'
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {/* Agent rooms: message status label. */}
                   {!isProject && isUser && msg.status && !String(msg.id).startsWith('temp-') && (
                     <MessageStatusLabel status={msg.status} replied={respondedSet.has(msg.id)} />
