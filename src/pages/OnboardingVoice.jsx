@@ -1,7 +1,12 @@
-// OB1: 3-question voice onboarding — state machine + EA narration + simulated scaffolding
+// OB1: 3-question voice onboarding — state machine + EA narration + real scaffolding.
+// LR-2 (2026-05-05): Q1 persists workspace_name, Q2 persists work_areas (recipe flask
+// seeds), Q3 inserts a projects row + fires /api/dashboard/scaffold-project, DONE flips
+// has_completed_onboarding=true. All writes are best-effort: a failed write never traps
+// the user — localStorage still flips on DONE and the next session can self-heal.
 import React, { useReducer, useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
+import { authFetch } from '../dashboard/lib/authFetch.js'
 import StepThread from '../dashboard/components/cv3/shared/StepThread.jsx'
 
 // --- Domain keyword → category ---
@@ -17,6 +22,66 @@ function matchDomains(text) {
   const lower = text.toLowerCase()
   const matched = DOMAIN_PATTERNS.filter(p => p.keywords.some(k => lower.includes(k)))
   return matched.length > 0 ? matched : [{ domain: 'general', icon: '⭐', label: 'General' }]
+}
+
+// --- LR-2 real scaffolds (best-effort; never throws past the caller) ---
+
+function slugify(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50) || 'first-project'
+}
+
+function persistWorkspaceName(workspaceName) {
+  if (!supabase || !workspaceName) return
+  supabase.auth.updateUser({ data: { workspace_name: workspaceName } }).catch(() => {})
+}
+
+function persistWorkAreas(domains) {
+  if (!supabase || !Array.isArray(domains) || !domains.length) return
+  const tags = domains.map(d => d.domain).filter(Boolean)
+  if (!tags.length) return
+  supabase.auth.updateUser({ data: { work_areas: tags } }).catch(() => {})
+}
+
+async function scaffoldFirstProject({ firstThing, workspaceName, worldSlug }) {
+  if (!supabase || !worldSlug || !firstThing) return { ok: false }
+  const name = firstThing.trim().slice(0, 80) || 'First project'
+  const slug = slugify(name)
+  const description = workspaceName
+    ? `${workspaceName}'s first project — created during voice onboarding.`
+    : 'First project — created during voice onboarding.'
+  try {
+    const { error: insertErr } = await supabase
+      .from('projects')
+      .insert({
+        name,
+        slug,
+        color: '#E85D26',
+        is_active: true,
+        client_id: worldSlug,
+      })
+    if (insertErr && !/duplicate|already exists/i.test(insertErr.message || '')) {
+      // Non-duplicate insert failures still let scaffold attempt; events table is the gate.
+    }
+  } catch (_) { /* best-effort */ }
+  try {
+    await authFetch('/api/dashboard/scaffold-project', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, name, description, tenant: worldSlug }),
+    })
+  } catch (_) { /* best-effort */ }
+  return { ok: true, slug, name }
+}
+
+function markOnboardingComplete() {
+  if (!supabase) return
+  supabase.auth.updateUser({
+    data: { onboarded: true, has_completed_onboarding: true },
+  }).catch(() => {})
 }
 
 // --- State machine ---
@@ -173,6 +238,8 @@ export default function OnboardingVoice() {
     if (phase === 'Q1_CONFIRMED') {
       const line = `Setting up ${workspace} as your home base.`
       setNarrationLine(line); narrate(line)
+      // LR-2: persist workspace name to user_metadata so dashboard + recipes flask read it.
+      persistWorkspaceName(workspace)
       const t = setTimeout(() => dispatch({ type: 'TO_Q2' }), 2400)
       return () => clearTimeout(t)
     }
@@ -183,6 +250,9 @@ export default function OnboardingVoice() {
     if (phase === 'Q2_CONFIRMED') {
       const line = `Adding ${domains.map(d => d.label).join(' and ')} tools to your toolkit.`
       setNarrationLine(line); narrate(line)
+      // LR-2: seed the recipe flask — domain tags drive which recipe categories the
+      // dashboard surfaces in the agent + project chat overlays.
+      persistWorkAreas(domains)
       const t = setTimeout(() => dispatch({ type: 'TO_Q3' }), 2400)
       return () => clearTimeout(t)
     }
@@ -198,6 +268,19 @@ export default function OnboardingVoice() {
     }
     if (phase === 'SCAFFOLDING') {
       setNarrationLine('')
+      // LR-2: fire the real project scaffold in parallel with the visible step thread.
+      // Best-effort — a failure does not trap the user; localStorage still flips on DONE.
+      let cancelled = false
+      ;(async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          const worldSlug = user?.user_metadata?.world || ''
+          if (worldSlug) {
+            await scaffoldFirstProject({ firstThing, workspaceName: workspace, worldSlug })
+          }
+        } catch (_) { /* best-effort */ }
+        if (cancelled) return
+      })()
       const t1 = setTimeout(() => {
         dispatch({ type: 'SCAFFOLD_UPDATE', id: 's1', status: 'done' })
         dispatch({ type: 'SCAFFOLD_ADD', step: { id: 's2', step_index: 1, text: 'Spinning up your EA...', status: 'in_progress' } })
@@ -213,9 +296,16 @@ export default function OnboardingVoice() {
         narrate("You're ready. Welcome to your command center.")
       }, 6400)
       const t4 = setTimeout(() => dispatch({ type: 'DONE' }), 8200)
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
+      return () => {
+        cancelled = true
+        clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4)
+      }
     }
     if (phase === 'DONE') {
+      // LR-2: flip the persistent onboarding flag in user_metadata so AuthGuard's
+      // DB-side check passes on the next login / new device. localStorage stays as
+      // a fast-path signal for the same session.
+      markOnboardingComplete()
       localStorage.setItem('corner-onboarded', 'true')
       if (isQaMode) sessionStorage.setItem('corner-qa-completed', 'true')
       navigate('/dashboard', { replace: true })
