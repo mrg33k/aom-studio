@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat — Ahead of Market</title>
+  <link rel="stylesheet" href="../styles/tokens.css">
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/animations.css">
+  <link rel="stylesheet" href="../styles/desktop.css">
+  <link rel="stylesheet" href="../styles/mobile.css">
+  <style>
+    /* Chat-specific styles */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-header {
+      padding: var(--sp-lg);
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--c-s1);
+    }
+
+    .chat-header-title {
+      font-size: var(--fs-lg);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    .chat-header-status {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+    }
+
+    .chat-header-actions {
+      display: flex;
+      gap: var(--sp-md);
+    }
+
+    .chat-header-actions button {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--c-text2);
+      transition: all 0.2s ease;
+    }
+
+    .chat-header-actions button:hover {
+      background-color: rgba(26, 36, 56, 0.5);
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--sp-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-md);
+    }
+
+    .message {
+      padding: var(--sp-md);
+      border-radius: 8px;
+      animation: slide-up 0.3s ease-out;
+      word-wrap: break-word;
+      max-width: 80%;
+    }
+
+    .message.user {
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .message.assistant {
+      background-color: var(--c-dim);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      margin-right: auto;
+    }
+
+    .message-timestamp {
+      font-size: var(--fs-xs);
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: var(--sp-sm);
+    }
+
+    .message.assistant .message-timestamp {
+      color: var(--c-text2);
+    }
+
+    .message-steps {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-sm);
+      margin-top: var(--sp-md);
+      padding-top: var(--sp-md);
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+      font-size: var(--fs-sm);
+    }
+
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--c-accent);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .step.done .step-dot {
+      background-color: var(--c-muted);
+    }
+
+    .step-text {
+      flex: 1;
+      line-height: var(--lh-normal);
+    }
+
+    .chat-input-area {
+      padding: var(--sp-lg);
+      border-top: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      display: flex;
+      gap: var(--sp-md);
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      background-color: rgba(26, 36, 56, 0.5);
+      color: var(--c-text);
+      font-size: var(--fs-base);
+    }
+
+    .chat-input-area input:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      background-color: rgba(26, 36, 56, 0.8);
+    }
+
+    .chat-input-area button {
+      padding: 10px 16px;
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      border: none;
+      border-radius: 6px;
+      font-weight: var(--fw-bold);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chat-input-area button:hover {
+      background-color: #0CA771;
+    }
+
+    .chat-input-area button:active {
+      transform: scale(0.98);
+    }
+
+    /* Mobile */
+    @media (max-width: 1439px) {
+      .message {
+        max-width: 90%;
+      }
+
+      .chat-input-area {
+        flex-direction: row;
+        padding-bottom: max(var(--sp-md), env(safe-area-inset-bottom));
+      }
+    }
+
+    @media (max-width: 389px) {
+      .message {
+        max-width: 95%;
+      }
+
+      .chat-header-title {
+        font-size: var(--fs-base);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Desktop: 3-column rail layout -->
+  <div class="rail-left" id="rail-left">
+    <a href="./home.html" style="text-decoration: none; color: inherit; margin-bottom: var(--sp-lg); display: flex; align-items: center; gap: var(--sp-md);">
+      <span style="font-size: var(--fs-lg);">←</span>
+      <span>Back to Home</span>
+    </a>
+
+    <h3 class="sidebar-label">Agents</h3>
+    <div class="pinned-list" id="agents-list">
+      <a href="./chat-1on1.html?agent=patrik-ea" class="pinned-item">
+        <span class="pinned-item-name">Your EA</span>
+      </a>
+      <a href="./chat-1on1.html?agent=steffen" class="pinned-item active">
+        <span class="pinned-item-name">Steffen (Brand)</span>
+      </a>
+      <a href="./chat-1on1.html?agent=cleo" class="pinned-item">
+        <span class="pinned-item-name">Cleo (Video)</span>
+      </a>
+      <a href="./chat-1on1.html?agent=bobby" class="pinned-item">
+        <span class="pinned-item-name">Bobby (Web)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Center: chat thread -->
+  <div class="rail-center" style="display: flex; flex-direction: column;">
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-title">Steffen (Brand)</div>
+        <div class="chat-header-status">Online</div>
+      </div>
+      <div class="chat-header-actions">
+        <button title="Call" onclick="startVoiceCall()">☎️</button>
+        <button title="Menu" onclick="toggleDrawer()">⋯</button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="messages">
+      <!-- Messages load here dynamically -->
+      <div class="message assistant">
+        <div>Hi Patrik, I'm ready for the brand refresh. What's the starting brief?</div>
+        <div class="message-timestamp">10:34 AM</div>
+        <div class="message-steps">
+          <div class="step done">
+            <div class="step-dot"></div>
+            <div class="step-text">Read the bakery's CONTEXT</div>
+          </div>
+          <div class="step done">
+            <div class="step-dot"></div>
+            <div class="step-text">Reviewed previous brand guidelines</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="message user">
+        <div>Let's start with a quick mood board. Pull references from competitive brands and show me 3 directions.</div>
+        <div class="message-timestamp">10:36 AM</div>
+      </div>
+
+      <div class="message assistant">
+        <div>On it. I'll scan your competitors and build 3 distinct brand directions. Should take about 10 minutes.</div>
+        <div class="message-timestamp">10:36 AM</div>
+        <div class="message-steps">
+          <div class="step done">
+            <div class="step-dot"></div>
+            <div class="step-text">Reading the bakery's CONTEXT</div>
+          </div>
+          <div class="step">
+            <div class="step-dot"></div>
+            <div class="step-text">Scanning 5 competitor brands</div>
+          </div>
+          <div class="step">
+            <div class="step-dot"></div>
+            <div class="step-text">Building mood board (3 directions)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="message user">
+        <div>Cool, let me know when you have something to show</div>
+        <div class="message-timestamp">10:37 AM</div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Right sidebar: agent info + context -->
+  <div class="rail-right">
+    <h3 class="sidebar-label">About</h3>
+    <div style="font-size: var(--fs-sm); line-height: var(--lh-normal); color: var(--c-text2);">
+      <p><strong>Steffen</strong> is your brand strategist. He owns visual identity, copy tone, and design direction across all projects.</p>
+      <p style="margin-top: var(--sp-lg);">Active projects: 3</p>
+      <p>Last activity: Just now</p>
+    </div>
+
+    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Quick Actions</h3>
+    <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
+      <button class="btn-secondary" onclick="alert('Not yet implemented')">View Projects</button>
+      <button class="btn-secondary" onclick="alert('Not yet implemented')">View Tasks</button>
+      <button class="btn-secondary" onclick="alert('Not yet implemented')">Mute Notifications</button>
+    </div>
+  </div>
+
+  <!-- Drawer (phone, actions, settings) -->
+  <div class="drawer" id="drawer">
+    <h3 class="drawer-title">Menu</h3>
+    <div class="drawer-section">
+      <h4>Voice Call</h4>
+      <button class="btn-primary" style="width: 100%; margin-top: var(--sp-md);" onclick="startVoiceCall()">
+        Start Live Call
+      </button>
+    </div>
+    <div class="drawer-section">
+      <h4>Actions</h4>
+      <button class="btn-secondary" style="width: 100%; margin-bottom: var(--sp-md);">Archive Chat</button>
+      <button class="btn-secondary" style="width: 100%;">Block Agent</button>
+    </div>
+  </div>
+
+  <script src="../include.js"></script>
+  <script>
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const messagesEl = document.getElementById('messages');
+      const message = document.createElement('div');
+      message.className = 'message user';
+      message.innerHTML = `
+        <div>${text}</div>
+        <div class="message-timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      `;
+      messagesEl.appendChild(message);
+      input.value = '';
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      // Simulate agent response
+      setTimeout(() => {
+        const response = document.createElement('div');
+        response.className = 'message assistant';
+        response.innerHTML = `
+          <div>Got it, working on that now...</div>
+          <div class="message-timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          <div class="message-steps">
+            <div class="step">
+              <div class="step-dot"></div>
+              <div class="step-text">Processing your request</div>
+            </div>
+          </div>
+        `;
+        messagesEl.appendChild(response);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }, 500);
+    }
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('drawer');
+      drawer.classList.toggle('open');
+    }
+
+    function startVoiceCall() {
+      alert('Voice call UI not yet implemented (R75-v0 ready)');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+/* ============================================================
+   CV4 DESIGN TOKENS
+   Extracted from tailwind.config.js + index.css
+   Base: Mobile-first (390px), extends to desktop (1440px+)
+   ========================================================== */
+
+/* ---- COLOR PALETTE ---- */
+:root {
+  /* Dark Frame (CV3 baseline, extended for CV4) */
+  --c-bg: #06090F;
+  --c-bg2: #0B1018;
+  --c-s1: #111827;
+  --c-s2: #1A2035;
+  --c-s3: #222942;
+  --c-border: rgba(255,255,255,0.04);
+  --c-border2: rgba(255,255,255,0.08);
+  --c-text: #F1F5F9;
+  --c-text2: #94A3B8;
+  --c-muted: #475569;
+  --c-dim: #334155;
+
+  /* AOM Brand Colors (Tailwind + Index.css palette) */
+  --aom-cream: #FDF6EC;
+  --aom-cream-dark: #EDE7DF;
+  --aom-cream-alt: #F5EFE6;
+  --aom-black: #0A0A0A;
+  --aom-orange: #E85D26;
+  --aom-orange-hover: #D14E1C;
+  --aom-orange-muted: #C44A1F;
+  --aom-gold: #C9A84C;
+  --aom-gold-light: #D4B85E;
+  --aom-warm-gray: #7A7267;
+  --aom-light-border: #D9D3CB;
+
+  /* Dark Frame Extended (Night System) */
+  --aom-night: #0C0C0C;
+  --aom-night-card: #151515;
+  --aom-night-border: rgba(255,255,255,0.10);
+  --aom-night-border-hover: rgba(255,255,255,0.18);
+  --aom-charcoal: #141412;
+  --aom-surface: #1A1A17;
+  --aom-mid-dark: #1A1A1A;
+  --aom-text-light: #F0ECE6;
+  --aom-text-muted: #8A847C;
+
+  /* Accent & Status */
+  --c-accent: #10B981;
+  --c-accent2: #34D399;
+  --c-accentBg: rgba(16,185,129,0.08);
+  --c-yellow: #EAB308;
+  --c-green: #22C55E;
+  --c-purple: #A78BFA;
+  --c-blue: #60A5FA;
+  --c-pink: #F472B6;
+  --c-orange: #FB923C;
+  --c-teal: #2DD4BF;
+  --c-red: #EF4444;
+
+  /* Agent-specific colors */
+  --agent-rex: #10B981;
+  --agent-bobby: #EAB308;
+  --agent-steffen: #A78BFA;
+  --agent-cleo: #F472B6;
+  --agent-elon: #60A5FA;
+  --agent-gary: #FB923C;
+}
+
+/* ---- TYPOGRAPHY SCALE (Golden Ratio, φ = 1.618) ---- */
+:root {
+  /* Font sizes */
+  --fs-2xs: 9px;    /* tiny labels, badges */
+  --fs-xs: 10px;    /* small caps, meta text */
+  --fs-sm: 12px;    /* role labels, timestamps */
+  --fs-base: 14px;  /* body text, chat messages */
+  --fs-md: 16px;    /* default body, input text */
+  --fs-lg: 20px;    /* agent names, card titles */
+  --fs-xl: 26px;    /* section headers, featured names */
+  --fs-2xl: 34px;   /* page titles, hero text */
+  --fs-3xl: 42px;   /* display size */
+
+  /* Line heights */
+  --lh-tight: 1.2;
+  --lh-body: 1.5;
+  --lh-loose: 1.7;
+
+  /* Letter spacing */
+  --ls-tight: -0.02em;
+  --ls-normal: 0;
+  --ls-wide: 0.04em;
+  --ls-caps: 0.08em;   /* uppercase labels */
+  --ls-mega: 0.12em;   /* section headers */
+
+  /* Font families */
+  --ff-headline: 'Syne', system-ui, sans-serif;
+  --ff-body: 'Space Grotesk', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+}
+
+/* ---- SPACING SCALE ---- */
+:root {
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 20px;
+  --sp-2xl: 24px;
+  --sp-3xl: 32px;
+  --sp-4xl: 40px;
+  --sp-5xl: 48px;
+}
+
+/* ---- LAYOUT HEIGHTS (Fixed Nav) ---- */
+:root {
+  --nav-row1: 44px;  /* Top nav (logo, world, tabs) */
+  --nav-row2: 36px;  /* Secondary nav or action bar */
+  --nav-total: 80px; /* Combined nav height */
+  --input-bar: 52px; /* Message input area */
+}
+
+/* ---- SHADOWS ---- */
+:root {
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  --shadow-orange-glow: 0 0 30px rgba(232,93,38,0.15);
+  --shadow-orange-glow-lg: 0 0 60px rgba(232,93,38,0.2);
+}
+
+/* ---- BREAKPOINTS (Mobile-first) ---- */
+:root {
+  --bp-mobile: 390px;   /* Base mobile width */
+  --bp-tablet: 768px;   /* Tablet landscape */
+  --bp-desktop: 1440px; /* Desktop full width */
+}
+
+/* ---- ANIMATIONS ---- */
+@keyframes chatMsgIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ctaGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(232, 93, 38, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(232, 93, 38, 0.25); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.chat-msg-in {
+  animation: chatMsgIn 250ms ease-out both;
+}
+
+.cta-glow {
+  animation: ctaGlow 2s ease-in-out infinite;
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow { animation: none; }
+  .pulse { animation: none; }
+  .chat-msg-in { animation: none; }
+}

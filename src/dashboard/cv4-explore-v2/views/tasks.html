@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasks — Ahead of Market</title>
+  <link rel="stylesheet" href="../styles/tokens.css">
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/animations.css">
+  <link rel="stylesheet" href="../styles/desktop.css">
+  <link rel="stylesheet" href="../styles/mobile.css">
+  <style>
+    /* Tasks-specific styles */
+    .tasks-container {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-lg);
+    }
+
+    .tasks-header {
+      padding: var(--sp-lg);
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tasks-header h1 {
+      margin: 0;
+      font-size: var(--fs-2xl);
+    }
+
+    .tasks-filter {
+      display: flex;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-lg);
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      background-color: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      color: var(--c-text2);
+      cursor: pointer;
+      font-size: var(--fs-sm);
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn.active {
+      background-color: var(--c-accent);
+      border-color: var(--c-accent);
+      color: var(--c-s1);
+    }
+
+    .filter-btn:hover {
+      background-color: rgba(26, 36, 56, 0.5);
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-md);
+    }
+
+    .task-card {
+      padding: var(--sp-lg);
+      background-color: rgba(26, 36, 56, 0.5);
+      border: 1px solid transparent;
+      border-left: 3px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .task-card:hover {
+      background-color: rgba(26, 36, 56, 0.8);
+      border-color: var(--c-border);
+    }
+
+    .task-card.right-now {
+      border-left-color: var(--c-accent);
+      background-color: rgba(16, 185, 129, 0.08);
+    }
+
+    .task-card.scheduled {
+      border-left-color: var(--c-info);
+    }
+
+    .task-card.inbox {
+      border-left-color: var(--c-warning);
+    }
+
+    .task-card.done {
+      border-left-color: var(--c-success);
+      opacity: 0.7;
+    }
+
+    .task-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-md);
+    }
+
+    .task-title {
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+      flex: 1;
+      font-size: var(--fs-base);
+    }
+
+    .task-status {
+      display: inline-block;
+      padding: 4px 8px;
+      background-color: rgba(16, 185, 129, 0.2);
+      border-radius: 4px;
+      font-size: var(--fs-xs);
+      color: var(--c-accent);
+      font-weight: var(--fw-semibold);
+      text-transform: uppercase;
+    }
+
+    .task-status.scheduled {
+      background-color: rgba(59, 130, 246, 0.2);
+      color: var(--c-info);
+    }
+
+    .task-status.inbox {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: var(--c-warning);
+    }
+
+    .task-status.done {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--c-success);
+    }
+
+    .task-meta {
+      display: flex;
+      gap: var(--sp-lg);
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      margin-bottom: var(--sp-md);
+    }
+
+    .task-description {
+      font-size: var(--fs-sm);
+      color: var(--c-text);
+      margin-bottom: var(--sp-md);
+      line-height: var(--lh-normal);
+    }
+
+    .task-agent {
+      display: inline-block;
+      padding: 4px 8px;
+      background-color: rgba(26, 36, 56, 0.5);
+      border-radius: 4px;
+      font-size: var(--fs-xs);
+      color: var(--c-accent);
+    }
+
+    .task-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--sp-md);
+      border-top: 1px solid rgba(45, 58, 74, 0.3);
+    }
+
+    .task-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+
+    .task-actions button {
+      padding: 6px 12px;
+      background-color: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 4px;
+      font-size: var(--fs-xs);
+      color: var(--c-text2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .task-actions button:hover {
+      background-color: rgba(26, 36, 56, 0.5);
+      color: var(--c-text);
+    }
+
+    /* Mobile */
+    @media (max-width: 1439px) {
+      .tasks-header {
+        padding: var(--sp-lg);
+      }
+
+      .task-card {
+        margin: 0 var(--sp-lg);
+      }
+
+      .task-header {
+        flex-direction: column;
+        gap: var(--sp-sm);
+      }
+
+      .task-title {
+        font-size: var(--fs-base);
+      }
+
+      .task-meta {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Desktop: 3-column rail layout -->
+  <div class="rail-left">
+    <a href="./home.html" style="text-decoration: none; color: inherit; margin-bottom: var(--sp-lg); display: flex; align-items: center; gap: var(--sp-md);">
+      <span style="font-size: var(--fs-lg);">←</span>
+      <span>Back to Home</span>
+    </a>
+
+    <h3 class="sidebar-label">Filters</h3>
+    <div style="display: flex; flex-direction: column; gap: var(--sp-sm);">
+      <button class="filter-btn active" onclick="filterTasks('all')">All Tasks</button>
+      <button class="filter-btn" onclick="filterTasks('right-now')">Right Now</button>
+      <button class="filter-btn" onclick="filterTasks('scheduled')">Scheduled</button>
+      <button class="filter-btn" onclick="filterTasks('inbox')">Inbox</button>
+      <button class="filter-btn" onclick="filterTasks('done')">Done</button>
+    </div>
+
+    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Projects</h3>
+    <div class="pinned-list">
+      <a href="./project-chat.html?project=corner" class="pinned-item">
+        <span class="pinned-item-name">Corner</span>
+      </a>
+      <a href="./project-chat.html?project=ambition-mechanical" class="pinned-item">
+        <span class="pinned-item-name">Ambition</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Center: tasks list -->
+  <div class="rail-center">
+    <div class="tasks-header">
+      <h1>Tasks</h1>
+      <button class="btn-primary" onclick="createTask()">New Task</button>
+    </div>
+
+    <div class="view-content">
+      <div class="tasks-container">
+        <!-- Right Now section -->
+        <div>
+          <h2 class="section-label">Right Now (5)</h2>
+          <div class="task-list" id="right-now-list">
+            <div class="task-card right-now" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">R75-g2: Finish CV4 v2 hand-author</div>
+                <span class="task-status">Right Now</span>
+              </div>
+              <div class="task-meta">
+                <span>Due in 2 hours</span>
+                <span>Corner mission</span>
+              </div>
+              <div class="task-description">
+                Complete Phase 5-10 HTML component authoring. Verify all 7 design gates. Take screenshots at 390px and 1440px.
+              </div>
+              <div class="task-agent">Assigned to: Patrik (self)</div>
+              <div class="task-footer">
+                <div>
+                  <span style="font-size: var(--fs-xs); color: var(--c-text2);">60% complete</span>
+                </div>
+                <div class="task-actions">
+                  <button onclick="event.stopPropagation(); completeTask(this)">Mark Done</button>
+                  <button onclick="event.stopPropagation(); skipTask(this)">Skip</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-card right-now" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">Reply to Steffen: Brand feedback</div>
+                <span class="task-status">Right Now</span>
+              </div>
+              <div class="task-meta">
+                <span>Waiting for 1 hour</span>
+                <span>1:1 chat</span>
+              </div>
+              <div class="task-description">
+                Steffen sent color direction options. Review and respond with feedback or approval.
+              </div>
+              <div class="task-agent">Assigned to: Patrik (self)</div>
+              <div class="task-footer">
+                <div>
+                  <span style="font-size: var(--fs-xs); color: var(--c-text2);">Waiting for input</span>
+                </div>
+                <div class="task-actions">
+                  <button onclick="event.stopPropagation(); openChat('steffen')">Go to Chat</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-card right-now" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">Approve/archive ISA Energy project</div>
+                <span class="task-status">Right Now</span>
+              </div>
+              <div class="task-meta">
+                <span>Stale for 7 days</span>
+                <span>System nudge</span>
+              </div>
+              <div class="task-description">
+                ISA Energy hasn't moved in a week. Either reactivate (add next action) or archive it.
+              </div>
+              <div class="task-footer">
+                <div class="task-actions">
+                  <button onclick="event.stopPropagation(); archiveProject('isa-energy')">Archive</button>
+                  <button onclick="event.stopPropagation(); openProject('isa-energy')">Reactivate</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scheduled section -->
+        <div>
+          <h2 class="section-label">Scheduled (3)</h2>
+          <div class="task-list">
+            <div class="task-card scheduled" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">R75-e1: Setup live-thread chain + steps emission</div>
+                <span class="task-status scheduled">Scheduled</span>
+              </div>
+              <div class="task-meta">
+                <span>Due May 6</span>
+                <span>Corner mission</span>
+              </div>
+              <div class="task-description">
+                Wire /relay-emit-step.py to dashboard. Test baseline + custom steps. Verify chain rendering under latest user message.
+              </div>
+              <div class="task-agent">Assigned to: Bobby</div>
+            </div>
+
+            <div class="task-card scheduled" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">Brand guidelines page live</div>
+                <span class="task-status scheduled">Scheduled</span>
+              </div>
+              <div class="task-meta">
+                <span>Due May 8</span>
+                <span>Brand mission</span>
+              </div>
+              <div class="task-agent">Assigned to: Steffen</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inbox section -->
+        <div>
+          <h2 class="section-label">Inbox (1)</h2>
+          <div class="task-list">
+            <div class="task-card inbox" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">Cleo: Approve video batch before shipping</div>
+                <span class="task-status inbox">Inbox</span>
+              </div>
+              <div class="task-meta">
+                <span>Just in</span>
+                <span>Video approval</span>
+              </div>
+              <div class="task-description">
+                Ambition batch 1906 ready. 18 cuts, color graded, stabilized. Needs final approval before distribution.
+              </div>
+              <div class="task-agent">From: Cleo</div>
+              <div class="task-footer">
+                <div class="task-actions">
+                  <button onclick="event.stopPropagation(); approveTask(this)">Approve</button>
+                  <button onclick="event.stopPropagation(); askMoreInfo(this)">More Info</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Done section (collapsed) -->
+        <div>
+          <h2 class="section-label" onclick="toggleDoneSection()" style="cursor: pointer;">Done (12) ▼</h2>
+          <div class="task-list" id="done-list" style="display: none;">
+            <div class="task-card done" onclick="openTask(this)">
+              <div class="task-header">
+                <div class="task-title">R75-c1: Complete R74 compact + context pass</div>
+                <span class="task-status done">Done</span>
+              </div>
+              <div class="task-meta">
+                <span>May 2</span>
+              </div>
+              <div class="task-agent">Completed by: Patrik</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right sidebar: stats -->
+  <div class="rail-right">
+    <h3 class="sidebar-label">Stats</h3>
+    <div style="display: flex; flex-direction: column; gap: var(--sp-lg);">
+      <div>
+        <div style="font-size: var(--fs-xs); color: var(--c-muted);">RIGHT NOW</div>
+        <div style="font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--c-accent);">5</div>
+      </div>
+      <div>
+        <div style="font-size: var(--fs-xs); color: var(--c-muted);">SCHEDULED</div>
+        <div style="font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--c-info);">3</div>
+      </div>
+      <div>
+        <div style="font-size: var(--fs-xs); color: var(--c-muted);">INBOX</div>
+        <div style="font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--c-warning);">1</div>
+      </div>
+      <div>
+        <div style="font-size: var(--fs-xs); color: var(--c-muted);">DONE THIS WEEK</div>
+        <div style="font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--c-success);">12</div>
+      </div>
+    </div>
+
+    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Capacity</h3>
+    <div style="font-size: var(--fs-sm); color: var(--c-text2);">
+      <p>You have <strong>2 hours</strong> of focus time before your 3pm meeting.</p>
+      <p style="margin-top: var(--sp-md);">R75-g2 (CV4 v2) is your highest priority.</p>
+    </div>
+  </div>
+
+  <script src="../include.js"></script>
+  <script>
+    function filterTasks(filter) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      console.log('Filter:', filter);
+    }
+
+    function openTask(el) {
+      alert('Task detail view not yet implemented');
+    }
+
+    function completeTask(btn) {
+      btn.closest('.task-card').classList.add('done');
+      btn.textContent = 'Done';
+      btn.disabled = true;
+    }
+
+    function skipTask(btn) {
+      btn.closest('.task-card').remove();
+    }
+
+    function createTask() {
+      alert('Create task UI not yet implemented');
+    }
+
+    function openChat(agent) {
+      location.href = `./chat-1on1.html?agent=${agent}`;
+    }
+
+    function archiveProject(slug) {
+      alert(`Archive project: ${slug}`);
+    }
+
+    function openProject(slug) {
+      location.href = `./project-chat.html?project=${slug}`;
+    }
+
+    function approveTask(btn) {
+      btn.closest('.task-card').classList.add('done');
+      btn.textContent = 'Approved';
+      btn.disabled = true;
+    }
+
+    function askMoreInfo(btn) {
+      alert('Reply flow not yet implemented');
+    }
+
+    function toggleDoneSection() {
+      const list = document.getElementById('done-list');
+      list.style.display = list.style.display === 'none' ? 'flex' : 'none';
+    }
+  </script>
+</body>
+</html>
