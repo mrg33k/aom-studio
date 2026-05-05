@@ -2,10 +2,12 @@ import { C } from '../../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
 import AvatarUploader from '../shared/AvatarUploader.jsx'
+import SharedRoomSettings from '../shared-rooms/SharedRoomSettings.jsx'
 
 // Full-screen settings overlay for the project-chat room. Tabs:
 //   General (room name)
 //   Voice (voice picker)
+//   Members (shared-room ACL) -- only if a project is selected
 //   Collaborators (only if a project is selected -- invite by email)
 //   Google (calendar + gmail OAuth)
 //   Keys (user + project env keys keychain)
@@ -82,7 +84,7 @@ export default function ProjectSettingsModal() {
           gap: isMobile ? 6 : 2,
           ...(isMobile && { overflowX: 'auto', WebkitOverflowScrolling: 'touch' }),
         }}>
-          {['General', 'Voice', ...(selectedProject ? ['Collaborators'] : []), 'Google', 'Keys'].map(item => (
+          {['General', 'Voice', ...(selectedProject ? ['Members', 'Collaborators'] : []), 'Google', 'Keys'].map(item => (
             <button
               key={item}
               onClick={() => setSettingsTab(item)}
@@ -226,6 +228,15 @@ export default function ProjectSettingsModal() {
               ))}
             </div>
           </div>
+          )}
+          {/* Members -- shared-room ACL management (R75-d4) */}
+          {selectedProject && settingsTab === 'Members' && (
+            <SharedRoomSettings
+              projectId={selectedProject.id}
+              worldId={worldId}
+              isOwner={true}
+              onClose={() => setSettingsOpen(false)}
+            />
           )}
           {/* Collaborators -- only show for projects */}
           {selectedProject && settingsTab === 'Collaborators' && (
