@@ -12,6 +12,7 @@ import {
 import useProjectChatSwitcher from './useProjectChatSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
 import OnboardingTooltip from '../session/OnboardingTooltip.jsx'
+import OnboardingResumeCTA from '../session/OnboardingResumeCTA.jsx'
 import HeaderActionsDrawer from '../shared/HeaderActionsDrawer.jsx'
 
 // Header row for the project-chat room: back button, project icon + quick
@@ -283,6 +284,8 @@ export default function ProjectChatHeader() {
           }
         }}
       />
+      {/* R75-d2: resume voice onboarding when has_completed_onboarding=false + checkpoint saved */}
+      <OnboardingResumeCTA />
       {/* R60 (session 20): phone moves INTO drawer; context meter moves
           OUTSIDE drawer via `outsideWhenClosed`. Drawer holds every action;
           the context meter is the one always-on indicator the user glances

@@ -1,6 +1,6 @@
 // OB1: 3-question voice onboarding — state machine + EA narration + simulated scaffolding
 import React, { useReducer, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../dashboard/lib/supabase.js'
 import StepThread from '../dashboard/components/cv3/shared/StepThread.jsx'
 
@@ -38,6 +38,14 @@ function reducer(state, action) {
       scaffoldSteps: state.scaffoldSteps.map(s => s.id === action.id ? { ...s, status: action.status } : s),
     }
     case 'DONE': return { ...state, phase: 'DONE' }
+    // R75-d2: direct-set for resume-from-checkpoint
+    case 'RESUME': return {
+      ...initialState,
+      phase: action.resumePhase || 'Q1_LISTENING',
+      workspace: action.workspace || '',
+      domains: action.domains || [],
+      firstThing: action.firstThing || '',
+    }
     default:     return state
   }
 }
@@ -92,16 +100,29 @@ export default function OnboardingVoice() {
   const recRef = useRef(null)
   const isQaMode = sessionStorage.getItem('corner-qa-active') === 'true'
   const voiceAvailable = !!(window.SpeechRecognition || window.webkitSpeechRecognition)
+  const { state: locationState } = useLocation()
+  const isResumeMode = locationState?.resume === true
 
-  // Skip onboarding if user already has a world
+  // Skip onboarding if user already has a world (skip in resume mode)
   useEffect(() => {
-    if (!supabase || isQaMode) return
+    if (!supabase || isQaMode || isResumeMode) return
     supabase.auth.getUser().then(({ data: { user } }) => {
       const meta = user?.user_metadata || {}
       if (meta.world || meta.onboarded || localStorage.getItem('corner-onboarded') === 'true') {
         navigate('/dashboard', { replace: true })
       }
     }).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // R75-d2: restore saved checkpoint when resuming mid-flow
+  useEffect(() => {
+    if (!isResumeMode) return
+    const saved = localStorage.getItem('ob-resume-state')
+    if (!saved) return
+    try {
+      const { resumePhase, workspace, domains } = JSON.parse(saved)
+      dispatch({ type: 'RESUME', resumePhase, workspace, domains })
+    } catch (_) {}
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function stopMic() {
@@ -128,6 +149,18 @@ export default function OnboardingVoice() {
     setTextMode(false)
     handler(val)
   }
+
+  // R75-d2: persist resume checkpoint so chat-header CTA can restore mid-flow
+  useEffect(() => {
+    const { phase, workspace, domains } = state
+    if (phase === 'Q1_CONFIRMED') {
+      localStorage.setItem('ob-resume-state', JSON.stringify({ resumePhase: 'Q2_LISTENING', workspace }))
+    } else if (phase === 'Q2_CONFIRMED') {
+      localStorage.setItem('ob-resume-state', JSON.stringify({ resumePhase: 'Q3_LISTENING', workspace, domains }))
+    } else if (phase === 'DONE') {
+      localStorage.removeItem('ob-resume-state')
+    }
+  }, [state.phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Phase-driven state machine
   useEffect(() => {

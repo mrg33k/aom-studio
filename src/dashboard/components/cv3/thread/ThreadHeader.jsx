@@ -10,6 +10,7 @@ import {
 } from '../chat/ChatPanelContext.jsx'
 import useThreadQuickSwitcher from './useThreadQuickSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
+import OnboardingResumeCTA from '../session/OnboardingResumeCTA.jsx'
 import HeaderActionsDrawer from '../shared/HeaderActionsDrawer.jsx'
 
 // Thread header: back button, agent avatar + name + quick switcher, mic/files/settings buttons.
@@ -265,6 +266,8 @@ export default function ThreadHeader() {
           </div>
         )}
       </div>
+      {/* R75-d2: resume voice onboarding when has_completed_onboarding=false + checkpoint saved */}
+      <OnboardingResumeCTA />
       {/* R60 (session 20): drawer holds every action including phone.
           Context meter lives OUTSIDE the drawer via `outsideWhenClosed`:
           visible full-time when drawer is closed, hides when drawer opens
