@@ -80,27 +80,36 @@
   /* Action buttons */
   .input-bar-actions {
     display: flex;
-    flex-direction: column;
-    gap: var(--sp-xs);
+    gap: var(--sp-sm);
+    align-items: flex-end;
+  }
+
+  .input-bar-actions-group {
+    display: flex;
+    gap: var(--sp-sm);
+    border-right: 1px solid var(--c-border);
+    padding-right: var(--sp-sm);
+    margin-right: var(--sp-sm);
   }
 
   .input-bar-btn {
-    width: 40px;
+    padding: var(--sp-md) var(--sp-lg);
     height: 40px;
-    padding: 0;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
     border: 1px solid var(--c-border);
     background-color: transparent;
     color: var(--c-text2);
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
-    min-height: 40px;
-    min-width: 40px;
+    min-height: 44px;
+    min-width: 44px;
+    white-space: nowrap;
   }
 
   .input-bar-btn:hover {
@@ -119,7 +128,7 @@
     background-color: var(--c-accent);
     color: var(--c-s1);
     border: none;
-    padding: 0 var(--sp-lg);
+    padding: var(--sp-md) var(--sp-lg);
     width: auto;
     height: 40px;
     font-weight: var(--fw-bold);
@@ -246,6 +255,30 @@
     .input-bar-hint {
       display: none;
     }
+
+    .input-bar-actions-group {
+      border-right: none;
+      padding-right: 0;
+      margin-right: 0;
+    }
+
+    .input-bar-btn {
+      font-size: 12px;
+      padding: var(--sp-sm) var(--sp-md);
+    }
+  }
+
+  @media (max-width: 389px) {
+    .input-bar-btn {
+      font-size: 11px;
+      padding: var(--sp-xs) var(--sp-sm);
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    .input-bar-send {
+      min-width: 56px;
+    }
   }
 </style>
 
@@ -274,36 +307,34 @@
     </div>
 
     <div class="input-bar-actions">
-      <!-- File attach toggle -->
-      <button
-        class="input-bar-btn"
-        id="attach-btn"
-        title="Attach file"
-        aria-label="Attach file"
-        aria-expanded="false"
-        onclick="toggleFilePanel()"
-      >📎</button>
-    </div>
+      <!-- Modifier buttons group -->
+      <div class="input-bar-actions-group">
+        <button
+          class="input-bar-btn"
+          id="attach-btn"
+          title="Attach files"
+          aria-label="Attach files"
+          aria-expanded="false"
+          onclick="toggleFilePanel()"
+        >Attach</button>
+        <button
+          class="input-bar-btn"
+          id="voice-btn"
+          title="Record voice message"
+          aria-label="Record voice message"
+          onclick="toggleVoice()"
+        >Voice</button>
+      </div>
 
-    <div class="input-bar-actions">
-      <!-- Voice toggle -->
+      <!-- Send button -->
       <button
-        class="input-bar-btn"
-        id="voice-btn"
-        title="Record voice message"
-        aria-label="Record voice message"
-        onclick="toggleVoice()"
-      >🎙</button>
+        class="input-bar-btn input-bar-send"
+        id="send-btn"
+        disabled
+        aria-label="Send message"
+        onclick="submitMessage()"
+      >Send</button>
     </div>
-
-    <!-- Send button -->
-    <button
-      class="input-bar-btn input-bar-send"
-      id="send-btn"
-      disabled
-      aria-label="Send message"
-      onclick="submitMessage()"
-    >Send</button>
   </div>
 
   <!-- File upload panel (hidden by default) -->
