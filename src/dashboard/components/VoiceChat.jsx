@@ -27,7 +27,10 @@ import { authFetch } from '../lib/authFetch.js'
 // tmux relay). Voice calls DO run Gemini Live, but the transcript is summarized
 // at call-end via /api/dashboard/voice-summary (Claude Haiku) and piped to the
 // terminal as one consolidated message.
-const TERMINAL_AGENTS = new Set(['elon', 'gary'])
+// 'ea' joins (LR-4a, 2026-05-05) so EA voice calls produce the same
+// scaffolds + chat-room landings as the typed text path of LR-2/LR-3.
+// Mirrors api/dashboard/voice-summary.js TERMINAL_AGENTS — keep in sync.
+const TERMINAL_AGENTS = new Set(['elon', 'gary', 'ea'])
 
 // Target sample rate for Gemini Live input
 const TARGET_SAMPLE_RATE = 16000

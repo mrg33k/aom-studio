@@ -23,7 +23,11 @@ const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
 
 // Terminal rooms: live Claude Code sessions attached via tmux relay.
 // Mirror of the same set in v2-gemini-chat.js and VoiceChat.jsx. Keep in sync.
-const TERMINAL_AGENTS = new Set(['elon', 'gary'])
+// 'ea' joins (LR-4a, 2026-05-05) so EA voice calls receive the same
+// Haiku-richer summary path as Elon/Gary calls. supabase-listener.py
+// already treats voice-handoff + voice-summary identically to typed
+// dashboard messages, so no listener-side change was required.
+const TERMINAL_AGENTS = new Set(['elon', 'gary', 'ea'])
 
 const SUMMARY_SYSTEM_PROMPT = `You summarize voice conversations between Patrik and his voice assistant.
 
