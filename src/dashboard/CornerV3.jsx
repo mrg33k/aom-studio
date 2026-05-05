@@ -40,7 +40,6 @@ import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
-import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -891,15 +890,6 @@ export default function CornerV3() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ── CUTSCENE OVERLAY ──────────────────────────────────────────────── */}
-      {cutsceneItems.length > 0 && (
-        <CutsceneOverlay
-          items={cutsceneItems}
-          onAction={handleCutsceneAction}
-          onClose={() => setCutsceneItems([])}
-        />
       )}
 
       {/* ── PHONE RECORDING OVERLAY ───────────────────────────────────────── */}

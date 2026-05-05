@@ -651,6 +651,9 @@ export default function MessageList({ roomType = 'agent' }) {
           const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
             ? stepsByMessageId[msg.id]
             : null
+          const isOwnMessage = msg.user_id === currentUser?.id
+          const [msgRetention, setMsgRetention] = React.useState(msg.retention)
+          const [hoveredMsg, setHoveredMsg] = React.useState(null)
           // R75-b5: settle when the assistant reply arrives (not just on next user msg).
           // This dims the chain and flips data-status to 'done' the moment the reply lands.
           const hasAssistantReply = userBubbleSteps
