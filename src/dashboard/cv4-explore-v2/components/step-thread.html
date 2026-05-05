@@ -1,0 +1,394 @@
+<!-- Step Thread Component — cv4-explore-v2 -->
+<!-- Fragment: standalone step thread panel for right rail or below messages -->
+<!-- Usage: data-include="components/step-thread.html" or inline into view -->
+
+<style>
+  .step-thread-component {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-lg);
+  }
+
+  .step-thread-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-sm);
+  }
+
+  .step-thread-label {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .step-thread-collapse {
+    font-size: 11px;
+    color: var(--c-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    transition: color 0.2s ease;
+    min-height: unset;
+    min-width: unset;
+    height: auto;
+    width: auto;
+  }
+
+  .step-thread-collapse:hover {
+    color: var(--c-accent);
+  }
+
+  /* Task group */
+  .step-group {
+    border: 1px solid var(--c-border-faint);
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: var(--c-dim-faint);
+  }
+
+  .step-group-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    padding: var(--sp-md);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease;
+  }
+
+  .step-group-header:hover {
+    background-color: var(--c-dim);
+  }
+
+  .step-group-title {
+    flex: 1;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--c-text);
+    line-height: 1.2;
+  }
+
+  .step-group-meta {
+    font-size: 11px;
+    color: var(--c-muted);
+    flex-shrink: 0;
+  }
+
+  .step-group-chevron {
+    font-size: 10px;
+    color: var(--c-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .step-group.open .step-group-chevron {
+    transform: rotate(90deg);
+  }
+
+  /* Status dot — group level */
+  .step-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .step-status-dot.done {
+    background-color: var(--c-muted);
+  }
+
+  .step-status-dot.in-progress {
+    background-color: var(--c-accent);
+    animation: breathing-dot 2s ease-in-out infinite;
+  }
+
+  .step-status-dot.pending {
+    background-color: transparent;
+    border: 1.5px solid var(--c-border);
+  }
+
+  .step-status-dot.error {
+    background-color: var(--c-error);
+  }
+
+  /* Steps list (collapsible) */
+  .step-group-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .step-group.open .step-group-body {
+    max-height: 600px;
+  }
+
+  .step-list {
+    border-top: 1px solid var(--c-border-faint);
+    padding: var(--sp-sm) 0;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-md);
+    padding: var(--sp-sm) var(--sp-md);
+    font-size: var(--fs-xs);
+    color: var(--c-text2);
+    line-height: var(--lh-normal);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    position: relative;
+  }
+
+  .step-item:hover {
+    background-color: var(--c-dim);
+  }
+
+  /* Connector line between steps */
+  .step-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--sp-md) + 3.5px);
+    top: calc(var(--sp-sm) + 11px);
+    bottom: calc(-1 * var(--sp-sm));
+    width: 1px;
+    background-color: var(--c-border-faint);
+  }
+
+  .step-item-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .step-item.done .step-item-dot {
+    background-color: var(--c-muted);
+  }
+
+  .step-item.active .step-item-dot {
+    background-color: var(--c-accent);
+    animation: breathing-dot 2s ease-in-out infinite;
+  }
+
+  .step-item.pending .step-item-dot {
+    background-color: transparent;
+    border: 1.5px solid var(--c-border);
+  }
+
+  .step-item-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .step-item-label {
+    display: block;
+    color: var(--c-text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .step-item.active .step-item-label {
+    color: var(--c-text);
+  }
+
+  .step-item.done .step-item-label {
+    color: var(--c-muted);
+  }
+
+  .step-item-time {
+    font-size: 10px;
+    color: var(--c-muted);
+    margin-top: 1px;
+    font-family: var(--ff-mono);
+  }
+
+  .step-item-detail {
+    font-size: 11px;
+    color: var(--c-muted);
+    margin-top: var(--sp-xs);
+    line-height: 1.45;
+    display: none;
+  }
+
+  .step-item.expanded .step-item-detail {
+    display: block;
+  }
+
+  /* Status badge */
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: var(--fw-semibold);
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+
+  .step-badge.in-progress {
+    background-color: var(--c-accent-light);
+    color: var(--c-accent);
+    border: 1px solid var(--c-accent-light);
+  }
+
+  .step-badge.done {
+    background-color: var(--c-dim);
+    color: var(--c-muted);
+  }
+
+  .step-badge.blocked {
+    background-color: rgba(239,68,68,0.1);
+    color: var(--c-error);
+  }
+
+  @media (max-width: 1439px) {
+    .step-thread-component {
+      gap: var(--sp-md);
+    }
+  }
+</style>
+
+<div class="step-thread-component" id="step-thread" role="region" aria-label="Task steps">
+
+  <div class="step-thread-header">
+    <span class="step-thread-label">Active Steps</span>
+    <button class="step-thread-collapse" onclick="toggleAllSteps()" title="Collapse all">−</button>
+  </div>
+
+  <!-- Task group 1: Brand moodboard (in progress) -->
+  <div class="step-group open" id="step-group-1">
+    <div class="step-group-header" onclick="toggleStepGroup('step-group-1')">
+      <div class="step-status-dot in-progress"></div>
+      <div class="step-group-title">Ambition Brand Moodboard</div>
+      <div class="step-badge in-progress">Working</div>
+      <span class="step-group-chevron">▶</span>
+    </div>
+    <div class="step-group-body">
+      <div class="step-list">
+        <div class="step-item done">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Read Ambition CONTEXT + VISION</span>
+            <span class="step-item-time">10:31 AM · 0:04</span>
+          </div>
+        </div>
+        <div class="step-item done">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Loaded previous brand guidelines</span>
+            <span class="step-item-time">10:31 AM · 0:06</span>
+          </div>
+        </div>
+        <div class="step-item done">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Extracted current palette from live site</span>
+            <span class="step-item-time">10:33 AM · 0:22</span>
+          </div>
+        </div>
+        <div class="step-item active">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Scanning 6 competitor brand references</span>
+            <span class="step-item-time">10:34 AM · running</span>
+            <span class="step-item-detail">Palantir · Linear · Vercel · Flexport · Relativity · SpaceX. Extracting type stacks, color rationale, and hero layout patterns.</span>
+          </div>
+        </div>
+        <div class="step-item pending">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Build 3 direction moodboards</span>
+          </div>
+        </div>
+        <div class="step-item pending">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Audit existing Ambition logo vs. each direction</span>
+          </div>
+        </div>
+        <div class="step-item pending">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Write positioning summaries</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task group 2: Copywriting (queued) -->
+  <div class="step-group" id="step-group-2">
+    <div class="step-group-header" onclick="toggleStepGroup('step-group-2')">
+      <div class="step-status-dot pending"></div>
+      <div class="step-group-title">Homepage Copy Refresh</div>
+      <div class="step-group-meta">Queued</div>
+      <span class="step-group-chevron">▶</span>
+    </div>
+    <div class="step-group-body">
+      <div class="step-list">
+        <div class="step-item pending">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Read current homepage copy</span>
+          </div>
+        </div>
+        <div class="step-item pending">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Draft 3 hero headline variations</span>
+          </div>
+        </div>
+        <div class="step-item pending">
+          <div class="step-item-dot"></div>
+          <div class="step-item-content">
+            <span class="step-item-label">Write supporting value props</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  function toggleStepGroup(id) {
+    const group = document.getElementById(id);
+    if (group) group.classList.toggle('open');
+  }
+
+  function toggleAllSteps() {
+    const btn = document.querySelector('.step-thread-collapse');
+    const allOpen = document.querySelectorAll('.step-group.open');
+    const allGroups = document.querySelectorAll('.step-group');
+
+    if (allOpen.length > 0) {
+      allGroups.forEach(g => g.classList.remove('open'));
+      if (btn) btn.textContent = '+';
+    } else {
+      allGroups.forEach(g => g.classList.add('open'));
+      if (btn) btn.textContent = '−';
+    }
+  }
+
+  // Step item expand/collapse detail
+  document.addEventListener('click', (e) => {
+    const item = e.target.closest('.step-item');
+    if (item && !e.target.closest('.step-group-header')) {
+      item.classList.toggle('expanded');
+    }
+  });
+
+  window.toggleStepGroup = toggleStepGroup;
+  window.toggleAllSteps = toggleAllSteps;
+})();
+</script>

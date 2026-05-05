@@ -1,0 +1,217 @@
+<!-- Error Toast Notification -->
+<div id="error-toast-container" class="toast-container">
+  <!-- Toast items will be dynamically inserted here -->
+</div>
+
+<style>
+  .toast-container {
+    position: fixed;
+    bottom: var(--sp-lg);
+    right: var(--sp-lg);
+    max-width: 400px;
+    z-index: 998;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-md);
+    pointer-events: none;
+  }
+
+  .toast {
+    background: var(--c-error, #ef4444);
+    color: white;
+    padding: var(--sp-md) var(--sp-lg);
+    border-radius: 8px;
+    font-size: var(--fs-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-md);
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+    line-height: 1.5;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOutRight {
+    to {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+  }
+
+  .toast.removing {
+    animation: slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .toast-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  .toast-content {
+    flex: 1;
+  }
+
+  .toast-message {
+    margin: 0;
+    font-weight: var(--fw-semibold);
+  }
+
+  .toast-description {
+    margin: var(--sp-xs) 0 0 0;
+    opacity: 0.9;
+    font-size: var(--fs-xs);
+  }
+
+  .toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: opacity 0.2s ease;
+  }
+
+  .toast-close:hover {
+    opacity: 0.7;
+  }
+
+  .toast.success {
+    background: var(--c-success, #10b981);
+  }
+
+  .toast.warning {
+    background: var(--c-warning, #f59e0b);
+  }
+
+  .toast.info {
+    background: var(--c-info, #3b82f6);
+  }
+
+  @media (max-width: 389px) {
+    .toast-container {
+      bottom: var(--sp-md);
+      right: var(--sp-md);
+      left: var(--sp-md);
+      max-width: none;
+    }
+
+    .toast {
+      padding: var(--sp-md);
+      font-size: var(--fs-xs);
+    }
+  }
+</style>
+
+<script>
+  window.ErrorToast = (function() {
+    const container = document.getElementById('error-toast-container');
+
+    function show(config = {}) {
+      const {
+        message = 'An error occurred',
+        description = '',
+        type = 'error', // error, success, warning, info
+        duration = 5000,
+      } = config;
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      const icon = document.createElement('div');
+      icon.className = 'toast-icon';
+      icon.textContent = type === 'success' ? '✓' : type === 'warning' ? '!' : type === 'info' ? 'i' : '✕';
+
+      const content = document.createElement('div');
+      content.className = 'toast-content';
+
+      const msgEl = document.createElement('p');
+      msgEl.className = 'toast-message';
+      msgEl.textContent = message;
+      content.appendChild(msgEl);
+
+      if (description) {
+        const descEl = document.createElement('p');
+        descEl.className = 'toast-description';
+        descEl.textContent = description;
+        content.appendChild(descEl);
+      }
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'toast-close';
+      closeBtn.textContent = '×';
+      closeBtn.addEventListener('click', () => {
+        remove(toast);
+      });
+
+      toast.appendChild(icon);
+      toast.appendChild(content);
+      toast.appendChild(closeBtn);
+
+      container.appendChild(toast);
+
+      if (duration > 0) {
+        setTimeout(() => {
+          remove(toast);
+        }, duration);
+      }
+
+      return toast;
+    }
+
+    function remove(toast) {
+      toast.classList.add('removing');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }
+
+    function error(message, description) {
+      return show({ message, description, type: 'error' });
+    }
+
+    function success(message, description) {
+      return show({ message, description, type: 'success' });
+    }
+
+    function warning(message, description) {
+      return show({ message, description, type: 'warning' });
+    }
+
+    function info(message, description) {
+      return show({ message, description, type: 'info' });
+    }
+
+    return {
+      show,
+      error,
+      success,
+      warning,
+      info,
+    };
+  })();
+</script>

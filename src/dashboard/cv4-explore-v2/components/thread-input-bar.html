@@ -1,0 +1,506 @@
+<!-- Thread Input Bar Component — cv4-explore-v2 -->
+<!-- Fragment: include via data-include="components/thread-input-bar.html" or inline into view -->
+
+<style>
+  .thread-input-bar {
+    border-top: 1px solid var(--c-border);
+    background-color: var(--c-s1);
+    padding: var(--sp-md) var(--sp-xl) var(--sp-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-sm);
+    flex-shrink: 0;
+  }
+
+  .input-bar-row {
+    display: flex;
+    gap: var(--sp-sm);
+    align-items: flex-end;
+  }
+
+  .input-bar-textarea-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .input-bar-textarea {
+    width: 100%;
+    min-height: 40px;
+    max-height: 120px;
+    padding: 10px var(--sp-md);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    background-color: var(--c-input-bg);
+    color: var(--c-text);
+    font-family: var(--ff-sans);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    resize: none;
+    overflow-y: auto;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    display: block;
+    scrollbar-width: none;
+  }
+
+  .input-bar-textarea::-webkit-scrollbar { display: none; }
+
+  .input-bar-textarea::placeholder {
+    color: var(--c-muted);
+  }
+
+  .input-bar-textarea:focus {
+    outline: none;
+    border-color: var(--c-accent);
+    background-color: var(--c-input-focus-bg);
+  }
+
+  .input-bar-char-count {
+    position: absolute;
+    bottom: 6px;
+    right: var(--sp-sm);
+    font-size: 10px;
+    color: var(--c-muted);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .input-bar-char-count.visible {
+    opacity: 1;
+  }
+
+  .input-bar-char-count.warn {
+    color: var(--c-warning);
+  }
+
+  .input-bar-char-count.over {
+    color: var(--c-error);
+  }
+
+  /* Action buttons */
+  .input-bar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-xs);
+  }
+
+  .input-bar-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1px solid var(--c-border);
+    background-color: transparent;
+    color: var(--c-text2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .input-bar-btn:hover {
+    background-color: var(--c-dim);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+  }
+
+  .input-bar-btn.active {
+    background-color: var(--c-accent-glow);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+  }
+
+  .input-bar-send {
+    background-color: var(--c-accent);
+    color: var(--c-s1);
+    border: none;
+    padding: 0 var(--sp-lg);
+    width: auto;
+    height: 40px;
+    font-weight: var(--fw-bold);
+    font-size: var(--fs-sm);
+    border-radius: 6px;
+    flex-shrink: 0;
+    min-width: 64px;
+  }
+
+  .input-bar-send:hover:not(:disabled) {
+    background-color: var(--c-accent-hover);
+  }
+
+  .input-bar-send:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: var(--c-accent);
+  }
+
+  /* File upload reveal panel */
+  .input-bar-file-panel {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    padding: var(--sp-sm) 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  .input-bar-file-panel.open {
+    max-height: 80px;
+    padding: var(--sp-sm) 0;
+  }
+
+  .file-drop-zone {
+    flex: 1;
+    border: 1px dashed var(--c-border);
+    border-radius: 6px;
+    padding: var(--sp-sm) var(--sp-md);
+    font-size: var(--fs-xs);
+    color: var(--c-muted);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-sm);
+  }
+
+  .file-drop-zone:hover,
+  .file-drop-zone.drag-over {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+    background-color: var(--c-accent-light);
+  }
+
+  .file-input-hidden {
+    display: none;
+  }
+
+  /* Hint text */
+  .input-bar-hint {
+    font-size: 11px;
+    color: var(--c-muted);
+    padding: 0 var(--sp-xs);
+    opacity: 0.7;
+  }
+
+  kbd {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    background-color: var(--c-dim);
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    padding: 1px 4px;
+    color: var(--c-text2);
+  }
+
+  /* Voice recording state within input bar */
+  .input-bar-recording-state {
+    display: none;
+    align-items: center;
+    gap: var(--sp-md);
+    flex: 1;
+    padding: var(--sp-sm) var(--sp-md);
+    background-color: var(--c-dim);
+    border: 1px solid var(--c-border-faint);
+    border-radius: 6px;
+    font-size: var(--fs-sm);
+    color: var(--c-text2);
+  }
+
+  .input-bar-recording-state.active {
+    display: flex;
+  }
+
+  .rec-dot-small {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--c-error);
+    animation: rec-pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .rec-timer {
+    font-family: var(--ff-mono);
+    font-size: var(--fs-xs);
+    color: var(--c-text);
+  }
+
+  @media (max-width: 1439px) {
+    .thread-input-bar {
+      padding: var(--sp-md);
+      padding-bottom: max(var(--sp-md), env(safe-area-inset-bottom));
+      position: sticky;
+      bottom: 0;
+      z-index: var(--z-base);
+    }
+
+    .input-bar-hint {
+      display: none;
+    }
+  }
+</style>
+
+<div class="thread-input-bar" id="thread-input-bar" role="form" aria-label="Send a message">
+  <div class="input-bar-row">
+    <!-- Voice recording active state (replaces textarea) -->
+    <div class="input-bar-recording-state" id="recording-state">
+      <div class="rec-dot-small"></div>
+      <span>Recording</span>
+      <span class="rec-timer" id="rec-timer-inline">0:00</span>
+      <span style="flex:1;"></span>
+      <button class="input-bar-btn" id="stop-rec-btn" title="Stop recording" aria-label="Stop recording">⏹</button>
+    </div>
+
+    <!-- Normal textarea -->
+    <div class="input-bar-textarea-wrap" id="textarea-wrap">
+      <textarea
+        class="input-bar-textarea"
+        id="msg-input"
+        placeholder="Type a message… ⌘↵ to send"
+        rows="1"
+        aria-label="Message text"
+        maxlength="1000"
+      ></textarea>
+      <span class="input-bar-char-count" id="char-count" aria-live="polite"></span>
+    </div>
+
+    <div class="input-bar-actions">
+      <!-- File attach toggle -->
+      <button
+        class="input-bar-btn"
+        id="attach-btn"
+        title="Attach file"
+        aria-label="Attach file"
+        aria-expanded="false"
+        onclick="toggleFilePanel()"
+      >📎</button>
+    </div>
+
+    <div class="input-bar-actions">
+      <!-- Voice toggle -->
+      <button
+        class="input-bar-btn"
+        id="voice-btn"
+        title="Record voice message"
+        aria-label="Record voice message"
+        onclick="toggleVoice()"
+      >🎙</button>
+    </div>
+
+    <!-- Send button -->
+    <button
+      class="input-bar-btn input-bar-send"
+      id="send-btn"
+      disabled
+      aria-label="Send message"
+      onclick="submitMessage()"
+    >Send</button>
+  </div>
+
+  <!-- File upload panel (hidden by default) -->
+  <div class="input-bar-file-panel" id="file-panel">
+    <label class="file-drop-zone" id="drop-zone" for="file-input" role="button" tabindex="0">
+      <span>📎</span>
+      <span>Drop files here or <strong>browse</strong></span>
+    </label>
+    <input
+      type="file"
+      id="file-input"
+      class="file-input-hidden"
+      multiple
+      aria-label="Upload files"
+    >
+  </div>
+
+  <!-- Keyboard hint -->
+  <div class="input-bar-hint">
+    <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for newline
+  </div>
+</div>
+
+<script>
+(function() {
+  const textarea = document.getElementById('msg-input');
+  const sendBtn = document.getElementById('send-btn');
+  const charCountEl = document.getElementById('char-count');
+  const filePanel = document.getElementById('file-panel');
+  const attachBtn = document.getElementById('attach-btn');
+  const voiceBtn = document.getElementById('voice-btn');
+  const recordingState = document.getElementById('recording-state');
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const textareaWrap = document.getElementById('textarea-wrap');
+
+  const MAX_CHARS = 1000;
+  const CHAR_WARN = 800;
+  let isRecording = false;
+  let recInterval = null;
+  let recSeconds = 0;
+
+  function updateSendBtn() {
+    if (!textarea || !sendBtn) return;
+    const hasContent = textarea.value.trim().length > 0;
+    sendBtn.disabled = !hasContent || isRecording;
+  }
+
+  function autoResize() {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    const maxH = 120;
+    textarea.style.height = Math.min(textarea.scrollHeight, maxH) + 'px';
+  }
+
+  function updateCharCount() {
+    if (!textarea || !charCountEl) return;
+    const len = textarea.value.length;
+    const remaining = MAX_CHARS - len;
+
+    charCountEl.textContent = remaining < MAX_CHARS - CHAR_WARN
+      ? `${remaining}`
+      : '';
+
+    charCountEl.className = 'input-bar-char-count';
+    if (len >= CHAR_WARN && len < MAX_CHARS) {
+      charCountEl.classList.add('visible', 'warn');
+    } else if (len >= MAX_CHARS) {
+      charCountEl.classList.add('visible', 'over');
+    } else if (len > 0) {
+      charCountEl.classList.remove('visible');
+    }
+  }
+
+  if (textarea) {
+    textarea.addEventListener('input', () => {
+      autoResize();
+      updateCharCount();
+      updateSendBtn();
+    });
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtn.disabled) submitMessage();
+      }
+    });
+  }
+
+  window.submitMessage = function() {
+    if (!textarea) return;
+    const text = textarea.value.trim();
+    if (!text) return;
+
+    if (window.MessageList) {
+      window.MessageList.addMessage('user', text);
+      window.MessageList.showTyping();
+      setTimeout(() => {
+        window.MessageList.hideTyping();
+        window.MessageList.addMessage('assistant', 'Got it, working on that now.');
+      }, 1400);
+    }
+
+    textarea.value = '';
+    autoResize();
+    updateCharCount();
+    updateSendBtn();
+    textarea.focus();
+    console.log('[chat] send:', text);
+  };
+
+  window.toggleFilePanel = function() {
+    if (!filePanel || !attachBtn) return;
+    const isOpen = filePanel.classList.toggle('open');
+    attachBtn.setAttribute('aria-expanded', isOpen);
+    attachBtn.classList.toggle('active', isOpen);
+  };
+
+  // Drag-and-drop
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const files = Array.from(e.dataTransfer.files);
+      console.log('[attach] dropped:', files.map(f => f.name));
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const files = Array.from(fileInput.files);
+      console.log('[attach] selected:', files.map(f => f.name));
+    });
+  }
+
+  function startRecTimer() {
+    recSeconds = 0;
+    const timerEl = document.getElementById('rec-timer-inline');
+    recInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds / 60);
+      const s = recSeconds % 60;
+      if (timerEl) timerEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  function stopRecTimer() {
+    clearInterval(recInterval);
+    recInterval = null;
+  }
+
+  window.toggleVoice = function() {
+    isRecording = !isRecording;
+    if (!voiceBtn || !recordingState || !textareaWrap) return;
+
+    if (isRecording) {
+      voiceBtn.classList.add('active');
+      voiceBtn.setAttribute('aria-label', 'Stop recording');
+      recordingState.classList.add('active');
+      textareaWrap.style.display = 'none';
+      startRecTimer();
+
+      // Start actual recording via VoiceRecorder component
+      if (window.VoiceRecorder) {
+        window.VoiceRecorder.startRecording().catch(err => {
+          console.error('[voice] permission denied:', err);
+          window.toggleVoice(); // Cancel recording if permission denied
+          if (window.ErrorToast) {
+            window.ErrorToast.error('Microphone access denied', 'Please grant microphone permission to record voice messages.');
+          }
+        });
+      }
+      console.log('[voice] recording started');
+    } else {
+      voiceBtn.classList.remove('active');
+      voiceBtn.setAttribute('aria-label', 'Record voice message');
+      recordingState.classList.remove('active');
+      textareaWrap.style.display = '';
+      stopRecTimer();
+
+      // Stop actual recording via VoiceRecorder component
+      if (window.VoiceRecorder) {
+        window.VoiceRecorder.stopRecording();
+      }
+      console.log('[voice] recording stopped, duration:', recSeconds + 's');
+    }
+    updateSendBtn();
+  };
+
+  const stopRecBtn = document.getElementById('stop-rec-btn');
+  if (stopRecBtn) stopRecBtn.addEventListener('click', () => { if (isRecording) window.toggleVoice(); });
+
+  updateSendBtn();
+})();
+</script>

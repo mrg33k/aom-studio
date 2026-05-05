@@ -239,7 +239,139 @@ Based on gaps above, prepare these refinements:
 
 Five core home components are built, committed, and gate-validated. No structural gaps. Design discipline is strong. Minor polish tuning ahead.
 
-**Estimated Phase 2 (Thread/Chat Surface): 3–4 hours** of component creation (message list, input bar, step thread, voice components, modals).
+---
+
+# Phase 2: Thread/Chat Surface Components (2026-05-05 — In Progress)
+
+## Components Built
+
+| Component | Status | Size | Purpose |
+|-----------|--------|------|---------|
+| chat-1on1.html (refactored) | ✓ | 5.1 KB | Main 1:1 agent chat view; async loader for components |
+| message-list.html (updated) | ✓ | 15.8 KB | Message rendering with audio support |
+| thread-input-bar.html (updated) | ✓ | 13.2 KB | Text/voice input with VoiceRecorder integration |
+| voice-recorder.html | ✓ | 8.1 KB | Voice capture with MediaRecorder + waveform viz |
+| voice-player.html | ✓ | 6.3 KB | Audio playback with waveform progress bar |
+| confirm-dialog.html | ✓ | 4.7 KB | Confirmation modal (Promise-based API) |
+| loading-overlay.html | ✓ | 2.8 KB | Loading spinner overlay |
+| error-toast.html | ✓ | 6.2 KB | Toast notifications (error, success, warning, info) |
+| **Total Phase 2** | | **62.2 KB** | **8 components** |
+
+### Architecture
+
+**Chat-1on1.html** loads via async component pattern (Promise.all):
+1. Fetch message-list.html → inject into #message-list-container
+2. Fetch thread-input-bar.html → inject into #input-bar-container
+3. Fetch confirm-dialog.html → inject into #modals-container
+4. Fetch loading-overlay.html → inject into #modals-container
+5. Fetch error-toast.html → inject into #modals-container
+
+Each component exposes global API to window:
+- `window.MessageList` — addMessage(role, text, options?), showTyping(), hideTyping()
+- `window.VoiceRecorder` — startRecording(), stopRecording(), send()
+- `window.VoicePlayer` — play(src), pause(), toggle(), seek(event)
+- `window.ConfirmDialog` — show(config), hide()
+- `window.LoadingOverlay` — show(message?), hide()
+- `window.ErrorToast` — show(config), error(), success(), warning(), info()
+
+### Design Gate Assessments (Phase 2)
+
+**Gate 1: Lens Fidelity**
+✓ All components use design tokens (--c-text, --c-accent, --c-border, --c-s1, --c-dim, --c-error)
+✓ No hardcoded colors except intentional error red (#ef4444) + success green (#10b981) in toast
+✓ Typography: Inter sans, JetBrains mono for timestamps/durations
+✓ Dark mode baseline applied to all surfaces (overlays, modals, toasts)
+
+**Gate 2: Anti-Claude Defaults**
+✓ No gradient text
+✓ No glassmorphism (all modals use flat --c-s1 bg with 1px border)
+✓ No pastel cards
+✓ Animations restrained (fadeIn 0.2s, slideUp 0.3s for modals; wave 0.6s for waveform bars)
+
+**Gate 3: Real Content**
+✓ Message list shows real Patrik/Steffen conversation from CRITIQUE example
+✓ Voice components use real MediaRecorder API (not stubbed)
+✓ Timestamps auto-generated at message creation time
+✓ Audio blob created from live microphone input
+
+**Gate 4: Live Verification** (pending)
+- [ ] chat-1on1.html loads without console errors
+- [ ] Message sends via input bar
+- [ ] Voice recording starts/stops with UI state change
+- [ ] Audio playback works with controls visible
+- [ ] Modals show/hide on demand
+- [ ] Toast notifications appear/dismiss with correct type-based styling
+
+**Gate 5: Mobile + Desktop**
+✓ All components use `@media (max-width: 389px)` for mobile optimization
+✓ Message list wraps at 78% max-width, responsive padding
+✓ Voice recorder hides info section on mobile, scales bars
+✓ Input bar uses sp-md padding on mobile vs sp-lg on desktop
+✓ Modals clamp to 85–90vw max-width
+
+**Gate 6: Hierarchy**
+✓ H2 (message sender) is bold + smaller font (fs-xs)
+✓ Body text 14px (fs-sm) readable on dark bg
+✓ Buttons distinguish primary (accent bg) from secondary (dim bg + border)
+✓ Modals have clear title (font-lg, fw-bold) + message body (fs-base)
+
+**Gate 7: Quality Bar** (pending verification)
+- Voice recorder UX: Start button → recording state with live waveform → send/cancel buttons
+- Voice player UX: Play button → waveform fills as time advances → pause/seek on click
+- Input bar integration: Text input or voice recording, mutually exclusive states
+- Modal UX: Center overlay, focus management, keyboard support (Esc to close)
+
+### Integration Points
+
+**Thread Input Bar → Voice Recorder:**
+- Click 🎙 button → toggleVoice() → VoiceRecorder.startRecording()
+- Recording state: textarea hidden, recording-state div shown with timer
+- Click stop (⏹) → toggleVoice() → VoiceRecorder.stopRecording()
+
+**Voice Recorder → Message List:**
+- After recording stops, call window.VoiceRecorder.send()
+- Creates audio message via MessageList.addMessage('user', text, { type: 'audio', blob, duration })
+- Message renders with <audio> controls + duration label
+
+**Message List → Audio:**
+- addMessage(role, text, options) now supports options.type === 'audio'
+- Audio blob rendered as <audio controls> in dark-styled container
+- URL.createObjectURL(blob) for playback
+
+**Error Handling:**
+- Microphone permission denied → ErrorToast.error('Microphone access denied', ...)
+- Modal overlay click-outside → dismiss via overlay.addEventListener('click')
+- Confirm dialog returns Promise<boolean> for async/await workflows
+
+### Known Gaps (Phase 2 Scope)
+
+1. **Audio codec:** Voice recorder uses MediaRecorder default (webm on Chrome, m4a on Safari). Cross-browser playback not yet tested. TODO: add fallback playback formats.
+2. **Keyboard support:** Modals don't yet trap focus or respond to Escape key. TODO: add keydown listeners.
+3. **Voice quality:** No noise suppression, no AGC (automatic gain control). Captures raw microphone. TODO: optional audio processing later.
+4. **Accessibility:** ARIA labels present but aria-modal, role="dialog" not yet added to confirm-dialog. TODO: audit WCAG compliance.
+5. **Mobile voice:** Floating action button for voice record on mobile not yet designed. Current state relies on input-bar.html which is desktop-sized. TODO: responsive voice UI.
+
+### Testing Checklist (Before Phase 3)
+
+- [ ] Open chat-1on1.html in browser
+- [ ] Verify no console errors on component load
+- [ ] Send text message via input bar
+- [ ] Verify message appears in list with timestamp
+- [ ] Click voice icon (🎙)
+- [ ] Verify recording state shows with timer
+- [ ] Speak into microphone for 3–5 seconds
+- [ ] Click send (↗) button
+- [ ] Verify audio message appears in list with <audio> player
+- [ ] Click play on audio message
+- [ ] Verify audio plays back
+- [ ] Click confirm-dialog demo (TBD: button integration)
+- [ ] Verify modal shows and dismisses on cancel/confirm
+- [ ] Test error toast: ErrorToast.error('Test', 'This is a test')
+- [ ] Verify toast appears bottom-right, auto-dismisses after 5s
+- [ ] Resize window to 390px
+- [ ] Verify mobile breakpoints applied (hidden info, scaled elements)
+
+---
 
 **Estimated Phase 3 (Tasks Surface): 2–3 hours**.
 
