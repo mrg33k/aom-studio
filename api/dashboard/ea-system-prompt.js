@@ -1,6 +1,7 @@
 // GET /api/dashboard/ea-system-prompt?client_id=X
 // Returns the computed EA system prompt for a given tenant.
 // Includes conversational naming nudge when display_name IS NULL and cadence allows.
+// Includes active project list + novel-topic routing instructions (R78-p1).
 //
 // Used by:
 //   - Acceptance tests (gate EAN-1: checks nudge present/absent)
@@ -31,7 +32,7 @@ function buildNudgeText(daysSinceNudge) {
   return `Hey — I want to make sure I ask this properly: you still haven't given me a name. I'll keep working either way, but I'd love one when you're ready. What would you like to call me?`;
 }
 
-export function buildEaSystemPrompt({ displayName, workspaceName, lastNudgeAt }) {
+export function buildEaSystemPrompt({ displayName, workspaceName, lastNudgeAt, projects }) {
   const effectiveName = displayName || (workspaceName ? `${workspaceName} EA` : 'EA');
   const nudge = shouldNudge(displayName, lastNudgeAt);
 
@@ -47,6 +48,26 @@ export function buildEaSystemPrompt({ displayName, workspaceName, lastNudgeAt })
 
   if (nudge) {
     parts.push('', `# NAMING NUDGE (inject once, naturally, not in every reply)`, buildNudgeText(daysSinceNudge));
+  }
+
+  const activeProjects = Array.isArray(projects) ? projects : [];
+  if (activeProjects.length > 0) {
+    const projectLines = activeProjects
+      .map(p => `- ${p.slug}${p.name && p.name !== p.slug ? ` (${p.name})` : ''}`)
+      .join('\n');
+    parts.push(
+      '',
+      `# ACTIVE PROJECTS`,
+      `These are the user's active projects. Use this list to route topics correctly:\n${projectLines}`,
+      '',
+      `# NOVEL TOPIC ROUTING`,
+      `When the user brings up a topic that doesn't map to any project above:`,
+      `1. Engage with the topic naturally first — don't open with "should this be a project?"`,
+      `2. Once the direction is clear, ask naturally: "Sounds interesting — is this something you want to make a project on and keep working on, or just a one-off?"`,
+      `3. If yes: drop a confirmation card with the proposed slug for them to review before the project is created. Never scaffold silently.`,
+      `4. If no: keep the conversation going here — no project needed.`,
+      `Do NOT suggest creating a project when the topic clearly relates to an existing one above.`,
+    );
   }
 
   return parts.join('\n');
@@ -68,25 +89,36 @@ export default async function handler(req, res) {
   if (!clientId) return res.status(400).json({ error: 'client_id required' });
 
   try {
-    const url = `${SUPABASE_URL}/rest/v1/agent_status?slug=eq.ea&client_id=eq.${encodeURIComponent(clientId)}&select=name,display_name,last_naming_nudge_at&limit=1`;
-    const r = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-    });
+    const headers = {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    };
 
-    if (!r.ok) return res.status(502).json({ error: 'Supabase query failed' });
-    const rows = await r.json();
+    const [eaRes, projectsRes] = await Promise.all([
+      fetch(
+        `${SUPABASE_URL}/rest/v1/agent_status?slug=eq.ea&client_id=eq.${encodeURIComponent(clientId)}&select=name,display_name,last_naming_nudge_at&limit=1`,
+        { headers },
+      ),
+      fetch(
+        `${SUPABASE_URL}/rest/v1/projects?is_active=eq.true&client_id=eq.${encodeURIComponent(clientId)}&select=slug,name&order=name`,
+        { headers },
+      ),
+    ]);
+
+    if (!eaRes.ok) return res.status(502).json({ error: 'Supabase query failed' });
+    const rows = await eaRes.json();
     const ea = Array.isArray(rows) ? rows[0] : null;
 
     if (!ea) return res.status(404).json({ error: `No EA found for client_id=${clientId}` });
+
+    const projects = projectsRes.ok ? await projectsRes.json() : [];
 
     const workspaceName = (ea.name || '').replace(/ EA$/, '') || clientId;
     const prompt = buildEaSystemPrompt({
       displayName: ea.display_name || null,
       workspaceName,
       lastNudgeAt: ea.last_naming_nudge_at || null,
+      projects: Array.isArray(projects) ? projects : [],
     });
 
     const nudging = shouldNudge(ea.display_name, ea.last_naming_nudge_at);
