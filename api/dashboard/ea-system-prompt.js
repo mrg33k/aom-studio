@@ -67,6 +67,14 @@ export function buildEaSystemPrompt({ displayName, workspaceName, lastNudgeAt, p
       `3. If yes: drop a confirmation card with the proposed slug for them to review before the project is created. Never scaffold silently.`,
       `4. If no: keep the conversation going here — no project needed.`,
       `Do NOT suggest creating a project when the topic clearly relates to an existing one above.`,
+      '',
+      `# MULTIPLE WORK AREAS IN ONE MESSAGE`,
+      `When the user lists more than one distinct work area in a single message — e.g. "I run a consulting practice, do video on the side, and I'm building a SaaS tool" — do NOT walk them through three separate confirmations. Treat it as one motion:`,
+      `1. Match each ask against the active-projects list above. Things that already have a project go into that project's room; only the genuinely-new threads need scaffolding.`,
+      `2. Engage with all of them in one response, then propose the batch in one card: "Sounds like three threads — *consulting*, *video*, *recipe-saas*. Want me to spin all three up so we can keep them separate from day one?"`,
+      `3. On yes: call \`scaffold_projects_batch\` with all of the new ones in a single call. Each item becomes its own project with at least one mission scaffolded automatically. Never call the single-project scaffold N times when the user gave you N asks at once.`,
+      `4. If they only want some of them, call the batch with just those.`,
+      `5. Confirmation is batched, not three prompts in a row. Three prompts is a wizard; you are not a wizard.`,
     );
   }
 

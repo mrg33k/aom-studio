@@ -2,6 +2,8 @@
 // Agent-specific chat with streaming (SSE) for the chat-first dashboard
 // Each agent gets their AGENT.md + last-conversation.md as system prompt context
 
+import { scaffoldOneItem } from './ea-scaffold-batch.js'
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -141,6 +143,47 @@ const TOOLS = [
       required: ['task_id'],
     },
   },
+  {
+    name: 'scaffold_projects_batch',
+    description:
+      "Scaffold one OR MORE new projects (each with at least one mission) in a single batch. Use this when the user describes multiple distinct work areas in one message — e.g. 'I run a consulting practice, do video production, and I'm building a SaaS' — so confirmation is one card, not three. A single new project also goes through this tool. Each item gets the canonical 6-file project box plus a 6-file mission box (default mission slug 'first-brief' if you don't name one). Never call this for an existing project the user is just referencing.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          description:
+            'One entry per new project to scaffold. Match the user’s asks 1:1 — split distinct threads into separate items rather than bundling them.',
+          items: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+                description:
+                  "Human-readable project name. Will be slugified (lowercased, dashed). Keep it short and concrete — what the user actually said the work is, not a generic placeholder.",
+              },
+              description: {
+                type: 'string',
+                description:
+                  "One-or-two sentence description of what this project is, in the user's own words where possible. Lands verbatim in VISION.md and CONTEXT.md.",
+              },
+              mission: {
+                type: 'object',
+                description:
+                  'Optional first mission to scaffold inside this project. If omitted, a "first-brief" vision-interview mission is scaffolded automatically — every project gets a mission home.',
+                properties: {
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                },
+              },
+            },
+            required: ['name'],
+          },
+        },
+      },
+      required: ['items'],
+    },
+  },
 ]
 
 // ─── Supabase REST helper ─────────────────────────────────────────────
@@ -255,6 +298,27 @@ async function executeTool(name, args, ctx) {
         question,
       }
     }
+    case 'scaffold_projects_batch': {
+      // LR-3: multi-project + mission scaffold from one tool call. Tenant is
+      // taken from the chat.js handler context (already authenticated at the
+      // chat surface); the underlying ea-scaffold-batch endpoint enforces
+      // verifyTenant for HTTP callers.
+      const items = Array.isArray(args.items) ? args.items : []
+      if (items.length === 0) throw new Error('items must be a non-empty array')
+      if (items.length > 10) throw new Error('max 10 items per batch')
+
+      const tenantId = ctx.clientId
+      const results = []
+      for (const item of items) {
+        try {
+          results.push(await scaffoldOneItem({ item, tenantId }))
+        } catch (err) {
+          results.push({ ok: false, name: item?.name || null, error: err?.message || String(err) })
+        }
+      }
+      const allOk = results.every(r => r.ok)
+      return { ok: allOk, count: results.length, tenant: tenantId, results }
+    }
   }
   throw new Error(`Unknown tool: ${name}`)
 }
@@ -338,13 +402,16 @@ function buildSystemPrompt(meta, agentMd, lastConvo, priorities, { hasTools = fa
   if (hasTools) {
     parts.push(
       '# TASK DISPATCH',
-      'You have two tools: `write_task` and `check_task`. When Patrik asks for code work, a deploy, a fix, an investigation, or anything requiring shell/edit execution, call `write_task` with the right project slug and a specific description. The worker runs in a fresh tmux session with full permissions. Do NOT write code yourself; you do not have edit tools.',
+      'You have three tools: `write_task`, `check_task`, and `scaffold_projects_batch`. When Patrik asks for code work, a deploy, a fix, an investigation, or anything requiring shell/edit execution, call `write_task` with the right project slug and a specific description. The worker runs in a fresh tmux session with full permissions. Do NOT write code yourself; you do not have edit tools.',
       '',
       'SPLITTING RULE: if Patrik asks for multiple distinct pieces of work in one message, call `write_task` ONCE PER PIECE. Never bundle unrelated work into a single task. Each call can target a different project. Workers for different repos run in parallel; workers for the same repo serialize automatically.',
       '',
       'After calling `write_task`, tell Patrik in one line what you queued and the short task id. If you queued multiple tasks, list them as bullet points. Do not restate descriptions back to him.',
       'If Patrik asks about a task you queued, call `check_task` and report status plainly. If the task needs input, surface the question verbatim.',
       'Never call `write_task` for questions, opinions, or discussion. Only dispatch when there is actual work to execute.',
+      '',
+      '# NEW PROJECT SCAFFOLDING',
+      'When Patrik (or a user you serve) describes ONE OR MORE new work areas that should become projects, call `scaffold_projects_batch` ONCE with all of them as items. Never call it N times for N asks — that produces N separate confirmation prompts. One call, one batched response. Each new project automatically gets a "first-brief" mission unless you name a more specific one in the item.',
       '',
     )
   }
