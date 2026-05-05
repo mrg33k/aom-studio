@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { C } from '../../lib/cv3Colors.js'
+import { C } from '../../../lib/cv3Colors.js'
 
 // Get time-of-day bucket (5am boundaries)
 function getTimeOfDay() {
@@ -210,7 +210,7 @@ export default function CutsceneOverlay({ items = [], onAction, onClose }) {
 
 function CutsceneItem({ item, onAction, isLast }) {
   const projectName = item.metadata?.project_name || 'Unknown Project'
-  const preview = item.content?.substring(0, 80) || 'Waiting for input'
+  const preview = item.text?.substring(0, 80) || 'Waiting for input'
 
   return (
     <div style={{

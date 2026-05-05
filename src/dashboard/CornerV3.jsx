@@ -40,6 +40,7 @@ import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
+import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -210,18 +211,17 @@ export default function CornerV3() {
 
   // Fetch stale-nudge items on mount (R1: stale-nudge only)
   useEffect(() => {
-    if (!currentUser || cutsceneShownRef.current) return
+    if (!worldId || cutsceneShownRef.current) return
     cutsceneShownRef.current = true
 
     const fetchCutsceneItems = async () => {
       try {
         const { data, error } = await supabase
           .from('messages')
-          .select('id, created_at, content, metadata')
-          .eq('user_id', currentUser.id)
+          .select('id, timestamp, text, metadata')
+          .eq('client_id', worldId)
           .eq('source', 'stale-project-nudge')
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false })
+          .order('timestamp', { ascending: false })
           .limit(10)
 
         if (error) {
@@ -241,7 +241,7 @@ export default function CornerV3() {
     }
 
     fetchCutsceneItems()
-  }, [currentUser])
+  }, [worldId])
   // Notifications: filter inboxItems by per-agent read timestamps (session-only)
   const notifItems = useMemo(() => {
     return (inboxItems || []).filter(item =>
@@ -905,6 +905,15 @@ export default function CornerV3() {
             setPhoneOverlayOpen(false)
             if (telephone.isRecording) telephone.stop()
           }}
+        />
+      )}
+
+      {/* ── CUTSCENE OVERLAY (entrance: stale-nudge cards) ───────────────── */}
+      {cutsceneItems.length > 0 && (
+        <CutsceneOverlay
+          items={cutsceneItems}
+          onAction={handleCutsceneAction}
+          onClose={() => setCutsceneItems([])}
         />
       )}
 
