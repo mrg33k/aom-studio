@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
-  const { text, projectSlug, clientId, userId, mission_slug: rawMission } = req.body || {};
+  const { text, projectSlug, clientId, userId, mission_slug: rawMission, ops_query } = req.body || {};
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
@@ -59,11 +59,13 @@ export default async function handler(req, res) {
 
   const missionSlug = (rawMission || '').toString().trim() || null;
   if (!missionSlug) {
-    console.warn(
-      '[mission-first] WARN: no mission_slug in create-project-task request. ' +
-      'Pass mission_slug in request body. Hard error flip date: 2026-05-28.',
-    );
-    // Fire-and-forget — do not await or let failure block task creation.
+    if (!ops_query) {
+      return res.status(400).json({
+        error: 'mission_slug is required. Every task must belong to a mission. Pass mission_slug in the request body, or set ops_query:true for legitimate non-mission operational tasks.',
+        code: 'MISSION_SLUG_REQUIRED',
+      });
+    }
+    // ops_query opt-out: log for observability but allow through.
     _logMissionWarnEvent({ project: slug, source: 'create-project-task.js' }).catch(() => {});
   }
 
