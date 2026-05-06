@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steffen (Brand) — Ahead of Market</title>
+  <link rel="stylesheet" href="../styles/tokens.css">
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/animations.css">
+  <link rel="stylesheet" href="../styles/desktop.css">
+  <link rel="stylesheet" href="../styles/mobile.css">
+  <style>
+    /* ─── Layout ─────────────────────────────────────────────────────────── */
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Center rail: full-height flex column so message list fills */
+    .chat-surface {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────────────────── */
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-md) var(--sp-xl);
+      border-bottom: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      flex-shrink: 0;
+    }
+
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+    }
+
+    .chat-back-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      color: var(--c-text2);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      flex-shrink: 0;
+      min-width: 32px;
+      min-height: 32px;
+    }
+
+    .chat-back-btn:hover {
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+    }
+
+    .chat-agent-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background-color: var(--c-dim);
+      border: 1.5px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: var(--fw-bold);
+      color: var(--c-accent);
+      flex-shrink: 0;
+      font-family: var(--ff-mono);
+    }
+
+    .chat-agent-info {}
+
+    .chat-agent-name {
+      font-size: var(--fs-base);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+      line-height: 1.1;
+    }
+
+    .chat-agent-status {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-xs);
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      margin-top: 2px;
+    }
+
+    .status-live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--c-accent);
+      animation: breathing-dot 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .chat-header-actions {
+      display: flex;
+      gap: var(--sp-sm);
+    }
+
+    .chat-action-btn {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      color: var(--c-text2);
+      cursor: pointer;
+      font-size: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .chat-action-btn:hover {
+      background-color: var(--c-dim);
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+    }
+
+    /* ─── Message list ───────────────────────────────────────────────────── */
+
+    .message-list-component {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-md);
+      padding: var(--sp-xl) var(--sp-xl) var(--sp-lg);
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      animation: slide-up 0.3s ease-out;
+      max-width: 78%;
+      word-break: break-word;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .msg.assistant {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      margin-bottom: var(--sp-xs);
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    .msg.user .msg-meta {
+      flex-direction: row-reverse;
+    }
+
+    .msg-sender {
+      font-weight: var(--fw-semibold);
+      font-size: var(--fs-xs);
+      color: var(--c-text2);
+    }
+
+    .msg-bubble {
+      padding: var(--sp-md) var(--sp-lg);
+      border-radius: 8px;
+      font-size: var(--fs-sm);
+      line-height: var(--lh-normal);
+    }
+
+    .msg.assistant .msg-bubble {
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      color: var(--c-text);
+      border-radius: 2px 8px 8px 8px;
+    }
+
+    .msg.user .msg-bubble {
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      border-radius: 8px 2px 8px 8px;
+    }
+
+    .msg-bubble p + p {
+      margin-top: var(--sp-sm);
+      margin-bottom: 0;
+    }
+
+    .msg-bubble p {
+      margin-bottom: 0;
+    }
+
+    .msg-bubble code {
+      font-family: var(--ff-mono);
+      font-size: 12px;
+      background-color: var(--c-s1-faint);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .msg.user .msg-bubble code {
+      background-color: rgba(0,0,0,0.18);
+    }
+
+    .msg-bubble pre {
+      background-color: var(--c-s1);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      padding: var(--sp-md);
+      margin-top: var(--sp-md);
+      overflow-x: auto;
+      font-family: var(--ff-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--c-text2);
+    }
+
+    .msg-attachment {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      margin-top: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      background-color: var(--c-s1-faint);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      font-size: var(--fs-xs);
+      color: var(--c-text2);
+      cursor: pointer;
+      transition: border-color 0.2s ease;
+    }
+
+    .msg-attachment:hover {
+      border-color: var(--c-accent);
+      color: var(--c-text);
+    }
+
+    .msg-attachment-icon {
+      width: 28px;
+      height: 28px;
+      background-color: var(--c-dim);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .msg-timestamp {
+      font-size: 11px;
+      color: var(--c-muted);
+      margin-top: var(--sp-xs);
+      letter-spacing: 0.02em;
+    }
+
+    .msg-status-icon {
+      font-size: 10px;
+      color: var(--c-accent);
+    }
+
+    /* Message steps */
+    .msg-steps {
+      margin-top: var(--sp-md);
+      padding-top: var(--sp-md);
+      border-top: 1px solid var(--c-border-faint);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-sm);
+    }
+
+    .msg-step {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+      font-size: 12px;
+      color: var(--c-text2);
+      line-height: var(--lh-normal);
+      cursor: pointer;
+    }
+
+    .msg-step-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--c-muted);
+      flex-shrink: 0;
+      margin-top: 4px;
+      transition: background-color 0.2s ease;
+    }
+
+    .msg-step.active .msg-step-dot {
+      background-color: var(--c-accent);
+      animation: breathing-dot 2s ease-in-out infinite;
+    }
+
+    .msg-step.done .msg-step-dot {
+      background-color: var(--c-muted);
+    }
+
+    .msg-step-body { flex: 1; }
+    .msg-step-label { display: block; }
+
+    .msg-step-detail {
+      font-size: 11px;
+      color: var(--c-muted);
+      margin-top: 2px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .msg-step.expanded .msg-step-detail {
+      display: block;
+    }
+
+    /* Day separator */
+    .day-separator {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      color: var(--c-muted);
+      font-size: var(--fs-xs);
+      margin: var(--sp-lg) 0 var(--sp-md);
+      font-weight: var(--fw-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .day-separator::before,
+    .day-separator::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background-color: var(--c-border-faint);
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: none;
+      align-self: flex-start;
+      align-items: center;
+      gap: 4px;
+      padding: var(--sp-md);
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 2px 8px 8px 8px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--c-muted);
+      animation: typing-bounce 1.4s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* ─── Input Bar ──────────────────────────────────────────────────────── */
+
+    .thread-input-bar {
+      border-top: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      padding: var(--sp-md) var(--sp-xl) var(--sp-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-sm);
+      flex-shrink: 0;
+    }
+
+    .input-bar-row {
+      display: flex;
+      gap: var(--sp-sm);
+      align-items: flex-end;
+    }
+
+    .input-bar-textarea-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-bar-textarea {
+      width: 100%;
+      min-height: 40px;
+      max-height: 120px;
+      padding: 10px var(--sp-md);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      background-color: var(--c-input-bg);
+      color: var(--c-text);
+      font-family: var(--ff-sans);
+      font-size: var(--fs-sm);
+      line-height: var(--lh-normal);
+      resize: none;
+      overflow-y: auto;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+      display: block;
+      scrollbar-width: none;
+    }
+
+    .input-bar-textarea::-webkit-scrollbar { display: none; }
+
+    .input-bar-textarea::placeholder { color: var(--c-muted); }
+
+    .input-bar-textarea:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      background-color: var(--c-input-focus-bg);
+    }
+
+    .input-bar-char-count {
+      position: absolute;
+      bottom: 6px;
+      right: var(--sp-sm);
+      font-size: 10px;
+      color: var(--c-muted);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .input-bar-char-count.visible { opacity: 1; }
+    .input-bar-char-count.warn { color: var(--c-warning); }
+    .input-bar-char-count.over { color: var(--c-error); }
+
+    .input-bar-icon-btn {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      padding: 0;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border: 1px solid var(--c-border);
+      background-color: transparent;
+      color: var(--c-text2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .input-bar-icon-btn:hover {
+      background-color: var(--c-dim);
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+    }
+
+    .input-bar-icon-btn.active {
+      background-color: var(--c-accent-glow);
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+    }
+
+    .input-bar-send {
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      border: none;
+      padding: 0 var(--sp-lg);
+      height: 40px;
+      min-height: 40px;
+      font-weight: var(--fw-bold);
+      font-size: var(--fs-sm);
+      border-radius: 6px;
+      flex-shrink: 0;
+      min-width: 64px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .input-bar-send:hover:not(:disabled) { background-color: var(--c-accent-hover); }
+
+    .input-bar-send:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .input-bar-file-panel {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+    }
+
+    .input-bar-file-panel.open {
+      max-height: 60px;
+    }
+
+    .file-drop-zone {
+      flex: 1;
+      border: 1px dashed var(--c-border);
+      border-radius: 6px;
+      padding: var(--sp-sm) var(--sp-md);
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-sm);
+    }
+
+    .file-drop-zone:hover {
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+      background-color: var(--c-accent-light);
+    }
+
+    .input-bar-hint {
+      font-size: 11px;
+      color: var(--c-muted);
+      opacity: 0.7;
+    }
+
+    kbd {
+      font-family: var(--ff-mono);
+      font-size: 10px;
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 3px;
+      padding: 1px 4px;
+      color: var(--c-text2);
+    }
+
+    /* Voice recording indicator in input bar */
+    .input-bar-rec-state {
+      display: none;
+      align-items: center;
+      gap: var(--sp-md);
+      flex: 1;
+      padding: var(--sp-sm) var(--sp-md);
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border-faint);
+      border-radius: 6px;
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+    }
+
+    .input-bar-rec-state.active { display: flex; }
+
+    .rec-dot-sm {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--c-error);
+      animation: rec-pulse 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .rec-timer-sm {
+      font-family: var(--ff-mono);
+      font-size: var(--fs-xs);
+      color: var(--c-text);
+    }
+
+    /* ─── Left rail ──────────────────────────────────────────────────────── */
+
+    .sidebar-nav-top {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      margin-bottom: var(--sp-xl);
+      padding-bottom: var(--sp-lg);
+      border-bottom: 1px solid var(--c-border-faint);
+      text-decoration: none;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      transition: color 0.2s ease;
+    }
+
+    .sidebar-nav-top:hover { color: var(--c-accent); }
+
+    .sidebar-agent-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-sm) var(--sp-md);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      color: inherit;
+      margin-bottom: var(--sp-xs);
+      border: 1px solid transparent;
+    }
+
+    .sidebar-agent-item:hover {
+      background-color: var(--c-dim-faint);
+      border-color: var(--c-border-faint);
+    }
+
+    .sidebar-agent-item.active {
+      background-color: var(--c-accent-glow);
+      border-color: var(--c-accent);
+    }
+
+    .sidebar-agent-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: var(--fw-bold);
+      color: var(--c-text2);
+      flex-shrink: 0;
+      font-family: var(--ff-mono);
+    }
+
+    .sidebar-agent-item.active .sidebar-agent-avatar {
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+    }
+
+    .sidebar-agent-text { flex: 1; min-width: 0; }
+
+    .sidebar-agent-name {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-agent-item.active .sidebar-agent-name { color: var(--c-accent); }
+
+    .sidebar-agent-last {
+      font-size: 11px;
+      color: var(--c-muted);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-online-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--c-muted);
+      flex-shrink: 0;
+    }
+
+    .sidebar-online-dot.online {
+      background-color: var(--c-accent);
+      animation: breathing-dot 2s ease-in-out infinite;
+    }
+
+    /* ─── Right rail ─────────────────────────────────────────────────────── */
+
+    .agent-meta-card {
+      padding: var(--sp-md);
+      background-color: var(--c-dim-faint);
+      border: 1px solid var(--c-border-faint);
+      border-radius: 6px;
+      margin-bottom: var(--sp-lg);
+    }
+
+    .agent-meta-name {
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+      margin-bottom: var(--sp-xs);
+    }
+
+    .agent-meta-role {
+      font-size: var(--fs-xs);
+      color: var(--c-text2);
+      margin-bottom: var(--sp-md);
+    }
+
+    .agent-meta-stat {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--c-muted);
+      padding: var(--sp-xs) 0;
+      border-top: 1px solid var(--c-border-faint);
+    }
+
+    .agent-meta-stat-val {
+      color: var(--c-text2);
+      font-family: var(--ff-mono);
+    }
+
+    /* ─── Step Thread (right rail) ───────────────────────────────────────── */
+
+    .step-thread-panel {}
+
+    .step-thread-label {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: var(--sp-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .step-thread-collapse-btn {
+      font-size: 11px;
+      color: var(--c-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      min-height: unset;
+      min-width: unset;
+      height: auto;
+      width: auto;
+      transition: color 0.2s ease;
+    }
+
+    .step-thread-collapse-btn:hover { color: var(--c-accent); }
+
+    .step-group {
+      border: 1px solid var(--c-border-faint);
+      border-radius: 6px;
+      overflow: hidden;
+      background-color: var(--c-dim-faint);
+      margin-bottom: var(--sp-md);
+    }
+
+    .step-group-header {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.15s ease;
+    }
+
+    .step-group-header:hover { background-color: var(--c-dim); }
+
+    .step-group-title {
+      flex: 1;
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+      line-height: 1.2;
+    }
+
+    .step-group-chevron {
+      font-size: 10px;
+      color: var(--c-muted);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .step-group.open .step-group-chevron {
+      transform: rotate(90deg);
+    }
+
+    .step-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .step-status-dot.done { background-color: var(--c-muted); }
+
+    .step-status-dot.in-progress {
+      background-color: var(--c-accent);
+      animation: breathing-dot 2s ease-in-out infinite;
+    }
+
+    .step-status-dot.pending {
+      background-color: transparent;
+      border: 1.5px solid var(--c-border);
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: var(--fw-semibold);
+      padding: 1px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+    }
+
+    .step-badge.in-progress {
+      background-color: var(--c-accent-light);
+      color: var(--c-accent);
+    }
+
+    .step-badge.done {
+      background-color: var(--c-dim);
+      color: var(--c-muted);
+    }
+
+    .step-group-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .step-group.open .step-group-body {
+      max-height: 600px;
+    }
+
+    .step-list {
+      border-top: 1px solid var(--c-border-faint);
+      padding: var(--sp-xs) 0;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-sm);
+      padding: var(--sp-xs) var(--sp-md);
+      font-size: 11px;
+      color: var(--c-text2);
+      line-height: var(--lh-normal);
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      position: relative;
+    }
+
+    .step-item:hover { background-color: var(--c-dim); }
+
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: calc(var(--sp-md) + 3px);
+      top: calc(var(--sp-xs) + 9px);
+      bottom: calc(-1 * var(--sp-xs));
+      width: 1px;
+      background-color: var(--c-border-faint);
+    }
+
+    .step-item-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .step-item.done .step-item-dot { background-color: var(--c-muted); }
+
+    .step-item.active .step-item-dot {
+      background-color: var(--c-accent);
+      animation: breathing-dot 2s ease-in-out infinite;
+    }
+
+    .step-item.pending .step-item-dot {
+      background-color: transparent;
+      border: 1.5px solid var(--c-border);
+    }
+
+    .step-item-label {
+      font-size: 11px;
+      color: var(--c-text2);
+    }
+
+    .step-item.active .step-item-label { color: var(--c-text); }
+    .step-item.done .step-item-label { color: var(--c-muted); }
+
+    .step-item-time {
+      font-size: 10px;
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+      display: block;
+    }
+
+    /* ─── Modals ─────────────────────────────────────────────────────────── */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(2px);
+      z-index: var(--z-modal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      padding: var(--sp-2xl);
+      max-width: 420px;
+      width: 100%;
+      animation: scale-in 0.2s ease-out;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .modal-title {
+      font-size: var(--fs-lg);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+      margin-bottom: var(--sp-md);
+    }
+
+    .modal-body {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      line-height: var(--lh-normal);
+      margin-bottom: var(--sp-xl);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: var(--sp-md);
+      justify-content: flex-end;
+    }
+
+    .modal-cancel {
+      padding: var(--sp-sm) var(--sp-lg);
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 44px;
+    }
+
+    .modal-cancel:hover {
+      border-color: var(--c-text2);
+      color: var(--c-text);
+    }
+
+    .modal-confirm {
+      padding: var(--sp-sm) var(--sp-lg);
+      background-color: var(--c-accent);
+      border: none;
+      border-radius: 6px;
+      color: var(--c-s1);
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      min-height: 44px;
+    }
+
+    .modal-confirm:hover { background-color: var(--c-accent-hover); }
+
+    .modal-confirm.danger {
+      background-color: var(--c-error);
+    }
+
+    .modal-confirm.danger:hover {
+      background-color: var(--c-error-dark);
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: var(--c-s1-ghost);
+      z-index: var(--z-modal);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: var(--sp-lg);
+    }
+
+    .loading-overlay.active {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 2.5px solid var(--c-border);
+      border-top-color: var(--c-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-message {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      font-family: var(--ff-mono);
+      letter-spacing: 0.02em;
+    }
+
+    /* Error toast */
+    .toast-container {
+      position: fixed;
+      bottom: var(--sp-xl);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: var(--z-toast);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-sm);
+      pointer-events: none;
+      align-items: center;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      font-size: var(--fs-sm);
+      color: var(--c-text);
+      box-shadow: var(--shadow-lg);
+      pointer-events: auto;
+      animation: slide-up 0.3s ease-out;
+      min-width: 240px;
+      max-width: 400px;
+    }
+
+    .toast.error {
+      border-color: var(--c-error);
+      background-color: rgba(239,68,68,0.08);
+    }
+
+    .toast.success {
+      border-color: var(--c-accent);
+      background-color: var(--c-accent-light);
+    }
+
+    .toast-icon { font-size: 16px; flex-shrink: 0; }
+    .toast-text { flex: 1; }
+
+    .toast-close {
+      font-size: 14px;
+      color: var(--c-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      min-height: unset;
+      min-width: unset;
+      width: auto;
+      height: auto;
+      transition: color 0.2s ease;
+    }
+
+    .toast-close:hover { color: var(--c-text); }
+
+    /* ─── Voice recorder inline (shown when voice mode active) ──────────── */
+
+    .voice-recorder-inline {
+      display: none;
+      align-items: center;
+      gap: var(--sp-md);
+      padding: var(--sp-sm) var(--sp-md);
+      background-color: rgba(239,68,68,0.06);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 6px;
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+    }
+
+    .voice-recorder-inline.active { display: flex; }
+
+    .rec-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--c-error);
+      animation: rec-pulse 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .rec-timer-display {
+      font-family: var(--ff-mono);
+      font-size: var(--fs-sm);
+      color: var(--c-error);
+      min-width: 40px;
+    }
+
+    .rec-waveform-bars {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 20px;
+    }
+
+    .rec-wave-bar {
+      width: 2px;
+      background-color: var(--c-error);
+      border-radius: 1px;
+      animation: wave-bar-anim 0.7s ease-in-out infinite;
+      opacity: 0.7;
+    }
+
+    .rec-wave-bar:nth-child(1)  { height: 30%; animation-delay: 0.0s; }
+    .rec-wave-bar:nth-child(2)  { height: 55%; animation-delay: 0.1s; }
+    .rec-wave-bar:nth-child(3)  { height: 80%; animation-delay: 0.2s; }
+    .rec-wave-bar:nth-child(4)  { height: 45%; animation-delay: 0.15s; }
+    .rec-wave-bar:nth-child(5)  { height: 90%; animation-delay: 0.3s; }
+    .rec-wave-bar:nth-child(6)  { height: 60%; animation-delay: 0.05s; }
+    .rec-wave-bar:nth-child(7)  { height: 35%; animation-delay: 0.25s; }
+
+    @keyframes wave-bar-anim {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+
+    /* ─── Mobile overrides ───────────────────────────────────────────────── */
+
+    @media (max-width: 1439px) {
+      .message-list-component {
+        padding: var(--sp-lg);
+      }
+
+      .msg {
+        max-width: 90%;
+      }
+
+      .thread-input-bar {
+        padding: var(--sp-md);
+        padding-bottom: max(var(--sp-md), env(safe-area-inset-bottom));
+        position: sticky;
+        bottom: 0;
+        z-index: var(--z-base);
+      }
+
+      .input-bar-hint { display: none; }
+
+      .chat-header { padding: var(--sp-md) var(--sp-lg); }
+    }
+
+    @media (max-width: 389px) {
+      .msg { max-width: 95%; }
+      .msg-bubble { font-size: var(--fs-base); }
+      .chat-agent-name { font-size: var(--fs-sm); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ─── Left rail: agents sidebar ──────────────────────────────────────── -->
+  <div class="rail-left" id="rail-left">
+    <a href="./home.html" class="sidebar-nav-top">
+      <span>←</span>
+      <span>Home</span>
+    </a>
+
+    <div class="sidebar-label">Agents</div>
+
+    <a href="./chat-1on1.html?agent=patrik-ea" class="sidebar-agent-item">
+      <div class="sidebar-agent-avatar">EA</div>
+      <div class="sidebar-agent-text">
+        <span class="sidebar-agent-name">Your EA</span>
+        <span class="sidebar-agent-last">2 tasks queued</span>
+      </div>
+      <div class="sidebar-online-dot online"></div>
+    </a>
+
+    <a href="./chat-1on1.html?agent=steffen" class="sidebar-agent-item active">
+      <div class="sidebar-agent-avatar">SB</div>
+      <div class="sidebar-agent-text">
+        <span class="sidebar-agent-name">Steffen (Brand)</span>
+        <span class="sidebar-agent-last">Building moodboard…</span>
+      </div>
+      <div class="sidebar-online-dot online"></div>
+    </a>
+
+    <a href="./chat-1on1.html?agent=cleo" class="sidebar-agent-item">
+      <div class="sidebar-agent-avatar">CV</div>
+      <div class="sidebar-agent-text">
+        <span class="sidebar-agent-name">Cleo (Video)</span>
+        <span class="sidebar-agent-last">Space Rising edit ready</span>
+      </div>
+      <div class="sidebar-online-dot online"></div>
+    </a>
+
+    <a href="./chat-1on1.html?agent=bobby" class="sidebar-agent-item">
+      <div class="sidebar-agent-avatar">BW</div>
+      <div class="sidebar-agent-text">
+        <span class="sidebar-agent-name">Bobby (Web)</span>
+        <span class="sidebar-agent-last">Idle · 2 hr ago</span>
+      </div>
+      <div class="sidebar-online-dot"></div>
+    </a>
+
+    <a href="./chat-1on1.html?agent=rex" class="sidebar-agent-item">
+      <div class="sidebar-agent-avatar">RX</div>
+      <div class="sidebar-agent-text">
+        <span class="sidebar-agent-name">Rex (Ops)</span>
+        <span class="sidebar-agent-last">Awaiting input</span>
+      </div>
+      <div class="sidebar-online-dot online"></div>
+    </a>
+
+    <a href="./chat-1on1.html?agent=foreman" class="sidebar-agent-item">
+      <div class="sidebar-agent-avatar">FM</div>
+      <div class="sidebar-agent-text">
+        <span class="sidebar-agent-name">Foreman</span>
+        <span class="sidebar-agent-last">Round 75 in progress</span>
+      </div>
+      <div class="sidebar-online-dot online"></div>
+    </a>
+  </div>
+
+  <!-- ─── Center rail: chat surface ─────────────────────────────────────── -->
+  <div class="rail-center" style="overflow:hidden;">
+    <div class="chat-surface">
+
+      <!-- Chat header -->
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <a href="./home.html" class="chat-back-btn" title="Back to home" aria-label="Back">←</a>
+          <div class="chat-agent-avatar" style="background-color:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.4);color:#A78BFA;">SB</div>
+          <div class="chat-agent-info">
+            <div class="chat-agent-name">Steffen (Brand)</div>
+            <div class="chat-agent-status">
+              <div class="status-live-dot"></div>
+              Working · Building moodboard
+            </div>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <button class="chat-action-btn" title="Voice call" aria-label="Start voice call" onclick="startVoiceCall()">☎</button>
+          <button class="chat-action-btn" title="Agent profile" aria-label="View agent profile" onclick="showAgentProfile()">ℹ</button>
+          <button class="chat-action-btn" title="Settings" aria-label="Open settings" onclick="showSettings()">⋯</button>
+        </div>
+      </div>
+
+      <!-- Message list -->
+      <div class="message-list-component" id="message-list" role="log" aria-live="polite" aria-label="Conversation messages">
+
+        <div class="day-separator">Today — May 5, 2026</div>
+
+        <div class="msg assistant">
+          <div class="msg-meta">
+            <span class="msg-sender">Steffen</span>
+            <span class="msg-timestamp">10:31 AM</span>
+          </div>
+          <div class="msg-bubble">
+            <p>Morning. Ready for the brand refresh. What's the brief?</p>
+          </div>
+          <div class="msg-steps">
+            <div class="msg-step done">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body"><span class="msg-step-label">Read Ambition CONTEXT + VISION</span></div>
+            </div>
+            <div class="msg-step done">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body"><span class="msg-step-label">Loaded previous brand guidelines</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg user">
+          <div class="msg-meta">
+            <span class="msg-sender">Patrik</span>
+            <span class="msg-timestamp">10:33 AM</span>
+            <span class="msg-status-icon">✓✓</span>
+          </div>
+          <div class="msg-bubble">
+            <p>Pull competitive references and show me 3 brand directions. Technical services firms — Palantir, Linear, Vercel aesthetic. No blue SaaS.</p>
+          </div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="msg-meta">
+            <span class="msg-sender">Steffen</span>
+            <span class="msg-timestamp">10:33 AM</span>
+          </div>
+          <div class="msg-bubble">
+            <p>On it. Scanning competitors and building 3 brand directions. ~12 minutes.</p>
+            <p>Each direction: color palette, type stack, hero layout, and one-liner positioning statement.</p>
+          </div>
+          <div class="msg-steps">
+            <div class="msg-step done">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body">
+                <span class="msg-step-label">Read Ambition CONTEXT + VISION</span>
+                <span class="msg-step-detail">Confirmed: mechanical engineering agency, B2B, industrial clients, mid-market.</span>
+              </div>
+            </div>
+            <div class="msg-step active">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body">
+                <span class="msg-step-label">Scanning 6 competitor brands</span>
+                <span class="msg-step-detail">Palantir · Linear · Vercel · Flexport · Relativity · SpaceX. Extracting type stacks, color palettes, and layout patterns.</span>
+              </div>
+            </div>
+            <div class="msg-step">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body"><span class="msg-step-label">Building 3 direction moodboards</span></div>
+            </div>
+            <div class="msg-step">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body"><span class="msg-step-label">Writing positioning summaries</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg user">
+          <div class="msg-meta">
+            <span class="msg-sender">Patrik</span>
+            <span class="msg-timestamp">10:36 AM</span>
+            <span class="msg-status-icon">✓✓</span>
+          </div>
+          <div class="msg-bubble">
+            <p>Also — check if the current Ambition logo works in all 3 directions. Flag if not.</p>
+          </div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="msg-meta">
+            <span class="msg-sender">Steffen</span>
+            <span class="msg-timestamp">10:36 AM</span>
+          </div>
+          <div class="msg-bubble">
+            <p>Got it. Auditing the existing mark against each direction. Initial palette assessment:</p>
+            <pre>Current Ambition palette:
+  Primary:    #1A1A2E  (near-black navy)
+  Accent:     #E94560  (coral red)
+  Background: #16213E  (deep navy)
+
+Direction A (Terminal Dark) → Keep coral ✓
+Direction B (Industrial Mono) → Swap to white ✓
+Direction C (Engineering Blue) → Coral to blue ⚠ full identity shift</pre>
+            <p>Direction C will need the logo audited separately — full identity shift.</p>
+          </div>
+          <div class="msg-steps">
+            <div class="msg-step done">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body"><span class="msg-step-label">Extracted current palette from existing site</span></div>
+            </div>
+            <div class="msg-step done">
+              <div class="msg-step-dot"></div>
+              <div class="msg-step-body"><span class="msg-step-label">Mapped 3 direction palettes</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="msg-meta">
+            <span class="msg-sender">Steffen</span>
+            <span class="msg-timestamp">10:44 AM</span>
+          </div>
+          <div class="msg-bubble">
+            <p>Moodboard ready. Attaching the brief now.</p>
+            <div class="msg-attachment" role="button" tabindex="0" onclick="console.log('open: brand-brief.pdf')">
+              <div class="msg-attachment-icon">📄</div>
+              <div>
+                <div style="font-weight:600;color:var(--c-text);font-size:var(--fs-xs);">Ambition Brand Direction Brief</div>
+                <div>3 directions · PDF · 48 KB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Typing indicator (hidden by default) -->
+        <div class="typing-indicator" id="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+
+      </div>
+
+      <!-- Voice recorder (shows when voice mode active) -->
+      <div class="voice-recorder-inline" id="voice-recorder-inline">
+        <div class="rec-pulse-dot"></div>
+        <span>Recording</span>
+        <div class="rec-timer-display" id="rec-timer-display">0:00</div>
+        <div class="rec-waveform-bars">
+          <div class="rec-wave-bar"></div>
+          <div class="rec-wave-bar"></div>
+          <div class="rec-wave-bar"></div>
+          <div class="rec-wave-bar"></div>
+          <div class="rec-wave-bar"></div>
+          <div class="rec-wave-bar"></div>
+          <div class="rec-wave-bar"></div>
+        </div>
+        <button class="input-bar-icon-btn" onclick="stopVoiceRec()" title="Stop recording" aria-label="Stop recording" style="margin-left:auto;">⏹</button>
+      </div>
+
+      <!-- Input bar -->
+      <div class="thread-input-bar">
+        <div class="input-bar-row">
+          <div class="input-bar-textarea-wrap">
+            <textarea
+              class="input-bar-textarea"
+              id="msg-input"
+              placeholder="Type a message…"
+              rows="1"
+              aria-label="Message"
+              maxlength="1000"
+            ></textarea>
+            <span class="input-bar-char-count" id="char-count" aria-live="polite"></span>
+          </div>
+          <button class="input-bar-icon-btn" id="attach-btn" title="Attach file" aria-label="Attach file" onclick="toggleFilePanel()">📎</button>
+          <button class="input-bar-icon-btn" id="voice-btn" title="Voice message" aria-label="Start voice recording" onclick="toggleVoiceMode()">🎙</button>
+          <button class="input-bar-send" id="send-btn" disabled aria-label="Send" onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="input-bar-file-panel" id="file-panel">
+          <label class="file-drop-zone" for="file-upload-input">
+            <span>📎</span>
+            <span>Drop files or <strong>browse</strong></span>
+          </label>
+          <input type="file" id="file-upload-input" style="display:none;" multiple aria-label="Upload files">
+        </div>
+
+        <div class="input-bar-hint">
+          <kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> newline
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Right rail: step thread + agent metadata ───────────────────────── -->
+  <div class="rail-right" id="rail-right">
+
+    <!-- Agent meta card -->
+    <div class="agent-meta-card">
+      <div class="agent-meta-name">Steffen (Brand)</div>
+      <div class="agent-meta-role">Brand strategist · Visual identity · Copy</div>
+      <div class="agent-meta-stat">
+        <span>Status</span>
+        <span class="agent-meta-stat-val" style="color:var(--c-accent);">Working</span>
+      </div>
+      <div class="agent-meta-stat">
+        <span>Active projects</span>
+        <span class="agent-meta-stat-val">3</span>
+      </div>
+      <div class="agent-meta-stat">
+        <span>Last activity</span>
+        <span class="agent-meta-stat-val">Just now</span>
+      </div>
+      <div class="agent-meta-stat">
+        <span>Tasks this week</span>
+        <span class="agent-meta-stat-val">7</span>
+      </div>
+    </div>
+
+    <!-- Step thread panel -->
+    <div class="step-thread-panel">
+      <div class="step-thread-label">
+        <span>Active Steps</span>
+        <button class="step-thread-collapse-btn" onclick="collapseAllGroups()" title="Collapse all">−</button>
+      </div>
+
+      <div class="step-group open" id="sg-moodboard">
+        <div class="step-group-header" onclick="toggleGroup('sg-moodboard')">
+          <div class="step-status-dot in-progress"></div>
+          <div class="step-group-title">Ambition Brand Moodboard</div>
+          <div class="step-badge in-progress">Working</div>
+          <span class="step-group-chevron">▶</span>
+        </div>
+        <div class="step-group-body">
+          <div class="step-list">
+            <div class="step-item done">
+              <div class="step-item-dot"></div>
+              <div>
+                <span class="step-item-label">Read CONTEXT + VISION</span>
+                <span class="step-item-time">10:31 · 0:04</span>
+              </div>
+            </div>
+            <div class="step-item done">
+              <div class="step-item-dot"></div>
+              <div>
+                <span class="step-item-label">Loaded brand guidelines</span>
+                <span class="step-item-time">10:31 · 0:06</span>
+              </div>
+            </div>
+            <div class="step-item done">
+              <div class="step-item-dot"></div>
+              <div>
+                <span class="step-item-label">Extracted current palette</span>
+                <span class="step-item-time">10:33 · 0:22</span>
+              </div>
+            </div>
+            <div class="step-item active">
+              <div class="step-item-dot"></div>
+              <div>
+                <span class="step-item-label">Scanning 6 competitors</span>
+                <span class="step-item-time">10:34 · running</span>
+              </div>
+            </div>
+            <div class="step-item pending">
+              <div class="step-item-dot"></div>
+              <div><span class="step-item-label">Build 3 moodboards</span></div>
+            </div>
+            <div class="step-item pending">
+              <div class="step-item-dot"></div>
+              <div><span class="step-item-label">Audit existing logo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-group" id="sg-copy">
+        <div class="step-group-header" onclick="toggleGroup('sg-copy')">
+          <div class="step-status-dot pending"></div>
+          <div class="step-group-title">Homepage Copy Refresh</div>
+          <div style="font-size:10px;color:var(--c-muted);flex-shrink:0;">Queued</div>
+          <span class="step-group-chevron">▶</span>
+        </div>
+        <div class="step-group-body">
+          <div class="step-list">
+            <div class="step-item pending">
+              <div class="step-item-dot"></div>
+              <div><span class="step-item-label">Read current homepage copy</span></div>
+            </div>
+            <div class="step-item pending">
+              <div class="step-item-dot"></div>
+              <div><span class="step-item-label">Draft 3 hero headline variations</span></div>
+            </div>
+            <div class="step-item pending">
+              <div class="step-item-dot"></div>
+              <div><span class="step-item-label">Write supporting value props</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick actions -->
+    <div style="margin-top:var(--sp-xl);">
+      <div class="sidebar-label" style="margin-bottom:var(--sp-md);">Quick</div>
+      <div style="display:flex;flex-direction:column;gap:var(--sp-sm);">
+        <button class="btn-secondary" style="width:100%;font-size:var(--fs-xs);" onclick="openConfirmModal('Archive this chat?', 'This will archive the conversation but keep the task history.', 'Archive', false)">
+          Archive Chat
+        </button>
+        <button class="btn-secondary" style="width:100%;font-size:var(--fs-xs);" onclick="showLoading('Clearing session…', 1200)">
+          Clear Session
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── Confirm dialog modal ───────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-box">
+      <div class="modal-title" id="confirm-title">Confirm action</div>
+      <div class="modal-body" id="confirm-body">Are you sure?</div>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeConfirmModal()">Cancel</button>
+        <button class="modal-confirm" id="confirm-action-btn" onclick="runConfirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Loading overlay ────────────────────────────────────────────────── -->
+  <div class="loading-overlay" id="loading-overlay" role="status" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div class="loading-message" id="loading-message">Loading…</div>
+  </div>
+
+  <!-- ─── Toast container ────────────────────────────────────────────────── -->
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script>
+    /* ─── Message list ──────────────────────────────────────────────────── */
+
+    const msgList = document.getElementById('message-list');
+    const typingIndicator = document.getElementById('typing-indicator');
+
+    function scrollToBottom(smooth) {
+      if (!msgList) return;
+      msgList.scrollTo({ top: msgList.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    }
+
+    function addMessage(role, html) {
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const el = document.createElement('div');
+      el.className = `msg ${role}`;
+      el.innerHTML = `
+        <div class="msg-meta">
+          <span class="msg-sender">${role === 'user' ? 'Patrik' : 'Steffen'}</span>
+          <span class="msg-timestamp">${time}</span>
+          ${role === 'user' ? '<span class="msg-status-icon">✓</span>' : ''}
+        </div>
+        <div class="msg-bubble">${typeof html === 'string' ? `<p>${html}</p>` : html}</div>
+      `;
+      if (typingIndicator.parentNode) {
+        msgList.insertBefore(el, typingIndicator);
+      } else {
+        msgList.appendChild(el);
+      }
+      scrollToBottom(true);
+    }
+
+    function showTyping() {
+      typingIndicator.style.display = 'flex';
+      scrollToBottom(true);
+    }
+
+    function hideTyping() {
+      typingIndicator.style.display = 'none';
+    }
+
+    /* ─── Input bar ─────────────────────────────────────────────────────── */
+
+    const input = document.getElementById('msg-input');
+    const sendBtn = document.getElementById('send-btn');
+    const charCountEl = document.getElementById('char-count');
+    const filePanel = document.getElementById('file-panel');
+    const attachBtn = document.getElementById('attach-btn');
+    const voiceBtn = document.getElementById('voice-btn');
+    const fileInput = document.getElementById('file-upload-input');
+
+    const MAX_CHARS = 1000;
+
+    function updateSendState() {
+      if (!input || !sendBtn) return;
+      sendBtn.disabled = input.value.trim().length === 0;
+    }
+
+    function autoResizeTextarea() {
+      if (!input) return;
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    }
+
+    function updateCharCount() {
+      if (!input || !charCountEl) return;
+      const len = input.value.length;
+      const remaining = MAX_CHARS - len;
+      charCountEl.textContent = remaining < 200 ? `${remaining}` : '';
+      charCountEl.className = 'input-bar-char-count';
+      if (len >= 800 && len < 1000) charCountEl.classList.add('visible', 'warn');
+      else if (len >= 1000) charCountEl.classList.add('visible', 'over');
+    }
+
+    if (input) {
+      input.addEventListener('input', () => {
+        autoResizeTextarea();
+        updateCharCount();
+        updateSendState();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (!sendBtn.disabled) sendMessage();
+        }
+      });
+    }
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage('user', text);
+      input.value = '';
+      autoResizeTextarea();
+      updateCharCount();
+      updateSendState();
+      input.focus();
+      showTyping();
+      setTimeout(() => {
+        hideTyping();
+        addMessage('assistant', 'Got it, working on that now.');
+      }, 1200 + Math.random() * 600);
+    }
+
+    function toggleFilePanel() {
+      const isOpen = filePanel.classList.toggle('open');
+      attachBtn.classList.toggle('active', isOpen);
+      attachBtn.setAttribute('aria-expanded', isOpen);
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        const names = Array.from(fileInput.files).map(f => f.name);
+        showToast('success', `Attached: ${names.join(', ')}`);
+        filePanel.classList.remove('open');
+        attachBtn.classList.remove('active');
+      });
+    }
+
+    /* ─── Voice mode ────────────────────────────────────────────────────── */
+
+    let isRecording = false;
+    let recInterval = null;
+    let recSecs = 0;
+
+    const voiceRecInline = document.getElementById('voice-recorder-inline');
+    const recTimerDisplay = document.getElementById('rec-timer-display');
+
+    function toggleVoiceMode() {
+      if (!isRecording) {
+        isRecording = true;
+        voiceBtn.classList.add('active');
+        if (voiceRecInline) voiceRecInline.classList.add('active');
+        recSecs = 0;
+        recInterval = setInterval(() => {
+          recSecs++;
+          const m = Math.floor(recSecs / 60);
+          const s = recSecs % 60;
+          if (recTimerDisplay) recTimerDisplay.textContent = `${m}:${String(s).padStart(2, '0')}`;
+        }, 1000);
+        console.log('[voice] recording started (stub)');
+      } else {
+        stopVoiceRec();
+      }
+    }
+
+    function stopVoiceRec() {
+      isRecording = false;
+      voiceBtn.classList.remove('active');
+      if (voiceRecInline) voiceRecInline.classList.remove('active');
+      clearInterval(recInterval);
+      if (recTimerDisplay) recTimerDisplay.textContent = '0:00';
+      if (recSecs > 0) showToast('success', `Voice message ready (${recSecs}s) — not sent yet (stub)`);
+      console.log('[voice] recording stopped, duration:', recSecs + 's');
+    }
+
+    /* ─── Step thread groups ────────────────────────────────────────────── */
+
+    function toggleGroup(id) {
+      const g = document.getElementById(id);
+      if (g) g.classList.toggle('open');
+    }
+
+    function collapseAllGroups() {
+      const btn = document.querySelector('.step-thread-collapse-btn');
+      const allOpen = document.querySelectorAll('.step-group.open');
+      if (allOpen.length > 0) {
+        document.querySelectorAll('.step-group').forEach(g => g.classList.remove('open'));
+        if (btn) btn.textContent = '+';
+      } else {
+        document.querySelectorAll('.step-group').forEach(g => g.classList.add('open'));
+        if (btn) btn.textContent = '−';
+      }
+    }
+
+    /* ─── Confirm modal ─────────────────────────────────────────────────── */
+
+    let _confirmCallback = null;
+
+    function openConfirmModal(title, body, confirmLabel, isDanger, cb) {
+      document.getElementById('confirm-title').textContent = title || 'Confirm';
+      document.getElementById('confirm-body').textContent = body || '';
+      const confirmBtn = document.getElementById('confirm-action-btn');
+      confirmBtn.textContent = confirmLabel || 'Confirm';
+      confirmBtn.className = 'modal-confirm' + (isDanger ? ' danger' : '');
+      _confirmCallback = cb || null;
+      document.getElementById('confirm-modal').classList.add('open');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.remove('open');
+      _confirmCallback = null;
+    }
+
+    function runConfirmAction() {
+      closeConfirmModal();
+      if (_confirmCallback) _confirmCallback();
+    }
+
+    // Close on backdrop click
+    document.getElementById('confirm-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeConfirmModal();
+    });
+
+    /* ─── Loading overlay ───────────────────────────────────────────────── */
+
+    function showLoading(msg, duration) {
+      const overlay = document.getElementById('loading-overlay');
+      const msgEl = document.getElementById('loading-message');
+      if (msgEl) msgEl.textContent = msg || 'Loading…';
+      overlay.classList.add('active');
+      if (duration) {
+        setTimeout(() => overlay.classList.remove('active'), duration);
+      }
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('active');
+    }
+
+    /* ─── Toast notifications ───────────────────────────────────────────── */
+
+    function showToast(type, message, duration) {
+      const container = document.getElementById('toast-container');
+      const icons = { error: '⚠', success: '✓', info: 'ℹ' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type || 'info'}`;
+      toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || 'ℹ'}</span>
+        <span class="toast-text">${message}</span>
+        <button class="toast-close" aria-label="Dismiss">✕</button>
+      `;
+
+      toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+      container.appendChild(toast);
+
+      const dismissAfter = duration || (type === 'error' ? 6000 : 4000);
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(8px)';
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, dismissAfter);
+    }
+
+    /* ─── Chat action stubs ─────────────────────────────────────────────── */
+
+    function startVoiceCall() {
+      showToast('info', 'Voice call starting… (stub)');
+      console.log('[call] voice call started');
+    }
+
+    function showAgentProfile() {
+      showToast('info', 'Agent profile overlay — not yet implemented');
+    }
+
+    function showSettings() {
+      openConfirmModal(
+        'Clear this session?',
+        'This will reset the conversation context. Task history is preserved.',
+        'Clear session',
+        true,
+        () => showToast('success', 'Session cleared')
+      );
+    }
+
+    /* ─── Step item expand on click ─────────────────────────────────────── */
+
+    document.addEventListener('click', (e) => {
+      const step = e.target.closest('.msg-step');
+      if (step && !e.target.closest('.step-group-header')) {
+        step.classList.toggle('expanded');
+      }
+    });
+
+    /* ─── Init ──────────────────────────────────────────────────────────── */
+
+    document.addEventListener('DOMContentLoaded', () => {
+      scrollToBottom(false);
+      updateSendState();
+
+      // Demo: show error toast after 3s to verify auto-dismiss
+      // setTimeout(() => showToast('error', 'Task R75-a2 failed — needs input'), 3000);
+    });
+
+    // Initial scroll (safeguard)
+    setTimeout(() => scrollToBottom(false), 80);
+  </script>
+</body>
+</html>

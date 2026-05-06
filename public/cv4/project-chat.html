@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Chat — AOM</title>
+
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/animations.css">
+  <link rel="stylesheet" href="styles/desktop.css">
+  <link rel="stylesheet" href="styles/mobile.css">
+
+  <style>
+    body {
+      display: grid;
+      grid-template-columns: 240px 1fr 280px;
+      grid-template-rows: 1fr;
+      gap: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Left sidebar — agents */
+    .left-rail {
+      background-color: var(--c-s1);
+      border-right: 1px solid var(--c-border);
+      padding: var(--sp-lg) var(--sp-md);
+      overflow-y: auto;
+    }
+
+    .sidebar-label {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-md);
+      padding: 0 var(--sp-sm);
+    }
+
+    .agent-card {
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-sm);
+      border-radius: 6px;
+      background-color: var(--c-dim-faint);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .agent-card:hover {
+      background-color: var(--c-dim-ghost);
+      border-color: var(--c-border);
+    }
+
+    .agent-card.active {
+      background-color: var(--c-accent-glow);
+      border-color: var(--c-accent);
+    }
+
+    .agent-name {
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    .agent-role {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      margin-top: var(--sp-xs);
+    }
+
+    /* Center — chat */
+    .center-rail {
+      background-color: var(--c-s1);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .project-header {
+      padding: var(--sp-2xl) var(--sp-xl);
+      border-bottom: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .project-title {
+      font-size: var(--fs-2xl);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    .project-status {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      margin-top: var(--sp-sm);
+    }
+
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--sp-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-lg);
+    }
+
+    .message {
+      display: flex;
+      gap: var(--sp-md);
+      animation: slide-up 0.3s ease-out;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 65%;
+      padding: var(--sp-md) var(--sp-lg);
+      border-radius: 8px;
+      word-wrap: break-word;
+    }
+
+    .message.assistant .message-content {
+      background-color: var(--c-dim);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+    }
+
+    .message.user .message-content {
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+    }
+
+    .input-area {
+      padding: var(--sp-lg);
+      border-top: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      display: flex;
+      gap: var(--sp-md);
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: var(--sp-md) var(--sp-lg);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      background-color: var(--c-input-bg);
+      color: var(--c-text);
+      font-size: var(--fs-base);
+      transition: border-color 0.2s ease;
+    }
+
+    .input-area input:focus {
+      outline: none;
+      border-color: var(--c-accent);
+      background-color: var(--c-input-focus-bg);
+    }
+
+    .input-area button {
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: var(--c-accent);
+      color: var(--c-s1);
+      border: none;
+      border-radius: 6px;
+      font-weight: var(--fw-bold);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .input-area button:hover {
+      background-color: var(--c-accent-hover);
+    }
+
+    /* Right sidebar — activity */
+    .right-rail {
+      background-color: var(--c-s1-faint);
+      border-left: 1px solid var(--c-border);
+      padding: var(--sp-lg) var(--sp-md);
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      padding: var(--sp-md);
+      margin-bottom: var(--sp-md);
+      border-radius: 6px;
+      background-color: var(--c-dim-faint);
+      border-left: 3px solid transparent;
+      font-size: var(--fs-sm);
+    }
+
+    .activity-item.task {
+      border-left-color: var(--c-info);
+    }
+
+    .activity-item.message {
+      border-left-color: var(--c-accent);
+    }
+
+    .activity-item.system {
+      border-left-color: var(--c-muted);
+    }
+
+    .activity-title {
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+      margin-bottom: var(--sp-xs);
+    }
+
+    .activity-time {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    @media (max-width: 1439px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      .left-rail,
+      .right-rail {
+        display: none;
+      }
+
+      .project-header {
+        padding: var(--sp-lg);
+      }
+
+      .project-title {
+        font-size: var(--fs-lg);
+      }
+
+      .messages-area {
+        padding: var(--sp-lg);
+      }
+
+      .message-content {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Left sidebar: agents -->
+  <div class="left-rail">
+    <h3 class="sidebar-label">Agents</h3>
+
+    <a href="#elon" class="agent-card active">
+      <div class="agent-name">Elon</div>
+      <div class="agent-role">Systems Architect</div>
+    </a>
+
+    <a href="#studio" class="agent-card">
+      <div class="agent-name">Studio</div>
+      <div class="agent-role">Creative Director</div>
+    </a>
+
+    <a href="#steffen" class="agent-card">
+      <div class="agent-name">Steffen</div>
+      <div class="agent-role">Brand & Design</div>
+    </a>
+
+    <a href="#cleo" class="agent-card">
+      <div class="agent-name">Cleo</div>
+      <div class="agent-role">Video & Audio</div>
+    </a>
+
+    <a href="#bobby" class="agent-card">
+      <div class="agent-name">Bobby</div>
+      <div class="agent-role">Web Development</div>
+    </a>
+  </div>
+
+  <!-- Center: chat -->
+  <div class="center-rail">
+    <div class="project-header">
+      <div>
+        <h1 class="project-title">Corner</h1>
+        <p class="project-status">Platform Operating System — 12 active tasks</p>
+      </div>
+    </div>
+
+    <div class="messages-area">
+      <div class="message assistant">
+        <div class="message-content">
+          <p>Hey Patrik. I've got an overview of current activity on Corner.</p>
+          <p style="margin-top: var(--sp-sm);">Right now we're in R73, focused on the core three pillars: home greeting + search, task board with live project summary, and scoped project chats.</p>
+        </div>
+      </div>
+
+      <div class="message user">
+        <div class="message-content">
+          How's the quality bar?
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="message-content">
+          <p>Solid. All visual work passed the design gate audit (7/7 checks). No hardcoded colors, no anti-Claude defaults, real content only.</p>
+          <p style="margin-top: var(--sp-sm);">Code review in progress. Once Cleo signs off on responsive behavior, we ship.</p>
+        </div>
+      </div>
+
+      <div class="message user">
+        <div class="message-content">
+          What about the isometric game world?
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="message-content">
+          <p>Queued for R74. That's a bigger lift—Three.js scene, Crossy Road voxel aesthetic, day/night cycle tied to system data.</p>
+          <p style="margin-top: var(--sp-sm);">I've pulled reference images and set up the brief. Studio has first pick on it.</p>
+        </div>
+      </div>
+
+      <div class="message user">
+        <div class="message-content">
+          Good. Let me know when the game world is ready to prototype.
+        </div>
+      </div>
+
+      <div class="message assistant">
+        <div class="message-content">
+          <p>Will do. That's the differentiator—every other AI dashboard is beige and boring. We're going isometric command center.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input type="text" placeholder="Message the team..." />
+      <button>Send</button>
+    </div>
+  </div>
+
+  <!-- Right sidebar: activity -->
+  <div class="right-rail">
+    <h3 class="sidebar-label">Activity</h3>
+
+    <div class="activity-item task">
+      <div class="activity-title">Task created: CV4 home.html</div>
+      <div class="activity-time">2 hours ago</div>
+    </div>
+
+    <div class="activity-item message">
+      <div class="activity-title">Elon sent message</div>
+      <div class="activity-time">1 hour ago</div>
+    </div>
+
+    <div class="activity-item task">
+      <div class="activity-title">Task marked done: Design gates audit</div>
+      <div class="activity-time">45 minutes ago</div>
+    </div>
+
+    <div class="activity-item message">
+      <div class="activity-title">Studio replied on project chat</div>
+      <div class="activity-time">30 minutes ago</div>
+    </div>
+
+    <div class="activity-item system">
+      <div class="activity-title">Code deployed to staging</div>
+      <div class="activity-time">20 minutes ago</div>
+    </div>
+
+    <div class="activity-item task">
+      <div class="activity-title">Cleo assigned to verification</div>
+      <div class="activity-time">10 minutes ago</div>
+    </div>
+  </div>
+</body>
+</html>

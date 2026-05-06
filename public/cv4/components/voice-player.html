@@ -1,0 +1,241 @@
+<!-- Voice Player Component — cv4-explore-v2 -->
+<!-- Fragment: Audio playback UI with waveform visualization -->
+
+<style>
+  .voice-player {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    padding: var(--sp-md) var(--sp-lg);
+    background-color: var(--c-dim);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .voice-player:hover {
+    border-color: var(--c-accent);
+    background-color: var(--c-dim-ghost);
+  }
+
+  .voice-player.playing {
+    border-color: var(--c-accent);
+  }
+
+  .voice-player-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: var(--c-accent);
+    color: var(--c-s1);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+
+  .voice-player-button:hover {
+    background-color: var(--c-accent-hover);
+  }
+
+  .voice-player-waveform {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    height: 24px;
+    cursor: pointer;
+  }
+
+  .voice-player-bar {
+    flex: 1;
+    height: 4px;
+    background-color: var(--c-border);
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+  }
+
+  .voice-player-bar.played {
+    background-color: var(--c-accent);
+  }
+
+  .voice-player.playing .voice-player-bar:not(.played) {
+    animation: idle-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes idle-pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+  }
+
+  .voice-player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 60px;
+  }
+
+  .voice-player-duration {
+    font-size: 11px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    letter-spacing: 0.05em;
+  }
+
+  .voice-player-time {
+    font-size: 10px;
+    color: var(--c-text2);
+    font-weight: var(--fw-medium);
+  }
+
+  .voice-player.playing .voice-player-duration {
+    color: var(--c-accent);
+  }
+
+  @media (max-width: 389px) {
+    .voice-player {
+      padding: var(--sp-sm) var(--sp-md);
+    }
+
+    .voice-player-info {
+      display: none;
+    }
+
+    .voice-player-waveform {
+      gap: 0.5px;
+    }
+
+    .voice-player-bar {
+      height: 3px;
+    }
+  }
+</style>
+
+<div class="voice-player" id="voice-player">
+  <button class="voice-player-button" id="play-btn" onclick="window.VoicePlayer?.toggle()">▶</button>
+  
+  <div class="voice-player-waveform" id="waveform" onclick="window.VoicePlayer?.seek(event)">
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+    <div class="voice-player-bar"></div>
+  </div>
+
+  <div class="voice-player-info">
+    <div class="voice-player-duration" id="duration">0:45</div>
+    <div class="voice-player-time" id="time">0:00</div>
+  </div>
+</div>
+
+<audio id="audio" style="display:none;"></audio>
+
+<script>
+(function() {
+  const player = document.getElementById('voice-player');
+  const audio = document.getElementById('audio');
+  const playBtn = document.getElementById('play-btn');
+  const waveform = document.getElementById('waveform');
+  const timeEl = document.getElementById('time');
+  const durationEl = document.getElementById('duration');
+  let isPlaying = false;
+
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function updateWaveform() {
+    const bars = waveform.querySelectorAll('.voice-player-bar');
+    const progress = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+    const barWidth = 100 / bars.length;
+    
+    bars.forEach((bar, idx) => {
+      if ((idx + 1) * barWidth <= progress) {
+        bar.classList.add('played');
+      } else {
+        bar.classList.remove('played');
+      }
+    });
+
+    if (timeEl) timeEl.textContent = formatTime(audio.currentTime);
+  }
+
+  function togglePlayPause() {
+    if (!audio.src) return;
+    
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+  }
+
+  function updatePlayButton() {
+    playBtn.textContent = isPlaying ? '⏸' : '▶';
+    isPlaying ? player.classList.add('playing') : player.classList.remove('playing');
+  }
+
+  // Event listeners
+  audio.onplay = () => {
+    isPlaying = true;
+    updatePlayButton();
+  };
+
+  audio.onpause = () => {
+    isPlaying = false;
+    updatePlayButton();
+  };
+
+  audio.ontimeupdate = updateWaveform;
+
+  audio.onloadedmetadata = () => {
+    if (durationEl) durationEl.textContent = formatTime(audio.duration);
+    updateWaveform();
+  };
+
+  audio.onended = () => {
+    audio.currentTime = 0;
+    isPlaying = false;
+    updatePlayButton();
+    updateWaveform();
+  };
+
+  // Expose to global
+  window.VoicePlayer = {
+    play: (src) => {
+      audio.src = src;
+      audio.play();
+    },
+    pause: () => audio.pause(),
+    toggle: togglePlayPause,
+    seek: (event) => {
+      if (!audio.duration) return;
+      const rect = waveform.getBoundingClientRect();
+      const percent = (event.clientX - rect.left) / rect.width;
+      audio.currentTime = percent * audio.duration;
+    },
+    setSource: (src) => {
+      audio.src = src;
+    }
+  };
+
+  // Set initial button state
+  updatePlayButton();
+})();
+</script>

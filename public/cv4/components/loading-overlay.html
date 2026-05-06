@@ -1,0 +1,94 @@
+<!-- Loading Overlay Modal -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+  <div class="loading-container">
+    <div class="spinner"></div>
+    <p class="loading-text" id="loading-text">Loading...</p>
+  </div>
+</div>
+
+<style>
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-lg);
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--c-border);
+    border-top-color: var(--c-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-text {
+    font-size: var(--fs-base);
+    color: var(--c-text2);
+    margin: 0;
+    font-weight: var(--fw-semibold);
+  }
+
+  @media (max-width: 389px) {
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border-width: 2px;
+    }
+
+    .loading-text {
+      font-size: var(--fs-sm);
+    }
+  }
+</style>
+
+<script>
+  window.LoadingOverlay = (function() {
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text');
+
+    function show(message = 'Loading...') {
+      textEl.textContent = message;
+      overlay.style.display = 'flex';
+    }
+
+    function hide() {
+      overlay.style.display = 'none';
+    }
+
+    return {
+      show,
+      hide,
+    };
+  })();
+</script>

@@ -1,0 +1,321 @@
+<!-- Voice Recorder Component — cv4-explore-v2 -->
+<!-- Fragment: Voice recording UI with waveform visualization -->
+
+<style>
+  .voice-recorder {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-md);
+    padding: var(--sp-md);
+    background-color: var(--c-s1-faint);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .voice-recorder:hover {
+    border-color: var(--c-accent);
+    background-color: var(--c-dim);
+  }
+
+  .voice-recorder.recording {
+    background-color: rgba(239, 68, 68, 0.08);
+    border-color: var(--c-error);
+  }
+
+  .voice-recorder-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    background-color: var(--c-dim);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .voice-recorder.recording .voice-recorder-icon {
+    background-color: rgba(239, 68, 68, 0.2);
+    animation: pulse-red 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.8; }
+  }
+
+  .voice-recorder-waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    height: 24px;
+  }
+
+  .voice-recorder-bar {
+    width: 2px;
+    height: 6px;
+    background-color: var(--c-muted);
+    border-radius: 1px;
+    transition: height 0.1s linear;
+  }
+
+  .voice-recorder.recording .voice-recorder-bar {
+    background-color: var(--c-accent);
+    animation: wave 0.6s ease-in-out infinite;
+  }
+
+  .voice-recorder-bar:nth-child(1) { animation-delay: 0s; }
+  .voice-recorder-bar:nth-child(2) { animation-delay: 0.1s; }
+  .voice-recorder-bar:nth-child(3) { animation-delay: 0.2s; }
+  .voice-recorder-bar:nth-child(4) { animation-delay: 0.3s; }
+  .voice-recorder-bar:nth-child(5) { animation-delay: 0.4s; }
+  .voice-recorder-bar:nth-child(6) { animation-delay: 0.5s; }
+
+  @keyframes wave {
+    0%, 100% { height: 6px; }
+    50% { height: 18px; }
+  }
+
+  .voice-recorder-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-xs);
+    flex: 1;
+  }
+
+  .voice-recorder-label {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--c-text);
+  }
+
+  .voice-recorder-time {
+    font-size: 11px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    letter-spacing: 0.05em;
+  }
+
+  .voice-recorder.recording .voice-recorder-time {
+    color: var(--c-error);
+  }
+
+  .voice-recorder-actions {
+    display: flex;
+    gap: var(--sp-sm);
+    flex-shrink: 0;
+  }
+
+  .voice-recorder-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--c-dim);
+    color: var(--c-text2);
+  }
+
+  .voice-recorder-button:hover {
+    background-color: var(--c-dim-ghost);
+    color: var(--c-text);
+  }
+
+  .voice-recorder-button.send {
+    background-color: var(--c-accent);
+    color: var(--c-s1);
+  }
+
+  .voice-recorder-button.send:hover {
+    background-color: var(--c-accent-hover);
+  }
+
+  .voice-recorder-button.cancel:hover {
+    background-color: var(--c-error);
+    color: var(--c-s1);
+  }
+
+  @media (max-width: 389px) {
+    .voice-recorder {
+      padding: var(--sp-sm);
+    }
+
+    .voice-recorder-info {
+      display: none;
+    }
+
+    .voice-recorder-waveform {
+      gap: 2px;
+    }
+
+    .voice-recorder-bar {
+      width: 1.5px;
+    }
+  }
+</style>
+
+<div class="voice-recorder" id="voice-recorder">
+  <div class="voice-recorder-icon">🎤</div>
+  <div class="voice-recorder-waveform">
+    <div class="voice-recorder-bar"></div>
+    <div class="voice-recorder-bar"></div>
+    <div class="voice-recorder-bar"></div>
+    <div class="voice-recorder-bar"></div>
+    <div class="voice-recorder-bar"></div>
+    <div class="voice-recorder-bar"></div>
+  </div>
+  <div class="voice-recorder-info">
+    <div class="voice-recorder-label">Ready to record</div>
+    <div class="voice-recorder-time">00:00</div>
+  </div>
+  <div class="voice-recorder-actions">
+    <button class="voice-recorder-button send" title="Send" onclick="window.VoiceRecorder?.send()">↗</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const recorder = document.getElementById('voice-recorder');
+  let isRecording = false;
+  let recordingTime = 0;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let timerInterval = null;
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      recordedChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+        window.VoiceRecorder?.onRecordingComplete(blob);
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      recordingTime = 0;
+      recorder.classList.add('recording');
+      updateLabel();
+      startTimer();
+      updateActions();
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      isRecording = false;
+      recorder.classList.remove('recording');
+      clearInterval(timerInterval);
+      updateLabel();
+      updateActions();
+    }
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      recordingTime++;
+      updateLabel();
+    }, 1000);
+  }
+
+  function updateLabel() {
+    const label = recorder.querySelector('.voice-recorder-label');
+    const time = recorder.querySelector('.voice-recorder-time');
+    if (label) label.textContent = isRecording ? 'Recording...' : 'Ready to record';
+    if (time) {
+      const mins = Math.floor(recordingTime / 60);
+      const secs = recordingTime % 60;
+      time.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+  }
+
+  function updateActions() {
+    const actions = recorder.querySelector('.voice-recorder-actions');
+    if (!actions) return;
+    actions.innerHTML = '';
+
+    if (isRecording) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'voice-recorder-button cancel';
+      cancelBtn.textContent = '✕';
+      cancelBtn.title = 'Cancel';
+      cancelBtn.onclick = stopRecording;
+
+      const sendBtn = document.createElement('button');
+      sendBtn.className = 'voice-recorder-button send';
+      sendBtn.textContent = '↗';
+      sendBtn.title = 'Send';
+      sendBtn.onclick = () => {
+        stopRecording();
+        setTimeout(() => window.VoiceRecorder?.send(), 100);
+      };
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(sendBtn);
+    } else {
+      const startBtn = document.createElement('button');
+      startBtn.className = 'voice-recorder-button';
+      startBtn.textContent = '🎙';
+      startBtn.title = 'Start recording';
+      startBtn.onclick = startRecording;
+      actions.appendChild(startBtn);
+    }
+  }
+
+  let recordedBlob = null;
+
+  // Expose to global
+  window.VoiceRecorder = {
+    startRecording,
+    stopRecording,
+    send: () => {
+      if (recordedBlob && window.MessageList) {
+        // Create a voice message attachment
+        const timestamp = new Date().toLocaleTimeString();
+        window.MessageList.addMessage('user', `[Voice message - ${timestamp}]`, {
+          type: 'audio',
+          blob: recordedBlob,
+          duration: recordingTime
+        });
+
+        // Show assistant response
+        window.MessageList.showTyping();
+        setTimeout(() => {
+          window.MessageList.hideTyping();
+          window.MessageList.addMessage('assistant', 'Got your voice message, processing...');
+        }, 1400);
+
+        // Reset
+        recordedBlob = null;
+        recordingTime = 0;
+        updateLabel();
+        updateActions();
+
+        console.log('[voice] message sent');
+      }
+    },
+    onRecordingComplete: (blob) => {
+      recordedBlob = blob;
+      console.log('[voice] recording complete:', blob.size, 'bytes');
+    }
+  };
+
+  updateActions();
+})();
+</script>

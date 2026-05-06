@@ -10,6 +10,7 @@
     { "source": "/v2", "destination": "/v2.html" },
     { "source": "/cv2", "destination": "/cv2.html" },
     { "source": "/cv3", "destination": "/cv3.html" },
+    { "source": "/cv4", "destination": "/cv4/views/home.html" },
     { "source": "/brand", "destination": "/index.html" },
     { "source": "/brand/:path*", "destination": "/index.html" },
     { "source": "/brands", "destination": "/index.html" },

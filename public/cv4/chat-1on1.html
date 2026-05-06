@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat with Elon — AOM</title>
+
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/animations.css">
+  <link rel="stylesheet" href="styles/desktop.css">
+  <link rel="stylesheet" href="styles/mobile.css">
+
+  <style>
+    /* Chat-specific layout */
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: var(--sp-lg) var(--sp-xl);
+      border-bottom: 1px solid var(--c-border);
+      background-color: var(--c-s1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .chat-title {
+      font-size: var(--fs-xl);
+      font-weight: var(--fw-bold);
+      color: var(--c-text);
+    }
+
+    .chat-subtitle {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      margin-top: var(--sp-xs);
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: var(--sp-md);
+    }
+
+    .chat-actions button {
+      padding: var(--sp-md) var(--sp-lg);
+      background-color: var(--c-dim);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      font-size: var(--fs-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chat-actions button:hover {
+      background-color: var(--c-dim-ghost);
+      border-color: var(--c-accent);
+    }
+
+    .chat-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Message list container */
+    #message-list-container {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Input bar container */
+    #input-bar-container {
+      flex-shrink: 0;
+    }
+    }
+
+    @media (max-width: 1439px) {
+      .chat-actions {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-header">
+    <div>
+      <h1 class="chat-title">Elon</h1>
+      <p class="chat-subtitle">Systems architect & operations</p>
+    </div>
+    <div class="chat-actions">
+      <button>←</button>
+      <button>⋮</button>
+    </div>
+  </div>
+
+  <div class="chat-body">
+    <!-- Message list will load here -->
+    <div id="message-list-container"></div>
+
+    <!-- Input bar will load here -->
+    <div id="input-bar-container"></div>
+  </div>
+
+  <!-- Modals and overlays will load here -->
+  <div id="modals-container"></div>
+
+  <script>
+    // Async component loader
+    async function loadComponent(filePath, containerId) {
+      try {
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error(`Failed to load ${filePath}: ${response.status}`);
+        const html = await response.text();
+        const container = document.getElementById(containerId);
+        if (container) {
+          container.innerHTML = html;
+          // Execute any scripts within the loaded HTML
+          const scripts = container.querySelectorAll('script');
+          scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            newScript.textContent = oldScript.textContent;
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+          });
+        }
+      } catch (error) {
+        console.error(`Error loading component:`, error);
+      }
+    }
+
+    // Load all components on DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      Promise.all([
+        loadComponent('components/message-list.html', 'message-list-container'),
+        loadComponent('components/thread-input-bar.html', 'input-bar-container'),
+        loadComponent('components/confirm-dialog.html', 'modals-container'),
+        loadComponent('components/loading-overlay.html', 'modals-container'),
+        loadComponent('components/error-toast.html', 'modals-container')
+      ]).then(() => {
+        console.log('All chat components loaded');
+      });
+    });
+  </script>
+</body>
+</html>

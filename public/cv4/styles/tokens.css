@@ -1,0 +1,106 @@
+/* CV4 Design Tokens — Colors, Spacing, Sizing */
+
+:root {
+  /* Primary colors — CV3 legacy palette */
+  --c-s1: #08141C;           /* Dark slate, primary background */
+  --c-text: #E8EBEF;         /* High-contrast text white */
+  --c-text2: #A7B5C8;        /* Secondary text, labels */
+  --c-accent: #10B981;       /* Emerald green, accent / success */
+  --c-muted: #5A6F8C;        /* Muted text, disabled */
+  --c-dim: #1A2438;          /* Subtle background lift */
+  --c-border: #2D3A4A;       /* Border color, rgba overlay for focus */
+
+  /* Semantic colors */
+  --c-success: #10B981;      /* Green, matching accent */
+  --c-warning: #F59E0B;      /* Amber */
+  --c-error: #EF4444;        /* Red */
+  --c-info: #3B82F6;         /* Blue */
+
+  /* Spacing scale */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+  --sp-2xl: 32px;
+  --sp-3xl: 48px;
+
+  /* Typography */
+  --ff-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ff-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 20px;
+  --fs-2xl: 24px;
+  --fs-3xl: 32px;
+  --fs-4xl: 40px;
+
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  /* Line height */
+  --lh-tight: 1.2;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.75;
+
+  /* Z-index stacking */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-modal: 500;
+  --z-toast: 1000;
+  --z-floating-call: 950;
+
+  /* Component-specific tokens */
+  --c-accent-hover: #0CA771;    /* Accent button hover (darkened) */
+  --c-secondary-hover: #2A3A50; /* Secondary button hover */
+  --c-input-bg: rgba(8, 14, 28, 0.5);   /* Input background */
+  --c-input-focus-bg: rgba(8, 14, 28, 0.8); /* Input focus background */
+
+  /* Opacity variants (for rgba patterns) */
+  --c-s1-faint: rgba(8, 14, 28, 0.5);   /* s1 at 50% opacity */
+  --c-s1-ghost: rgba(8, 14, 28, 0.95);  /* s1 at 95% opacity */
+  --c-s1-opaque: rgba(8, 14, 28, 0.98); /* s1 at 98% opacity */
+  --c-dim-faint: rgba(26, 36, 56, 0.5); /* dim at 50% opacity */
+  --c-dim-ghost: rgba(26, 36, 56, 0.8); /* dim at 80% opacity */
+  --c-accent-glow: rgba(16, 185, 129, 0.15); /* accent at 15% opacity (glow) */
+  --c-accent-light: rgba(16, 185, 129, 0.1); /* accent at 10% opacity */
+  --c-accent-lighter: rgba(16, 185, 129, 0.2); /* accent at 20% opacity */
+  --c-accent-medium: rgba(16, 185, 129, 0.3); /* accent at 30% opacity */
+  --c-accent-strong: rgba(16, 185, 129, 0.6); /* accent at 60% opacity */
+  --c-accent-red: rgba(16, 185, 129, 0); /* accent fade (for pulse) */
+  --c-border-faint: rgba(45, 58, 74, 0.5); /* border at 50% opacity */
+  --c-error-bg: #EF4444; /* Error color */
+  --c-error-dark: #DC2626; /* Error color darkened */
+  --c-error-glow: rgba(239, 68, 68, 0.7); /* Error glow */
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.3);
+
+  /* Breakpoints */
+  --bp-mobile: 390px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1440px;
+
+  /* Container widths */
+  --cw-desktop-left: 240px;    /* Left sidebar agents+projects */
+  --cw-desktop-right: 280px;   /* Right sidebar activity */
+  --cw-desktop-center: auto;   /* Center flex content */
+}
+
+/* Mobile breakpoint */
+@media (max-width: 767px) {
+  :root {
+    /* Smaller touch targets mobile */
+    --sp-md: 10px;
+    --sp-lg: 14px;
+  }
+}
