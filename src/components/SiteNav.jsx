@@ -4,13 +4,11 @@ import { Menu, X, Phone } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 /**
- * SiteNav -- single source of truth for all page navigation.
- *
- * RULE: Every page uses <SiteNav />. No page builds its own nav.
- * If the nav needs to change, change it HERE and it updates everywhere.
+ * SiteNav -- Superside-shaped, scroll-aware.
+ * Cream over the hero, inverts to dark when the hero scrolls past.
  *
  * Props:
- *   transparent - if true, nav starts transparent and goes solid on scroll
+ *   openBrief - handler for the primary "Start a project" CTA
  */
 
 const NAV_LINKS = [
@@ -19,90 +17,164 @@ const NAV_LINKS = [
   { label: 'AI', href: '/ai' },
 ];
 
-export default function SiteNav({ transparent = false }) {
-  const [scrolled, setScrolled] = useState(false);
+export default function SiteNav({ openBrief }) {
+  const [inverted, setInverted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [phoneOpen, setPhoneOpen] = useState(false);
   const location = useLocation();
   const showAiBadge = location.pathname === '/ai';
+  const onHome = location.pathname === '/';
 
   useEffect(() => {
-    if (!transparent) return;
-    const handleScroll = () => setScrolled(window.scrollY > 80);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [transparent]);
+    if (!onHome) {
+      setInverted(true);
+      return;
+    }
+    const main = document.querySelector('main');
+    const target = main || window;
+    function update() {
+      const hero = document.querySelector('[data-hero="true"]');
+      if (!hero) { setInverted(true); return; }
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      setInverted(heroBottom <= 60);
+    }
+    update();
+    target.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      target.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [onHome, location.pathname]);
 
-  const isSolid = !transparent || scrolled;
+  const handleStartProject = () => {
+    if (typeof openBrief === 'function') openBrief();
+    else window.location.href = '/book';
+  };
 
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 right-0 z-[200] transition-all duration-300 border-b ${
-          isSolid
-            ? 'bg-[#0A0A08]/95 backdrop-blur-md border-white/5'
-            : 'bg-gradient-to-b from-black/40 to-transparent border-transparent'
+      <div
+        className={`sticky top-0 z-[200] transition-colors duration-300 border-b ${
+          inverted
+            ? 'bg-aom-night border-aom-night-border'
+            : 'bg-aom-cream border-aom-light-border'
         }`}
       >
-        <div className="w-full px-6 md:px-12 py-4 flex items-center justify-between">
+        <nav className="max-w-[1400px] mx-auto px-5 md:px-12 py-[18px] flex items-center justify-between gap-8">
           {/* Logo */}
           <a
             href="/"
-            title="Ahead of Market - We Make Companies Impossible to Ignore"
-            className="text-2xl font-headline font-extrabold tracking-[-0.03em] text-[#F0ECE6] inline-flex items-center min-h-[44px] min-w-[44px]"
+            aria-label="AOM home"
+            className={`font-headline font-extrabold text-[22px] tracking-[-0.02em] inline-flex items-baseline gap-1 transition-colors ${
+              inverted ? 'text-aom-cream' : 'text-aom-black'
+            }`}
           >
-            AOM<span className="text-[#E85D26]">.</span>
+            AOM
+            <span className="inline-block w-[9px] h-[9px] rounded-full bg-aom-orange -translate-y-[1px]" />
           </a>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* Primary links */}
+          <div className="hidden md:flex flex-1 ml-4 gap-7 items-center">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-base font-body font-bold uppercase tracking-[0.15em] text-[#8A847C] hover:text-[#F0ECE6] transition-colors px-3 py-2"
+                className={`relative text-[13px] font-body font-medium tracking-[0.01em] py-1.5 transition-colors aom-nav-link ${
+                  inverted ? 'text-aom-text-light' : 'text-aom-black'
+                }`}
               >
                 {link.label}
               </a>
             ))}
             {showAiBadge && (
-              <span
-                style={{
-                  background: '#10b981',
-                  color: '#fff',
-                  fontSize: 10,
-                  padding: '2px 6px',
-                  borderRadius: 8,
-                  marginLeft: 6,
-                }}
-              >
+              <span className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded-md ml-1">
                 AI
               </span>
             )}
+          </div>
+
+          {/* Secondary */}
+          <div className="hidden md:flex items-center gap-4">
             <button
               onClick={() => setPhoneOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 min-h-[44px] bg-white/5 text-[#8A847C] font-body font-bold text-base uppercase tracking-[0.15em] hover:text-[#F0ECE6] border border-white/10 hover:border-white/20 transition-all"
+              className={`text-[13px] font-body font-medium transition-colors ${
+                inverted ? 'text-aom-text-muted hover:text-aom-orange' : 'text-aom-warm-gray hover:text-aom-orange'
+              }`}
             >
-              <Phone size={14} />
-              Talk to Us
+              Talk to us
             </button>
-            <span style={{ fontSize: 10, color: '#555', marginLeft: 8 }}>
-              v2.1
-            </span>
+            <button
+              onClick={handleStartProject}
+              className="aom-btn"
+            >
+              Start a project
+            </button>
           </div>
 
           {/* Mobile */}
           <div className="flex md:hidden items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="w-11 h-11 flex items-center justify-center bg-white/5 border border-white/10 text-[#F0ECE6]"
+              className={`w-11 h-11 flex items-center justify-center border ${
+                inverted ? 'bg-white/5 border-white/10 text-aom-text-light' : 'bg-aom-cream-dark border-aom-light-border text-aom-black'
+              }`}
               aria-label="Open menu"
             >
               <Menu size={20} />
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
+
+      {/* Reusable nav-link underline + button styles */}
+      <style>{`
+        .aom-nav-link::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          height: 1px;
+          width: 0;
+          background: #E85D26;
+          transition: width 0.3s cubic-bezier(.2,.8,.2,1);
+        }
+        .aom-nav-link:hover::after { width: 100%; }
+        .aom-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          background: #E85D26;
+          color: #0C0C0C;
+          font-family: 'Space Grotesk', system-ui, sans-serif;
+          font-weight: 600;
+          font-size: 13px;
+          letter-spacing: 0.01em;
+          border-radius: 999px;
+          border: none;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .aom-btn:hover { background: #D14E1C; transform: translateY(-1px); }
+        .aom-btn--ghost {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          background: transparent;
+          color: #0A0A0A;
+          font-family: 'Space Grotesk', system-ui, sans-serif;
+          font-weight: 600;
+          font-size: 13px;
+          letter-spacing: 0.01em;
+          border-radius: 999px;
+          border: 1px solid #0A0A0A;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+        }
+        .aom-btn--ghost:hover { background: #0A0A0A; color: #FDF6EC; transform: translateY(-1px); }
+      `}</style>
 
       {/* Phone directory modal */}
       <AnimatePresence>
@@ -119,16 +191,16 @@ export default function SiteNav({ transparent = false }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="bg-[#0A0A08] border border-white/10 rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl"
+              className="bg-aom-night border border-aom-night-border rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-headline font-extrabold uppercase tracking-[0.1em] text-[#F0ECE6]">
-                  Talk to Us
+                <h3 className="text-lg font-headline font-extrabold uppercase tracking-[0.1em] text-aom-text-light">
+                  Talk to us
                 </h3>
                 <button
                   onClick={() => setPhoneOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center text-aom-text-muted hover:text-aom-text-light transition-colors"
                 >
                   <X size={18} />
                 </button>
@@ -136,24 +208,24 @@ export default function SiteNav({ transparent = false }) {
               <div className="space-y-4">
                 <a
                   href="tel:6023732164"
-                  className="flex items-center gap-3 p-4 rounded-lg border border-white/10 bg-white/[0.03] hover:border-[#E85D26]/40 hover:bg-white/[0.06] transition-all group"
+                  className="flex items-center gap-3 p-4 rounded-lg border border-aom-night-border bg-white/[0.03] hover:border-aom-orange/40 hover:bg-white/[0.06] transition-all group"
                 >
-                  <Phone size={18} className="text-[#E85D26]" />
+                  <Phone size={18} className="text-aom-orange" />
                   <div>
-                    <p className="text-sm font-body font-bold text-[#F0ECE6] group-hover:text-[#E85D26] transition-colors">(602) 373-2164</p>
-                    <p className="text-xs text-[#8A847C] mt-0.5">Call or text</p>
+                    <p className="text-sm font-body font-bold text-aom-text-light group-hover:text-aom-orange transition-colors">(602) 373-2164</p>
+                    <p className="text-xs text-aom-text-muted mt-0.5">Call or text</p>
                   </div>
                 </a>
                 <a
                   href="mailto:hello@aheadofmarket.com"
-                  className="flex items-center gap-3 p-4 rounded-lg border border-white/10 bg-white/[0.03] hover:border-[#E85D26]/40 hover:bg-white/[0.06] transition-all group"
+                  className="flex items-center gap-3 p-4 rounded-lg border border-aom-night-border bg-white/[0.03] hover:border-aom-orange/40 hover:bg-white/[0.06] transition-all group"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#E85D26]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-aom-orange">
                     <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                   </svg>
                   <div>
-                    <p className="text-sm font-body font-bold text-[#F0ECE6] group-hover:text-[#E85D26] transition-colors">hello@aheadofmarket.com</p>
-                    <p className="text-xs text-[#8A847C] mt-0.5">Email us</p>
+                    <p className="text-sm font-body font-bold text-aom-text-light group-hover:text-aom-orange transition-colors">hello@aheadofmarket.com</p>
+                    <p className="text-xs text-aom-text-muted mt-0.5">Email us</p>
                   </div>
                 </a>
               </div>
@@ -169,15 +241,15 @@ export default function SiteNav({ transparent = false }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] bg-[#0A0A08]/98 backdrop-blur-xl flex flex-col"
+            className="fixed inset-0 z-[300] bg-aom-night/[0.98] backdrop-blur-xl flex flex-col"
           >
-            <div className="flex justify-between items-center px-6 py-4">
-              <span className="text-2xl font-headline font-extrabold tracking-[-0.03em] text-[#F0ECE6]">
-                AOM<span className="text-[#E85D26]">.</span>
+            <div className="flex justify-between items-center px-5 py-4">
+              <span className="text-2xl font-headline font-extrabold tracking-[-0.02em] text-aom-cream inline-flex items-baseline gap-1">
+                AOM<span className="inline-block w-[9px] h-[9px] rounded-full bg-aom-orange -translate-y-[1px]" />
               </span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-11 h-11 flex items-center justify-center text-[#F0ECE6]"
+                className="w-11 h-11 flex items-center justify-center text-aom-text-light"
                 aria-label="Close menu"
               >
                 <X size={24} />
@@ -188,7 +260,7 @@ export default function SiteNav({ transparent = false }) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-3xl font-headline font-extrabold uppercase tracking-tight text-[#F0ECE6] hover:text-[#E85D26] transition-colors min-h-[44px] flex items-center"
+                  className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors min-h-[44px] flex items-center"
                 >
                   {link.label}
                 </a>
@@ -196,15 +268,20 @@ export default function SiteNav({ transparent = false }) {
               <div className="w-12 h-[1px] bg-white/10 my-4" />
               <button
                 onClick={() => { setMobileMenuOpen(false); setPhoneOpen(true); }}
-                className="text-lg font-headline font-bold uppercase tracking-widest text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
+                className="text-lg font-body font-medium uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors"
               >
-                Talk to Us
+                Talk to us
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleStartProject(); }}
+                className="aom-btn"
+              >
+                Start a project
               </button>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
-
     </>
   );
 }
