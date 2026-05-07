@@ -16,7 +16,6 @@ import ServicesGrid from './components/ServicesGrid';
 import ConstructionCallout from './components/ConstructionCallout';
 import BrandsCallout from './components/BrandsCallout';
 import SiteNav from './components/SiteNav';
-import TickerBar from './components/TickerBar';
 
 // --- FIREBASE & STORAGE CONFIG ---
 import { initializeApp } from 'firebase/app';
@@ -709,14 +708,13 @@ export default function App() {
             {isPhoneModalOpen && <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />}
           </AnimatePresence>
 
-          {/* --- TICKER + NAV: Superside-shaped --- */}
-          <TickerBar />
-          <SiteNav openBrief={openBrief} />
+          {/* --- NAV: Use shared SiteNav --- */}
+          <SiteNav transparent />
 
           {/* === SECTION ORDER: Hook > Prove > Show > Explain > Convert === */}
 
-          {/* 1. HERO (Superside-shaped, cream) */}
-          <HeroSection openBrief={openBrief} />
+          {/* 1. HERO (dark, video bg) */}
+          <HeroSection openBrief={openBrief} scrollToSection={scrollToSection} />
 
           {/* Pattern strip */}
           <PatternStrip variant="diagonal" />
