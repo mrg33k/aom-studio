@@ -58,6 +58,7 @@ const Onboarding = lazy(() => import('./pages/Onboarding.jsx'))
 const OnboardingVoice = lazy(() => import('./pages/OnboardingVoice.jsx'))
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
+const HomeR4Preview = lazy(() => import('./pages/HomeR4Preview.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
 const MunicipalityDirectory = lazy(() => import('./pages/MunicipalityDirectory.jsx'))
@@ -194,6 +195,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/r4" element={<HomeR4Preview />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />
           <Route path="/brand/v4" element={<BrandGuidelinesV4 />} />
