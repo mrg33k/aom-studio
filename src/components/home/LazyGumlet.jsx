@@ -74,7 +74,7 @@ export default function LazyGumlet({
     >
       {mounted && (
         <iframe
-          src={`https://play.gumlet.io/embed/${id}?autoplay=true&muted=true&loop=true&preload=true&controls=false&disable_player_controls=true`}
+          src={`https://play.gumlet.io/embed/${id}?autoplay=true&muted=true&loop=true&preload=false&controls=false&disable_player_controls=true`}
           style={coverStyle}
           loading="lazy"
           allow="autoplay"

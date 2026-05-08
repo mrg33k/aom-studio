@@ -81,7 +81,7 @@ export default function StickyVideoDeck({ items = [], theme = 'classic' }) {
                 key={'A' + i}
                 it={it}
                 aspect={aspectFor('A', i % colA.length)}
-                eager={i < 3}
+                eager={i === 0}
               />
             ))}
           </div>
@@ -93,7 +93,7 @@ export default function StickyVideoDeck({ items = [], theme = 'classic' }) {
                 key={'B' + i}
                 it={it}
                 aspect={aspectFor('B', i % colB.length)}
-                eager={i < 3}
+                eager={i === 0}
               />
             ))}
           </div>
