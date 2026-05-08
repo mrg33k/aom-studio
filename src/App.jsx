@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import HeroSection from './components/HeroSection';
+import LiveActivityTicker from './components/LiveActivityTicker';
 import ServicesGrid from './components/ServicesGrid';
 import ConstructionCallout from './components/ConstructionCallout';
 import BrandsCallout from './components/BrandsCallout';
@@ -709,15 +710,15 @@ export default function App() {
           </AnimatePresence>
 
           {/* --- NAV: Use shared SiteNav --- */}
-          <SiteNav transparent />
+          <SiteNav transparent onStartProject={openBrief} />
 
           {/* === SECTION ORDER: Hook > Prove > Show > Explain > Convert === */}
 
-          {/* 1. HERO (dark, video bg) */}
+          {/* 1. HERO (dark, Cinema-shape ported from /r4 R3) */}
           <HeroSection openBrief={openBrief} scrollToSection={scrollToSection} />
 
-          {/* Pattern strip */}
-          <PatternStrip variant="diagonal" />
+          {/* 1b. LIVE ACTIVITY TICKER — ESPN-style scrolling client work, ported from /r4 */}
+          <LiveActivityTicker />
 
           {/* 2. CONSTRUCTION CALLOUT (dark, #1 target audience) */}
           <ConstructionCallout openBrief={openBrief} />
