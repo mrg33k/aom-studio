@@ -25,7 +25,7 @@ export default function HomeEditorial({ openBrief }) {
                 <span className="w-10 h-px bg-[#E85D26]" />
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">Available anywhere · 2026</p>
               </div>
-              <h1 className="font-headline text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.92] tracking-[-0.025em] max-w-[700px]">
+              <h1 className="font-display-serif text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.92] tracking-[-0.025em] max-w-[700px]">
                 A creative team<br />you can <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
               </h1>
               <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#E85D26] mt-8">Brand, websites, ads, and video. Online or in person.</p>
@@ -55,7 +55,7 @@ export default function HomeEditorial({ openBrief }) {
           <div className="flex items-end justify-between gap-6 flex-wrap mb-7 border-b border-[#FDF6EC]/15 pb-5">
             <div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-2">In the room · Last 30 days</p>
-              <p className="font-headline text-[28px] md:text-[40px] leading-[1.0] tracking-[-0.02em]">14 projects in flight</p>
+              <p className="font-display-serif text-[28px] md:text-[40px] leading-[1.0] tracking-[-0.02em]">14 projects in flight</p>
             </div>
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#FDF6EC]/50">Edition · April 2026</p>
           </div>
@@ -64,7 +64,7 @@ export default function HomeEditorial({ openBrief }) {
               <div key={w.client} className="flex items-baseline gap-3 border-b border-[#FDF6EC]/10 py-2.5">
                 <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] shrink-0 w-7">{String(i + 1).padStart(2, '0')}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-headline text-[16px] md:text-[18px] tracking-[-0.01em] text-[#FDF6EC] truncate">{w.client}</p>
+                  <p className="font-display-serif text-[16px] md:text-[18px] tracking-[-0.01em] text-[#FDF6EC] truncate">{w.client}</p>
                   <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#FDF6EC]/55 mt-0.5">{w.tag} · {w.when}</p>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export default function HomeEditorial({ openBrief }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {STATS.map((s) => (
               <div key={s.label} className="border-t-2 border-[#E85D26] pt-4">
-                <p className="font-headline text-[64px] md:text-[88px] leading-none tracking-[-0.03em]">{s.value}</p>
+                <p className="font-display-serif text-[64px] md:text-[88px] leading-none tracking-[-0.03em]">{s.value}</p>
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#0C0C0C]/65 mt-3">{s.label}</p>
               </div>
             ))}
@@ -101,7 +101,7 @@ export default function HomeEditorial({ openBrief }) {
                 <LazyGumlet id="698a6296fc23d3d76fa8d992" />
               </div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-3">Customer story · Ambition Mechanical</p>
-              <h3 className="font-headline text-[32px] md:text-[52px] leading-[0.95] tracking-[-0.02em]">
+              <h3 className="font-display-serif text-[32px] md:text-[52px] leading-[0.95] tracking-[-0.02em]">
                 Three decades of work, <em className="font-display-italic italic font-medium text-[#E85D26]">finally on film.</em>
               </h3>
               <a href="#" className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] no-underline">
@@ -113,7 +113,7 @@ export default function HomeEditorial({ openBrief }) {
                 <LazyGumlet id="698a5d24aec3d4e420c2a0a0" />
               </div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-3">Customer story · Skylar</p>
-              <h3 className="font-headline text-[26px] md:text-[34px] leading-[1.0] tracking-[-0.015em]">
+              <h3 className="font-display-serif text-[26px] md:text-[34px] leading-[1.0] tracking-[-0.015em]">
                 A wellness brand the city showed up to.
               </h3>
               <a href="#" className="mt-5 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] no-underline">
@@ -130,7 +130,7 @@ export default function HomeEditorial({ openBrief }) {
           <div className="flex items-end justify-between mb-12 flex-wrap gap-6">
             <div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-4">Capabilities</p>
-              <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] max-w-2xl">
+              <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] max-w-2xl">
                 Move fast with <em className="font-display-italic italic font-medium text-[#E85D26]">16+ services.</em>
               </h2>
             </div>
@@ -143,7 +143,7 @@ export default function HomeEditorial({ openBrief }) {
               <div key={g.group} className="border-b border-[#0C0C0C]/15 grid grid-cols-1 md:grid-cols-12 py-6 md:py-7 gap-y-4">
                 <div className="md:col-span-3 flex items-baseline gap-3">
                   <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26]">{String(gi + 1).padStart(2, '0')}</span>
-                  <p className="font-headline text-[24px] md:text-[28px] tracking-[-0.015em]">{g.group}</p>
+                  <p className="font-display-serif text-[24px] md:text-[28px] tracking-[-0.015em]">{g.group}</p>
                 </div>
                 <div className="md:col-span-9 flex flex-wrap gap-x-8 gap-y-2">
                   {g.items.map((it, i) => (
@@ -162,7 +162,7 @@ export default function HomeEditorial({ openBrief }) {
       <section id="work" className="py-24 md:py-32 px-6 md:px-12 border-b border-[#0C0C0C]/12">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">Recent work · 06 features</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
             From the <em className="font-display-italic italic font-medium text-[#E85D26]">archive.</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
@@ -172,7 +172,7 @@ export default function HomeEditorial({ openBrief }) {
                   <LazyGumlet id={t.reel} className="transition-transform duration-700 group-hover:scale-[1.04]" />
                 </div>
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-1">No. {String(i + 1).padStart(2, '0')} · {t.tag}</p>
-                <p className="font-headline text-[22px] md:text-[26px] tracking-[-0.015em] leading-[1.05] text-[#0C0C0C]">{t.client}</p>
+                <p className="font-display-serif text-[22px] md:text-[26px] tracking-[-0.015em] leading-[1.05] text-[#0C0C0C]">{t.client}</p>
               </a>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default function HomeEditorial({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#0C0C0C]/12 bg-[#0C0C0C] text-[#FDF6EC]">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">Editorial · Decision table</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-12 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-12 max-w-3xl">
             Hiring or outsourcing? <em className="font-display-italic italic font-medium text-[#E85D26]">Neither.</em>
           </h2>
           <div className="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
@@ -222,7 +222,7 @@ export default function HomeEditorial({ openBrief }) {
           <div className="columns-1 md:columns-2 lg:columns-3 gap-10 [column-fill:_balance]">
             {TESTIMONIALS.map((t, i) => (
               <figure key={i} className="break-inside-avoid mb-12">
-                <blockquote className="font-headline text-[20px] md:text-[26px] leading-[1.3] tracking-[-0.01em] text-[#0C0C0C]">
+                <blockquote className="font-display-serif text-[20px] md:text-[26px] leading-[1.3] tracking-[-0.01em] text-[#0C0C0C]">
                   "<em className="text-[#E85D26] not-italic">{t.quote.split(' ').slice(0, 4).join(' ')}</em> {t.quote.split(' ').slice(4).join(' ')}"
                 </blockquote>
                 <figcaption className="mt-5">
@@ -238,7 +238,7 @@ export default function HomeEditorial({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#0C0C0C]/12">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The system</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
             One team, <em className="font-display-italic italic font-medium text-[#E85D26]">one system.</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 max-w-4xl">
@@ -246,7 +246,7 @@ export default function HomeEditorial({ openBrief }) {
               <div key={f.title} className="flex gap-5">
                 <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] mt-1 shrink-0">{String(i + 1).padStart(2, '0')}</span>
                 <div>
-                  <h3 className="font-headline text-[24px] md:text-[28px] tracking-[-0.015em] mb-3 leading-[1.05]">{f.title}</h3>
+                  <h3 className="font-display-serif text-[24px] md:text-[28px] tracking-[-0.015em] mb-3 leading-[1.05]">{f.title}</h3>
                   <p className="font-body text-[15px] text-[#0C0C0C]/70 leading-[1.6]">{f.body}</p>
                 </div>
               </div>
@@ -259,14 +259,14 @@ export default function HomeEditorial({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#0C0C0C]/12">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The standard</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
             For brands that <em className="font-display-italic italic font-medium text-[#E85D26]">refuse to compromise.</em>
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 border-t border-l border-[#0C0C0C]/12">
             {PILLARS.map((p, i) => (
               <div key={p.title} className="border-r border-b border-[#0C0C0C]/12 p-6 md:p-8">
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] mb-3">{String(i + 1).padStart(2, '0')}</p>
-                <h3 className="font-headline text-[24px] tracking-[-0.015em] mb-3">{p.title}</h3>
+                <h3 className="font-display-serif text-[24px] tracking-[-0.015em] mb-3">{p.title}</h3>
                 <p className="font-body text-[13.5px] text-[#0C0C0C]/70 leading-[1.55]">{p.body}</p>
               </div>
             ))}
@@ -279,7 +279,7 @@ export default function HomeEditorial({ openBrief }) {
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7 order-2 lg:order-1">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The team</p>
-            <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.93] tracking-[-0.025em]">
+            <h2 className="font-display-serif text-[40px] md:text-[80px] leading-[0.93] tracking-[-0.025em]">
               Senior craft. <em className="font-display-italic italic font-medium text-[#E85D26]">No middle layer.</em>
             </h2>
             <p className="font-body text-[16.5px] text-[#0C0C0C]/75 mt-7 max-w-xl leading-[1.65]">
@@ -297,7 +297,7 @@ export default function HomeEditorial({ openBrief }) {
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">For in-house teams</p>
-            <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.93] tracking-[-0.025em]">
+            <h2 className="font-display-serif text-[40px] md:text-[80px] leading-[0.93] tracking-[-0.025em]">
               Your team deserves <em className="font-display-italic italic font-medium text-[#E85D26]">a partner</em>, not another tool.
             </h2>
             <p className="font-body text-[16.5px] text-[#FDF6EC]/80 mt-7 max-w-xl leading-[1.65]">
@@ -320,7 +320,7 @@ export default function HomeEditorial({ openBrief }) {
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-7">
             Volume 010 · Ends here
           </p>
-          <h2 className="font-headline text-[60px] md:text-[160px] leading-[0.85] tracking-[-0.03em]">
+          <h2 className="font-display-serif text-[60px] md:text-[160px] leading-[0.85] tracking-[-0.03em]">
             Make <em className="font-display-italic italic font-medium text-[#E85D26]">something.</em>
           </h2>
           <button onClick={() => openBrief?.()}

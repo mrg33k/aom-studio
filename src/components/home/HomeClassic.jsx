@@ -28,7 +28,7 @@ export default function HomeClassic({ openBrief }) {
                 <span className="inline-block w-6 h-px bg-[#E85D26] mr-3 align-middle" />
                 Available anywhere · 2026
               </p>
-              <h1 className="font-headline text-[12vw] md:text-[80px] lg:text-[88px] xl:text-[112px] leading-[0.92] tracking-[-0.025em] max-w-[700px]">
+              <h1 className="font-display-serif text-[12vw] md:text-[80px] lg:text-[88px] xl:text-[112px] leading-[0.92] tracking-[-0.025em] max-w-[700px]">
                 A creative team<br />you can actually <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
               </h1>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.55] max-w-xl">
@@ -66,7 +66,7 @@ export default function HomeClassic({ openBrief }) {
       <section className="py-24 md:py-28 px-6 md:px-12 border-t border-white/[0.06]">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-12 flex-wrap gap-6">
-            <h2 className="font-headline text-[36px] md:text-[60px] leading-[0.94] tracking-[-0.025em] max-w-2xl">
+            <h2 className="font-display-serif text-[36px] md:text-[60px] leading-[0.94] tracking-[-0.025em] max-w-2xl">
               Move fast with <em className="font-display-italic italic font-medium text-[#E85D26]">16+ services</em>, fuel results across every team.
             </h2>
             <a href="#services" className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 no-underline">
@@ -97,7 +97,7 @@ export default function HomeClassic({ openBrief }) {
       {/* 10. LET'S MAKE SOMETHING — the closing banner */}
       <section className="py-32 md:py-40 px-6 md:px-12 border-t border-white/[0.06] text-center bg-gradient-to-b from-[#0C0C0C] to-[#1a0d05]">
         <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-headline text-[60px] md:text-[140px] leading-[0.85] tracking-[-0.03em]">
+          <h2 className="font-display-serif text-[60px] md:text-[140px] leading-[0.85] tracking-[-0.03em]">
             Let's <em className="font-display-italic italic font-medium text-[#E85D26]">make something.</em>
           </h2>
           <div className="mt-12 inline-block">
@@ -116,7 +116,7 @@ export default function HomeClassic({ openBrief }) {
                 <span className="w-8 h-px bg-[#E85D26]" />
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">Talk to us</p>
               </div>
-              <h3 className="font-headline text-[44px] md:text-[88px] leading-[0.9] tracking-[-0.03em] text-[#F0ECE6]">
+              <h3 className="font-display-serif text-[44px] md:text-[88px] leading-[0.9] tracking-[-0.03em] text-[#F0ECE6]">
                 A real person<br /><em className="font-display-italic italic font-medium text-[#E85D26]">replies.</em>
               </h3>
               <p className="font-body text-[15px] md:text-[17px] text-[#F0ECE6]/65 mt-6 max-w-xl leading-[1.6]">
@@ -130,7 +130,7 @@ export default function HomeClassic({ openBrief }) {
               >
                 <div className="flex flex-col gap-1.5">
                   <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26]/85">Email</p>
-                  <p className="font-headline text-[24px] md:text-[32px] tracking-[-0.018em] text-[#F0ECE6] group-hover:text-[#FF6B2C] transition-colors break-all">hello@aom-inhouse.com</p>
+                  <p className="font-display-serif text-[24px] md:text-[32px] tracking-[-0.018em] text-[#F0ECE6] group-hover:text-[#FF6B2C] transition-colors break-all">hello@aom-inhouse.com</p>
                 </div>
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 shrink-0 group-hover:gap-2.5 transition-all">
                   Send <ArrowRight size={13} />
@@ -142,7 +142,7 @@ export default function HomeClassic({ openBrief }) {
               >
                 <div className="flex flex-col gap-1.5">
                   <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26]/85">Phone</p>
-                  <p className="font-headline text-[24px] md:text-[32px] tracking-[-0.018em] text-[#F0ECE6] group-hover:text-[#FF6B2C] transition-colors">(602) 555-1234</p>
+                  <p className="font-display-serif text-[24px] md:text-[32px] tracking-[-0.018em] text-[#F0ECE6] group-hover:text-[#FF6B2C] transition-colors">(602) 555-1234</p>
                 </div>
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 shrink-0 group-hover:gap-2.5 transition-all">
                   Call <ArrowRight size={13} />
@@ -154,7 +154,7 @@ export default function HomeClassic({ openBrief }) {
           {/* Bottom row — logo + links + copyright */}
           <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <a href="/" className="font-headline text-[20px] tracking-[-0.02em] text-[#F0ECE6] hover:text-[#E85D26] transition-colors no-underline">
+              <a href="/" className="font-display-serif text-[20px] tracking-[-0.02em] text-[#F0ECE6] hover:text-[#E85D26] transition-colors no-underline">
                 AOM<span className="text-[#E85D26]">.</span>
               </a>
               <span className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/40">Ahead of Market</span>

@@ -25,7 +25,7 @@ export default function HomeCinema({ openBrief }) {
                 <span className="w-2 h-2 rounded-full bg-[#E85D26] animate-pulse" />
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#F0ECE6]">Now streaming · Live reels</p>
               </div>
-              <h1 className="font-headline text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.88] tracking-[-0.03em] max-w-[700px]">
+              <h1 className="font-display-serif text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.88] tracking-[-0.03em] max-w-[700px]">
                 A creative team<br />you can <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
               </h1>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/85 mt-8 leading-[1.55] max-w-xl">
@@ -61,7 +61,7 @@ export default function HomeCinema({ openBrief }) {
           {[...RECENT_WORK, ...RECENT_WORK, ...RECENT_WORK].map((w, i) => (
             <div key={i} className="inline-flex items-center gap-3 border border-[#E85D26]/20 bg-black/50 rounded-full pl-5 pr-4 py-2.5 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-[#E85D26]" />
-              <span className="font-headline text-[20px] md:text-[26px] tracking-[-0.015em] text-[#F0ECE6]">{w.client}</span>
+              <span className="font-display-serif text-[20px] md:text-[26px] tracking-[-0.015em] text-[#F0ECE6]">{w.client}</span>
               <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/65 border-l border-[#E85D26]/25 pl-3">{w.tag}</span>
               <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#E85D26]/85">· {w.when}</span>
             </div>
@@ -82,7 +82,7 @@ export default function HomeCinema({ openBrief }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
             {STATS.map((s) => (
               <div key={s.label} className="md:border-r last:border-r-0 border-[#E85D26]/20 md:px-5">
-                <p className="font-headline text-[64px] md:text-[88px] leading-none tracking-[-0.03em] text-[#E85D26]">{s.value}</p>
+                <p className="font-display-serif text-[64px] md:text-[88px] leading-none tracking-[-0.03em] text-[#E85D26]">{s.value}</p>
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/65 mt-3">{s.label}</p>
               </div>
             ))}
@@ -94,7 +94,7 @@ export default function HomeCinema({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">Featured · 02 stories</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
             From the <em className="font-display-italic italic font-medium text-[#E85D26]">field.</em>
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -103,7 +103,7 @@ export default function HomeCinema({ openBrief }) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10 pointer-events-none" />
               <div className="absolute bottom-7 left-7 right-7 z-20">
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-3">Customer film · Ambition Mechanical</p>
-                <h3 className="font-headline text-[32px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">
+                <h3 className="font-display-serif text-[32px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">
                   Three decades of work, <em className="font-display-italic italic font-medium text-[#E85D26]">finally on film.</em>
                 </h3>
                 <span className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6]">
@@ -116,7 +116,7 @@ export default function HomeCinema({ openBrief }) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10 pointer-events-none" />
               <div className="absolute bottom-7 left-7 right-7">
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-3">Customer story · Skylar</p>
-                <h3 className="font-headline text-[32px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">
+                <h3 className="font-display-serif text-[32px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">
                   Wellness brand, <em className="font-display-italic italic font-medium text-[#E85D26]">city showed up.</em>
                 </h3>
                 <span className="mt-5 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6]">
@@ -131,7 +131,7 @@ export default function HomeCinema({ openBrief }) {
       {/* 8. SERVICES -- index card stack */}
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15">
         <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-12">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-12">
             <em className="font-display-italic italic font-medium text-[#E85D26]">Capabilities.</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -153,7 +153,7 @@ export default function HomeCinema({ openBrief }) {
       <section id="work" className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between flex-wrap gap-6 mb-12">
-            <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
+            <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
               The <em className="font-display-italic italic font-medium text-[#E85D26]">screening room.</em>
             </h2>
             <a href="#" className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 no-underline">
@@ -171,7 +171,7 @@ export default function HomeCinema({ openBrief }) {
                 </div>
                 <div className="absolute bottom-5 left-5 right-5">
                   <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26] mb-1.5">{t.tag}</p>
-                  <p className="font-headline text-[24px] md:text-[26px] leading-tight tracking-[-0.01em]">{t.client}</p>
+                  <p className="font-display-serif text-[24px] md:text-[26px] leading-tight tracking-[-0.01em]">{t.client}</p>
                 </div>
               </a>
             ))}
@@ -183,7 +183,7 @@ export default function HomeCinema({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15 bg-[#0a0a0a]">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5 text-center">VS · Compare</p>
-          <h2 className="font-headline text-[44px] md:text-[100px] leading-[0.9] tracking-[-0.03em] mb-16 text-center">
+          <h2 className="font-display-serif text-[44px] md:text-[100px] leading-[0.9] tracking-[-0.03em] mb-16 text-center">
             Hiring or outsourcing? <em className="font-display-italic italic font-medium text-[#E85D26]">Neither.</em>
           </h2>
           <div className="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
@@ -219,14 +219,14 @@ export default function HomeCinema({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15 overflow-hidden">
         <div className="max-w-[1440px] mx-auto mb-12">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-4">From the audience</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
             Wins, <em className="font-display-italic italic font-medium text-[#E85D26]">told by clients.</em>
           </h2>
         </div>
         <div className="flex gap-5 animate-marquee-cinema-wide">
           {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
             <div key={i} className="shrink-0 w-[480px] md:w-[540px] whitespace-normal border border-[#E85D26]/25 bg-[#0a0a0a] p-7 md:p-9">
-              <p className="font-headline text-[20px] md:text-[24px] leading-[1.35] text-[#F0ECE6] tracking-[-0.005em]">"{t.quote}"</p>
+              <p className="font-display-serif text-[20px] md:text-[24px] leading-[1.35] text-[#F0ECE6] tracking-[-0.005em]">"{t.quote}"</p>
               <div className="mt-7 flex items-center gap-3">
                 <span className="w-10 h-10 rounded-full bg-[#E85D26] text-[#0C0C0C] flex items-center justify-center font-mono text-[12px] font-bold">{t.author.split(' ')[0]?.[0]}</span>
                 <div>
@@ -247,14 +247,14 @@ export default function HomeCinema({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15">
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The system</p>
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
             One team, <em className="font-display-italic italic font-medium text-[#E85D26]">one system.</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {PLATFORM_FEATURES.map((f, i) => (
               <div key={f.title} className="border border-[#E85D26]/15 bg-[#0a0a0a] p-7 md:p-9 hover:border-[#E85D26]/50 transition-colors">
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-4">{String(i + 1).padStart(2, '0')}</p>
-                <h3 className="font-headline text-[26px] md:text-[32px] leading-[1.0] tracking-[-0.018em] mb-4">{f.title}</h3>
+                <h3 className="font-display-serif text-[26px] md:text-[32px] leading-[1.0] tracking-[-0.018em] mb-4">{f.title}</h3>
                 <p className="font-body text-[15px] text-[#F0ECE6]/75 leading-[1.6]">{f.body}</p>
               </div>
             ))}
@@ -265,14 +265,14 @@ export default function HomeCinema({ openBrief }) {
       {/* 13. PILLARS */}
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15 bg-[#0a0a0a]">
         <div className="max-w-[1440px] mx-auto">
-          <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
+          <h2 className="font-display-serif text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
             Refuse to <em className="font-display-italic italic font-medium text-[#E85D26]">compromise.</em>
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {PILLARS.map((p, i) => (
               <div key={p.title} className="border-l-2 border-l-[#E85D26] border-y border-r border-[#E85D26]/15 bg-black p-6">
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-4">{String(i + 1).padStart(2, '0')}</p>
-                <h3 className="font-headline text-[24px] tracking-[-0.015em] mb-3">{p.title}</h3>
+                <h3 className="font-display-serif text-[24px] tracking-[-0.015em] mb-3">{p.title}</h3>
                 <p className="font-body text-[13.5px] text-[#F0ECE6]/70 leading-[1.55]">{p.body}</p>
               </div>
             ))}
@@ -285,7 +285,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-6 order-2 lg:order-1">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The team</p>
-            <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
+            <h2 className="font-display-serif text-[40px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
               <em className="font-display-italic italic font-medium text-[#E85D26]">Senior craft.</em><br />
               No middle layer.
             </h2>
@@ -309,7 +309,7 @@ export default function HomeCinema({ openBrief }) {
           </div>
           <div className="lg:col-span-6">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">For in-house teams</p>
-            <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
+            <h2 className="font-display-serif text-[40px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
               Your team deserves <em className="font-display-italic italic font-medium text-[#E85D26]">a partner.</em>
             </h2>
             <p className="font-body text-[16px] text-[#F0ECE6]/80 mt-7 max-w-xl leading-[1.6]">
@@ -331,7 +331,7 @@ export default function HomeCinema({ openBrief }) {
         </div>
         <div className="relative z-10 max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-7">Final scene</p>
-          <h2 className="font-headline text-[60px] md:text-[180px] leading-[0.82] tracking-[-0.035em]">
+          <h2 className="font-display-serif text-[60px] md:text-[180px] leading-[0.82] tracking-[-0.035em]">
             Roll <em className="font-display-italic italic font-medium text-[#E85D26]">credits.</em>
           </h2>
           <p className="font-body text-[18px] text-[#F0ECE6]/80 mt-8 max-w-xl mx-auto">

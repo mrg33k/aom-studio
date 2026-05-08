@@ -20,7 +20,7 @@ import { HOW_IT_WORKS } from './content';
 const STORAGE_KEY = 'aom_two_variant';
 const VARIANTS = ['A', 'B', 'C', 'D'];
 const VARIANT_LABELS = { A: 'Twin', B: 'VS', C: 'Flow', D: 'Tabs' };
-const DEFAULT_VARIANT = 'B';
+const DEFAULT_VARIANT = 'D';
 
 const STEP_ICONS_ONLINE = [Upload, MessageSquare, Sparkles, FileText];
 const STEP_ICONS_IN_PERSON = [Calendar, Handshake, Camera, Package];
@@ -63,7 +63,7 @@ function SectionHeader() {
   return (
     <div className="text-center max-w-3xl mx-auto mb-14 md:mb-20">
       <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-5">How to hire us</p>
-      <h2 className="font-headline text-[42px] md:text-[80px] leading-[0.94] tracking-[-0.025em]">
+      <h2 className="font-display-serif text-[42px] md:text-[80px] leading-[0.94] tracking-[-0.025em]">
         Two ways. <em className="font-display-italic italic font-medium text-[#E85D26]">Pick one.</em>
       </h2>
       <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-6 leading-[1.55]">
@@ -92,7 +92,7 @@ function VariantA({ openBrief }) {
               </div>
               <div>
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26]">{path.eyebrow}</p>
-                <h3 className="font-headline text-[28px] md:text-[34px] leading-[1.0] tracking-[-0.02em] mt-1">{path.title}</h3>
+                <h3 className="font-display-serif text-[28px] md:text-[34px] leading-[1.0] tracking-[-0.02em] mt-1">{path.title}</h3>
               </div>
             </div>
             <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/70 leading-[1.55] mb-8">{path.summary}</p>
@@ -108,7 +108,7 @@ function VariantA({ openBrief }) {
                       <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#E85D26] text-[#0C0C0C] font-mono text-[10px] font-bold flex items-center justify-center">{s.n}</span>
                     </div>
                     <div className="flex-1 pt-0.5">
-                      <p className="font-headline text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
+                      <p className="font-display-serif text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
                       <p className="font-body text-[13.5px] md:text-[14px] text-[#F0ECE6]/65 mt-1.5 leading-[1.55]">{s.body}</p>
                     </div>
                   </li>
@@ -132,7 +132,7 @@ function VariantB({ openBrief }) {
       {/* Center divider + OR badge */}
       <div className="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-[#E85D26]/40 to-transparent" />
       <div className="hidden lg:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-[#0C0C0C] border-2 border-[#E85D26] items-center justify-center z-10">
-        <span className="font-headline text-[18px] tracking-[-0.01em] text-[#E85D26]">or</span>
+        <span className="font-display-serif text-[18px] tracking-[-0.01em] text-[#E85D26]">or</span>
       </div>
 
       {HOW_IT_WORKS.map((path, idx) => {
@@ -146,7 +146,7 @@ function VariantB({ openBrief }) {
               </div>
               <div>
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-1">{path.eyebrow}</p>
-                <h3 className="font-headline text-[34px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">{path.title}</h3>
+                <h3 className="font-display-serif text-[34px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">{path.title}</h3>
               </div>
             </div>
             <p className="font-body text-[16px] md:text-[17px] text-[#F0ECE6]/75 leading-[1.6] mb-8 max-w-md">{path.summary}</p>
@@ -156,11 +156,11 @@ function VariantB({ openBrief }) {
                 return (
                   <div key={s.n} className="flex items-start gap-4 border-b border-white/[0.08] pb-4">
                     <div className="flex items-center gap-3 shrink-0 pt-0.5">
-                      <span className="font-headline text-[28px] md:text-[36px] leading-none tracking-[-0.02em] text-[#E85D26]">{String(s.n).padStart(2, '0')}</span>
+                      <span className="font-display-serif text-[28px] md:text-[36px] leading-none tracking-[-0.02em] text-[#E85D26]">{String(s.n).padStart(2, '0')}</span>
                       <StepIcon size={18} className="text-[#F0ECE6]/55" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-headline text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
+                      <p className="font-display-serif text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
                       <p className="font-body text-[14px] text-[#F0ECE6]/65 mt-1 leading-[1.55]">{s.body}</p>
                     </div>
                   </div>
@@ -193,7 +193,7 @@ function VariantC({ openBrief }) {
                 </div>
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26]">{path.eyebrow}</p>
-                  <h3 className="font-headline text-[24px] md:text-[28px] leading-[1.0] tracking-[-0.015em] mt-0.5">{path.title}</h3>
+                  <h3 className="font-display-serif text-[24px] md:text-[28px] leading-[1.0] tracking-[-0.015em] mt-0.5">{path.title}</h3>
                 </div>
               </div>
               <CTAButton size="sm" onClick={() => openBrief?.()}>{ctaFor(idx)}</CTAButton>
@@ -212,7 +212,7 @@ function VariantC({ openBrief }) {
                         </div>
                         <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26]">Step {s.n}</span>
                       </div>
-                      <p className="font-headline text-[17px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
+                      <p className="font-display-serif text-[17px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
                       <p className="font-body text-[12.5px] text-[#F0ECE6]/65 leading-[1.5]">{s.body}</p>
                     </div>
                     {!isLast && (
@@ -267,7 +267,7 @@ function VariantD({ openBrief }) {
           <div className="w-16 h-16 rounded-2xl bg-[#E85D26]/15 border border-[#E85D26]/30 flex items-center justify-center">
             <HeaderIcon size={28} className="text-[#E85D26]" />
           </div>
-          <h3 className="font-headline text-[36px] md:text-[52px] leading-[0.95] tracking-[-0.025em]">{path.title}</h3>
+          <h3 className="font-display-serif text-[36px] md:text-[52px] leading-[0.95] tracking-[-0.025em]">{path.title}</h3>
         </div>
         <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 leading-[1.6] mb-10 max-w-xl">{path.summary}</p>
 
@@ -283,7 +283,7 @@ function VariantD({ openBrief }) {
                   <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-[#E85D26] text-[#0C0C0C] font-mono text-[11px] font-bold flex items-center justify-center">{s.n}</span>
                 </div>
                 <div className="flex-1 pt-0.5">
-                  <p className="font-headline text-[20px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
+                  <p className="font-display-serif text-[20px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
                   <p className="font-body text-[14px] text-[#F0ECE6]/65 mt-2 leading-[1.6]">{s.body}</p>
                 </div>
               </li>
