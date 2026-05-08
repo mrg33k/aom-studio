@@ -1,14 +1,12 @@
 import React from 'react';
-import { ArrowRight, ArrowUpRight, Play, Upload, MessageSquare, Sparkles, FileText, Calendar, Handshake, Camera, Package } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Play } from 'lucide-react';
 import StickyVideoDeck from './StickyVideoDeck';
 import LazyGumlet from './LazyGumlet';
+import TwoWaysSection from './TwoWaysSection';
 import {
-  HERO_DECK, RECENT_WORK, HOW_IT_WORKS, STATS, SERVICES, CASE_TILES,
+  HERO_DECK, RECENT_WORK, STATS, SERVICES, CASE_TILES,
   COMPARISON, TESTIMONIALS, PLATFORM_FEATURES, PILLARS,
 } from './content';
-
-const STEP_ICONS_ONLINE = [Upload, MessageSquare, Sparkles, FileText];
-const STEP_ICONS_IN_PERSON = [Calendar, Handshake, Camera, Package];
 
 /**
  * HomeCinema -- All Superside sections, dark/film-festival treatment.
@@ -28,7 +26,7 @@ export default function HomeCinema({ openBrief }) {
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#F0ECE6]">Now streaming · Live reels</p>
               </div>
               <h1 className="font-headline text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.88] tracking-[-0.03em] max-w-[700px]">
-                A creative team<br />you can <em className="text-[#E85D26]">hire.</em>
+                A creative team<br />you can <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
               </h1>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/85 mt-8 leading-[1.55] max-w-xl">
                 Brand films, websites, and ads for real businesses. Hire us online by sending a few files. Or hire us in person. We reply within 24 hours.
@@ -75,71 +73,8 @@ export default function HomeCinema({ openBrief }) {
         `}</style>
       </section>
 
-      {/* 3. HOW IT WORKS — two paths, cinema treatment */}
-      <section className="py-24 md:py-32 px-6 md:px-12 border-t border-[#E85D26]/15 relative overflow-hidden">
-        <div className="max-w-[1440px] mx-auto relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-14 md:mb-20">
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-6">How to hire us</p>
-            <h2 className="font-headline text-[44px] md:text-[100px] leading-[0.88] tracking-[-0.03em]">
-              Two ways. <em className="text-[#E85D26]">Pick one.</em>
-            </h2>
-            <p className="font-body text-[16px] md:text-[19px] text-[#F0ECE6]/75 mt-7 leading-[1.55]">
-              Most clients send files online and never visit. Some prefer to shake hands. Either works.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {HOW_IT_WORKS.map((path, idx) => {
-              const icons = idx === 0 ? STEP_ICONS_ONLINE : STEP_ICONS_IN_PERSON;
-              const HeaderIcon = idx === 0 ? Upload : Handshake;
-              return (
-                <div key={path.title} className="relative border border-[#E85D26]/20 bg-[#0a0a0a] p-7 md:p-10 hover:border-[#E85D26]/55 transition-colors overflow-hidden">
-                  <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
-                    <LazyGumlet id={HERO_DECK[idx === 0 ? 0 : 5].id} filter="grayscale(0.85) contrast(1.2)" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black" />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-7">
-                      <div className="w-14 h-14 rounded-2xl bg-[#E85D26] text-[#0C0C0C] flex items-center justify-center">
-                        <HeaderIcon size={24} />
-                      </div>
-                      <div>
-                        <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">{String(idx + 1).padStart(2, '0')} · {path.eyebrow}</p>
-                        <h3 className="font-headline text-[30px] md:text-[42px] leading-[0.95] tracking-[-0.02em] mt-1">{path.title}</h3>
-                      </div>
-                    </div>
-                    <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/75 leading-[1.6] mb-8 max-w-md">{path.summary}</p>
-                    <ol className="space-y-5">
-                      {path.steps.map((s, i) => {
-                        const StepIcon = icons[i];
-                        return (
-                          <li key={s.n} className="flex gap-4 items-start">
-                            <div className="shrink-0 relative">
-                              <div className="w-11 h-11 rounded-xl bg-black border border-[#E85D26]/25 flex items-center justify-center">
-                                <StepIcon size={18} className="text-[#F0ECE6]/85" />
-                              </div>
-                              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#E85D26] text-[#0C0C0C] font-mono text-[10px] font-bold flex items-center justify-center">
-                                {s.n}
-                              </span>
-                            </div>
-                            <div className="flex-1 pt-0.5">
-                              <p className="font-headline text-[19px] md:text-[22px] leading-[1.18] tracking-[-0.01em] text-[#F0ECE6]">{s.label}</p>
-                              <p className="font-body text-[13.5px] md:text-[14.5px] text-[#F0ECE6]/65 mt-1.5 leading-[1.55]">{s.body}</p>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ol>
-                    <button onClick={() => openBrief?.()}
-                      className="mt-9 w-full bg-[#E85D26] text-[#0C0C0C] font-body font-semibold text-[14px] px-6 py-4 rounded-full hover:bg-[#FF6B2C] transition-colors flex items-center justify-center gap-2">
-                      {idx === 0 ? 'Send your files' : 'Book a visit'} <ArrowRight size={15} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* 3. HOW IT WORKS — TwoWaysSection with A/B/C/D layout picker */}
+      <TwoWaysSection openBrief={openBrief} />
 
       {/* 5. STATS -- ticker */}
       <section className="py-20 md:py-24 px-6 md:px-12 border-y border-[#E85D26]/15 bg-[#0a0a0a]">
@@ -160,7 +95,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">Featured · 02 stories</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
-            From the <em className="text-[#E85D26]">field.</em>
+            From the <em className="font-display-italic italic font-medium text-[#E85D26]">field.</em>
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <a href="#" className="group relative block aspect-[16/10] overflow-hidden rounded-lg border border-[#E85D26]/20 bg-black no-underline">
@@ -169,7 +104,7 @@ export default function HomeCinema({ openBrief }) {
               <div className="absolute bottom-7 left-7 right-7 z-20">
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-3">Customer film · Ambition Mechanical</p>
                 <h3 className="font-headline text-[32px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">
-                  Three decades of work, <em className="text-[#E85D26]">finally on film.</em>
+                  Three decades of work, <em className="font-display-italic italic font-medium text-[#E85D26]">finally on film.</em>
                 </h3>
                 <span className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6]">
                   <Play size={13} className="fill-current text-[#E85D26]" /> Watch
@@ -182,7 +117,7 @@ export default function HomeCinema({ openBrief }) {
               <div className="absolute bottom-7 left-7 right-7">
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-3">Customer story · Skylar</p>
                 <h3 className="font-headline text-[32px] md:text-[44px] leading-[0.95] tracking-[-0.025em]">
-                  Wellness brand, <em className="text-[#E85D26]">city showed up.</em>
+                  Wellness brand, <em className="font-display-italic italic font-medium text-[#E85D26]">city showed up.</em>
                 </h3>
                 <span className="mt-5 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6]">
                   Read the story <ArrowUpRight size={13} />
@@ -197,7 +132,7 @@ export default function HomeCinema({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-12">
-            <em className="text-[#E85D26]">Capabilities.</em>
+            <em className="font-display-italic italic font-medium text-[#E85D26]">Capabilities.</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {SERVICES.map((g, gi) => (
@@ -219,7 +154,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between flex-wrap gap-6 mb-12">
             <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
-              The <em className="text-[#E85D26]">screening room.</em>
+              The <em className="font-display-italic italic font-medium text-[#E85D26]">screening room.</em>
             </h2>
             <a href="#" className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 no-underline">
               Full archive <ArrowRight size={13} />
@@ -249,7 +184,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5 text-center">VS · Compare</p>
           <h2 className="font-headline text-[44px] md:text-[100px] leading-[0.9] tracking-[-0.03em] mb-16 text-center">
-            Hiring or outsourcing? <em className="text-[#E85D26]">Neither.</em>
+            Hiring or outsourcing? <em className="font-display-italic italic font-medium text-[#E85D26]">Neither.</em>
           </h2>
           <div className="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
             <table className="w-full min-w-[760px] border-separate border-spacing-0">
@@ -285,7 +220,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="max-w-[1440px] mx-auto mb-12">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-4">From the audience</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
-            Wins, <em className="text-[#E85D26]">told by clients.</em>
+            Wins, <em className="font-display-italic italic font-medium text-[#E85D26]">told by clients.</em>
           </h2>
         </div>
         <div className="flex gap-5 animate-marquee-cinema-wide">
@@ -313,7 +248,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The system</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
-            One team, <em className="text-[#E85D26]">one system.</em>
+            One team, <em className="font-display-italic italic font-medium text-[#E85D26]">one system.</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {PLATFORM_FEATURES.map((f, i) => (
@@ -331,7 +266,7 @@ export default function HomeCinema({ openBrief }) {
       <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#E85D26]/15 bg-[#0a0a0a]">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
-            Refuse to <em className="text-[#E85D26]">compromise.</em>
+            Refuse to <em className="font-display-italic italic font-medium text-[#E85D26]">compromise.</em>
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {PILLARS.map((p, i) => (
@@ -351,7 +286,7 @@ export default function HomeCinema({ openBrief }) {
           <div className="lg:col-span-6 order-2 lg:order-1">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The team</p>
             <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
-              <em className="text-[#E85D26]">Senior craft.</em><br />
+              <em className="font-display-italic italic font-medium text-[#E85D26]">Senior craft.</em><br />
               No middle layer.
             </h2>
             <p className="font-body text-[16px] text-[#F0ECE6]/80 mt-7 max-w-xl leading-[1.6]">
@@ -375,7 +310,7 @@ export default function HomeCinema({ openBrief }) {
           <div className="lg:col-span-6">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">For in-house teams</p>
             <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.92] tracking-[-0.025em]">
-              Your team deserves <em className="text-[#E85D26]">a partner.</em>
+              Your team deserves <em className="font-display-italic italic font-medium text-[#E85D26]">a partner.</em>
             </h2>
             <p className="font-body text-[16px] text-[#F0ECE6]/80 mt-7 max-w-xl leading-[1.6]">
               In-house creative teams ship the most when they have a partner to send the spillover to. Be that team. We'll be the partner.
@@ -397,7 +332,7 @@ export default function HomeCinema({ openBrief }) {
         <div className="relative z-10 max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-7">Final scene</p>
           <h2 className="font-headline text-[60px] md:text-[180px] leading-[0.82] tracking-[-0.035em]">
-            Roll <em className="text-[#E85D26]">credits.</em>
+            Roll <em className="font-display-italic italic font-medium text-[#E85D26]">credits.</em>
           </h2>
           <p className="font-body text-[18px] text-[#F0ECE6]/80 mt-8 max-w-xl mx-auto">
             We're open for new work in 2026. Send us a brief.

@@ -18,8 +18,8 @@ import { HOW_IT_WORKS } from './content';
  */
 
 const STORAGE_KEY = 'aom_two_variant';
-const VARIANTS = ['B'];
-const VARIANT_LABELS = { B: 'VS' };
+const VARIANTS = ['A', 'B', 'C', 'D'];
+const VARIANT_LABELS = { A: 'Twin', B: 'VS', C: 'Flow', D: 'Tabs' };
 const DEFAULT_VARIANT = 'B';
 
 const STEP_ICONS_ONLINE = [Upload, MessageSquare, Sparkles, FileText];
@@ -64,7 +64,7 @@ function SectionHeader() {
     <div className="text-center max-w-3xl mx-auto mb-14 md:mb-20">
       <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] mb-5">How to hire us</p>
       <h2 className="font-headline text-[42px] md:text-[80px] leading-[0.94] tracking-[-0.025em]">
-        Two ways. <em className="text-[#E85D26]">Pick one.</em>
+        Two ways. <em className="font-display-italic italic font-medium text-[#E85D26]">Pick one.</em>
       </h2>
       <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-6 leading-[1.55]">
         You don't need a meeting to start. Most clients hire us online and never visit. Some prefer to shake hands. Both work.

@@ -1,14 +1,12 @@
 import React from 'react';
-import { ArrowRight, ArrowUpRight, Play, Upload, MessageSquare, Sparkles, FileText, Calendar, Handshake, Camera, Package } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Play } from 'lucide-react';
 import StickyVideoDeck from './StickyVideoDeck';
 import LazyGumlet from './LazyGumlet';
+import TwoWaysSection from './TwoWaysSection';
 import {
-  HERO_DECK, RECENT_WORK, HOW_IT_WORKS, STATS, SERVICES, CASE_TILES,
+  HERO_DECK, RECENT_WORK, STATS, SERVICES, CASE_TILES,
   COMPARISON, TESTIMONIALS, PLATFORM_FEATURES, PILLARS,
 } from './content';
-
-const STEP_ICONS_ONLINE = [Upload, MessageSquare, Sparkles, FileText];
-const STEP_ICONS_IN_PERSON = [Calendar, Handshake, Camera, Package];
 
 /**
  * HomeEditorial -- Same Superside section list, magazine/newspaper treatment.
@@ -28,7 +26,7 @@ export default function HomeEditorial({ openBrief }) {
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">Available anywhere · 2026</p>
               </div>
               <h1 className="font-headline text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.92] tracking-[-0.025em] max-w-[700px]">
-                A creative team<br />you can <em className="text-[#E85D26]">hire.</em>
+                A creative team<br />you can <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
               </h1>
               <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#E85D26] mt-8">Brand, websites, ads, and video. Online or in person.</p>
               <p className="font-body text-[16.5px] md:text-[18px] text-[#0C0C0C]/75 mt-8 leading-[1.55] max-w-xl">
@@ -75,70 +73,8 @@ export default function HomeEditorial({ openBrief }) {
         </div>
       </section>
 
-      {/* 3. HOW IT WORKS — two paths, magazine layout */}
-      <section className="py-24 md:py-32 px-6 md:px-12 border-b border-[#0C0C0C]/12">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16">
-            <div className="lg:col-span-3">
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-2">Article 01</p>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#0C0C0C]/55">How to hire us</p>
-            </div>
-            <div className="lg:col-span-9">
-              <h2 className="font-headline text-[44px] md:text-[88px] leading-[0.94] tracking-[-0.025em]">
-                Two ways. <em className="text-[#E85D26]">Pick one.</em>
-              </h2>
-              <p className="font-body text-[16.5px] leading-[1.65] text-[#0C0C0C]/85 max-w-2xl mt-7">
-                Most clients hire us online and never visit. Some prefer to shake hands. Both work the same way underneath.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 border-t-2 border-[#0C0C0C]">
-            {HOW_IT_WORKS.map((path, idx) => {
-              const icons = idx === 0 ? STEP_ICONS_ONLINE : STEP_ICONS_IN_PERSON;
-              const HeaderIcon = idx === 0 ? Upload : Handshake;
-              return (
-                <div key={path.title} className={`py-10 md:py-12 px-2 md:px-8 ${idx === 0 ? 'lg:border-r border-[#0C0C0C]/15' : ''}`}>
-                  <div className="flex items-center gap-4 mb-7">
-                    <div className="w-14 h-14 rounded-2xl bg-[#0C0C0C] text-[#FDF6EC] flex items-center justify-center">
-                      <HeaderIcon size={24} className="text-[#E85D26]" />
-                    </div>
-                    <div>
-                      <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26]">{String(idx + 1).padStart(2, '0')} · {path.eyebrow}</p>
-                      <h3 className="font-headline text-[30px] md:text-[40px] leading-[1.0] tracking-[-0.02em] mt-1">{path.title}</h3>
-                    </div>
-                  </div>
-                  <p className="font-body text-[15.5px] md:text-[16.5px] text-[#0C0C0C]/75 leading-[1.65] mb-9 max-w-md">{path.summary}</p>
-                  <ol className="space-y-7">
-                    {path.steps.map((s, i) => {
-                      const StepIcon = icons[i];
-                      return (
-                        <li key={s.n} className="flex gap-5 items-start border-t border-[#0C0C0C]/15 pt-5">
-                          <div className="shrink-0 relative">
-                            <div className="w-11 h-11 rounded-xl bg-[#FDF6EC] border border-[#0C0C0C]/15 flex items-center justify-center">
-                              <StepIcon size={18} className="text-[#0C0C0C]/85" />
-                            </div>
-                            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#E85D26] text-[#0C0C0C] font-mono text-[10px] font-bold flex items-center justify-center">
-                              {s.n}
-                            </span>
-                          </div>
-                          <div className="flex-1 pt-0.5">
-                            <p className="font-headline text-[20px] md:text-[22px] leading-[1.2] tracking-[-0.01em] text-[#0C0C0C]">{s.label}</p>
-                            <p className="font-body text-[14px] md:text-[14.5px] text-[#0C0C0C]/65 mt-1.5 leading-[1.6]">{s.body}</p>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                  <button onClick={() => openBrief?.()}
-                    className="mt-9 bg-[#0C0C0C] text-[#FDF6EC] font-body font-semibold text-[14px] px-7 py-3.5 rounded-full hover:bg-[#E85D26] transition-colors inline-flex items-center gap-2">
-                    {idx === 0 ? 'Send your files' : 'Book a visit'} <ArrowRight size={15} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* 3. HOW IT WORKS — TwoWaysSection with A/B/C/D layout picker */}
+      <TwoWaysSection openBrief={openBrief} />
 
       {/* 5. STATS — editorial chart */}
       <section className="py-20 md:py-24 px-6 md:px-12 border-b border-[#0C0C0C]/12">
@@ -166,7 +102,7 @@ export default function HomeEditorial({ openBrief }) {
               </div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-3">Customer story · Ambition Mechanical</p>
               <h3 className="font-headline text-[32px] md:text-[52px] leading-[0.95] tracking-[-0.02em]">
-                Three decades of work, <em className="text-[#E85D26]">finally on film.</em>
+                Three decades of work, <em className="font-display-italic italic font-medium text-[#E85D26]">finally on film.</em>
               </h3>
               <a href="#" className="mt-6 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] no-underline">
                 <Play size={13} className="fill-current" /> Watch the film
@@ -195,7 +131,7 @@ export default function HomeEditorial({ openBrief }) {
             <div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-4">Capabilities</p>
               <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] max-w-2xl">
-                Move fast with <em className="text-[#E85D26]">16+ services.</em>
+                Move fast with <em className="font-display-italic italic font-medium text-[#E85D26]">16+ services.</em>
               </h2>
             </div>
             <a href="#services" className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 no-underline">
@@ -227,7 +163,7 @@ export default function HomeEditorial({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">Recent work · 06 features</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
-            From the <em className="text-[#E85D26]">archive.</em>
+            From the <em className="font-display-italic italic font-medium text-[#E85D26]">archive.</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
             {CASE_TILES.map((t, i) => (
@@ -248,7 +184,7 @@ export default function HomeEditorial({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">Editorial · Decision table</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-12 max-w-3xl">
-            Hiring or outsourcing? <em className="text-[#E85D26]">Neither.</em>
+            Hiring or outsourcing? <em className="font-display-italic italic font-medium text-[#E85D26]">Neither.</em>
           </h2>
           <div className="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
             <table className="w-full min-w-[720px] border-collapse">
@@ -303,7 +239,7 @@ export default function HomeEditorial({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The system</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
-            One team, <em className="text-[#E85D26]">one system.</em>
+            One team, <em className="font-display-italic italic font-medium text-[#E85D26]">one system.</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 max-w-4xl">
             {PLATFORM_FEATURES.map((f, i) => (
@@ -324,7 +260,7 @@ export default function HomeEditorial({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The standard</p>
           <h2 className="font-headline text-[44px] md:text-[80px] leading-[0.92] tracking-[-0.025em] mb-14 max-w-3xl">
-            For brands that <em className="text-[#E85D26]">refuse to compromise.</em>
+            For brands that <em className="font-display-italic italic font-medium text-[#E85D26]">refuse to compromise.</em>
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 border-t border-l border-[#0C0C0C]/12">
             {PILLARS.map((p, i) => (
@@ -344,7 +280,7 @@ export default function HomeEditorial({ openBrief }) {
           <div className="lg:col-span-7 order-2 lg:order-1">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">The team</p>
             <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.93] tracking-[-0.025em]">
-              Senior craft. <em className="text-[#E85D26]">No middle layer.</em>
+              Senior craft. <em className="font-display-italic italic font-medium text-[#E85D26]">No middle layer.</em>
             </h2>
             <p className="font-body text-[16.5px] text-[#0C0C0C]/75 mt-7 max-w-xl leading-[1.65]">
               Designers, directors, editors, strategists, writers. The person who shoots is the person who edits is the person you talk to.
@@ -362,7 +298,7 @@ export default function HomeEditorial({ openBrief }) {
           <div className="lg:col-span-7">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-5">For in-house teams</p>
             <h2 className="font-headline text-[40px] md:text-[80px] leading-[0.93] tracking-[-0.025em]">
-              Your team deserves <em className="text-[#E85D26]">a partner</em>, not another tool.
+              Your team deserves <em className="font-display-italic italic font-medium text-[#E85D26]">a partner</em>, not another tool.
             </h2>
             <p className="font-body text-[16.5px] text-[#FDF6EC]/80 mt-7 max-w-xl leading-[1.65]">
               In-house creative teams ship the most when they have a partner to send the spillover to. We're built to be that partner — flexible, fast, and on-brand from day one.
@@ -385,7 +321,7 @@ export default function HomeEditorial({ openBrief }) {
             Volume 010 · Ends here
           </p>
           <h2 className="font-headline text-[60px] md:text-[160px] leading-[0.85] tracking-[-0.03em]">
-            Make <em className="text-[#E85D26]">something.</em>
+            Make <em className="font-display-italic italic font-medium text-[#E85D26]">something.</em>
           </h2>
           <button onClick={() => openBrief?.()}
             className="mt-12 bg-[#0C0C0C] text-[#FDF6EC] font-body font-semibold text-[15px] px-8 py-4 rounded-full hover:bg-[#E85D26] hover:text-[#0C0C0C] transition-colors inline-flex items-center gap-2">

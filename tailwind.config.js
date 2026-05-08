@@ -48,6 +48,7 @@ export default {
         headline: ['Syne', 'system-ui', 'sans-serif'],
         body: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
+        'display-italic': ['"Playfair Display"', 'Georgia', 'serif'],
       },
       boxShadow: {
         'orange-glow': '0 0 30px rgba(232,93,38,0.15)',

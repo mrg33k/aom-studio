@@ -29,7 +29,7 @@ export default function HomeClassic({ openBrief }) {
                 Available anywhere · 2026
               </p>
               <h1 className="font-headline text-[12vw] md:text-[80px] lg:text-[88px] xl:text-[112px] leading-[0.92] tracking-[-0.025em] max-w-[700px]">
-                A creative team<br />you can actually <em className="text-[#E85D26]">hire.</em>
+                A creative team<br />you can actually <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
               </h1>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.55] max-w-xl">
                 We make brands, websites, ads, and videos. Hire us online by sending us your files. Or hire us in person. Either way, we reply within 24 hours and start working.
@@ -67,7 +67,7 @@ export default function HomeClassic({ openBrief }) {
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-12 flex-wrap gap-6">
             <h2 className="font-headline text-[36px] md:text-[60px] leading-[0.94] tracking-[-0.025em] max-w-2xl">
-              Move fast with <em className="text-[#E85D26]">16+ services</em>, fuel results across every team.
+              Move fast with <em className="font-display-italic italic font-medium text-[#E85D26]">16+ services</em>, fuel results across every team.
             </h2>
             <a href="#services" className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] inline-flex items-center gap-1.5 no-underline">
               See all services <ArrowRight size={13} />
@@ -98,7 +98,7 @@ export default function HomeClassic({ openBrief }) {
       <section className="py-32 md:py-40 px-6 md:px-12 border-t border-white/[0.06] text-center bg-gradient-to-b from-[#0C0C0C] to-[#1a0d05]">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="font-headline text-[60px] md:text-[140px] leading-[0.85] tracking-[-0.03em]">
-            Let's <em className="text-[#E85D26]">make something.</em>
+            Let's <em className="font-display-italic italic font-medium text-[#E85D26]">make something.</em>
           </h2>
           <div className="mt-12 inline-block">
             <CTAButton size="lg" variant="08" onClick={() => openBrief?.()}>Start a project</CTAButton>
@@ -117,7 +117,7 @@ export default function HomeClassic({ openBrief }) {
                 <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">Talk to us</p>
               </div>
               <h3 className="font-headline text-[44px] md:text-[88px] leading-[0.9] tracking-[-0.03em] text-[#F0ECE6]">
-                A real person<br /><em className="text-[#E85D26]">replies.</em>
+                A real person<br /><em className="font-display-italic italic font-medium text-[#E85D26]">replies.</em>
               </h3>
               <p className="font-body text-[15px] md:text-[17px] text-[#F0ECE6]/65 mt-6 max-w-xl leading-[1.6]">
                 Email is the fastest way in. We answer within one business day. Always.
