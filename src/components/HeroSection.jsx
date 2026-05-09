@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import StickyVideoDeck from './home/StickyVideoDeck';
+import CTAButton from './home/CTAButton';
 import { HERO_DECK } from './home/content';
 
 /**
@@ -31,12 +32,7 @@ export default function HeroSection({ openBrief }) {
               Brand films, websites, and ads for real businesses. Hire us online by sending a few files. Or hire us in person. We reply within 24 hours.
             </p>
             <div className="flex flex-wrap items-center gap-3 mt-10">
-              <button
-                onClick={() => openBrief?.()}
-                className="bg-[#E85D26] text-[#0C0C0C] font-body font-semibold text-[14px] px-6 py-3.5 rounded-full hover:bg-[#FF6B2C] transition-colors flex items-center gap-2"
-              >
-                Start a project <ArrowRight size={15} />
-              </button>
+              <CTAButton size="lg" variant="06" onClick={() => openBrief?.()}>Start a project</CTAButton>
               <a
                 href="#work"
                 className="text-[#F0ECE6] flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.22em] no-underline px-2 py-3 hover:text-[#E85D26] transition-colors"

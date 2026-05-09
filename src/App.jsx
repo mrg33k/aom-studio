@@ -14,8 +14,6 @@ import {
 import HeroSection from './components/HeroSection';
 import LiveActivityTicker from './components/LiveActivityTicker';
 import ServicesGrid from './components/ServicesGrid';
-import ConstructionCallout from './components/ConstructionCallout';
-import BrandsCallout from './components/BrandsCallout';
 import SiteNav from './components/SiteNav';
 
 // --- FIREBASE & STORAGE CONFIG ---
@@ -326,7 +324,7 @@ const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) =
         <div className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted"><ScrambleText text={kicker} hover={false} /></div>
       </div>
       <div>
-        <div className="text-5xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-text-light">{valueNode}</div>
+        <div className="text-5xl md:text-6xl font-display-serif font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-text-light">{valueNode}</div>
         <p className="text-aom-text-muted text-base mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
       </div>
     </div>
@@ -346,7 +344,7 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
       <h3 className={`text-xl md:text-2xl font-body font-normal leading-relaxed transition-colors ${isSelected ? "text-aom-text-light" : "text-aom-text-muted group-hover:text-aom-text-light"}`}>"{idea.statement}"</h3>
     </div>
     <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
-      <div><p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-1">Starting At</p><p className="text-lg font-headline font-extrabold text-aom-orange tracking-tight">{idea.price}</p></div>
+      <div><p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-1">Starting At</p><p className="text-lg font-display-serif font-extrabold text-aom-orange tracking-tight">{idea.price}</p></div>
       <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-aom-orange text-white border-aom-orange rotate-0" : "bg-transparent text-aom-text-muted border-white/10 -rotate-45 group-hover:text-aom-text-light group-hover:border-white/20"}`}><ArrowRight size={14} /></div>
     </div>
   </button>
@@ -357,9 +355,9 @@ const TestimonialCard = memo(({ t }) => (
     <div className="inline-flex items-center gap-2 bg-aom-orange/10 border border-aom-orange/20 px-3 py-1.5 mb-6">
       <TrendingUp size={14} className="text-aom-orange" /><span className="text-aom-orange font-bold text-base uppercase tracking-[0.15em] font-body">{t.metric}</span>
     </div>
-    <p className="text-aom-text-light text-lg font-headline font-bold tracking-[-0.01em] leading-snug">"{t.quote}"</p>
+    <p className="text-aom-text-light text-lg font-display-serif font-bold tracking-[-0.01em] leading-snug">"{t.quote}"</p>
     <div className="mt-8 pt-4 border-t border-white/10">
-      <p className="text-base font-headline font-bold uppercase tracking-[0.15em] text-aom-text-light">{t.name}</p>
+      <p className="text-base font-display-serif font-bold uppercase tracking-[0.15em] text-aom-text-light">{t.name}</p>
       <p className="text-base font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mt-1">{t.company}</p>
     </div>
   </div>
@@ -368,7 +366,7 @@ const TestimonialCard = memo(({ t }) => (
 const FAQItem = memo(({ item, open, onToggle }) => (
   <div className="border border-white/10 bg-white/[0.03]">
     <button onClick={onToggle} aria-expanded={open} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
-      <span className="text-aom-text-light font-headline font-bold uppercase tracking-[-0.01em] text-base">{item.q}</span>
+      <span className="text-aom-text-light font-display-serif font-bold uppercase tracking-[-0.01em] text-base">{item.q}</span>
       <ChevronRight className={`text-aom-orange transition-transform shrink-0 ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
     <AnimatePresence initial={false}>
@@ -403,9 +401,9 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, isGrid = false
         )}
       </div>
       <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
-        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-base font-headline font-bold px-2 py-1 bg-black/80 border border-white/10 text-white/60 uppercase tracking-[0.15em]">{t}</span>)}</div></div>
+        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-base font-display-serif font-bold px-2 py-1 bg-black/80 border border-white/10 text-white/60 uppercase tracking-[0.15em]">{t}</span>)}</div></div>
         <div className="max-w-[95%]">
-          <h3 className={`font-headline font-extrabold tracking-tight text-white leading-[0.9] transition-colors group-hover:text-aom-orange uppercase ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
+          <h3 className={`font-display-serif font-extrabold tracking-tight text-white leading-[0.9] transition-colors group-hover:text-aom-orange uppercase ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
           <p className="text-base font-body text-white/70 mt-2 uppercase tracking-[0.15em] flex items-center gap-2"><span className="w-1 h-1 bg-aom-orange rounded-full" />{sub}</p>
         </div>
       </div>
@@ -429,7 +427,7 @@ const PortfolioExpander = ({ campaigns, onPlay }) => {
         )}
       </AnimatePresence>
       {!expanded && (
-        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-white/10 bg-white/[0.03] text-aom-text-muted font-headline font-bold uppercase tracking-[0.1em] text-base hover:border-aom-orange/40 hover:text-aom-text-light transition-all mt-8">
+        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-white/10 bg-white/[0.03] text-aom-text-muted font-display-serif font-bold uppercase tracking-[0.1em] text-base hover:border-aom-orange/40 hover:text-aom-text-light transition-all mt-8">
           See All Work <span className="text-aom-orange ml-2">+</span>
         </button>
       )}
@@ -462,7 +460,7 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
   return (
     <div className="relative group/gallery">
       <div className="flex items-center justify-between mb-4 md:hidden px-6">
-        <div className="flex items-center gap-2 text-base font-headline font-bold uppercase tracking-[0.15em] text-aom-text-muted animate-pulse"><MousePointer2 size={14} className="text-aom-orange" /> Swipe to explore</div>
+        <div className="flex items-center gap-2 text-base font-display-serif font-bold uppercase tracking-[0.15em] text-aom-text-muted animate-pulse"><MousePointer2 size={14} className="text-aom-orange" /> Swipe to explore</div>
       </div>
       <div ref={containerRef} className="flex gap-4 md:gap-6 overflow-x-auto hide-scrollbar px-6 md:px-12 py-4 scroll-smooth cursor-grab active:cursor-grabbing snap-none touch-pan-x">
         {items.map((v, i) => ( <VideoModule key={i} onPlay={onPlay} isVertical={isVertical} {...v} /> ))}
@@ -500,7 +498,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
               <motion.div key="list" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                 <div className="text-center mb-8">
                   <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4"><Phone size={24} className="text-aom-orange" /></div>
-                  <h2 className="text-3xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">Connect<span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-3xl font-display-serif font-extrabold text-aom-text-light uppercase tracking-tighter">Connect<span className="text-aom-orange">.</span></h2>
                   <p className="text-aom-text-muted text-base font-mono font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
                 </div>
                 <div className="space-y-2">
@@ -508,7 +506,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                     <button key={item.label} onClick={() => { setSelectedDept(item); setView('dept'); }} className="w-full p-4 border border-white/10 bg-white/[0.03] hover:border-aom-orange/30 hover:bg-aom-orange/5 transition-all group flex items-center justify-between text-left text-aom-text-light">
                       <div className="flex items-center gap-4">
                         <item.icon size={16} className="text-aom-text-muted group-hover:text-aom-orange transition-colors" />
-                        <div><p className="text-aom-text-light font-headline font-extrabold uppercase tracking-widest text-base">{item.label}</p><p className="text-base font-body text-aom-text-muted mt-0.5">{item.sub}</p></div>
+                        <div><p className="text-aom-text-light font-display-serif font-extrabold uppercase tracking-widest text-base">{item.label}</p><p className="text-base font-body text-aom-text-muted mt-0.5">{item.sub}</p></div>
                       </div>
                       <ChevronRight size={14} className="text-aom-text-muted group-hover:text-aom-text-light transition-colors" />
                     </button>
@@ -521,7 +519,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                   <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4">
                     <selectedDept.icon size={24} className="text-aom-orange" />
                   </div>
-                  <h2 className="text-2xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">{selectedDept.label}</h2>
+                  <h2 className="text-2xl font-display-serif font-extrabold text-aom-text-light uppercase tracking-tighter">{selectedDept.label}</h2>
                   <p className="text-aom-text-muted text-base font-mono font-bold uppercase tracking-[0.3em] mt-2">{selectedDept.sub}</p>
                 </div>
                 <div className="space-y-4">
@@ -530,10 +528,10 @@ const PhoneModal = ({ isOpen, onClose }) => {
                       <p className="text-aom-text-muted text-base leading-relaxed">Please send an email to <span className="text-aom-orange font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
                     </div>
                   )}
-                  <button onClick={() => handleRoute(selectedDept.number)} className="w-full bg-aom-orange py-4 text-white font-headline font-extrabold uppercase tracking-widest text-base hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl">
+                  <button onClick={() => handleRoute(selectedDept.number)} className="w-full bg-aom-orange py-4 text-white font-display-serif font-extrabold uppercase tracking-widest text-base hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl">
                     <Phone size={14} className="fill-white" /> Call {selectedDept.label}
                   </button>
-                  <a href="mailto:hello@aom-inhouse.com" className="w-full py-4 border border-white/10 bg-white/[0.03] text-aom-text-muted font-headline font-extrabold uppercase tracking-widest text-base hover:text-aom-text-light hover:border-white/20 transition-all flex items-center justify-center gap-2">
+                  <a href="mailto:hello@aom-inhouse.com" className="w-full py-4 border border-white/10 bg-white/[0.03] text-aom-text-muted font-display-serif font-extrabold uppercase tracking-widest text-base hover:text-aom-text-light hover:border-white/20 transition-all flex items-center justify-center gap-2">
                     <Mail size={14} /> Email Instead
                   </a>
                 </div>
@@ -692,7 +690,7 @@ export default function App() {
         {!isInitialized && (
           <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-night flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
             <div className="relative mb-12 flex items-center justify-center">
-              <h1 className="text-7xl font-headline font-extrabold tracking-[-0.03em] text-white/10 relative">
+              <h1 className="text-7xl font-display-serif font-extrabold tracking-[-0.03em] text-white/10 relative">
                 AOM<span className="text-white/5">.</span>
                 <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-aom-text-light overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-aom-orange">.</span></motion.div>
               </h1>
@@ -720,9 +718,6 @@ export default function App() {
           {/* 1b. LIVE ACTIVITY TICKER — ESPN-style scrolling client work, ported from /r4 */}
           <LiveActivityTicker />
 
-          {/* 2. CONSTRUCTION CALLOUT (dark, #1 target audience) */}
-          <ConstructionCallout openBrief={openBrief} />
-
           {/* 3. STATS + TESTIMONIALS (dark, social proof) */}
           <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-mid-dark relative">
             {/* Film grain */}
@@ -739,7 +734,7 @@ export default function App() {
               <FadeIn className="border-b border-white/10 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
                   <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-extrabold text-aom-text-light tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-display-serif font-extrabold text-aom-text-light tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
                 </div>
                 <div className="w-full lg:max-w-md p-7 border border-white/10 bg-white/[0.03]"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-text-muted text-base leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
               </FadeIn>
@@ -761,10 +756,10 @@ export default function App() {
             <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/10 pb-16 text-white">
               <div>
-                <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
+                <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-display-serif font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
                 <p className="text-white/60 text-base md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
               </div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2" role="tablist" aria-label="Portfolio filter">{['all', 'brands', 'founders', 'construction'].map(tab => <button key={tab} role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-base font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2" role="tablist" aria-label="Portfolio filter">{['all', 'brands', 'founders', 'construction'].map(tab => <button key={tab} role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-base font-display-serif font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
             </div>
 
             {/* Featured project */}
@@ -778,7 +773,7 @@ export default function App() {
                   <div className="absolute inset-0 flex items-end p-8 md:p-12">
                     <div>
                       <p className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-aom-orange mb-2">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
-                      <h3 className="font-headline text-3xl md:text-5xl font-extrabold uppercase tracking-[-0.02em] text-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
+                      <h3 className="font-display-serif text-3xl md:text-5xl font-extrabold uppercase tracking-[-0.02em] text-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
                       <p className="text-white/70 text-base mt-3 max-w-md font-body">{shuffledData[activeTab].campaigns[0].sub}</p>
                     </div>
                   </div>
@@ -807,15 +802,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Pattern strip */}
-          <PatternStrip variant="diagonal" />
-
-          {/* 5. BRANDS + CORPORATE (dark charcoal) */}
-          <BrandsCallout openBrief={openBrief} />
-
-          {/* Accent bar divider */}
-          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
-
           {/* 6. SERVICES -- cream breathing section */}
           <ServicesGrid scrollToSection={scrollToSection} />
 
@@ -823,7 +809,7 @@ export default function App() {
           <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-mid-dark text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-16">
-                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
+                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-display-serif font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
@@ -838,10 +824,10 @@ export default function App() {
               <div className="mb-20">
                 <div className="max-w-xl">
                   <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">Why Us</span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-display-serif font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-base mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-display-serif font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-base mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
@@ -857,7 +843,7 @@ export default function App() {
             }} />
             <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
               <div className="w-12 h-[2px] bg-aom-orange mx-auto mb-8" />
-              <p className="font-headline text-2xl md:text-4xl font-bold uppercase tracking-[-0.02em] text-aom-text-light leading-[1.05]">
+              <p className="font-display-serif text-2xl md:text-4xl font-bold uppercase tracking-[-0.02em] text-aom-text-light leading-[1.05]">
                 If the asset doesn't move trust or attention, it's just expensive footage.
               </p>
               <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-aom-text-muted mt-6 font-bold">
@@ -875,7 +861,7 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
                 <FadeIn className="lg:col-span-4">
                   <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">FAQ</span>
-                  <h2 className="text-4xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Common<br /><span className="text-outline">Questions</span><span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-4xl md:text-6xl font-display-serif tracking-[-0.025em] leading-[1.0]">Common <em className="font-display-italic italic font-medium text-aom-orange">questions.</em></h2>
                   <p className="text-aom-text-muted text-base leading-relaxed mt-6 font-body">Can't find what you're looking for? Start a brief or give us a call.</p>
                 </FadeIn>
                 <div className="lg:col-span-8 space-y-3">
@@ -889,14 +875,14 @@ export default function App() {
           <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
           <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-white" aria-label="Site footer">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Start?</span></h2>
+              <h2 className="text-6xl md:text-[10rem] font-display-serif font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Start?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-[0.15em] text-base hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/30">Start a Brief</button>
-                <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.15em] text-base hover:text-white transition-all clip-path-slant border border-white/10 hover:border-white/20">Talk to Us</button>
+                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-display-serif font-extrabold uppercase tracking-[0.15em] text-base hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/30">Start a Brief</button>
+                <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-display-serif font-extrabold uppercase tracking-[0.15em] text-base hover:text-white transition-all clip-path-slant border border-white/10 hover:border-white/20">Talk to Us</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/10 pt-16">
-                <div><p className="text-aom-orange font-mono font-bold uppercase text-[11px] tracking-[0.3em] mb-4">Talk</p><button onClick={openPhone} className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] min-h-[44px] hover:text-aom-orange transition-colors">Call the Team</button></div>
-                <div><p className="text-aom-orange font-mono font-bold uppercase text-[11px] tracking-[0.3em] mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
+                <div><p className="text-aom-orange font-mono font-bold uppercase text-[11px] tracking-[0.3em] mb-4">Talk</p><button onClick={openPhone} className="text-white text-3xl font-display-serif font-extrabold tracking-[-0.02em] min-h-[44px] hover:text-aom-orange transition-colors">Call the Team</button></div>
+                <div><p className="text-aom-orange font-mono font-bold uppercase text-[11px] tracking-[0.3em] mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-display-serif font-extrabold tracking-[-0.02em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>
           </footer>
@@ -937,7 +923,7 @@ export default function App() {
                     <div className="space-y-10 relative z-10">
                       <div>
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-3xl font-headline font-extrabold text-white uppercase tracking-tighter">Start Brief<span className="text-orange-600">.</span></h2>
+                            <h2 className="text-3xl font-display-serif font-extrabold text-white uppercase tracking-tighter">Start Brief<span className="text-orange-600">.</span></h2>
                             <span className="text-[11px] font-mono text-white/50 font-bold tracking-widest uppercase">Step {step} of 3</span>
                         </div>
                         {selectedIntent && step === 1 && ( <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5"><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-widest">{selectedIntent.title}</span></div> )}

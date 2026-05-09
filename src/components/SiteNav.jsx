@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, Phone, ArrowRight } from 'lucide-react';
+import { Menu, X, Phone } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import CTAButton from './home/CTAButton';
 
 /**
  * SiteNav -- single source of truth for all page navigation.
@@ -90,15 +91,7 @@ export default function SiteNav({ transparent = false, onStartProject }) {
             >
               <Phone size={13} /> Talk to us
             </button>
-            <button
-              onClick={handleStartProject}
-              className="group bg-[#E85D26] text-[#0C0C0C] font-body font-semibold text-[13px] pl-5 pr-1.5 py-1.5 rounded-full hover:bg-[#FF6B2C] transition-colors inline-flex items-center gap-3 whitespace-nowrap"
-            >
-              <span>Start a project</span>
-              <span className="w-7 h-7 rounded-full bg-[#0C0C0C] flex items-center justify-center text-[#E85D26] shrink-0">
-                <ArrowRight size={13} />
-              </span>
-            </button>
+            <CTAButton size="sm" variant="06" onClick={handleStartProject}>Start a project</CTAButton>
           </div>
 
           {/* Mobile */}
@@ -211,15 +204,7 @@ export default function SiteNav({ transparent = false, onStartProject }) {
               >
                 <Phone size={14} /> Talk to us
               </button>
-              <button
-                onClick={() => { setMobileMenuOpen(false); handleStartProject(); }}
-                className="group bg-[#E85D26] text-[#0C0C0C] font-body font-semibold text-[14px] pl-6 pr-2 py-2 rounded-full hover:bg-[#FF6B2C] transition-colors inline-flex items-center gap-3"
-              >
-                <span>Start a project</span>
-                <span className="w-8 h-8 rounded-full bg-[#0C0C0C] flex items-center justify-center text-[#E85D26] shrink-0">
-                  <ArrowRight size={14} />
-                </span>
-              </button>
+              <CTAButton size="md" variant="06" onClick={() => { setMobileMenuOpen(false); handleStartProject(); }}>Start a project</CTAButton>
             </nav>
           </motion.div>
         )}
