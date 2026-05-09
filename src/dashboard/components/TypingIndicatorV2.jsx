@@ -11,8 +11,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 
-const SILENCE_MS = 45_000  // 45s — R73 stall state kicks in
-const POKE_MS = 300_000    // 5min (legacy poke button, kept as deeper fallback)
+const SILENCE_MS = 60_000    // 60s — R73 stall state kicks in (bumped from 45s: fewer false positives)
+const FALLBACK_MS = 120_000  // 120s total — show manual button only if auto-retry still hasn't produced a reply
+const POKE_MS = 300_000      // 5min (legacy poke button, kept as deeper fallback)
 
 let _stylesInjected = false
 function ensureStyles() {
@@ -44,6 +45,8 @@ export function TypingIndicatorV2({
   const [pokeUsed, setPokeUsed] = useState(false)
   const [stallCleared, setStallCleared] = useState(false)  // R73: user dismissed the stall
   const [clearState, setClearState] = useState('idle')     // R73: idle|working|done|error
+  const [autoFired, setAutoFired] = useState(false)        // R2: auto-fire fired for this session
+  const autoFiredRef = useRef(false)
   const startRef = useRef(null)
 
   useEffect(() => { ensureStyles() }, [])
@@ -55,6 +58,8 @@ export function TypingIndicatorV2({
       setPokeUsed(false)
       setStallCleared(false)
       setClearState('idle')
+      setAutoFired(false)
+      autoFiredRef.current = false
       startRef.current = null
       return
     }
@@ -65,12 +70,35 @@ export function TypingIndicatorV2({
     return () => clearInterval(tick)
   }, [streaming])
 
+  // R2: auto-fire clear-context silently when stall threshold is reached.
+  // Does NOT call onStall — keeps indicator visible while waiting for the retry.
+  // Falls back to a manual button at FALLBACK_MS if the retry also doesn't produce a reply.
+  useEffect(() => {
+    if (!streaming) return
+    const delay = stalled ? 0 : SILENCE_MS
+    const timer = setTimeout(async () => {
+      if (autoFiredRef.current) return
+      autoFiredRef.current = true
+      setAutoFired(true)
+      try {
+        await authFetch('/api/dashboard/clear-context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: agentSlug, client_id: worldId }),
+        })
+      } catch {}
+    }, delay)
+    return () => clearTimeout(timer)
+  }, [streaming, stalled]) // eslint-disable-line -- agentSlug/worldId stable per session
+
   if (!streaming) return null
 
   // R73-fix: OR with parent-driven `stalled` so wall-clock detection in
   // MessageList can fire even when this component has remounted (timer reset).
   const showStall = (msElapsed >= SILENCE_MS || stalled) && !stallCleared
   const showPoke = msElapsed >= POKE_MS && !pokeUsed && !showStall
+  // R2: show fallback manual button only after auto-fire + another FALLBACK_MS window elapsed.
+  const showFallback = autoFired && msElapsed >= FALLBACK_MS && !stallCleared
 
   const handlePoke = () => {
     setPokeUsed(true)
@@ -119,36 +147,38 @@ export function TypingIndicatorV2({
           ))}
         </span>
 
-        {/* R73 stall state — visible break + clear & retry */}
+        {/* R73 stall state — visible text; button removed (R2: auto-fire replaces it) */}
         {showStall && (
-          <>
-            <span
-              data-testid="typing-stall-text"
-              style={{
-                color: '#EF4444', fontSize: 10, fontWeight: 600,
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
-            >
-              {agentName || 'Agent'} went quiet
-            </span>
-            <button
-              data-testid={`typing-stall-clear-${agentSlug || ''}`}
-              onClick={handleClearAndRetry}
-              disabled={clearState === 'working'}
-              style={{
-                background: '#EF444418',
-                border: '1px solid #EF444440',
-                borderRadius: 5, padding: '2px 8px',
-                color: '#EF4444', fontSize: 10, fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace",
-                cursor: clearState === 'working' ? 'progress' : 'pointer',
-                flexShrink: 0,
-                animation: 'twPokeIn 0.35s ease-out',
-              }}
-            >
-              {clearState === 'working' ? 'clearing…' : clearState === 'error' ? 'retry' : 'clear & retry'}
-            </button>
-          </>
+          <span
+            data-testid="typing-stall-text"
+            style={{
+              color: '#EF4444', fontSize: 10, fontWeight: 600,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            {agentName || 'Agent'} went quiet
+          </span>
+        )}
+
+        {/* R2: fallback manual button — only after auto-fire + FALLBACK_MS window */}
+        {showFallback && (
+          <button
+            data-testid={`typing-stall-clear-${agentSlug || ''}`}
+            onClick={handleClearAndRetry}
+            disabled={clearState === 'working'}
+            style={{
+              background: '#EF444418',
+              border: '1px solid #EF444440',
+              borderRadius: 5, padding: '2px 8px',
+              color: '#EF4444', fontSize: 10, fontWeight: 700,
+              fontFamily: "'JetBrains Mono', monospace",
+              cursor: clearState === 'working' ? 'progress' : 'pointer',
+              flexShrink: 0,
+              animation: 'twPokeIn 0.35s ease-out',
+            }}
+          >
+            {clearState === 'working' ? 'clearing…' : clearState === 'error' ? 'retry' : 'clear & retry'}
+          </button>
         )}
 
         {/* Legacy poke button (5min+; hidden once stall kicks in) */}
@@ -205,8 +235,8 @@ export function TypingIndicatorV2({
         )}
       </div>
 
-      {/* R73 stall CTA */}
-      {showStall && (
+      {/* R2: fallback manual button — only after auto-fire + FALLBACK_MS window */}
+      {showFallback && (
         <button
           data-testid={`typing-stall-clear-${agentSlug || ''}`}
           onClick={handleClearAndRetry}
