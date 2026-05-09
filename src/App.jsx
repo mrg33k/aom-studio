@@ -734,7 +734,7 @@ export default function App() {
               <FadeIn className="border-b border-white/10 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
                   <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
-                  <h2 className="text-5xl md:text-7xl font-display-serif font-extrabold text-aom-text-light tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-display-serif text-aom-text-light tracking-[-0.025em] leading-[1.0]">The work <em className="font-display-italic italic font-medium text-aom-orange">speaks.</em></h2>
                 </div>
                 <div className="w-full lg:max-w-md p-7 border border-white/10 bg-white/[0.03]"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-text-muted text-base leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
               </FadeIn>
@@ -756,7 +756,7 @@ export default function App() {
             <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/10 pb-16 text-white">
               <div>
-                <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-display-serif font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
+                <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-display-serif tracking-[-0.025em] leading-[1.0]">The <em className="font-display-italic italic font-medium text-aom-orange">portfolio.</em></h2>
                 <p className="text-white/60 text-base md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
               </div>
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2" role="tablist" aria-label="Portfolio filter">{['all', 'brands', 'founders', 'construction'].map(tab => <button key={tab} role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-base font-display-serif font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
@@ -809,7 +809,7 @@ export default function App() {
           <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-mid-dark text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-16">
-                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-display-serif font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
+                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-display-serif tracking-[-0.025em] leading-[1.0]">Pick what <em className="font-display-italic italic font-medium text-aom-orange">fits.</em></h2></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
@@ -824,7 +824,7 @@ export default function App() {
               <div className="mb-20">
                 <div className="max-w-xl">
                   <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">Why Us</span>
-                  <h2 className="text-5xl md:text-7xl font-display-serif font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-display-serif tracking-[-0.025em] leading-[1.0]">Why it <em className="font-display-italic italic font-medium text-aom-orange">works.</em></h2>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-display-serif font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-base mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
@@ -875,7 +875,7 @@ export default function App() {
           <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
           <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-white" aria-label="Site footer">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-display-serif font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Start?</span></h2>
+              <h2 className="text-6xl md:text-[10rem] font-display-serif tracking-[-0.03em] mb-24 leading-[1.0]">Ready to <em className="font-display-italic italic font-medium text-aom-orange">start?</em></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-display-serif font-extrabold uppercase tracking-[0.15em] text-base hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/30">Start a Brief</button>
                 <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-display-serif font-extrabold uppercase tracking-[0.15em] text-base hover:text-white transition-all clip-path-slant border border-white/10 hover:border-white/20">Talk to Us</button>
