@@ -14,6 +14,7 @@ import {
 import HeroSection from './components/HeroSection';
 import LiveActivityTicker from './components/LiveActivityTicker';
 import ServicesGrid from './components/ServicesGrid';
+import TwoWaysSection from './components/home/TwoWaysSection';
 import SiteNav from './components/SiteNav';
 
 // --- FIREBASE & STORAGE CONFIG ---
@@ -718,39 +719,7 @@ export default function App() {
           {/* 1b. LIVE ACTIVITY TICKER — ESPN-style scrolling client work, ported from /r4 */}
           <LiveActivityTicker />
 
-          {/* 3. STATS + TESTIMONIALS (dark, social proof) */}
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-mid-dark relative">
-            {/* Film grain */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay z-0" aria-hidden="true">
-              <svg width="100%" height="100%">
-                <filter id="stats-grain">
-                  <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" />
-                  <feColorMatrix type="saturate" values="0" />
-                </filter>
-                <rect width="100%" height="100%" filter="url(#stats-grain)" />
-              </svg>
-            </div>
-            <div className="max-w-screen-2xl mx-auto w-full relative z-10">
-              <FadeIn className="border-b border-white/10 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
-                <div className="max-w-3xl">
-                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
-                  <h2 className="text-5xl md:text-7xl font-display-serif text-aom-text-light tracking-[-0.025em] leading-[1.0]">The work <em className="font-display-italic italic font-medium text-aom-orange">speaks.</em></h2>
-                </div>
-                <div className="w-full lg:max-w-md p-7 border border-white/10 bg-white/[0.03]"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-text-muted text-base leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
-              </FadeIn>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FadeIn><VibeStat icon={Building2} kicker="Projects Shipped" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Across construction, hospitality, non-profit, tech, and events." /></FadeIn>
-                <FadeIn delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Clients Served" valueNode={<span><CountUp to={34} /><span className="text-aom-orange">+</span></span>} sub="Phoenix-based, nationally active. Every project gets the same team, the same standard." accent /></FadeIn>
-                <FadeIn delay={0.2}><VibeStat icon={Clapperboard} kicker="Videos Delivered" valueNode={<span><CountUp to={100} /><span className="text-aom-orange">+</span></span>} sub={<span>Archive verified: <span className="text-aom-orange">{videoTotal}</span> projects found in current build.</span>} /></FadeIn>
-              </div>
-              <FadeIn className="mt-16"><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{TESTIMONIALS.map((t, i) => <TestimonialCard key={i} t={t} />)}</div></FadeIn>
-            </div>
-          </section>
-
-          {/* Accent bar divider */}
-          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
-
-          {/* 4. PORTFOLIO (dark) */}
+          {/* 2. PORTFOLIO (dark) */}
           <section id="work" className="py-24 md:py-36 bg-aom-night-card relative z-10 overflow-hidden">
             {/* Accent divider */}
             <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
@@ -802,23 +771,10 @@ export default function App() {
             </div>
           </section>
 
-          {/* 6. SERVICES -- cream breathing section */}
-          <ServicesGrid scrollToSection={scrollToSection} />
+          {/* 3. TWO WAYS — Tabbed (D) variant ported from /r4 */}
+          <TwoWaysSection openBrief={openBrief} />
 
-          {/* 7. ENGAGEMENT IDEAS / "Pick What Fits" (dark) */}
-          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-mid-dark text-aom-text-light">
-            <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-16">
-                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-display-serif tracking-[-0.025em] leading-[1.0]">Pick what <em className="font-display-italic italic font-medium text-aom-orange">fits.</em></h2></div>
-              </FadeIn>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
-            </div>
-          </section>
-
-          {/* Pattern strip */}
-          <PatternStrip variant="diagonal" />
-
-          {/* 8. TRUST METRICS / "Why It Works" (dark card bg) */}
+          {/* 4. WHY IT WORKS (dark card bg) */}
           <section className="px-6 md:px-12 py-16 md:py-24 overflow-hidden bg-aom-night text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="mb-20">
@@ -831,31 +787,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* AI content lives on /ai now */}
-
-          {/* Pattern strip */}
-          <PatternStrip variant="dots" />
-
-          {/* 10. PULL QUOTE (dark, visual emphasis) */}
-          <section className="py-20 md:py-32 bg-aom-night relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{
-              background: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(232,93,38,0.08) 5px, rgba(232,93,38,0.08) 6px)'
-            }} />
-            <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-              <div className="w-12 h-[2px] bg-aom-orange mx-auto mb-8" />
-              <p className="font-display-serif text-2xl md:text-4xl font-bold uppercase tracking-[-0.02em] text-aom-text-light leading-[1.05]">
-                If the asset doesn't move trust or attention, it's just expensive footage.
-              </p>
-              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-aom-text-muted mt-6 font-bold">
-                That's how we think about every project.
-              </p>
-            </div>
-          </section>
-
-          {/* Accent bar divider */}
-          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
-
-          {/* 11. FAQ (dark) */}
+          {/* 5. FAQ (dark) */}
           <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
