@@ -477,6 +477,7 @@ export default function ChatPanel() {
     settingsOpen: settings.settingsOpen, setSettingsOpen: settings.setSettingsOpen,
     settingsTab: settings.settingsTab, setSettingsTab: settings.setSettingsTab,
     filesOpen: settings.filesOpen, setFilesOpen: settings.setFilesOpen,
+    canonFilesOpen: settings.canonFilesOpen, setCanonFilesOpen: settings.setCanonFilesOpen,
     profileOpen: settings.profileOpen, setProfileOpen: settings.setProfileOpen,
     recipesOpen: settings.recipesOpen, setRecipesOpen: settings.setRecipesOpen,
     chatNameInput: settings.chatNameInput, setChatNameInput: settings.setChatNameInput,
@@ -495,6 +496,7 @@ export default function ChatPanel() {
     saveEnvKey: settings.saveEnvKey, deleteEnvKey: settings.deleteEnvKey,
   }), [
     settings.settingsOpen, settings.settingsTab, settings.filesOpen,
+    settings.canonFilesOpen,
     settings.profileOpen, settings.recipesOpen,
     settings.chatNameInput, settings.inviteEmail, settings.inviteLoading,
     settings.inviteMsg, settings.collaborators, settings.envKeys,

@@ -604,6 +604,31 @@ export default function useChatMessages({
     return () => clearTimeout(timer)
   }, [messages, selectedAgent?.slug, selectedProject?.slug, selectedProject?.isShared, worldId])
 
+  // ── R3 (2026-05-12): poll /api/dashboard/message-steps while awaiting reply ─
+  // The events table is RLS-blocked for realtime delivery to the browser, so
+  // chain items emitted mid-work (by relay-keepalive's poke step + the
+  // PostToolUse auto-step-emit hook + explicit relay-emit-step.py calls) only
+  // become visible AFTER the assistant reply lands (via the 4s safety-net or
+  // the on-subscribe refetch). That makes the chain look like history, not
+  // live activity. This effect polls every 1.2s while a real user message is
+  // awaiting a reply, so each new step shows up within ~1-2s of being written.
+  useEffect(() => {
+    if (!worldId || !messages.length || !refetchStepsRef.current) return
+    let lastRealIdx = -1
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const id = String(messages[i].id)
+      if (!id.startsWith('temp-') && !id.startsWith('bridge-stream-') && !id.startsWith('voice-')) {
+        lastRealIdx = i; break
+      }
+    }
+    if (lastRealIdx === -1) return
+    if (messages[lastRealIdx].role !== 'user') return
+    const hasResponse = messages.slice(lastRealIdx + 1).some(m => m.role === 'assistant')
+    if (hasResponse) return
+    const interval = setInterval(() => { refetchStepsRef.current?.() }, 1200)
+    return () => clearInterval(interval)
+  }, [messages, selectedAgent?.slug, selectedProject?.slug, worldId])
+
   // ── Re-fetch steps when a new settled assistant message arrives without steps ─
   // events RLS blocks realtime postgres_changes delivery to the browser, so the
   // step INSERT in handleInsert (above) never fires for new replies. refetchSteps
