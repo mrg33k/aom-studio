@@ -2,17 +2,17 @@
 // compact=true  : fits inside a message bubble (ChatBar inline)
 // compact=false : stands alone below messages (UnifiedPanel, ChatDashboard)
 //
-// R73 (session 22 /007 — fail-loud principle): after SILENCE_MS of no agent
-// response the indicator flips to a visible stall state with a one-click
-// clear-and-retry CTA. Silence is the worst failure mode — the user can't
-// tell working-hard from dead. 45s is past a normal reply window but well
-// before the 5min legacy poke. The clear button fires the existing
-// /api/dashboard/clear-context endpoint so the agent gets a fresh shell.
+// 2026-05-12 (relay-respond-hygiene R3): auto-fire of /clear at the silence
+// threshold was killing Elon mid-reply (two /clear fires per user message
+// around the 45-60s mark, observed every turn in prod). relay-keepalive
+// already detects dead Claude processes and restarts them, so the auto-fire
+// was redundant *and* destructive. Removed. We still show the "went quiet"
+// state visually and surface the manual "clear & retry" button immediately
+// at the silence threshold; the user decides whether to interrupt.
 import React, { useState, useEffect, useRef } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 
-const SILENCE_MS = 60_000    // 60s — R73 stall state kicks in (bumped from 45s: fewer false positives)
-const FALLBACK_MS = 120_000  // 120s total — show manual button only if auto-retry still hasn't produced a reply
+const SILENCE_MS = 90_000    // 90s — Elon routine routing + tool calls run 60-90s; raise the bar before signaling stall
 const POKE_MS = 300_000      // 5min (legacy poke button, kept as deeper fallback)
 
 let _stylesInjected = false
@@ -43,23 +43,19 @@ export function TypingIndicatorV2({
 }) {
   const [msElapsed, setMsElapsed] = useState(0)
   const [pokeUsed, setPokeUsed] = useState(false)
-  const [stallCleared, setStallCleared] = useState(false)  // R73: user dismissed the stall
-  const [clearState, setClearState] = useState('idle')     // R73: idle|working|done|error
-  const [autoFired, setAutoFired] = useState(false)        // R2: auto-fire fired for this session
-  const autoFiredRef = useRef(false)
+  const [stallCleared, setStallCleared] = useState(false)  // user dismissed the stall
+  const [clearState, setClearState] = useState('idle')     // idle|working|done|error
   const startRef = useRef(null)
 
   useEffect(() => { ensureStyles() }, [])
 
-  // Track elapsed so we can fire R73 stall (45s) and legacy poke (5min).
+  // Track elapsed so we can show stall state and the legacy 5min poke.
   useEffect(() => {
     if (!streaming) {
       setMsElapsed(0)
       setPokeUsed(false)
       setStallCleared(false)
       setClearState('idle')
-      setAutoFired(false)
-      autoFiredRef.current = false
       startRef.current = null
       return
     }
@@ -70,35 +66,16 @@ export function TypingIndicatorV2({
     return () => clearInterval(tick)
   }, [streaming])
 
-  // R2: auto-fire clear-context silently when stall threshold is reached.
-  // Does NOT call onStall — keeps indicator visible while waiting for the retry.
-  // Falls back to a manual button at FALLBACK_MS if the retry also doesn't produce a reply.
-  useEffect(() => {
-    if (!streaming) return
-    const delay = stalled ? 0 : SILENCE_MS
-    const timer = setTimeout(async () => {
-      if (autoFiredRef.current) return
-      autoFiredRef.current = true
-      setAutoFired(true)
-      try {
-        await authFetch('/api/dashboard/clear-context', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent: agentSlug, client_id: worldId }),
-        })
-      } catch {}
-    }, delay)
-    return () => clearTimeout(timer)
-  }, [streaming, stalled]) // eslint-disable-line -- agentSlug/worldId stable per session
-
   if (!streaming) return null
 
-  // R73-fix: OR with parent-driven `stalled` so wall-clock detection in
-  // MessageList can fire even when this component has remounted (timer reset).
+  // OR with parent-driven `stalled` so wall-clock detection in MessageList
+  // can fire even when this component has remounted (timer reset).
   const showStall = (msElapsed >= SILENCE_MS || stalled) && !stallCleared
   const showPoke = msElapsed >= POKE_MS && !pokeUsed && !showStall
-  // R2: show fallback manual button only after auto-fire + another FALLBACK_MS window elapsed.
-  const showFallback = autoFired && msElapsed >= FALLBACK_MS && !stallCleared
+  // Manual "clear & retry" button shows the moment we flag stall — user decides
+  // whether to interrupt. (Previously this required a 120s delay after an
+  // auto-fire that has now been removed.)
+  const showFallback = showStall
 
   const handlePoke = () => {
     setPokeUsed(true)
@@ -147,7 +124,7 @@ export function TypingIndicatorV2({
           ))}
         </span>
 
-        {/* R73 stall state — visible text; button removed (R2: auto-fire replaces it) */}
+        {/* Stall state — visible "went quiet" text (manual retry button below) */}
         {showStall && (
           <span
             data-testid="typing-stall-text"
@@ -160,7 +137,7 @@ export function TypingIndicatorV2({
           </span>
         )}
 
-        {/* R2: fallback manual button — only after auto-fire + FALLBACK_MS window */}
+        {/* Manual "clear & retry" — shown the moment we flag stall; user decides */}
         {showFallback && (
           <button
             data-testid={`typing-stall-clear-${agentSlug || ''}`}
@@ -235,7 +212,7 @@ export function TypingIndicatorV2({
         )}
       </div>
 
-      {/* R2: fallback manual button — only after auto-fire + FALLBACK_MS window */}
+      {/* Manual "clear & retry" — shown the moment we flag stall; user decides */}
       {showFallback && (
         <button
           data-testid={`typing-stall-clear-${agentSlug || ''}`}
