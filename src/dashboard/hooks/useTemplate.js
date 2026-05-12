@@ -14,6 +14,7 @@ export function useTemplate(slug, { pollMs = 10_000 } = {}) {
     if (!slug) return
 
     let cancelled = false
+    // fallow-ignore-next-line complexity
     async function fetchOnce() {
       try {
         const res = await fetch(`${REGISTRY_BASE}/api/templates/${encodeURIComponent(slug)}`)
@@ -51,6 +52,7 @@ export function useTemplate(slug, { pollMs = 10_000 } = {}) {
 
 // Returns the full registry (all templates). For pages that need the list,
 // not a single slug. Same daemon, same poll cadence.
+// fallow-ignore-next-line unused-export
 export function useTemplateRegistry({ pollMs = 10_000 } = {}) {
   const [registry, setRegistry] = useState(null)
   const [error, setError] = useState(null)
@@ -58,6 +60,7 @@ export function useTemplateRegistry({ pollMs = 10_000 } = {}) {
 
   useEffect(() => {
     let cancelled = false
+    // fallow-ignore-next-line complexity
     async function fetchOnce() {
       try {
         const res = await fetch(`${REGISTRY_BASE}/api/templates`)

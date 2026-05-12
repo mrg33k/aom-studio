@@ -2,6 +2,11 @@
 > Auto-generated. This is WHERE things live across all AOM repos.
 > Agents: use this to find files. Don't guess paths. Don't grep blindly.
 ## aom-studio (Dashboard, API, React frontend on Vercel)
+
+> **Naming note (2026-05-12):** This REPO is named `aom-studio` and contains the Corner platform code.
+> The AOM company **dashboard room** was also previously labeled 'aom-studio' but was renamed to
+> `aheadofmarket.com` (slug: `aheadofmarket`) to remove the collision. The repo name is unchanged.
+
 **Path:** /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio
 
 ### HARD RULE
