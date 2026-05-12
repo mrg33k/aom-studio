@@ -1,19 +1,17 @@
 // GET /api/dashboard/project-summary?slug=corner
 //
-// Returns the latest project-summary event row for a given project slug.
-// Written by scripts/project-summary-daemon.py into the shared `events`
-// table with event_type='project_summary', agent=<slug>. The dashboard's
-// TasksPanel polls this every few seconds to render the live summary card
-// above the task list.
+// Returns the current project summary for a given project slug.
+// Written by scripts/project-summary-daemon.py into the `cm_state` table
+// with kind='project_summary', scope_id=<slug>. As of chat-perf-finishing
+// R3 (2026-05-11), state-shape writes use cm_state (upsert-in-place)
+// instead of events (append-only) to keep the events table bounded.
 //
-// Uses the service role key because the `events` table has RLS on and the
-// anon key can't SELECT it. R2 was directly fetching from the browser and
-// silently returning empty results.
+// Uses the service role key because cm_state has RLS on.
 //
-// Response shape:
+// Response shape (preserved from the events-era for frontend compatibility):
 // {
 //   event: {
-//     timestamp: "2026-04-15T20:57:00Z",
+//     timestamp: "2026-05-11T20:57:00Z",  // mapped from cm_state.updated_at
 //     payload: {
 //       summary_md, open_task_count, recent_completions,
 //       last_human_intent, reasons, updated_at, revision,
@@ -44,10 +42,11 @@ export default async function handler(req, res) {
 
   try {
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/events` +
-      `?event_type=eq.project_summary` +
-      `&agent=eq.${encodeURIComponent(rawSlug)}` +
-      `&order=timestamp.desc` +
+      `${SUPABASE_URL}/rest/v1/cm_state` +
+      `?kind=eq.project_summary` +
+      `&scope_id=eq.${encodeURIComponent(rawSlug)}` +
+      `&client_id=eq.aom` +
+      `&select=payload,updated_at` +
       `&limit=1`,
       {
         headers: {
@@ -67,9 +66,16 @@ export default async function handler(req, res) {
     }
 
     const rows = await resp.json();
-    const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+    const stateRow = Array.isArray(rows) && rows.length ? rows[0] : null;
+
+    // Map cm_state shape → events-era response shape so the frontend
+    // (TasksPanel) doesn't need to change. timestamp = updated_at.
+    const event = stateRow
+      ? { timestamp: stateRow.updated_at, payload: stateRow.payload }
+      : null;
+
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ event: row });
+    return res.status(200).json({ event });
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'unknown error' });
   }
