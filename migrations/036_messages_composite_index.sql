@@ -1,0 +1,58 @@
+-- ============================================================
+-- Migration 036: Composite index on messages for chat-load perf
+-- Date: 2026-05-11
+-- Mission: corner:launch-mvp (chat-perf-finishing)
+--
+-- Problem:
+--   The dashboard chat-load query
+--     SELECT * FROM messages
+--      WHERE client_id = $1 AND agent = $2
+--        AND (project IS NULL OR project = '')
+--      ORDER BY timestamp DESC LIMIT 200
+--   returns 500 (timeout) and 504 (Cloudflare timeout) on production. Confirmed
+--   via browser DevTools network capture during a real chat load on 2026-05-11.
+--
+-- Root cause:
+--   migrations/015 added a composite index for `tasks` matching its dashboard
+--   query pattern (idx_tasks_client_status on client_id + status + priority + sort_order).
+--   It only added `idx_messages_client_id` (single column) on `messages`. Postgres
+--   has to use that index, scan all matching rows for agent equality, then sort
+--   by timestamp. On a heavy table this becomes a slow scan + in-memory sort.
+--
+-- Fix:
+--   Composite index matching the chat-load filter+sort pattern.
+--   Pattern: equality columns first, sort column last.
+--   CONCURRENTLY = non-blocking, no table lock, safe on prod.
+--
+-- Cage-match note:
+--   This is Option A from the cage-match round. If after deploy + measurement
+--   the chat-load query is NOT meaningfully faster, follow up with migration 037
+--   (two narrower indexes for planner flexibility) and DROP this index.
+-- ============================================================
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_client_agent_timestamp
+  ON messages (client_id, agent, timestamp DESC);
+
+-- Verification queries (run after migration):
+--
+--   -- 1. Confirm the index exists
+--   SELECT indexname, indexdef
+--   FROM pg_indexes
+--   WHERE schemaname = 'public'
+--     AND tablename  = 'messages'
+--     AND indexname  = 'idx_messages_client_agent_timestamp';
+--
+--   -- 2. EXPLAIN ANALYZE the failing query — should use the new index now
+--   EXPLAIN (ANALYZE, BUFFERS)
+--   SELECT *
+--   FROM messages
+--   WHERE client_id = 'aom' AND agent = 'elon'
+--     AND (project IS NULL OR project = '')
+--   ORDER BY timestamp DESC
+--   LIMIT 200;
+--
+--   Expected: Index Scan on idx_messages_client_agent_timestamp
+--   Not expected: Seq Scan on messages, or Bitmap Heap Scan
+--
+-- Rollback (if needed):
+--   DROP INDEX CONCURRENTLY IF EXISTS idx_messages_client_agent_timestamp;
