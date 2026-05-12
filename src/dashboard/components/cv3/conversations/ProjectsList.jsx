@@ -9,6 +9,7 @@ import { formatChatTime } from '../shared.jsx'
 import PinMenu from './PinMenu.jsx'
 import { supabase } from '../../../lib/supabase.js'
 import { getClientId } from '../../../lib/clientConfig.js'
+import { useTemplate } from '../../../hooks/useTemplate'
 
 function mapArchivedRow(row) {
   return {
@@ -22,6 +23,7 @@ function mapArchivedRow(row) {
 function ProjectRow({ project, projectPreviews, activeProjectSlugs, setInlineProject, setMessages, setSelectedAgent, onSelectProject, isPinned, onPin, onUnpin, onReorder, isArchived, onArchive, onUnarchive }) {
   const pColor = project.color || '#6B8AB0'
   const pPreview = projectPreviews?.[`project:${project.slug}`]
+  const { template } = useTemplate(project.slug)
 
   const handleContextMenu = (e) => {
     e.preventDefault(); e.stopPropagation()
@@ -116,7 +118,9 @@ function ProjectRow({ project, projectPreviews, activeProjectSlugs, setInlinePro
               fontFamily: "'JetBrains Mono', monospace",
               flexShrink: 0,
             }}>
-              {pPreview?.timestamp ? formatChatTime(pPreview.timestamp) : ''}
+              {template?.last_meaningful_update
+                ? formatChatTime(template.last_meaningful_update)
+                : pPreview?.timestamp ? formatChatTime(pPreview.timestamp) : ''}
             </span>
           </div>
           {!isArchived && activeProjectSlugs?.has(project.slug) ? (
