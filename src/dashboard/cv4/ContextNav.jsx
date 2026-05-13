@@ -1,0 +1,288 @@
+// CV4 ContextNav — second navigation row.
+//
+// Layout: [hamburger] + [context title with switcher dropdown]
+//         · [Chat | Tasks toggle]
+//         · [compaction meters slot]
+//
+// R5.1 Phase H: the old in-thread ThreadHeader is gone; everything that
+// used to live there moves here or into the bottom Commands menu. Title
+// becomes a click-to-switch dropdown (agents + projects). Right slot
+// renders the context-fullness + storage-quota meters when an agent
+// chat is active.
+
+import { useState, useRef, useEffect } from 'react'
+import { C } from '../lib/cv3Colors.js'
+import { Badge, Tab } from '../components/cv3/shared.jsx'
+import { ChatIcon, TasksIcon } from '../components/cv3/icons.jsx'
+import ContextFullnessMeter from '../components/cv3/session/ContextFullnessMeter.jsx'
+import StorageQuotaMeter from '../components/cv3/session/StorageQuotaMeter.jsx'
+
+export default function CV4ContextNav({
+  tab,
+  onSwitchTab,
+  unreadChat = 0,
+  activeTaskCount = 0,
+  drawerOpen,
+  onToggleDrawer,
+  selectedAgent,
+  conversationTarget,
+  agents = [],
+  projects = [],
+  onSelectAgent,
+  onSelectProject,
+  worldId,
+}) {
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const switcherRef = useRef(null)
+
+  useEffect(() => {
+    if (!switcherOpen) return
+    const handler = (e) => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target)) setSwitcherOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [switcherOpen])
+
+  let title = 'Home'
+  let dotColor = null
+  let switchable = false
+  if (tab === 'tasks') {
+    title = conversationTarget?.type === 'project' ? conversationTarget.name : 'Tasks'
+    dotColor = conversationTarget?.type === 'project' ? (conversationTarget.color || C.yellow) : null
+  } else if (selectedAgent) {
+    title = selectedAgent.name
+    dotColor = selectedAgent.color || C.accent
+    switchable = true
+  } else if (conversationTarget?.type === 'project') {
+    title = conversationTarget.name
+    dotColor = conversationTarget.color || C.blue
+    switchable = true
+  }
+
+  const sortedProjects = [...projects].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  const showMeters = tab === 'chat' && selectedAgent?.slug
+
+  return (
+    <div
+      data-cv4-context-nav
+      style={{
+        width: '100%',
+        flexShrink: 0,
+        background: C.bg,
+        borderBottom: '1px solid ' + C.border,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 16px',
+        gap: 12,
+        position: 'sticky',
+        top: 0,
+        zIndex: 99,
+      }}
+    >
+      {/* LEFT: hamburger + context title (click to switch agents/projects) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '0 1 auto' }}>
+        <button
+          data-testid="cv4-context-drawer-toggle"
+          onClick={onToggleDrawer}
+          aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
+          style={{
+            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+            background: drawerOpen ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${drawerOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+            color: drawerOpen ? C.accent : C.muted,
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        <div ref={switcherRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          {dotColor && (
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: dotColor, flexShrink: 0,
+            }} />
+          )}
+          {switchable ? (
+            <button
+              data-testid="cv4-context-title-switcher"
+              onClick={() => setSwitcherOpen(o => !o)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: 'none', border: 'none', padding: 0,
+                cursor: 'pointer',
+                color: C.text,
+                fontFamily: "'Inter', sans-serif",
+                minWidth: 0,
+              }}
+            >
+              <span style={{
+                fontSize: 14, fontWeight: 600,
+                letterSpacing: '-0.01em',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{title}</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ flexShrink: 0, transform: switcherOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms ease' }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          ) : (
+            <span style={{
+              fontSize: 14, fontWeight: 600, color: C.text,
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '-0.01em',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{title}</span>
+          )}
+
+          {switcherOpen && switchable && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              marginTop: 6,
+              width: 260,
+              maxHeight: 360,
+              overflowY: 'auto',
+              background: C.s1,
+              border: `1px solid ${C.border2}`,
+              borderRadius: 12,
+              padding: 6,
+              zIndex: 200,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+            }}>
+              {agents.length > 0 && (
+                <>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: C.dim,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    padding: '6px 8px 4px',
+                  }}>Agents</div>
+                  {agents.map(agent => (
+                    <button
+                      key={`cv4-sw-a-${agent.slug}`}
+                      onClick={() => {
+                        setSwitcherOpen(false)
+                        if (agent.slug !== selectedAgent?.slug) onSelectAgent?.(agent)
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        width: '100%', padding: '8px 8px',
+                        borderRadius: 8,
+                        background: agent.slug === selectedAgent?.slug ? 'rgba(16,185,129,0.10)' : 'transparent',
+                        border: 'none', cursor: 'pointer', textAlign: 'left',
+                      }}
+                      onMouseEnter={e => { if (agent.slug !== selectedAgent?.slug) e.currentTarget.style.background = C.s2 }}
+                      onMouseLeave={e => { if (agent.slug !== selectedAgent?.slug) e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                        background: agent.color || C.accent,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, fontSize: 10, color: '#000',
+                      }}>
+                        {(agent.name || '?')[0].toUpperCase()}
+                      </div>
+                      <span style={{
+                        fontSize: 13, fontWeight: 600, color: C.text,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{agent.name}</span>
+                      {agent.slug === selectedAgent?.slug && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </>
+              )}
+              {sortedProjects.length > 0 && (
+                <>
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 8px' }} />
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: C.dim,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    padding: '6px 8px 4px',
+                  }}>Projects</div>
+                  {sortedProjects.map(project => {
+                    const pColor = project.color || '#6B8AB0'
+                    return (
+                      <button
+                        key={`cv4-sw-p-${project.id || project.slug}`}
+                        onClick={() => {
+                          setSwitcherOpen(false)
+                          onSelectProject?.(project)
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          width: '100%', padding: '8px 8px',
+                          borderRadius: 8,
+                          background: 'transparent',
+                          border: 'none', cursor: 'pointer', textAlign: 'left',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = C.s2 }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                      >
+                        <div style={{
+                          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                          background: `linear-gradient(135deg, ${pColor}44, ${pColor}22)`,
+                          border: `1px solid ${pColor}33`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <div style={{ width: 8, height: 8, borderRadius: 2, background: pColor }} />
+                        </div>
+                        <span style={{
+                          fontSize: 13, fontWeight: 600, color: C.text,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{project.name}</span>
+                      </button>
+                    )
+                  })}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CENTER: Chat | Tasks toggle */}
+      <div style={{ display: 'flex', gap: 2 }}>
+        <Tab
+          label="Chat"
+          icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
+          active={tab === 'chat'}
+          onClick={() => onSwitchTab('chat')}
+          badge={<Badge count={unreadChat} />}
+        />
+        <Tab
+          label="Tasks"
+          icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
+          active={tab === 'tasks'}
+          onClick={() => onSwitchTab('tasks')}
+          badge={<Badge count={activeTaskCount} color={C.yellow} />}
+        />
+      </div>
+
+      {/* RIGHT: compaction meters (chat with agent) — used to live in
+          the old ThreadHeader's outsideWhenClosed slot. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
+        {showMeters && (
+          <>
+            <ContextFullnessMeter agentSlug={selectedAgent.slug} />
+            <StorageQuotaMeter world={worldId || 'aom'} />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

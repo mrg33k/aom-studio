@@ -1,0 +1,412 @@
+// CV4 composer Commands menu — a vivid purple "stars" button that lives
+// OUTSIDE the message pill on the left. Click → vertical popover rises
+// above the button with every action that used to live in the old
+// ThreadHeader actions drawer plus the new image-gen picker.
+//
+// Surfaces:
+//   Image generation → Gemini / Ideogram / OpenAI (sets selectedImageTool)
+//   About <agent>     → opens agent profile drawer (super agents)
+//   Phone             → toggles voice recording
+//   Clear context     → super-agent only, two-step confirm
+//   Files             → opens the files panel
+//   Recipes           → opens the recipes panel
+//   Settings          → opens settings
+//
+// The menu reads all state from ChatPanel's provider tree, so it works
+// inside both ThreadInputBar (agent chat) and ProjectInputBar (project
+// chat). Agent-only rows are hidden when there's no selectedAgent.
+//
+// R5.1 Phase H.
+
+import { useState, useRef, useEffect } from 'react'
+import { C } from '../lib/cv3Colors.js'
+import { IMAGE_TOOLS } from '../components/cv3/shared/ImageGenPicker.jsx'
+import { authFetch } from '../lib/authFetch.js'
+import { resetContextMeter } from '../components/cv3/session/ContextFullnessMeter.jsx'
+import {
+  useChatCore,
+  useChatMessagesCtx,
+  useChatRecordingCtx,
+  useChatSettingsCtx,
+} from '../components/cv3/chat/ChatPanelContext.jsx'
+
+const PURPLE = '#A78BFA'
+const PURPLE_BG = 'rgba(167,139,250,0.18)'
+const PURPLE_RING = 'rgba(167,139,250,0.45)'
+
+export default function ComposerCommandsMenu({
+  open,
+  setOpen,
+  setSelectedImageTool,
+}) {
+  const wrapRef = useRef(null)
+  const [view, setView] = useState('root')
+
+  const { selectedAgent, agents, worldId, resetExchangeCount } = useChatCore()
+  const { setMessages } = useChatMessagesCtx()
+  const { isRecording, handleMicToggle } = useChatRecordingCtx()
+  const {
+    filesOpen, setFilesOpen,
+    settingsOpen, setSettingsOpen,
+    profileOpen, setProfileOpen,
+    recipesOpen, setRecipesOpen,
+  } = useChatSettingsCtx()
+
+  const selectedAgentRecord = agents?.find(a => String(a?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
+    || agents?.find(a => a?.slug === selectedAgent?.slug)
+  const isSuperAgent = Boolean(selectedAgentRecord?.is_super || selectedAgent?.is_super)
+  const hasAgent = Boolean(selectedAgent?.slug)
+
+  const [clearStage, setClearStage] = useState('idle')
+  async function handleClearContext() {
+    if (!selectedAgent?.slug) return
+    if (clearStage === 'idle') { setClearStage('confirm'); return }
+    if (clearStage !== 'confirm') return
+    setClearStage('working')
+    try {
+      await authFetch('/api/dashboard/clear-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: selectedAgent.slug, client_id: worldId || 'aom' }),
+      })
+    } catch (_) {}
+    resetExchangeCount?.()
+    resetContextMeter(selectedAgent?.slug)
+    setMessages?.([])
+    setClearStage('done')
+    setTimeout(() => setClearStage('idle'), 2500)
+  }
+
+  useEffect(() => {
+    if (!open) {
+      setView('root')
+      setClearStage('idle')
+      return
+    }
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open, setOpen])
+
+  return (
+    <div
+      ref={wrapRef}
+      data-testid="cv4-commands-menu"
+      style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+    >
+      <button
+        type="button"
+        title="Commands"
+        data-testid="cv4-commands-menu-button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: 42, height: 42, borderRadius: '50%',
+          background: open
+            ? PURPLE_BG
+            : 'linear-gradient(135deg, rgba(167,139,250,0.20) 0%, rgba(139,92,246,0.28) 100%)',
+          border: open ? `1.5px solid ${PURPLE_RING}` : '1.5px solid rgba(167,139,250,0.30)',
+          color: PURPLE,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.15s',
+          boxShadow: open
+            ? `0 0 0 4px rgba(167,139,250,0.10), 0 4px 14px rgba(124,58,237,0.30)`
+            : '0 2px 8px rgba(124,58,237,0.20)',
+        }}
+      >
+        <SparklesIcon />
+      </button>
+
+      {open && (
+        <div
+          data-testid="cv4-commands-menu-popover"
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 10px)',
+            left: 0,
+            minWidth: 260,
+            background: C.s1,
+            border: '1px solid ' + C.border2,
+            borderRadius: 14,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+            padding: 6,
+            zIndex: 50,
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          {view === 'root' && (
+            <>
+              <MenuHeader>Commands</MenuHeader>
+              <MenuRow
+                icon={<ImageIcon />}
+                label="Image generation"
+                detail="Gemini · Ideogram · OpenAI"
+                hasSubmenu
+                onClick={() => setView('image-gen')}
+                testid="cv4-commands-image-gen"
+              />
+              {hasAgent && (
+                <MenuRow
+                  icon={<InfoIcon />}
+                  label={`About ${selectedAgent.name}`}
+                  onClick={() => { setProfileOpen(o => !o); setOpen(false) }}
+                  active={profileOpen}
+                  testid={`cv4-commands-info-${selectedAgent.slug}`}
+                />
+              )}
+              <MenuRow
+                icon={<PhoneIcon recording={isRecording} />}
+                label={isRecording ? 'Stop recording' : 'Record voice message'}
+                onClick={() => { handleMicToggle?.(); setOpen(false) }}
+                active={isRecording}
+                tint={isRecording ? '#EF4444' : null}
+                testid="cv4-commands-phone"
+              />
+              {hasAgent && isSuperAgent && (
+                clearStage === 'confirm' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px' }}>
+                    <span style={{ fontSize: 11, color: '#F87171', flex: 1 }}>Clear agent context?</span>
+                    <button
+                      onClick={handleClearContext}
+                      style={{
+                        height: 24, padding: '0 8px', borderRadius: 6,
+                        background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)',
+                        cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#F87171',
+                      }}
+                    >Yes</button>
+                    <button
+                      onClick={() => setClearStage('idle')}
+                      style={{
+                        height: 24, padding: '0 8px', borderRadius: 6,
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                        cursor: 'pointer', fontSize: 11, color: C.muted,
+                      }}
+                    >No</button>
+                  </div>
+                ) : (
+                  <MenuRow
+                    icon={<TrashIcon stage={clearStage} />}
+                    label={clearStage === 'done' ? 'Context cleared' : 'Clear agent context'}
+                    detail={clearStage === 'working' ? 'Working…' : null}
+                    onClick={handleClearContext}
+                    tint={clearStage === 'done' ? '#6EE7B7' : null}
+                    testid={`cv4-commands-clear-${selectedAgent?.slug || 'na'}`}
+                  />
+                )
+              )}
+              <MenuRow
+                icon={<FilesIcon />}
+                label="Files in this chat"
+                onClick={() => { setFilesOpen(o => !o); setOpen(false) }}
+                active={filesOpen}
+                testid="cv4-commands-files"
+              />
+              {hasAgent && (
+                <MenuRow
+                  icon={<FlaskIcon />}
+                  label="Recipes"
+                  detail={`What ${selectedAgent.name} can run`}
+                  onClick={() => { setRecipesOpen(o => !o); setOpen(false) }}
+                  active={recipesOpen}
+                  tint={recipesOpen ? '#F9A8D4' : null}
+                  testid={`cv4-commands-recipes-${selectedAgent.slug}`}
+                />
+              )}
+              <MenuRow
+                icon={<SettingsIcon />}
+                label="Settings"
+                onClick={() => { setSettingsOpen(o => !o); setOpen(false) }}
+                active={settingsOpen}
+                testid="cv4-commands-settings"
+              />
+            </>
+          )}
+          {view === 'image-gen' && (
+            <>
+              <MenuHeader onBack={() => setView('root')}>Image generation</MenuHeader>
+              {IMAGE_TOOLS.map(tool => (
+                <MenuRow
+                  key={tool.id}
+                  icon={<ImageIcon />}
+                  label={tool.name}
+                  detail={tool.detail}
+                  onClick={() => {
+                    setSelectedImageTool(tool.id)
+                    setOpen(false)
+                  }}
+                  testid={`cv4-commands-image-gen-${tool.id}`}
+                />
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MenuHeader({ children, onBack }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '6px 10px 8px',
+    }}>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            width: 18, height: 18, borderRadius: '50%',
+            background: 'none', border: 'none', color: C.muted,
+            cursor: 'pointer', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+      )}
+      <span style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+        textTransform: 'uppercase', color: C.dim,
+      }}>{children}</span>
+    </div>
+  )
+}
+
+function MenuRow({ icon, label, detail, hasSubmenu, onClick, testid, active, tint }) {
+  return (
+    <button
+      type="button"
+      data-testid={testid}
+      onClick={onClick}
+      style={{
+        width: '100%',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 10px',
+        background: active ? 'rgba(255,255,255,0.04)' : 'none',
+        border: 'none', borderRadius: 8,
+        color: tint || C.text,
+        cursor: 'pointer', textAlign: 'left',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = active ? 'rgba(255,255,255,0.04)' : 'none' }}
+    >
+      <span style={{
+        width: 28, height: 28, borderRadius: 8,
+        background: 'rgba(255,255,255,0.04)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: tint || C.muted, flexShrink: 0,
+      }}>
+        {icon}
+      </span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+        {detail && (
+          <span style={{ fontSize: 11, color: C.muted, fontWeight: 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{detail}</span>
+        )}
+      </span>
+      {hasSubmenu && (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      )}
+    </button>
+  )
+}
+
+function SparklesIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z" fill="currentColor" fillOpacity="0.25"/>
+      <path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z" fill="currentColor" fillOpacity="0.25"/>
+      <path d="M5 15l.6 1.6L7.2 17l-1.6.6L5 19l-.6-1.4L2.8 17l1.6-.6z" fill="currentColor" fillOpacity="0.25"/>
+    </svg>
+  )
+}
+
+function ImageIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2.5" />
+      <circle cx="8.5" cy="9" r="1.5" />
+      <path d="M21 15l-5-5-9 9" />
+    </svg>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+  )
+}
+
+function PhoneIcon({ recording }) {
+  if (recording) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="6" y="6" width="12" height="12" rx="2"/>
+      </svg>
+    )
+  }
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+    </svg>
+  )
+}
+
+function FilesIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+  )
+}
+
+function FlaskIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3h6M10 3v5.5l-4.5 9a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L14 8.5V3"/>
+    </svg>
+  )
+}
+
+function SettingsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  )
+}
+
+function TrashIcon({ stage }) {
+  if (stage === 'working') {
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+    )
+  }
+  if (stage === 'done') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    )
+  }
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+    </svg>
+  )
+}

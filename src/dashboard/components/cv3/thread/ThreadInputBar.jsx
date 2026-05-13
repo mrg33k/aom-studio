@@ -5,6 +5,7 @@ import IntegrationsModal from '../IntegrationsModal.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
 import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import ImageGenPicker from '../shared/ImageGenPicker.jsx'
+import ComposerCommandsMenu from '../../../cv4/ComposerCommandsMenu.jsx'
 import {
   useChatCore,
   useChatSendCtx,
@@ -33,6 +34,10 @@ export default function ThreadInputBar() {
   // Caret position for slash-command autocomplete
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
+
+  // CV4 swaps the inert chevron for a vertical commands menu (image gen, etc.)
+  const isCv4 = typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')
+  const [commandsOpen, setCommandsOpen] = useState(false)
 
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
   // Auto-open the modal when the user lands back from the OAuth callback so
@@ -100,7 +105,22 @@ export default function ThreadInputBar() {
           </div>
         )
       })()}
-      <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
+      <div style={{
+        position: 'relative',
+        maxWidth: isCv4 ? 612 : 560,
+        margin: '0 auto',
+        display: isCv4 ? 'flex' : 'block',
+        alignItems: 'center',
+        gap: isCv4 ? 8 : 0,
+      }}>
+      {isCv4 && (
+        <ComposerCommandsMenu
+          open={commandsOpen}
+          setOpen={setCommandsOpen}
+          setSelectedImageTool={setSelectedImageTool}
+        />
+      )}
+      <div style={{ flex: isCv4 ? 1 : undefined, minWidth: 0, position: 'relative' }}>
       <SlashCommandAutocomplete
         value={input}
         setValue={setInput}
@@ -122,6 +142,7 @@ export default function ThreadInputBar() {
         <ImageGenPicker
           selectedImageTool={selectedImageTool}
           setSelectedImageTool={setSelectedImageTool}
+          hideTrigger={isCv4}
         />
         <input
           ref={inputRef}
@@ -148,8 +169,9 @@ export default function ThreadInputBar() {
             fontFamily: "'Inter', sans-serif",
           }}
         />
-        {/* Action buttons inside pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* Action buttons inside pill. data-role="composer-actions" lets shells
+            (e.g. /cv4) reorder this cluster relative to the input via CSS. */}
+        <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Attach */}
           <button
             title="Attach"
@@ -171,18 +193,22 @@ export default function ThreadInputBar() {
               </svg>
             )}
           </button>
-          {/* Commands */}
-          <button title="Commands" onClick={() => {}} style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'none', border: 'none',
-            color: C.muted, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, transition: 'all 0.15s',
-          }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
-            </svg>
-          </button>
+          {/* CV4 hoists the Commands button OUTSIDE the pill (purple
+              sparkles icon, left of the pill). CV3 keeps the inert
+              chevron until promotion. */}
+          {!isCv4 && (
+            <button title="Commands" onClick={() => {}} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.15s',
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+            </button>
+          )}
         </div>
         {/* Mic button (hidden when input or chips present) */}
         {!hasContent && (
@@ -242,6 +268,7 @@ export default function ThreadInputBar() {
             )}
           </button>
         )}
+      </div>
       </div>
       </div>
     </div>

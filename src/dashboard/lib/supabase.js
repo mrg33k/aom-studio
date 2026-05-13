@@ -1,17 +1,33 @@
 // Supabase client for Corner dashboard
 // Uses VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (client-safe, read-only capable)
 // These must be set in Vercel env vars with VITE_ prefix to be exposed to the browser.
+//
+// Fixture mode: set VITE_USE_FIXTURES=1 in .env.local to swap the real client
+// for a fake one backed by JSON snapshots under src/dashboard/__fixtures__/latest.
+// Run `npm run snapshot` first to populate the fixtures. The dynamic import below
+// is dead-code-eliminated when the flag is off, so prod builds never see the
+// fake client or the fixture JSON.
 
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === '1'
 
-// Returns null if env vars are missing (localhost without Supabase configured).
+let _supabase = null
+
+if (USE_FIXTURES) {
+  const { fixtureClient, fixtureSummary } = await import('./fixtureClient.js')
+  _supabase = fixtureClient
+  // eslint-disable-next-line no-console
+  console.log('[supabase] FIXTURE MODE — using local JSON snapshot:', fixtureSummary())
+} else if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+}
+
+// Returns null if env vars are missing AND fixture mode is off.
 // All callers should guard: if (!supabase) { fall back to local API }
-export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null
+export const supabase = _supabase
 
 // messages table schema:
 //   id          uuid primary key default gen_random_uuid()
