@@ -493,7 +493,10 @@ export default function CornerV4() {
           <LiveCallProvider>
     <div data-testid="dashboard-home-root" data-shell="cv4" style={{
       width: '100%',
-      height: '100dvh',
+      // 100vh fallback; the @supports rule below upgrades to 100svh which
+      // tracks the SMALL viewport (URL bar visible). 100dvh was overshooting
+      // on iOS Safari and creating ~200px of empty space below the composer.
+      height: '100vh',
       background: C.bg,
       display: 'flex',
       flexDirection: 'column',
@@ -503,6 +506,14 @@ export default function CornerV4() {
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
+        /* R6.5: viewport sizing — upgrade fallback 100vh to 100svh on browsers
+           that support it. svh matches the smallest visible viewport (URL bar
+           up) so the composer never gets pushed below the visible area on
+           iOS Safari. dvh was overshooting and producing a ~200px bottom gap
+           on tablet/mobile. */
+        @supports (height: 100svh) {
+          [data-shell="cv4"] { height: 100svh !important; }
+        }
         [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
         [data-shell="cv4"] [data-role="thread-header"] { display: none !important; }
         /* R6.4: message bubble typography — prose-grade reading, not SMS.

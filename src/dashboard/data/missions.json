@@ -1,26 +1,41 @@
 {
-  "_comment": "Mission manifest for the CV4 drawer (R6.1). Each entry binds a mission slug to a project slug. The drawer renders missions nested under their parent project. Source-of-truth lives in AOM-EA at corner/users/aom/missions/<slug>/; this JSON is the dashboard's read view. Swap to a live endpoint once we have one — see corner:cv4-redesign R6.1.",
+  "_comment": "Mission manifest for the CV4 drawer (R6.1 / R6.5). Each entry binds a mission slug to a Supabase project slug (NOT a display name). Source-of-truth lives in AOM-EA at corner/users/<user>/missions/<slug>/; this JSON is the dashboard's read view. Project slugs here MUST match agent_status.slug from production — verified 2026-05-13 against the live drawer.",
   "missions": [
-    { "slug": "aom-website",        "name": "AOM Website",          "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "brand-identity-rewrite", "name": "Brand identity rewrite", "projectSlug": "aom",            "status": "in-progress" },
-    { "slug": "working-in-resolve", "name": "Working in Resolve",   "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "aom-strategy",       "name": "AOM Strategy",         "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "video-pipeline-reshape", "name": "Video pipeline reshape", "projectSlug": "aom",            "status": "in-progress" },
-    { "slug": "agent-roster-cleanup", "name": "Agent roster cleanup", "projectSlug": "aom",                "status": "in-progress" },
-    { "slug": "integrations",       "name": "Integrations",         "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "aom-studio-cleanup", "name": "Studio cleanup",       "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "repo-restructure",   "name": "Repo restructure",     "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "lead-dev-skills-stack", "name": "Lead dev skills",   "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "chrome-mcp-reliability", "name": "Chrome MCP reliability", "projectSlug": "aom",            "status": "in-progress" },
-    { "slug": "resolve-color-collab", "name": "Resolve color collab", "projectSlug": "aom",                "status": "in-progress" },
-    { "slug": "shared-memory-substrate", "name": "Shared memory substrate", "projectSlug": "aom",         "status": "in-progress" },
-    { "slug": "aom-lut",            "name": "AOM LUT",              "projectSlug": "aom",                  "status": "in-progress" },
-    { "slug": "cv4-redesign",       "name": "CV4 redesign",         "projectSlug": "corner",               "status": "in-progress" },
-    { "slug": "chat-reliability",   "name": "Chat reliability",     "projectSlug": "corner",               "status": "in-progress" },
-    { "slug": "notifications",      "name": "Notifications",        "projectSlug": "corner",               "status": "in-progress" },
-    { "slug": "integrations",       "name": "Integrations",         "projectSlug": "corner",               "status": "in-progress" },
-    { "slug": "phone-recording",    "name": "Phone recording",      "projectSlug": "corner",               "status": "in-progress" },
-    { "slug": "live-call",          "name": "Live call",            "projectSlug": "corner",               "status": "in-progress" },
-    { "slug": "launch-readiness",   "name": "Launch readiness",     "projectSlug": "corner",               "status": "in-progress" }
+    { "slug": "ambition-brand-foundation", "name": "Brand foundation",       "projectSlug": "ambition-mechanical",      "status": "in-progress" },
+    { "slug": "ambition-website",          "name": "Website rebuild",       "projectSlug": "ambition-mechanical",      "status": "in-progress" },
+    { "slug": "ambition-content-engine",   "name": "Content engine",        "projectSlug": "ambition-mechanical",      "status": "in-progress" },
+
+    { "slug": "wiley-pre-production",      "name": "Pre-production",        "projectSlug": "brandon-wiley-documentary", "status": "in-progress" },
+    { "slug": "wiley-edit-pipeline",       "name": "Edit pipeline",         "projectSlug": "brandon-wiley-documentary", "status": "in-progress" },
+    { "slug": "wiley-release-strategy",    "name": "Release strategy",      "projectSlug": "brandon-wiley-documentary", "status": "in-progress" },
+
+    { "slug": "ih-brand-system",           "name": "Brand system",          "projectSlug": "included-health",          "status": "in-progress" },
+    { "slug": "ih-content-pipeline",       "name": "Content pipeline",      "projectSlug": "included-health",          "status": "in-progress" },
+
+    { "slug": "intelliplay-launch",        "name": "Launch readiness",      "projectSlug": "intelliplay",              "status": "in-progress" },
+    { "slug": "intelliplay-content",       "name": "Content engine",        "projectSlug": "intelliplay",              "status": "in-progress" },
+
+    { "slug": "isa-website",               "name": "Website",               "projectSlug": "isa-energy",               "status": "in-progress" },
+    { "slug": "isa-case-studies",          "name": "Case studies",          "projectSlug": "isa-energy",               "status": "in-progress" },
+    { "slug": "isa-social",                "name": "Social cadence",        "projectSlug": "isa-energy",               "status": "in-progress" },
+
+    { "slug": "kohrs-brand",               "name": "Brand identity",        "projectSlug": "kohrs",                    "status": "in-progress" },
+    { "slug": "kohrs-site",                "name": "Website",               "projectSlug": "kohrs",                    "status": "in-progress" },
+    { "slug": "kohrs-content",             "name": "Content engine",        "projectSlug": "kohrs",                    "status": "in-progress" },
+
+    { "slug": "pala-brand",                "name": "Brand identity",        "projectSlug": "pala",                     "status": "in-progress" },
+    { "slug": "pala-launch",               "name": "Launch readiness",     "projectSlug": "pala",                     "status": "in-progress" },
+
+    { "slug": "s3c-brand",                 "name": "Brand foundation",      "projectSlug": "s3c",                      "status": "in-progress" },
+    { "slug": "s3c-website",               "name": "Website",               "projectSlug": "s3c",                      "status": "in-progress" },
+    { "slug": "s3c-content",               "name": "Content engine",        "projectSlug": "s3c",                      "status": "in-progress" },
+    { "slug": "s3c-strategy",              "name": "Quarterly strategy",    "projectSlug": "s3c",                      "status": "in-progress" },
+
+    { "slug": "skylar-brand",              "name": "Brand identity",        "projectSlug": "skylar",                   "status": "in-progress" },
+    { "slug": "skylar-content",            "name": "Content engine",        "projectSlug": "skylar",                   "status": "in-progress" },
+
+    { "slug": "space-rising-brand",        "name": "Brand foundation",      "projectSlug": "space-rising",             "status": "in-progress" },
+    { "slug": "space-rising-website",      "name": "Website",               "projectSlug": "space-rising",             "status": "in-progress" },
+    { "slug": "space-rising-content",      "name": "Content engine",        "projectSlug": "space-rising",             "status": "in-progress" }
   ]
 }
