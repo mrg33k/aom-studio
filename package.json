@@ -9,6 +9,7 @@
     "build": "vite build",
     "generate-briefs": "node scripts/generate-briefs-index.js",
     "enrich-municipalities": "node scripts/enrich-municipality-contacts.js",
+    "snapshot": "node --env-file=.env scripts/snapshot-dashboard-data.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
