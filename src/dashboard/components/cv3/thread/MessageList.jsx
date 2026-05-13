@@ -790,9 +790,58 @@ export default function MessageList({ roomType = 'agent' }) {
                     const isMulti = atts.length > 1
                     const items = atts.map((att, attIdx) => {
                       const isImage = att.mime && att.mime.startsWith('image/')
+                      const isVideo = att.mime && att.mime.startsWith('video/')
+                      const isAudio = att.mime && att.mime.startsWith('audio/')
                       const openAttachment = () => {
                         if (!att.url) return
                         try { window.open(att.url, '_blank', 'noopener,noreferrer') } catch (_) {}
+                      }
+                      if (isVideo) {
+                        return (
+                          <div
+                            key={attIdx}
+                            style={{
+                              alignSelf: isUser ? 'flex-end' : 'flex-start',
+                              borderRadius: 16,
+                              overflow: 'hidden',
+                              maxWidth: '70%',
+                              background: '#000',
+                              boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            <video
+                              controls
+                              preload="metadata"
+                              src={att.url}
+                              style={{ display: 'block', width: '100%', maxHeight: 480, borderRadius: 16 }}
+                            />
+                            {att.name && (
+                              <div style={{ fontSize: 11, color: C.muted, padding: '6px 10px', background: C.s1 }}>
+                                {att.name}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      }
+                      if (isAudio) {
+                        return (
+                          <div
+                            key={attIdx}
+                            style={{
+                              alignSelf: isUser ? 'flex-end' : 'flex-start',
+                              borderRadius: 16,
+                              padding: 12,
+                              background: `linear-gradient(180deg, ${C.s2}, ${C.s1})`,
+                              border: `1px solid ${C.border2}`,
+                              maxWidth: 360,
+                            }}
+                          >
+                            <audio controls preload="metadata" src={att.url} style={{ width: '100%' }} />
+                            {att.name && (
+                              <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>{att.name}</div>
+                            )}
+                          </div>
+                        )
                       }
                       if (isImage) {
                         return (
