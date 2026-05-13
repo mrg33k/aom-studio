@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import integrationsData from '../../../data/integrations.json'
 import { C } from '../../lib/cv3Colors.js'
+import { supabase } from '../../lib/supabase.js'
 
 const REGISTRY = integrationsData.integrations
 const STORAGE_KEY = 'corner.integrations.connected.v1'
@@ -22,6 +23,18 @@ function loadLocalConnected() {
 
 function saveLocalConnected(map) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)) } catch {}
+}
+
+async function authedFetch(url, init = {}) {
+  const headers = { ...(init.headers || {}) }
+  try {
+    if (supabase) {
+      const { data } = await supabase.auth.getSession()
+      const token = data?.session?.access_token
+      if (token) headers.Authorization = `Bearer ${token}`
+    }
+  } catch {}
+  return fetch(url, { ...init, credentials: 'include', headers })
 }
 
 function categoryAccent(category) {
@@ -71,7 +84,7 @@ export default function IntegrationsModal({ open, onClose }) {
     const local = loadLocalConnected()
     setConnectedMap(local)
     setLoading(true)
-    fetch('/api/integrations/list', { credentials: 'include' })
+    authedFetch('/api/integrations/list')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data && Array.isArray(data.integrations)) {
@@ -132,8 +145,8 @@ export default function IntegrationsModal({ open, onClose }) {
     const next = { ...connectedMap, [slug]: { status: 'connected', connected_at: new Date().toISOString() } }
     setConnectedMap(next)
     saveLocalConnected(next)
-    fetch('/api/integrations/connect', {
-      method: 'POST', credentials: 'include',
+    authedFetch('/api/integrations/connect', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug }),
     }).catch(() => {})
@@ -144,8 +157,8 @@ export default function IntegrationsModal({ open, onClose }) {
     delete next[slug]
     setConnectedMap(next)
     saveLocalConnected(next)
-    fetch('/api/integrations/disconnect', {
-      method: 'POST', credentials: 'include',
+    authedFetch('/api/integrations/disconnect', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug }),
     }).catch(() => {})
