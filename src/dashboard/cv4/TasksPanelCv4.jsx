@@ -18,8 +18,10 @@ import { TasksPanelProvider, useTasksPanelCtx } from '../components/cv3/tasks/Ta
 import { TaskContextMenu } from '../components/cv3/ContextMenu.jsx'
 
 import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from '../components/cv3/tasks/FilesSection.jsx'
+import LivingParagraphCard from '../components/cv3/tasks/LivingParagraphCard.jsx'
 import TaskInputBar from '../components/cv3/tasks/TaskInputBar.jsx'
 import CreateProjectModal from '../components/cv3/tasks/CreateProjectModal.jsx'
+import { useCornerAuth } from '../CornerContext.jsx'
 
 export default function TasksPanelCv4() {
   const ctx = useTasksPanel()
@@ -49,6 +51,7 @@ function TasksPanelCv4Body() {
     handleTaskMoveTo,
   } = useTasksPanelCtx()
   const { selectedAgent, conversationTarget } = useCornerNav()
+  const { worldId } = useCornerAuth()
 
   // R7.2: when the active conversation changes, sync the task filter scope.
   //  - Project chat → that project
@@ -103,6 +106,16 @@ function TasksPanelCv4Body() {
           toggleCreateProjectModal={toggleCreateProjectModal}
           startConversationalProjectCreation={startConversationalProjectCreation}
         />
+
+        {/* Living narrative — the constantly-updated paragraph that keeps
+            you up to speed on the current scope. Same component the CV3
+            dashboard used; the writer pipeline + Supabase realtime
+            subscription are already wired. */}
+        {!searchQuery && !activeMissionPath && (
+          <div data-cv4-tasks-narrative style={{ marginBottom: 14 }}>
+            <LivingParagraphCard world={worldId} activeProject={activeProject} />
+          </div>
+        )}
 
         {/* Live state. */}
         <TaskSection
