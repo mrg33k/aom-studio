@@ -47,6 +47,7 @@ const AmbitionPerformance = lazy(() => import('./pages/AmbitionPerformance.jsx')
 const AmbitionPerformanceV2 = lazy(() => import('./pages/AmbitionPerformanceV2.jsx'))
 const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
+const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
 const CleoWorkspaceDetail = lazy(() => import('./dashboard/components/cv3/CleoWorkspaceDetail.jsx'))
 const BriefPage = lazy(() => import('./pages/BriefPage.jsx'))
@@ -265,6 +266,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
+          {/* CV4 WD-40 design playground — mirrors /dashboard, iterates toward convention-first shell. */}
+          <Route path="/cv4" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/cv4/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/cv4/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/cv4/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
         </Routes>
       </Suspense>
     </BrowserRouter>
