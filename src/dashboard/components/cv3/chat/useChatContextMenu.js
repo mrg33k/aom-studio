@@ -42,14 +42,30 @@ export default function useChatContextMenu({
   }, [selectedProject, worldId])
 
   // MESSAGES: Follow-up → set chip, focus composer
+  // fallow-ignore-next-line complexity
   const handleMessageFollowUp = useCallback((msg) => {
     if (!msg) return
+    // Extract attachment info so the reply chip can show a video/image thumbnail
+    let metaAtt = null
+    if (msg.metadata) {
+      if (typeof msg.metadata === 'object') metaAtt = msg.metadata.attachment
+      else { try { metaAtt = JSON.parse(msg.metadata)?.attachment } catch (_) {} }
+    }
+    const atts = (msg.attachments && msg.attachments.length) ? msg.attachments : null
+    const attUrl = atts?.[0]?.url || msg.attachment_url || metaAtt?.url || null
+    const attMime = atts?.[0]?.mime || msg.file_mime_type || metaAtt?.mime || null
+    const attachmentKind = attMime?.startsWith('video/') ? 'video'
+      : attMime?.startsWith('image/') ? 'image'
+      : attMime?.startsWith('audio/') ? 'audio'
+      : null
     setReplyTo({
       type: 'message',
       id: msg.id,
       label: msg.agent || msg.role || 'message',
       snippet: snippetOf(msg.text),
       agent: msg.agent,
+      attachment_kind: attachmentKind,
+      attachment_url: attachmentKind ? attUrl : null,
     })
     setTimeout(() => inputRef?.current?.focus(), 40)
   }, [snippetOf, inputRef])

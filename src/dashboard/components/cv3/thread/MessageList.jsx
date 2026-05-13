@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react'
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -7,7 +7,7 @@ import StepThread from '../shared/StepThread.jsx'
 import useSyntheticChain from '../shared/useSyntheticChain.js'
 import DocUpdatesStripe from '../shared/DocUpdateCard.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
-import { NeedsVerificationBadge, MessageContextMenu } from '../ContextMenu.jsx'
+import { NeedsVerificationBadge, MessageContextMenu, MobileActionSheet } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
 import MessageStatusLabel from './MessageStatusLabel.jsx'
 import SummaryMessage from './SummaryMessage.jsx'
@@ -197,7 +197,7 @@ export default function MessageList({ roomType = 'agent' }) {
   const isProject = roomType === 'project'
 
   const {
-    selectedAgent, selectedProject, currentUser, displayName, allTasks, agents, worldId,
+    selectedAgent, selectedProject, currentUser, displayName, allTasks, agents, worldId, isMobile,
   } = useChatCore()
   const {
     messages, loadingMsgs, messagesEndRef, userProfiles,
@@ -215,6 +215,23 @@ export default function MessageList({ roomType = 'agent' }) {
 
   const { msgMenu, setMsgMenu, openMsgMenu, startLongPress, cancelLongPress } = useThreadMsgMenu()
   const { respondedSet, awaitingResponse } = useThreadMessageStatus(messages)
+
+  // Hover state for desktop action buttons (desktop only; on mobile long-press fires the sheet)
+  const [hoverMsgId, setHoverMsgId] = useState(null)
+
+  // Scroll to a message and briefly flash-highlight it
+  const scrollToAndHighlight = useCallback((messageId) => {
+    const el = document.querySelector(`[data-message-id="${CSS.escape(String(messageId))}"]`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.style.transition = 'background 0.1s ease'
+    el.style.background = 'rgba(16,185,129,0.18)'
+    el.style.borderRadius = '12px'
+    setTimeout(() => {
+      el.style.background = ''
+      setTimeout(() => { el.style.transition = '' }, 400)
+    }, 900)
+  }, [])
 
   // R73: invoked by TypingIndicatorV2 after the stall-CTA fires.
   const handleTypingStall = () => {
@@ -650,6 +667,12 @@ export default function MessageList({ roomType = 'agent' }) {
             ? arr.slice(idx + 1).some(m => m.role === 'assistant' && !String(m.id).startsWith('temp-'))
             : false
 
+          // Parse reply_to from this message's metadata for quote header rendering
+          const msgMeta = parseMeta(msg)
+          const replyToData = msgMeta.reply_to && msgMeta.reply_to.message_id ? msgMeta.reply_to : null
+          // Find original message for quote header (look up in full messages array)
+          const replyOriginal = replyToData ? messages.find(m => String(m.id) === String(replyToData.message_id)) : null
+
           return (
             <React.Fragment key={msg.id}>
               {/* c76e17f9: inter-turn spine connector. */}
@@ -658,6 +681,56 @@ export default function MessageList({ roomType = 'agent' }) {
                   <div style={{ width: 20, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                     <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.05)' }} />
                   </div>
+                </div>
+              )}
+              <div style={{ position: 'relative', ...floatStyle }}
+                onMouseEnter={() => !isMobile && setHoverMsgId(msg.id)}
+                onMouseLeave={() => setHoverMsgId(null)}
+              >
+              {/* Desktop hover action buttons */}
+              {!isMobile && hoverMsgId === msg.id && (
+                <div style={{
+                  position: 'absolute',
+                  top: -28,
+                  right: isUser ? 0 : undefined,
+                  left: isUser ? undefined : 38,
+                  display: 'flex',
+                  gap: 4,
+                  zIndex: 200,
+                }}>
+                  {[
+                    {
+                      key: 'reply', title: 'Reply',
+                      icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>,
+                      onClick: () => handleMessageFollowUp(msg),
+                    },
+                    {
+                      key: 'copy', title: 'Copy',
+                      icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+                      onClick: () => { if (msg.text) navigator.clipboard?.writeText(msg.text).catch(() => {}) },
+                    },
+                  ].map(btn => (
+                    <button
+                      key={btn.key}
+                      title={btn.title}
+                      onClick={btn.onClick}
+                      data-test-id={`msg-hover-${btn.key}-${msg.id}`}
+                      style={{
+                        width: 28, height: 28, borderRadius: 8,
+                        background: 'rgba(30,41,59,0.92)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: 'rgba(226,232,240,0.8)',
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                        transition: 'background 0.12s, color 0.12s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; e.currentTarget.style.color = '#34D399' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(30,41,59,0.92)'; e.currentTarget.style.color = 'rgba(226,232,240,0.8)' }}
+                    >
+                      {btn.icon}
+                    </button>
+                  ))}
                 </div>
               )}
               <div
@@ -676,7 +749,6 @@ export default function MessageList({ roomType = 'agent' }) {
                   alignItems: 'flex-end',
                   gap: 10,
                   marginBottom: userBubbleSteps ? 0 : (isUser ? 4 : 12),
-                  ...floatStyle,
                 }}
               >
                 {/* Assistant avatar: circle for agents, square gem for projects. */}
@@ -698,6 +770,64 @@ export default function MessageList({ roomType = 'agent' }) {
                   )
                 )}
                 <div style={{ maxWidth: isUser ? '75%' : '85%', minWidth: 0 }}>
+                  {/* Quote header: rendered when this message is a reply to another message */}
+                  {replyToData && (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      data-test-id={`quote-header-${msg.id}`}
+                      onClick={() => scrollToAndHighlight(replyToData.message_id)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToAndHighlight(replyToData.message_id) } }}
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 8,
+                        marginBottom: 4,
+                        padding: '5px 10px',
+                        borderLeft: '3px solid rgba(16,185,129,0.55)',
+                        borderRadius: '0 6px 6px 0',
+                        background: 'rgba(16,185,129,0.07)',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 10, fontWeight: 700, color: 'rgba(52,211,153,0.85)',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          letterSpacing: '0.03em',
+                          marginBottom: 2,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
+                          {replyToData.sender || replyOriginal?.agent || 'message'}
+                        </div>
+                        <div style={{
+                          fontSize: 12, color: 'rgba(226,232,240,0.5)',
+                          lineHeight: 1.35,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {replyToData.snippet || (replyOriginal?.text ? replyOriginal.text.slice(0, 100) : null) || (replyToData.attachment_kind ? `[${replyToData.attachment_kind}]` : '—')}
+                        </div>
+                      </div>
+                      {replyToData.attachment_kind === 'video' && replyToData.attachment_url && (
+                        <video
+                          src={replyToData.attachment_url}
+                          preload="metadata"
+                          muted
+                          style={{ width: 52, height: 36, borderRadius: 4, objectFit: 'cover', flexShrink: 0, background: '#000' }}
+                        />
+                      )}
+                      {replyToData.attachment_kind === 'image' && replyToData.attachment_url && (
+                        <img
+                          src={replyToData.attachment_url}
+                          alt=""
+                          style={{ width: 52, height: 36, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      )}
+                    </div>
+                  )}
                   {/* Project rooms: other-user name above bubble. */}
                   {isProject && isUser && isOtherUser && (
                     <div style={{
@@ -1072,6 +1202,7 @@ export default function MessageList({ roomType = 'agent' }) {
                   </div>
                 )}
               </div>
+              </div>{/* end hover wrapper */}
               {/* R75-r65-f: under-user step chain, indented to agent-avatar column. */}
               {userBubbleSteps && (
                 <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
@@ -1128,19 +1259,34 @@ export default function MessageList({ roomType = 'agent' }) {
       <div ref={messagesEndRef} />
     </div>
 
-    {/* Right-click / long-press context menu for messages. */}
-    <MessageContextMenu
-      open={!!msgMenu}
-      x={msgMenu?.x || 0}
-      y={msgMenu?.y || 0}
-      message={msgMenu?.message || null}
-      agents={agents || []}
-      onClose={() => setMsgMenu(null)}
-      onFollowUp={(m) => handleMessageFollowUp?.(m)}
-      onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
-      onResearch={(m) => handleMessageResearch?.(m)}
-      onSendTo={(target) => handleMessageSendTo?.(msgMenu?.message, target)}
-    />
+    {/* Right-click / long-press context menu for messages (desktop) */}
+    {!isMobile && (
+      <MessageContextMenu
+        open={!!msgMenu}
+        x={msgMenu?.x || 0}
+        y={msgMenu?.y || 0}
+        message={msgMenu?.message || null}
+        agents={agents || []}
+        onClose={() => setMsgMenu(null)}
+        onReply={(m) => handleMessageFollowUp?.(m)}
+        onFollowUp={(m) => handleMessageFollowUp?.(m)}
+        onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
+        onResearch={(m) => handleMessageResearch?.(m)}
+        onSendTo={(target) => handleMessageSendTo?.(msgMenu?.message, target)}
+      />
+    )}
+    {/* Mobile long-press action sheet (bottom sheet) */}
+    {isMobile && (
+      <MobileActionSheet
+        open={!!msgMenu}
+        message={msgMenu?.message || null}
+        onClose={() => setMsgMenu(null)}
+        onReply={(m) => handleMessageFollowUp?.(m)}
+        onCopy={(m) => { if (m?.text) navigator.clipboard?.writeText(m.text).catch(() => {}) }}
+        onNeedsVerification={(m) => handleMessageNeedsVerification?.(m)}
+        onResearch={(m) => handleMessageResearch?.(m)}
+      />
+    )}
     </>
   )
 }

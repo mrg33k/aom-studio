@@ -14,6 +14,15 @@ import { useCornerData } from '../../../CornerContext.jsx'
 import { authFetch } from '../../../lib/authFetch.js'
 import { bumpContextMeter } from '../session/ContextFullnessMeter.jsx'
 
+// fallow-ignore-next-line complexity
+const buildReplyMeta = (snap) => snap?.type === 'message' ? {
+  message_id: snap.id,
+  snippet: snap.snippet || null,
+  sender: snap.label || null,
+  attachment_kind: snap.attachment_kind || null,
+  attachment_url: snap.attachment_url || null,
+} : null
+
 export default function useChatSend({
   input,
   setInput,
@@ -84,6 +93,7 @@ export default function useChatSend({
     // Optimistic user message
     const now = new Date().toISOString()
     const tempUserId = `temp-user-${Date.now()}`
+    const replyMeta = buildReplyMeta(replySnap)
     setMessages(prev => [...prev, {
       id: tempUserId,
       role: 'user',
@@ -91,7 +101,7 @@ export default function useChatSend({
       text,
       timestamp: now,
       source: 'corner-dashboard',
-      ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
+      ...(replyMeta ? { metadata: { reply_to: replyMeta } } : {}),
     }])
     // R27e: bump the context-fullness meter on each user send (agent chat).
     bumpContextMeter(selectedAgent.slug)
@@ -119,8 +129,7 @@ export default function useChatSend({
           project: '',
           client_id: worldId,
           ...userIdentity,
-          ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
-          ...(replySnap ? { metadata: { reply_to_kind: replySnap.type, reply_to_id: replySnap.id } } : {}),
+          ...(replyMeta ? { metadata: { reply_to: replyMeta } } : {}),
         }),
       }).then(r => r.json()).catch(() => null)
       if (bridgeResult?.messageId) {
@@ -175,6 +184,7 @@ export default function useChatSend({
     setSending(true)
     const now = new Date().toISOString()
     const tempUserId = `temp-user-${Date.now()}`
+    const replyMetaVoice = buildReplyMeta(replySnap)
     setMessages(prev => [...prev, {
       id: tempUserId,
       role: 'user',
@@ -182,7 +192,7 @@ export default function useChatSend({
       text,
       timestamp: now,
       source: 'corner-dashboard',
-      ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
+      ...(replyMetaVoice ? { metadata: { reply_to: replyMetaVoice } } : {}),
     }])
     // R27e: bump the context-fullness meter on each user send (voice path).
     bumpContextMeter(selectedAgent.slug)
@@ -202,8 +212,7 @@ export default function useChatSend({
           project: '',
           client_id: worldId,
           ...userIdentity,
-          ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
-          ...(replySnap ? { metadata: { reply_to_kind: replySnap.type, reply_to_id: replySnap.id } } : {}),
+          ...(replyMetaVoice ? { metadata: { reply_to: replyMetaVoice } } : {}),
         }),
       }).then(r => r.json()).catch(() => null)
       if (bridgeResult?.messageId) {
@@ -276,6 +285,7 @@ export default function useChatSend({
     const projectClientId = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
     const now = new Date().toISOString()
     const tempUserId = `temp-proj-${Date.now()}`
+    const replyMetaProj = buildReplyMeta(replySnap)
     setMessages(prev => [...prev, {
       id: tempUserId,
       role: 'user',
@@ -283,7 +293,7 @@ export default function useChatSend({
       text,
       timestamp: now,
       source: 'corner-dashboard',
-      ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
+      ...(replyMetaProj ? { metadata: { reply_to: replyMetaProj } } : {}),
     }])
     // R27e: bump the context-fullness meter on each user send (project chat).
     bumpContextMeter(agentKey)
@@ -299,8 +309,7 @@ export default function useChatSend({
           project: projectSlug,
           client_id: projectClientId,
           ...userIdentity,
-          ...(replySnap?.type === 'message' ? { reply_to: replySnap.id } : {}),
-          ...(replySnap ? { metadata: { reply_to_kind: replySnap.type, reply_to_id: replySnap.id } } : {}),
+          ...(replyMetaProj ? { metadata: { reply_to: replyMetaProj } } : {}),
         }),
       }).then(r => r.json()).catch(() => null)
       if (bridgeResult?.messageId) {

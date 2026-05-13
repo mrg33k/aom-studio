@@ -11,6 +11,7 @@ const MENU_WIDTH = 224
 // items: [{ key, label, description?, icon?, variant?, hasSubmenu?, disabled?, onSelect }]
 // onSelect returns null | false | undefined to close, or 'keep' to keep the menu open
 // (used for picker rows that render sub-choices inline).
+// fallow-ignore-next-line unused-export
 export function ContextMenu({ open, x, y, items, onClose, testId }) {
   const ref = useRef(null)
   const [highlight, setHighlight] = useState(0)
@@ -179,6 +180,11 @@ const Icon = {
       <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
     </svg>
   ),
+  copy: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  ),
   verify: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
@@ -202,11 +208,11 @@ const Icon = {
 }
 
 // ---------------------------------------------------------------------------
-// Message right-click menu. Four actions + optional agent sub-picker.
+// Message right-click menu. Reply + Copy + four actions + optional agent sub-picker.
 // ---------------------------------------------------------------------------
 export function MessageContextMenu({
   open, x, y, message, agents = [], onClose,
-  onFollowUp, onNeedsVerification, onResearch, onSendTo,
+  onReply, onFollowUp, onNeedsVerification, onResearch, onSendTo,
 }) {
   const [stage, setStage] = useState('root') // 'root' | 'agents'
   useEffect(() => { if (!open) setStage('root') }, [open])
@@ -241,12 +247,23 @@ export function MessageContextMenu({
 
   const items = [
     {
-      key: 'follow-up',
-      label: 'Follow-up',
-      description: 'reply tied to this message',
+      key: 'reply',
+      label: 'Reply',
+      description: 'quote in composer',
       icon: Icon.reply,
-      testId: 'msg-ctx-follow-up',
-      onSelect: () => onFollowUp?.(message),
+      testId: 'msg-ctx-reply',
+      onSelect: () => (onReply || onFollowUp)?.(message),
+    },
+    {
+      key: 'copy',
+      label: 'Copy',
+      description: 'copy message text',
+      icon: Icon.copy,
+      testId: 'msg-ctx-copy',
+      onSelect: () => {
+        const t = message?.text || ''
+        if (t) navigator.clipboard?.writeText(t).catch(() => {})
+      },
     },
     {
       key: 'needs-verification',
@@ -376,13 +393,17 @@ export function TaskContextMenu({
 
 // ---------------------------------------------------------------------------
 // Reply-to chip rendered above the composer when a follow-up has been queued.
-// target: { type: 'message'|'task', id, label, snippet }
+// target: { type: 'message'|'task', id, label, snippet, attachment_kind?, attachment_url? }
 // ---------------------------------------------------------------------------
+// fallow-ignore-next-line complexity
 export function ReplyToChip({ target, onDismiss }) {
   if (!target) return null
   const type = target.type === 'task' ? 'task' : 'message'
   const label = target.label || (target.type === 'task' ? 'task' : 'message')
   const snippet = (target.snippet || '').replace(/\s+/g, ' ').trim()
+  const hasVideoThumb = target.attachment_kind === 'video' && target.attachment_url
+  const hasImageThumb = target.attachment_kind === 'image' && target.attachment_url
+  const hasAudio = target.attachment_kind === 'audio'
   return (
     <div
       data-test-id="reply-to-chip"
@@ -408,6 +429,32 @@ export function ReplyToChip({ target, onDismiss }) {
         fontFamily: "'JetBrains Mono', monospace",
         flexShrink: 0,
       }}>Replying to {type}</span>
+      {hasVideoThumb && (
+        <video
+          src={target.attachment_url}
+          preload="metadata"
+          muted
+          style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0, background: '#000' }}
+        />
+      )}
+      {hasImageThumb && (
+        <img
+          src={target.attachment_url}
+          alt=""
+          style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+        />
+      )}
+      {hasAudio && (
+        <span style={{
+          width: 32, height: 32, borderRadius: 4, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(16,185,129,0.15)',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </span>
+      )}
       <span style={{
         fontSize: 12,
         color: 'rgba(226,232,240,0.75)',
@@ -417,7 +464,7 @@ export function ReplyToChip({ target, onDismiss }) {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
       }}>
-        {label ? `${label}` : ''}{label && snippet ? ' · ' : ''}{snippet ? `“${snippet.length > 80 ? snippet.slice(0, 77) + '…' : snippet}”` : ''}
+        {label ? `${label}` : ''}{label && snippet ? ' · ' : ''}{snippet ? `"${snippet.length > 80 ? snippet.slice(0, 77) + '…' : snippet}"` : (hasVideoThumb || hasImageThumb || hasAudio ? `[${target.attachment_kind}]` : '')}
       </span>
       <button
         data-test-id="reply-to-chip-dismiss"
@@ -437,6 +484,142 @@ export function ReplyToChip({ target, onDismiss }) {
       >×</button>
     </div>
   )
+}
+
+// ---------------------------------------------------------------------------
+// Mobile bottom action sheet (rises from bottom on long-press).
+// ---------------------------------------------------------------------------
+// fallow-ignore-next-line complexity
+export function MobileActionSheet({ open, message, onClose, onReply, onCopy, onNeedsVerification, onResearch }) {
+  useEffect(() => {
+    if (!open) return
+    const handleKey = (e) => { if (e.key === 'Escape') onClose?.() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [open, onClose])
+
+  if (!open || !message) return null
+
+  const actions = [
+    {
+      key: 'reply', label: 'Reply', icon: Icon.reply,
+      onTap: () => { onReply?.(message); onClose?.() },
+    },
+    {
+      key: 'copy', label: 'Copy Text', icon: Icon.copy,
+      // fallow-ignore-next-line complexity
+      onTap: () => {
+        const t = message?.text || ''
+        if (t) navigator.clipboard?.writeText(t).catch(() => {})
+        onClose?.()
+      },
+    },
+    {
+      key: 'verify', label: 'Needs verification', icon: Icon.verify,
+      onTap: () => { onNeedsVerification?.(message); onClose?.() },
+    },
+    {
+      key: 'research', label: 'Research', icon: Icon.research,
+      onTap: () => { onResearch?.(message); onClose?.() },
+    },
+  ]
+
+  const sheet = (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9990,
+          background: 'rgba(0,0,0,0.45)',
+        }}
+      />
+      {/* Sheet */}
+      <div
+        style={{
+          position: 'fixed',
+          left: 0, right: 0, bottom: 0,
+          zIndex: 9991,
+          background: 'linear-gradient(180deg, #1a2030, #111827)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '20px 20px 0 0',
+          padding: '12px 0 calc(16px + env(safe-area-inset-bottom, 0px))',
+          fontFamily: "'Inter', sans-serif",
+          animation: 'slideUpSheet 0.22s ease',
+        }}
+      >
+        {/* Drag handle */}
+        <div style={{
+          width: 36, height: 4, borderRadius: 2,
+          background: 'rgba(255,255,255,0.18)',
+          margin: '0 auto 14px',
+        }} />
+        {/* Message preview */}
+        {message.text && (
+          <div style={{
+            margin: '0 16px 12px',
+            padding: '8px 12px',
+            borderRadius: 10,
+            background: 'rgba(255,255,255,0.05)',
+            fontSize: 12, color: 'rgba(226,232,240,0.55)',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            textOverflow: 'ellipsis',
+            lineHeight: 1.5,
+          }}>
+            {message.text.length > 120 ? message.text.slice(0, 117) + '…' : message.text}
+          </div>
+        )}
+        {actions.map(action => (
+          <button
+            key={action.key}
+            onClick={action.onTap}
+            data-test-id={`sheet-${action.key}`}
+            style={{
+              width: '100%',
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 20px',
+              background: 'transparent',
+              border: 'none',
+              color: '#E2E8F0',
+              cursor: 'pointer',
+              fontSize: 15, fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
+              textAlign: 'left',
+              transition: 'background 0.1s',
+            }}
+            onTouchStart={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+            onTouchEnd={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            <span style={{ color: C.accent, display: 'flex', alignItems: 'center' }}>{action.icon}</span>
+            {action.label}
+          </button>
+        ))}
+        {/* Cancel */}
+        <button
+          onClick={onClose}
+          style={{
+            width: 'calc(100% - 32px)',
+            margin: '8px 16px 0',
+            padding: '14px',
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.06)',
+            border: 'none',
+            color: 'rgba(226,232,240,0.7)',
+            cursor: 'pointer',
+            fontSize: 15, fontWeight: 600,
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+      <style>{`@keyframes slideUpSheet { from { transform: translateY(100%) } to { transform: translateY(0) } }`}</style>
+    </>
+  )
+  return createPortal(sheet, document.body)
 }
 
 // ---------------------------------------------------------------------------

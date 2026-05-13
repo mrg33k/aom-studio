@@ -22,6 +22,7 @@
     "public/**",
     ".playwright-mcp/**"
   ],
+  "ignoreDependencies": ["@anthropic-ai/sdk"],
   "duplicates": {
   },
   "rules": {}

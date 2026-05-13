@@ -18,7 +18,7 @@ export default function useThreadMsgMenu() {
     const x = t.clientX, y = t.clientY
     longPressRef.current = setTimeout(() => {
       setMsgMenu({ x, y, message })
-    }, 600)
+    }, 400)
   }
 
   const cancelLongPress = () => {
