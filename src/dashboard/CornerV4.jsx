@@ -643,6 +643,59 @@ export default function CornerV4() {
         [data-shell="cv4"] *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
         [data-shell="cv4"] * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent; }
 
+        /* ── R7.4: composer + chat area pick up the drawer aesthetic.
+           Sharp 2px corners on the pill, hairline borders, square action
+           buttons. The composer reads as a flat extension of the drawer
+           palette instead of a rounded floating SMS pill. */
+        [data-shell="cv4"] [data-testid="thread-chat-input"],
+        [data-shell="cv4"] [data-testid="project-chat-input"] {
+          font-family: 'Inter', sans-serif !important;
+        }
+        /* The pill = parent of the input + composer-actions row.
+           Match by structure: any element that directly contains
+           [data-role="composer-actions"] and has a borderRadius set. */
+        [data-shell="cv4"] *:has(> [data-role="composer-actions"]) {
+          border-radius: 2px !important;
+          border-width: 1px !important;
+          background: rgba(255,255,255,0.02) !important;
+          border-color: rgba(255,255,255,0.08) !important;
+        }
+        [data-shell="cv4"] *:has(> [data-role="composer-actions"]):focus-within {
+          border-color: rgba(255,255,255,0.18) !important;
+          background: rgba(255,255,255,0.03) !important;
+        }
+        /* All round composer-action buttons → square. Mic + send become 2px. */
+        [data-shell="cv4"] [data-role="composer-actions"] > button,
+        [data-shell="cv4"] [data-role="composer-actions"] ~ button,
+        [data-shell="cv4"] [data-role="composer-actions"] + button {
+          border-radius: 4px !important;
+        }
+        /* User bubble (right side) — calm, drawer-toned chip instead of
+           heavy accent. The text is already #DCE3ED from R6.6; the bg now
+           reads as part of the panel surface. */
+        [data-shell="cv4"] [data-bubble="user"] {
+          background: rgba(255,255,255,0.035) !important;
+          border: 1px solid rgba(255,255,255,0.06) !important;
+          border-radius: 2px !important;
+          padding: 10px 14px !important;
+          filter: none !important;
+        }
+        /* Assistant — already transparent (R6.4); add a faint left-rule so
+           the column reads as structured prose. */
+        [data-shell="cv4"] [data-bubble="assistant"] {
+          padding-left: 12px !important;
+          border-left: 1px solid rgba(255,255,255,0.06) !important;
+        }
+        /* Soften the centered chat content's outer border (the seam between
+           chat and the right tasks drawer). */
+        [data-shell="cv4"] [data-cv4-content-col] { background: transparent; }
+        /* The composer's outer container (sticky bottom strip). Match the
+           drawer bg so it reads as one continuous surface, not a banner. */
+        [data-shell="cv4"] [data-testid="thread-chat-input"],
+        [data-shell="cv4"] [data-testid="project-chat-input"] {
+          background: transparent !important;
+        }
+
         /* ── R7: TASK VIEW BRUTALIST OVERHAUL ─────────────────────────────────
            Sharp rectangles, monospace screaming caps for section headers,
            hard borders, tighter rows. Targets TasksPanel via its existing
