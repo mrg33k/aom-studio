@@ -24,6 +24,9 @@ export default function CV4ContextNav({
   activeTaskCount = 0,
   drawerOpen,
   onToggleDrawer,
+  tasksDrawerOpen,
+  onToggleTasksDrawer,
+  isDesktop = false,
   selectedAgent,
   conversationTarget,
   agents = [],
@@ -255,32 +258,65 @@ export default function CV4ContextNav({
         </div>
       </div>
 
-      {/* CENTER: Chat | Tasks toggle */}
-      <div style={{ display: 'flex', gap: 2 }}>
-        <Tab
-          label="Chat"
-          icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
-          active={tab === 'chat'}
-          onClick={() => onSwitchTab('chat')}
-          badge={<Badge count={unreadChat} />}
-        />
-        <Tab
-          label="Tasks"
-          icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
-          active={tab === 'tasks'}
-          onClick={() => onSwitchTab('tasks')}
-          badge={<Badge count={activeTaskCount} color={C.yellow} />}
-        />
-      </div>
+      {/* CENTER: Chat | Tasks toggle — hidden on desktop where Tasks lives
+          in the right docked drawer instead of taking over the content area. */}
+      {!isDesktop && (
+        <div style={{ display: 'flex', gap: 2 }}>
+          <Tab
+            label="Chat"
+            icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
+            active={tab === 'chat'}
+            onClick={() => onSwitchTab('chat')}
+            badge={<Badge count={unreadChat} />}
+          />
+          <Tab
+            label="Tasks"
+            icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
+            active={tab === 'tasks'}
+            onClick={() => onSwitchTab('tasks')}
+            badge={<Badge count={activeTaskCount} color={C.yellow} />}
+          />
+        </div>
+      )}
 
-      {/* RIGHT: compaction meters (chat with agent) — used to live in
-          the old ThreadHeader's outsideWhenClosed slot. */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
+      {/* RIGHT: compaction meters + tasks-drawer toggle (desktop only). */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
         {showMeters && (
           <>
             <ContextFullnessMeter agentSlug={selectedAgent.slug} />
             <StorageQuotaMeter world={worldId || 'aom'} />
           </>
+        )}
+        {isDesktop && onToggleTasksDrawer && (
+          <button
+            data-testid="cv4-tasks-drawer-toggle"
+            onClick={onToggleTasksDrawer}
+            aria-label={tasksDrawerOpen ? 'Close tasks' : 'Open tasks'}
+            title={tasksDrawerOpen ? 'Close tasks' : 'Open tasks'}
+            style={{
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: tasksDrawerOpen ? 'rgba(234,179,8,0.14)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${tasksDrawerOpen ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: tasksDrawerOpen ? C.yellow : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+              position: 'relative',
+            }}
+          >
+            <TasksIcon color={tasksDrawerOpen ? C.yellow : C.muted} />
+            {activeTaskCount > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -4,
+                minWidth: 14, height: 14, borderRadius: 7,
+                background: C.yellow,
+                fontSize: 9, fontWeight: 800, color: '#000',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 4px',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>{activeTaskCount}</span>
+            )}
+          </button>
         )}
       </div>
     </div>
