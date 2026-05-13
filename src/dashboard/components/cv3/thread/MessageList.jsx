@@ -852,19 +852,25 @@ export default function MessageList({ roomType = 'agent' }) {
                   {/* Text bubble */}
                   {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url) && msg.text.startsWith('Attached file: ')) && (() => {
                     const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+                    // Subtle outline on the bubble whose context-menu is open.
+                    const isMenuTarget = msgMenu?.message?.id === msg.id
+                    const menuOutline = isMenuTarget ? '1.5px solid rgba(52,211,153,0.55)' : null
                     if (isUser) {
                       return (
-                        <div data-bubble="user" style={{
+                        <div data-bubble="user" data-menu-target={isMenuTarget || undefined} style={{
                           padding: '10px 16px',
                           borderRadius: '18px 18px 4px 18px',
                           fontSize: 14, lineHeight: 1.6,
                           color: '#fff',
                           background: senderColor,
                           border: 'none',
+                          outline: menuOutline,
+                          outlineOffset: isMenuTarget ? 1 : 0,
                           wordBreak: 'break-word',
                           fontFamily: "'Inter', sans-serif",
                           letterSpacing: '-0.01em',
                           whiteSpace: 'pre-wrap',
+                          transition: 'outline-color 120ms ease',
                         }}>
                           <LinkifyText text={msg.text} />
                         </div>
@@ -873,11 +879,14 @@ export default function MessageList({ roomType = 'agent' }) {
                     return (
                       <div
                         data-bubble="assistant"
+                        data-menu-target={isMenuTarget || undefined}
                         data-testid={hasChain ? 'assistant-final-message' : undefined}
                         style={{
-                          padding: hasChain ? '12px 14px' : '2px 0',
-                          borderRadius: hasChain ? 8 : 0,
+                          padding: hasChain ? '12px 14px' : (isMenuTarget ? '4px 8px' : '2px 0'),
+                          borderRadius: hasChain ? 8 : (isMenuTarget ? 6 : 0),
                           border: hasChain ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                          outline: menuOutline,
+                          outlineOffset: isMenuTarget ? 1 : 0,
                           marginTop: hasChain ? 8 : 0,
                           fontSize: 14, lineHeight: 1.6,
                           color: '#E2E8F0',
@@ -885,6 +894,7 @@ export default function MessageList({ roomType = 'agent' }) {
                           wordBreak: 'break-word',
                           fontFamily: "'Inter', sans-serif",
                           letterSpacing: '-0.01em',
+                          transition: 'outline-color 120ms ease',
                         }}
                       >
                         <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
