@@ -1,12 +1,11 @@
-// CV4 Drawer — left slide-in panel as a FILE BROWSER.
+// CV4 Drawer — left sidebar / file browser.
 //
-// R6.1 + R6.3 (2026-05-13). Projects + missions render as a tree (chevron
-// disclosure on project rows; missions indent one level). Agents listed
-// flat below. Color is reserved for STATE (selected, hover) — not for
-// identity. Dense rows, monospace path-feel for hierarchy.
+// Two render modes:
+//  - overlay (mobile/tablet): position:fixed slide-in with backdrop
+//  - docked  (desktop):       inline flex column, part of the layout
 //
-// Mission click: routes to the project's chat (R6.2 will add a
-// composer chip carrying the mission as context).
+// R6.1 / R6.3 = projects+missions tree as a file browser.
+// R6.6 (2026-05-13) = docked mode so the sidebar is always-on at >=1024px.
 
 import { useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -17,6 +16,7 @@ const PANEL_WIDTH = 300
 export default function CV4Drawer({
   open,
   onClose,
+  docked = false,
   agents = [],
   projectRooms = [],
   selectedAgentSlug,
@@ -27,11 +27,11 @@ export default function CV4Drawer({
   onLogout,
 }) {
   useEffect(() => {
-    if (!open) return
+    if (docked || !open) return
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, onClose, docked])
 
   const missionsByProject = useMemo(() => {
     const map = new Map()
@@ -45,7 +45,6 @@ export default function CV4Drawer({
     return map
   }, [])
 
-  // Auto-expand the project the user is currently in.
   const [expanded, setExpanded] = useState(() => new Set(selectedProjectSlug ? [selectedProjectSlug] : []))
   useEffect(() => {
     if (selectedProjectSlug && !expanded.has(selectedProjectSlug)) {
@@ -61,18 +60,72 @@ export default function CV4Drawer({
     })
   }
 
+  const sharedStyles = (
+    <style>{`
+      @keyframes cv4DrawerFade { from { opacity: 0 } to { opacity: 1 } }
+      [data-cv4-drawer] [data-row]:hover { background: rgba(255,255,255,0.035); }
+      [data-cv4-drawer] [data-row][data-active="true"] { background: rgba(16,185,129,0.08); }
+      [data-cv4-drawer] [data-row][data-active="true"]::before {
+        content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 2px;
+        background: ${C.accent}; border-radius: 0 2px 2px 0;
+      }
+      [data-cv4-drawer] [data-row] { position: relative; }
+    `}</style>
+  )
+
+  const body = (
+    <DrawerBody
+      projectRooms={projectRooms}
+      missionsByProject={missionsByProject}
+      expanded={expanded}
+      toggle={toggle}
+      selectedProjectSlug={selectedProjectSlug}
+      selectedAgentSlug={selectedAgentSlug}
+      agents={agents}
+      onSelectAgent={onSelectAgent}
+      onSelectProject={onSelectProject}
+      onSelectMission={onSelectMission}
+      onLogout={onLogout}
+      onClose={docked ? () => {} : onClose}
+    />
+  )
+
+  if (docked) {
+    return (
+      <aside
+        data-cv4-drawer
+        data-cv4-drawer-docked="true"
+        data-testid="cv4-drawer"
+        style={{
+          width: PANEL_WIDTH, flexShrink: 0,
+          background: C.bg,
+          borderRight: '1px solid ' + C.border,
+          display: 'flex', flexDirection: 'column',
+          fontFamily: "'Inter', sans-serif",
+          overflow: 'hidden',
+        }}
+      >
+        {sharedStyles}
+        <div style={{
+          padding: '12px 14px 10px',
+          borderBottom: '1px solid ' + C.border,
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: C.dim,
+            letterSpacing: '0.10em', textTransform: 'uppercase',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            Explorer
+          </span>
+        </div>
+        {body}
+      </aside>
+    )
+  }
+
   return (
     <>
-      <style>{`
-        @keyframes cv4DrawerFade { from { opacity: 0 } to { opacity: 1 } }
-        [data-cv4-drawer] [data-row]:hover { background: rgba(255,255,255,0.035); }
-        [data-cv4-drawer] [data-row][data-active="true"] { background: rgba(16,185,129,0.08); }
-        [data-cv4-drawer] [data-row][data-active="true"]::before {
-          content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 2px;
-          background: ${C.accent}; border-radius: 0 2px 2px 0;
-        }
-        [data-cv4-drawer] [data-row] { position: relative; }
-      `}</style>
+      {sharedStyles}
 
       <div
         data-testid="cv4-drawer-backdrop"
@@ -99,7 +152,7 @@ export default function CV4Drawer({
           background: C.bg,
           borderRight: '1px solid ' + C.border,
           boxShadow: open ? '6px 0 24px rgba(0,0,0,0.4)' : 'none',
-          transform: open ? 'translateX(0)' : `translateX(-100%)`,
+          transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.22s cubic-bezier(.2,.8,.2,1)',
           display: 'flex', flexDirection: 'column',
           paddingTop: 'env(safe-area-inset-top, 0px)',
@@ -131,68 +184,86 @@ export default function CV4Drawer({
             }}
           >×</button>
         </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
-          <TreeSection title="Projects">
-            {projectRooms.length === 0 ? (
-              <Empty label="No projects" />
-            ) : (
-              projectRooms.map(p => {
-                const missions = missionsByProject.get(p.slug) || []
-                const isExpanded = expanded.has(p.slug)
-                const hasMissions = missions.length > 0
-                return (
-                  <div key={p.slug}>
-                    <FolderRow
-                      label={p.name}
-                      hasChildren={hasMissions}
-                      expanded={isExpanded}
-                      active={selectedProjectSlug === p.slug}
-                      onToggle={() => toggle(p.slug)}
-                      onOpen={() => { onSelectProject?.(p); onClose() }}
-                    />
-                    {isExpanded && hasMissions && (
-                      <div>
-                        {missions.map(m => (
-                          <MissionRow
-                            key={`${p.slug}-${m.slug}`}
-                            mission={m}
-                            project={p}
-                            onClick={() => {
-                              onSelectMission?.(m, p)
-                              onClose()
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </TreeSection>
-
-          <TreeSection title="Agents">
-            {agents.length === 0 ? (
-              <Empty label="No agents" />
-            ) : (
-              agents.map(a => (
-                <AgentRow
-                  key={a.slug}
-                  agent={a}
-                  active={selectedAgentSlug === a.slug}
-                  onClick={() => { onSelectAgent?.(a); onClose() }}
-                />
-              ))
-            )}
-          </TreeSection>
-
-          <TreeSection title="Account">
-            <PlainRow icon={<SignOutIcon />} label="Sign out" onClick={() => { onLogout?.(); onClose() }} />
-          </TreeSection>
-        </div>
+        {body}
       </aside>
     </>
+  )
+}
+
+function DrawerBody({
+  projectRooms,
+  missionsByProject,
+  expanded,
+  toggle,
+  selectedProjectSlug,
+  selectedAgentSlug,
+  agents,
+  onSelectAgent,
+  onSelectProject,
+  onSelectMission,
+  onLogout,
+  onClose,
+}) {
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+      <TreeSection title="Projects">
+        {projectRooms.length === 0 ? (
+          <Empty label="No projects" />
+        ) : (
+          projectRooms.map(p => {
+            const missions = missionsByProject.get(p.slug) || []
+            const isExpanded = expanded.has(p.slug)
+            const hasMissions = missions.length > 0
+            return (
+              <div key={p.slug}>
+                <FolderRow
+                  label={p.name}
+                  hasChildren={hasMissions}
+                  expanded={isExpanded}
+                  active={selectedProjectSlug === p.slug}
+                  onToggle={() => toggle(p.slug)}
+                  onOpen={() => { onSelectProject?.(p); onClose() }}
+                />
+                {isExpanded && hasMissions && (
+                  <div>
+                    {missions.map(m => (
+                      <MissionRow
+                        key={`${p.slug}-${m.slug}`}
+                        mission={m}
+                        project={p}
+                        onClick={() => {
+                          onSelectMission?.(m, p)
+                          onClose()
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </TreeSection>
+
+      <TreeSection title="Agents">
+        {agents.length === 0 ? (
+          <Empty label="No agents" />
+        ) : (
+          agents.map(a => (
+            <AgentRow
+              key={a.slug}
+              agent={a}
+              active={selectedAgentSlug === a.slug}
+              onClick={() => { onSelectAgent?.(a); onClose() }}
+            />
+          ))
+        )}
+      </TreeSection>
+
+      <TreeSection title="Account">
+        <PlainRow icon={<SignOutIcon />} label="Sign out" onClick={() => { onLogout?.(); onClose() }} />
+      </TreeSection>
+    </div>
   )
 }
 

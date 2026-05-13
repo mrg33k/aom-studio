@@ -134,7 +134,17 @@ export default function CornerV4() {
   const stageFilesRef = useRef(null)
   const homeFileInputRef = useRef(null)
   const [showCommandsModal, setShowCommandsModal] = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  // R6.6: docked sidebar on desktop. Drawer opens by default at >=1024px and
+  // sits inline so chat messages feel anchored, not adrift in a centered void.
+  // Below 1024px it falls back to the overlay slide-in.
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => setIsDesktop(window.innerWidth >= 1024)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  const [drawerOpen, setDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
   const [toast, setToast] = useState({ visible: false, message: '' })
   const showToast = useCallback((message) => setToast({ visible: true, message }), [])
   const prevDoneIdsRef = useRef(null)
@@ -516,28 +526,161 @@ export default function CornerV4() {
         }
         [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
         [data-shell="cv4"] [data-role="thread-header"] { display: none !important; }
-        /* R6.4: message bubble typography — prose-grade reading, not SMS.
-           Bumps font + line-height, caps line length, softens contrast,
-           adds paragraph breathing room for multi-paragraph content. */
-        [data-shell="cv4"] [data-bubble] {
-          font-size: 15px !important;
-          line-height: 1.65 !important;
-          letter-spacing: 0 !important;
-          max-width: 62ch;
+        /* R6.6: message typography — proper prose. Beats the inline 14px /
+           lh 1.6 / #E2E8F0 styling that MessageList passes into
+           ChatMessageRenderer's .cmr-content (inline → has to be !important).
+           Targets every nested element so paragraph rhythm, list spacing,
+           and color all read like long-form copy instead of SMS. */
+        [data-shell="cv4"] [data-bubble],
+        [data-shell="cv4"] [data-bubble] .chat-message-container,
+        [data-shell="cv4"] [data-bubble] .cmr-content,
+        [data-shell="cv4"] [data-bubble] .message-content {
+          font-size: 15.5px !important;
+          line-height: 1.72 !important;
+          letter-spacing: 0.005em !important;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+          font-weight: 400 !important;
         }
-        [data-shell="cv4"] [data-bubble="user"] {
-          filter: saturate(0.78);
+        [data-shell="cv4"] [data-bubble] { max-width: 64ch; }
+        [data-shell="cv4"] [data-bubble="assistant"],
+        [data-shell="cv4"] [data-bubble="assistant"] .cmr-content,
+        [data-shell="cv4"] [data-bubble="assistant"] .message-content {
+          color: #B6C2D1 !important;
         }
-        [data-shell="cv4"] [data-bubble="assistant"] {
+        [data-shell="cv4"] [data-bubble="user"],
+        [data-shell="cv4"] [data-bubble="user"] .cmr-content,
+        [data-shell="cv4"] [data-bubble="user"] .message-content {
+          color: #DCE3ED !important;
+        }
+        /* Paragraph rhythm — generous bottom margin for prose, zero on tail. */
+        [data-shell="cv4"] [data-bubble] .cmr-content p,
+        [data-shell="cv4"] [data-bubble] .message-content p {
+          margin: 0 0 0.95em 0 !important;
+          line-height: 1.72 !important;
+        }
+        [data-shell="cv4"] [data-bubble] .cmr-content p:last-child,
+        [data-shell="cv4"] [data-bubble] .message-content p:last-child { margin-bottom: 0 !important; }
+        /* Lists — denser internally than prose so they don't feel airy,
+           but with proper margin around the block. */
+        [data-shell="cv4"] [data-bubble] .cmr-content ul,
+        [data-shell="cv4"] [data-bubble] .cmr-content ol,
+        [data-shell="cv4"] [data-bubble] .message-content ul,
+        [data-shell="cv4"] [data-bubble] .message-content ol {
+          margin: 0.3em 0 1em 0 !important;
+          padding-left: 1.4em !important;
+        }
+        [data-shell="cv4"] [data-bubble] .cmr-content li,
+        [data-shell="cv4"] [data-bubble] .message-content li {
+          margin: 0 0 0.45em 0 !important;
+          line-height: 1.6 !important;
+        }
+        /* Headings — quiet, not loud. Same weight, just larger + breathing. */
+        [data-shell="cv4"] [data-bubble] .cmr-content h1,
+        [data-shell="cv4"] [data-bubble] .cmr-content h2,
+        [data-shell="cv4"] [data-bubble] .cmr-content h3,
+        [data-shell="cv4"] [data-bubble] .message-content h1,
+        [data-shell="cv4"] [data-bubble] .message-content h2,
+        [data-shell="cv4"] [data-bubble] .message-content h3 {
+          font-size: 1.06em !important;
+          font-weight: 600 !important;
+          line-height: 1.4 !important;
+          margin: 1.2em 0 0.4em 0 !important;
+          letter-spacing: -0.005em !important;
+          color: #D6DEEA !important;
+        }
+        /* Bold without being shouty. */
+        [data-shell="cv4"] [data-bubble] .cmr-content strong,
+        [data-shell="cv4"] [data-bubble] .message-content strong {
+          font-weight: 600 !important;
+          color: #D6DEEA !important;
+        }
+        /* Inline code: subtle chip, monospace. */
+        [data-shell="cv4"] [data-bubble] .cmr-content code,
+        [data-shell="cv4"] [data-bubble] .message-content code {
+          font-size: 0.88em !important;
+          padding: 1px 6px !important;
+          background: rgba(255,255,255,0.045) !important;
+          border: 1px solid rgba(255,255,255,0.05) !important;
+          border-radius: 4px !important;
           color: #CBD5E1 !important;
         }
-        [data-shell="cv4"] [data-bubble="assistant"] p,
-        [data-shell="cv4"] [data-bubble="user"] p {
-          margin: 0 0 0.75em;
+        /* Links — calm blue, not Twitter-blue. */
+        [data-shell="cv4"] [data-bubble] .cmr-content a,
+        [data-shell="cv4"] [data-bubble] .message-content a {
+          color: #7DD3FC !important;
+          text-decoration-color: rgba(125,211,252,0.35) !important;
+          text-underline-offset: 3px !important;
         }
-        [data-shell="cv4"] [data-bubble="assistant"] p:last-child,
-        [data-shell="cv4"] [data-bubble="user"] p:last-child {
-          margin-bottom: 0;
+        /* Hide bubble chrome a bit — the prose IS the thing. */
+        [data-shell="cv4"] [data-bubble="assistant"] {
+          background: transparent !important;
+          padding-left: 0 !important;
+        }
+
+        /* ── R7: TASK VIEW BRUTALIST OVERHAUL ─────────────────────────────────
+           Sharp rectangles, monospace screaming caps for section headers,
+           hard borders, tighter rows. Targets TasksPanel via its existing
+           data-testid markers so we don't have to rewrite the component tree. */
+        [data-shell="cv4"] h2[data-testid="task-column-header"] {
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 26px !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.02em !important;
+          text-transform: uppercase !important;
+          color: #F1F5F9 !important;
+          line-height: 1 !important;
+          padding-bottom: 10px !important;
+          border-bottom: 2px solid rgba(255,255,255,0.08) !important;
+          width: 100% !important;
+        }
+        [data-shell="cv4"] h2[data-testid="task-column-header"] + span {
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 14px !important;
+          font-weight: 700 !important;
+          padding: 2px 8px !important;
+          background: rgba(255,255,255,0.05) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+        }
+        /* Section spacing — tighter. */
+        [data-shell="cv4"] [data-testid="task-column-header"] {
+          margin-bottom: 14px !important;
+        }
+        /* Task cards — square, hard borders, denser. */
+        [data-shell="cv4"] [data-testid="task-card"] {
+          border-radius: 2px !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          padding: 12px 14px !important;
+          margin-bottom: 6px !important;
+          background: rgba(255,255,255,0.015) !important;
+          transition: border-color 0.12s, background 0.12s !important;
+        }
+        [data-shell="cv4"] [data-testid="task-card"]:hover {
+          border-color: rgba(255,255,255,0.18) !important;
+          background: rgba(255,255,255,0.03) !important;
+        }
+        /* Project filter pills — square chips, monospace, tighter. */
+        [data-shell="cv4"] button[data-testid^="project-pill-"] {
+          border-radius: 2px !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          font-size: 11px !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.04em !important;
+          text-transform: uppercase !important;
+          padding: 5px 10px !important;
+          border-width: 1px !important;
+        }
+        /* Search input — square, hairline border. */
+        [data-shell="cv4"] [data-testid="tasks-search"],
+        [data-shell="cv4"] input[placeholder="Search tasks..."] {
+          border-radius: 0 !important;
+        }
+        /* The search shell wrapping the input. */
+        [data-shell="cv4"] input[placeholder="Search tasks..."]:focus {
+          outline: 1px solid rgba(255,255,255,0.2) !important;
+        }
+        /* Generic: kill the soft rounded look on common task chrome. */
+        [data-shell="cv4"] [data-testid="task-card"] > div {
+          border-radius: 0 !important;
         }
       `}</style>
 
@@ -632,10 +775,40 @@ export default function CornerV4() {
         worldId={worldId}
       />
 
-      {/* ── CONTENT ────────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {tab === 'tasks' && <TasksPanel />}
-        {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
+      {/* ── MAIN ROW: docked drawer + content on desktop; content-only on mobile.
+          Mobile drawer continues to render as an overlay at the end of the tree
+          (it's position:fixed so the position in DOM doesn't matter). */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
+        {isDesktop && (
+          <CV4Drawer
+            docked
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            agents={agents}
+            projectRooms={projectRooms}
+            selectedAgentSlug={selectedAgent?.slug}
+            selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
+            onSelectAgent={handleSelectAgent}
+            onSelectProject={handleSelectProject}
+            onSelectMission={(mission, project) => {
+              handleSelectProject(project)
+              setAttachedMission({
+                slug: mission.slug,
+                name: mission.name,
+                projectSlug: project.slug,
+                path: `corner:${mission.slug}`,
+              })
+            }}
+            onLogout={async () => {
+              if (supabase) await supabase.auth.signOut().catch(() => {})
+              window.location.href = '/'
+            }}
+          />
+        )}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {tab === 'tasks' && <TasksPanel />}
+          {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
+        </div>
       </div>
 
       {/* R5.1: persistent home input bar removed. Chat is the always-on default,
@@ -743,32 +916,32 @@ export default function CornerV4() {
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
       />
 
-      {/* ── CV4 DRAWER (left slide-in, triggered by top-right hamburger) ─── */}
-      <CV4Drawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        agents={agents}
-        projectRooms={projectRooms}
-        selectedAgentSlug={selectedAgent?.slug}
-        selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
-        onSelectAgent={handleSelectAgent}
-        onSelectProject={handleSelectProject}
-        onSelectMission={(mission, project) => {
-          // R6.2: route to the project's chat AND attach the mission as a
-          // context chip on the composer. Cleared on send.
-          handleSelectProject(project)
-          setAttachedMission({
-            slug: mission.slug,
-            name: mission.name,
-            projectSlug: project.slug,
-            path: `corner:${mission.slug}`,
-          })
-        }}
-        onLogout={async () => {
-          if (supabase) await supabase.auth.signOut().catch(() => {})
-          window.location.href = '/'
-        }}
-      />
+      {/* ── CV4 DRAWER (mobile/tablet overlay; desktop renders docked above) ─ */}
+      {!isDesktop && (
+        <CV4Drawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          agents={agents}
+          projectRooms={projectRooms}
+          selectedAgentSlug={selectedAgent?.slug}
+          selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
+          onSelectAgent={handleSelectAgent}
+          onSelectProject={handleSelectProject}
+          onSelectMission={(mission, project) => {
+            handleSelectProject(project)
+            setAttachedMission({
+              slug: mission.slug,
+              name: mission.name,
+              projectSlug: project.slug,
+              path: `corner:${mission.slug}`,
+            })
+          }}
+          onLogout={async () => {
+            if (supabase) await supabase.auth.signOut().catch(() => {})
+            window.location.href = '/'
+          }}
+        />
+      )}
 
       <FloatingCallBar />
     </div>
