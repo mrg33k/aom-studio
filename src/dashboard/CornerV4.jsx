@@ -42,6 +42,7 @@ import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
 import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
+import CV4Drawer from './cv4/Drawer.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -357,10 +358,11 @@ export default function CornerV4() {
     }
   }, [])
 
-  // Called by ChatPanel when a project is selected
+  // Called by ChatPanel (and the CV4 drawer) when a project is selected.
+  // Carries `slug` so the drawer's active highlight + Tasks-tab scoping can key on it.
   const handleSelectProject = useCallback((project) => {
     setSelectedAgent(null)
-    setConversationTarget({ name: project.name, type: 'project' })
+    setConversationTarget({ name: project.name, slug: project.slug, type: 'project' })
     setTab('chat')
     setUnreadChat(0)
   }, [])
@@ -800,6 +802,22 @@ export default function CornerV4() {
         message={toast.message}
         visible={toast.visible}
         onDismiss={() => setToast(t => ({ ...t, visible: false }))}
+      />
+
+      {/* ── CV4 DRAWER (left slide-in, triggered by top-right hamburger) ─── */}
+      <CV4Drawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        agents={agents}
+        projectRooms={projectRooms}
+        selectedAgentSlug={selectedAgent?.slug}
+        selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
+        onSelectAgent={handleSelectAgent}
+        onSelectProject={handleSelectProject}
+        onLogout={async () => {
+          if (supabase) await supabase.auth.signOut().catch(() => {})
+          window.location.href = '/'
+        }}
       />
 
       <FloatingCallBar />
