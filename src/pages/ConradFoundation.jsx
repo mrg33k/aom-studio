@@ -30,10 +30,11 @@ export default function ConradFoundation() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Video placeholder path — will be replaced by Cleo's cut at task 42e4e77c
-  // In the meantime, use a still from the Space Rising footage archive
+  // Video deliverable from Cleo (task 42e4e77c) + poster frame from hero tile
   const nancyVideoPath = '/ConradFoundation/nancy-sample-tile-v1.mp4'
   const nancyStillPath = '/ConradFoundation/nancy-still-placeholder.jpg'
+  const nancyMastclassStill = '/ConradFoundation/nancy-expert-masterclass.jpg'
+  const zoomMockupPath = '/ConradFoundation/zoom-mockup.jpg'
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -320,12 +321,7 @@ export default function ConradFoundation() {
             <motion.div className="filming-side filming-bad" variants={itemVariants}>
               <div className="filming-label">Standard Zoom Recording</div>
               <div className="zoom-mock">
-                <div className="zoom-frame">
-                  <div className="zoom-participant">
-                    <div className="zoom-avatar"></div>
-                  </div>
-                  <div className="zoom-chat-stub"></div>
-                </div>
+                <img src={zoomMockupPath} alt="Standard Zoom recording mockup — washed, lo-res" />
               </div>
               <div className="zoom-meta">Washed out. Awkward framing. Gone after the live.</div>
             </motion.div>
@@ -334,7 +330,7 @@ export default function ConradFoundation() {
             <motion.div className="filming-side filming-good" variants={itemVariants}>
               <div className="filming-label">AOM Expert Capture</div>
               <div className="masterclass-frame">
-                <img src={nancyStillPath} alt="Nancy Conrad — Expert capture sample" />
+                <img src={nancyMastclassStill} alt="Nancy Conrad — MasterClass-tier expert capture" />
               </div>
               <div className="masterclass-meta">Lit. Framed. Archived. Reusable forever.</div>
             </motion.div>
