@@ -32,6 +32,7 @@ function ensureStyles() {
 export function TypingIndicatorV2({
   streaming,
   stalled = false,         // R73-fix: parent-driven stall override (wall-clock, survives remounts)
+  stepActiveRecently = false, // live step chain firing under latest user msg = visible work
   agentSlug,
   agentColor = '#3B82F6',
   agentName,
@@ -70,7 +71,9 @@ export function TypingIndicatorV2({
 
   // OR with parent-driven `stalled` so wall-clock detection in MessageList
   // can fire even when this component has remounted (timer reset).
-  const showStall = (msElapsed >= SILENCE_MS || stalled) && !stallCleared
+  // Override: when the agent is visibly emitting steps under the latest user
+  // message, suppress the "went quiet" state — we can literally see work happening.
+  const showStall = (msElapsed >= SILENCE_MS || stalled) && !stallCleared && !stepActiveRecently
   const showPoke = msElapsed >= POKE_MS && !pokeUsed && !showStall
   // Manual "clear & retry" button shows the moment we flag stall — user decides
   // whether to interrupt. (Previously this required a 120s delay after an

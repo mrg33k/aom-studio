@@ -254,9 +254,22 @@ export default function MessageList({ roomType = 'agent' }) {
     ? nowMs - new Date(latestRealUserMsg.timestamp).getTime()
     : 0
 
+  // If live steps are firing under the latest user msg, the agent is visibly
+  // working — suppress the stall signal. Per .claude/rules/live-thread-step-emission.md,
+  // step events stream while the agent reads, queues, spawns workers, etc.
+  // Seeing dots travel down the chain is the opposite of silence.
+  const latestUserStepsForStall = latestRealUserMsg
+    ? (stepsByMessageId[latestRealUserMsg.id] || [])
+    : []
+  const lastStepAt = latestUserStepsForStall.length > 0
+    ? Math.max(...latestUserStepsForStall.map(s => new Date(s.timestamp || 0).getTime()))
+    : 0
+  const msSinceLastStep = lastStepAt > 0 ? nowMs - lastStepAt : Infinity
+  const stepActiveRecently = msSinceLastStep < 30_000
+
   // awaitingResponse=true means no assistant message (real or bridge-stream) has
   // arrived yet — strictly the relay path where the agent hasn't replied at all.
-  const chainStalled = inFlight && awaitingResponse && msSinceUser >= 45_000
+  const chainStalled = inFlight && awaitingResponse && msSinceUser >= 45_000 && !stepActiveRecently
 
   // c76e17f9: skip "Read your message" on turn 2+ (context already established).
   const isFirstTurn = !messages.some(m =>
@@ -932,6 +945,7 @@ export default function MessageList({ roomType = 'agent' }) {
           <TypingIndicatorV2
             streaming={true}
             stalled={chainStalled}
+            stepActiveRecently={stepActiveRecently}
             agentColor={roomColor}
             agentSlug={roomSlug}
             agentName={roomName}
