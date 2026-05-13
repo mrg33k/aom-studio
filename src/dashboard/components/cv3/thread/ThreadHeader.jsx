@@ -10,6 +10,7 @@ import {
 } from '../chat/ChatPanelContext.jsx'
 import useThreadQuickSwitcher from './useThreadQuickSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
+import StorageQuotaMeter from '../session/StorageQuotaMeter.jsx'
 import OnboardingResumeCTA from '../session/OnboardingResumeCTA.jsx'
 import HeaderActionsDrawer from '../shared/HeaderActionsDrawer.jsx'
 
@@ -274,7 +275,12 @@ export default function ThreadHeader() {
           so it doesn't fight the action tray for space. */}
       <HeaderActionsDrawer
         testid={`thread-header-drawer-${selectedAgent?.slug || 'unknown'}`}
-        outsideWhenClosed={selectedAgent?.slug ? <ContextFullnessMeter agentSlug={selectedAgent.slug} /> : null}
+        outsideWhenClosed={selectedAgent?.slug ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <ContextFullnessMeter agentSlug={selectedAgent.slug} />
+            <StorageQuotaMeter world={worldId || 'aom'} />
+          </div>
+        ) : null}
       >
         {/* Info (R40) */}
         {selectedAgent?.slug && (

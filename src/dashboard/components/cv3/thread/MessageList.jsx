@@ -702,7 +702,7 @@ export default function MessageList({ roomType = 'agent' }) {
                     </div>
                   )}
                   {/* Text bubble */}
-                  {msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: ')) && (() => {
+                  {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url) && msg.text.startsWith('Attached file: ')) && (() => {
                     const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
                     if (isUser) {
                       return (
@@ -752,22 +752,28 @@ export default function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* Agent rooms: file/image attachments. */}
-                  {!isProject && (() => {
+                  {/* File / image attachments. Renders in both agent and
+                      project rooms so an uploaded file shows the same chip
+                      regardless of which surface posted it. */}
+                  {(() => {
+                    // Three input shapes (in priority): explicit attachments[],
+                    // top-level columns (post-migration), metadata.attachment
+                    // (pre-migration fallback that works against the live schema today).
+                    const metaAtt = msg.metadata?.attachment
+                    const attUrl = msg.attachment_url || metaAtt?.url
+                    const attMime = msg.file_mime_type || metaAtt?.mime
+                    const attSize = msg.file_size ?? metaAtt?.size
+                    const attName = metaAtt?.name
+                      || (msg.text && msg.text.startsWith('Attached file: ')
+                            ? msg.text.replace('Attached file: ', '').split('\n')[0]
+                            : msg.file_name || null)
                     const atts = (msg.attachments && msg.attachments.length)
                       ? msg.attachments
-                      : msg.attachment_url
-                        ? [{
-                            url: msg.attachment_url,
-                            mime: msg.file_mime_type,
-                            size: msg.file_size,
-                            name: msg.text && msg.text.startsWith('Attached file: ')
-                              ? msg.text.replace('Attached file: ', '')
-                              : msg.file_name || null,
-                          }]
+                      : attUrl
+                        ? [{ url: attUrl, mime: attMime, size: attSize, name: attName }]
                         : []
                     if (!atts.length) return null
-                    const hasText = msg.text && !(msg.attachment_url && msg.text.startsWith('Attached file: '))
+                    const hasText = msg.text && !(attUrl && msg.text.startsWith('Attached file: '))
                     const isMulti = atts.length > 1
                     const items = atts.map((att, attIdx) => {
                       const isImage = att.mime && att.mime.startsWith('image/')

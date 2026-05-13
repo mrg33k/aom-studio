@@ -11,6 +11,7 @@ import {
 } from '../chat/ChatPanelContext.jsx'
 import useProjectChatSwitcher from './useProjectChatSwitcher.js'
 import ContextFullnessMeter, { resetContextMeter } from '../session/ContextFullnessMeter.jsx'
+import StorageQuotaMeter from '../session/StorageQuotaMeter.jsx'
 import OnboardingTooltip from '../session/OnboardingTooltip.jsx'
 import OnboardingResumeCTA from '../session/OnboardingResumeCTA.jsx'
 import HeaderActionsDrawer from '../shared/HeaderActionsDrawer.jsx'
@@ -299,7 +300,13 @@ export default function ProjectChatHeader() {
           const eaSlug = agents?.find(a => a.is_ea && a.is_terminal)?.slug
             || agents?.find(a => a.is_ea)?.slug
             || 'elon'
-          return <ContextFullnessMeter agentSlug={eaSlug} />
+          return (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <ContextFullnessMeter agentSlug={eaSlug} />
+              {/* R79-f7: storage usage strip. Hides itself for AOM (unlimited). */}
+              <StorageQuotaMeter world={worldId || 'aom'} />
+            </div>
+          )
         })()}
       >
         {/* R60: telephone now lives inside the drawer (no longer primary). */}
