@@ -43,6 +43,7 @@ import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
 import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
 import CV4Drawer from './cv4/Drawer.jsx'
+import CV4ContextNav from './cv4/ContextNav.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -546,13 +547,17 @@ export default function CornerV4() {
       overflow: 'hidden',
       fontFamily: "'Inter', sans-serif",
     }}>
-      {/* R5.1 Phase C: composer action items live on the LEFT of the input on /cv4.
-          Scoped to [data-shell="cv4"] so /dashboard's composer is untouched. */}
+      {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
+          shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
         [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
+        [data-shell="cv4"] [data-role="thread-header"] { display: none; }
       `}</style>
 
-      {/* ── NAV BAR (R5.1: single row, Chat|Tasks toggle, drawer button) ─── */}
+      {/* ── NAV BAR (R5.1 Phase F: slim top row — logo + bell + avatar) ───
+          Chat/Tasks toggle, drawer toggle, and the title all live in the
+          second-row ContextNav below. Mic + phone removed (not useful here).
+          World switching lives inside the avatar dropdown. */}
       <nav
         aria-label="Main navigation"
         style={{
@@ -563,48 +568,18 @@ export default function CornerV4() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 16px',
-          paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))',
+          padding: '8px 16px',
+          paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
           position: 'sticky',
           top: 0,
           zIndex: 100,
           gap: 12,
         }}
       >
-        {/* LEFT: Logo + World */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <AomLogo />
-          <WorldSelector
-            currentWorldId={worldId}
-            currentUser={currentUser}
-            onEnterWorld={handleEnterWorld}
-            onReturnToMyWorld={handleReturnToMyWorld}
-            isNightMode={true}
-            isMobile={false}
-          />
         </div>
-
-        {/* CENTER: Chat | Tasks toggle (the only navigation surface now) */}
-        <div style={{ display: 'flex', gap: 2 }}>
-          <Tab
-            label="Chat"
-            icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
-            active={tab === 'chat'}
-            onClick={() => handleTabChange('chat')}
-            badge={<Badge count={unreadChat} />}
-          />
-          <Tab
-            label="Tasks"
-            icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
-            active={tab === 'tasks'}
-            onClick={() => handleTabChange('tasks')}
-            badge={<Badge count={activeTaskCount} color={C.yellow} />}
-          />
-        </div>
-
-        {/* RIGHT: GlobalCall + Bell + Phone + Drawer toggle + Avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <GlobalCallButton />
           <div style={{ position: 'relative' }}>
             <BellIcon
               count={totalUnread}
@@ -628,61 +603,42 @@ export default function CornerV4() {
               />
             )}
           </div>
-          {/* Phone recording */}
-          <button
-            data-testid="nav-phone-icon"
-            title={telephone.isRecording ? 'Stop recording' : 'Phone recording'}
-            onClick={() => {
-              if (!telephone.isRecording && !telephone.isTranscribing) {
-                setPhoneOverlayOpen(true)
-              }
-              telephone.toggle()
-            }}
-            disabled={telephone.isTranscribing}
-            style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: telephone.isRecording
-                ? 'rgba(239,68,68,0.15)'
-                : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${telephone.isRecording ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              color: telephone.isRecording ? '#EF4444' : C.muted,
-              cursor: telephone.isTranscribing ? 'default' : 'pointer',
-              opacity: telephone.isTranscribing ? 0.5 : 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.15s',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-          </button>
-          {/* Drawer toggle (Phase D will wire this to the side panel) */}
-          <button
-            data-testid="nav-drawer-toggle"
-            title={drawerOpen ? 'Close menu' : 'Open menu'}
-            onClick={() => setDrawerOpen(o => !o)}
-            style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: drawerOpen ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${drawerOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              color: drawerOpen ? C.accent : C.muted,
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.15s',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
+          <UserAvatar
+            user={currentUser}
+            onUserUpdate={setCurrentUser}
+            extraMenuItems={(
+              <div style={{ marginBottom: 12 }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', color: C.dim,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  marginBottom: 6,
+                }}>World</div>
+                <WorldSelector
+                  currentWorldId={worldId}
+                  currentUser={currentUser}
+                  onEnterWorld={handleEnterWorld}
+                  onReturnToMyWorld={handleReturnToMyWorld}
+                  isNightMode={true}
+                  isMobile={false}
+                />
+              </div>
+            )}
+          />
         </div>
       </nav>
+
+      {/* ── CV4 CONTEXT NAV (second row: hamburger + title · Chat|Tasks · slot) */}
+      <CV4ContextNav
+        tab={tab}
+        onSwitchTab={handleTabChange}
+        unreadChat={unreadChat}
+        activeTaskCount={activeTaskCount}
+        drawerOpen={drawerOpen}
+        onToggleDrawer={() => setDrawerOpen(o => !o)}
+        selectedAgent={selectedAgent}
+        conversationTarget={conversationTarget}
+      />
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

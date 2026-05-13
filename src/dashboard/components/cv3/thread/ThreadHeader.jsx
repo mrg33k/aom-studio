@@ -71,7 +71,7 @@ export default function ThreadHeader() {
   )
 
   return (
-    <div style={{
+    <div data-role="thread-header" style={{
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '10px 14px',
       borderBottom: '1px solid rgba(255,255,255,0.06)',

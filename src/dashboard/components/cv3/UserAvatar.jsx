@@ -80,7 +80,10 @@ function compressAvatar(file) {
   })
 }
 
-export default function UserAvatar({ user, onUserUpdate }) {
+// `extraMenuItems`: optional React node rendered at the top of the avatar
+// dropdown. CV4 uses this to mount the WorldSelector inside the avatar menu.
+// CV3 callers omit it; their menu is unchanged.
+export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
   const initial = user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
   const avatarUrl = user?.user_metadata?.avatar_url
 
@@ -179,6 +182,7 @@ export default function UserAvatar({ user, onUserUpdate }) {
           zIndex: 9999,
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
+          {extraMenuItems}
           {/* Avatar upload */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
             <div
