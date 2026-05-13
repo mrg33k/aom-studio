@@ -87,6 +87,11 @@ export function AgentAvatar({ name, color, size = 38 }) {
     }
   }
 
+  // sprites-v2 files are 2x2 idle-frame sheets. Render the top-left frame only
+  // (img sized 200% inside an overflow-hidden parent, positioned absolutely so
+  // flex centering doesn't pull the center crop in).
+  const isSpriteSheet = imageUrl && /\/sprites-v2\//.test(imageUrl)
+
   return (
     <div style={{
       width: size,
@@ -99,9 +104,12 @@ export function AgentAvatar({ name, color, size = 38 }) {
       flexShrink: 0,
       boxShadow: `0 0 0 1px rgba(255,255,255,0.08)`,
       overflow: 'hidden',
+      position: isSpriteSheet ? 'relative' : undefined,
     }}>
       {imageUrl
-        ? <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? (isSpriteSheet
+            ? <img src={imageUrl} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '200%', height: '200%', objectFit: 'cover', objectPosition: '0% 0%' }} />
+            : <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />)
         : <span style={{
             fontSize: size * 0.42,
             fontWeight: 700,

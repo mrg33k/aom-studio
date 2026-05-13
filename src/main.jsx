@@ -265,14 +265,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/onboarding/voice" element={<OnboardingVoice />} />
           <Route path="/accept-invite" element={<AcceptInvite />} />
-          <Route path="/dashboard" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          {/* /dashboard now renders CV4. CV3 is reachable at /dashboard/cv3 for fallback. */}
+          <Route path="/dashboard" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/dashboard/welcome" element={<AuthGuard><DashboardWelcome /></AuthGuard>} />
           <Route path="/dashboard/settings/invites" element={<AuthGuard><DashboardSettingsInvites /></AuthGuard>} />
-          <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           {/* R21a: canonical per-project chat URL ("/dashboard/projects/<slug>/chat"). */}
-          <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><CornerV3 /></AuthGuard>} />
-          <Route path="/dashboard/projects/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/dashboard/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/dashboard/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
           {/* CV4 WD-40 design playground — mirrors /dashboard, iterates toward convention-first shell. */}
