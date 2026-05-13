@@ -4,7 +4,7 @@
 // R-CV4-2 (2026-05-12): Convention-first shell. Sidebar (projects + agents +
 // account) on the left, chat in the center, collapsible Tasks rail on the
 // right. Top-tab Chat/Tasks switcher killed. Shared cv3/ component tree is
-// preserved verbatim so chain animations + voice + cutscene primitives stay
+// preserved verbatim so chain animations + voice primitives stay
 // in lockstep with V3.
 //
 // CornerV3.jsx stays sacred at /dashboard (feedback_cornerv3_only).
@@ -40,7 +40,6 @@ import {
 import { LiveCallProvider } from './providers/LiveCallProvider.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
-import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
 
 import Sidebar from './cv4/Sidebar.jsx'
 import TopBar from './cv4/TopBar.jsx'
@@ -204,45 +203,12 @@ export default function CornerV4() {
     userIdentity: parentUserIdentity,
   })
   const [phoneOverlayOpen, setPhoneOverlayOpen] = useState(false)
-  const [cutsceneItems, setCutsceneItems] = useState([])
-  const cutsceneShownRef = useRef(false)
-
   useEffect(() => {
     if (!telephone.lastTranscript || telephone.isRecording || telephone.isTranscribing) return
     showToast('Transcript sent.')
     const t = setTimeout(() => setPhoneOverlayOpen(false), 2000)
     return () => clearTimeout(t)
   }, [telephone.lastTranscript, telephone.isRecording, telephone.isTranscribing])
-
-  // Stale-nudge cutscene fetch
-  useEffect(() => {
-    if (!worldId || cutsceneShownRef.current) return
-    cutsceneShownRef.current = true
-
-    const fetchCutsceneItems = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('messages')
-          .select('id, timestamp, text, metadata')
-          .eq('client_id', worldId)
-          .eq('source', 'stale-project-nudge')
-          .order('timestamp', { ascending: false })
-          .limit(10)
-
-        if (error) {
-          console.error('Error fetching cutscene items:', error)
-          return
-        }
-
-        const unresolved = (data || []).filter(item => !item.metadata?.action_resolved_at)
-        setCutsceneItems(unresolved)
-      } catch (err) {
-        console.error('Cutscene fetch error:', err)
-      }
-    }
-
-    fetchCutsceneItems()
-  }, [worldId])
 
   const activeTaskCount = (queued?.length || 0) + (rightNow?.length || 0)
 
@@ -382,28 +348,6 @@ export default function CornerV4() {
     telephone.toggle()
   }, [telephone])
 
-  // ── Cutscene action handler ───────────────────────────────────────────────
-
-  const handleCutsceneAction = useCallback(async (itemId, actionType) => {
-    try {
-      const response = await authFetch('/api/dashboard/cutscene-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_id: itemId,
-          item_type: 'stale_nudge',
-          action: actionType,
-          user_id: currentUser.id,
-        }),
-      })
-      if (!response.ok) {
-        console.error('Cutscene action failed:', response.statusText)
-      }
-    } catch (err) {
-      console.error('Cutscene action error:', err)
-    }
-  }, [currentUser?.id])
-
   // ── Memoized provider values ──────────────────────────────────────────────
 
   const authValue = useMemo(() => ({
@@ -508,14 +452,6 @@ export default function CornerV4() {
                     setPhoneOverlayOpen(false)
                     if (telephone.isRecording) telephone.stop()
                   }}
-                />
-              )}
-
-              {cutsceneItems.length > 0 && (
-                <CutsceneOverlay
-                  items={cutsceneItems}
-                  onAction={handleCutsceneAction}
-                  onClose={() => setCutsceneItems([])}
                 />
               )}
 

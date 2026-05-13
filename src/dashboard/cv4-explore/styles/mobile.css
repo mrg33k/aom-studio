@@ -490,131 +490,6 @@ small {
   display: none; /* hidden on mobile */
 }
 
-/* ---- CUTSCENE OVERLAY (Video game "previously on" recap) ---- */
-
-.cutscene-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.95);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  opacity: 0;
-  animation: fadeIn 300ms ease-out forwards;
-  gap: var(--sp-2xl);
-  padding: var(--sp-lg);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.cutscene-hero {
-  text-align: center;
-}
-
-.cutscene-hero h2 {
-  font-size: var(--fs-2xl);
-  color: var(--c-text);
-  margin-bottom: var(--sp-lg);
-}
-
-.cutscene-items {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-lg);
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.cutscene-item {
-  background: var(--c-s2);
-  border: 1px solid var(--c-border);
-  border-radius: 8px;
-  padding: var(--sp-lg);
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
-}
-
-.cutscene-item-type {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--ls-caps);
-  color: var(--c-accent);
-  font-weight: 600;
-}
-
-.cutscene-item-title {
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-.cutscene-item-desc {
-  font-size: var(--fs-sm);
-  color: var(--c-text2);
-  line-height: var(--lh-body);
-}
-
-.cutscene-item-actions {
-  display: flex;
-  gap: var(--sp-md);
-  flex-wrap: wrap;
-}
-
-.cutscene-action-btn {
-  flex: 1;
-  min-width: 100px;
-  padding: var(--sp-md) var(--sp-lg);
-  border-radius: 6px;
-  border: 1px solid var(--c-accent);
-  background: var(--c-accent);
-  color: var(--c-bg);
-  font-family: var(--ff-body);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.cutscene-action-btn:hover {
-  background: var(--c-accent2);
-  border-color: var(--c-accent2);
-}
-
-.cutscene-action-btn.secondary {
-  background: transparent;
-  color: var(--c-accent);
-}
-
-.cutscene-action-btn.secondary:hover {
-  background: var(--c-s1);
-}
-
-.cutscene-dismiss-btn {
-  align-self: center;
-  margin-top: var(--sp-lg);
-  padding: var(--sp-md) var(--sp-xl);
-  background: transparent;
-  border: 1px solid var(--c-border);
-  color: var(--c-text);
-  font-size: var(--fs-sm);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.cutscene-dismiss-btn:hover {
-  border-color: var(--c-text);
-  color: var(--c-text);
-}
-
 /* ---- TASKS VIEW ---- */
 
 .tasks-container {
@@ -699,34 +574,29 @@ small {
 /* ---- SCROLLBAR STYLING ---- */
 
 .chat-history::-webkit-scrollbar,
-.tasks-container::-webkit-scrollbar,
-.cutscene-items::-webkit-scrollbar {
+.tasks-container::-webkit-scrollbar {
   width: 6px;
 }
 
 .chat-history::-webkit-scrollbar-track,
-.tasks-container::-webkit-scrollbar-track,
-.cutscene-items::-webkit-scrollbar-track {
+.tasks-container::-webkit-scrollbar-track {
   background: var(--c-bg);
 }
 
 .chat-history::-webkit-scrollbar-thumb,
-.tasks-container::-webkit-scrollbar-thumb,
-.cutscene-items::-webkit-scrollbar-thumb {
+.tasks-container::-webkit-scrollbar-thumb {
   background: var(--c-border2);
   border-radius: 3px;
 }
 
 .chat-history::-webkit-scrollbar-thumb:hover,
-.tasks-container::-webkit-scrollbar-thumb:hover,
-.cutscene-items::-webkit-scrollbar-thumb:hover {
+.tasks-container::-webkit-scrollbar-thumb:hover {
   background: var(--c-muted);
 }
 
 /* Firefox scrollbar */
 .chat-history,
-.tasks-container,
-.cutscene-items {
+.tasks-container {
   scrollbar-color: var(--c-border2) var(--c-bg);
   scrollbar-width: thin;
 }

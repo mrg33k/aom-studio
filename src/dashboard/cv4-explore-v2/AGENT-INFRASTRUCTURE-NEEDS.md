@@ -223,39 +223,6 @@ This document outlines the backend/agent infrastructure required to make CV4 v2 
 
 ---
 
-## Priority 7: Cut-Scene Overlay (Welcome Back)
-
-### First-Return Notification Card
-
-**UI Surface:** `views/home.html` — overlay on page load  
-**Current State:** Structure exists, content hardcoded  
-**What Needs to Exist:**
-
-1. **Cut-Scene Data API**
-   - GET `/api/cut-scene?user=patrik`
-   - Output:
-     ```json
-     {
-       "staleProjects": [{ name, lastActive, icon }],
-       "needsInputTasks": [{ id, title, agent }],
-       "pendingApprovals": [{ id, item, requester }],
-       "skillRecommendations": [{ name, relevance, icon }]
-     }
-     ```
-
-2. **Dismiss Behavior**
-   - Click dismiss → set `sessionStorage.cutSceneDismissed = true`
-   - Don't re-show until session reload
-   - OR: POST `/api/cut-scene/dismiss` → server-side flag
-
-**Agent Responsibility:**
-- System: Query for stale projects (last_message < 7 days)
-- System: Query for needs_input tasks
-- Elon: Evaluate pending approvals
-- Skill system: Surface relevant skills based on recent projects
-
----
-
 ## Cross-Cutting Concerns
 
 ### Authentication & Authorization
