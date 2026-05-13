@@ -1,51 +1,143 @@
-// CV4 Sidebar — convention-first left rail.
-// Holds projects + agents + account switcher. Mirrors the ChatGPT/Claude.ai
-// organizational flow Patrik ratified in corner/VISION.md 2026-05-12.
+// CV4 Sidebar — editorial-midnight convention-first left rail.
+//
+// R-CV4-3: refreshed visuals (Instrument Serif accents, hairline dividers,
+// Hanken Grotesk body, AOM amber as the only accent), plus collapsible
+// mission groups under each project. Selecting a mission opens its
+// conversation AND emits onSelectMission so the composer pins the mission
+// as context for the next message.
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useCornerAuth, useCornerData, useCornerNav } from '../CornerContext.jsx'
-import { AomLogo } from '../components/cv3/icons.jsx'
-import { getStatusCfg } from '../lib/cv3Colors.js'
+import { getMissionsForProject } from './missionsIndex.js'
 
-function SectionLabel({ children }) {
+function CaretIcon() {
   return (
-    <div className="px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-aom-text-muted">
-      {children}
-    </div>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
   )
 }
 
 function StatusPip({ status }) {
-  const cfg = getStatusCfg(status)
+  const map = {
+    ACTIVE: 'var(--cv4-status-active)',
+    active: 'var(--cv4-status-active)',
+    BUILDING: 'var(--cv4-status-building)',
+    building: 'var(--cv4-status-building)',
+    QUIET: 'var(--cv4-status-quiet)',
+    quiet: 'var(--cv4-status-quiet)',
+    IDLE: 'var(--cv4-status-quiet)',
+    SHIPPED: 'var(--cv4-status-shipped)',
+    shipped: 'var(--cv4-status-shipped)',
+    QUEUED: 'var(--cv4-status-active)',
+    queued: 'var(--cv4-status-active)',
+    BLOCKED: 'var(--cv4-status-blocked)',
+    blocked: 'var(--cv4-status-blocked)',
+  }
   return (
     <span
-      className="inline-block size-[6px] rounded-full flex-shrink-0"
-      style={{ backgroundColor: cfg.color }}
-      title={cfg.label}
+      className="cv4-pip"
+      style={{ backgroundColor: map[status] || 'var(--cv4-status-quiet)' }}
+      title={status || 'idle'}
     />
   )
 }
 
-function ProjectRow({ project, active, onClick }) {
+function HomeIcon() {
   return (
-    <button
-      onClick={onClick}
-      data-testid={`cv4-sidebar-project-${project.slug}`}
-      className={[
-        'group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors',
-        active
-          ? 'bg-white/[0.08] text-white'
-          : 'text-aom-text-light/85 hover:bg-white/[0.04] hover:text-white',
-      ].join(' ')}
-    >
-      <StatusPip status={project.status} />
-      <span className="flex-1 truncate font-medium">{project.name}</span>
-      {project.tasks?.length > 0 && (
-        <span className="rounded bg-aom-orange/15 px-1.5 py-0.5 text-[10px] font-bold text-aom-orange">
-          {project.tasks.length}
-        </span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9.5L12 3l9 6.5V20a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2V9.5Z" />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="cv4-search__icon">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" />
+    </svg>
+  )
+}
+
+function ChevronDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
+
+function ProjectGroup({ project, isActive, isExpanded, onToggle, onSelectProject, selectedMissionSlug, onSelectMission }) {
+  const missions = getMissionsForProject(project.slug)
+  const showCaret = missions.length > 0
+
+  return (
+    <div>
+      <div className="cv4-row" data-active={isActive ? 'true' : 'false'} style={{ paddingRight: 4 }}>
+        {showCaret ? (
+          <button
+            className="cv4-caret"
+            data-open={isExpanded ? 'true' : 'false'}
+            onClick={(e) => { e.stopPropagation(); onToggle(project.slug) }}
+            aria-label={isExpanded ? 'Collapse missions' : 'Expand missions'}
+          >
+            <CaretIcon />
+          </button>
+        ) : (
+          <span style={{ width: 16, height: 16, flexShrink: 0 }} />
+        )}
+        <button
+          onClick={() => onSelectProject(project)}
+          data-testid={`cv4-sidebar-project-${project.slug}`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            flex: 1, minWidth: 0, padding: 0, background: 'transparent', border: 0, color: 'inherit',
+            font: 'inherit', textAlign: 'left', cursor: 'pointer',
+          }}
+        >
+          <StatusPip status={project.status} />
+          <span className="cv4-row__label">{project.name}</span>
+        </button>
+        {project.tasks?.length > 0 && (
+          <span style={{
+            fontFamily: 'var(--cv4-font-mono)',
+            fontSize: 10,
+            color: 'var(--cv4-bone-3)',
+            letterSpacing: '0.04em',
+            flexShrink: 0,
+          }}>
+            {project.tasks.length}
+          </span>
+        )}
+      </div>
+
+      {isExpanded && missions.length > 0 && (
+        <div className="cv4-mission-group">
+          {missions.map((m) => (
+            <button
+              key={m.slug}
+              className="cv4-mission-row"
+              data-active={selectedMissionSlug === `${project.slug}:${m.slug}` ? 'true' : 'false'}
+              data-testid={`cv4-sidebar-mission-${project.slug}-${m.slug}`}
+              onClick={() => onSelectMission(project, m)}
+            >
+              <StatusPip status={m.status} />
+              <span className="cv4-mission-row__label">{m.name}</span>
+            </button>
+          ))}
+        </div>
       )}
-    </button>
+    </div>
   )
 }
 
@@ -53,27 +145,37 @@ function AgentRow({ agent, active, onClick }) {
   const initial = (agent.name || agent.slug || '?').charAt(0).toUpperCase()
   return (
     <button
-      onClick={onClick}
+      className="cv4-row"
+      data-active={active ? 'true' : 'false'}
       data-testid={`cv4-sidebar-agent-${agent.slug}`}
-      className={[
-        'group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors',
-        active
-          ? 'bg-white/[0.08] text-white'
-          : 'text-aom-text-light/85 hover:bg-white/[0.04] hover:text-white',
-      ].join(' ')}
+      onClick={onClick}
     >
-      <span
-        className="flex size-[22px] flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white/95"
-        style={{ backgroundColor: agent.color || '#475569' }}
-      >
-        {initial}
-      </span>
-      <span className="flex-1 truncate font-medium capitalize">{agent.name || agent.slug}</span>
+      <span style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 22,
+        height: 22,
+        borderRadius: 999,
+        backgroundColor: agent.color || '#475569',
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 700,
+        flexShrink: 0,
+        letterSpacing: '0.01em',
+      }}>{initial}</span>
+      <span className="cv4-row__label" style={{ textTransform: 'capitalize' }}>{agent.name || agent.slug}</span>
     </button>
   )
 }
 
-export default function Sidebar({ onOpenWorldSwitcher, onNewThread, onGoHome }) {
+export default function Sidebar({
+  onOpenWorldSwitcher,
+  onNewThread,
+  onGoHome,
+  onSelectMission,
+  selectedMissionKey,
+}) {
   const { currentUser, worldId } = useCornerAuth()
   const { agents = [], projectRooms = [] } = useCornerData()
   const {
@@ -84,11 +186,12 @@ export default function Sidebar({ onOpenWorldSwitcher, onNewThread, onGoHome }) 
   } = useCornerNav()
 
   const [query, setQuery] = useState('')
+  const [expandedProjects, setExpandedProjects] = useState(() => new Set())
 
   const filteredProjects = useMemo(() => {
     if (!query.trim()) return projectRooms
     const q = query.toLowerCase()
-    return projectRooms.filter(p =>
+    return projectRooms.filter((p) =>
       (p.name || '').toLowerCase().includes(q) ||
       (p.slug || '').toLowerCase().includes(q)
     )
@@ -97,11 +200,36 @@ export default function Sidebar({ onOpenWorldSwitcher, onNewThread, onGoHome }) 
   const filteredAgents = useMemo(() => {
     if (!query.trim()) return agents
     const q = query.toLowerCase()
-    return agents.filter(a =>
+    return agents.filter((a) =>
       (a.name || '').toLowerCase().includes(q) ||
       (a.slug || '').toLowerCase().includes(q)
     )
   }, [agents, query])
+
+  const toggleProject = useCallback((slug) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }, [])
+
+  // When searching, auto-expand projects that have matching missions
+  const expandedDuringSearch = useMemo(() => {
+    if (!query.trim()) return null
+    const q = query.toLowerCase()
+    const set = new Set(expandedProjects)
+    for (const p of projectRooms) {
+      const matches = getMissionsForProject(p.slug).some((m) =>
+        (m.name || '').toLowerCase().includes(q) || (m.slug || '').toLowerCase().includes(q)
+      )
+      if (matches) set.add(p.slug)
+    }
+    return set
+  }, [query, projectRooms, expandedProjects])
+
+  const effectiveExpanded = expandedDuringSearch || expandedProjects
 
   const activeProjectSlug = conversationTarget?.type === 'project' ? conversationTarget.slug : null
   const activeAgentSlug = selectedAgent?.slug || null
@@ -111,81 +239,90 @@ export default function Sidebar({ onOpenWorldSwitcher, onNewThread, onGoHome }) 
     || currentUser?.email?.split('@')[0]
     || 'you'
 
+  const handleSelectProjectInline = useCallback((project) => {
+    handleSelectProject(project)
+    onSelectMission?.(null)
+  }, [handleSelectProject, onSelectMission])
+
+  const handleSelectMissionInline = useCallback((project, mission) => {
+    handleSelectProject(project)
+    onSelectMission?.({ project, mission })
+  }, [handleSelectProject, onSelectMission])
+
   return (
     <aside
       data-testid="cv4-sidebar"
-      className="flex h-full w-[268px] flex-shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0d14] text-aom-text-light"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: 282,
+        flexShrink: 0,
+        background: 'var(--cv4-ink-1)',
+        borderRight: '1px solid var(--cv4-hair)',
+      }}
     >
-      {/* Header: logo + new thread */}
-      <div className="flex-shrink-0 px-4 pb-3 pt-4">
+      {/* Header */}
+      <div className="cv4-sidebar-header">
         <button
           onClick={onGoHome}
-          className={[
-            'flex w-full items-center gap-2 rounded-md py-1 transition-opacity',
-            isHome ? 'opacity-100' : 'opacity-90 hover:opacity-100',
-          ].join(' ')}
+          style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', display: 'block' }}
           title="Home"
         >
-          <AomLogo />
+          <span className="cv4-wordmark">
+            Corner<span className="cv4-wordmark__dot">.</span>
+          </span>
         </button>
-        <button
-          onClick={onNewThread}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-[13px] font-semibold text-aom-text-light transition-colors hover:border-white/[0.18] hover:bg-white/[0.07]"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+        <button className="cv4-cta-new" onClick={onNewThread}>
+          <PlusIcon />
           New thread
         </button>
       </div>
 
       {/* Search */}
-      <div className="flex-shrink-0 px-4 pb-3">
-        <div className="flex items-center gap-2 rounded-md border border-white/[0.06] bg-black/30 px-2.5 py-1.5 focus-within:border-white/[0.18]">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="flex-shrink-0 text-aom-text-muted">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.3-4.3" />
-          </svg>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            className="w-full bg-transparent text-[12px] text-aom-text-light placeholder:text-aom-text-muted/70 focus:outline-none"
-          />
-        </div>
+      <div className="cv4-search">
+        <SearchIcon />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search projects, missions, agents"
+          spellCheck="false"
+        />
       </div>
 
-      {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px 8px' }}>
         {/* Home shortcut */}
         <button
-          onClick={onGoHome}
+          className="cv4-row"
+          data-active={isHome ? 'true' : 'false'}
           data-testid="cv4-sidebar-home"
-          className={[
-            'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors',
-            isHome
-              ? 'bg-white/[0.08] text-white'
-              : 'text-aom-text-light/85 hover:bg-white/[0.04] hover:text-white',
-          ].join(' ')}
+          onClick={onGoHome}
+          style={{ marginBottom: 6 }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          <span className="flex-1 truncate font-medium">Home</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, color: 'var(--cv4-bone-2)', flexShrink: 0 }}>
+            <HomeIcon />
+          </span>
+          <span className="cv4-row__label">Home</span>
         </button>
 
         {filteredProjects.length > 0 && (
           <>
-            <SectionLabel>Projects</SectionLabel>
-            <div className="flex flex-col gap-px">
+            <div className="cv4-section-label">
+              <span><i>Projects</i></span>
+              <span className="cv4-section-label__count">{filteredProjects.length.toString().padStart(2, '0')}</span>
+            </div>
+            <div>
               {filteredProjects.map((p) => (
-                <ProjectRow
+                <ProjectGroup
                   key={p.slug || p.id}
                   project={p}
-                  active={activeProjectSlug === p.slug}
-                  onClick={() => handleSelectProject(p)}
+                  isActive={activeProjectSlug === p.slug}
+                  isExpanded={effectiveExpanded.has(p.slug)}
+                  onToggle={toggleProject}
+                  onSelectProject={handleSelectProjectInline}
+                  selectedMissionSlug={selectedMissionKey}
+                  onSelectMission={handleSelectMissionInline}
                 />
               ))}
             </div>
@@ -194,14 +331,20 @@ export default function Sidebar({ onOpenWorldSwitcher, onNewThread, onGoHome }) 
 
         {filteredAgents.length > 0 && (
           <>
-            <SectionLabel>Agents</SectionLabel>
-            <div className="flex flex-col gap-px">
+            <div className="cv4-section-label">
+              <span><i>Agents</i></span>
+              <span className="cv4-section-label__count">{filteredAgents.length.toString().padStart(2, '0')}</span>
+            </div>
+            <div>
               {filteredAgents.map((a) => (
                 <AgentRow
                   key={a.slug || a.id}
                   agent={a}
                   active={activeAgentSlug === a.slug}
-                  onClick={() => handleSelectAgent(a)}
+                  onClick={() => {
+                    handleSelectAgent(a)
+                    onSelectMission?.(null)
+                  }}
                 />
               ))}
             </div>
@@ -209,33 +352,23 @@ export default function Sidebar({ onOpenWorldSwitcher, onNewThread, onGoHome }) 
         )}
 
         {filteredProjects.length === 0 && filteredAgents.length === 0 && (
-          <div className="px-3 py-6 text-center text-[12px] text-aom-text-muted">
-            No matches for "{query}"
+          <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: 12, color: 'var(--cv4-bone-3)' }}>
+            No matches for <i style={{ fontFamily: 'var(--cv4-font-display)' }}>"{query}"</i>
           </div>
         )}
       </div>
 
-      {/* Account switcher */}
-      <div className="flex-shrink-0 border-t border-white/[0.06] px-2 py-2">
-        <button
-          onClick={onOpenWorldSwitcher}
-          data-testid="cv4-sidebar-account"
-          className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-white/[0.04]"
-        >
-          <span className="flex size-[26px] flex-shrink-0 items-center justify-center rounded-full bg-aom-orange/90 text-[11px] font-bold text-white">
-            {displayName.charAt(0).toUpperCase()}
+      {/* Account */}
+      <div style={{ borderTop: '1px solid var(--cv4-hair)' }}>
+        <button className="cv4-account" onClick={onOpenWorldSwitcher} data-testid="cv4-sidebar-account">
+          <span className="cv4-account__avatar">{displayName.charAt(0).toUpperCase()}</span>
+          <span className="cv4-account__body">
+            <span className="cv4-account__name">{displayName}</span>
+            <span className="cv4-account__world">{worldId || 'no world'}</span>
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[12.5px] font-semibold text-aom-text-light">
-              {displayName}
-            </span>
-            <span className="block truncate text-[10.5px] text-aom-text-muted">
-              {worldId || 'no world'}
-            </span>
+          <span style={{ color: 'var(--cv4-bone-3)', flexShrink: 0, display: 'inline-flex' }}>
+            <ChevronDown />
           </span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 text-aom-text-muted">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
         </button>
       </div>
     </aside>

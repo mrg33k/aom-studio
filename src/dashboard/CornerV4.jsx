@@ -46,6 +46,7 @@ import Sidebar from './cv4/Sidebar.jsx'
 import TopBar from './cv4/TopBar.jsx'
 import RightRail from './cv4/RightRail.jsx'
 import WorldSwitcherModal from './cv4/WorldSwitcherModal.jsx'
+import './cv4/cv4.css'
 
 // ── Toast notification ────────────────────────────────────────────────────────
 
@@ -70,6 +71,35 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
         <span className="text-[12px] font-semibold text-aom-text-light">{message}</span>
       </div>
     </>
+  )
+}
+
+// ── Mission chip (pinned context above composer) ──────────────────────────────
+
+function MissionChip({ mission, onClear }) {
+  const project = mission?.project
+  const m = mission?.mission
+  if (!project || !m) return null
+  return (
+    <div className="cv4-composer-pin" data-testid="cv4-mission-chip">
+      <span className="cv4-mission-chip">
+        <span className="cv4-mission-chip__dot" />
+        <span className="cv4-mission-chip__label">{project.name}</span>
+        <span className="cv4-mission-chip__name">{m.name}</span>
+        <button
+          type="button"
+          className="cv4-mission-chip__x"
+          onClick={onClear}
+          aria-label="Clear mission"
+          title="Clear mission"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </span>
+    </div>
   )
 }
 
@@ -105,6 +135,8 @@ export default function CornerV4() {
   const [prefillMessage, setPrefillMessage] = useState(null)
   const [rightRailOpen, setRightRailOpen] = useState(false)
   const [worldSwitcherOpen, setWorldSwitcherOpen] = useState(false)
+  // R-CV4-3: mission attachment. Shape: { project: {slug, name}, mission: {slug, name, status} } or null.
+  const [selectedMission, setSelectedMission] = useState(null)
 
   const stageFilesRef = useRef(null)
   const [toast, setToast] = useState({ visible: false, message: '' })
@@ -273,16 +305,39 @@ export default function CornerV4() {
     setSelectedAgent(null)
     setConversationTarget({ name: project.name, type: 'project', slug: project.slug })
     setUnreadChat(0)
+    // Clear mission when switching project unless caller will set one immediately.
+    setSelectedMission((prev) => (prev?.project?.slug === project.slug ? prev : null))
   }, [])
+
+  // R-CV4-3: mission selection from sidebar. Opens the project conversation and
+  // pins the mission as the next-message context (visual chip above composer,
+  // background metadata via CornerNav so the send path can attach mission_slug).
+  const handleSelectMission = useCallback(({ project, mission }) => {
+    if (!project || !mission) return
+    setSelectedAgent(null)
+    setConversationTarget({ name: project.name, type: 'project', slug: project.slug })
+    setSelectedMission({ project, mission })
+    setUnreadChat(0)
+  }, [])
+
+  const handleClearMission = useCallback(() => {
+    setSelectedMission(null)
+  }, [])
+
+  const selectedMissionKey = selectedMission
+    ? `${selectedMission.project.slug}:${selectedMission.mission.slug}`
+    : null
 
   const handleBackFromConversation = useCallback(() => {
     setSelectedAgent(null)
     setConversationTarget(null)
+    setSelectedMission(null)
   }, [])
 
   const handleGoHome = useCallback(() => {
     setSelectedAgent(null)
     setConversationTarget(null)
+    setSelectedMission(null)
     setUnreadChat(0)
   }, [])
 
@@ -290,6 +345,7 @@ export default function CornerV4() {
     // Mimic ChatGPT "new chat" — clear conversation, focus the composer.
     setSelectedAgent(null)
     setConversationTarget(null)
+    setSelectedMission(null)
   }, [])
 
   // ── World switching ───────────────────────────────────────────────────────
@@ -372,7 +428,11 @@ export default function CornerV4() {
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
     stageFilesRef,
-  }), [selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, stageFilesRef])
+    // R-CV4-3: mission attachment for next-message metadata. Send paths that
+    // read this (CV4-aware send wrapper, future) attach mission_slug +
+    // mission_project_slug into outgoing message metadata.
+    selectedMission, clearMission: handleClearMission,
+  }), [selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, stageFilesRef, selectedMission, handleClearMission])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -386,15 +446,17 @@ export default function CornerV4() {
         <CornerNavProvider value={navValue}>
           <LiveCallProvider>
             <div
+              data-cv4=""
               data-testid="cv4-root"
-              className="flex h-[100dvh] w-full overflow-hidden bg-[#06090F] text-aom-text-light"
-              style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+              className="flex h-[100dvh] w-full overflow-hidden"
             >
               {/* LEFT — Sidebar */}
               <Sidebar
                 onOpenWorldSwitcher={() => setWorldSwitcherOpen(true)}
                 onNewThread={handleNewThread}
                 onGoHome={handleGoHome}
+                onSelectMission={handleSelectMission}
+                selectedMissionKey={selectedMissionKey}
               />
 
               {/* CENTER — TopBar + Chat */}
@@ -407,8 +469,14 @@ export default function CornerV4() {
                   rightRailOpen={rightRailOpen}
                   activeTaskCount={activeTaskCount}
                 />
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ position: 'relative' }}>
                   <ChatPanel key={selectedAgent?.slug || conversationTarget?.slug || 'home'} />
+                  {selectedMission && (
+                    <MissionChip
+                      mission={selectedMission}
+                      onClear={handleClearMission}
+                    />
+                  )}
                 </div>
               </main>
 
