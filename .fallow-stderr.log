@@ -1,0 +1,3 @@
+  note: git churn analysis took 3.0s (cached for next run at same HEAD)
+
+Failed: dead-code (347 issues), dupes (786 clone groups), health (1118 above threshold) — start with preferences.js

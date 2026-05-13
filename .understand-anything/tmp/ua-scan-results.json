@@ -1,0 +1,5671 @@
+{
+  "scriptCompleted": true,
+  "name": "aom-v17",
+  "rawDescription": "",
+  "readmeHead": "",
+  "languages": [
+    "cjs",
+    "css",
+    "example",
+    "html",
+    "javascript",
+    "json",
+    "markdown",
+    "mjs",
+    "pulled",
+    "python",
+    "shell",
+    "sql",
+    "tmx",
+    "txt",
+    "typescript",
+    "unknown",
+    "url",
+    "vercel"
+  ],
+  "frameworks": [
+    "React",
+    "Tailwind CSS",
+    "Vite"
+  ],
+  "files": [
+    {
+      "path": ".claude/skills/_research-template.md",
+      "language": "markdown",
+      "sizeLines": 111,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/INDEX.md",
+      "language": "markdown",
+      "sizeLines": 42,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-add/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 48,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-competitor/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-deeply-webpage/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 42,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-deeply/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 76,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-market/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 81,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-pattern/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-person/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 79,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-podcast/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 85,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-x-community/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 84,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/research-youtube/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claudeignore",
+      "language": "unknown",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".env.example",
+      "language": "example",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".env.pulled",
+      "language": "pulled",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".env.vercel",
+      "language": "vercel",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".vercelignore",
+      "language": "unknown",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/_lib/crosspost.js",
+      "language": "javascript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/_lib/verifyTenant.js",
+      "language": "javascript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/accept-invite.js",
+      "language": "javascript",
+      "sizeLines": 259,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/ai-search.js",
+      "language": "javascript",
+      "sizeLines": 342,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/conversations.js",
+      "language": "javascript",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/active-agents.js",
+      "language": "javascript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/agent-customize.js",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/agent-status-updater.js",
+      "language": "javascript",
+      "sizeLines": 68,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/agent-status.js",
+      "language": "javascript",
+      "sizeLines": 149,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/agent-voice.js",
+      "language": "javascript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/analyze-logs.js",
+      "language": "javascript",
+      "sizeLines": 211,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/avatar.js",
+      "language": "javascript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/base-chat.js",
+      "language": "javascript",
+      "sizeLines": 436,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/chat-bridge.js",
+      "language": "javascript",
+      "sizeLines": 411,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/chat.js",
+      "language": "javascript",
+      "sizeLines": 680,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/clear-context.js",
+      "language": "javascript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/cleo-workspaces.js",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/context-index.json",
+      "language": "json",
+      "sizeLines": 1,
+      "fileCategory": "config"
+    },
+    {
+      "path": "api/dashboard/create-agents.js",
+      "language": "javascript",
+      "sizeLines": 263,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/create-project-from-chat.js",
+      "language": "javascript",
+      "sizeLines": 189,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/create-project-task.js",
+      "language": "javascript",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/create-world.js",
+      "language": "javascript",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/cutscene-action.js",
+      "language": "javascript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/doc-updates.js",
+      "language": "javascript",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/ea-scaffold-batch.js",
+      "language": "javascript",
+      "sizeLines": 439,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/ea-system-prompt.js",
+      "language": "javascript",
+      "sizeLines": 145,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/env-vars.js",
+      "language": "javascript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/file-content.js",
+      "language": "javascript",
+      "sizeLines": 129,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/file-search.js",
+      "language": "javascript",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/file-upload.js",
+      "language": "javascript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/files.js",
+      "language": "javascript",
+      "sizeLines": 409,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/finance.js",
+      "language": "javascript",
+      "sizeLines": 189,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/foreman-pause.js",
+      "language": "javascript",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/get-directory-tenants.js",
+      "language": "javascript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/git-history.js",
+      "language": "javascript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/haiku-chat.js",
+      "language": "javascript",
+      "sizeLines": 573,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/invite-create.js",
+      "language": "javascript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/message-retention.js",
+      "language": "javascript",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/message-steps.js",
+      "language": "javascript",
+      "sizeLines": 82,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/missions-created.js",
+      "language": "javascript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/missions.js",
+      "language": "javascript",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/onboarding-state.js",
+      "language": "javascript",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/poke-agent.js",
+      "language": "javascript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/preferences.js",
+      "language": "javascript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-access.js",
+      "language": "javascript",
+      "sizeLines": 181,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-files.js",
+      "language": "javascript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-invite.js",
+      "language": "javascript",
+      "sizeLines": 174,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-narrative.js",
+      "language": "javascript",
+      "sizeLines": 85,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-paragraph.js",
+      "language": "javascript",
+      "sizeLines": 231,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-shared.js",
+      "language": "javascript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/project-summary.js",
+      "language": "javascript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/prune-context.js",
+      "language": "javascript",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/recipes.js",
+      "language": "javascript",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/reset-agent.js",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/retry-task.js",
+      "language": "javascript",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/scaffold-mission.js",
+      "language": "javascript",
+      "sizeLines": 224,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/scaffold-project.js",
+      "language": "javascript",
+      "sizeLines": 249,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/session-handoff.js",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/set-supabase-client-context.js",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/setup-finance.js",
+      "language": "javascript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/stripe-webhook.js",
+      "language": "javascript",
+      "sizeLines": 206,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/supabase-messages.js",
+      "language": "javascript",
+      "sizeLines": 250,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/supabase-status.js",
+      "language": "javascript",
+      "sizeLines": 153,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/support-chat.js",
+      "language": "javascript",
+      "sizeLines": 152,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/task-action.js",
+      "language": "javascript",
+      "sizeLines": 450,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/task-success-rate.js",
+      "language": "javascript",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/unstuck.js",
+      "language": "javascript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/update-agent-order.js",
+      "language": "javascript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/v2-task-list.js",
+      "language": "javascript",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/v2-task-update.js",
+      "language": "javascript",
+      "sizeLines": 262,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/v2-transcribe-audio.js",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/voice-context-lookup.js",
+      "language": "javascript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/voice-context-update.js",
+      "language": "javascript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/voice-handoff.js",
+      "language": "javascript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/voice-session.js",
+      "language": "javascript",
+      "sizeLines": 329,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/voice-summary.js",
+      "language": "javascript",
+      "sizeLines": 191,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/dashboard/worlds.js",
+      "language": "javascript",
+      "sizeLines": 104,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/local/file.js",
+      "language": "javascript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/members/[id].js",
+      "language": "javascript",
+      "sizeLines": 177,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/onboarding/architect.js",
+      "language": "javascript",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/onboarding/create-agents.js",
+      "language": "javascript",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/referrals.js",
+      "language": "javascript",
+      "sizeLines": 101,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/relay-sms.js",
+      "language": "javascript",
+      "sizeLines": 209,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/relay.js",
+      "language": "javascript",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/town-managers/export.js",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/waitlist.js",
+      "language": "javascript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/worlds/[slug].js",
+      "language": "javascript",
+      "sizeLines": 86,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/worlds/[slug]/members.js",
+      "language": "javascript",
+      "sizeLines": 101,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/worlds/[slug]/switch.js",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "api/worlds/index.js",
+      "language": "javascript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "app.jsx",
+      "language": "javascript",
+      "sizeLines": 624,
+      "fileCategory": "code"
+    },
+    {
+      "path": "board-mockup.html",
+      "language": "html",
+      "sizeLines": 683,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "board-rail-mockup.html",
+      "language": "html",
+      "sizeLines": 1020,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "corner-redesign.html",
+      "language": "html",
+      "sizeLines": 441,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "corner-test-src-crop.mjs",
+      "language": "mjs",
+      "sizeLines": 375,
+      "fileCategory": "code"
+    },
+    {
+      "path": "corner/RESEARCH.md",
+      "language": "markdown",
+      "sizeLines": 8,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "corner/research/2026-05-10-superpowers-skill-eval.md",
+      "language": "markdown",
+      "sizeLines": 192,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "count-municipalities.js",
+      "language": "javascript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "CV3-BUILD-SHEET.md",
+      "language": "markdown",
+      "sizeLines": 193,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "CV3-GAP-ANALYSIS.md",
+      "language": "markdown",
+      "sizeLines": 294,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "dashboard.html",
+      "language": "html",
+      "sizeLines": 39,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "directory-mockup.html",
+      "language": "html",
+      "sizeLines": 1081,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "docs/briefs/2026-04-25-chat-reliability-audit.md",
+      "language": "markdown",
+      "sizeLines": 162,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/briefs/2026-05-05-lr2-impl-decision.md",
+      "language": "markdown",
+      "sizeLines": 80,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/briefs/INDEX.json",
+      "language": "json",
+      "sizeLines": 2429,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/briefs/notion-competitors.md",
+      "language": "markdown",
+      "sizeLines": 56,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/briefs/spa-seo-strategy.md",
+      "language": "markdown",
+      "sizeLines": 303,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/design-specs/project-files-section.md",
+      "language": "markdown",
+      "sizeLines": 203,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/design-specs/project-welcome-card-redesign.md",
+      "language": "markdown",
+      "sizeLines": 200,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/research/2026-05-05-lr3-multi-project.md",
+      "language": "markdown",
+      "sizeLines": 153,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/research/2026-05-05-lr4a-phone-parity.md",
+      "language": "markdown",
+      "sizeLines": 191,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "growth-plan.html",
+      "language": "html",
+      "sizeLines": 24,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "index.css",
+      "language": "css",
+      "sizeLines": 4,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "index.html",
+      "language": "html",
+      "sizeLines": 79,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "middleware.js",
+      "language": "javascript",
+      "sizeLines": 251,
+      "fileCategory": "code"
+    },
+    {
+      "path": "migrations/001_sourcing_directory.sql",
+      "language": "sql",
+      "sizeLines": 531,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/002_sourcing_listings_fields.sql",
+      "language": "sql",
+      "sizeLines": 144,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/003_sourcing_articles_admin.sql",
+      "language": "sql",
+      "sizeLines": 63,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/004_scout_messages.sql",
+      "language": "sql",
+      "sizeLines": 28,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/005_sourcing_multitenant.sql",
+      "language": "sql",
+      "sizeLines": 63,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/006_sourcing_members.sql",
+      "language": "sql",
+      "sizeLines": 29,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/007_sourcing_contacts.sql",
+      "language": "sql",
+      "sizeLines": 38,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/008_reviews_favorites.sql",
+      "language": "sql",
+      "sizeLines": 92,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/009_message_status.sql",
+      "language": "sql",
+      "sizeLines": 10,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/010_grants.sql",
+      "language": "sql",
+      "sizeLines": 89,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/010_notification_preferences.sql",
+      "language": "sql",
+      "sizeLines": 40,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/011_sort_order_and_brands.sql",
+      "language": "sql",
+      "sizeLines": 28,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/012_status_truthful_cleanup.sql",
+      "language": "sql",
+      "sizeLines": 21,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/013_agent_status_truthful.sql",
+      "language": "sql",
+      "sizeLines": 38,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/013_imessage_channels.sql",
+      "language": "sql",
+      "sizeLines": 40,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/014_enforce_world_id_rls.sql",
+      "language": "sql",
+      "sizeLines": 140,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/015_add_client_client_id_and_rls.sql",
+      "language": "sql",
+      "sizeLines": 464,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/016_messages_attachments.sql",
+      "language": "sql",
+      "sizeLines": 27,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/017_events_rls_and_policy_cleanup.sql",
+      "language": "sql",
+      "sizeLines": 109,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/017_messages_user_identity.sql",
+      "language": "sql",
+      "sizeLines": 7,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/018_env_vars.sql",
+      "language": "sql",
+      "sizeLines": 21,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/018_project_context.sql",
+      "language": "sql",
+      "sizeLines": 66,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/019_add_project_id_to_tasks.sql",
+      "language": "sql",
+      "sizeLines": 32,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/019_project_access.sql",
+      "language": "sql",
+      "sizeLines": 16,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/020_add_active_voice_id_to_agents.sql",
+      "language": "sql",
+      "sizeLines": 5,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/021_company_member_linkage.sql",
+      "language": "sql",
+      "sizeLines": 67,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/021_member_company_link.sql",
+      "language": "sql",
+      "sizeLines": 18,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/022_invites_and_billing.sql",
+      "language": "sql",
+      "sizeLines": 76,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/023_arsenal_world_isolation_fix.sql",
+      "language": "sql",
+      "sizeLines": 292,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/023b_isolation_policy_sweep.sql",
+      "language": "sql",
+      "sizeLines": 98,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/024_r77_t1_messages_agent_status_rls.sql",
+      "language": "sql",
+      "sizeLines": 109,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/026_r77_t3_shared_rooms_membership_rls.sql",
+      "language": "sql",
+      "sizeLines": 137,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/027_r77_t4_worlds_recursion_fix.sql",
+      "language": "sql",
+      "sizeLines": 123,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/028_r77_t10_arsenal_room_shape.sql",
+      "language": "sql",
+      "sizeLines": 160,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/029_r77_t11_super_admin_rls_path.sql",
+      "language": "sql",
+      "sizeLines": 389,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/030_dispatch_eligible.sql",
+      "language": "sql",
+      "sizeLines": 35,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/031_ea_display_name.sql",
+      "language": "sql",
+      "sizeLines": 12,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/031_project_access_rls.sql",
+      "language": "sql",
+      "sizeLines": 39,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/032_archive_projects.sql",
+      "language": "sql",
+      "sizeLines": 5,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/033_failed_task_hygiene.sql",
+      "language": "sql",
+      "sizeLines": 39,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/034_message_retention.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/034_shared_rooms_three_tier_roles.sql",
+      "language": "sql",
+      "sizeLines": 22,
+      "fileCategory": "data"
+    },
+    {
+      "path": "migrations/20260504_seed_repo_projects.sql",
+      "language": "sql",
+      "sizeLines": 26,
+      "fileCategory": "data"
+    },
+    {
+      "path": "outreach-plan.html",
+      "language": "html",
+      "sizeLines": 24,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "package-lock.json",
+      "language": "json",
+      "sizeLines": 4344,
+      "fileCategory": "config"
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "sizeLines": 41,
+      "fileCategory": "config"
+    },
+    {
+      "path": "PHONEBOOK.md",
+      "language": "markdown",
+      "sizeLines": 162,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "postcss.config.js",
+      "language": "javascript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "projects/trading-agent/INTEGRATION-NOTES.md",
+      "language": "markdown",
+      "sizeLines": 266,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "proposals-isa.html",
+      "language": "html",
+      "sizeLines": 31,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "proposals-quentin.html",
+      "language": "html",
+      "sizeLines": 30,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/aom-tracker.js",
+      "language": "javascript",
+      "sizeLines": 143,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/arsenal-municipality-data.json",
+      "language": "json",
+      "sizeLines": 330708,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/cage-match/deepseek/index.html",
+      "language": "html",
+      "sizeLines": 825,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/deepseek/styles.css",
+      "language": "css",
+      "sizeLines": 1557,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/gemini/index.html",
+      "language": "html",
+      "sizeLines": 519,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/gemini/styles.css",
+      "language": "css",
+      "sizeLines": 1314,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/gpt/index.html",
+      "language": "html",
+      "sizeLines": 348,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/gpt/styles.css",
+      "language": "css",
+      "sizeLines": 626,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/opus/index.html",
+      "language": "html",
+      "sizeLines": 608,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/opus/styles.css",
+      "language": "css",
+      "sizeLines": 1618,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/sonnet/index.html",
+      "language": "html",
+      "sizeLines": 544,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cage-match/sonnet/styles.css",
+      "language": "css",
+      "sizeLines": 1595,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/corner/ai-advisory-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/alex-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/alex-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/ambition-mechanical-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/bobby-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/bobby-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/brandon-wiley-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/cleo-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/cleo-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/colton-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/colton-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/corner-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/elmo-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/elmo-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/elon-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/elon-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/included-health-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/isa-energy-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/jacob-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/jacob-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/kohrs-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/manifest.json",
+      "language": "json",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/mom-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/mom-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/nabi-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/outreach-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/paige-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/paige-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/pixel-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/pixel-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/skylar-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/steffen-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/steffen-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/steve-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/steve-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/tony-room/archive-v1/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/corner/tony-room/layers.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "public/cv2.html",
+      "language": "html",
+      "sizeLines": 441,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv3.html",
+      "language": "html",
+      "sizeLines": 524,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/AGENT-INFRASTRUCTURE-NEEDS.md",
+      "language": "markdown",
+      "sizeLines": 334,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/cv4/chat-1on1.html",
+      "language": "html",
+      "sizeLines": 153,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/confirm-dialog.html",
+      "language": "html",
+      "sizeLines": 180,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/error-toast.html",
+      "language": "html",
+      "sizeLines": 218,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/loading-overlay.html",
+      "language": "html",
+      "sizeLines": 95,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/message-list.html",
+      "language": "html",
+      "sizeLines": 527,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/step-thread.html",
+      "language": "html",
+      "sizeLines": 395,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/thread-input-bar.html",
+      "language": "html",
+      "sizeLines": 538,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/voice-player.html",
+      "language": "html",
+      "sizeLines": 242,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/components/voice-recorder.html",
+      "language": "html",
+      "sizeLines": 322,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/CRITIQUE-PASS-1.md",
+      "language": "markdown",
+      "sizeLines": 386,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/cv4/CRITIQUE-PASS-2.md",
+      "language": "markdown",
+      "sizeLines": 231,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/cv4/DESIGN.md",
+      "language": "markdown",
+      "sizeLines": 396,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/cv4/home.html",
+      "language": "html",
+      "sizeLines": 285,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/include.js",
+      "language": "javascript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/cv4/INVENTORY.md",
+      "language": "markdown",
+      "sizeLines": 667,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/cv4/project-chat.html",
+      "language": "html",
+      "sizeLines": 380,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/styles/animations.css",
+      "language": "css",
+      "sizeLines": 301,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/styles/base.css",
+      "language": "css",
+      "sizeLines": 310,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/styles/desktop.css",
+      "language": "css",
+      "sizeLines": 236,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/styles/mobile.css",
+      "language": "css",
+      "sizeLines": 341,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/styles/tokens.css",
+      "language": "css",
+      "sizeLines": 107,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/tasks.html",
+      "language": "html",
+      "sizeLines": 372,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/views/chat-1on1.html",
+      "language": "html",
+      "sizeLines": 1909,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/views/home.html",
+      "language": "html",
+      "sizeLines": 451,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/views/project-chat.html",
+      "language": "html",
+      "sizeLines": 479,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/cv4/views/tasks.html",
+      "language": "html",
+      "sizeLines": 492,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/invoices/index.html",
+      "language": "html",
+      "sizeLines": 222,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/isa-preprod.html",
+      "language": "html",
+      "sizeLines": 913,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/learning/assets/apple2-fonts/FreeLicense.txt",
+      "language": "txt",
+      "sizeLines": 21,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Instructions.url",
+      "language": "url",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/License.txt",
+      "language": "txt",
+      "sizeLines": 23,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Tilemap/sample_fantasy.tmx",
+      "language": "tmx",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Tilemap/sample_interior.tmx",
+      "language": "tmx",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Tilemap/sample_platformer.tmx",
+      "language": "tmx",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Tilemap/sample_urban.tmx",
+      "language": "tmx",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Tilemap/tileset_colored.tsx",
+      "language": "typescript",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Tilesheet.txt",
+      "language": "txt",
+      "sizeLines": 9,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Visit Kenney.url",
+      "language": "url",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/assets/kenney-1bit/Visit Patreon.url",
+      "language": "url",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "public/learning/v1/index.html",
+      "language": "html",
+      "sizeLines": 1556,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/learning/v2/index.html",
+      "language": "html",
+      "sizeLines": 1311,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/learning/v3/index.html",
+      "language": "html",
+      "sizeLines": 1905,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/learning/v5/index.html",
+      "language": "html",
+      "sizeLines": 1126,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/learning/v6a/index.html",
+      "language": "html",
+      "sizeLines": 1124,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/learning/v6b/index.html",
+      "language": "html",
+      "sizeLines": 1471,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/og-directory-render.html",
+      "language": "html",
+      "sizeLines": 163,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/og-render.html",
+      "language": "html",
+      "sizeLines": 174,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "public/space-rising/footage-review-2026-04-29/index.html",
+      "language": "html",
+      "sizeLines": 2842,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "qa-final-2026-03-28.mjs",
+      "language": "mjs",
+      "sizeLines": 289,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/AL-2_spawn_foreman.js",
+      "language": "javascript",
+      "sizeLines": 175,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-1_greeting_seeded.py",
+      "language": "python",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-2_onboarding_scaffold.py",
+      "language": "python",
+      "sizeLines": 205,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-2_three_question_onboarding.js",
+      "language": "javascript",
+      "sizeLines": 371,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-3_multi_project_one_chat.js",
+      "language": "javascript",
+      "sizeLines": 374,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-4a_phone_parity.js",
+      "language": "javascript",
+      "sizeLines": 405,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-4a_phone_parity.py",
+      "language": "python",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/LR-4b_floating_call_bar.js",
+      "language": "javascript",
+      "sizeLines": 505,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/R75-b5_live_chain.js",
+      "language": "javascript",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/R75-b8.js",
+      "language": "javascript",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/R75-b9.js",
+      "language": "javascript",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/R75-r65-e.js",
+      "language": "javascript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/R78-p1.js",
+      "language": "javascript",
+      "sizeLines": 150,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/accept/shc-r73-chain.js",
+      "language": "javascript",
+      "sizeLines": 181,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/build-skills-index.js",
+      "language": "javascript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/check-imports.sh",
+      "language": "shell",
+      "sizeLines": 43,
+      "fileCategory": "script"
+    },
+    {
+      "path": "scripts/create-finance-table.sql",
+      "language": "sql",
+      "sizeLines": 30,
+      "fileCategory": "data"
+    },
+    {
+      "path": "scripts/create-rooms-table.sql",
+      "language": "sql",
+      "sizeLines": 62,
+      "fileCategory": "data"
+    },
+    {
+      "path": "scripts/delete-blank-reports.js",
+      "language": "javascript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/enrich-50k-plus.py",
+      "language": "python",
+      "sizeLines": 240,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/enrich-municipality-contacts.js",
+      "language": "javascript",
+      "sizeLines": 314,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/enrich-municipality-contacts.py",
+      "language": "python",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/generate-briefs-index.js",
+      "language": "javascript",
+      "sizeLines": 258,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/import-az-companies.cjs",
+      "language": "cjs",
+      "sizeLines": 986,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/import-biotech-defense.cjs",
+      "language": "cjs",
+      "sizeLines": 1210,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/README-enrichment.md",
+      "language": "markdown",
+      "sizeLines": 117,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "scripts/run-migration.cjs",
+      "language": "cjs",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/seed-env-vars.js",
+      "language": "javascript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/set-user-onboarded.mjs",
+      "language": "mjs",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/test-enrichment.js",
+      "language": "javascript",
+      "sizeLines": 162,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/verify-task-card.mjs",
+      "language": "mjs",
+      "sizeLines": 165,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/write-brief.py",
+      "language": "python",
+      "sizeLines": 250,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/App.jsx",
+      "language": "javascript",
+      "sizeLines": 1011,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/archive/ChatDashboard.jsx",
+      "language": "javascript",
+      "sizeLines": 2754,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/archive/DashboardV2.jsx",
+      "language": "javascript",
+      "sizeLines": 633,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/AITeaser.jsx",
+      "language": "javascript",
+      "sizeLines": 210,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/BrandsCallout.jsx",
+      "language": "javascript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/BriefModal.jsx",
+      "language": "javascript",
+      "sizeLines": 236,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ConstructionCallout.jsx",
+      "language": "javascript",
+      "sizeLines": 148,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/HeroSection.jsx",
+      "language": "javascript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/HeroVariants.jsx",
+      "language": "javascript",
+      "sizeLines": 465,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/ArticlesSection.jsx",
+      "language": "javascript",
+      "sizeLines": 730,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/content.js",
+      "language": "javascript",
+      "sizeLines": 561,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/CTAButton.jsx",
+      "language": "javascript",
+      "sizeLines": 156,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/CTAPalette.jsx",
+      "language": "javascript",
+      "sizeLines": 156,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/CustomerStoriesSection.jsx",
+      "language": "javascript",
+      "sizeLines": 241,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/HomeCinema.jsx",
+      "language": "javascript",
+      "sizeLines": 349,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/HomeClassic.jsx",
+      "language": "javascript",
+      "sizeLines": 184,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/HomeEditorial.jsx",
+      "language": "javascript",
+      "sizeLines": 335,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/HomeVariants.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/LazyGumlet.jsx",
+      "language": "javascript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/RecentWorkSection.jsx",
+      "language": "javascript",
+      "sizeLines": 189,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/ServicesChartSection.jsx",
+      "language": "javascript",
+      "sizeLines": 329,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/StatsSection.jsx",
+      "language": "javascript",
+      "sizeLines": 202,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/StickyVideoDeck.jsx",
+      "language": "javascript",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/SystemSection.jsx",
+      "language": "javascript",
+      "sizeLines": 863,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/TwoWaysSection.jsx",
+      "language": "javascript",
+      "sizeLines": 322,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/home/WhatWeMakeSection.jsx",
+      "language": "javascript",
+      "sizeLines": 316,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/LiveActivityTicker.jsx",
+      "language": "javascript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/ServicesGrid.jsx",
+      "language": "javascript",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/SiteFooter.jsx",
+      "language": "javascript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/SiteNav.jsx",
+      "language": "javascript",
+      "sizeLines": 215,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/SiteNavR4.jsx",
+      "language": "javascript",
+      "sizeLines": 540,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/SkillsShowcase.jsx",
+      "language": "javascript",
+      "sizeLines": 329,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/index.js",
+      "language": "javascript",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplatePresentationContent.jsx",
+      "language": "javascript",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplatePresentationStats.jsx",
+      "language": "javascript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplatePresentationTitle.jsx",
+      "language": "javascript",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplateSocialBeforeAfter.jsx",
+      "language": "javascript",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplateSocialIGPost.jsx",
+      "language": "javascript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplateSocialIGStory.jsx",
+      "language": "javascript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplateSocialLinkedIn.jsx",
+      "language": "javascript",
+      "sizeLines": 99,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplateSocialQuickTip.jsx",
+      "language": "javascript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/components/templates/TemplateSocialTestimonial.jsx",
+      "language": "javascript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/context/ThemeContext.jsx",
+      "language": "javascript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/agentKnowledge.js",
+      "language": "javascript",
+      "sizeLines": 711,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/agentTypingPhrases.js",
+      "language": "javascript",
+      "sizeLines": 483,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/BoardViewMessageContent.module.css",
+      "language": "css",
+      "sizeLines": 277,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/chatConnection.js",
+      "language": "javascript",
+      "sizeLines": 285,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/AgentInfoTab.jsx",
+      "language": "javascript",
+      "sizeLines": 802,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/AgentRevolver.jsx",
+      "language": "javascript",
+      "sizeLines": 584,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/ChatMessageRenderer.jsx",
+      "language": "javascript",
+      "sizeLines": 236,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/ChildPillsDrawer.jsx",
+      "language": "javascript",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/CompactStats.jsx",
+      "language": "javascript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/CreateRoomModal.jsx",
+      "language": "javascript",
+      "sizeLines": 643,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/AgentCard.jsx",
+      "language": "javascript",
+      "sizeLines": 222,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/chatConstants.js",
+      "language": "javascript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useBridgeStream.js",
+      "language": "javascript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatAttachments.js",
+      "language": "javascript",
+      "sizeLines": 240,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatContextMenu.js",
+      "language": "javascript",
+      "sizeLines": 235,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatConversations.js",
+      "language": "javascript",
+      "sizeLines": 405,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatMessages.js",
+      "language": "javascript",
+      "sizeLines": 656,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatPrefs.js",
+      "language": "javascript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatRecording.js",
+      "language": "javascript",
+      "sizeLines": 92,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatSend.js",
+      "language": "javascript",
+      "sizeLines": 333,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/chat/useChatSettings.js",
+      "language": "javascript",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/ChatPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 596,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/CleoWorkspaceDetail.jsx",
+      "language": "javascript",
+      "sizeLines": 491,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/CleoWorkspacesIndex.jsx",
+      "language": "javascript",
+      "sizeLines": 249,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/ContextMenu.jsx",
+      "language": "javascript",
+      "sizeLines": 476,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/AgentFailureSurface.jsx",
+      "language": "javascript",
+      "sizeLines": 177,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/AgentsList.jsx",
+      "language": "javascript",
+      "sizeLines": 291,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/CallInProgressBanner.jsx",
+      "language": "javascript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/conversationsConstants.js",
+      "language": "javascript",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/EaHeroCard.jsx",
+      "language": "javascript",
+      "sizeLines": 194,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/GreetingHero.jsx",
+      "language": "javascript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/HomeSearchBar.jsx",
+      "language": "javascript",
+      "sizeLines": 70,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/HomeStateFeed.jsx",
+      "language": "javascript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/PinMenu.jsx",
+      "language": "javascript",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/ProjectsList.jsx",
+      "language": "javascript",
+      "sizeLines": 307,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/SearchResults.jsx",
+      "language": "javascript",
+      "sizeLines": 349,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/SuccessRateChip.jsx",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/useHomeSearch.js",
+      "language": "javascript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/useListOrder.js",
+      "language": "javascript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/conversations/usePinned.js",
+      "language": "javascript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/ConversationsView.jsx",
+      "language": "javascript",
+      "sizeLines": 370,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/cutscene/CutsceneOverlay.jsx",
+      "language": "javascript",
+      "sizeLines": 363,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/icons.jsx",
+      "language": "javascript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/NotificationsPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx",
+      "language": "javascript",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/CanonFilesPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 265,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/FileArticleReader.jsx",
+      "language": "javascript",
+      "sizeLines": 213,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/projectChatConstants.js",
+      "language": "javascript",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectChatHeader.jsx",
+      "language": "javascript",
+      "sizeLines": 479,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectFilesPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectInputBar.jsx",
+      "language": "javascript",
+      "sizeLines": 255,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectRecordingStatusBar.jsx",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectSearchBar.jsx",
+      "language": "javascript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectSearchResults.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectSettingsModal.jsx",
+      "language": "javascript",
+      "sizeLines": 649,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectVoiceChatHost.jsx",
+      "language": "javascript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/ProjectVoiceModeBar.jsx",
+      "language": "javascript",
+      "sizeLines": 92,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/useProjectChatFiles.js",
+      "language": "javascript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/useProjectChatPrefill.js",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/project-chat/useProjectChatSwitcher.js",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/ProjectChatView.jsx",
+      "language": "javascript",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/session/ContextFullnessMeter.jsx",
+      "language": "javascript",
+      "sizeLines": 160,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/session/OnboardingResumeCTA.jsx",
+      "language": "javascript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/session/OnboardingTooltip.jsx",
+      "language": "javascript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/session/RecipesBookOverlay.jsx",
+      "language": "javascript",
+      "sizeLines": 339,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared-rooms/SharedRoomSettings.jsx",
+      "language": "javascript",
+      "sizeLines": 362,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared.jsx",
+      "language": "javascript",
+      "sizeLines": 304,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/AvatarUploader.jsx",
+      "language": "javascript",
+      "sizeLines": 92,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/DocUpdateCard.jsx",
+      "language": "javascript",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/HandoffNudge.jsx",
+      "language": "javascript",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/HeaderActionsDrawer.jsx",
+      "language": "javascript",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/PasteChip.jsx",
+      "language": "javascript",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/StepThread.jsx",
+      "language": "javascript",
+      "sizeLines": 189,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/shared/useSyntheticChain.js",
+      "language": "javascript",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/SlashCommandAutocomplete.jsx",
+      "language": "javascript",
+      "sizeLines": 225,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/ActiveTasksSection.jsx",
+      "language": "javascript",
+      "sizeLines": 199,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/BlockedTasksSection.jsx",
+      "language": "javascript",
+      "sizeLines": 148,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/CreateProjectModal.jsx",
+      "language": "javascript",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/DoneTasksSection.jsx",
+      "language": "javascript",
+      "sizeLines": 214,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/FailedTasksSection.jsx",
+      "language": "javascript",
+      "sizeLines": 405,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/FilesSection.jsx",
+      "language": "javascript",
+      "sizeLines": 767,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/ForemanTasksSection.jsx",
+      "language": "javascript",
+      "sizeLines": 380,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "language": "javascript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/LivingParagraphCard.jsx",
+      "language": "javascript",
+      "sizeLines": 260,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/PersonalTodosSection.jsx",
+      "language": "javascript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/ProjectBriefingCard.jsx",
+      "language": "javascript",
+      "sizeLines": 243,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/ResultPreview.jsx",
+      "language": "javascript",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/TaskDrawerFileFAQ.jsx",
+      "language": "javascript",
+      "sizeLines": 190,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/TaskDrawerProjectSummary.jsx",
+      "language": "javascript",
+      "sizeLines": 107,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/TaskInputBar.jsx",
+      "language": "javascript",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/useTasksPanel.js",
+      "language": "javascript",
+      "sizeLines": 899,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/WaitingTasksSection.jsx",
+      "language": "javascript",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/tasks/WeeklyStatsCard.jsx",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/TasksPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 536,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/TaskStatusCard.jsx",
+      "language": "javascript",
+      "sizeLines": 568,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/AgentProfileOverlay.jsx",
+      "language": "javascript",
+      "sizeLines": 230,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/FilesPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 68,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/MessageChecks.jsx",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/MessageList.jsx",
+      "language": "javascript",
+      "sizeLines": 959,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/MessageStatusLabel.jsx",
+      "language": "javascript",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/RecordingStatusBar.jsx",
+      "language": "javascript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/SummaryMessage.jsx",
+      "language": "javascript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/threadConstants.js",
+      "language": "javascript",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/ThreadHeader.jsx",
+      "language": "javascript",
+      "sizeLines": 440,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/ThreadInputBar.jsx",
+      "language": "javascript",
+      "sizeLines": 222,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/ThreadSettingsModal.jsx",
+      "language": "javascript",
+      "sizeLines": 470,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/useThreadMessageStatus.js",
+      "language": "javascript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/useThreadMsgMenu.js",
+      "language": "javascript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/useThreadQuickSwitcher.js",
+      "language": "javascript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/useThreadResetAgent.js",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/VoiceChatHost.jsx",
+      "language": "javascript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/thread/VoiceModeBar.jsx",
+      "language": "javascript",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/ThreadView.jsx",
+      "language": "javascript",
+      "sizeLines": 120,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/UserAvatar.jsx",
+      "language": "javascript",
+      "sizeLines": 324,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/voice/FloatingCallBar.jsx",
+      "language": "javascript",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/cv3/voice/GlobalCallButton.jsx",
+      "language": "javascript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/FloatingActionButton.jsx",
+      "language": "javascript",
+      "sizeLines": 250,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/HUDConstants.jsx",
+      "language": "javascript",
+      "sizeLines": 470,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/ProjectCard.jsx",
+      "language": "javascript",
+      "sizeLines": 489,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/SkillAutocomplete.jsx",
+      "language": "javascript",
+      "sizeLines": 271,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/TaskContextMenu.jsx",
+      "language": "javascript",
+      "sizeLines": 1029,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/TaskDetailAccordion.jsx",
+      "language": "javascript",
+      "sizeLines": 321,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/TaskLabelPill.jsx",
+      "language": "javascript",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/TaskPanel.jsx",
+      "language": "javascript",
+      "sizeLines": 949,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/TaskQueueFAB.jsx",
+      "language": "javascript",
+      "sizeLines": 510,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/TypingIndicatorV2.jsx",
+      "language": "javascript",
+      "sizeLines": 293,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/VoiceChat.jsx",
+      "language": "javascript",
+      "sizeLines": 1229,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/VoiceToggle.jsx",
+      "language": "javascript",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/components/WorldSelector.jsx",
+      "language": "javascript",
+      "sizeLines": 621,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/CornerContext.jsx",
+      "language": "javascript",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/CornerV3.jsx",
+      "language": "javascript",
+      "sizeLines": 935,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/AGENT-INFRASTRUCTURE-NEEDS.md",
+      "language": "markdown",
+      "sizeLines": 334,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/chat-1on1.html",
+      "language": "html",
+      "sizeLines": 153,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/confirm-dialog.html",
+      "language": "html",
+      "sizeLines": 180,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/error-toast.html",
+      "language": "html",
+      "sizeLines": 218,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/loading-overlay.html",
+      "language": "html",
+      "sizeLines": 95,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/message-list.html",
+      "language": "html",
+      "sizeLines": 527,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/step-thread.html",
+      "language": "html",
+      "sizeLines": 395,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/thread-input-bar.html",
+      "language": "html",
+      "sizeLines": 538,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/voice-player.html",
+      "language": "html",
+      "sizeLines": 242,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/components/voice-recorder.html",
+      "language": "html",
+      "sizeLines": 322,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/CRITIQUE-PASS-1.md",
+      "language": "markdown",
+      "sizeLines": 386,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/CRITIQUE-PASS-2.md",
+      "language": "markdown",
+      "sizeLines": 231,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/DESIGN.md",
+      "language": "markdown",
+      "sizeLines": 396,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/home.html",
+      "language": "html",
+      "sizeLines": 285,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/include.js",
+      "language": "javascript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/INVENTORY.md",
+      "language": "markdown",
+      "sizeLines": 667,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/project-chat.html",
+      "language": "html",
+      "sizeLines": 380,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/styles/animations.css",
+      "language": "css",
+      "sizeLines": 301,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/styles/base.css",
+      "language": "css",
+      "sizeLines": 310,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/styles/desktop.css",
+      "language": "css",
+      "sizeLines": 236,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/styles/mobile.css",
+      "language": "css",
+      "sizeLines": 341,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/styles/tokens.css",
+      "language": "css",
+      "sizeLines": 107,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/tasks.html",
+      "language": "html",
+      "sizeLines": 372,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/views/chat-1on1.html",
+      "language": "html",
+      "sizeLines": 1909,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/views/home.html",
+      "language": "html",
+      "sizeLines": 450,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/views/project-chat.html",
+      "language": "html",
+      "sizeLines": 479,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore-v2/views/tasks.html",
+      "language": "html",
+      "sizeLines": 492,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore/HANDOFF.md",
+      "language": "markdown",
+      "sizeLines": 804,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/dashboard/cv4-explore/index.html",
+      "language": "html",
+      "sizeLines": 507,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore/styles/desktop.css",
+      "language": "css",
+      "sizeLines": 656,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore/styles/mobile.css",
+      "language": "css",
+      "sizeLines": 733,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/cv4-explore/styles/tokens.css",
+      "language": "css",
+      "sizeLines": 175,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/dashboard/data/mockProjects.js",
+      "language": "javascript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/data/skills.js",
+      "language": "javascript",
+      "sizeLines": 164,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/gridSpec.js",
+      "language": "javascript",
+      "sizeLines": 404,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useCleoWorkspaces.js",
+      "language": "javascript",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useCurrentUserSlug.js",
+      "language": "javascript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useDataPipe.js",
+      "language": "javascript",
+      "sizeLines": 738,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useLongPress.js",
+      "language": "javascript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useProjects.js",
+      "language": "javascript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useTasks.js",
+      "language": "javascript",
+      "sizeLines": 327,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useTelephone.js",
+      "language": "javascript",
+      "sizeLines": 184,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useToast.jsx",
+      "language": "javascript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/hooks/useVoiceChat.js",
+      "language": "javascript",
+      "sizeLines": 204,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/audioUtils.js",
+      "language": "javascript",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/auth.js",
+      "language": "javascript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/authFetch.js",
+      "language": "javascript",
+      "sizeLines": 24,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/clientConfig.js",
+      "language": "javascript",
+      "sizeLines": 161,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/cv3Colors.js",
+      "language": "javascript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/rexTaskClient.js",
+      "language": "javascript",
+      "sizeLines": 99,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/supabase.js",
+      "language": "javascript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/taskLabels.js",
+      "language": "javascript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/lib/typeScale.js",
+      "language": "javascript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/officeLayouts/default.js",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/OnboardingGuide.jsx",
+      "language": "javascript",
+      "sizeLines": 829,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/providers/LiveCallProvider.jsx",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/SystemToast.jsx",
+      "language": "javascript",
+      "sizeLines": 214,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/timeUtils.js",
+      "language": "javascript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dashboard/useWebSocket.js",
+      "language": "javascript",
+      "sizeLines": 232,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/data/agent-profiles.js",
+      "language": "javascript",
+      "sizeLines": 197,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/data/briefs-index.json",
+      "language": "json",
+      "sizeLines": 41,
+      "fileCategory": "config"
+    },
+    {
+      "path": "src/data/finance-seed.json",
+      "language": "json",
+      "sizeLines": 3146,
+      "fileCategory": "config"
+    },
+    {
+      "path": "src/data/ideas.json",
+      "language": "json",
+      "sizeLines": 313,
+      "fileCategory": "config"
+    },
+    {
+      "path": "src/data/skills.json",
+      "language": "json",
+      "sizeLines": 1022,
+      "fileCategory": "config"
+    },
+    {
+      "path": "src/demo/DemoPage.jsx",
+      "language": "javascript",
+      "sizeLines": 1392,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/growth-plan/GrowthPlan.jsx",
+      "language": "javascript",
+      "sizeLines": 581,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/growth-plan/main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/index.css",
+      "language": "css",
+      "sizeLines": 311,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "src/main.jsx",
+      "language": "javascript",
+      "sizeLines": 273,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/outreach/main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/outreach/OutreachPlan.jsx",
+      "language": "javascript",
+      "sizeLines": 824,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AcceptInvite.jsx",
+      "language": "javascript",
+      "sizeLines": 217,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AmbitionBrandGuidelines.jsx",
+      "language": "javascript",
+      "sizeLines": 1443,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AmbitionBrandGuidelinesV2.jsx",
+      "language": "javascript",
+      "sizeLines": 2925,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AmbitionPerformance.jsx",
+      "language": "javascript",
+      "sizeLines": 1922,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AmbitionPerformanceV2.jsx",
+      "language": "javascript",
+      "sizeLines": 1906,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/AuditTest.jsx",
+      "language": "javascript",
+      "sizeLines": 654,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BookAudit.jsx",
+      "language": "javascript",
+      "sizeLines": 442,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BrandGuidelines.jsx",
+      "language": "javascript",
+      "sizeLines": 1620,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BrandGuidelinesV4.jsx",
+      "language": "javascript",
+      "sizeLines": 3115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Brands.jsx",
+      "language": "javascript",
+      "sizeLines": 223,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BrandsHub.jsx",
+      "language": "javascript",
+      "sizeLines": 178,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefAIAdvisory.jsx",
+      "language": "javascript",
+      "sizeLines": 435,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefAmbitionLinkedIn.jsx",
+      "language": "javascript",
+      "sizeLines": 348,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefAmbitionSections.jsx",
+      "language": "javascript",
+      "sizeLines": 345,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefAmbitionStrategy.jsx",
+      "language": "javascript",
+      "sizeLines": 1199,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefAuditOnboarding.jsx",
+      "language": "javascript",
+      "sizeLines": 819,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefCompetitors.jsx",
+      "language": "javascript",
+      "sizeLines": 532,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefFullscreenSite.jsx",
+      "language": "javascript",
+      "sizeLines": 798,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefIdeasTracker.jsx",
+      "language": "javascript",
+      "sizeLines": 808,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefMasterplan.jsx",
+      "language": "javascript",
+      "sizeLines": 437,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefPage.jsx",
+      "language": "javascript",
+      "sizeLines": 201,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefPartnerships.jsx",
+      "language": "javascript",
+      "sizeLines": 429,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefROICalculator.jsx",
+      "language": "javascript",
+      "sizeLines": 800,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefSecurity.jsx",
+      "language": "javascript",
+      "sizeLines": 558,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefsHub.jsx",
+      "language": "javascript",
+      "sizeLines": 531,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefSprintPlan.jsx",
+      "language": "javascript",
+      "sizeLines": 575,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefVelocity.jsx",
+      "language": "javascript",
+      "sizeLines": 466,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/BriefWebDesignUpgrade.jsx",
+      "language": "javascript",
+      "sizeLines": 460,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/CaseStudy.jsx",
+      "language": "javascript",
+      "sizeLines": 906,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ChangePassword.jsx",
+      "language": "javascript",
+      "sizeLines": 185,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Corner.jsx",
+      "language": "javascript",
+      "sizeLines": 774,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/DashboardSettingsInvites.jsx",
+      "language": "javascript",
+      "sizeLines": 277,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/DashboardWelcome.jsx",
+      "language": "javascript",
+      "sizeLines": 318,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ElonRoomCanvas.jsx",
+      "language": "javascript",
+      "sizeLines": 226,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/FinanceTracker.jsx",
+      "language": "javascript",
+      "sizeLines": 761,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Gemma4Brief.jsx",
+      "language": "javascript",
+      "sizeLines": 558,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Gemma4BriefDeepseek.jsx",
+      "language": "javascript",
+      "sizeLines": 558,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Gemma4BriefGemini.jsx",
+      "language": "javascript",
+      "sizeLines": 324,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/GlobalSignup.jsx",
+      "language": "javascript",
+      "sizeLines": 282,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/GuideAmbitionCrown.jsx",
+      "language": "javascript",
+      "sizeLines": 587,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/GuideAmbitionMemorialTower.jsx",
+      "language": "javascript",
+      "sizeLines": 1015,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/GuidesHub.jsx",
+      "language": "javascript",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/HomeR4Preview.jsx",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/IdeasTracker.jsx",
+      "language": "javascript",
+      "sizeLines": 1611,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/IncludedHealthBrand.jsx",
+      "language": "javascript",
+      "sizeLines": 1324,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ISABrandBible.jsx",
+      "language": "javascript",
+      "sizeLines": 677,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ISAShootScript.jsx",
+      "language": "javascript",
+      "sizeLines": 1095,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Login.jsx",
+      "language": "javascript",
+      "sizeLines": 359,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/MunicipalityDirectory.jsx",
+      "language": "javascript",
+      "sizeLines": 1147,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Onboarding.jsx",
+      "language": "javascript",
+      "sizeLines": 691,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/OnboardingVoice.jsx",
+      "language": "javascript",
+      "sizeLines": 525,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/R65LiveThread.jsx",
+      "language": "javascript",
+      "sizeLines": 1027,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ResearchHVAC.jsx",
+      "language": "javascript",
+      "sizeLines": 507,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ROICalculator.jsx",
+      "language": "javascript",
+      "sizeLines": 985,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/S3CBrand.jsx",
+      "language": "javascript",
+      "sizeLines": 916,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/S3CLogos.jsx",
+      "language": "javascript",
+      "sizeLines": 140,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Settings.jsx",
+      "language": "javascript",
+      "sizeLines": 884,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/SignupPage.jsx",
+      "language": "javascript",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Skills.jsx",
+      "language": "javascript",
+      "sizeLines": 594,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/Social.jsx",
+      "language": "javascript",
+      "sizeLines": 572,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/SpaceRisingBrand.jsx",
+      "language": "javascript",
+      "sizeLines": 918,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/TenantSignupPage.jsx",
+      "language": "javascript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/V2.jsx",
+      "language": "javascript",
+      "sizeLines": 2056,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/V2Home.jsx",
+      "language": "javascript",
+      "sizeLines": 1504,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/V2VBrand.jsx",
+      "language": "javascript",
+      "sizeLines": 848,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ValorBrand.jsx",
+      "language": "javascript",
+      "sizeLines": 1476,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pages/ValorBrandSections.jsx",
+      "language": "javascript",
+      "sizeLines": 998,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/proposals/ISAProposal.jsx",
+      "language": "javascript",
+      "sizeLines": 839,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/proposals/main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/proposals/quentin-main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/proposals/QuentinProposal.jsx",
+      "language": "javascript",
+      "sizeLines": 736,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/supabaseClient.js",
+      "language": "javascript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/system/main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/system/SystemPage.jsx",
+      "language": "javascript",
+      "sizeLines": 1280,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/utils/analyze-municipalities.js",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/v2-main.jsx",
+      "language": "javascript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/views/CornerV3.jsx",
+      "language": "javascript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/cli-latest",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/gotrue-version",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/pooler-url",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/postgres-version",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/project-ref",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/rest-version",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/storage-migration",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "supabase/.temp/storage-version",
+      "language": "unknown",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "system.html",
+      "language": "html",
+      "sizeLines": 25,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "tailwind.config.js",
+      "language": "javascript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "test-analyze-logs.js",
+      "language": "javascript",
+      "sizeLines": 85,
+      "fileCategory": "code"
+    },
+    {
+      "path": "test-results/.last-run.json",
+      "language": "json",
+      "sizeLines": 4,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass10-results.json",
+      "language": "json",
+      "sizeLines": 118,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass11-results.json",
+      "language": "json",
+      "sizeLines": 195,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass5-results.json",
+      "language": "json",
+      "sizeLines": 128,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass5c-results.json",
+      "language": "json",
+      "sizeLines": 20,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass6-results.json",
+      "language": "json",
+      "sizeLines": 98,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass7-results.json",
+      "language": "json",
+      "sizeLines": 114,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass8-results.json",
+      "language": "json",
+      "sizeLines": 144,
+      "fileCategory": "config"
+    },
+    {
+      "path": "test-screenshots/pass9-results.json",
+      "language": "json",
+      "sizeLines": 135,
+      "fileCategory": "config"
+    },
+    {
+      "path": "tests/lr3-multi-project.test.mjs",
+      "language": "mjs",
+      "sizeLines": 250,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/rightclick-menus.test.mjs",
+      "language": "mjs",
+      "sizeLines": 236,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/vision-qa-2026-04-19/findings.json",
+      "language": "json",
+      "sizeLines": 62,
+      "fileCategory": "config"
+    },
+    {
+      "path": "tests/vision-qa-2026-04-19/run.mjs",
+      "language": "mjs",
+      "sizeLines": 339,
+      "fileCategory": "code"
+    },
+    {
+      "path": "v2.html",
+      "language": "html",
+      "sizeLines": 28,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "vercel.json",
+      "language": "json",
+      "sizeLines": 65,
+      "fileCategory": "config"
+    },
+    {
+      "path": "vite.config.js",
+      "language": "javascript",
+      "sizeLines": 2714,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass10.mjs",
+      "language": "mjs",
+      "sizeLines": 898,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass11.mjs",
+      "language": "mjs",
+      "sizeLines": 1002,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass12.mjs",
+      "language": "mjs",
+      "sizeLines": 359,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass13.mjs",
+      "language": "mjs",
+      "sizeLines": 359,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass14.mjs",
+      "language": "mjs",
+      "sizeLines": 359,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass15.mjs",
+      "language": "mjs",
+      "sizeLines": 359,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass16.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass17.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass18.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass19.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass20.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass21.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass22.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass23.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass24.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass25.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass26.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass27.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass28.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass29.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass30.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass31.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass32.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass33.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass34.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass35.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass36.mjs",
+      "language": "mjs",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass37.mjs",
+      "language": "mjs",
+      "sizeLines": 352,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass38.mjs",
+      "language": "mjs",
+      "sizeLines": 352,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass39.mjs",
+      "language": "mjs",
+      "sizeLines": 352,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass5.mjs",
+      "language": "mjs",
+      "sizeLines": 665,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass5c.mjs",
+      "language": "mjs",
+      "sizeLines": 352,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass7.mjs",
+      "language": "mjs",
+      "sizeLines": 474,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass8.mjs",
+      "language": "mjs",
+      "sizeLines": 667,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/corner-test-pass9.mjs",
+      "language": "mjs",
+      "sizeLines": 689,
+      "fileCategory": "code"
+    },
+    {
+      "path": "z-archive-corner-tests/README.md",
+      "language": "markdown",
+      "sizeLines": 2,
+      "fileCategory": "docs"
+    }
+  ],
+  "totalFiles": 705,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "very-large",
+  "importMap": {
+    ".claude/skills/INDEX.md": [],
+    ".claude/skills/_research-template.md": [],
+    ".claude/skills/research-add/SKILL.md": [],
+    ".claude/skills/research-competitor/SKILL.md": [],
+    ".claude/skills/research-deeply-webpage/SKILL.md": [],
+    ".claude/skills/research-deeply/SKILL.md": [],
+    ".claude/skills/research-market/SKILL.md": [],
+    ".claude/skills/research-pattern/SKILL.md": [],
+    ".claude/skills/research-person/SKILL.md": [],
+    ".claude/skills/research-podcast/SKILL.md": [],
+    ".claude/skills/research-x-community/SKILL.md": [],
+    ".claude/skills/research-youtube/SKILL.md": [],
+    ".claudeignore": [],
+    ".env.example": [],
+    ".env.pulled": [],
+    ".env.vercel": [],
+    ".vercelignore": [],
+    "CV3-BUILD-SHEET.md": [],
+    "CV3-GAP-ANALYSIS.md": [],
+    "PHONEBOOK.md": [],
+    "api/_lib/crosspost.js": [],
+    "api/_lib/verifyTenant.js": [],
+    "api/accept-invite.js": [],
+    "api/ai-search.js": [],
+    "api/conversations.js": [],
+    "api/dashboard/active-agents.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/agent-customize.js": [],
+    "api/dashboard/agent-status-updater.js": [
+      "api/dashboard/set-supabase-client-context.js"
+    ],
+    "api/dashboard/agent-status.js": [],
+    "api/dashboard/agent-voice.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/analyze-logs.js": [],
+    "api/dashboard/avatar.js": [],
+    "api/dashboard/base-chat.js": [],
+    "api/dashboard/chat-bridge.js": [
+      "api/_lib/crosspost.js",
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/chat.js": [
+      "api/dashboard/ea-scaffold-batch.js"
+    ],
+    "api/dashboard/clear-context.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/cleo-workspaces.js": [],
+    "api/dashboard/context-index.json": [],
+    "api/dashboard/create-agents.js": [],
+    "api/dashboard/create-project-from-chat.js": [],
+    "api/dashboard/create-project-task.js": [],
+    "api/dashboard/create-world.js": [],
+    "api/dashboard/cutscene-action.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/doc-updates.js": [],
+    "api/dashboard/ea-scaffold-batch.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/ea-system-prompt.js": [],
+    "api/dashboard/env-vars.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/file-content.js": [],
+    "api/dashboard/file-search.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/file-upload.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/files.js": [],
+    "api/dashboard/finance.js": [],
+    "api/dashboard/foreman-pause.js": [],
+    "api/dashboard/get-directory-tenants.js": [],
+    "api/dashboard/git-history.js": [],
+    "api/dashboard/haiku-chat.js": [],
+    "api/dashboard/invite-create.js": [],
+    "api/dashboard/message-retention.js": [],
+    "api/dashboard/message-steps.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/missions-created.js": [],
+    "api/dashboard/missions.js": [],
+    "api/dashboard/onboarding-state.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/poke-agent.js": [],
+    "api/dashboard/preferences.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/project-access.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/project-files.js": [],
+    "api/dashboard/project-invite.js": [],
+    "api/dashboard/project-narrative.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/project-paragraph.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/project-shared.js": [],
+    "api/dashboard/project-summary.js": [],
+    "api/dashboard/prune-context.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/recipes.js": [],
+    "api/dashboard/reset-agent.js": [],
+    "api/dashboard/retry-task.js": [],
+    "api/dashboard/scaffold-mission.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/scaffold-project.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/session-handoff.js": [],
+    "api/dashboard/set-supabase-client-context.js": [],
+    "api/dashboard/setup-finance.js": [],
+    "api/dashboard/stripe-webhook.js": [],
+    "api/dashboard/supabase-messages.js": [
+      "api/_lib/crosspost.js",
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/supabase-status.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/support-chat.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/task-action.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/task-success-rate.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/unstuck.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/update-agent-order.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/v2-task-list.js": [
+      "api/_lib/verifyTenant.js"
+    ],
+    "api/dashboard/v2-task-update.js": [],
+    "api/dashboard/v2-transcribe-audio.js": [],
+    "api/dashboard/voice-context-lookup.js": [],
+    "api/dashboard/voice-context-update.js": [],
+    "api/dashboard/voice-handoff.js": [],
+    "api/dashboard/voice-session.js": [],
+    "api/dashboard/voice-summary.js": [],
+    "api/dashboard/worlds.js": [],
+    "api/local/file.js": [],
+    "api/members/[id].js": [],
+    "api/onboarding/architect.js": [],
+    "api/onboarding/create-agents.js": [],
+    "api/referrals.js": [],
+    "api/relay-sms.js": [],
+    "api/relay.js": [],
+    "api/town-managers/export.js": [],
+    "api/waitlist.js": [],
+    "api/worlds/[slug].js": [],
+    "api/worlds/[slug]/members.js": [],
+    "api/worlds/[slug]/switch.js": [],
+    "api/worlds/index.js": [],
+    "app.jsx": [],
+    "board-mockup.html": [],
+    "board-rail-mockup.html": [],
+    "corner-redesign.html": [],
+    "corner-test-src-crop.mjs": [],
+    "corner/RESEARCH.md": [],
+    "corner/research/2026-05-10-superpowers-skill-eval.md": [],
+    "count-municipalities.js": [],
+    "dashboard.html": [],
+    "directory-mockup.html": [],
+    "docs/briefs/2026-04-25-chat-reliability-audit.md": [],
+    "docs/briefs/2026-05-05-lr2-impl-decision.md": [],
+    "docs/briefs/INDEX.json": [],
+    "docs/briefs/notion-competitors.md": [],
+    "docs/briefs/spa-seo-strategy.md": [],
+    "docs/design-specs/project-files-section.md": [],
+    "docs/design-specs/project-welcome-card-redesign.md": [],
+    "docs/research/2026-05-05-lr3-multi-project.md": [],
+    "docs/research/2026-05-05-lr4a-phone-parity.md": [],
+    "growth-plan.html": [],
+    "index.css": [],
+    "index.html": [],
+    "main.jsx": [
+      "index.css"
+    ],
+    "middleware.js": [],
+    "migrations/001_sourcing_directory.sql": [],
+    "migrations/002_sourcing_listings_fields.sql": [],
+    "migrations/003_sourcing_articles_admin.sql": [],
+    "migrations/004_scout_messages.sql": [],
+    "migrations/005_sourcing_multitenant.sql": [],
+    "migrations/006_sourcing_members.sql": [],
+    "migrations/007_sourcing_contacts.sql": [],
+    "migrations/008_reviews_favorites.sql": [],
+    "migrations/009_message_status.sql": [],
+    "migrations/010_grants.sql": [],
+    "migrations/010_notification_preferences.sql": [],
+    "migrations/011_sort_order_and_brands.sql": [],
+    "migrations/012_status_truthful_cleanup.sql": [],
+    "migrations/013_agent_status_truthful.sql": [],
+    "migrations/013_imessage_channels.sql": [],
+    "migrations/014_enforce_world_id_rls.sql": [],
+    "migrations/015_add_client_client_id_and_rls.sql": [],
+    "migrations/016_messages_attachments.sql": [],
+    "migrations/017_events_rls_and_policy_cleanup.sql": [],
+    "migrations/017_messages_user_identity.sql": [],
+    "migrations/018_env_vars.sql": [],
+    "migrations/018_project_context.sql": [],
+    "migrations/019_add_project_id_to_tasks.sql": [],
+    "migrations/019_project_access.sql": [],
+    "migrations/020_add_active_voice_id_to_agents.sql": [],
+    "migrations/021_company_member_linkage.sql": [],
+    "migrations/021_member_company_link.sql": [],
+    "migrations/022_invites_and_billing.sql": [],
+    "migrations/023_arsenal_world_isolation_fix.sql": [],
+    "migrations/023b_isolation_policy_sweep.sql": [],
+    "migrations/024_r77_t1_messages_agent_status_rls.sql": [],
+    "migrations/026_r77_t3_shared_rooms_membership_rls.sql": [],
+    "migrations/027_r77_t4_worlds_recursion_fix.sql": [],
+    "migrations/028_r77_t10_arsenal_room_shape.sql": [],
+    "migrations/029_r77_t11_super_admin_rls_path.sql": [],
+    "migrations/030_dispatch_eligible.sql": [],
+    "migrations/031_ea_display_name.sql": [],
+    "migrations/031_project_access_rls.sql": [],
+    "migrations/032_archive_projects.sql": [],
+    "migrations/033_failed_task_hygiene.sql": [],
+    "migrations/034_message_retention.sql": [],
+    "migrations/034_shared_rooms_three_tier_roles.sql": [],
+    "migrations/20260504_seed_repo_projects.sql": [],
+    "outreach-plan.html": [],
+    "package-lock.json": [],
+    "package.json": [],
+    "postcss.config.js": [],
+    "projects/trading-agent/INTEGRATION-NOTES.md": [],
+    "proposals-isa.html": [],
+    "proposals-quentin.html": [],
+    "public/aom-tracker.js": [],
+    "public/arsenal-municipality-data.json": [],
+    "public/cage-match/deepseek/index.html": [],
+    "public/cage-match/deepseek/styles.css": [],
+    "public/cage-match/gemini/index.html": [],
+    "public/cage-match/gemini/styles.css": [],
+    "public/cage-match/gpt/index.html": [],
+    "public/cage-match/gpt/styles.css": [],
+    "public/cage-match/opus/index.html": [],
+    "public/cage-match/opus/styles.css": [],
+    "public/cage-match/sonnet/index.html": [],
+    "public/cage-match/sonnet/styles.css": [],
+    "public/corner/ai-advisory-room/layers.json": [],
+    "public/corner/alex-room/archive-v1/layers.json": [],
+    "public/corner/alex-room/layers.json": [],
+    "public/corner/ambition-mechanical-room/layers.json": [],
+    "public/corner/bobby-room/archive-v1/layers.json": [],
+    "public/corner/bobby-room/layers.json": [],
+    "public/corner/brandon-wiley-room/layers.json": [],
+    "public/corner/cleo-room/archive-v1/layers.json": [],
+    "public/corner/cleo-room/layers.json": [],
+    "public/corner/colton-room/archive-v1/layers.json": [],
+    "public/corner/colton-room/layers.json": [],
+    "public/corner/corner-room/layers.json": [],
+    "public/corner/elmo-room/archive-v1/layers.json": [],
+    "public/corner/elmo-room/layers.json": [],
+    "public/corner/elon-room/archive-v1/layers.json": [],
+    "public/corner/elon-room/layers.json": [],
+    "public/corner/included-health-room/layers.json": [],
+    "public/corner/isa-energy-room/layers.json": [],
+    "public/corner/jacob-room/archive-v1/layers.json": [],
+    "public/corner/jacob-room/layers.json": [],
+    "public/corner/kohrs-room/layers.json": [],
+    "public/corner/manifest.json": [],
+    "public/corner/mom-room/archive-v1/layers.json": [],
+    "public/corner/mom-room/layers.json": [],
+    "public/corner/nabi-room/layers.json": [],
+    "public/corner/outreach-room/layers.json": [],
+    "public/corner/paige-room/archive-v1/layers.json": [],
+    "public/corner/paige-room/layers.json": [],
+    "public/corner/pixel-room/archive-v1/layers.json": [],
+    "public/corner/pixel-room/layers.json": [],
+    "public/corner/skylar-room/layers.json": [],
+    "public/corner/steffen-room/archive-v1/layers.json": [],
+    "public/corner/steffen-room/layers.json": [],
+    "public/corner/steve-room/archive-v1/layers.json": [],
+    "public/corner/steve-room/layers.json": [],
+    "public/corner/tony-room/archive-v1/layers.json": [],
+    "public/corner/tony-room/layers.json": [],
+    "public/cv2.html": [],
+    "public/cv3.html": [],
+    "public/cv4/AGENT-INFRASTRUCTURE-NEEDS.md": [],
+    "public/cv4/CRITIQUE-PASS-1.md": [],
+    "public/cv4/CRITIQUE-PASS-2.md": [],
+    "public/cv4/DESIGN.md": [],
+    "public/cv4/INVENTORY.md": [],
+    "public/cv4/chat-1on1.html": [],
+    "public/cv4/components/confirm-dialog.html": [],
+    "public/cv4/components/error-toast.html": [],
+    "public/cv4/components/loading-overlay.html": [],
+    "public/cv4/components/message-list.html": [],
+    "public/cv4/components/step-thread.html": [],
+    "public/cv4/components/thread-input-bar.html": [],
+    "public/cv4/components/voice-player.html": [],
+    "public/cv4/components/voice-recorder.html": [],
+    "public/cv4/home.html": [],
+    "public/cv4/include.js": [],
+    "public/cv4/project-chat.html": [],
+    "public/cv4/styles/animations.css": [],
+    "public/cv4/styles/base.css": [],
+    "public/cv4/styles/desktop.css": [],
+    "public/cv4/styles/mobile.css": [],
+    "public/cv4/styles/tokens.css": [],
+    "public/cv4/tasks.html": [],
+    "public/cv4/views/chat-1on1.html": [],
+    "public/cv4/views/home.html": [],
+    "public/cv4/views/project-chat.html": [],
+    "public/cv4/views/tasks.html": [],
+    "public/invoices/index.html": [],
+    "public/isa-preprod.html": [],
+    "public/learning/assets/apple2-fonts/FreeLicense.txt": [],
+    "public/learning/assets/kenney-1bit/Instructions.url": [],
+    "public/learning/assets/kenney-1bit/License.txt": [],
+    "public/learning/assets/kenney-1bit/Tilemap/sample_fantasy.tmx": [],
+    "public/learning/assets/kenney-1bit/Tilemap/sample_interior.tmx": [],
+    "public/learning/assets/kenney-1bit/Tilemap/sample_platformer.tmx": [],
+    "public/learning/assets/kenney-1bit/Tilemap/sample_urban.tmx": [],
+    "public/learning/assets/kenney-1bit/Tilemap/tileset_colored.tsx": [],
+    "public/learning/assets/kenney-1bit/Tilesheet.txt": [],
+    "public/learning/assets/kenney-1bit/Visit Kenney.url": [],
+    "public/learning/assets/kenney-1bit/Visit Patreon.url": [],
+    "public/learning/v1/index.html": [],
+    "public/learning/v2/index.html": [],
+    "public/learning/v3/index.html": [],
+    "public/learning/v5/index.html": [],
+    "public/learning/v6a/index.html": [],
+    "public/learning/v6b/index.html": [],
+    "public/og-directory-render.html": [],
+    "public/og-render.html": [],
+    "public/space-rising/footage-review-2026-04-29/index.html": [],
+    "qa-final-2026-03-28.mjs": [],
+    "scripts/README-enrichment.md": [],
+    "scripts/accept/AL-2_spawn_foreman.js": [],
+    "scripts/accept/LR-1_greeting_seeded.py": [],
+    "scripts/accept/LR-2_onboarding_scaffold.py": [],
+    "scripts/accept/LR-2_three_question_onboarding.js": [],
+    "scripts/accept/LR-3_multi_project_one_chat.js": [],
+    "scripts/accept/LR-4a_phone_parity.js": [],
+    "scripts/accept/LR-4a_phone_parity.py": [],
+    "scripts/accept/LR-4b_floating_call_bar.js": [],
+    "scripts/accept/R75-b5_live_chain.js": [],
+    "scripts/accept/R75-b8.js": [],
+    "scripts/accept/R75-b9.js": [],
+    "scripts/accept/R75-r65-e.js": [],
+    "scripts/accept/R78-p1.js": [
+      "api/dashboard/ea-system-prompt.js"
+    ],
+    "scripts/accept/shc-r73-chain.js": [],
+    "scripts/build-skills-index.js": [],
+    "scripts/check-imports.sh": [],
+    "scripts/create-finance-table.sql": [],
+    "scripts/create-rooms-table.sql": [],
+    "scripts/delete-blank-reports.js": [],
+    "scripts/enrich-50k-plus.py": [],
+    "scripts/enrich-municipality-contacts.js": [],
+    "scripts/enrich-municipality-contacts.py": [],
+    "scripts/generate-briefs-index.js": [],
+    "scripts/import-az-companies.cjs": [],
+    "scripts/import-biotech-defense.cjs": [],
+    "scripts/run-migration.cjs": [],
+    "scripts/seed-env-vars.js": [],
+    "scripts/set-user-onboarded.mjs": [],
+    "scripts/test-enrichment.js": [],
+    "scripts/verify-task-card.mjs": [],
+    "scripts/write-brief.py": [],
+    "src/App.jsx": [
+      "src/components/HeroSection.jsx",
+      "src/components/LiveActivityTicker.jsx",
+      "src/components/ServicesGrid.jsx",
+      "src/components/home/TwoWaysSection.jsx",
+      "src/components/SiteNav.jsx"
+    ],
+    "src/archive/ChatDashboard.jsx": [],
+    "src/archive/DashboardV2.jsx": [],
+    "src/components/AITeaser.jsx": [],
+    "src/components/BrandsCallout.jsx": [],
+    "src/components/BriefModal.jsx": [],
+    "src/components/ConstructionCallout.jsx": [],
+    "src/components/HeroSection.jsx": [
+      "src/components/home/StickyVideoDeck.jsx",
+      "src/components/home/CTAButton.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/HeroVariants.jsx": [],
+    "src/components/LiveActivityTicker.jsx": [
+      "src/components/home/content.js"
+    ],
+    "src/components/ServicesGrid.jsx": [],
+    "src/components/SiteFooter.jsx": [],
+    "src/components/SiteNav.jsx": [
+      "src/components/home/CTAButton.jsx"
+    ],
+    "src/components/SiteNavR4.jsx": [
+      "src/components/home/CTAButton.jsx"
+    ],
+    "src/components/SkillsShowcase.jsx": [],
+    "src/components/home/ArticlesSection.jsx": [
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/CTAButton.jsx": [],
+    "src/components/home/CTAPalette.jsx": [],
+    "src/components/home/CustomerStoriesSection.jsx": [
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/CTAButton.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/HomeCinema.jsx": [
+      "src/components/home/StickyVideoDeck.jsx",
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/TwoWaysSection.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/HomeClassic.jsx": [
+      "src/components/home/StickyVideoDeck.jsx",
+      "src/components/home/RecentWorkSection.jsx",
+      "src/components/home/TwoWaysSection.jsx",
+      "src/components/home/StatsSection.jsx",
+      "src/components/home/CustomerStoriesSection.jsx",
+      "src/components/home/ServicesChartSection.jsx",
+      "src/components/home/ArticlesSection.jsx",
+      "src/components/home/CTAButton.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/HomeEditorial.jsx": [
+      "src/components/home/StickyVideoDeck.jsx",
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/TwoWaysSection.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/HomeVariants.jsx": [
+      "src/components/home/HomeClassic.jsx",
+      "src/components/home/HomeEditorial.jsx",
+      "src/components/home/HomeCinema.jsx"
+    ],
+    "src/components/home/LazyGumlet.jsx": [],
+    "src/components/home/RecentWorkSection.jsx": [
+      "src/components/home/content.js"
+    ],
+    "src/components/home/ServicesChartSection.jsx": [],
+    "src/components/home/StatsSection.jsx": [
+      "src/components/home/content.js"
+    ],
+    "src/components/home/StickyVideoDeck.jsx": [
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/SystemSection.jsx": [
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/TwoWaysSection.jsx": [
+      "src/components/home/CTAButton.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/WhatWeMakeSection.jsx": [
+      "src/components/home/LazyGumlet.jsx",
+      "src/components/home/content.js"
+    ],
+    "src/components/home/content.js": [],
+    "src/components/templates/TemplatePresentationContent.jsx": [],
+    "src/components/templates/TemplatePresentationStats.jsx": [],
+    "src/components/templates/TemplatePresentationTitle.jsx": [],
+    "src/components/templates/TemplateSocialBeforeAfter.jsx": [],
+    "src/components/templates/TemplateSocialIGPost.jsx": [],
+    "src/components/templates/TemplateSocialIGStory.jsx": [],
+    "src/components/templates/TemplateSocialLinkedIn.jsx": [],
+    "src/components/templates/TemplateSocialQuickTip.jsx": [],
+    "src/components/templates/TemplateSocialTestimonial.jsx": [],
+    "src/components/templates/index.js": [],
+    "src/context/ThemeContext.jsx": [],
+    "src/dashboard/BoardViewMessageContent.module.css": [],
+    "src/dashboard/CornerContext.jsx": [],
+    "src/dashboard/CornerV3.jsx": [
+      "src/data/skills.json",
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/hooks/useTasks.js",
+      "src/dashboard/hooks/useDataPipe.js",
+      "src/dashboard/hooks/useCurrentUserSlug.js",
+      "src/dashboard/hooks/useTelephone.js",
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/icons.jsx",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/cv3/UserAvatar.jsx",
+      "src/dashboard/components/cv3/TasksPanel.jsx",
+      "src/dashboard/components/cv3/ChatPanel.jsx",
+      "src/dashboard/components/WorldSelector.jsx",
+      "src/dashboard/CornerContext.jsx",
+      "src/dashboard/providers/LiveCallProvider.jsx",
+      "src/dashboard/components/cv3/voice/GlobalCallButton.jsx",
+      "src/dashboard/components/cv3/voice/FloatingCallBar.jsx",
+      "src/dashboard/components/cv3/NotificationsPanel.jsx",
+      "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx",
+      "src/dashboard/components/cv3/cutscene/CutsceneOverlay.jsx"
+    ],
+    "src/dashboard/OnboardingGuide.jsx": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/SystemToast.jsx": [],
+    "src/dashboard/agentKnowledge.js": [],
+    "src/dashboard/agentTypingPhrases.js": [],
+    "src/dashboard/chatConnection.js": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/AgentInfoTab.jsx": [
+      "src/dashboard/agentKnowledge.js",
+      "src/data/agent-profiles.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/components/AgentRevolver.jsx": [
+      "src/dashboard/components/HUDConstants.jsx",
+      "src/dashboard/gridSpec.js",
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/components/ChatMessageRenderer.jsx": [],
+    "src/dashboard/components/ChildPillsDrawer.jsx": [
+      "src/dashboard/components/ProjectCard.jsx"
+    ],
+    "src/dashboard/components/CompactStats.jsx": [
+      "src/dashboard/components/HUDConstants.jsx"
+    ],
+    "src/dashboard/components/CreateRoomModal.jsx": [
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/components/FloatingActionButton.jsx": [
+      "src/dashboard/components/CreateRoomModal.jsx"
+    ],
+    "src/dashboard/components/HUDConstants.jsx": [
+      "src/dashboard/gridSpec.js",
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/components/ProjectCard.jsx": [
+      "src/dashboard/components/HUDConstants.jsx"
+    ],
+    "src/dashboard/components/SkillAutocomplete.jsx": [
+      "src/dashboard/data/skills.js"
+    ],
+    "src/dashboard/components/TaskContextMenu.jsx": [
+      "src/dashboard/gridSpec.js",
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/TaskDetailAccordion.jsx": [
+      "src/dashboard/gridSpec.js",
+      "src/dashboard/components/TaskContextMenu.jsx"
+    ],
+    "src/dashboard/components/TaskLabelPill.jsx": [
+      "src/dashboard/lib/taskLabels.js"
+    ],
+    "src/dashboard/components/TaskPanel.jsx": [
+      "src/dashboard/gridSpec.js",
+      "src/dashboard/components/HUDConstants.jsx",
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/hooks/useLongPress.js"
+    ],
+    "src/dashboard/components/TaskQueueFAB.jsx": [
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/TypingIndicatorV2.jsx": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/VoiceChat.jsx": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/VoiceToggle.jsx": [],
+    "src/dashboard/components/WorldSelector.jsx": [
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/components/cv3/AgentCard.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx"
+    ],
+    "src/dashboard/components/cv3/ChatPanel.jsx": [
+      "src/dashboard/hooks/useProjects.js",
+      "src/dashboard/timeUtils.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/CornerContext.jsx",
+      "src/dashboard/components/cv3/ProjectChatView.jsx",
+      "src/dashboard/components/cv3/ConversationsView.jsx",
+      "src/dashboard/components/cv3/ThreadView.jsx",
+      "src/dashboard/components/cv3/chat/chatConstants.js",
+      "src/dashboard/components/cv3/chat/useBridgeStream.js",
+      "src/dashboard/components/cv3/chat/useChatPrefs.js",
+      "src/dashboard/components/cv3/chat/useChatConversations.js",
+      "src/dashboard/components/cv3/chat/useChatMessages.js",
+      "src/dashboard/components/cv3/chat/useChatSettings.js",
+      "src/dashboard/components/cv3/chat/useChatAttachments.js",
+      "src/dashboard/components/cv3/chat/useChatRecording.js",
+      "src/dashboard/components/cv3/chat/useChatSend.js",
+      "src/dashboard/components/cv3/chat/useChatContextMenu.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/CleoWorkspaceDetail.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/hooks/useCleoWorkspaces.js"
+    ],
+    "src/dashboard/components/cv3/CleoWorkspacesIndex.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/hooks/useCleoWorkspaces.js"
+    ],
+    "src/dashboard/components/cv3/ContextMenu.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/ConversationsView.jsx": [
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/thread/AgentProfileOverlay.jsx",
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/components/cv3/conversations/conversationsConstants.js",
+      "src/dashboard/components/cv3/conversations/useHomeSearch.js",
+      "src/dashboard/components/cv3/conversations/CallInProgressBanner.jsx",
+      "src/dashboard/components/cv3/conversations/GreetingHero.jsx",
+      "src/dashboard/components/cv3/conversations/HomeSearchBar.jsx",
+      "src/dashboard/components/cv3/shared/HandoffNudge.jsx",
+      "src/dashboard/components/cv3/conversations/SearchResults.jsx",
+      "src/dashboard/components/cv3/conversations/EaHeroCard.jsx",
+      "src/dashboard/components/cv3/conversations/HomeStateFeed.jsx",
+      "src/dashboard/components/cv3/conversations/AgentsList.jsx",
+      "src/dashboard/components/cv3/conversations/ProjectsList.jsx",
+      "src/dashboard/components/cv3/conversations/usePinned.js",
+      "src/dashboard/components/cv3/conversations/useListOrder.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/NotificationsPanel.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx"
+    ],
+    "src/dashboard/components/cv3/ProjectChatView.jsx": [
+      "src/dashboard/components/cv3/TaskStatusCard.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectChatHeader.jsx",
+      "src/dashboard/components/cv3/session/RecipesBookOverlay.jsx",
+      "src/dashboard/components/cv3/project-chat/CanonFilesPanel.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectFilesPanel.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectSearchBar.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectSearchResults.jsx",
+      "src/dashboard/components/cv3/thread/MessageList.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectVoiceChatHost.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectVoiceModeBar.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectRecordingStatusBar.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectInputBar.jsx",
+      "src/dashboard/components/cv3/project-chat/ProjectSettingsModal.jsx",
+      "src/dashboard/components/cv3/shared/HandoffNudge.jsx"
+    ],
+    "src/dashboard/components/cv3/SlashCommandAutocomplete.jsx": [
+      "src/data/skills.json",
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/TaskStatusCard.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/TasksPanel.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/ContextMenu.jsx",
+      "src/dashboard/components/cv3/tasks/FilesSection.jsx",
+      "src/dashboard/components/cv3/tasks/TaskDrawerProjectSummary.jsx",
+      "src/dashboard/components/cv3/tasks/TaskDrawerFileFAQ.jsx",
+      "src/dashboard/components/cv3/shared/DocUpdateCard.jsx",
+      "src/dashboard/components/cv3/tasks/ActiveTasksSection.jsx",
+      "src/dashboard/components/cv3/tasks/ForemanTasksSection.jsx",
+      "src/dashboard/components/cv3/tasks/LivingParagraphCard.jsx",
+      "src/dashboard/components/cv3/tasks/PersonalTodosSection.jsx",
+      "src/dashboard/components/cv3/tasks/WaitingTasksSection.jsx",
+      "src/dashboard/components/cv3/tasks/BlockedTasksSection.jsx",
+      "src/dashboard/components/cv3/tasks/FailedTasksSection.jsx",
+      "src/dashboard/components/cv3/tasks/DoneTasksSection.jsx",
+      "src/dashboard/components/cv3/tasks/WeeklyStatsCard.jsx",
+      "src/dashboard/components/cv3/tasks/TaskInputBar.jsx",
+      "src/dashboard/components/cv3/tasks/CreateProjectModal.jsx",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx",
+      "src/dashboard/components/cv3/tasks/useTasksPanel.js"
+    ],
+    "src/dashboard/components/cv3/ThreadView.jsx": [
+      "src/dashboard/components/cv3/TaskStatusCard.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/thread/ThreadHeader.jsx",
+      "src/dashboard/components/cv3/thread/AgentProfileOverlay.jsx",
+      "src/dashboard/components/cv3/session/RecipesBookOverlay.jsx",
+      "src/dashboard/components/cv3/thread/FilesPanel.jsx",
+      "src/dashboard/components/cv3/thread/VoiceChatHost.jsx",
+      "src/dashboard/components/cv3/thread/MessageList.jsx",
+      "src/dashboard/components/cv3/thread/VoiceModeBar.jsx",
+      "src/dashboard/components/cv3/thread/RecordingStatusBar.jsx",
+      "src/dashboard/components/cv3/thread/ThreadInputBar.jsx",
+      "src/dashboard/components/cv3/thread/ThreadSettingsModal.jsx",
+      "src/dashboard/components/cv3/shared/HandoffNudge.jsx"
+    ],
+    "src/dashboard/components/cv3/UserAvatar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/components/cv3/chat/ChatPanelContext.jsx": [],
+    "src/dashboard/components/cv3/chat/chatConstants.js": [],
+    "src/dashboard/components/cv3/chat/useBridgeStream.js": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/chat/useChatAttachments.js": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/chat/useChatContextMenu.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/lib/rexTaskClient.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/chat/useChatConversations.js": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/components/cv3/chat/useChatMessages.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/chat/useChatPrefs.js": [
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/chat/useChatRecording.js": [
+      "src/dashboard/components/cv3/shared.jsx"
+    ],
+    "src/dashboard/components/cv3/chat/useChatSend.js": [
+      "src/dashboard/CornerContext.jsx",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/session/ContextFullnessMeter.jsx"
+    ],
+    "src/dashboard/components/cv3/chat/useChatSettings.js": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/conversations/AgentFailureSurface.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/conversations/AgentsList.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/cv3/conversations/AgentFailureSurface.jsx",
+      "src/dashboard/components/cv3/conversations/PinMenu.jsx"
+    ],
+    "src/dashboard/components/cv3/conversations/CallInProgressBanner.jsx": [],
+    "src/dashboard/components/cv3/conversations/EaHeroCard.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/cv3/conversations/AgentFailureSurface.jsx",
+      "src/dashboard/components/cv3/conversations/PinMenu.jsx"
+    ],
+    "src/dashboard/components/cv3/conversations/GreetingHero.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/conversations/HomeSearchBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/conversations/HomeStateFeed.jsx": [
+      "src/dashboard/components/cv3/shared/DocUpdateCard.jsx"
+    ],
+    "src/dashboard/components/cv3/conversations/PinMenu.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/conversations/ProjectsList.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/cv3/conversations/PinMenu.jsx",
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/components/cv3/conversations/SearchResults.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx"
+    ],
+    "src/dashboard/components/cv3/conversations/SuccessRateChip.jsx": [
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/conversations/conversationsConstants.js": [],
+    "src/dashboard/components/cv3/conversations/useHomeSearch.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/conversations/useListOrder.js": [],
+    "src/dashboard/components/cv3/conversations/usePinned.js": [],
+    "src/dashboard/components/cv3/cutscene/CutsceneOverlay.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/icons.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/project-chat/CanonFilesPanel.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/FileArticleReader.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectChatHeader.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/project-chat/useProjectChatSwitcher.js",
+      "src/dashboard/components/cv3/session/ContextFullnessMeter.jsx",
+      "src/dashboard/components/cv3/session/OnboardingTooltip.jsx",
+      "src/dashboard/components/cv3/session/OnboardingResumeCTA.jsx",
+      "src/dashboard/components/cv3/shared/HeaderActionsDrawer.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectFilesPanel.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/project-chat/projectChatConstants.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/project-chat/useProjectChatFiles.js"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectInputBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/SlashCommandAutocomplete.jsx",
+      "src/dashboard/components/cv3/ContextMenu.jsx",
+      "src/dashboard/components/cv3/shared/PasteChip.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/project-chat/useProjectChatPrefill.js"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectRecordingStatusBar.jsx": [
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectSearchBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectSearchResults.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectSettingsModal.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/typeScale.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/shared/AvatarUploader.jsx",
+      "src/dashboard/components/cv3/shared-rooms/SharedRoomSettings.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectVoiceChatHost.jsx": [
+      "src/dashboard/components/VoiceChat.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/project-chat/ProjectVoiceModeBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/project-chat/projectChatConstants.js": [],
+    "src/dashboard/components/cv3/project-chat/useProjectChatFiles.js": [],
+    "src/dashboard/components/cv3/project-chat/useProjectChatPrefill.js": [],
+    "src/dashboard/components/cv3/project-chat/useProjectChatSwitcher.js": [],
+    "src/dashboard/components/cv3/session/ContextFullnessMeter.jsx": [],
+    "src/dashboard/components/cv3/session/OnboardingResumeCTA.jsx": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/components/cv3/session/OnboardingTooltip.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/session/RecipesBookOverlay.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/shared-rooms/SharedRoomSettings.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/shared.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/shared/AvatarUploader.jsx": [],
+    "src/dashboard/components/cv3/shared/DocUpdateCard.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/shared/HandoffNudge.jsx": [
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/shared/HeaderActionsDrawer.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/shared/PasteChip.jsx": [
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/components/cv3/shared/StepThread.jsx": [],
+    "src/dashboard/components/cv3/shared/useSyntheticChain.js": [],
+    "src/dashboard/components/cv3/tasks/ActiveTasksSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/ContextMenu.jsx",
+      "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/BlockedTasksSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/CreateProjectModal.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/DoneTasksSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/cv3/tasks/ResultPreview.jsx",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/FailedTasksSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "src/dashboard/components/cv3/tasks/ResultPreview.jsx",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/FilesSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/ForemanTasksSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx",
+      "src/dashboard/CornerContext.jsx",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/tasks/LivingParagraphCard.jsx": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/tasks/PersonalTodosSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/ProjectBriefingCard.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/ResultPreview.jsx": [],
+    "src/dashboard/components/cv3/tasks/TaskDrawerFileFAQ.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/TaskDrawerProjectSummary.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/TaskInputBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx": [],
+    "src/dashboard/components/cv3/tasks/WaitingTasksSection.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/tasks/lifecycle.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/WeeklyStatsCard.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/tasks/TasksPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/tasks/lifecycle.js": [],
+    "src/dashboard/components/cv3/tasks/useTasksPanel.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/lib/rexTaskClient.js",
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/hooks/useProjects.js",
+      "src/dashboard/CornerContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/AgentProfileOverlay.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared/AvatarUploader.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/FilesPanel.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/MessageChecks.jsx": [],
+    "src/dashboard/components/cv3/thread/MessageList.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/ChatMessageRenderer.jsx",
+      "src/dashboard/components/TypingIndicatorV2.jsx",
+      "src/dashboard/components/cv3/shared/StepThread.jsx",
+      "src/dashboard/components/cv3/shared/useSyntheticChain.js",
+      "src/dashboard/components/cv3/shared/DocUpdateCard.jsx",
+      "src/dashboard/components/cv3/TaskStatusCard.jsx",
+      "src/dashboard/components/cv3/ContextMenu.jsx",
+      "src/dashboard/components/cv3/thread/MessageChecks.jsx",
+      "src/dashboard/components/cv3/thread/MessageStatusLabel.jsx",
+      "src/dashboard/components/cv3/thread/SummaryMessage.jsx",
+      "src/dashboard/components/cv3/thread/useThreadMsgMenu.js",
+      "src/dashboard/components/cv3/thread/useThreadMessageStatus.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/MessageStatusLabel.jsx": [],
+    "src/dashboard/components/cv3/thread/RecordingStatusBar.jsx": [
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/SummaryMessage.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/components/ChatMessageRenderer.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/ThreadHeader.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/thread/useThreadQuickSwitcher.js",
+      "src/dashboard/components/cv3/session/ContextFullnessMeter.jsx",
+      "src/dashboard/components/cv3/session/OnboardingResumeCTA.jsx",
+      "src/dashboard/components/cv3/shared/HeaderActionsDrawer.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/ThreadInputBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/SlashCommandAutocomplete.jsx",
+      "src/dashboard/components/cv3/ContextMenu.jsx",
+      "src/dashboard/components/cv3/shared/PasteChip.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/ThreadSettingsModal.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/lib/typeScale.js",
+      "src/dashboard/components/cv3/thread/threadConstants.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/components/cv3/thread/useThreadResetAgent.js"
+    ],
+    "src/dashboard/components/cv3/thread/VoiceChatHost.jsx": [
+      "src/dashboard/components/VoiceChat.jsx",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/components/cv3/thread/VoiceModeBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/components/cv3/chat/ChatPanelContext.jsx"
+    ],
+    "src/dashboard/components/cv3/thread/threadConstants.js": [],
+    "src/dashboard/components/cv3/thread/useThreadMessageStatus.js": [],
+    "src/dashboard/components/cv3/thread/useThreadMsgMenu.js": [],
+    "src/dashboard/components/cv3/thread/useThreadQuickSwitcher.js": [],
+    "src/dashboard/components/cv3/thread/useThreadResetAgent.js": [
+      "src/dashboard/components/cv3/thread/threadConstants.js"
+    ],
+    "src/dashboard/components/cv3/voice/FloatingCallBar.jsx": [
+      "src/dashboard/lib/cv3Colors.js",
+      "src/dashboard/providers/LiveCallProvider.jsx"
+    ],
+    "src/dashboard/components/cv3/voice/GlobalCallButton.jsx": [
+      "src/dashboard/providers/LiveCallProvider.jsx",
+      "src/dashboard/CornerContext.jsx",
+      "src/dashboard/lib/cv3Colors.js"
+    ],
+    "src/dashboard/cv4-explore-v2/AGENT-INFRASTRUCTURE-NEEDS.md": [],
+    "src/dashboard/cv4-explore-v2/CRITIQUE-PASS-1.md": [],
+    "src/dashboard/cv4-explore-v2/CRITIQUE-PASS-2.md": [],
+    "src/dashboard/cv4-explore-v2/DESIGN.md": [],
+    "src/dashboard/cv4-explore-v2/INVENTORY.md": [],
+    "src/dashboard/cv4-explore-v2/chat-1on1.html": [],
+    "src/dashboard/cv4-explore-v2/components/confirm-dialog.html": [],
+    "src/dashboard/cv4-explore-v2/components/error-toast.html": [],
+    "src/dashboard/cv4-explore-v2/components/loading-overlay.html": [],
+    "src/dashboard/cv4-explore-v2/components/message-list.html": [],
+    "src/dashboard/cv4-explore-v2/components/step-thread.html": [],
+    "src/dashboard/cv4-explore-v2/components/thread-input-bar.html": [],
+    "src/dashboard/cv4-explore-v2/components/voice-player.html": [],
+    "src/dashboard/cv4-explore-v2/components/voice-recorder.html": [],
+    "src/dashboard/cv4-explore-v2/home.html": [],
+    "src/dashboard/cv4-explore-v2/include.js": [],
+    "src/dashboard/cv4-explore-v2/project-chat.html": [],
+    "src/dashboard/cv4-explore-v2/styles/animations.css": [],
+    "src/dashboard/cv4-explore-v2/styles/base.css": [],
+    "src/dashboard/cv4-explore-v2/styles/desktop.css": [],
+    "src/dashboard/cv4-explore-v2/styles/mobile.css": [],
+    "src/dashboard/cv4-explore-v2/styles/tokens.css": [],
+    "src/dashboard/cv4-explore-v2/tasks.html": [],
+    "src/dashboard/cv4-explore-v2/views/chat-1on1.html": [],
+    "src/dashboard/cv4-explore-v2/views/home.html": [],
+    "src/dashboard/cv4-explore-v2/views/project-chat.html": [],
+    "src/dashboard/cv4-explore-v2/views/tasks.html": [],
+    "src/dashboard/cv4-explore/HANDOFF.md": [],
+    "src/dashboard/cv4-explore/index.html": [],
+    "src/dashboard/cv4-explore/styles/desktop.css": [],
+    "src/dashboard/cv4-explore/styles/mobile.css": [],
+    "src/dashboard/cv4-explore/styles/tokens.css": [],
+    "src/dashboard/data/mockProjects.js": [],
+    "src/dashboard/data/skills.js": [],
+    "src/dashboard/gridSpec.js": [],
+    "src/dashboard/hooks/useCleoWorkspaces.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/hooks/useCurrentUserSlug.js": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/hooks/useDataPipe.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/lib/clientConfig.js",
+      "src/dashboard/gridSpec.js",
+      "src/dashboard/SystemToast.jsx"
+    ],
+    "src/dashboard/hooks/useLongPress.js": [],
+    "src/dashboard/hooks/useProjects.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/hooks/useTasks.js": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/dashboard/hooks/useTelephone.js": [
+      "src/dashboard/components/cv3/shared.jsx",
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/hooks/useToast.jsx": [],
+    "src/dashboard/hooks/useVoiceChat.js": [
+      "src/dashboard/lib/audioUtils.js"
+    ],
+    "src/dashboard/lib/audioUtils.js": [],
+    "src/dashboard/lib/auth.js": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/lib/authFetch.js": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/lib/clientConfig.js": [],
+    "src/dashboard/lib/cv3Colors.js": [],
+    "src/dashboard/lib/rexTaskClient.js": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/dashboard/lib/supabase.js": [],
+    "src/dashboard/lib/taskLabels.js": [
+      "src/dashboard/lib/authFetch.js"
+    ],
+    "src/dashboard/lib/typeScale.js": [],
+    "src/dashboard/main.jsx": [
+      "src/index.css"
+    ],
+    "src/dashboard/officeLayouts/default.js": [],
+    "src/dashboard/providers/LiveCallProvider.jsx": [
+      "src/dashboard/components/VoiceChat.jsx"
+    ],
+    "src/dashboard/timeUtils.js": [],
+    "src/dashboard/useWebSocket.js": [],
+    "src/data/agent-profiles.js": [],
+    "src/data/briefs-index.json": [],
+    "src/data/finance-seed.json": [],
+    "src/data/ideas.json": [],
+    "src/data/skills.json": [],
+    "src/demo/DemoPage.jsx": [],
+    "src/growth-plan/GrowthPlan.jsx": [],
+    "src/growth-plan/main.jsx": [
+      "src/growth-plan/GrowthPlan.jsx",
+      "src/index.css"
+    ],
+    "src/index.css": [],
+    "src/main.jsx": [
+      "src/dashboard/lib/auth.js",
+      "src/dashboard/lib/supabase.js",
+      "src/App.jsx",
+      "src/index.css"
+    ],
+    "src/outreach/OutreachPlan.jsx": [],
+    "src/outreach/main.jsx": [
+      "src/outreach/OutreachPlan.jsx",
+      "src/index.css"
+    ],
+    "src/pages/AcceptInvite.jsx": [
+      "src/dashboard/lib/auth.js"
+    ],
+    "src/pages/AmbitionBrandGuidelines.jsx": [],
+    "src/pages/AmbitionBrandGuidelinesV2.jsx": [],
+    "src/pages/AmbitionPerformance.jsx": [],
+    "src/pages/AmbitionPerformanceV2.jsx": [],
+    "src/pages/AuditTest.jsx": [],
+    "src/pages/BookAudit.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/BrandGuidelines.jsx": [],
+    "src/pages/BrandGuidelinesV4.jsx": [
+      "src/components/templates/index.js"
+    ],
+    "src/pages/Brands.jsx": [],
+    "src/pages/BrandsHub.jsx": [],
+    "src/pages/BriefAIAdvisory.jsx": [],
+    "src/pages/BriefAmbitionLinkedIn.jsx": [],
+    "src/pages/BriefAmbitionSections.jsx": [],
+    "src/pages/BriefAmbitionStrategy.jsx": [],
+    "src/pages/BriefAuditOnboarding.jsx": [],
+    "src/pages/BriefCompetitors.jsx": [],
+    "src/pages/BriefFullscreenSite.jsx": [],
+    "src/pages/BriefIdeasTracker.jsx": [],
+    "src/pages/BriefMasterplan.jsx": [],
+    "src/pages/BriefPage.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/BriefPartnerships.jsx": [],
+    "src/pages/BriefROICalculator.jsx": [],
+    "src/pages/BriefSecurity.jsx": [],
+    "src/pages/BriefSprintPlan.jsx": [],
+    "src/pages/BriefVelocity.jsx": [],
+    "src/pages/BriefWebDesignUpgrade.jsx": [],
+    "src/pages/BriefsHub.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx",
+      "src/data/briefs-index.json"
+    ],
+    "src/pages/CaseStudy.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/ChangePassword.jsx": [
+      "src/dashboard/lib/auth.js",
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/pages/Corner.jsx": [],
+    "src/pages/DashboardSettingsInvites.jsx": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/pages/DashboardWelcome.jsx": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/clientConfig.js"
+    ],
+    "src/pages/ElonRoomCanvas.jsx": [],
+    "src/pages/FinanceTracker.jsx": [
+      "src/dashboard/lib/supabase.js",
+      "src/data/finance-seed.json"
+    ],
+    "src/pages/Gemma4Brief.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/Gemma4BriefDeepseek.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/Gemma4BriefGemini.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/GlobalSignup.jsx": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/pages/GuideAmbitionCrown.jsx": [],
+    "src/pages/GuideAmbitionMemorialTower.jsx": [],
+    "src/pages/GuidesHub.jsx": [],
+    "src/pages/HomeR4Preview.jsx": [
+      "src/components/home/HomeClassic.jsx",
+      "src/components/home/HomeEditorial.jsx",
+      "src/components/home/HomeCinema.jsx",
+      "src/components/SiteNavR4.jsx"
+    ],
+    "src/pages/ISABrandBible.jsx": [
+      "src/components/SiteNav.jsx"
+    ],
+    "src/pages/ISAShootScript.jsx": [],
+    "src/pages/IdeasTracker.jsx": [
+      "src/data/ideas.json",
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/IncludedHealthBrand.jsx": [],
+    "src/pages/Login.jsx": [
+      "src/dashboard/lib/auth.js"
+    ],
+    "src/pages/MunicipalityDirectory.jsx": [],
+    "src/pages/Onboarding.jsx": [
+      "src/dashboard/lib/supabase.js"
+    ],
+    "src/pages/OnboardingVoice.jsx": [
+      "src/dashboard/lib/supabase.js",
+      "src/dashboard/lib/authFetch.js",
+      "src/dashboard/components/cv3/shared/StepThread.jsx"
+    ],
+    "src/pages/R65LiveThread.jsx": [],
+    "src/pages/ROICalculator.jsx": [],
+    "src/pages/ResearchHVAC.jsx": [],
+    "src/pages/S3CBrand.jsx": [],
+    "src/pages/S3CLogos.jsx": [],
+    "src/pages/Settings.jsx": [],
+    "src/pages/SignupPage.jsx": [],
+    "src/pages/Skills.jsx": [
+      "src/components/SiteNav.jsx",
+      "src/components/SiteFooter.jsx"
+    ],
+    "src/pages/Social.jsx": [],
+    "src/pages/SpaceRisingBrand.jsx": [],
+    "src/pages/TenantSignupPage.jsx": [],
+    "src/pages/V2.jsx": [],
+    "src/pages/V2Home.jsx": [],
+    "src/pages/V2VBrand.jsx": [],
+    "src/pages/ValorBrand.jsx": [],
+    "src/pages/ValorBrandSections.jsx": [],
+    "src/proposals/ISAProposal.jsx": [],
+    "src/proposals/QuentinProposal.jsx": [],
+    "src/proposals/main.jsx": [
+      "src/proposals/ISAProposal.jsx",
+      "src/index.css"
+    ],
+    "src/proposals/quentin-main.jsx": [
+      "src/proposals/QuentinProposal.jsx",
+      "src/index.css"
+    ],
+    "src/supabaseClient.js": [],
+    "src/system/SystemPage.jsx": [],
+    "src/system/main.jsx": [
+      "src/system/SystemPage.jsx",
+      "src/index.css"
+    ],
+    "src/utils/analyze-municipalities.js": [],
+    "src/v2-main.jsx": [
+      "src/pages/V2Home.jsx",
+      "src/index.css"
+    ],
+    "src/views/CornerV3.jsx": [],
+    "supabase/.temp/cli-latest": [],
+    "supabase/.temp/gotrue-version": [],
+    "supabase/.temp/pooler-url": [],
+    "supabase/.temp/postgres-version": [],
+    "supabase/.temp/project-ref": [],
+    "supabase/.temp/rest-version": [],
+    "supabase/.temp/storage-migration": [],
+    "supabase/.temp/storage-version": [],
+    "system.html": [],
+    "tailwind.config.js": [],
+    "test-analyze-logs.js": [],
+    "test-results/.last-run.json": [],
+    "test-screenshots/pass10-results.json": [],
+    "test-screenshots/pass11-results.json": [],
+    "test-screenshots/pass5-results.json": [],
+    "test-screenshots/pass5c-results.json": [],
+    "test-screenshots/pass6-results.json": [],
+    "test-screenshots/pass7-results.json": [],
+    "test-screenshots/pass8-results.json": [],
+    "test-screenshots/pass9-results.json": [],
+    "tests/lr3-multi-project.test.mjs": [],
+    "tests/rightclick-menus.test.mjs": [],
+    "tests/vision-qa-2026-04-19/findings.json": [],
+    "tests/vision-qa-2026-04-19/run.mjs": [],
+    "v2.html": [],
+    "vercel.json": [],
+    "vite.config.js": [],
+    "z-archive-corner-tests/README.md": [],
+    "z-archive-corner-tests/corner-test-pass10.mjs": [],
+    "z-archive-corner-tests/corner-test-pass11.mjs": [],
+    "z-archive-corner-tests/corner-test-pass12.mjs": [],
+    "z-archive-corner-tests/corner-test-pass13.mjs": [],
+    "z-archive-corner-tests/corner-test-pass14.mjs": [],
+    "z-archive-corner-tests/corner-test-pass15.mjs": [],
+    "z-archive-corner-tests/corner-test-pass16.mjs": [],
+    "z-archive-corner-tests/corner-test-pass17.mjs": [],
+    "z-archive-corner-tests/corner-test-pass18.mjs": [],
+    "z-archive-corner-tests/corner-test-pass19.mjs": [],
+    "z-archive-corner-tests/corner-test-pass20.mjs": [],
+    "z-archive-corner-tests/corner-test-pass21.mjs": [],
+    "z-archive-corner-tests/corner-test-pass22.mjs": [],
+    "z-archive-corner-tests/corner-test-pass23.mjs": [],
+    "z-archive-corner-tests/corner-test-pass24.mjs": [],
+    "z-archive-corner-tests/corner-test-pass25.mjs": [],
+    "z-archive-corner-tests/corner-test-pass26.mjs": [],
+    "z-archive-corner-tests/corner-test-pass27.mjs": [],
+    "z-archive-corner-tests/corner-test-pass28.mjs": [],
+    "z-archive-corner-tests/corner-test-pass29.mjs": [],
+    "z-archive-corner-tests/corner-test-pass30.mjs": [],
+    "z-archive-corner-tests/corner-test-pass31.mjs": [],
+    "z-archive-corner-tests/corner-test-pass32.mjs": [],
+    "z-archive-corner-tests/corner-test-pass33.mjs": [],
+    "z-archive-corner-tests/corner-test-pass34.mjs": [],
+    "z-archive-corner-tests/corner-test-pass35.mjs": [],
+    "z-archive-corner-tests/corner-test-pass36.mjs": [],
+    "z-archive-corner-tests/corner-test-pass37.mjs": [],
+    "z-archive-corner-tests/corner-test-pass38.mjs": [],
+    "z-archive-corner-tests/corner-test-pass39.mjs": [],
+    "z-archive-corner-tests/corner-test-pass5.mjs": [],
+    "z-archive-corner-tests/corner-test-pass5c.mjs": [],
+    "z-archive-corner-tests/corner-test-pass7.mjs": [],
+    "z-archive-corner-tests/corner-test-pass8.mjs": [],
+    "z-archive-corner-tests/corner-test-pass9.mjs": []
+  }
+}

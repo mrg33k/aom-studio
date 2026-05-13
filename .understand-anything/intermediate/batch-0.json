@@ -1,0 +1,662 @@
+{
+  "nodes": [
+    {
+      "id": "api/_lib/crosspost.js",
+      "nodeType": "file",
+      "filePath": "api/_lib/crosspost.js",
+      "name": "crosspost.js",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "API endpoint/utility module with 4 functions",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 97,
+        "nonEmptyLines": 90,
+        "functionCount": 4,
+        "exportCount": 3
+      }
+    },
+    {
+      "id": "api/_lib/crosspost.js:crosspostRowId",
+      "nodeType": "function",
+      "filePath": "api/_lib/crosspost.js",
+      "name": "crosspostRowId",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/_lib/crosspost.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 13,
+        "endLine": 19,
+        "paramCount": 2
+      }
+    },
+    {
+      "id": "api/_lib/crosspost.js:detectProjectTag",
+      "nodeType": "function",
+      "filePath": "api/_lib/crosspost.js",
+      "name": "detectProjectTag",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/_lib/crosspost.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 22,
+        "endLine": 26,
+        "paramCount": 1
+      }
+    },
+    {
+      "id": "api/_lib/crosspost.js:detectProjectFromText",
+      "nodeType": "function",
+      "filePath": "api/_lib/crosspost.js",
+      "name": "detectProjectFromText",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/_lib/crosspost.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 29,
+        "endLine": 47,
+        "paramCount": 0
+      }
+    },
+    {
+      "id": "api/_lib/crosspost.js:crossPostToProjectThread",
+      "nodeType": "function",
+      "filePath": "api/_lib/crosspost.js",
+      "name": "crossPostToProjectThread",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/_lib/crosspost.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 52,
+        "endLine": 97,
+        "paramCount": 0
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "haiku-chat.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API endpoint/utility module with 6 functions",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 572,
+        "nonEmptyLines": 501,
+        "functionCount": 6,
+        "exportCount": 2
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js:sbRest",
+      "nodeType": "function",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "sbRest",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/dashboard/haiku-chat.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 10,
+        "endLine": 31,
+        "paramCount": 3
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js:writeToSupabase",
+      "nodeType": "function",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "writeToSupabase",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/dashboard/haiku-chat.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 33,
+        "endLine": 57,
+        "paramCount": 3
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js:cleanTitle",
+      "nodeType": "function",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "cleanTitle",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/dashboard/haiku-chat.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 59,
+        "endLine": 63,
+        "paramCount": 1
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js:executeTool",
+      "nodeType": "function",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "executeTool",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/dashboard/haiku-chat.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 171,
+        "endLine": 348,
+        "paramCount": 3
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js:buildSystemPrompt",
+      "nodeType": "function",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "buildSystemPrompt",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/dashboard/haiku-chat.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 352,
+        "endLine": 390,
+        "paramCount": 0
+      }
+    },
+    {
+      "id": "api/dashboard/haiku-chat.js:handler",
+      "nodeType": "function",
+      "filePath": "api/dashboard/haiku-chat.js",
+      "name": "handler",
+      "language": "javascript",
+      "complexity": "simple",
+      "description": "Function in api/dashboard/haiku-chat.js",
+      "tags": [],
+      "metadata": {
+        "startLine": 394,
+        "endLine": 570,
+        "paramCount": 2
+      }
+    },
+    {
+      "id": "api/_lib/graphql-executor.js",
+      "nodeType": "file",
+      "filePath": "api/_lib/graphql-executor.js",
+      "name": "graphql-executor.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 126,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/_lib/openai.js",
+      "nodeType": "file",
+      "filePath": "api/_lib/openai.js",
+      "name": "openai.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 59,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/_lib/playlist-archive.js",
+      "nodeType": "file",
+      "filePath": "api/_lib/playlist-archive.js",
+      "name": "playlist-archive.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 180,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/_lib/supabase.js",
+      "nodeType": "file",
+      "filePath": "api/_lib/supabase.js",
+      "name": "supabase.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 142,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/_lib/yt-fetch.js",
+      "nodeType": "file",
+      "filePath": "api/_lib/yt-fetch.js",
+      "name": "yt-fetch.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 108,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/admin/[team_id].js",
+      "nodeType": "file",
+      "filePath": "api/admin/[team_id].js",
+      "name": "[team_id].js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 86,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/_archive/[project_id].js",
+      "nodeType": "file",
+      "filePath": "api/clips/_archive/[project_id].js",
+      "name": "[project_id].js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 59,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/_archive/index.js",
+      "nodeType": "file",
+      "filePath": "api/clips/_archive/index.js",
+      "name": "index.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 47,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/create.js",
+      "nodeType": "file",
+      "filePath": "api/clips/create.js",
+      "name": "create.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 201,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/gallery.js",
+      "nodeType": "file",
+      "filePath": "api/clips/gallery.js",
+      "name": "gallery.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 143,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/import.js",
+      "nodeType": "file",
+      "filePath": "api/clips/import.js",
+      "name": "import.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 143,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/source-index.js",
+      "nodeType": "file",
+      "filePath": "api/clips/source-index.js",
+      "name": "source-index.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 222,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/clips/sources.js",
+      "nodeType": "file",
+      "filePath": "api/clips/sources.js",
+      "name": "sources.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 95,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/[project_id].js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/[project_id].js",
+      "name": "[project_id].js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 97,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/_lib/audience-analysis.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/_lib/audience-analysis.js",
+      "name": "audience-analysis.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 109,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/_lib/social-inference.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/_lib/social-inference.js",
+      "name": "social-inference.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 95,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/gallery.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/gallery.js",
+      "name": "gallery.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 155,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/messages.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/messages.js",
+      "name": "messages.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 269,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/projects.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/projects.js",
+      "name": "projects.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 157,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/search.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/search.js",
+      "name": "search.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 283,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/top-queries.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/top-queries.js",
+      "name": "top-queries.js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 102,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/dashboard/upload.js",
+      "nodeType": "file",
+      "filePath": "api/dashboard/upload.js",
+      "name": "upload.js",
+      "language": "javascript",
+      "complexity": "complex",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 198,
+        "extractionSkipped": true
+      }
+    },
+    {
+      "id": "api/files/[file_id].js",
+      "nodeType": "file",
+      "filePath": "api/files/[file_id].js",
+      "name": "[file_id].js",
+      "language": "javascript",
+      "complexity": "moderate",
+      "description": "API module (extraction skipped)",
+      "tags": [
+        "api",
+        "javascript"
+      ],
+      "metadata": {
+        "totalLines": 93,
+        "extractionSkipped": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "api/_lib/crosspost.js",
+      "target": "api/_lib/crosspost.js:crosspostRowId",
+      "type": "contains",
+      "description": "File contains function crosspostRowId",
+      "metadata": {}
+    },
+    {
+      "source": "api/_lib/crosspost.js",
+      "target": "api/_lib/crosspost.js:detectProjectTag",
+      "type": "contains",
+      "description": "File contains function detectProjectTag",
+      "metadata": {}
+    },
+    {
+      "source": "api/_lib/crosspost.js",
+      "target": "api/_lib/crosspost.js:detectProjectFromText",
+      "type": "contains",
+      "description": "File contains function detectProjectFromText",
+      "metadata": {}
+    },
+    {
+      "source": "api/_lib/crosspost.js",
+      "target": "api/_lib/crosspost.js:crossPostToProjectThread",
+      "type": "contains",
+      "description": "File contains function crossPostToProjectThread",
+      "metadata": {}
+    },
+    {
+      "source": "api/dashboard/haiku-chat.js",
+      "target": "api/dashboard/haiku-chat.js:sbRest",
+      "type": "contains",
+      "description": "File contains function sbRest",
+      "metadata": {}
+    },
+    {
+      "source": "api/dashboard/haiku-chat.js",
+      "target": "api/dashboard/haiku-chat.js:writeToSupabase",
+      "type": "contains",
+      "description": "File contains function writeToSupabase",
+      "metadata": {}
+    },
+    {
+      "source": "api/dashboard/haiku-chat.js",
+      "target": "api/dashboard/haiku-chat.js:cleanTitle",
+      "type": "contains",
+      "description": "File contains function cleanTitle",
+      "metadata": {}
+    },
+    {
+      "source": "api/dashboard/haiku-chat.js",
+      "target": "api/dashboard/haiku-chat.js:executeTool",
+      "type": "contains",
+      "description": "File contains function executeTool",
+      "metadata": {}
+    },
+    {
+      "source": "api/dashboard/haiku-chat.js",
+      "target": "api/dashboard/haiku-chat.js:buildSystemPrompt",
+      "type": "contains",
+      "description": "File contains function buildSystemPrompt",
+      "metadata": {}
+    },
+    {
+      "source": "api/dashboard/haiku-chat.js",
+      "target": "api/dashboard/haiku-chat.js:handler",
+      "type": "contains",
+      "description": "File contains function handler",
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "batch": 0,
+    "filesAnalyzed": 2,
+    "filesSkipped": 23,
+    "totalNodes": 35,
+    "totalEdges": 10
+  }
+}

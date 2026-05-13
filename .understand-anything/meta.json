@@ -1,0 +1,22 @@
+{
+  "gitCommitHash": "6570f2fb070266762972960d3497a44f75263290",
+  "timestamp": "2026-05-11T10:21:41.059515",
+  "projectName": "aom-v17",
+  "projectRoot": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+  "totalNodes": 35,
+  "totalEdges": 10,
+  "nodeTypes": {
+    "file": 25,
+    "function": 10
+  },
+  "edgeTypes": {
+    "contains": 10
+  },
+  "phasesCompleted": [
+    "phase-0-preflight",
+    "phase-0.5-ignore-config",
+    "phase-1-scan",
+    "phase-2-analyze (partial: 1 of 29 batches)",
+    "phase-6-validate"
+  ]
+}

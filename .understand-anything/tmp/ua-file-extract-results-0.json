@@ -1,0 +1,1046 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 2,
+  "filesSkipped": [
+    "api/_lib/graphql-executor.js",
+    "api/_lib/openai.js",
+    "api/_lib/playlist-archive.js",
+    "api/_lib/supabase.js",
+    "api/_lib/yt-fetch.js",
+    "api/admin/[team_id].js",
+    "api/clips/_archive/[project_id].js",
+    "api/clips/_archive/index.js",
+    "api/clips/create.js",
+    "api/clips/gallery.js",
+    "api/clips/import.js",
+    "api/clips/source-index.js",
+    "api/clips/sources.js",
+    "api/dashboard/[project_id].js",
+    "api/dashboard/_lib/audience-analysis.js",
+    "api/dashboard/_lib/social-inference.js",
+    "api/dashboard/gallery.js",
+    "api/dashboard/messages.js",
+    "api/dashboard/projects.js",
+    "api/dashboard/search.js",
+    "api/dashboard/top-queries.js",
+    "api/dashboard/upload.js",
+    "api/files/[file_id].js"
+  ],
+  "results": [
+    {
+      "path": "api/_lib/crosspost.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 97,
+      "nonEmptyLines": 90,
+      "functions": [
+        {
+          "name": "crosspostRowId",
+          "startLine": 13,
+          "endLine": 19,
+          "params": [
+            "sourceId",
+            "project"
+          ]
+        },
+        {
+          "name": "detectProjectTag",
+          "startLine": 22,
+          "endLine": 26,
+          "params": [
+            "text"
+          ]
+        },
+        {
+          "name": "detectProjectFromText",
+          "startLine": 29,
+          "endLine": 47,
+          "params": []
+        },
+        {
+          "name": "crossPostToProjectThread",
+          "startLine": 52,
+          "endLine": 97,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "detectProjectTag",
+          "line": 22,
+          "isDefault": false
+        },
+        {
+          "name": "detectProjectFromText",
+          "line": 29,
+          "isDefault": false
+        },
+        {
+          "name": "crossPostToProjectThread",
+          "line": 52,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "crosspostRowId",
+          "callee": "crypto\n    .createHash('sha256')\n    .update(`crosspost:${project}:${sourceId}`)\n    .digest",
+          "lineNumber": 14
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "crypto\n    .createHash('sha256')\n    .update",
+          "lineNumber": 14
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "crypto\n    .createHash",
+          "lineNumber": 14
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "hash.slice",
+          "lineNumber": 18
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "hash.slice",
+          "lineNumber": 18
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "hash.slice",
+          "lineNumber": 18
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "hash.slice",
+          "lineNumber": 18
+        },
+        {
+          "caller": "crosspostRowId",
+          "callee": "hash.slice",
+          "lineNumber": 18
+        },
+        {
+          "caller": "detectProjectTag",
+          "callee": "text.match",
+          "lineNumber": 24
+        },
+        {
+          "caller": "detectProjectTag",
+          "callee": "m[1].toLowerCase",
+          "lineNumber": 25
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "detectProjectTag",
+          "lineNumber": 30
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "fetch",
+          "lineNumber": 34
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "res.json",
+          "lineNumber": 39
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "text.toLowerCase",
+          "lineNumber": 40
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "lower.includes",
+          "lineNumber": 42
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "p.slug.toLowerCase",
+          "lineNumber": 42
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "lower.includes",
+          "lineNumber": 43
+        },
+        {
+          "caller": "detectProjectFromText",
+          "callee": "p.name.toLowerCase",
+          "lineNumber": 43
+        },
+        {
+          "caller": "crossPostToProjectThread",
+          "callee": "crosspostRowId",
+          "lineNumber": 65
+        },
+        {
+          "caller": "crossPostToProjectThread",
+          "callee": "(sourceMessage.text || '').trim",
+          "lineNumber": 68
+        },
+        {
+          "caller": "crossPostToProjectThread",
+          "callee": "fetch",
+          "lineNumber": 88
+        },
+        {
+          "caller": "crossPostToProjectThread",
+          "callee": "JSON.stringify",
+          "lineNumber": 94
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "api/dashboard/haiku-chat.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 572,
+      "nonEmptyLines": 501,
+      "functions": [
+        {
+          "name": "sbRest",
+          "startLine": 10,
+          "endLine": 31,
+          "params": [
+            "method",
+            "path",
+            "body"
+          ]
+        },
+        {
+          "name": "writeToSupabase",
+          "startLine": 33,
+          "endLine": 57,
+          "params": [
+            "role",
+            "agent",
+            "text"
+          ]
+        },
+        {
+          "name": "cleanTitle",
+          "startLine": 59,
+          "endLine": 63,
+          "params": [
+            "raw"
+          ]
+        },
+        {
+          "name": "executeTool",
+          "startLine": 171,
+          "endLine": 348,
+          "params": [
+            "name",
+            "args",
+            "ctx"
+          ]
+        },
+        {
+          "name": "buildSystemPrompt",
+          "startLine": 352,
+          "endLine": 390,
+          "params": []
+        },
+        {
+          "name": "handler",
+          "startLine": 394,
+          "endLine": 570,
+          "params": [
+            "req",
+            "res"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "handler",
+          "line": 394,
+          "isDefault": true
+        },
+        {
+          "name": "config",
+          "line": 572,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "sbRest",
+          "callee": "JSON.stringify",
+          "lineNumber": 24
+        },
+        {
+          "caller": "sbRest",
+          "callee": "fetch",
+          "lineNumber": 25
+        },
+        {
+          "caller": "sbRest",
+          "callee": "res.text",
+          "lineNumber": 26
+        },
+        {
+          "caller": "sbRest",
+          "callee": "text.slice",
+          "lineNumber": 28
+        },
+        {
+          "caller": "sbRest",
+          "callee": "JSON.parse",
+          "lineNumber": 30
+        },
+        {
+          "caller": "writeToSupabase",
+          "callee": "fetch",
+          "lineNumber": 36
+        },
+        {
+          "caller": "writeToSupabase",
+          "callee": "JSON.stringify",
+          "lineNumber": 44
+        },
+        {
+          "caller": "writeToSupabase",
+          "callee": "crypto.randomUUID",
+          "lineNumber": 45
+        },
+        {
+          "caller": "writeToSupabase",
+          "callee": "new Date().toISOString",
+          "lineNumber": 46
+        },
+        {
+          "caller": "cleanTitle",
+          "callee": "(raw || '').trim().replace",
+          "lineNumber": 60
+        },
+        {
+          "caller": "cleanTitle",
+          "callee": "(raw || '').trim",
+          "lineNumber": 60
+        },
+        {
+          "caller": "cleanTitle",
+          "callee": "s.slice",
+          "lineNumber": 62
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.project || '').trim().toLowerCase",
+          "lineNumber": 175
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.project || '').trim",
+          "lineNumber": 175
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 175
+        },
+        {
+          "caller": "executeTool",
+          "callee": "cleanTitle",
+          "lineNumber": 176
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.description || args.title || '').trim",
+          "lineNumber": 177
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 177
+        },
+        {
+          "caller": "executeTool",
+          "callee": "['sonnet', 'opus', 'haiku'].includes",
+          "lineNumber": 178
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.mission).trim",
+          "lineNumber": 179
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 179
+        },
+        {
+          "caller": "executeTool",
+          "callee": "sbRest",
+          "lineNumber": 186
+        },
+        {
+          "caller": "executeTool",
+          "callee": "encodeURIComponent",
+          "lineNumber": 186
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 187
+        },
+        {
+          "caller": "executeTool",
+          "callee": "new Date().toISOString",
+          "lineNumber": 201
+        },
+        {
+          "caller": "executeTool",
+          "callee": "sbRest",
+          "lineNumber": 211
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 212
+        },
+        {
+          "caller": "executeTool",
+          "callee": "writeToSupabase('assistant', `task:${task.id}`, `queued by ${ctx.slug} from haiku-chat: ${title}`, 'haiku-chat-dispatch', '', ctx.clientId).catch",
+          "lineNumber": 215
+        },
+        {
+          "caller": "executeTool",
+          "callee": "writeToSupabase",
+          "lineNumber": 215
+        },
+        {
+          "caller": "executeTool",
+          "callee": "filters.push",
+          "lineNumber": 222
+        },
+        {
+          "caller": "executeTool",
+          "callee": "encodeURIComponent",
+          "lineNumber": 222
+        },
+        {
+          "caller": "executeTool",
+          "callee": "filters.push",
+          "lineNumber": 223
+        },
+        {
+          "caller": "executeTool",
+          "callee": "encodeURIComponent",
+          "lineNumber": 223
+        },
+        {
+          "caller": "executeTool",
+          "callee": "filters.push",
+          "lineNumber": 224
+        },
+        {
+          "caller": "executeTool",
+          "callee": "encodeURIComponent",
+          "lineNumber": 224
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Math.min",
+          "lineNumber": 225
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Number",
+          "lineNumber": 225
+        },
+        {
+          "caller": "executeTool",
+          "callee": "filters.push",
+          "lineNumber": 226
+        },
+        {
+          "caller": "executeTool",
+          "callee": "filters.join",
+          "lineNumber": 228
+        },
+        {
+          "caller": "executeTool",
+          "callee": "filters.join",
+          "lineNumber": 231
+        },
+        {
+          "caller": "executeTool",
+          "callee": "encodeURIComponent",
+          "lineNumber": 231
+        },
+        {
+          "caller": "executeTool",
+          "callee": "sbRest",
+          "lineNumber": 234
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 235
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 235
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.task_id || '').trim",
+          "lineNumber": 239
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 239
+        },
+        {
+          "caller": "executeTool",
+          "callee": "sbRest",
+          "lineNumber": 241
+        },
+        {
+          "caller": "executeTool",
+          "callee": "encodeURIComponent",
+          "lineNumber": 241
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 242
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.agent || '').trim",
+          "lineNumber": 259
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 259
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.content || '').trim",
+          "lineNumber": 260
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 260
+        },
+        {
+          "caller": "executeTool",
+          "callee": "writeToSupabase",
+          "lineNumber": 264
+        },
+        {
+          "caller": "executeTool",
+          "callee": "content.slice",
+          "lineNumber": 265
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.to_agent || '').trim",
+          "lineNumber": 269
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 269
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.message || '').trim",
+          "lineNumber": 270
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 270
+        },
+        {
+          "caller": "executeTool",
+          "callee": "writeToSupabase",
+          "lineNumber": 274
+        },
+        {
+          "caller": "executeTool",
+          "callee": "message.slice",
+          "lineNumber": 275
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String(args.mission_slug || '').trim",
+          "lineNumber": 279
+        },
+        {
+          "caller": "executeTool",
+          "callee": "String",
+          "lineNumber": 279
+        },
+        {
+          "caller": "executeTool",
+          "callee": "missionSlug.includes",
+          "lineNumber": 283
+        },
+        {
+          "caller": "executeTool",
+          "callee": "missionSlug.split",
+          "lineNumber": 288
+        },
+        {
+          "caller": "executeTool",
+          "callee": "rest.join",
+          "lineNumber": 289
+        },
+        {
+          "caller": "executeTool",
+          "callee": "cleanTitle",
+          "lineNumber": 292
+        },
+        {
+          "caller": "executeTool",
+          "callee": "sbRest",
+          "lineNumber": 297
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 298
+        },
+        {
+          "caller": "executeTool",
+          "callee": "new Date().toISOString",
+          "lineNumber": 311
+        },
+        {
+          "caller": "executeTool",
+          "callee": "sbRest",
+          "lineNumber": 323
+        },
+        {
+          "caller": "executeTool",
+          "callee": "Array.isArray",
+          "lineNumber": 324
+        },
+        {
+          "caller": "executeTool",
+          "callee": "writeToSupabase(\n        'assistant',\n        `task:${task.id}`,\n        `foreman queued by ${ctx.slug}: driving mission ${missionSlug}`,\n        'haiku-chat-foreman',\n        '',\n        ctx.clientId,\n      ).catch",
+          "lineNumber": 327
+        },
+        {
+          "caller": "executeTool",
+          "callee": "writeToSupabase",
+          "lineNumber": 327
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 396
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 397
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 398
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status(200).end",
+          "lineNumber": 399
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status",
+          "lineNumber": 399
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status(405).json",
+          "lineNumber": 402
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status",
+          "lineNumber": 402
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 404
+        },
+        {
+          "caller": "handler",
+          "callee": "client_id.trim",
+          "lineNumber": 407
+        },
+        {
+          "caller": "handler",
+          "callee": "client_id.trim().toLowerCase",
+          "lineNumber": 407
+        },
+        {
+          "caller": "handler",
+          "callee": "client_id.trim",
+          "lineNumber": 407
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status(400).json",
+          "lineNumber": 409
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status",
+          "lineNumber": 409
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status(200).json",
+          "lineNumber": 412
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status",
+          "lineNumber": 412
+        },
+        {
+          "caller": "handler",
+          "callee": "writeToSupabase('user', slug, message, 'haiku-chat', '', clientId).catch",
+          "lineNumber": 419
+        },
+        {
+          "caller": "handler",
+          "callee": "writeToSupabase",
+          "lineNumber": 419
+        },
+        {
+          "caller": "handler",
+          "callee": "buildSystemPrompt",
+          "lineNumber": 421
+        },
+        {
+          "caller": "handler",
+          "callee": "Array.isArray",
+          "lineNumber": 424
+        },
+        {
+          "caller": "handler",
+          "callee": "history.slice",
+          "lineNumber": 425
+        },
+        {
+          "caller": "handler",
+          "callee": "messages.push",
+          "lineNumber": 428
+        },
+        {
+          "caller": "handler",
+          "callee": "messages.push",
+          "lineNumber": 431
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 433
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 434
+        },
+        {
+          "caller": "handler",
+          "callee": "res.setHeader",
+          "lineNumber": 435
+        },
+        {
+          "caller": "handler",
+          "callee": "fetch",
+          "lineNumber": 450
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 457
+        },
+        {
+          "caller": "handler",
+          "callee": "anthropicRes.text",
+          "lineNumber": 461
+        },
+        {
+          "caller": "handler",
+          "callee": "res.write",
+          "lineNumber": 462
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 462
+        },
+        {
+          "caller": "handler",
+          "callee": "anthropicRes.body.getReader",
+          "lineNumber": 466
+        },
+        {
+          "caller": "handleEvent",
+          "callee": "res.write",
+          "lineNumber": 490
+        },
+        {
+          "caller": "handleEvent",
+          "callee": "JSON.stringify",
+          "lineNumber": 490
+        },
+        {
+          "caller": "handleEvent",
+          "callee": "JSON.parse",
+          "lineNumber": 497
+        },
+        {
+          "caller": "handleEvent",
+          "callee": "res.write",
+          "lineNumber": 503
+        },
+        {
+          "caller": "handleEvent",
+          "callee": "JSON.stringify",
+          "lineNumber": 503
+        },
+        {
+          "caller": "handler",
+          "callee": "reader.read",
+          "lineNumber": 508
+        },
+        {
+          "caller": "handler",
+          "callee": "decoder.decode",
+          "lineNumber": 510
+        },
+        {
+          "caller": "handler",
+          "callee": "buffer.split",
+          "lineNumber": 511
+        },
+        {
+          "caller": "handler",
+          "callee": "lines.pop",
+          "lineNumber": 512
+        },
+        {
+          "caller": "handler",
+          "callee": "line.startsWith",
+          "lineNumber": 514
+        },
+        {
+          "caller": "handler",
+          "callee": "line.slice",
+          "lineNumber": 515
+        },
+        {
+          "caller": "handler",
+          "callee": "handleEvent",
+          "lineNumber": 517
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.parse",
+          "lineNumber": 517
+        },
+        {
+          "caller": "handler",
+          "callee": "buffer.startsWith",
+          "lineNumber": 520
+        },
+        {
+          "caller": "handler",
+          "callee": "handleEvent",
+          "lineNumber": 521
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.parse",
+          "lineNumber": 521
+        },
+        {
+          "caller": "handler",
+          "callee": "buffer.slice",
+          "lineNumber": 521
+        },
+        {
+          "caller": "handler",
+          "callee": "blocks.filter",
+          "lineNumber": 524
+        },
+        {
+          "caller": "handler",
+          "callee": "blocks\n        .filter(Boolean)\n        .map(b => b.type === 'tool_use'\n          ? { type: 'tool_use', id: b.id, name: b.name, input: b.input || {} }\n          : { type: 'text', text: b.text || '' })\n        .filter",
+          "lineNumber": 527
+        },
+        {
+          "caller": "handler",
+          "callee": "blocks\n        .filter(Boolean)\n        .map",
+          "lineNumber": 527
+        },
+        {
+          "caller": "handler",
+          "callee": "blocks\n        .filter",
+          "lineNumber": 527
+        },
+        {
+          "caller": "handler",
+          "callee": "messages.push",
+          "lineNumber": 533
+        },
+        {
+          "caller": "handler",
+          "callee": "res.write",
+          "lineNumber": 537
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 537
+        },
+        {
+          "caller": "handler",
+          "callee": "executeTool",
+          "lineNumber": 539
+        },
+        {
+          "caller": "handler",
+          "callee": "toolResults.push",
+          "lineNumber": 540
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 540
+        },
+        {
+          "caller": "handler",
+          "callee": "res.write",
+          "lineNumber": 541
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 541
+        },
+        {
+          "caller": "handler",
+          "callee": "toolResults.push",
+          "lineNumber": 543
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 546
+        },
+        {
+          "caller": "handler",
+          "callee": "String",
+          "lineNumber": 546
+        },
+        {
+          "caller": "handler",
+          "callee": "res.write",
+          "lineNumber": 549
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 549
+        },
+        {
+          "caller": "handler",
+          "callee": "String",
+          "lineNumber": 549
+        },
+        {
+          "caller": "handler",
+          "callee": "messages.push",
+          "lineNumber": 552
+        },
+        {
+          "caller": "handler",
+          "callee": "writeToSupabase('assistant', slug, fullResponse, 'haiku-chat-api', '', clientId).catch",
+          "lineNumber": 556
+        },
+        {
+          "caller": "handler",
+          "callee": "writeToSupabase",
+          "lineNumber": 556
+        },
+        {
+          "caller": "handler",
+          "callee": "res.write",
+          "lineNumber": 559
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 559
+        },
+        {
+          "caller": "handler",
+          "callee": "res.end",
+          "lineNumber": 560
+        },
+        {
+          "caller": "handler",
+          "callee": "console.error",
+          "lineNumber": 562
+        },
+        {
+          "caller": "handler",
+          "callee": "res.write",
+          "lineNumber": 564
+        },
+        {
+          "caller": "handler",
+          "callee": "JSON.stringify",
+          "lineNumber": 564
+        },
+        {
+          "caller": "handler",
+          "callee": "res.end",
+          "lineNumber": 565
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status(500).json",
+          "lineNumber": 567
+        },
+        {
+          "caller": "handler",
+          "callee": "res.status",
+          "lineNumber": 567
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 6,
+        "classCount": 0
+      }
+    }
+  ]
+}

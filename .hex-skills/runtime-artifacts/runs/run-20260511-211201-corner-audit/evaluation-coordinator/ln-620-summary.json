@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "summary_kind": "evaluation-coordinator",
+  "run_id": "run-20260511-211201-corner-audit",
+  "identifier": "ln-620",
+  "producer_skill": "ln-620-codebase-auditor",
+  "produced_at": "2026-05-11T21:25:00Z",
+  "payload": {
+    "status": "completed",
+    "final_result": "conditional_fail",
+    "report_path": ".hex-skills/runtime-artifacts/runs/run-20260511-211201-corner-audit/audit-report/ln-620--final-report.md",
+    "worker_count": 9,
+    "issues_total": 29,
+    "severity_counts": {
+      "critical": 2,
+      "high": 17,
+      "medium": 8,
+      "low": 2
+    },
+    "overall_score": 4.7,
+    "warnings": [
+      "ln-621 worker did not persist its own JSON summary (context exhaustion); markdown report written by coordinator from agent return summary",
+      "ln-622, ln-623, ln-624, ln-628 workers did not persist JSON summaries; markdowns sufficient for aggregation",
+      "ln-623 and ln-629 initially wrote markdown to wrong run-id subdirectory (run-20260511-corner-audit); files moved during aggregation",
+      "ln-628 did not persist any markdown report; findings captured inline in agent return and folded into final report",
+      "April 2026 Vercel incident may have transiently exposed env vars; check deployment timestamps before assuming key rotation is sufficient"
+    ],
+    "cleanup_verified": true,
+    "worker_scores": {
+      "ln-621": 4.3,
+      "ln-622": 2.8,
+      "ln-623": 6.5,
+      "ln-624": 4.8,
+      "ln-625": 6.0,
+      "ln-626": 0.0,
+      "ln-627": 2.8,
+      "ln-628": 9.5,
+      "ln-629": 3.5
+    },
+    "metadata": {
+      "target": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+      "stack": "Vite 5 + React 18 + React Router 7 + Supabase + Firebase + Vercel + Tailwind",
+      "files_scanned": 348,
+      "api_routes": 30,
+      "version": "aom-v17 17.2.1",
+      "tier_0_blockers": 5,
+      "tier_1_sprint_items": 6,
+      "tier_2_quarter_items": 3,
+      "tier_3_convenience_items": 5
+    }
+  }
+}

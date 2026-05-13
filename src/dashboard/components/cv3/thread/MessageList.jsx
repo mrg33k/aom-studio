@@ -258,6 +258,11 @@ export default function MessageList({ roomType = 'agent' }) {
   // working — suppress the stall signal. Per .claude/rules/live-thread-step-emission.md,
   // step events stream while the agent reads, queues, spawns workers, etc.
   // Seeing dots travel down the chain is the opposite of silence.
+  // 2026-05-12: window was 30s and tripped chainStalled mid-routine — Elon
+  // routines run 60-90s, and a step at t=5s followed by a tool call would
+  // cross the 30s gap and show "clear & retry" while the chain was still
+  // demonstrably alive. Bumped to 120s so a chain that has started gets
+  // enough headroom for the slowest legit routine before we flag stall.
   const latestUserStepsForStall = latestRealUserMsg
     ? (stepsByMessageId[latestRealUserMsg.id] || [])
     : []
@@ -265,7 +270,7 @@ export default function MessageList({ roomType = 'agent' }) {
     ? Math.max(...latestUserStepsForStall.map(s => new Date(s.timestamp || 0).getTime()))
     : 0
   const msSinceLastStep = lastStepAt > 0 ? nowMs - lastStepAt : Infinity
-  const stepActiveRecently = msSinceLastStep < 30_000
+  const stepActiveRecently = msSinceLastStep < 120_000
 
   // awaitingResponse=true means no assistant message (real or bridge-stream) has
   // arrived yet — strictly the relay path where the agent hasn't replied at all.

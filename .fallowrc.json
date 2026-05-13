@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/main.{js,jsx,mjs}",
+    "src/v2-main.{js,jsx,mjs}",
+    "src/outreach/main.{js,jsx,mjs}",
+    "src/growth-plan/main.{js,jsx,mjs}",
+    "src/system/main.{js,jsx,mjs}",
+    "src/proposals/main.{js,jsx,mjs}",
+    "src/proposals/quentin-main.{js,jsx,mjs}",
+    "api/**/*.{js,ts}",
+    "scripts/**/*.{js,mjs}",
+    "tests/**/*.{js,mjs,jsx}",
+    "supabase/functions/**/*.{js,ts}",
+    "middleware.js"
+  ],
+  "ignorePatterns": [
+    "dist/**",
+    ".vercel/**",
+    "test-results/**",
+    "test-screenshots/**",
+    "public/**",
+    ".playwright-mcp/**"
+  ],
+  "duplicates": {
+  },
+  "rules": {}
+}

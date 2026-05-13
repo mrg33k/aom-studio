@@ -1,0 +1,160 @@
+{
+  "identifier": "ln-627",
+  "producer_skill": "ln-627-diagnosability-auditor",
+  "operation": "diagnosability_audit",
+  "project": "corner",
+  "codebase_root": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+  "timestamp": "2026-05-11T21:12:01Z",
+  "audit_date": "2026-05-11",
+  "evaluator": "Haiku 4.5 (ln-627-diagnosability-auditor)",
+  "category": "Diagnosability",
+  "priority": "Medium",
+  "score": {
+    "total": 2.8,
+    "max": 10.0,
+    "percentage": 28.0,
+    "reasoning": "Structured logging absent (0/2), correlation IDs absent (0/2), metrics collection absent (0/2), request tracing blocked (0/2), log levels partial (0.8/2). Bare console.error() in 36+ production routes with no context propagation."
+  },
+  "checks": [
+    {
+      "check_id": 1,
+      "name": "Structured Logging",
+      "status": "FAIL",
+      "severity": "MEDIUM",
+      "findings": 1,
+      "description": "No logging library (winston, pino, logrus) installed. 36+ console.error() calls across /api/ routes log only error message, no context.",
+      "evidence": [
+        "api/relay-sms.js:160 console.error('[relay-sms] Error:', err.message)",
+        "api/dashboard/haiku-chat.js:570 console.error('haiku-chat error:', err)",
+        "api/dashboard/chat-bridge.js:253 console.error('[chat-bridge] chain-card insert failed', ...)",
+        "package.json: no pino, winston, bunyan dependencies"
+      ],
+      "impact": "Operators cannot diagnose errors: no request ID, user ID, tenant ID, Supabase response details, timing. Silent catch blocks hide failures.",
+      "recommendation": "Install pino, create api/_lib/logger.js, replace console calls with structured logs including requestId, method, path, status, userId, tenantId.",
+      "effort": "M",
+      "effort_hours": 4
+    },
+    {
+      "check_id": 2,
+      "name": "Correlation IDs",
+      "status": "FAIL",
+      "severity": "MEDIUM",
+      "findings": 1,
+      "description": "No request ID generation, no header propagation, no correlation ID in logs. API routes do not read x-vercel-request-id or x-request-id headers.",
+      "evidence": [
+        "No grep match for 'requestId|correlationId|x-request-id' in /api/",
+        "api/dashboard/chat-bridge.js:239-260: bridge fetch() missing correlation ID header",
+        "No middleware to accept or generate correlation IDs"
+      ],
+      "impact": "Cannot trace a request from frontend → API → Supabase → bridge. Each service boundary is invisible. MTTR unacceptably high.",
+      "recommendation": "Add correlation ID middleware or per-route: read x-request-id header or generate UUID. Propagate to Supabase, bridge, and Anthropic API calls via headers.",
+      "effort": "M",
+      "effort_hours": 4
+    },
+    {
+      "check_id": 3,
+      "name": "Metrics Collection",
+      "status": "FAIL",
+      "severity": "MEDIUM",
+      "findings": 1,
+      "description": "No Prometheus client, StatsD, CloudWatch, or custom metrics instrumentation. No latency histograms, error counters, or health gauges.",
+      "evidence": [
+        "No grep match for 'prometheus|StatsD|cloudwatch|histogram|counter' in /api/",
+        "package.json: no prom-client or metrics library"
+      ],
+      "impact": "No visibility into request latency, error rates, Supabase query duration, bridge connectivity health. Cannot set SLA alerts or detect degradation.",
+      "recommendation": "Install prom-client. Add histograms for critical routes (haiku-chat, chat-bridge, supabase calls). Add counters for errors per table/operation. Configure Vercel to scrape.",
+      "effort": "M",
+      "effort_hours": 6
+    },
+    {
+      "check_id": 4,
+      "name": "Request Tracing",
+      "status": "FAIL",
+      "severity": "MEDIUM",
+      "findings": 1,
+      "description": "No end-to-end request traces. No OpenTelemetry, Jaeger, or correlation ID propagation. Each service boundary is opaque.",
+      "evidence": [
+        "Blocked by check #2 (correlation IDs absent)",
+        "No trace context passed to bridge, Supabase, or Anthropic calls"
+      ],
+      "impact": "Operator cannot reconstruct request flow across service boundaries. Diagnosis requires manually checking three independent log sources.",
+      "recommendation": "Implement correlation IDs (check #2) first. Then add lightweight trace context: log operation type and duration at each boundary (Supabase query, bridge request, Anthropic call).",
+      "effort": "M",
+      "effort_hours": 5,
+      "blocked_by": ["check_2"]
+    },
+    {
+      "check_id": 5,
+      "name": "Log Levels",
+      "status": "PARTIAL_FAIL",
+      "severity": "LOW",
+      "findings": 1,
+      "description": "Mixed use of console.log/error. No consistent log level discipline. Non-fatal errors logged at ERROR level. Silent success paths.",
+      "evidence": [
+        "api/dashboard/v2-task-update.js:72 console.log() for info (should be info level)",
+        "api/dashboard/v2-task-update.js:75 console.error() for non-fatal (should be warn level)",
+        "No info logs for successful operations"
+      ],
+      "impact": "Operators cannot filter alerts by severity. Non-fatal failures trigger ERRORs, muddying SLA monitoring. Success paths invisible.",
+      "recommendation": "Use logger.info() for happy paths and normal operations. Use logger.warn() for non-fatal failures. Use logger.error() only for critical failures.",
+      "effort": "S",
+      "effort_hours": 2
+    }
+  ],
+  "issues_by_severity": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 4,
+    "LOW": 1
+  },
+  "recommended_actions": [
+    {
+      "tier": 1,
+      "title": "Add Structured Logger",
+      "description": "Install pino, create api/_lib/logger.js, replace 40+ console calls with structured logs including requestId, method, path, status, userId, tenantId.",
+      "effort": "M (4 hours)",
+      "impact": "CRITICAL — enables context propagation and filters"
+    },
+    {
+      "tier": 1,
+      "title": "Add Correlation ID Generation + Propagation",
+      "description": "Generate UUID or read x-request-id header. Propagate via headers to Supabase, bridge, Anthropic calls. Log in every structured log entry.",
+      "effort": "M (4 hours)",
+      "impact": "CRITICAL — enables end-to-end tracing"
+    },
+    {
+      "tier": 2,
+      "title": "Add Latency Logging",
+      "description": "Time Supabase PATCH, bridge POST, Anthropic API calls. Log duration in milliseconds with operation type and status.",
+      "effort": "M (2 hours)",
+      "impact": "HIGH — enables bottleneck identification"
+    },
+    {
+      "tier": 2,
+      "title": "Add Error Context Fields",
+      "description": "Log HTTP method/path/statusCode, Supabase table/operation/status, user/tenant ID, error stack trace.",
+      "effort": "M (2 hours)",
+      "impact": "HIGH — enables faster diagnosis"
+    },
+    {
+      "tier": 3,
+      "title": "Metrics for Critical Paths",
+      "description": "Add histograms for haiku_api_response_time_ms, bridge_request_duration_ms. Add counters for supabase_errors, bridge_timeouts. Configure Vercel scrape.",
+      "effort": "M (6 hours)",
+      "impact": "MEDIUM — enables SLA monitoring and alerting"
+    }
+  ],
+  "gaps_not_audited": [
+    "Frontend error boundaries (React component errors silently fail)",
+    "Error reporting service integration (Sentry, Rollbar absent)",
+    "Health check endpoints (exist but don't report bridge/Anthropic API health)",
+    "Unhandled promise rejections (.catch(() => {}) silently swallows errors)"
+  ],
+  "conclusion": "Corner is NOT diagnosable in production. Operators cannot trace user-reported failures across service boundaries. Lack of correlation IDs and structured logging makes MTTR unacceptably high. Implement Tier 1 (structured logger + correlation IDs) immediately.",
+  "implementation_order": [
+    "Add structured logger + correlation ID generation + propagation (Tier 1, 8h total)",
+    "Add latency + error context logging (Tier 2, 4h total)",
+    "Add metrics instrumentation (Tier 3, 6h total)"
+  ]
+}

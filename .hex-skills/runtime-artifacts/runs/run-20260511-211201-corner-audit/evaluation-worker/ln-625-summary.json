@@ -1,0 +1,166 @@
+{
+  "audit_id": "ln-625",
+  "producer_skill": "ln-625-dependency-reuse-auditor",
+  "timestamp": "2026-05-11T22:15:00Z",
+  "project": "corner",
+  "repo_path": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+  "total_js_files": 319,
+  "status": "complete",
+  "findings": {
+    "dual_auth": {
+      "status": "active",
+      "firebase": {
+        "version": "10.14.1",
+        "import_count": 3,
+        "files": ["src/App.jsx"],
+        "usage": "auth (signInAnonymously, signInWithCustomToken) + firestore (addDoc, serverTimestamp)"
+      },
+      "supabase": {
+        "version": "2.99.2",
+        "import_count": 5,
+        "files": ["src/dashboard/lib/supabase.js", "api/ai-search.js", "api/town-managers/export.js", "api/members/[id].js"],
+        "usage": "database operations + REST API access"
+      },
+      "verdict": "Both SDKs actively used. Not legacy. Represents architectural debt.",
+      "risk": "high",
+      "maintenance_cost": "2x integration testing, state duplication risk, onboarding confusion"
+    },
+    "unused_dependencies": [
+      {
+        "package": "playwright",
+        "version": "1.58.2",
+        "import_count": 0,
+        "size_mb": 5,
+        "in_package_json": true,
+        "reason": "Was likely intended for test automation but never implemented",
+        "recommendation": "REMOVE_DEPENDENCY"
+      }
+    ],
+    "extraneous_dependencies": {
+      "status": "present",
+      "count": 8,
+      "packages": [
+        "pg@8.20.0",
+        "pg-cloudflare@1.3.0",
+        "pg-connection-string@2.12.0",
+        "pg-int8@1.0.1",
+        "pg-pool@3.13.0",
+        "pg-protocol@1.13.0",
+        "pg-types@2.2.0",
+        "pgpass@1.0.5",
+        "postgres-array@2.0.0",
+        "postgres-bytea@1.0.1",
+        "postgres-date@1.0.7",
+        "postgres-interval@1.2.0"
+      ],
+      "source": "transitive dependency bloat from @supabase/supabase-js",
+      "total_size_mb": 12,
+      "recommendation": "npm prune to clean after supabase upgrade/consolidation"
+    },
+    "version_status": {
+      "react": {
+        "current": "18.3.1",
+        "latest": "19.x",
+        "status": "ok",
+        "notes": "18.x stable and current; 19 exists but early adoption"
+      },
+      "vite": {
+        "current": "5.1.6",
+        "latest": "7.x",
+        "status": "outdated",
+        "lag": "2 major versions",
+        "notes": "Vite 7 released Q1 2026; upgrade path documented"
+      },
+      "tailwindcss": {
+        "current": "3.4.1",
+        "latest": "4.x",
+        "status": "outdated",
+        "lag": "1 major version",
+        "notes": "Tailwind 4 released Q2 2026; breaking changes in utility naming"
+      },
+      "react-router-dom": {
+        "current": "7.13.1",
+        "latest": "7.13.1",
+        "status": "current"
+      },
+      "framer-motion": {
+        "current": "11.18.2",
+        "latest": "11.x",
+        "status": "ok"
+      },
+      "firebase": {
+        "current": "10.14.1",
+        "latest": "10.x (11 available)",
+        "status": "ok"
+      },
+      "supabase": {
+        "current": "2.99.2",
+        "latest": "2.x",
+        "status": "ok"
+      }
+    },
+    "import_usage": {
+      "high_use": [
+        {"package": "lucide-react", "count": 63, "risk": "low", "status": "justified"},
+        {"package": "framer-motion", "count": 46, "risk": "low", "status": "justified"}
+      ],
+      "moderate_use": [
+        {"package": "marked", "count": 5, "risk": "low", "status": "justified"},
+        {"package": "html-to-image", "count": 2, "risk": "low", "status": "stable"}
+      ],
+      "light_use": [
+        {"package": "d3-force", "count": 1, "risk": "low", "status": "consider inline"},
+        {"package": "react-router-dom", "count": 26, "risk": "low", "status": "core"}
+      ]
+    },
+    "custom_utils": {
+      "status": "empty",
+      "utils_folder": "src/utils/",
+      "file_count": 0,
+      "duplication_risk": "none",
+      "notes": "No custom utility duplication; utilities embedded in components"
+    }
+  },
+  "recommendations": [
+    {
+      "priority": 1,
+      "action": "REMOVE_DEPENDENCY",
+      "package": "playwright",
+      "reason": "Zero imports, no test automation in place",
+      "effort": "trivial",
+      "impact": "save 5 MB from node_modules, reduce npm audit noise"
+    },
+    {
+      "priority": 2,
+      "action": "CLEAN",
+      "package": "npm prune",
+      "reason": "Drop extraneous postgres packages from Supabase transitive bloat",
+      "effort": "trivial",
+      "impact": "save 12 MB from node_modules, faster installs"
+    },
+    {
+      "priority": 3,
+      "action": "CONSOLIDATE",
+      "package": "Firebase vs Supabase",
+      "reason": "Both active; dual auth creates state duplication and testing burden",
+      "effort": "high",
+      "impact": "single source of truth for auth + DB; reduces cognitive load; cleaner architecture"
+    },
+    {
+      "priority": 4,
+      "action": "UPGRADE",
+      "package": "vite + tailwindcss",
+      "reason": "2 major versions behind; Vite 7 + Tailwind 4 current",
+      "effort": "high",
+      "impact": "access new features; better performance; reduced technical debt",
+      "schedule": "Q3 2026 planned"
+    }
+  ],
+  "severity": {
+    "critical": 1,
+    "high": 1,
+    "medium": 3,
+    "low": 8
+  },
+  "summary": "Corner has dual-auth architectural debt (Firebase + Supabase both active). One unused dependency (playwright). Transitive bloat from Supabase (12 MB postgres packages). Version lag on Vite (2 major) and Tailwind (1 major). No custom utility duplication risk. Medium-risk overall; consolidation decision is architectural and non-trivial."
+}

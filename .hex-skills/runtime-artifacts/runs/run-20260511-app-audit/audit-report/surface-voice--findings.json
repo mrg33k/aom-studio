@@ -1,0 +1,138 @@
+{
+  "audit_id": "surface-voice",
+  "surface": "Voice (Live Calls + Phone Recording)",
+  "audit_date": "2026-05-11",
+  "vision_source": "corner/VISION.md (opening ratification notes, R65+)",
+  "code_root": "aom-studio/src/dashboard",
+  "total_commitments_audited": 9,
+  "coverage": {
+    "built": 4,
+    "partial": 1,
+    "missing": 4,
+    "drifted": 0
+  },
+  "findings": [
+    {
+      "commitment": "Live voice calls persist across navigation",
+      "status": "BUILT",
+      "evidence": [
+        "src/dashboard/providers/LiveCallProvider.jsx:1-74 — top-level global provider wraps entire CornerV3 tree",
+        "src/dashboard/providers/LiveCallProvider.jsx:19 — session state managed at provider level",
+        "src/dashboard/providers/LiveCallProvider.jsx:54-70 — VoiceChat mounted in hidden div when session non-null; survives route changes"
+      ],
+      "notes": "Persistence mechanism is architecturally sound and confirmed via imports across codebase."
+    },
+    {
+      "commitment": "Floating call bar anchored to viewport bottom with agent name, status, mute, end controls",
+      "status": "BUILT",
+      "evidence": [
+        "src/dashboard/components/cv3/voice/FloatingCallBar.jsx:27-30 — fixed position bottom: 0, zIndex 500",
+        "src/dashboard/components/cv3/voice/FloatingCallBar.jsx:50 — agent name rendered via session.agentSlug",
+        "src/dashboard/components/cv3/voice/FloatingCallBar.jsx:7-12 — STATUS_LABELS for connecting/listening/speaking/error",
+        "src/dashboard/components/cv3/voice/FloatingCallBar.jsx:59-82 — mute button with toggle state",
+        "src/dashboard/components/cv3/voice/FloatingCallBar.jsx:83-94 — end button with red styling"
+      ],
+      "notes": "All affordances present. Pulsing indicator for listening/speaking states working."
+    },
+    {
+      "commitment": "Call ends only on explicit user action (no auto-hangup on nav)",
+      "status": "BUILT",
+      "evidence": [
+        "src/dashboard/providers/LiveCallProvider.jsx:31-36 — endCall() callback sets session to null only when called",
+        "src/dashboard/providers/LiveCallProvider.jsx:62-70 — onStatusChange listener in VoiceChat sets session null only when status === 'idle'",
+        "src/dashboard/components/cv3/voice/FloatingCallBar.jsx:83-94 — onClick={endCall} on End button"
+      ],
+      "notes": "Explicit end-only behavior confirmed. No cleanup tied to route change or nav away."
+    },
+    {
+      "commitment": "Phone recording mode accessible from dashboard nav",
+      "status": "BUILT",
+      "evidence": [
+        "src/dashboard/CornerV3.jsx:601-618 — phone icon in top-right nav actions (data-testid='nav-phone-icon')",
+        "src/dashboard/CornerV3.jsx:192 — phoneOverlayOpen state",
+        "src/dashboard/CornerV3.jsx:612 — onClick toggles recording and sets phoneOverlayOpen"
+      ],
+      "notes": "Icon placement in nav confirmed. Recording toggle wired to overlay visibility."
+    },
+    {
+      "commitment": "Phone recording overlay with states (recording, transcribing, done, error)",
+      "status": "PARTIAL",
+      "evidence": [
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:51-86 — recording state with pulse animation + timer",
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:89-102 — transcribing state with spinner",
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:105-125 — error state with message + close button",
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:128-143 — done state with transcript preview (truncated to 200 chars)"
+      ],
+      "gap": "Transcript preview is generic text only (line 140); no speaker labels, diarization markers, or structured metadata visible.",
+      "notes": "UI state machine is complete but diarization layer is absent from frontend."
+    },
+    {
+      "commitment": "Speaker diarization in recorded transcript",
+      "status": "MISSING",
+      "evidence": [
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:128-143 — transcript shown as plain string, no speaker field",
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:99 — generic 'Transcribing…' label",
+        "Grep search across all CV3 voice components: zero results for 'speaker', 'diarization', 'label'"
+      ],
+      "gap": "Vision explicitly requires 'speaker diarization' but zero implementation visible in frontend code or component state. Unclear if backend processes this and frontend simply doesn't display it.",
+      "notes": "Critical gap for launch product. A transcript without speaker labels is unusable for multi-person calls."
+    },
+    {
+      "commitment": "Multi-mission routing from single transcript",
+      "status": "MISSING",
+      "evidence": [
+        "src/dashboard/CornerV3.jsx:194 — useTelephone hook manages recording state only",
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx — no mission selector, no project picker, no intent parser",
+        "Grep search across CornerV3 + providers: zero results for 'mission', 'routing', 'destination' in phone-recording context"
+      ],
+      "gap": "Vision requires 'routes to right project/mission(s)' and 'can spawn multiple missions from one call'. No component, handler, or state management visible for this flow.",
+      "notes": "Transcript currently disappears after 2s auto-close with no downstream routing logic."
+    },
+    {
+      "commitment": "Auto-relocation if transcript recorded in wrong room",
+      "status": "MISSING",
+      "evidence": [
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:25-29 — auto-close after 2s with no routing",
+        "Grep search: zero results for 'relocation', 'move', 'reassign', 'destination' in phone-recording handlers",
+        "useTelephone hook does not expose any routing callback or post-process handler"
+      ],
+      "gap": "If user records in Project A but transcript should live in Project B, no mechanism exists to detect and move it.",
+      "notes": "Inferred from multi-mission routing vision commitment."
+    },
+    {
+      "commitment": "Post-call summary or transcript archive",
+      "status": "MISSING",
+      "evidence": [
+        "src/dashboard/components/cv3/phone-recording/PhoneRecordingOverlay.jsx:25-29 — onClose callback not wired to any task/message creation",
+        "src/dashboard/CornerV3.jsx:192-210 — useTelephone hook state not persisted or archived",
+        "Grep search across entire CV3 tree: zero results for 'archive', 'create-task', 'post-call', 'summary' in phone context"
+      ],
+      "gap": "Transcript is not surfaced as a task, message, or archived artifact visible in the dashboard after recording ends.",
+      "notes": "User records, sees preview, overlay closes — then what? No visible downstream action."
+    }
+  ],
+  "summary": {
+    "coverage_percentage": 44,
+    "top_3_gaps": [
+      {
+        "rank": 1,
+        "gap": "Speaker diarization missing from transcript UI",
+        "impact": "Recorded calls with multiple speakers are unlabeled, making them unusable for reference or routing decisions.",
+        "file_line": "PhoneRecordingOverlay.jsx:128-143, 99"
+      },
+      {
+        "rank": 2,
+        "gap": "Multi-mission routing not implemented",
+        "impact": "Single transcript cannot be routed to multiple projects/missions or intelligently assigned based on content intent.",
+        "file_line": "CornerV3.jsx:194, PhoneRecordingOverlay.jsx:onClose handlers"
+      },
+      {
+        "rank": 3,
+        "gap": "Post-call transcript disappears with no downstream action",
+        "impact": "Recordings are not archived, summarized, or linked to any project context. After 2s auto-close, the transcript is lost from user view.",
+        "file_line": "PhoneRecordingOverlay.jsx:25-29, CornerV3.jsx:192-210"
+      }
+    ],
+    "recommendation": "Before launch: clarify whether diarization + routing are backend-only (thus out of scope for this audit) or represent genuine feature gaps requiring frontend implementation. Current state supports recording but not post-processing. If post-processing is in-scope, all three gaps are blockers."
+  }
+}

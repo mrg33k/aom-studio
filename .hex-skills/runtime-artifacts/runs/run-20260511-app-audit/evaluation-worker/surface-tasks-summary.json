@@ -1,0 +1,122 @@
+{
+  "identifier": "surface-tasks",
+  "audit_date": "2026-05-11",
+  "surface": "Tasks View",
+  "vision_source": "corner/VISION.md lines 43-56",
+  "compliance": {
+    "built": 4,
+    "partial": 3,
+    "missing": 1,
+    "unknown": 1,
+    "total": 8,
+    "percent_compliance": 50
+  },
+  "findings": [
+    {
+      "commitment": "Living Paragraph as Story Narrative",
+      "vision_line": "48-49",
+      "status": "PARTIAL",
+      "evidence": {
+        "built": "LivingParagraphCard.jsx dual-source pattern with realtime subscription to events table",
+        "gap": "Template fallback (project-paragraph.js:87-98) is regex-based, lacks narrative voice"
+      },
+      "severity": "MEDIUM",
+      "file": "LivingParagraphCard.jsx:1-260",
+      "impact": "Users see engineer's log metrics instead of story when narrative cache is empty"
+    },
+    {
+      "commitment": "Event-Driven Composition",
+      "vision_line": "51-53",
+      "status": "BUILT",
+      "evidence": "project-narrative.js:3 triggered by daemon, LivingParagraphCard.jsx:81-107 realtime subscription",
+      "severity": "NONE",
+      "file": "project-narrative.js:1-85, LivingParagraphCard.jsx:81-107"
+    },
+    {
+      "commitment": "Project Narrative Quality Gates",
+      "vision_line": "54",
+      "status": "MISSING",
+      "evidence": "No quality enforcement, acceptance tests, or Ambition-standard baseline",
+      "severity": "HIGH",
+      "file": "project-paragraph.js (entire)",
+      "impact": "Quality unverified; fallback path quality uncontrolled"
+    },
+    {
+      "commitment": "All Tab Narrative Parity",
+      "vision_line": "55",
+      "status": "BUILT",
+      "evidence": "LivingParagraphCard.jsx:22-23 scope handling, project-paragraph.js:composeAll for 'all' scope",
+      "severity": "NONE",
+      "file": "LivingParagraphCard.jsx:22-23"
+    },
+    {
+      "commitment": "Task Status Names: Right Now / To Do / Schedule / Inbox / Done",
+      "vision_line": "implied product model",
+      "status": "PARTIAL",
+      "evidence": {
+        "found": ["Right Now (ActiveTasksSection.jsx:39)", "Inbox (WaitingTasksSection.jsx:34)", "Blocked (BlockedTasksSection.jsx:40)", "Done (DoneTasksSection.jsx:43)"],
+        "missing": ["To Do", "Schedule"]
+      },
+      "severity": "HIGH",
+      "file": "TasksPanel.jsx (missing imports for To Do / Schedule sections)",
+      "impact": "4 of 5 status buckets implemented; workflow incomplete"
+    },
+    {
+      "commitment": "Task Brief Accordion Expansion",
+      "vision_line": "implied interaction model",
+      "status": "UNKNOWN",
+      "evidence": "expandedTask state exists but brief rendering not confirmed in scope",
+      "severity": "MEDIUM",
+      "file": "useTasksPanel.js (partial)",
+      "impact": "Feature unclear; cannot verify or deny"
+    },
+    {
+      "commitment": "Project Cards as North Star",
+      "vision_line": "implied design model",
+      "status": "PARTIAL",
+      "evidence": "TaskDrawerProjectSummary only rendered when activeProject !== 'all' (TasksPanel.jsx:434)",
+      "severity": "MEDIUM",
+      "file": "TasksPanel.jsx:403-424, 434",
+      "impact": "North star hidden in All view; tenant-wide perspective loses project structure"
+    },
+    {
+      "commitment": "Weekly Stats: 7-day Bar Chart + Metrics",
+      "vision_line": "implied task view structure",
+      "status": "BUILT",
+      "evidence": "WeeklyStatsCard.jsx:43-88 bar chart + 3 metrics (Tasks, Pass Rate, Days Active)",
+      "severity": "NONE",
+      "file": "WeeklyStatsCard.jsx:1-94"
+    }
+  ],
+  "top_3_gaps": [
+    {
+      "rank": 1,
+      "gap": "Task Status Lifecycle Incomplete",
+      "severity": "HIGH",
+      "description": "Missing To Do and Schedule status sections. Vision calls for 5-bucket lifecycle; only 4 implemented.",
+      "file": "TasksPanel.jsx",
+      "impact": "Users cannot distinguish queued vs scheduled tasks; workflow incomplete"
+    },
+    {
+      "rank": 2,
+      "gap": "Narrative Quality Unverified",
+      "severity": "HIGH",
+      "description": "Template fallback generates regex-based summaries lacking narrative voice. No quality gates or Ambition-standard verification.",
+      "file": "project-paragraph.js:87-98",
+      "impact": "Fallback path (user-facing when daemon stale) reads as engineer's log, violates vision"
+    },
+    {
+      "rank": 3,
+      "gap": "Project North Star Hidden in All View",
+      "severity": "MEDIUM",
+      "description": "Project cards conditionally hidden when activeProject === 'all'. Tenant-wide view has no per-project summary.",
+      "file": "TasksPanel.jsx:434",
+      "impact": "Tenant-wide perspective loses project structure visibility"
+    }
+  ],
+  "recommendations": [
+    "Implement To Do / Schedule sections as distinct task status columns",
+    "Add narrative quality gates: A/B test fallback template vs LLM path, measure user satisfaction, gate behind quality threshold",
+    "Show project summary in All view: render rolled-up project-cards grid (active, queued, shipped per project) alongside tenant-wide paragraph"
+  ]
+}

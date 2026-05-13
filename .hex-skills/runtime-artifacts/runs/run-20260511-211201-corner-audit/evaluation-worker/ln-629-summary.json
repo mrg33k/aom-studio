@@ -1,0 +1,139 @@
+{
+  "runId": "run-20260511-corner-audit",
+  "worker": "ln-629",
+  "identifier": "runtime-lifecycle-config",
+  "timestamp": "2026-05-11T00:00:00Z",
+  "codebase": "Corner (aom-studio)",
+  "deploymentType": "Vercel serverless SPA + API routes",
+  "score": 3.5,
+  "maxScore": 10,
+  "category": "Runtime Lifecycle & Config Validation",
+  "status": "INCOMPLETE_PRODUCTION_READY",
+  "checks": {
+    "bootstrap_order": {
+      "status": "PASS",
+      "severity": "MEDIUM",
+      "score": 2,
+      "finding": "Proper initialization sequence in frontend (AuthGuard) and API routes. Supabase client initialized before routes. However, frontend permits missing Supabase (graceful fallback for local dev) which masks config issues in CI/staging.",
+      "files": [
+        "src/main.jsx:97-190",
+        "api/dashboard/supabase-messages.js:6-8",
+        "scripts/generate-briefs-index.js:24-41"
+      ]
+    },
+    "graceful_shutdown": {
+      "status": "FAIL",
+      "severity": "HIGH",
+      "score": 0,
+      "finding": "No process.on('SIGTERM') or process.on('SIGINT') handlers found. Vercel serverless manages termination automatically (acceptable for current deployment), but long-running deployments would require shutdown handlers.",
+      "action": "FIX_SHUTDOWN",
+      "effort": "M",
+      "recommendation": "Add SIGTERM/SIGINT handlers if moving to VM/Kubernetes. Document Vercel-specific lifecycle management."
+    },
+    "resource_cleanup": {
+      "status": "FAIL",
+      "severity": "HIGH",
+      "score": 0,
+      "finding": "No explicit resource cleanup. Supabase client is a singleton (src/dashboard/lib/supabase.js:12-14) never explicitly closed. No database connection pooling management.",
+      "action": "FIX_SHUTDOWN",
+      "effort": "S-M",
+      "recommendation": "Add cleanup logic on shutdown: call supabase.auth.signOut(), verify no lingering subscriptions."
+    },
+    "signal_handling": {
+      "status": "FAIL",
+      "severity": "HIGH",
+      "score": 0,
+      "finding": "No signal handlers (SIGTERM, SIGINT, SIGHUP) detected outside node_modules. Vercel functions do not receive direct signals, but long-running deployments require this.",
+      "action": "FIX_SHUTDOWN",
+      "effort": "S",
+      "recommendation": "Add signal handlers for long-running deployments. Not critical for Vercel serverless."
+    },
+    "probes": {
+      "status": "FAIL",
+      "severity": "MEDIUM",
+      "score": 0,
+      "finding": "No /health or /ready endpoints. supabase-status.js is a data endpoint, not a health probe. Vercel serverless does not require probes, but Kubernetes/load balancers cannot detect readiness.",
+      "action": "ADD_CONFIG_VALIDATION",
+      "effort": "S",
+      "recommendation": "Add /api/health (liveness) and /api/ready (readiness) endpoints. Lightweight checks suitable for monitoring and orchestration."
+    },
+    "startup_config_validation": {
+      "status": "MIXED",
+      "severity": "HIGH",
+      "score": 1.5,
+      "finding": "Inconsistent validation: frontend gracefully degrades when Supabase missing (local dev permissive), API routes fail-fast in some endpoints (supabase-messages.js:48-50, create-world.js:32-34) and graceful in others (haiku-chat.js:411-415). Prebuild script exits gracefully if AOM-EA missing (generate-briefs-index.js:38-40). No centralized startup config validation.",
+      "action": "ADD_CONFIG_VALIDATION",
+      "effort": "M",
+      "recommendation": "Create api/_lib/validateConfig.js with fail-fast pattern. Call in startup route or middleware. Update frontend AuthGuard to fail-fast in production (NODE_ENV check).",
+      "files": [
+        "src/main.jsx:163-166",
+        "api/dashboard/supabase-messages.js:48-50",
+        "api/dashboard/create-world.js:32-34",
+        "api/dashboard/haiku-chat.js:411-415",
+        "scripts/generate-briefs-index.js:38-40"
+      ]
+    }
+  },
+  "issuesSummary": {
+    "total": 8,
+    "critical": 0,
+    "high": 4,
+    "medium": 3,
+    "low": 1
+  },
+  "topGaps": [
+    {
+      "rank": 1,
+      "title": "No graceful shutdown handlers",
+      "severity": "HIGH",
+      "impact": "Requests in-flight during SIGTERM are aborted; Supabase connections close ungracefully.",
+      "currentState": "Vercel auto-terminates (acceptable for serverless), but long-running deployments need this."
+    },
+    {
+      "rank": 2,
+      "title": "No health/ready probe endpoints",
+      "severity": "MEDIUM",
+      "impact": "Load balancers and orchestrators cannot detect readiness or liveness.",
+      "currentState": "Not critical for Vercel, but required for Kubernetes/auto-scaling."
+    },
+    {
+      "rank": 3,
+      "title": "Inconsistent config validation",
+      "severity": "HIGH",
+      "impact": "Frontend permits missing Supabase (masks issues in CI/staging). API routes inconsistently fail-fast vs. graceful degrade.",
+      "currentState": "No centralized startup check; validation scattered across endpoints."
+    },
+    {
+      "rank": 4,
+      "title": "No signal handlers",
+      "severity": "HIGH",
+      "impact": "Process terminates abruptly on SIGTERM/SIGINT; no opportunity for cleanup.",
+      "currentState": "Not critical for Vercel serverless, but required for VM/Kubernetes."
+    },
+    {
+      "rank": 5,
+      "title": "Frontend gracefully falls back when Supabase missing",
+      "severity": "MEDIUM",
+      "impact": "Intentional for local dev, but masks config issues in staging/CI environments.",
+      "currentState": "AuthGuard permits missing Supabase (main.jsx:163-166)."
+    }
+  ],
+  "productionReadiness": {
+    "verdict": "INCOMPLETE",
+    "vercelDeployment": "ACCEPTABLE",
+    "kubernetesDeployment": "REQUIRES_WORK",
+    "notes": "Vercel serverless handles shutdown/termination automatically, so HIGH gaps are acceptable for current deployment. If Corner moves to long-running VM or Kubernetes, all HIGH items must be addressed. Probes are recommended even for Vercel (monitoring + visibility)."
+  },
+  "implementationEffort": {
+    "immediate": "S (1-2 hours: add probe endpoints + centralized config validation)",
+    "shortTerm": "M (4-6 hours: add signal handlers + resource cleanup if moving off Vercel)",
+    "longTerm": "M (Kubernetes lifecycle support if deployment target changes)"
+  },
+  "nextSteps": [
+    "Add /api/health and /api/ready endpoints",
+    "Create api/_lib/validateConfig.js with fail-fast pattern",
+    "Update frontend AuthGuard to fail-fast in production environments",
+    "Document Vercel-specific lifecycle management",
+    "Add SIGTERM/SIGINT handlers if moving to long-running deployments"
+  ]
+}
