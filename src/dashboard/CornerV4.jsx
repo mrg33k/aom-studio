@@ -715,6 +715,11 @@ export default function CornerV4() {
         selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
         onSelectAgent={handleSelectAgent}
         onSelectProject={handleSelectProject}
+        onSelectMission={(_mission, project) => {
+          // R6.1: route to the project's chat. R6.2 will additionally
+          // attach the mission as a context chip on the composer.
+          handleSelectProject(project)
+        }}
         onLogout={async () => {
           if (supabase) await supabase.auth.signOut().catch(() => {})
           window.location.href = '/'
