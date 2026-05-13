@@ -790,58 +790,172 @@ export default function MessageList({ roomType = 'agent' }) {
                     const isMulti = atts.length > 1
                     const items = atts.map((att, attIdx) => {
                       const isImage = att.mime && att.mime.startsWith('image/')
+                      const openAttachment = () => {
+                        if (!att.url) return
+                        try { window.open(att.url, '_blank', 'noopener,noreferrer') } catch (_) {}
+                      }
                       if (isImage) {
                         return (
                           <div
                             key={attIdx}
+                            role="button"
+                            tabIndex={0}
+                            title={att.name || 'Open image'}
+                            onClick={openAttachment}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAttachment() } }}
                             style={{
                               alignSelf: isUser ? 'flex-end' : 'flex-start',
                               borderRadius: 16, overflow: 'hidden',
                               maxWidth: '70%', cursor: 'pointer',
-                              transition: 'transform 0.15s',
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)' }}
-                            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.transform = 'scale(1.02)'
+                              e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.35)'
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.transform = 'scale(1)'
+                              e.currentTarget.style.boxShadow = 'none'
+                            }}
                           >
-                            <img src={att.url} alt="" style={{ width: '100%', display: 'block', borderRadius: 16 }} />
+                            <img src={att.url} alt={att.name || ''} style={{ width: '100%', display: 'block', borderRadius: 16 }} />
                           </div>
                         )
                       }
+                      // ─── Non-image: polished, clickable file card ───
+                      const ext = (att.name ? att.name.split('.').pop() : '').toLowerCase()
+                      const EXT_COLORS = {
+                        pdf: C.red,
+                        doc: C.blue, docx: C.blue, rtf: C.blue,
+                        xls: C.green, xlsx: C.green, csv: C.green, numbers: C.green,
+                        ppt: C.orange, pptx: C.orange, keynote: C.orange,
+                        zip: C.orange, rar: C.orange, tar: C.orange, gz: C.orange,
+                        mp3: C.purple, wav: C.purple, m4a: C.purple, aac: C.purple, flac: C.purple,
+                        mp4: C.pink, mov: C.pink, webm: C.pink, mkv: C.pink, avi: C.pink,
+                        txt: C.muted, md: C.muted, log: C.muted,
+                        json: C.teal, yml: C.teal, yaml: C.teal, xml: C.teal, html: C.teal,
+                        js: C.yellow, jsx: C.yellow, ts: C.yellow, tsx: C.yellow, py: C.yellow,
+                      }
+                      const tagColor = EXT_COLORS[ext] || C.accent
+                      const fileSizeLabel = att.size == null ? null
+                        : att.size < 1024
+                          ? `${att.size} B`
+                          : att.size < 1024 * 1024
+                            ? `${Math.round(att.size / 1024)} KB`
+                            : `${(att.size / (1024 * 1024)).toFixed(1)} MB`
                       return (
                         <div
                           key={attIdx}
+                          role="button"
+                          tabIndex={0}
+                          title={att.name ? `Open ${att.name}` : 'Open attachment'}
+                          onClick={openAttachment}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAttachment() } }}
                           style={{
                             alignSelf: isUser ? 'flex-end' : 'flex-start',
-                            background: C.s2, border: '1px solid ' + C.border,
-                            borderRadius: 14, padding: '10px 14px',
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            maxWidth: '75%', cursor: 'pointer',
+                            background: `linear-gradient(180deg, ${C.s2}, ${C.s1})`,
+                            border: `1px solid ${C.border2}`,
+                            borderRadius: 16,
+                            padding: '12px 14px',
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            maxWidth: 320, minWidth: 220,
+                            cursor: 'pointer',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+                            boxShadow: '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-1px)'
+                            e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 18px rgba(0,0,0,0.4)'
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+                            const hint = e.currentTarget.querySelector('[data-open-hint]')
+                            if (hint) hint.style.opacity = '1'
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)'
+                            e.currentTarget.style.borderColor = C.border2
+                            const hint = e.currentTarget.querySelector('[data-open-hint]')
+                            if (hint) hint.style.opacity = '0'
                           }}
                         >
+                          {/* Document icon block with extension ribbon */}
                           <div style={{
-                            width: 36, height: 36, borderRadius: 10,
-                            background: C.accentBg,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0, color: C.accent,
-                            fontSize: 11, fontWeight: 800,
-                            fontFamily: "'JetBrains Mono', monospace",
+                            position: 'relative',
+                            width: 44, height: 52, flexShrink: 0,
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))',
                           }}>
-                            {att.name ? att.name.split('.').pop().toUpperCase().slice(0, 4) : 'FILE'}
+                            <svg viewBox="0 0 44 52" width="44" height="52" aria-hidden="true">
+                              <defs>
+                                <linearGradient id={`docGrad-${msg.id}-${attIdx}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="rgba(255,255,255,0.10)" />
+                                  <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+                                </linearGradient>
+                              </defs>
+                              <path
+                                d="M6 2 H28 L40 14 V46 a4 4 0 0 1 -4 4 H6 a4 4 0 0 1 -4 -4 V6 a4 4 0 0 1 4 -4 z"
+                                fill={`url(#docGrad-${msg.id}-${attIdx})`}
+                                stroke="rgba(255,255,255,0.18)"
+                                strokeWidth="1"
+                              />
+                              <path
+                                d="M28 2 V14 H40"
+                                fill="none"
+                                stroke="rgba(255,255,255,0.22)"
+                                strokeWidth="1"
+                              />
+                              {/* Extension ribbon */}
+                              <rect x="2" y="30" width="36" height="14" rx="3" fill={tagColor} />
+                              <text
+                                x="20" y="40"
+                                textAnchor="middle"
+                                fontFamily="'JetBrains Mono', ui-monospace, monospace"
+                                fontSize="8"
+                                fontWeight="800"
+                                fill="#0B1018"
+                                letterSpacing="0.04em"
+                              >
+                                {ext ? ext.toUpperCase().slice(0, 5) : 'FILE'}
+                              </text>
+                            </svg>
                           </div>
+                          {/* Filename + size */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
-                              fontSize: 13, fontWeight: 600,
+                              fontSize: 13, fontWeight: 600, color: C.text,
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                              lineHeight: 1.25,
                             }}>
                               {att.name || 'Attached file'}
                             </div>
-                            {att.size != null && (
-                              <div style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
-                                {att.size < 1024 * 1024
-                                  ? `${Math.round(att.size / 1024)} KB`
-                                  : `${(att.size / (1024 * 1024)).toFixed(1)} MB`}
-                              </div>
-                            )}
+                            <div style={{
+                              marginTop: 2,
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              fontSize: 10, color: C.muted,
+                              fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                              letterSpacing: '0.02em',
+                            }}>
+                              {fileSizeLabel && <span>{fileSizeLabel}</span>}
+                              {fileSizeLabel && <span style={{ opacity: 0.5 }}>·</span>}
+                              <span style={{ color: tagColor, fontWeight: 700 }}>
+                                {ext ? ext.toUpperCase() : 'FILE'}
+                              </span>
+                            </div>
+                          </div>
+                          {/* Open affordance, fades in on hover */}
+                          <div
+                            data-open-hint
+                            style={{
+                              flexShrink: 0,
+                              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                              color: C.text2, opacity: 0, transition: 'opacity 0.15s ease',
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                            }}
+                          >
+                            OPEN
+                            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                              <path d="M2 8 L8 2 M4 2 H8 V6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                           </div>
                         </div>
                       )
