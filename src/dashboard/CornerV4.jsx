@@ -551,7 +551,7 @@ export default function CornerV4() {
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
         [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
-        [data-shell="cv4"] [data-role="thread-header"] { display: none; }
+        [data-shell="cv4"] [data-role="thread-header"] { display: none !important; }
       `}</style>
 
       {/* ── NAV BAR (R5.1 Phase F: slim top row — logo + bell + avatar) ───
@@ -638,6 +638,11 @@ export default function CornerV4() {
         onToggleDrawer={() => setDrawerOpen(o => !o)}
         selectedAgent={selectedAgent}
         conversationTarget={conversationTarget}
+        agents={agents}
+        projects={projectRooms}
+        onSelectAgent={handleSelectAgent}
+        onSelectProject={handleSelectProject}
+        worldId={worldId}
       />
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}

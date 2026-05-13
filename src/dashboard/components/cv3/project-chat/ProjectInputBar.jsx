@@ -118,7 +118,22 @@ export default function ProjectInputBar() {
         <ReplyToChip target={replyTo} onDismiss={() => setReplyTo(null)} />
       )}
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
-      <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
+      <div style={{
+        position: 'relative',
+        maxWidth: isCv4 ? 612 : 560,
+        margin: '0 auto',
+        display: isCv4 ? 'flex' : 'block',
+        alignItems: 'center',
+        gap: isCv4 ? 8 : 0,
+      }}>
+        {isCv4 && (
+          <ComposerCommandsMenu
+            open={commandsOpen}
+            setOpen={setCommandsOpen}
+            setSelectedImageTool={setSelectedImageTool}
+          />
+        )}
+        <div style={{ flex: isCv4 ? 1 : undefined, minWidth: 0, position: 'relative' }}>
         <SlashCommandAutocomplete
           value={input}
           setValue={setInput}
@@ -195,15 +210,10 @@ export default function ProjectInputBar() {
                 </svg>
               )}
             </button>
-            {/* Commands — CV4 wires this to the vertical commands menu (image
-                gen, etc.). CV3 keeps the inert chevron until promotion. */}
-            {isCv4 ? (
-              <ComposerCommandsMenu
-                open={commandsOpen}
-                setOpen={setCommandsOpen}
-                setSelectedImageTool={setSelectedImageTool}
-              />
-            ) : (
+            {/* CV4 hoists the Commands button OUTSIDE the pill (purple
+                sparkles icon, left of the pill). CV3 keeps the inert
+                chevron until promotion. */}
+            {!isCv4 && (
               <button title="Commands" onClick={() => {}} style={{
                 width: 36, height: 36, borderRadius: '50%',
                 background: 'none', border: 'none',
@@ -291,6 +301,7 @@ export default function ProjectInputBar() {
               )}
             </button>
           )}
+        </div>
         </div>
       </div>
     </div>
