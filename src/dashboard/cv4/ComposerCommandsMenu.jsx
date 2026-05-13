@@ -42,7 +42,7 @@ export default function ComposerCommandsMenu({
   const wrapRef = useRef(null)
   const [view, setView] = useState('root')
 
-  const { selectedAgent, agents, worldId, resetExchangeCount } = useChatCore()
+  const { selectedAgent, selectedProject, agents, worldId, resetExchangeCount } = useChatCore()
   const { setMessages } = useChatMessagesCtx()
   const { isRecording, handleMicToggle } = useChatRecordingCtx()
   const {
@@ -50,6 +50,7 @@ export default function ComposerCommandsMenu({
     settingsOpen, setSettingsOpen,
     profileOpen, setProfileOpen,
     recipesOpen, setRecipesOpen,
+    canonFilesOpen, setCanonFilesOpen,
   } = useChatSettingsCtx()
 
   const selectedAgentRecord = agents?.find(a => String(a?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
@@ -140,6 +141,7 @@ export default function ComposerCommandsMenu({
           {view === 'root' && (
             <>
               <MenuHeader>Commands</MenuHeader>
+              {/* 1. Image generation */}
               <MenuRow
                 icon={<ImageIcon />}
                 label="Image generation"
@@ -148,23 +150,70 @@ export default function ComposerCommandsMenu({
                 onClick={() => setView('image-gen')}
                 testid="cv4-commands-image-gen"
               />
-              {hasAgent && (
-                <MenuRow
-                  icon={<InfoIcon />}
-                  label={`About ${selectedAgent.name}`}
-                  onClick={() => { setProfileOpen(o => !o); setOpen(false) }}
-                  active={profileOpen}
-                  testid={`cv4-commands-info-${selectedAgent.slug}`}
-                />
-              )}
+              {/* 2. Record conversation */}
               <MenuRow
                 icon={<PhoneIcon recording={isRecording} />}
-                label={isRecording ? 'Stop recording' : 'Record voice message'}
+                label={isRecording ? 'Stop recording' : 'Record conversation'}
                 onClick={() => { handleMicToggle?.(); setOpen(false) }}
                 active={isRecording}
                 tint={isRecording ? '#EF4444' : null}
                 testid="cv4-commands-phone"
               />
+              {/* 3. Recipes (agent-scoped) */}
+              {hasAgent && (
+                <MenuRow
+                  icon={<FlaskIcon />}
+                  label="Recipes"
+                  detail={`What ${selectedAgent.name} can run`}
+                  onClick={() => { setRecipesOpen(o => !o); setOpen(false) }}
+                  active={recipesOpen}
+                  tint={recipesOpen ? '#F9A8D4' : null}
+                  testid={`cv4-commands-recipes-${selectedAgent.slug}`}
+                />
+              )}
+              {/* 4. Files in this chat */}
+              <MenuRow
+                icon={<FilesIcon />}
+                label="Files in this chat"
+                onClick={() => { setFilesOpen(o => !o); setOpen(false) }}
+                active={filesOpen}
+                testid="cv4-commands-files"
+              />
+              {/* 4b. Integrations — opens the IntegrationsModal owned by
+                   ThreadInputBar / ProjectInputBar via a global event. */}
+              <MenuRow
+                icon={<PlugIcon />}
+                label="Integrations"
+                detail="Connect tools and accounts"
+                onClick={() => {
+                  try { window.dispatchEvent(new Event('cv4:open-integrations')) } catch (_) {}
+                  setOpen(false)
+                }}
+                testid="cv4-commands-integrations"
+              />
+              {/* 5. About <room name> — agent name in agent chat,
+                   project name in project chat. Agents open the
+                   AgentProfileOverlay; projects open the canon-files panel
+                   (VISION/BUILD/CONTEXT/etc.) which is the canonical
+                   "more info about this project" surface. */}
+              {(hasAgent || selectedProject?.name) && (
+                <MenuRow
+                  icon={<InfoIcon />}
+                  label={`About ${selectedAgent?.name || selectedProject?.name}`}
+                  onClick={() => {
+                    if (hasAgent) {
+                      setProfileOpen(o => !o)
+                    } else {
+                      setCanonFilesOpen(o => !o)
+                    }
+                    setOpen(false)
+                  }}
+                  active={hasAgent ? profileOpen : canonFilesOpen}
+                  testid={`cv4-commands-info-${selectedAgent?.slug || selectedProject?.slug || 'room'}`}
+                />
+              )}
+              {/* Super-agent only: clear context. Kept available but rendered
+                  as a quieter destructive option above settings. */}
               {hasAgent && isSuperAgent && (
                 clearStage === 'confirm' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px' }}>
@@ -197,31 +246,42 @@ export default function ComposerCommandsMenu({
                   />
                 )
               )}
-              <MenuRow
-                icon={<FilesIcon />}
-                label="Files in this chat"
-                onClick={() => { setFilesOpen(o => !o); setOpen(false) }}
-                active={filesOpen}
-                testid="cv4-commands-files"
-              />
-              {hasAgent && (
-                <MenuRow
-                  icon={<FlaskIcon />}
-                  label="Recipes"
-                  detail={`What ${selectedAgent.name} can run`}
-                  onClick={() => { setRecipesOpen(o => !o); setOpen(false) }}
-                  active={recipesOpen}
-                  tint={recipesOpen ? '#F9A8D4' : null}
-                  testid={`cv4-commands-recipes-${selectedAgent.slug}`}
-                />
-              )}
-              <MenuRow
-                icon={<SettingsIcon />}
-                label="Settings"
+              {/* Footer rule before Settings — visually demotes it to a
+                  utility row that fits the brutalist drawer aesthetic. */}
+              <div style={{
+                height: 1, background: 'rgba(255,255,255,0.06)',
+                margin: '6px 8px',
+              }} />
+              {/* 6. Settings — styled as a quieter footer row in monospace
+                  caps to match the rest of the CV4 chrome. */}
+              <button
+                type="button"
+                data-testid="cv4-commands-settings"
                 onClick={() => { setSettingsOpen(o => !o); setOpen(false) }}
-                active={settingsOpen}
-                testid="cv4-commands-settings"
-              />
+                style={{
+                  width: '100%',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 10px',
+                  background: settingsOpen ? 'rgba(255,255,255,0.04)' : 'none',
+                  border: 'none', borderRadius: 8,
+                  color: C.muted,
+                  cursor: 'pointer', textAlign: 'left',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11, fontWeight: 700,
+                  letterSpacing: '0.10em', textTransform: 'uppercase',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = C.text }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = settingsOpen ? 'rgba(255,255,255,0.04)' : 'none'; e.currentTarget.style.color = C.muted }}
+              >
+                <span style={{
+                  width: 22, height: 22,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'inherit', flexShrink: 0,
+                }}>
+                  <SettingsIcon />
+                </span>
+                <span style={{ flex: 1 }}>Settings</span>
+              </button>
             </>
           )}
           {view === 'image-gen' && (
@@ -368,6 +428,16 @@ function FilesIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+  )
+}
+
+function PlugIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 2v6"/><path d="M15 2v6"/>
+      <path d="M6 8h12v3a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z"/>
+      <path d="M12 16v6"/>
     </svg>
   )
 }

@@ -86,9 +86,16 @@ function compressAvatar(file) {
 export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
   const initial = user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
   const avatarUrl = user?.user_metadata?.avatar_url
+  // CV4 renders the popover as a center-screen hero modal. On CV4 we hide
+  // the horizontal avatar+name strip and surface a large avatar at the top
+  // of the panel. CV3 keeps its original compact dropdown layout.
+  // R7.21 cutover: /dashboard now renders CV4 too, so "cv4 mode" is anywhere
+  // EXCEPT the /cv3 escape-hatch path.
+  const isCv4 = typeof window !== 'undefined' && !window.location.pathname.startsWith('/cv3')
 
   const [open, setOpen] = useState(false)
   const [nameInput, setNameInput] = useState('')
+  const [editingName, setEditingName] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const popoverRef = useRef(null)
@@ -169,8 +176,22 @@ export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
         }
       </div>
 
+      {/* CV4: backdrop turns visible and full-screen via [data-shell="cv4"]
+          CSS so the popover reads as a center-screen home-base modal. In CV3
+          it's a no-op (pointer-events:none + opacity:0). */}
       {open && (
-        <div style={{
+        <div
+          data-cv4-profile-backdrop
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9998,
+            pointerEvents: 'none', opacity: 0,
+            background: 'rgba(0,0,0,0)', transition: 'opacity 0.15s',
+          }}
+        />
+      )}
+      {open && (
+        <div data-cv4-profile-popover style={{
           position: 'absolute',
           top: 36,
           right: 0,
@@ -182,7 +203,149 @@ export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
           zIndex: 9999,
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
+          {/* CV4 hero block: large centered avatar + display name + small
+              Edit / Change / Generate row. Replaces the cv3 horizontal strip. */}
+          {isCv4 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div
+                onClick={() => fileRef.current?.click()}
+                style={{
+                  width: 104, height: 104, borderRadius: 4, flexShrink: 0,
+                  background: avatarUrl ? 'transparent' : `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden', cursor: 'pointer', position: 'relative',
+                }}
+              >
+                {uploading ? (
+                  <div style={{ width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.2)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                ) : avatarUrl ? (
+                  <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: 44, fontWeight: 700, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{initial}</span>
+                )}
+              </div>
+              {/* Name displayed as text by default; "Edit" toggles the input. */}
+              {!editingName ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{
+                    fontSize: 18, fontWeight: 700, color: C.text,
+                    fontFamily: "'Inter', sans-serif", textAlign: 'center',
+                  }}>
+                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'You'}
+                  </div>
+                  <button
+                    onClick={() => setEditingName(true)}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      padding: 0,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.10em',
+                      textTransform: 'uppercase', color: C.muted,
+                    }}
+                  >
+                    Edit name
+                  </button>
+                </div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  <input
+                    autoFocus
+                    value={nameInput}
+                    onChange={e => setNameInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { handleSave(); setEditingName(false) }
+                      if (e.key === 'Escape') setEditingName(false)
+                    }}
+                    style={{
+                      width: '100%', padding: '8px 10px',
+                      fontSize: 14, fontFamily: "'Inter', sans-serif",
+                      color: C.text, background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.10)', borderRadius: 2,
+                      outline: 'none', boxSizing: 'border-box', textAlign: 'center',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button
+                      onClick={() => { handleSave(); setEditingName(false) }}
+                      disabled={saving || !nameInput.trim()}
+                      style={{
+                        flex: 1, padding: '7px 0',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
+                        textTransform: 'uppercase',
+                        color: C.text, background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.12)', borderRadius: 2,
+                        cursor: saving || !nameInput.trim() ? 'default' : 'pointer',
+                      }}
+                    >{saving ? 'Saving…' : 'Save'}</button>
+                    <button
+                      onClick={() => setEditingName(false)}
+                      style={{
+                        flex: 1, padding: '7px 0',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
+                        textTransform: 'uppercase',
+                        color: C.muted, background: 'transparent',
+                        border: '1px solid rgba(255,255,255,0.10)', borderRadius: 2,
+                        cursor: 'pointer',
+                      }}
+                    >Cancel</button>
+                  </div>
+                </div>
+              )}
+              {/* Change / Generate avatar row */}
+              {!editingName && (
+                <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.10em',
+                      textTransform: 'uppercase', color: C.accent,
+                    }}
+                  >{uploading ? 'Uploading…' : avatarUrl ? 'Change photo' : 'Upload photo'}</button>
+                  <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: 10, lineHeight: '14px' }}>|</span>
+                  <button
+                    onClick={async () => {
+                      if (!user?.id) return
+                      setUploading(true)
+                      const name = user?.user_metadata?.full_name || user?.email || 'User'
+                      const base64 = generateAvatar(name + Date.now())
+                      try {
+                        const res = await fetch('/api/dashboard/avatar', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ user_id: user.id, image_base64: base64, mime_type: 'image/jpeg' }),
+                        })
+                        const data = await res.json()
+                        if (data.avatar_url) {
+                          const { data: refreshed } = await supabase.auth.refreshSession()
+                          if (refreshed?.user && onUserUpdate) onUserUpdate(refreshed.user)
+                        }
+                      } catch {}
+                      setUploading(false)
+                    }}
+                    disabled={uploading}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.10em',
+                      textTransform: 'uppercase', color: C.muted,
+                    }}
+                  >Generate</button>
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
+            </div>
+          )}
           {extraMenuItems}
+          {/* CV3 — original horizontal avatar strip. CV4 swaps to the hero
+              block above; the cv3 strip + name-edit input below are hidden
+              via the isCv4 short-circuit so CV3 visuals are untouched. */}
+          {!isCv4 && (<>
           {/* Avatar upload */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
             <div
@@ -294,6 +457,7 @@ export default function UserAvatar({ user, onUserUpdate, extraMenuItems }) {
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
+          </>)}
           <div style={{ borderTop: `1px solid ${C.border2}`, marginTop: 12, paddingTop: 10 }}>
             <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
               {user?.email}

@@ -4,6 +4,14 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
+import { injectThemeVars } from './dashboard/lib/cv3Colors.js'
+
+// Bind CSS-variable palettes before first paint so every `C.bg` etc.
+// resolves. The active palette is keyed off <html data-theme>, which
+// `useThemeMode` (and the legacy CornerV4 moon toggle, which now
+// routes through the hook) keeps in sync with the Arizona clock + the
+// user override stored in localStorage.
+injectThemeVars()
 // Everything else lazy-loaded so non-home routes don't bloat the main bundle.
 const Login = lazy(() => import('./pages/Login.jsx'))
 const ChangePassword = lazy(() => import('./pages/ChangePassword.jsx'))
@@ -265,7 +273,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/onboarding/voice" element={<OnboardingVoice />} />
           <Route path="/accept-invite" element={<AcceptInvite />} />
-          {/* /dashboard now renders CV4. CV3 is reachable at /dashboard/cv3 for fallback. */}
+          {/* R7.21 CUTOVER: /dashboard now renders CV4. /cv3 keeps CornerV3
+              available as an escape hatch — visit /cv3 (or /cv3/project/:id)
+              for the legacy shell. /cv4 paths are preserved (alias to CV4)
+              so links & worker phonebooks that still point at /cv4 keep
+              working through the transition. /dashboard/cv3 also keeps
+              CornerV3 mounted as a sub-route escape hatch. */}
           <Route path="/dashboard" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/dashboard/welcome" element={<AuthGuard><DashboardWelcome /></AuthGuard>} />
           <Route path="/dashboard/settings/invites" element={<AuthGuard><DashboardSettingsInvites /></AuthGuard>} />
@@ -277,11 +290,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
-          {/* CV4 WD-40 design playground — mirrors /dashboard, iterates toward convention-first shell. */}
+          {/* CV4 alias paths (kept during transition) */}
           <Route path="/cv4" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          {/* CV3 escape hatch — rollback path during R7.21 transition. */}
+          <Route path="/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/cv3/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/cv3/projects/:projectId/chat" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/cv3/projects/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
         </Routes>
       </Suspense>
     </BrowserRouter>

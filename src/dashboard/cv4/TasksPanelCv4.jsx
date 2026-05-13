@@ -17,9 +17,8 @@ import { useTasksPanel } from '../components/cv3/tasks/useTasksPanel.js'
 import { TasksPanelProvider, useTasksPanelCtx } from '../components/cv3/tasks/TasksPanelContext.jsx'
 import { TaskContextMenu } from '../components/cv3/ContextMenu.jsx'
 
-import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from '../components/cv3/tasks/FilesSection.jsx'
+import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection, CANON_ICONS } from '../components/cv3/tasks/FilesSection.jsx'
 import LivingParagraphCard from '../components/cv3/tasks/LivingParagraphCard.jsx'
-import TaskInputBar from '../components/cv3/tasks/TaskInputBar.jsx'
 import CreateProjectModal from '../components/cv3/tasks/CreateProjectModal.jsx'
 import { useCornerAuth } from '../CornerContext.jsx'
 
@@ -49,8 +48,9 @@ function TasksPanelCv4Body() {
     handleTaskNeedsVerification,
     handleTaskResearch,
     handleTaskMoveTo,
+    selectedBrief, briefHtml, briefLoading, closeBriefViewer,
   } = useTasksPanelCtx()
-  const { selectedAgent, conversationTarget } = useCornerNav()
+  const { selectedAgent, conversationTarget, handleSelectProject, setPrefillMessage } = useCornerNav()
   const { worldId } = useCornerAuth()
 
   // R7.2: when the active conversation changes, sync the task filter scope.
@@ -92,6 +92,30 @@ function TasksPanelCv4Body() {
 
   return (
     <div data-cv4-tasks-body style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
+      {selectedBrief && (
+        <Cv4BriefViewer
+          brief={selectedBrief}
+          html={briefHtml}
+          loading={briefLoading}
+          onClose={closeBriefViewer}
+          onAskAboutFile={(text) => {
+            // Take the user from the file viewer to the project chat for
+            // that file's project, with the message pre-filled and tagged
+            // so the agent has explicit file context.
+            const projectSlug = selectedBrief?.project || activeProject
+            const filename = selectedBrief?.filename || selectedBrief?.slug || ''
+            const tag = filename ? `[About ${filename}] ` : ''
+            const prefill = `${tag}${text}`.trim()
+            setPrefillMessage?.(prefill)
+            if (projectSlug && projectSlug !== 'all') {
+              const proj = (taskProjects || []).find(p => p.slug === projectSlug)
+                || projectPills.find(p => p.slug === projectSlug)
+              if (proj) handleSelectProject?.({ name: proj.name, slug: proj.slug })
+            }
+            closeBriefViewer()
+          }}
+        />
+      )}
       <div data-cv4-tasks-scroll style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 20px' }}>
 
         {/* SCOPE — what we're looking at, top-of-panel. */}
@@ -112,7 +136,33 @@ function TasksPanelCv4Body() {
             dashboard used; the writer pipeline + Supabase realtime
             subscription are already wired. */}
         {!searchQuery && !activeMissionPath && (
-          <div data-cv4-tasks-narrative style={{ marginBottom: 14 }}>
+          <div data-cv4-tasks-narrative style={{ marginBottom: 18 }}>
+            <h2 style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 14, fontWeight: 800,
+              letterSpacing: '0.05em', textTransform: 'uppercase',
+              color: C.text, margin: '0 0 8px 0', lineHeight: 1,
+            }}>Summary</h2>
+            <style>{`
+              [data-cv4-tasks-narrative] [data-testid="living-paragraph-text"] {
+                font-size: 12px !important;
+                font-weight: 400 !important;
+                line-height: 1.55 !important;
+                letter-spacing: 0 !important;
+                font-family: 'Inter', sans-serif !important;
+                color: ${C.text2} !important;
+              }
+              [data-cv4-tasks-narrative] [data-testid="living-paragraph"] > div > div:first-child {
+                width: 5px !important;
+                height: 5px !important;
+                margin-top: 8px !important;
+              }
+              [data-cv4-tasks-narrative] [data-testid="living-paragraph-read-more"] {
+                font-size: 10px !important;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+              }
+            `}</style>
             <LivingParagraphCard world={worldId} activeProject={activeProject} />
           </div>
         )}
@@ -154,7 +204,6 @@ function TasksPanelCv4Body() {
         )}
       </div>
 
-      <TaskInputBar />
       <CreateProjectModal />
 
       <TaskContextMenu
@@ -500,36 +549,563 @@ function StatusIcon({ status }) {
       </svg>
     )
   }
-  // active / default — empty square
+  // active / default — empty square with a soft breathing dot so you can
+  // tell at a glance that work is in progress (not just sitting open).
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
-      <rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.22)" strokeWidth="1.5"/>
+      <style>{`
+        @keyframes cv4ActivePulse {
+          0%, 100% { opacity: 0.25; transform: scale(0.85); transform-origin: 12px 12px; }
+          50%      { opacity: 0.9;  transform: scale(1.05); transform-origin: 12px 12px; }
+        }
+        @keyframes cv4ActiveBorder {
+          0%, 100% { stroke: rgba(255,255,255,0.22); }
+          50%      { stroke: rgba(52,211,153,0.55); }
+        }
+      `}</style>
+      <rect x="3" y="3" width="18" height="18" rx="3"
+            fill="rgba(255,255,255,0.025)" strokeWidth="1.5"
+            style={{ animation: 'cv4ActiveBorder 2.4s ease-in-out infinite' }} />
+      <circle cx="12" cy="12" r="2.8" fill="#34D399"
+              style={{ animation: 'cv4ActivePulse 2.4s ease-in-out infinite', transformOrigin: '12px 12px' }} />
     </svg>
   )
 }
 
 function FilesBlock({ activeProject, activeMissionPath, searchQuery }) {
+  // Mission scope keeps the CV3 scaffold/breadcrumb (they're already
+  // dense + monospace and fit the file-browser feel).
+  if (activeMissionPath) {
+    return (
+      <div data-cv4-tasks-section data-status="files" style={{ marginTop: 8 }}>
+        <SectionHeader title="Files" count={0} summary="Mission scaffold + files" />
+        <MissionBreadcrumb />
+        <MissionScaffoldSection />
+        <ProjectMissionsSection />
+        <ProjectFilesSection />
+      </div>
+    )
+  }
+  // Project + All scope: render the new CV4 file-tree.
+  return <Cv4FileTree activeProject={activeProject} searchQuery={searchQuery} />
+}
+
+// R52 — five canonical CAPS files surfaced at the top of every project
+// view (VISION/BUILD/CONTEXT/RESEARCH/ROADMAP). Distinct icon per file.
+// Clicking a row opens that file via the existing brief-viewer handler
+// using the `source: 'canon'` lookup path.
+const CV4_PROJECT_CANON = [
+  { filename: 'VISION.md',   label: 'Vision',   color: '#A78BFA', iconKey: 'VISION' },
+  { filename: 'BUILD.md',    label: 'Build',    color: '#FBBF24', iconKey: 'BUILD' },
+  { filename: 'CONTEXT.md',  label: 'Context',  color: '#60A5FA', iconKey: 'CONTEXT' },
+  { filename: 'RESEARCH.md', label: 'Research', color: '#6EE7B7', iconKey: 'RESEARCH' },
+  { filename: 'ROADMAP.md',  label: 'Roadmap',  color: '#FB923C', iconKey: 'ROADMAP' },
+]
+
+/* CV4 file tree — same look as the left drawer's project/mission tree but
+   sourced from briefs (all-scope) or task briefs (project scope). Always
+   uncollapsed by default; folders expand to show their docs. */
+function Cv4FileTree({ activeProject, searchQuery }) {
+  const {
+    allBriefs, allBriefsLoading,
+    setAllBriefsOpen,
+    handleBriefClick,
+    taskBriefs,
+    taskAttachments,
+    taskMissions,
+    setActiveMissionPath,
+    taskProjects,
+  } = useTasksPanelCtx()
+
+  // Keep the underlying CV3 "open" state always-true so the data hooks
+  // continue to fetch + sync even though we don't use the collapse UI.
+  useEffect(() => { setAllBriefsOpen(true) }, [setAllBriefsOpen])
+
+  const isAll = !activeProject || activeProject === 'all'
+
+  // Group briefs by project for the All view.
+  const byProject = useMemo(() => {
+    if (!isAll) return null
+    const m = new Map()
+    for (const b of (allBriefs || [])) {
+      if (searchQuery) {
+        const t = (b.title || b.filename || '').toLowerCase()
+        if (!t.includes(searchQuery.toLowerCase())) continue
+      }
+      const key = b.project || 'misc'
+      if (!m.has(key)) m.set(key, [])
+      m.get(key).push(b)
+    }
+    return m
+  }, [allBriefs, isAll, searchQuery])
+
+  // Flat list for project scope: project briefs + (later) project files.
+  const projectBriefs = useMemo(() => {
+    if (isAll) return []
+    return (taskBriefs || []).filter(b => {
+      if (!searchQuery) return true
+      const t = (b.title || b.filename || '').toLowerCase()
+      return t.includes(searchQuery.toLowerCase())
+    })
+  }, [taskBriefs, isAll, searchQuery])
+
+  const [expanded, setExpanded] = useState(() => new Set())
+  // Auto-expand every project folder once data lands so the tree opens
+  // by default (per the "uncollapsed" requirement).
+  useEffect(() => {
+    if (!isAll || !byProject) return
+    setExpanded(prev => {
+      const next = new Set(prev)
+      for (const k of byProject.keys()) next.add(k)
+      return next
+    })
+  }, [byProject, isAll])
+
+  const toggle = (slug) => setExpanded(prev => {
+    const n = new Set(prev)
+    if (n.has(slug)) n.delete(slug); else n.add(slug)
+    return n
+  })
+
+  const projectName = (slug) => {
+    if (!slug || slug === 'misc') return 'Misc'
+    const proj = taskProjects?.find(p => p.slug === slug)
+    return proj?.name || PROJECT_LABELS[slug] || slug
+  }
+
+  const totalCount = isAll
+    ? Array.from(byProject?.values() || []).reduce((s, arr) => s + arr.length, 0)
+    : projectBriefs.length
+
   return (
-    <div data-cv4-tasks-section data-status="files" style={{ marginTop: 8 }}>
-      <SectionHeader title="Files" count={0} summary="Recent docs across the scope" />
-      <div data-cv4-files-inner>
-        {activeMissionPath && (
+    <div data-cv4-file-tree data-cv4-tasks-section data-status="files" style={{ marginTop: 8 }}>
+      <SectionHeader
+        title="Files"
+        count={totalCount}
+        summary={isAll
+          ? (totalCount === 0 ? 'No files yet' : 'All projects — grouped by project')
+          : (totalCount === 0 ? 'No files in this project' : `Files in ${projectName(activeProject)}`)
+        }
+      />
+      <div data-cv4-files-tree-inner>
+        {allBriefsLoading && (
+          <div style={{ padding: '8px 4px', fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>
+        )}
+
+        {isAll && byProject && Array.from(byProject.entries()).map(([slug, briefs]) => {
+          const isExpanded = expanded.has(slug)
+          return (
+            <div key={slug}>
+              <TreeFolderRow
+                label={projectName(slug)}
+                count={briefs.length}
+                expanded={isExpanded}
+                onToggle={() => toggle(slug)}
+              />
+              {isExpanded && briefs.map((b, i) => (
+                <TreeDocRow
+                  key={`${slug}-${b.slug || b.filename || i}`}
+                  brief={b}
+                  onClick={() => handleBriefClick?.(b)}
+                />
+              ))}
+            </div>
+          )
+        })}
+
+        {!isAll && (
+          <Cv4ProjectCanon
+            activeProject={activeProject}
+            projectBriefs={projectBriefs}
+            taskAttachments={taskAttachments}
+            taskMissions={taskMissions}
+            setActiveMissionPath={setActiveMissionPath}
+            handleBriefClick={handleBriefClick}
+            searchQuery={searchQuery}
+          />
+        )}
+
+        {!allBriefsLoading && isAll && totalCount === 0 && (
+          <div style={{ padding: '6px 4px', fontSize: 11, color: C.muted, fontStyle: 'italic' }}>
+            {searchQuery ? 'No files match.' : 'No files yet.'}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// R52 — project file view: 5 canon CAPS rows at top + Missions/ + Files/
+// folders for the rest. Used in CV4 task drawer when project scope is
+// active and we are NOT drilled into a mission.
+function Cv4ProjectCanon({
+  activeProject, projectBriefs, taskAttachments, taskMissions,
+  setActiveMissionPath, handleBriefClick, searchQuery,
+}) {
+  const [missionsOpen, setMissionsOpen] = useState(true)
+  const [filesOpen, setFilesOpen] = useState(true)
+  const missions = Array.isArray(taskMissions) ? taskMissions : []
+  const attachments = Array.isArray(taskAttachments) ? taskAttachments : []
+  const filteredBriefs = projectBriefs || []
+
+  const onClickCanon = (entry) => {
+    handleBriefClick?.({
+      project: activeProject,
+      filename: entry.filename,
+      source: 'canon',
+      title: `${entry.label} — ${activeProject}`,
+    })
+  }
+
+  return (
+    <div data-testid="cv4-project-canon" data-project={activeProject}>
+      {/* Canon rows — five caps files, distinct icon each. */}
+      {CV4_PROJECT_CANON.map(entry => (
+        <Cv4CanonRow key={entry.filename} entry={entry} onClick={() => onClickCanon(entry)} />
+      ))}
+
+      {/* Missions folder */}
+      <TreeFolderRow
+        label="Missions"
+        count={missions.length}
+        expanded={missionsOpen}
+        onToggle={() => setMissionsOpen(v => !v)}
+      />
+      {missionsOpen && missions.length === 0 && (
+        <div style={{ padding: '4px 0 4px 36px', fontSize: 11, color: C.dim, fontStyle: 'italic' }}>
+          No missions yet.
+        </div>
+      )}
+      {missionsOpen && missions.map(m => (
+        <div
+          key={m.path}
+          data-row
+          data-mission-path={m.path}
+          onClick={() => setActiveMissionPath?.(m.path)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '3px 6px 3px 36px', cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          {CANON_ICONS.FOLDER(C.muted)}
+          <span style={{
+            flex: 1, fontSize: 11.5, fontWeight: 500, color: C.text2,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{m.name}</span>
+          {m.file_count > 0 && (
+            <span style={{
+              fontSize: 9, color: C.dim,
+              fontFamily: "'JetBrains Mono', monospace",
+              flexShrink: 0,
+            }}>{m.file_count}</span>
+          )}
+        </div>
+      ))}
+
+      {/* Files folder — briefs + attachments. */}
+      <TreeFolderRow
+        label="Files"
+        count={filteredBriefs.length + attachments.length}
+        expanded={filesOpen}
+        onToggle={() => setFilesOpen(v => !v)}
+      />
+      {filesOpen && filteredBriefs.length === 0 && attachments.length === 0 && (
+        <div style={{ padding: '4px 0 4px 36px', fontSize: 11, color: C.dim, fontStyle: 'italic' }}>
+          {searchQuery ? 'No files match.' : 'No files yet.'}
+        </div>
+      )}
+      {filesOpen && filteredBriefs.map((b, i) => (
+        <TreeDocRow
+          key={`brief-${b.slug || b.filename || i}`}
+          brief={b}
+          onClick={() => handleBriefClick?.(b)}
+          indent={36}
+        />
+      ))}
+      {filesOpen && attachments.map((f, i) => (
+        <TreeDocRow
+          key={`att-${f.id || f.name || i}`}
+          brief={{ title: f.name || f.filename, dateFormatted: '' }}
+          onClick={() => { /* attachment clicks handled by ProjectFilesSection elsewhere */ }}
+          indent={36}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Cv4CanonRow({ entry, onClick }) {
+  const [hov, setHov] = useState(false)
+  const icon = CANON_ICONS[entry.iconKey] || CANON_ICONS.FOLDER
+  return (
+    <div
+      data-row
+      data-testid={`cv4-canon-${entry.filename}`}
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '4px 6px',
+        cursor: 'pointer',
+        background: hov ? 'rgba(255,255,255,0.03)' : 'transparent',
+        transition: 'background 0.12s',
+      }}
+    >
+      <span style={{ width: 14, display: 'inline-block', flexShrink: 0 }} />
+      {icon(entry.color)}
+      <span style={{
+        flex: 1, fontSize: 12, fontWeight: 600, color: C.text,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{entry.label}</span>
+      <span style={{
+        fontSize: 9, fontWeight: 600, color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace",
+        flexShrink: 0,
+      }}>{entry.filename}</span>
+    </div>
+  )
+}
+
+function TreeFolderRow({ label, count, expanded, onToggle }) {
+  return (
+    <div
+      data-row
+      onClick={onToggle}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 4,
+        padding: '4px 6px 4px 4px',
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        style={{ flexShrink: 0, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
+        <polyline points="9 6 15 12 9 18"/>
+      </svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        {expanded ? (
           <>
-            <MissionBreadcrumb />
-            <MissionScaffoldSection />
-            <ProjectMissionsSection />
-            <ProjectFilesSection />
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z"/>
+            <path d="M3 10h18l-2 8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           </>
+        ) : (
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         )}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && (
-          <>
-            <ProjectMissionsSection />
-            <ProjectFilesSection />
-          </>
+      </svg>
+      <span style={{
+        flex: 1, fontSize: 12, fontWeight: 500, color: C.text2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{label}</span>
+      <span style={{
+        fontSize: 9, fontWeight: 700, color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace",
+        flexShrink: 0,
+      }}>{count}</span>
+    </div>
+  )
+}
+
+function TreeDocRow({ brief, onClick, indent = 24 }) {
+  const title = brief.title || brief.filename || 'Brief'
+  const date = brief.dateFormatted || brief.date || ''
+  return (
+    <div
+      data-row
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: `3px 6px 3px ${indent}px`,
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span style={{
+        flex: 1, fontSize: 11.5, fontWeight: 500, color: C.text2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{title}</span>
+      {date && (
+        <span style={{
+          fontSize: 9, color: C.dim,
+          fontFamily: "'JetBrains Mono', monospace",
+          flexShrink: 0,
+        }}>{date}</span>
+      )}
+    </div>
+  )
+}
+
+// Project labels for the All-view folder names (matches CV3 mapping).
+const PROJECT_LABELS = {
+  'corner': 'Corner',
+  'ambition-mechanical': 'Ambition',
+  'aom-website': 'AOM Website',
+  'arsenal-directory': 'Arsenal',
+  'sourcing-directory': 'Sourcing',
+}
+
+// R7.13 — CV4-themed brief/file viewer with an inline composer at the bottom.
+// The composer routes the user's message into the project chat with a
+// `[About <filename>]` tag so the agent has explicit file context.
+function Cv4BriefViewer({ brief, html, loading, onClose, onAskAboutFile }) {
+  const [text, setText] = useState('')
+  const filename = brief?.filename || brief?.slug || ''
+  const displayName = (brief?.title || filename || 'File').replace(/\.md$/, '')
+  const subtitle = [brief?.agent, brief?.project, brief?.dateFormatted || brief?.date]
+    .filter(Boolean).join(' · ')
+
+  const submit = () => {
+    const t = text.trim()
+    if (!t) return
+    onAskAboutFile?.(t)
+    setText('')
+  }
+
+  return (
+    <div
+      data-cv4-brief-viewer
+      style={{
+        position: 'absolute', inset: 0, zIndex: 60,
+        background: C.bg,
+        display: 'flex', flexDirection: 'column',
+        fontFamily: "'Inter', sans-serif",
+      }}
+    >
+      {/* Header — back arrow + filename + project breadcrumb. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '12px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        flexShrink: 0,
+      }}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close file viewer"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            color: C.muted,
+            padding: '6px 10px',
+            cursor: 'pointer',
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 10, fontWeight: 700,
+            letterSpacing: '0.10em', textTransform: 'uppercase',
+            borderRadius: 2,
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 13, fontWeight: 800, letterSpacing: '0.03em',
+            color: C.text,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{displayName}</div>
+          {subtitle && (
+            <div style={{
+              fontSize: 10, color: C.dim, marginTop: 2,
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.05em', textTransform: 'uppercase',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{subtitle}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Scrollable file body. */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 24px' }}>
+        {loading ? (
+          <div style={{ color: C.dim, fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>
+        ) : (
+          <div
+            data-testid="cv4-brief-viewer-content"
+            className={`briefing-summary-body${brief?.source === 'scaffold' || (brief?.filename || '').endsWith('.md') ? ' article' : ''}`}
+            style={{ color: C.text, fontSize: 14, lineHeight: 1.6 }}
+            dangerouslySetInnerHTML={{ __html: html || '<p style="color:#94A3B8">No content.</p>' }}
+          />
         )}
-        {(!activeProject || activeProject === 'all') && !searchQuery && (
-          <AllFilesSection />
-        )}
+      </div>
+
+      {/* Composer — ask about / suggest edits to this specific file. */}
+      <div style={{
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        padding: 10,
+        flexShrink: 0,
+        background: C.bg,
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap: 8,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          padding: '8px 10px',
+        }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                submit()
+              }
+            }}
+            placeholder={`Ask about or suggest an edit to ${filename || 'this file'}…`}
+            rows={1}
+            style={{
+              flex: 1,
+              background: 'transparent', border: 'none', outline: 'none',
+              color: C.text,
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 13, lineHeight: 1.4,
+              resize: 'none',
+              minHeight: 22, maxHeight: 120,
+            }}
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!text.trim()}
+            aria-label="Send"
+            style={{
+              width: 32, height: 32,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: text.trim() ? '#10B981' : 'rgba(255,255,255,0.06)',
+              border: '1px solid ' + (text.trim() ? '#10B981' : 'rgba(255,255,255,0.10)'),
+              color: text.trim() ? '#0A0A0A' : C.muted,
+              cursor: text.trim() ? 'pointer' : 'default',
+              borderRadius: 2,
+              flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <div style={{
+          marginTop: 6,
+          fontSize: 10, color: C.dim,
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.05em', textTransform: 'uppercase',
+        }}>
+          ↵ to send · referenced: {filename || '—'}
+        </div>
       </div>
     </div>
   )

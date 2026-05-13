@@ -536,6 +536,7 @@ export function MobileActionSheet({ open, message, onClose, onReply, onCopy, onN
       />
       {/* Sheet */}
       <div
+        data-cv4-mobile-sheet
         style={{
           position: 'fixed',
           left: 0, right: 0, bottom: 0,

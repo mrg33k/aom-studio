@@ -351,21 +351,42 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           setSupabaseAgents(data.agents)
         }
 
-        // Store project rooms from agent_status (type=project) for non-AOM worlds
-        if (data.projects && data.projects.length > 0) {
-          setSupabaseProjectRooms(data.projects.map(p => ({
+        // Store project rooms — MERGES two sources so CV4's middle switcher
+        // + left drawer match what CV3's home page shows:
+        //   1) agent_status rows with type='project' (have status, color, etc.)
+        //   2) projects table rows (data.projectDefs) — the canonical list
+        //      from supabase, which may include projects that don't yet have
+        //      an agent_status row (e.g. Nancy and other newer rooms). Without
+        //      this merge CV4 silently drops them.
+        const fromAgents = (data.projects || []).map(p => ({
+          id: p.id || p.slug,
+          slug: p.slug,
+          name: p.name || p.slug,
+          color: p.color || '#6B8AB0',
+          is_active: true,
+          isShared: false,
+          section: 'general',
+          tasks: [],
+          isClient: false,
+          status: p.status ? p.status.toUpperCase() : 'IDLE',
+        }))
+        const fromAgentsSlugs = new Set(fromAgents.map(p => p.slug))
+        const fromDefs = (data.projectDefs || [])
+          .filter(p => p?.slug && !fromAgentsSlugs.has(p.slug))
+          .map(p => ({
             id: p.id || p.slug,
             slug: p.slug,
             name: p.name || p.slug,
             color: p.color || '#6B8AB0',
-            is_active: true,
-            isShared: false,
+            is_active: p.is_active !== false,
+            isShared: !!p.is_shared,
             section: 'general',
             tasks: [],
             isClient: false,
-            status: p.status ? p.status.toUpperCase() : 'IDLE',
-          })))
-        }
+            status: 'IDLE',
+          }))
+        const merged = [...fromAgents, ...fromDefs]
+        if (merged.length > 0) setSupabaseProjectRooms(merged)
 
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
         {

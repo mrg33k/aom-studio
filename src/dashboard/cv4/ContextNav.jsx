@@ -84,8 +84,8 @@ export default function CV4ContextNav({
         zIndex: 99,
       }}
     >
-      {/* LEFT: hamburger + context title (click to switch agents/projects) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '0 1 auto' }}>
+      {/* LEFT: search button (opens drawer + the search row inside it). */}
+      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
         <button
           data-testid="cv4-context-drawer-toggle"
           onClick={onToggleDrawer}
@@ -100,15 +100,19 @@ export default function CV4ContextNav({
             transition: 'all 0.15s',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
+          {/* Search icon — opens the file-browser drawer. The drawer
+              also surfaces a search row under EXPLORE for quick lookup. */}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.5" y2="16.5"/>
           </svg>
         </button>
+      </div>
 
-        <div ref={switcherRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      {/* CENTER: agent/room name switcher, centered across the bar. */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
+        <div ref={switcherRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, maxWidth: '100%' }}>
           {dotColor && (
             <span style={{
               width: 8, height: 8, borderRadius: '50%',
@@ -149,20 +153,22 @@ export default function CV4ContextNav({
           )}
 
           {switcherOpen && switchable && (
-            <div style={{
+            <div data-cv4-switcher-popover style={{
               position: 'absolute',
               top: '100%',
-              left: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
               marginTop: 6,
               width: 260,
+              maxWidth: '90vw',
               maxHeight: 360,
               overflowY: 'auto',
-              background: C.s1,
-              border: `1px solid ${C.border2}`,
-              borderRadius: 12,
+              background: '#0B1018',
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 2,
               padding: 6,
               zIndex: 200,
-              boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.55)',
             }}>
               {agents.length > 0 && (
                 <>
@@ -258,34 +264,41 @@ export default function CV4ContextNav({
         </div>
       </div>
 
-      {/* CENTER: Chat | Tasks toggle — hidden on desktop where Tasks lives
-          in the right docked drawer instead of taking over the content area. */}
-      {!isDesktop && (
-        <div style={{ display: 'flex', gap: 2 }}>
-          <Tab
-            label="Chat"
-            icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
-            active={tab === 'chat'}
-            onClick={() => onSwitchTab('chat')}
-            badge={<Badge count={unreadChat} />}
-          />
-          <Tab
-            label="Tasks"
-            icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
-            active={tab === 'tasks'}
-            onClick={() => onSwitchTab('tasks')}
-            badge={<Badge count={activeTaskCount} color={C.yellow} />}
-          />
-        </div>
-      )}
-
-      {/* RIGHT: compaction meters + tasks-drawer toggle (desktop only). */}
+      {/* RIGHT: mobile gets a single icon-only Tasks toggle; desktop gets
+          the docked tasks-drawer toggle. The compaction/storage meters
+          have been removed — the UX no longer surfaces them since the
+          context behavior is reliable enough to be invisible. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
-        {showMeters && (
-          <>
-            <ContextFullnessMeter agentSlug={selectedAgent.slug} />
-            <StorageQuotaMeter world={worldId || 'aom'} />
-          </>
+        {!isDesktop && (
+          <button
+            data-testid="cv4-tasks-tab-toggle"
+            onClick={() => onSwitchTab(tab === 'tasks' ? 'chat' : 'tasks')}
+            aria-label={tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks'}
+            title={tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks'}
+            style={{
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: tab === 'tasks' ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${tab === 'tasks' ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: tab === 'tasks' ? '#10B981' : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+              position: 'relative',
+            }}
+          >
+            <TasksIcon color={tab === 'tasks' ? '#10B981' : 'currentColor'} />
+            {activeTaskCount > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -4,
+                minWidth: 14, height: 14, borderRadius: 7,
+                background: C.yellow,
+                fontSize: 9, fontWeight: 800, color: '#000',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 4px',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>{activeTaskCount}</span>
+            )}
+          </button>
         )}
         {isDesktop && onToggleTasksDrawer && (
           <button
@@ -322,3 +335,4 @@ export default function CV4ContextNav({
     </div>
   )
 }
+

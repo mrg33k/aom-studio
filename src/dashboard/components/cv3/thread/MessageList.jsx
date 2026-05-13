@@ -233,6 +233,27 @@ export default function MessageList({ roomType = 'agent' }) {
     }, 900)
   }, [])
 
+  // CV4 drawer search dispatches 'cv4:scroll-to-message' on hit click.
+  // We retry briefly because the target thread may still be hydrating when
+  // the event fires (the user just navigated to it).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = (e) => {
+      const id = e?.detail?.messageId
+      if (id == null) return
+      let attempts = 0
+      const tick = () => {
+        const el = document.querySelector(`[data-message-id="${CSS.escape(String(id))}"]`)
+        if (el) { scrollToAndHighlight(id); return }
+        attempts += 1
+        if (attempts < 12) window.setTimeout(tick, 250)
+      }
+      tick()
+    }
+    window.addEventListener('cv4:scroll-to-message', handler)
+    return () => window.removeEventListener('cv4:scroll-to-message', handler)
+  }, [scrollToAndHighlight])
+
   // R73: invoked by TypingIndicatorV2 after the stall-CTA fires.
   const handleTypingStall = () => {
     setSending?.(false)
@@ -426,7 +447,7 @@ export default function MessageList({ roomType = 'agent' }) {
               }} />
             </div>
           ) : (
-            <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={44} />
+            <AgentAvatar name={selectedAgent.name} slug={selectedAgent.slug} color={selectedAgent.color} size={44} />
           )}
           <span style={{ fontSize: 14, fontWeight: 600, color: C.text, marginTop: 4 }}>
             {roomName}
@@ -651,11 +672,18 @@ export default function MessageList({ roomType = 'agent' }) {
           const senderInitial = senderName ? senderName[0].toUpperCase() : 'U'
           const isOtherUser = isUser && msg.user_name && msg.user_name !== displayName
           const senderColor = isUser ? (isOtherUser ? '#7C3AED' : '#2563EB') : roomColor
+          // Fall back to the current user's avatar for user-role messages
+          // that don't carry a user_id (optimistic sends, legacy rows from
+          // before user_id tracking, and project messages where the row
+          // never gets re-fetched after persist). Without this, the same
+          // sender's bubbles flicker between avatar and initial-letter
+          // depending on how each row landed.
+          const treatAsCurrentUser = isUser && !isOtherUser
           const senderProfile = msg.user_id
             ? (msg.user_id === currentUser?.id
                 ? { avatar_url: currentUser?.user_metadata?.avatar_url }
                 : userProfiles[msg.user_id])
-            : null
+            : (treatAsCurrentUser ? { avatar_url: currentUser?.user_metadata?.avatar_url } : null)
           const senderAvatar = senderProfile?.avatar_url || null
           const msgFlagged = needsVerificationIds?.has?.(msg.id)
           const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
@@ -765,7 +793,7 @@ export default function MessageList({ roomType = 'agent' }) {
                     </div>
                   ) : (
                     <div style={{ alignSelf: 'flex-start', marginTop: 2 }}>
-                      <AgentAvatar name={selectedAgent.name} color={selectedAgent.color} size={28} />
+                      <AgentAvatar name={selectedAgent.name} slug={selectedAgent.slug} color={selectedAgent.color} size={28} />
                     </div>
                   )
                 )}
