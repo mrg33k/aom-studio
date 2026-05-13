@@ -1,18 +1,18 @@
 // CV4 HomeView switcher — pill picker top-right of the home pane.
 // URL ?home=v1|v2|v3 reads/writes the variant; localStorage persists it.
 //
-// Three directions:
-//   V1 — Editorial Briefing  (refined, restrained, NYT-briefing energy)
-//   V2 — Newspaper Front     (display masthead, lead story, multi-column)
-//   V3 — Terminal Briefing   (mono dense ops console)
+// R-CV4-6 — Editorial × Terminal hybrids:
+//   V1 — Letter    (editorial-leaning; italic serif + mono accents)
+//   V2 — Briefing  (balanced; terminal frames around italic-serif labels)
+//   V3 — Console   (terminal-leaning; one big editorial lead headline)
 
 import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'cv4-home-variant'
 const VARIANTS = [
-  { key: 'v1', label: 'V1', name: 'Editorial' },
-  { key: 'v2', label: 'V2', name: 'Newspaper' },
-  { key: 'v3', label: 'V3', name: 'Terminal' },
+  { key: 'v1', label: 'V1', name: 'Letter' },
+  { key: 'v2', label: 'V2', name: 'Briefing' },
+  { key: 'v3', label: 'V3', name: 'Console' },
 ]
 
 export function useHomeVariant() {

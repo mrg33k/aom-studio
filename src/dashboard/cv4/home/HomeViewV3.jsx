@@ -1,47 +1,59 @@
-// V3 — Terminal Briefing.
+// V3 — CONSOLE (Editorial + Terminal hybrid, terminal-leaning).
 //
-// Aesthetic: power-user ops console. JetBrains Mono throughout. Dense layout.
-// Color-coded status pips. Reads like a CLI dashboard. Higher information
-// density than V1/V2 — every row is one glance, every column-of-data is
-// tight. Hanken Grotesk only used for the preview snippet.
+// Live ISO status line + cursor. Greeting embedded as a `//` comment line
+// in mono. One BIG editorial lead headline (italic Instrument Serif) on
+// the most-recent activity item — the one "moment" of editorial. Below:
+// dense terminal blocks for everything else. Footer keymap prominent.
+//
+// Power-user feel with one editorial flourish.
 
 import { useEffect, useState } from 'react'
 import { useCornerNav } from '../../CornerContext.jsx'
-import useHomeData, { timeISOToFull } from './useHomeData.js'
+import useHomeData from './useHomeData.js'
 
 function clock() {
-  const d = new Date()
-  return d.toISOString().slice(0, 19).replace('T', ' ')
+  return new Date().toISOString().slice(0, 19).replace('T', ' ')
 }
 
-function statusGlyph(state) {
+function glyph(state, kind) {
   const s = (state || '').toUpperCase()
-  if (s === 'IDLE') return '○'
-  if (s === 'WORKING' || s === 'BUSY' || s === 'ACTIVE') return '●'
+  if (kind === 'agent') return s === 'IDLE' ? '○' : '●'
   if (s === 'BLOCKED') return '✕'
   if (s === 'SHIPPED' || s === 'DONE') return '✓'
   return '◐'
 }
 
-function statusClass(state) {
+function tone(state) {
   const s = (state || '').toUpperCase()
   if (s === 'IDLE') return 'idle'
-  if (s === 'WORKING' || s === 'ACTIVE' || s === 'BUSY') return 'active'
   if (s === 'BLOCKED') return 'blocked'
   if (s === 'SHIPPED' || s === 'DONE') return 'shipped'
+  if (s === 'BUILDING' || s === 'ACTIVE' || s === 'WORKING' || s === 'BUSY') return 'active'
   return 'quiet'
 }
 
-function Line({ glyph, glyphClass, slug, time, preview, onClick, kind }) {
+function Block({ title, count, children }) {
   return (
-    <button className="v3-line" data-kind={kind} onClick={onClick}>
-      <span className="v3-line__glyph">
-        <span className={`v3-glyph v3-glyph--${glyphClass}`}>{glyph}</span>
-      </span>
-      <span className="v3-line__slug">{slug}</span>
-      <span className="v3-line__dot">·</span>
-      <span className="v3-line__time">{time || '——'}</span>
-      {preview && <span className="v3-line__preview">{preview}</span>}
+    <section className="vC__block">
+      <div className="vC__block-bar">
+        <span className="vC__bar-tick">┌──</span>
+        <span className="vC__bar-label">{title}</span>
+        <span className="vC__bar-count">[{count.toString().padStart(2, '0')}]</span>
+        <span className="vC__bar-fill" />
+      </div>
+      <div className="vC__lines">{children}</div>
+    </section>
+  )
+}
+
+function Line({ glyphChar, glyphTone, slug, time, preview, onClick, kind }) {
+  return (
+    <button className="vC-line" data-kind={kind} onClick={onClick}>
+      <span className={`vC-line__glyph vC-line__glyph--${glyphTone}`}>{glyphChar}</span>
+      <span className="vC-line__slug">{slug}</span>
+      <span className="vC-line__dot">·</span>
+      <span className="vC-line__time">{time || '——'}</span>
+      <span className="vC-line__preview">{preview}</span>
     </button>
   )
 }
@@ -59,108 +71,107 @@ export default function HomeViewV3() {
   const openAgent = (a) => handleSelectAgent(a)
   const openProject = (p) => handleSelectProject(p)
 
-  return (
-    <div className="cv4-home v3" data-testid="cv4-home-v3">
-      <div className="v3__inner">
-        {/* Status line */}
-        <header className="v3__statusline">
-          <span className="v3__statusline-bracket">[</span>
-          <span className="v3__statusline-time">{now}</span>
-          <span className="v3__statusline-bracket">]</span>
-          <span className="v3__statusline-world">{data.worldId || 'aom'}</span>
-          <span className="v3__statusline-sep">»</span>
-          <span className="v3__statusline-route">home</span>
-          <span className="v3__statusline-cursor">▌</span>
-        </header>
+  const lead = data.leadStory
+  const openLead = () => {
+    if (!lead) return
+    if (lead.kind === 'agent') openAgent(lead.target)
+    else openProject(lead.target)
+  }
 
-        <div className="v3__greet">
-          // {data.greeting.toLowerCase().replace(',', ',')}
+  return (
+    <div className="cv4-home vC" data-testid="cv4-home-console">
+      <div className="vC__inner">
+        {/* Status line */}
+        <div className="vC__statusline">
+          <span className="vC__sl-bracket">[</span>
+          <span className="vC__sl-time">{now}</span>
+          <span className="vC__sl-bracket">]</span>
+          <span className="vC__sl-world">{data.worldId || 'aom'}</span>
+          <span className="vC__sl-sep">»</span>
+          <span className="vC__sl-route">home</span>
+          <span className="vC__sl-cursor">▌</span>
         </div>
 
-        {/* Agents */}
-        <section className="v3__block">
-          <div className="v3__block-bar">
-            <span className="v3__block-tick">┌──</span>
-            <span className="v3__block-label">AGENTS</span>
-            <span className="v3__block-count">[{data.agents.length}]</span>
-            <span className="v3__block-fill" />
-          </div>
-          <div className="v3__lines">
-            {data.agents.map((a) => (
-              <Line
-                key={a.slug}
-                kind="agent"
-                glyph={statusGlyph(a.state)}
-                glyphClass={statusClass(a.state)}
-                slug={a.slug}
-                time={a.lastTimeShort}
-                preview={a.lastText}
-                onClick={() => openAgent(a)}
-              />
-            ))}
-          </div>
-        </section>
+        {/* Greeting comment */}
+        <div className="vC__greet">// {data.greeting.toLowerCase()}</div>
 
-        {/* Pinned */}
-        {data.pinned.length > 0 && (
-          <section className="v3__block">
-            <div className="v3__block-bar">
-              <span className="v3__block-tick">┌──</span>
-              <span className="v3__block-label">PINNED</span>
-              <span className="v3__block-count">[{data.pinned.length}]</span>
-              <span className="v3__block-fill" />
+        {/* Editorial lead — the one moment of typographic warmth */}
+        {lead && (
+          <section className="vC__lead">
+            <div className="vC__lead-kicker">
+              <span className="vC__lead-kicker-kind">{lead.kind === 'agent' ? 'AGENT' : 'PROJECT'}</span>
+              <span className="vC__lead-kicker-sep">·</span>
+              <span className="vC__lead-kicker-time">{lead.tsShort}</span>
+              <span className="vC__lead-kicker-slug">{lead.slug}</span>
             </div>
-            <div className="v3__lines">
-              {data.pinned.map((p) => (
-                <Line
-                  key={p.key}
-                  kind={p.kind}
-                  glyph="★"
-                  glyphClass="pinned"
-                  slug={p.slug}
-                  time={p.tsShort}
-                  preview={p.preview}
-                  onClick={() => p.kind === 'agent' ? openAgent(p.data) : openProject(p.data)}
-                />
-              ))}
-            </div>
+            <button className="vC__lead-card" onClick={openLead}>
+              <h2 className="vC__lead-headline">{lead.label}</h2>
+              <p className="vC__lead-body">{lead.preview || 'Open the thread for the latest update.'}</p>
+              <span className="vC__lead-cta">
+                Open thread
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </span>
+            </button>
           </section>
         )}
 
-        {/* Projects */}
-        <section className="v3__block">
-          <div className="v3__block-bar">
-            <span className="v3__block-tick">┌──</span>
-            <span className="v3__block-label">PROJECTS</span>
-            <span className="v3__block-count">[{data.activeProjects.length}]</span>
-            <span className="v3__block-fill" />
-          </div>
-          <div className="v3__lines">
-            {data.activeProjects.map((p) => (
+        {/* Dense blocks */}
+        <Block title="AGENTS" count={data.agents.length}>
+          {data.agents.map((a) => (
+            <Line
+              key={a.slug}
+              kind="agent"
+              glyphChar={glyph(a.state, 'agent')}
+              glyphTone={tone(a.state)}
+              slug={a.slug}
+              time={a.lastTimeShort}
+              preview={a.lastText}
+              onClick={() => openAgent(a)}
+            />
+          ))}
+        </Block>
+
+        {data.pinned.length > 0 && (
+          <Block title="PINNED" count={data.pinned.length}>
+            {data.pinned.map((p) => (
               <Line
                 key={p.key}
-                kind="project"
-                glyph={statusGlyph(p.status)}
-                glyphClass={statusClass(p.status)}
+                kind={p.kind}
+                glyphChar="★"
+                glyphTone="amber"
                 slug={p.slug}
                 time={p.tsShort}
                 preview={p.preview}
-                onClick={() => openProject(p.data)}
+                onClick={() => p.kind === 'agent' ? openAgent(p.data) : openProject(p.data)}
               />
             ))}
-          </div>
-        </section>
+          </Block>
+        )}
 
-        {/* Footer */}
-        <footer className="v3__footer">
-          <span className="v3__footer-key">/</span>
-          <span> search</span>
-          <span className="v3__footer-sep">·</span>
-          <span className="v3__footer-key">e</span>
-          <span> archived</span>
-          <span className="v3__footer-sep">·</span>
-          <span className="v3__footer-key">↵</span>
-          <span> open</span>
+        <Block title="PROJECTS" count={data.activeProjects.length}>
+          {data.activeProjects.map((p) => (
+            <Line
+              key={p.key}
+              kind="project"
+              glyphChar={glyph(p.status, 'project')}
+              glyphTone={tone(p.status)}
+              slug={p.slug}
+              time={p.tsShort}
+              preview={p.preview}
+              onClick={() => openProject(p.data)}
+            />
+          ))}
+        </Block>
+
+        <footer className="vC__footer">
+          <span className="vC__footer-key">/</span><span>search</span>
+          <span className="vC__footer-sep">·</span>
+          <span className="vC__footer-key">e</span><span>archived</span>
+          <span className="vC__footer-sep">·</span>
+          <span className="vC__footer-key">↵</span><span>open</span>
         </footer>
       </div>
     </div>
