@@ -87,7 +87,7 @@ export function AllFilesSection() {
         </span>
         <span style={{
           fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif",
-          background: C.dim + '40', padding: '2px 7px', borderRadius: 10,
+          background: C.chipBg, padding: '2px 7px', borderRadius: 10,
           opacity: loading || allBriefs.length > 0 ? 1 : 0,
         }}>
           {loading ? '…' : allBriefs.length}
@@ -263,7 +263,7 @@ export function ProjectFilesSection() {
           </span>
           <span style={{
             fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif",
-            background: C.dim + '40', padding: '2px 7px', borderRadius: 10,
+            background: C.chipBg, padding: '2px 7px', borderRadius: 10,
             opacity: loading || totalCount > 0 ? 1 : 0,
           }}>
             {loading ? '…' : totalCount}
@@ -436,6 +436,52 @@ export function ProjectFilesSection() {
   )
 }
 
+// Distinct SVG icons (one per canon file) — used by both project-canon
+// and mission-scaffold rows so the 5 caps files are visually distinct
+// across the app.
+export const CANON_ICONS = {
+  VISION: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  ),
+  BUILD: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+    </svg>
+  ),
+  CONTEXT: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      <line x1="8" y1="2" x2="8" y2="18"/>
+      <line x1="16" y1="6" x2="16" y2="22"/>
+    </svg>
+  ),
+  RESEARCH: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M9 2h6"/>
+      <path d="M10 2v6.5L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 8.5V2"/>
+    </svg>
+  ),
+  ROADMAP: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+      <line x1="4" y1="22" x2="4" y2="15"/>
+    </svg>
+  ),
+  LAST_CONVERSATION: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+  ),
+  FOLDER: (color) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+}
+
 // R51 — MissionScaffoldSection (2026-04-22 session 18).
 // Renders the six canonical scaffold files FOR THE CURRENT MISSION as a
 // single-column list: VISION / RESEARCH / BUILD / CONTEXT /
@@ -448,12 +494,12 @@ export function ProjectFilesSection() {
 // breadcrumb + drill-in plumbing; R51 fills the file surface inside a
 // drilled-in mission.
 const MISSION_SCAFFOLD_ENTRIES = [
-  { filename: 'VISION.md',             label: 'Vision',           color: '#A78BFA' },
-  { filename: 'RESEARCH.md',           label: 'Research',         color: '#6EE7B7' },
-  { filename: 'BUILD.md',              label: 'Build',            color: '#FBBF24' },
-  { filename: 'CONTEXT.md',            label: 'Context',          color: '#60A5FA' },
-  { filename: 'last-conversation.md',  label: 'Last conversation', color: '#F9A8D4' },
-  { filename: 'research/',             label: 'research/',        color: '#94A3B8', isDir: true },
+  { filename: 'VISION.md',             label: 'Vision',           color: '#A78BFA', iconKey: 'VISION' },
+  { filename: 'RESEARCH.md',           label: 'Research',         color: '#6EE7B7', iconKey: 'RESEARCH' },
+  { filename: 'BUILD.md',              label: 'Build',            color: '#FBBF24', iconKey: 'BUILD' },
+  { filename: 'CONTEXT.md',            label: 'Context',          color: '#60A5FA', iconKey: 'CONTEXT' },
+  { filename: 'last-conversation.md',  label: 'Last conversation', color: '#F9A8D4', iconKey: 'LAST_CONVERSATION' },
+  { filename: 'research/',             label: 'research/',        color: '#94A3B8', isDir: true, iconKey: 'FOLDER' },
 ]
 
 export function MissionScaffoldSection() {
@@ -488,7 +534,7 @@ export function MissionScaffoldSection() {
         </span>
         <span style={{
           fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif",
-          background: C.dim + '40', padding: '2px 7px', borderRadius: 10,
+          background: C.chipBg, padding: '2px 7px', borderRadius: 10,
         }}>
           {MISSION_SCAFFOLD_ENTRIES.length}
         </span>
@@ -536,16 +582,7 @@ export function MissionScaffoldSection() {
                 transition: 'background 0.15s ease',
               }}
             >
-              {entry.isDir ? (
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={entry.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-              ) : (
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={entry.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
-              )}
+              {(CANON_ICONS[entry.iconKey] || CANON_ICONS.FOLDER)(entry.color)}
               <span style={{
                 flex: 1, fontSize: 13, fontWeight: 500, color: C.text,
                 fontFamily: "'Inter', sans-serif",
@@ -761,6 +798,180 @@ export function MissionBreadcrumb() {
           </span>
         )
       })}
+    </div>
+  )
+}
+
+// R52 — ProjectCanonSection (2026-05-13).
+// The single file-shape projects show by default. Top: five canonical
+// CAPS files (VISION/BUILD/CONTEXT/RESEARCH/ROADMAP), each with a
+// distinct icon. Below: Missions/ and Files/ as collapsible folders
+// containing the existing sections.
+//
+// Only renders when activeProject is a real slug (not 'all') and we
+// are NOT drilled into a mission. Drilled-in views still use
+// MissionScaffoldSection.
+const PROJECT_CANON_ENTRIES = [
+  { filename: 'VISION.md',   label: 'Vision',   color: '#A78BFA', iconKey: 'VISION' },
+  { filename: 'BUILD.md',    label: 'Build',    color: '#FBBF24', iconKey: 'BUILD' },
+  { filename: 'CONTEXT.md',  label: 'Context',  color: '#60A5FA', iconKey: 'CONTEXT' },
+  { filename: 'RESEARCH.md', label: 'Research', color: '#6EE7B7', iconKey: 'RESEARCH' },
+  { filename: 'ROADMAP.md',  label: 'Roadmap',  color: '#FB923C', iconKey: 'ROADMAP' },
+]
+
+function CanonRow({ entry, projectSlug, isLast, onClick }) {
+  const [hov, setHov] = useState(false)
+  const icon = CANON_ICONS[entry.iconKey] || CANON_ICONS.FOLDER
+  return (
+    <div
+      data-testid={`project-canon-entry-${entry.filename}`}
+      data-filename={entry.filename}
+      data-project={projectSlug}
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        height: 44, padding: '0 4px',
+        cursor: 'pointer', borderRadius: 6,
+        background: hov ? 'rgba(255,255,255,0.03)' : 'transparent',
+        borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
+        transition: 'background 0.15s ease',
+      }}
+    >
+      {icon(entry.color)}
+      <span style={{
+        flex: 1, fontSize: 13, fontWeight: 500, color: C.text,
+        fontFamily: "'Inter', sans-serif",
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+      }}>{entry.label}</span>
+      <span style={{
+        fontSize: 10, fontWeight: 600, color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
+      }}>{entry.filename}</span>
+    </div>
+  )
+}
+
+function FolderDisclosure({ label, color, count, testid, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
+  const folderIcon = CANON_ICONS.FOLDER
+  return (
+    <div data-testid={testid} aria-expanded={open ? 'true' : 'false'} style={{ marginTop: 6 }}>
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          height: 40, padding: '0 4px',
+          cursor: 'pointer', borderRadius: 6,
+          borderBottom: `1px solid ${C.border}`,
+        }}
+      >
+        {folderIcon(color)}
+        <span style={{
+          flex: 1, fontSize: 13, fontWeight: 600, color: C.text,
+          fontFamily: "'Inter', sans-serif",
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+        }}>{label}</span>
+        {typeof count === 'number' && (
+          <span style={{
+            fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif",
+            background: C.chipBg, padding: '2px 7px', borderRadius: 10,
+            flexShrink: 0,
+          }}>{count}</span>
+        )}
+        <svg
+          width={14} height={14} viewBox="0 0 24 24" fill="none"
+          stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease', flexShrink: 0,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div style={{
+        maxHeight: open ? 99999 : 0,
+        overflow: 'hidden',
+        transition: 'max-height 0.25s ease',
+        paddingLeft: 18,
+      }}>
+        {open && children}
+      </div>
+    </div>
+  )
+}
+
+export function ProjectCanonSection() {
+  const {
+    activeProject,
+    activeMissionPath,
+    handleBriefClick,
+    taskMissions,
+    taskBriefs,
+    taskAttachments,
+  } = useTasksPanelCtx()
+
+  // Hide unless a real project is active and no mission is drilled in.
+  if (activeMissionPath) return null
+  if (!activeProject || activeProject === 'all') return null
+
+  const onClickCanon = (entry) => {
+    handleBriefClick?.({
+      project: activeProject,
+      filename: entry.filename,
+      source: 'canon',
+      title: `${entry.label} — ${activeProject}`,
+    })
+  }
+
+  const missionCount = Array.isArray(taskMissions) ? taskMissions.length : 0
+  const filesCount = (Array.isArray(taskBriefs) ? taskBriefs.length : 0) + (Array.isArray(taskAttachments) ? taskAttachments.length : 0)
+
+  return (
+    <div
+      data-testid="project-canon"
+      data-project={activeProject}
+      style={{ marginBottom: 16 }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', height: 32, gap: 6 }}>
+        <span style={{
+          fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
+          letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif",
+        }}>
+          Files
+        </span>
+      </div>
+      <div style={{ height: 1, background: C.border }} />
+
+      {PROJECT_CANON_ENTRIES.map((entry, i) => (
+        <CanonRow
+          key={entry.filename}
+          entry={entry}
+          projectSlug={activeProject}
+          isLast={i === PROJECT_CANON_ENTRIES.length - 1}
+          onClick={() => onClickCanon(entry)}
+        />
+      ))}
+
+      <FolderDisclosure
+        label="Missions"
+        color="#60A5FA"
+        count={missionCount}
+        testid="project-canon-missions-folder"
+      >
+        <ProjectMissionsSection />
+      </FolderDisclosure>
+
+      <FolderDisclosure
+        label="Files"
+        color="#94A3B8"
+        count={filesCount}
+        testid="project-canon-files-folder"
+      >
+        <ProjectFilesSection />
+      </FolderDisclosure>
     </div>
   )
 }

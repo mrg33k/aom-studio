@@ -69,7 +69,8 @@ export default function ProjectInputBar() {
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
   // CV4 swaps the inert chevron for a vertical commands menu (image gen, etc.)
-  const isCv4 = typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')
+  // R7.21 cutover: /dashboard renders CV4 too; cv4 mode = NOT on /cv3.
+  const isCv4 = typeof window !== 'undefined' && !window.location.pathname.startsWith('/cv3')
   const [commandsOpen, setCommandsOpen] = useState(false)
 
   // R6.2: mission chip attached by the file-browser drawer.
@@ -92,6 +93,14 @@ export default function ProjectInputBar() {
   }, [])
   const handleModalCommand = useCallback((skillName) => {
     if (skillName === '/integrations') setIntegrationsOpen(true)
+  }, [])
+
+  // CV4 commands menu dispatches 'cv4:open-integrations' to open the modal.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onOpen = () => setIntegrationsOpen(true)
+    window.addEventListener('cv4:open-integrations', onOpen)
+    return () => window.removeEventListener('cv4:open-integrations', onOpen)
   }, [])
 
   const handlePaste = useCallback((e) => {

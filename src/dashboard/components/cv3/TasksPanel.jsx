@@ -11,9 +11,8 @@
 import { C } from '../../lib/cv3Colors.js'
 import { TaskContextMenu } from './ContextMenu.jsx'
 
-import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from './tasks/FilesSection.jsx'
+import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection, ProjectCanonSection } from './tasks/FilesSection.jsx'
 import TaskDrawerProjectSummary from './tasks/TaskDrawerProjectSummary.jsx'
-import TaskDrawerFileFAQ from './tasks/TaskDrawerFileFAQ.jsx'
 import DocUpdatesStripe from './shared/DocUpdateCard.jsx'
 import ActiveTasksSection from './tasks/ActiveTasksSection.jsx'
 import ForemanTasksSection from './tasks/ForemanTasksSection.jsx'
@@ -406,21 +405,9 @@ function TasksPanelBody() {
             {/* R75-h4 -- live project-state feed: recent doc edits + mission creates.
                 Reuses DocUpdatesStripe already live in project-chat (h1/h2). */}
             <DocUpdatesStripe project={activeProject} limit={5} />
-            {/* R31 -- FAQ surface: Vision + Research bullets above Missions + Files. */}
-            <TaskDrawerFileFAQ
-              filename="VISION.md"
-              label="Vision"
-              testid="task-drawer-vision-faq"
-              iconColor="#A78BFA"
-            />
-            <TaskDrawerFileFAQ
-              filename="RESEARCH.md"
-              label="Research"
-              testid="task-drawer-research-faq"
-              iconColor="#6EE7B7"
-            />
-            <ProjectMissionsSection />
-            <ProjectFilesSection />
+            {/* R52 — five canon CAPS files (VISION/BUILD/CONTEXT/RESEARCH/ROADMAP)
+                at top with distinct icons, then Missions/ and Files/ folders. */}
+            <ProjectCanonSection />
           </div>
         )}
         {/* ── Owner's Personal Todos (R14e-4) ──────────────────── */}

@@ -1,17 +1,21 @@
 // CanonFilesPanel -- read-only reader for a project's canonical MDs.
-// Surfaces: VISION / RESEARCH / BUILD / CONTEXT / last-conversation.
-// last-conversation.md is shown with an explicit "agent's notes" label + tint.
-// R79-f1 MVP slice.
+// Surfaces the same five caps files the task drawer's ProjectCanonSection
+// shows: VISION / BUILD / CONTEXT / RESEARCH / ROADMAP. Distinct icons
+// per file (CANON_ICONS keyed by iconKey).
+// R79-f1 MVP slice. R52 (2026-05-13) — swapped last-conversation for
+// ROADMAP and wired the distinct-icon set so the panel matches the
+// canonical project shape across the app.
 import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
+import { CANON_ICONS } from '../tasks/FilesSection.jsx'
 
 const CANON_ENTRIES = [
-  { filename: 'VISION.md',            label: 'Vision',                   color: '#A78BFA' },
-  { filename: 'RESEARCH.md',          label: 'Research',                 color: '#6EE7B7' },
-  { filename: 'BUILD.md',             label: 'Build',                    color: '#FBBF24' },
-  { filename: 'CONTEXT.md',           label: 'Context',                  color: '#60A5FA' },
-  { filename: 'last-conversation.md', label: 'What the agent remembers', color: '#F9A8D4', isTape: true },
+  { filename: 'VISION.md',   label: 'Vision',   color: '#A78BFA', iconKey: 'VISION'   },
+  { filename: 'BUILD.md',    label: 'Build',    color: '#FBBF24', iconKey: 'BUILD'    },
+  { filename: 'CONTEXT.md',  label: 'Context',  color: '#60A5FA', iconKey: 'CONTEXT'  },
+  { filename: 'RESEARCH.md', label: 'Research', color: '#6EE7B7', iconKey: 'RESEARCH' },
+  { filename: 'ROADMAP.md',  label: 'Roadmap',  color: '#FB923C', iconKey: 'ROADMAP'  },
 ]
 
 export default function CanonFilesPanel() {
@@ -55,7 +59,7 @@ export default function CanonFilesPanel() {
         data-testid="canon-file-viewer"
         style={{
           position: 'absolute', inset: 0, zIndex: 50,
-          background: selectedFile.isTape ? 'rgba(8,12,24,0.99)' : C.bg,
+          background: C.bg,
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         }}
@@ -87,21 +91,6 @@ export default function CanonFilesPanel() {
           </button>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            {selectedFile.isTape && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                background: 'rgba(249,168,212,0.1)',
-                border: '1px solid rgba(249,168,212,0.25)',
-                borderRadius: 6,
-                padding: '2px 8px',
-                fontSize: 9, fontWeight: 700, color: '#F9A8D4',
-                fontFamily: "'Inter', sans-serif",
-                letterSpacing: '0.07em', textTransform: 'uppercase',
-                marginBottom: 4,
-              }}>
-                Agent's notes to itself
-              </div>
-            )}
             <div style={{
               fontSize: 15, fontWeight: 700, color: C.text,
               fontFamily: "'Inter', sans-serif",
@@ -134,7 +123,7 @@ export default function CanonFilesPanel() {
         <div style={{
           flex: 1, overflowY: 'auto',
           padding: '28px 32px 56px',
-          background: selectedFile.isTape ? 'rgba(249,168,212,0.025)' : 'transparent',
+          background: 'transparent',
         }}>
           {fileLoading ? (
             <div style={{ color: C.dim, fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Loading…</div>
@@ -211,50 +200,28 @@ export default function CanonFilesPanel() {
                 height: 42, padding: '0 8px',
                 cursor: 'pointer',
                 borderRadius: 7,
-                background: entry.isTape
-                  ? isHov ? 'rgba(249,168,212,0.08)' : 'rgba(249,168,212,0.03)'
-                  : isHov ? 'rgba(255,255,255,0.05)' : 'transparent',
+                background: isHov ? 'rgba(255,255,255,0.05)' : 'transparent',
                 borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
                 transition: 'background 0.12s',
               }}
             >
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={entry.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
+              {(CANON_ICONS[entry.iconKey] || CANON_ICONS.FOLDER)(entry.color)}
 
               <span style={{
-                flex: 1, fontSize: 13,
-                fontWeight: entry.isTape ? 400 : 500,
-                color: entry.isTape ? '#F9A8D4' : C.text,
+                flex: 1, fontSize: 13, fontWeight: 500, color: C.text,
                 fontFamily: "'Inter', sans-serif",
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {entry.label}
               </span>
 
-              {entry.isTape ? (
-                <span style={{
-                  fontSize: 9, fontWeight: 700, color: '#F9A8D4',
-                  fontFamily: "'Inter', sans-serif",
-                  background: 'rgba(249,168,212,0.1)',
-                  border: '1px solid rgba(249,168,212,0.2)',
-                  borderRadius: 4,
-                  padding: '2px 5px',
-                  letterSpacing: '0.05em', textTransform: 'uppercase',
-                  flexShrink: 0,
-                }}>
-                  Tape
-                </span>
-              ) : (
-                <span style={{
-                  fontSize: 10, fontWeight: 600, color: C.dim,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  flexShrink: 0,
-                }}>
-                  {entry.filename}
-                </span>
-              )}
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: C.dim,
+                fontFamily: "'JetBrains Mono', monospace",
+                flexShrink: 0,
+              }}>
+                {entry.filename}
+              </span>
             </div>
           )
         })}
