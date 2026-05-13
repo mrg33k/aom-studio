@@ -1,10 +1,17 @@
 // CornerV4.jsx -- WD-40 redesign playground at /cv4
 // Route: /cv4
 //
-// 1:1 duplicate of CornerV3.jsx as of R-CV4-1 baseline. V3 stays sacred at /dashboard.
-// All visual iteration toward the convention-first shell (left sidebar = projects + missions)
-// happens in this file across subsequent rounds. Shared cv3/ component tree is intentionally
-// imported as-is so chain animations + voice + cutscene primitives stay in lockstep.
+// R5 reset (2026-05-13): /cv4 went back to a 1:1 mirror of CornerV3.jsx
+// (the a9209e9 baseline), then R5.1 Phases A-H layered targeted CV4-only
+// simplifications on top: slim top bar, second-row ContextNav, killed
+// the third-row ThreadHeader, hoisted Commands out of the pill as a
+// purple sparkles menu, left drawer for projects/agents/account.
+//
+// CV3 stays sacred at /dashboard. All CV4 cuts are gated by either the
+// [data-shell="cv4"] CSS scope on this root or a path check
+// (window.location.pathname.startsWith('/cv4')) inside shared cv3/
+// components. Shared cv3/ trees are imported verbatim so voice + chain
+// animations stay in lockstep with V3.
 //
 // Mission: corner/users/aom/missions/aom-website/
 // Plan: corner/users/aom/missions/aom-website/research/2026-05-12-cv4-wd40-redesign-plan.md
@@ -41,7 +48,6 @@ import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
-import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
 import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 
@@ -210,8 +216,6 @@ export default function CornerV4() {
     userIdentity: parentUserIdentity,
   })
   const [phoneOverlayOpen, setPhoneOverlayOpen] = useState(false)
-  const [cutsceneItems, setCutsceneItems] = useState([])
-  const cutsceneShownRef = useRef(false)
 
   // Auto-close overlay 2 s after transcript dispatches, then toast.
   useEffect(() => {
@@ -221,39 +225,6 @@ export default function CornerV4() {
     return () => clearTimeout(t)
   }, [telephone.lastTranscript, telephone.isRecording, telephone.isTranscribing])
 
-  // Fetch stale-nudge items on mount (R1: stale-nudge only)
-  useEffect(() => {
-    if (!worldId || cutsceneShownRef.current) return
-    cutsceneShownRef.current = true
-
-    const fetchCutsceneItems = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('messages')
-          .select('id, timestamp, text, metadata')
-          .eq('client_id', worldId)
-          .eq('source', 'stale-project-nudge')
-          .order('timestamp', { ascending: false })
-          .limit(10)
-
-        if (error) {
-          console.error('Error fetching cutscene items:', error)
-          return
-        }
-
-        // Filter for unresolved items (no action_resolved_at)
-        const unresolved = (data || []).filter(item =>
-          !item.metadata?.action_resolved_at
-        )
-
-        setCutsceneItems(unresolved)
-      } catch (err) {
-        console.error('Cutscene fetch error:', err)
-      }
-    }
-
-    fetchCutsceneItems()
-  }, [worldId])
   // Notifications: filter inboxItems by per-agent read timestamps (session-only)
   const notifItems = useMemo(() => {
     return (inboxItems || []).filter(item =>
@@ -454,28 +425,6 @@ export default function CornerV4() {
       setInputBarSending(false)
     }
   }, [inputBarText, inputBarSending, selectedAgent, agents, tab, worldId])
-
-  // Cutscene action handler (R1: archive/tell_more/leave_it)
-  const handleCutsceneAction = useCallback(async (itemId, actionType) => {
-    try {
-      const response = await authFetch('/api/dashboard/cutscene-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_id: itemId,
-          item_type: 'stale_nudge',
-          action: actionType,
-          user_id: currentUser.id,
-        }),
-      })
-
-      if (!response.ok) {
-        console.error('Cutscene action failed:', response.statusText)
-      }
-    } catch (err) {
-      console.error('Cutscene action error:', err)
-    }
-  }, [currentUser?.id])
 
   // ── Nav heights ───────────────────────────────────────────────────────────
 
@@ -746,15 +695,6 @@ export default function CornerV4() {
             setPhoneOverlayOpen(false)
             if (telephone.isRecording) telephone.stop()
           }}
-        />
-      )}
-
-      {/* ── CUTSCENE OVERLAY (entrance: stale-nudge cards) ───────────────── */}
-      {cutsceneItems.length > 0 && (
-        <CutsceneOverlay
-          items={cutsceneItems}
-          onAction={handleCutsceneAction}
-          onClose={() => setCutsceneItems([])}
         />
       )}
 

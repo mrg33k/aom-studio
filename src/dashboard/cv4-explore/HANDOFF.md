@@ -95,13 +95,12 @@ aom-studio/src/dashboard/cv4-explore/
 
 | Feature | Purpose | CV4 Location | Status | Notes |
 |---|---|---|---|---|
-| Cutscene overlay | "Previously on" recap on entry | `mobile.css .cutscene-overlay, index.html` | ✓ **NEW** | Shows waiting-on-input items, stale projects, pending approvals, skill recommendations |
 | Left sidebar (desktop) | Agent/project quick-nav | `desktop.css .sidebar-left` | ✓ **NEW** | 280px fixed width, scrollable agent + project list with active highlight |
 | Right sidebar (desktop) | Live activity feed | `desktop.css .sidebar-right` | ✓ **NEW** | 320px fixed width, shows recent activity (task updates, mentions, new messages) |
 | Article reader | File/doc viewer | Not yet in CV4 | ⚠ Next phase | Will be separate modal; design pending detailed interaction spec |
 | Conversational create | Project creation dialog | Not yet in CV4 | ⚠ Next phase | Multi-step creation flow with agent guidance; design pending |
 | Stale-project nudge | Project re-engagement card | Mapped to .project-card with badge | ⚠ Partial | Card styling done; action button behavior (archive, resume) pending |
-| Skill recommendation | New skill discovery card | .cutscene-item "New Skill Available" | ✓ **NEW** | Designed within cutscene overlay |
+| Skill recommendation | New skill discovery card | (pending) | ⚠ Future | Discovery surface to be determined |
 
 ---
 
@@ -446,129 +445,6 @@ aom-studio/src/dashboard/cv4-explore/
 - Center canvas feels "native" to desktop (not stretched mobile)
 - Scales beautifully to wide monitors (2560px+)
 
-### 3. Cutscene Overlay
-
-**Problem:** User logs in and there are 12 unread items, 3 stale projects, and 2 approvals pending. Dashboard doesn't tell them what to do first.
-
-**Solution:** On entry, a video-game style "cut-scene" plays: modal overlay with all waiting-on-input items, action buttons, dismissible per-item.
-
-**Items in cutscene:**
-- **Stale projects:** "ISA Energy Pricing hasn't been touched in 14 days. Archive, resume, or dismiss?"
-- **Needs input:** "Brand Color Approval: Review 2 color options and pick one."
-- **Pending approvals:** "Cleo wants to upload 2.4GB footage. Approve, deny, or ask questions?"
-- **Skill recommendations:** "New skill available: /video-pipeline. Learn more or dismiss?"
-
-**Implementation:**
-
-```html
-<div class="cutscene-overlay active">
-  <div class="cutscene-container">
-    <h2 class="cutscene-hero">Welcome Back to AOM</h2>
-    
-    <div class="cutscene-items">
-      <div class="cutscene-item">
-        <div class="cutscene-item-type">Stale Project</div>
-        <div class="cutscene-item-title">ISA Energy Pricing</div>
-        <div class="cutscene-item-desc">14 days inactive. Still working on this?</div>
-        <div class="cutscene-item-actions">
-          <button class="cutscene-action-btn primary">Resume</button>
-          <button class="cutscene-action-btn secondary">Archive</button>
-        </div>
-      </div>
-      
-      <!-- More items -->
-    </div>
-    
-    <button class="cutscene-dismiss-btn">Dismiss All</button>
-  </div>
-</div>
-```
-
-**CSS:**
-```css
-.cutscene-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.95);
-  display: none;              /* Hidden by default */
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease-out both;
-}
-
-.cutscene-overlay.active {
-  display: flex;              /* Show when .active class added */
-}
-
-.cutscene-container {
-  flex-direction: column;
-  gap: var(--sp-3xl);
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.cutscene-hero {
-  font-size: var(--fs-2xl);
-  font-family: var(--ff-headline);
-  color: var(--c-text);
-  text-align: center;
-}
-
-.cutscene-items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-lg);
-}
-
-.cutscene-item {
-  background: var(--c-s2);
-  border: 1px solid var(--c-border);
-  border-radius: 12px;
-  padding: var(--sp-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
-}
-
-.cutscene-item-type {
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: var(--ls-caps);
-  text-transform: uppercase;
-  color: var(--c-accent);
-}
-
-.cutscene-action-btn {
-  padding: var(--sp-md) var(--sp-lg);
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.cutscene-action-btn.primary {
-  background: var(--c-accent);
-  color: var(--c-bg);
-}
-
-.cutscene-action-btn.secondary {
-  background: transparent;
-  border: 1px solid var(--c-border);
-  color: var(--c-text2);
-}
-```
-
-**Trigger:** On mount, JS checks for waiting-on-input items. If count > 0, add `.active` class to overlay.
-
-**Advantage:**
-- User has immediate context on landing
-- Reduces need to scan dashboard for what's urgent
-- Supports async decision-making (keep items until user dismisses)
-- Extensible: new item types (mentions, reminders) can be added to cutscene
-
 ---
 
 ## Component Mapping (CV3 → CV4 React Conversion)
@@ -622,8 +498,6 @@ When converting to React, preserve these components as-is and wire them to CV4 H
 
 | CV3 Component | File | CV4 HTML | Conversion Task |
 |---|---|---|---|
-| CutsceneOverlay | (new) | `.cutscene-overlay` | Create new component; render items + action buttons |
-| CutsceneItem | (new) | `.cutscene-item` | Create new component; map item type to icon + colors |
 | FloatingCallBar | components/FloatingCallBar.jsx | `.floating-call-bar` | Preserve styling; bind to live call state |
 | TaskCompletionToast | components/TaskCompletionToast.jsx | `.toast` | Keep position + auto-dismiss; bind message prop |
 
@@ -636,7 +510,7 @@ When converting to React, preserve these components as-is and wire them to CV4 H
 1. Create new `CornerV4.jsx` in `src/dashboard/`
 2. Copy layout structure from `index.html` (.page, .nav, sidebars, main-content)
 3. Import all three CSS files (tokens.css, mobile.css, desktop.css)
-4. Create new components: LayoutGrid, SidebarLeft, SidebarRight, CutsceneOverlay, AgentReplyChain
+4. Create new components: LayoutGrid, SidebarLeft, SidebarRight, AgentReplyChain
 5. Wrap existing ChatPanel + TasksPanel components in new layout
 6. Verify three-column grid renders on desktop, single column on mobile
 
@@ -664,15 +538,7 @@ When converting to React, preserve these components as-is and wire them to CV4 H
 4. Create SidebarRight component (activity feed)
 5. Fetch recent activity from Supabase
 
-### Phase 5: Cutscene (1 day)
-
-1. Create CutsceneOverlay + CutsceneItem components
-2. Fetch waiting-on-input items, stale projects, pending approvals
-3. Map item types to icons + colors
-4. Bind action buttons (resume, archive, approve, dismiss)
-5. Test on mobile + desktop
-
-### Phase 6: Polish (1 day)
+### Phase 5: Polish (1 day)
 
 1. Verify responsive behavior: mobile (390px), tablet (768px), desktop (1440px)
 2. Check all animations (pulse on step, fade on overlays, transitions on hover)
@@ -690,9 +556,7 @@ When converting to React, preserve these components as-is and wire them to CV4 H
 
 3. **Right sidebar activity feed:** Real-time (new activity appears instantly) or manual refresh (user clicks "check updates")? Suggest real-time via Supabase realtime subscriptions.
 
-4. **Cutscene dismissal:** Individual item dismiss buttons (user can keep "Needs Input" but dismiss "Stale") or "Dismiss All" only? Demo shows both; clarify UX intent.
-
-5. **Sidebar active state:** When user clicks agent/project in left sidebar, should it switch the main chat view immediately OR open a modal/drawer first? Suggest immediate switch for speed.
+4. **Sidebar active state:** When user clicks agent/project in left sidebar, should it switch the main chat view immediately OR open a modal/drawer first? Suggest immediate switch for speed.
 
 6. **Left sidebar agent list:** Fixed height with scroll, or flex to content height? If many agents (50+), scroll is better. Suggest fixed height + auto-scroll to active agent.
 
@@ -700,7 +564,7 @@ When converting to React, preserve these components as-is and wire them to CV4 H
 
 ## Verification Checklist (Before Dev Start)
 
-- [ ] index.html opens in Chrome and shows all 4 demo views (chat, tasks, cutscene, commands)
+- [ ] index.html opens in Chrome and shows demo views (chat, tasks, commands)
 - [ ] Mobile view (390px) is single column, sidebars hidden
 - [ ] Desktop view (1440px) is three-column, sidebars visible
 - [ ] Responsive resize: stretch browser from 390px to 1440px, layout updates smoothly
@@ -767,8 +631,7 @@ python3 -m http.server 8765
 1. Load page, see demo welcome message
 2. Click "Chat Demo" link → view 1:1 conversation (user pinned, agent steps, history)
 3. Click "Tasks Demo" → view project cards with status badges
-4. Click "Cutscene Demo" → view overlay with action items
-5. Resize browser window 390px → 1440px, observe responsive layout
+4. Resize browser window 390px → 1440px, observe responsive layout
 
 ---
 
@@ -779,8 +642,7 @@ python3 -m http.server 8765
 3. **Dev team:** Create AgentReplyChain + StepItem components
 4. **Dev team:** Refactor ChatPanel for user-pinned-to-top architecture
 5. **Dev team:** Create SidebarLeft + SidebarRight components with Supabase data
-6. **Dev team:** Create CutsceneOverlay + action button handlers
-7. **Dev team:** Test responsive behavior on real devices
+6. **Dev team:** Test responsive behavior on real devices
 8. **Dev team:** Deploy to Vercel, confirm live
 9. **Archive:** Move cv4-explore to `src/dashboard/cv4-archive/` once V4 is live in production
 

@@ -368,22 +368,6 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 
 ## NEW v4 Foundational Components (Per Brief)
 
-### 1. Cut-Scene Overlay
-**Purpose:** Entrance experience narrating what's open (R74-cutscene)  
-**File:** `components/cutscene-overlay.html`  
-**Content:**
-- Semi-transparent dark backdrop (full viewport)
-- Center card: "Welcome back, Patrik"
-- Items list:
-  - Stale projects needing check-in (R75-c1)
-  - Tasks with `needs_input` (action buttons: Answer / Defer)
-  - Pending approvals (action buttons: Approve / Deny)
-  - Unanswered DMs in shared rooms
-  - Skill recommendations
-  - Recovery narrations
-- Each item: icon + title + subtitle + action button
-- "Dismiss" button at bottom
-
 ### 2. Stale-Project-Nudge Card
 **Purpose:** Action card for stale projects (R75-c1 render fix)  
 **File:** `components/stale-nudge-card.html`  
@@ -597,7 +581,6 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 - [ ] `views/project-chat.html` — compose above
 
 ### Phase 6: New v4 Components
-- [ ] `components/cutscene-overlay.html`
 - [ ] `components/stale-nudge-card.html`
 - [ ] `components/project-confirm-card.html`
 - [ ] `components/article-reader.html`

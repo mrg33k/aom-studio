@@ -40,7 +40,6 @@ import GlobalCallButton from './components/cv3/voice/GlobalCallButton.jsx'
 import FloatingCallBar from './components/cv3/voice/FloatingCallBar.jsx'
 import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
-import CutsceneOverlay from './components/cv3/cutscene/CutsceneOverlay.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -198,9 +197,6 @@ export default function CornerV3() {
     userIdentity: parentUserIdentity,
   })
   const [phoneOverlayOpen, setPhoneOverlayOpen] = useState(false)
-  const [cutsceneItems, setCutsceneItems] = useState([])
-  const cutsceneShownRef = useRef(false)
-
   // Auto-close overlay 2 s after transcript dispatches, then toast.
   useEffect(() => {
     if (!telephone.lastTranscript || telephone.isRecording || telephone.isTranscribing) return
@@ -209,39 +205,6 @@ export default function CornerV3() {
     return () => clearTimeout(t)
   }, [telephone.lastTranscript, telephone.isRecording, telephone.isTranscribing])
 
-  // Fetch stale-nudge items on mount (R1: stale-nudge only)
-  useEffect(() => {
-    if (!worldId || cutsceneShownRef.current) return
-    cutsceneShownRef.current = true
-
-    const fetchCutsceneItems = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('messages')
-          .select('id, timestamp, text, metadata')
-          .eq('client_id', worldId)
-          .eq('source', 'stale-project-nudge')
-          .order('timestamp', { ascending: false })
-          .limit(10)
-
-        if (error) {
-          console.error('Error fetching cutscene items:', error)
-          return
-        }
-
-        // Filter for unresolved items (no action_resolved_at)
-        const unresolved = (data || []).filter(item =>
-          !item.metadata?.action_resolved_at
-        )
-
-        setCutsceneItems(unresolved)
-      } catch (err) {
-        console.error('Cutscene fetch error:', err)
-      }
-    }
-
-    fetchCutsceneItems()
-  }, [worldId])
   // Notifications: filter inboxItems by per-agent read timestamps (session-only)
   const notifItems = useMemo(() => {
     return (inboxItems || []).filter(item =>
@@ -441,28 +404,6 @@ export default function CornerV3() {
       setInputBarSending(false)
     }
   }, [inputBarText, inputBarSending, selectedAgent, agents, tab, worldId])
-
-  // Cutscene action handler (R1: archive/tell_more/leave_it)
-  const handleCutsceneAction = useCallback(async (itemId, actionType) => {
-    try {
-      const response = await authFetch('/api/dashboard/cutscene-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_id: itemId,
-          item_type: 'stale_nudge',
-          action: actionType,
-          user_id: currentUser.id,
-        }),
-      })
-
-      if (!response.ok) {
-        console.error('Cutscene action failed:', response.statusText)
-      }
-    } catch (err) {
-      console.error('Cutscene action error:', err)
-    }
-  }, [currentUser?.id])
 
   // ── Nav heights ───────────────────────────────────────────────────────────
 
@@ -905,15 +846,6 @@ export default function CornerV3() {
             setPhoneOverlayOpen(false)
             if (telephone.isRecording) telephone.stop()
           }}
-        />
-      )}
-
-      {/* ── CUTSCENE OVERLAY (entrance: stale-nudge cards) ───────────────── */}
-      {cutsceneItems.length > 0 && (
-        <CutsceneOverlay
-          items={cutsceneItems}
-          onAction={handleCutsceneAction}
-          onClose={() => setCutsceneItems([])}
         />
       )}
 
