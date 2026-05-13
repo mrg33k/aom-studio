@@ -111,6 +111,9 @@ export default function CornerV4() {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
   const [prefillMessage, setPrefillMessage] = useState(null)
+  // R6.2: mission clicked from the drawer is "attached" to the composer
+  // and rendered as a context chip. Cleared on send by useChatSend.
+  const [attachedMission, setAttachedMission] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -460,8 +463,9 @@ export default function CornerV4() {
     selectedAgent, conversationTarget,
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
+    attachedMission, setAttachedMission,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, stageFilesRef])
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, attachedMission, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -715,10 +719,16 @@ export default function CornerV4() {
         selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
         onSelectAgent={handleSelectAgent}
         onSelectProject={handleSelectProject}
-        onSelectMission={(_mission, project) => {
-          // R6.1: route to the project's chat. R6.2 will additionally
-          // attach the mission as a context chip on the composer.
+        onSelectMission={(mission, project) => {
+          // R6.2: route to the project's chat AND attach the mission as a
+          // context chip on the composer. Cleared on send.
           handleSelectProject(project)
+          setAttachedMission({
+            slug: mission.slug,
+            name: mission.name,
+            projectSlug: project.slug,
+            path: `corner:${mission.slug}`,
+          })
         }}
         onLogout={async () => {
           if (supabase) await supabase.auth.signOut().catch(() => {})
