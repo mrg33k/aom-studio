@@ -1,0 +1,26 @@
+{
+  "_comment": "Mission manifest for the CV4 drawer (R6.1). Each entry binds a mission slug to a project slug. The drawer renders missions nested under their parent project. Source-of-truth lives in AOM-EA at corner/users/aom/missions/<slug>/; this JSON is the dashboard's read view. Swap to a live endpoint once we have one — see corner:cv4-redesign R6.1.",
+  "missions": [
+    { "slug": "aom-website",        "name": "AOM Website",          "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "brand-identity-rewrite", "name": "Brand identity rewrite", "projectSlug": "aom",            "status": "in-progress" },
+    { "slug": "working-in-resolve", "name": "Working in Resolve",   "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "aom-strategy",       "name": "AOM Strategy",         "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "video-pipeline-reshape", "name": "Video pipeline reshape", "projectSlug": "aom",            "status": "in-progress" },
+    { "slug": "agent-roster-cleanup", "name": "Agent roster cleanup", "projectSlug": "aom",                "status": "in-progress" },
+    { "slug": "integrations",       "name": "Integrations",         "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "aom-studio-cleanup", "name": "Studio cleanup",       "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "repo-restructure",   "name": "Repo restructure",     "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "lead-dev-skills-stack", "name": "Lead dev skills",   "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "chrome-mcp-reliability", "name": "Chrome MCP reliability", "projectSlug": "aom",            "status": "in-progress" },
+    { "slug": "resolve-color-collab", "name": "Resolve color collab", "projectSlug": "aom",                "status": "in-progress" },
+    { "slug": "shared-memory-substrate", "name": "Shared memory substrate", "projectSlug": "aom",         "status": "in-progress" },
+    { "slug": "aom-lut",            "name": "AOM LUT",              "projectSlug": "aom",                  "status": "in-progress" },
+    { "slug": "cv4-redesign",       "name": "CV4 redesign",         "projectSlug": "corner",               "status": "in-progress" },
+    { "slug": "chat-reliability",   "name": "Chat reliability",     "projectSlug": "corner",               "status": "in-progress" },
+    { "slug": "notifications",      "name": "Notifications",        "projectSlug": "corner",               "status": "in-progress" },
+    { "slug": "integrations",       "name": "Integrations",         "projectSlug": "corner",               "status": "in-progress" },
+    { "slug": "phone-recording",    "name": "Phone recording",      "projectSlug": "corner",               "status": "in-progress" },
+    { "slug": "live-call",          "name": "Live call",            "projectSlug": "corner",               "status": "in-progress" },
+    { "slug": "launch-readiness",   "name": "Launch readiness",     "projectSlug": "corner",               "status": "in-progress" }
+  ]
+}

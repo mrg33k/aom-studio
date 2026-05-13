@@ -6,6 +6,8 @@ import { ReplyToChip } from '../ContextMenu.jsx'
 import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import ImageGenPicker from '../shared/ImageGenPicker.jsx'
 import ComposerCommandsMenu from '../../../cv4/ComposerCommandsMenu.jsx'
+import MissionChip from '../../../cv4/MissionChip.jsx'
+import { useCornerNav } from '../../../CornerContext.jsx'
 import {
   useChatCore,
   useChatSendCtx,
@@ -70,6 +72,9 @@ export default function ProjectInputBar() {
   const isCv4 = typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')
   const [commandsOpen, setCommandsOpen] = useState(false)
 
+  // R6.2: mission chip attached by the file-browser drawer.
+  const { attachedMission, setAttachedMission } = useCornerNav()
+
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
   // Auto-open the modal when the user lands back from the OAuth callback so
   // they immediately see the success state (or error reason).
@@ -118,6 +123,9 @@ export default function ProjectInputBar() {
         <ReplyToChip target={replyTo} onDismiss={() => setReplyTo(null)} />
       )}
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
+      {isCv4 && attachedMission && (
+        <MissionChip mission={attachedMission} onClear={() => setAttachedMission(null)} />
+      )}
       <div style={{
         position: 'relative',
         maxWidth: isCv4 ? 612 : 560,
@@ -167,8 +175,12 @@ export default function ProjectInputBar() {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
                 if ((!input.trim() && !pasteChips?.length) || sending) return
-                sendProjectText(input)
+                const missionPrefix = attachedMission
+                  ? `[Mission: ${attachedMission.path}] `
+                  : ''
+                sendProjectText(missionPrefix + input)
                 setInput('')
+                if (attachedMission) setAttachedMission(null)
               }
             }}
             onKeyUp={updateCaret}
@@ -278,8 +290,12 @@ export default function ProjectInputBar() {
               title="Send"
               onClick={() => {
                 if ((!input.trim() && !pasteChips?.length) || sending) return
-                sendProjectText(input)
+                const missionPrefix = attachedMission
+                  ? `[Mission: ${attachedMission.path}] `
+                  : ''
+                sendProjectText(missionPrefix + input)
                 setInput('')
+                if (attachedMission) setAttachedMission(null)
               }}
               disabled={sending}
               style={{

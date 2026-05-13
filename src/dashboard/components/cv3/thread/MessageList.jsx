@@ -854,7 +854,7 @@ export default function MessageList({ roomType = 'agent' }) {
                     const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
                     if (isUser) {
                       return (
-                        <div style={{
+                        <div data-bubble="user" style={{
                           padding: '10px 16px',
                           borderRadius: '18px 18px 4px 18px',
                           fontSize: 14, lineHeight: 1.6,
@@ -872,6 +872,7 @@ export default function MessageList({ roomType = 'agent' }) {
                     }
                     return (
                       <div
+                        data-bubble="assistant"
                         data-testid={hasChain ? 'assistant-final-message' : undefined}
                         style={{
                           padding: hasChain ? '12px 14px' : '2px 0',

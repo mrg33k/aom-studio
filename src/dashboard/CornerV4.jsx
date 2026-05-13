@@ -111,6 +111,9 @@ export default function CornerV4() {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
   const [prefillMessage, setPrefillMessage] = useState(null)
+  // R6.2: mission clicked from the drawer is "attached" to the composer
+  // and rendered as a context chip. Cleared on send by useChatSend.
+  const [attachedMission, setAttachedMission] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -460,8 +463,9 @@ export default function CornerV4() {
     selectedAgent, conversationTarget,
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
+    attachedMission, setAttachedMission,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, stageFilesRef])
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, attachedMission, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -501,6 +505,29 @@ export default function CornerV4() {
       <style>{`
         [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
         [data-shell="cv4"] [data-role="thread-header"] { display: none !important; }
+        /* R6.4: message bubble typography — prose-grade reading, not SMS.
+           Bumps font + line-height, caps line length, softens contrast,
+           adds paragraph breathing room for multi-paragraph content. */
+        [data-shell="cv4"] [data-bubble] {
+          font-size: 15px !important;
+          line-height: 1.65 !important;
+          letter-spacing: 0 !important;
+          max-width: 62ch;
+        }
+        [data-shell="cv4"] [data-bubble="user"] {
+          filter: saturate(0.78);
+        }
+        [data-shell="cv4"] [data-bubble="assistant"] {
+          color: #CBD5E1 !important;
+        }
+        [data-shell="cv4"] [data-bubble="assistant"] p,
+        [data-shell="cv4"] [data-bubble="user"] p {
+          margin: 0 0 0.75em;
+        }
+        [data-shell="cv4"] [data-bubble="assistant"] p:last-child,
+        [data-shell="cv4"] [data-bubble="user"] p:last-child {
+          margin-bottom: 0;
+        }
       `}</style>
 
       {/* ── NAV BAR (R5.1 Phase F: slim top row — logo + bell + avatar) ───
@@ -715,6 +742,17 @@ export default function CornerV4() {
         selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
         onSelectAgent={handleSelectAgent}
         onSelectProject={handleSelectProject}
+        onSelectMission={(mission, project) => {
+          // R6.2: route to the project's chat AND attach the mission as a
+          // context chip on the composer. Cleared on send.
+          handleSelectProject(project)
+          setAttachedMission({
+            slug: mission.slug,
+            name: mission.name,
+            projectSlug: project.slug,
+            path: `corner:${mission.slug}`,
+          })
+        }}
         onLogout={async () => {
           if (supabase) await supabase.auth.signOut().catch(() => {})
           window.location.href = '/'
