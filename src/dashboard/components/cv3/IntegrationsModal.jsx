@@ -60,7 +60,7 @@ export default function IntegrationsModal({ open, onClose }) {
   const [tab, setTab] = useState('available')
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [connectedMap, setConnectedMap] = useState({}) // slug -> {status, connected_at}
+  const [connectedMap, setConnectedMap] = useState({}) // slug -> {status, connected_at, system?, system_note?}
   const [loading, setLoading] = useState(false)
   const [serverAware, setServerAware] = useState(false)
 
@@ -78,7 +78,12 @@ export default function IntegrationsModal({ open, onClose }) {
           const fromServer = {}
           data.integrations.forEach(i => {
             if (i.status === 'connected') {
-              fromServer[i.slug] = { status: 'connected', connected_at: i.connected_at || null }
+              fromServer[i.slug] = {
+                status: 'connected',
+                connected_at: i.connected_at || null,
+                system: !!i.system,
+                system_note: i.system_note || null,
+              }
             }
           })
           // Server is authoritative when reachable, but local additions persist.
@@ -258,22 +263,44 @@ export default function IntegrationsModal({ open, onClose }) {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8 }}>
               {filtered.map(i => {
-                const isConnected = !!connectedMap[i.slug]
+                const conn = connectedMap[i.slug]
+                const isConnected = !!conn
+                const isSystem = i.system || conn?.system
+                const isComingSoon = !isConnected && i.oauth_status === 'coming_soon'
                 return (
                   <div key={i.slug} data-testid={`integration-${i.slug}`} style={{
                     display: 'flex', gap: 10, alignItems: 'flex-start',
                     padding: 10, borderRadius: 12,
-                    background: C.bg, border: '1px solid ' + C.border2,
+                    background: C.bg, border: '1px solid ' + (isSystem ? 'rgba(59,130,246,0.3)' : C.border2),
                   }}>
                     <IconBlock slug={i.slug} name={i.name} category={i.category} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.name}</span>
                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted }}>{i.category}</span>
+                        {isSystem && (
+                          <span title={i.system_note || conn?.system_note || 'System integration — wired at the AOM platform level.'} style={{
+                            fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                            color: '#93c5fd', background: 'rgba(59,130,246,0.18)',
+                            border: '1px solid rgba(59,130,246,0.35)',
+                            padding: '2px 6px', borderRadius: 6,
+                          }}>System</span>
+                        )}
                       </div>
                       <div style={{ fontSize: 11, color: C.text2, marginTop: 2, lineHeight: 1.35 }}>{i.description}</div>
                       <div style={{ marginTop: 8 }}>
-                        {isConnected ? (
+                        {isConnected && isSystem ? (
+                          <button
+                            type="button"
+                            disabled
+                            title={i.system_note || conn?.system_note || ''}
+                            style={{
+                              fontSize: 11, padding: '4px 10px', borderRadius: 8,
+                              background: 'rgba(59,130,246,0.12)', color: '#93c5fd',
+                              border: '1px solid rgba(59,130,246,0.3)', cursor: 'default',
+                              fontWeight: 600,
+                            }}>Connected · platform</button>
+                        ) : isConnected ? (
                           <button
                             type="button"
                             onClick={() => disconnect(i.slug)}
@@ -283,6 +310,17 @@ export default function IntegrationsModal({ open, onClose }) {
                               border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer',
                               fontWeight: 600,
                             }}>Disconnect</button>
+                        ) : isComingSoon ? (
+                          <button
+                            type="button"
+                            disabled
+                            title="Real OAuth not wired yet — coming in a follow-up round."
+                            style={{
+                              fontSize: 11, padding: '4px 10px', borderRadius: 8,
+                              background: 'rgba(148,163,184,0.10)', color: '#94a3b8',
+                              border: '1px solid rgba(148,163,184,0.25)', cursor: 'not-allowed',
+                              fontWeight: 600,
+                            }}>Coming soon</button>
                         ) : (
                           <button
                             type="button"

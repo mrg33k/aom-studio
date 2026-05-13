@@ -77,6 +77,16 @@ export default async function handler(req, res) {
 
   const integrations = REGISTRY.map(i => {
     const row = rowsBySlug[i.slug]
+    // System integrations are AOM-platform-level — always connected for authed users.
+    // The user's account_integrations row, if any, can still override (e.g. user
+    // explicitly disconnected).
+    if (i.system && (!row || row.status !== 'available')) {
+      return {
+        ...i,
+        status: 'connected',
+        connected_at: row?.connected_at || '2026-01-01T00:00:00Z',
+      }
+    }
     return {
       ...i,
       status: row?.status || 'available',
