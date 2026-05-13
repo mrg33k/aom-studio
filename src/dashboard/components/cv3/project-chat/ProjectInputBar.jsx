@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import IntegrationsModal from '../IntegrationsModal.jsx'
@@ -64,6 +64,20 @@ export default function ProjectInputBar() {
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
+  // Auto-open the modal when the user lands back from the OAuth callback so
+  // they immediately see the success state (or error reason).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const u = new URL(window.location.href)
+    const flag = u.searchParams.get('integrations')
+    if (flag === 'connected' || flag === 'error') {
+      setIntegrationsOpen(true)
+      u.searchParams.delete('integrations')
+      u.searchParams.delete('slug')
+      u.searchParams.delete('reason')
+      window.history.replaceState({}, '', u.toString())
+    }
+  }, [])
   const handleModalCommand = useCallback((skillName) => {
     if (skillName === '/integrations') setIntegrationsOpen(true)
   }, [])

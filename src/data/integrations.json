@@ -2,20 +2,20 @@
   "generatedAt": "2026-05-12",
   "source": "corner:integrations mission R1+R2",
   "integrations": [
-    { "slug": "gmail", "name": "Gmail", "category": "Communication", "description": "Read and send email on your behalf.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "gmail", "name": "Gmail", "category": "Communication", "description": "Read and send email on your behalf.", "auth_type": "oauth" },
     { "slug": "google-calendar", "name": "Google Calendar", "category": "Communication", "description": "Read and create calendar events.", "auth_type": "oauth", "system": true, "system_note": "Wired at platform level. Used by Cleo for scheduling + verify-page Playwright auth." },
     { "slug": "outlook", "name": "Outlook", "category": "Communication", "description": "Microsoft email + calendar.", "auth_type": "oauth", "oauth_status": "coming_soon" },
-    { "slug": "slack", "name": "Slack", "category": "Communication", "description": "Post messages and read channels.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "slack", "name": "Slack", "category": "Communication", "description": "Post messages and read channels.", "auth_type": "oauth" },
     { "slug": "discord", "name": "Discord", "category": "Communication", "description": "Post to channels and read messages.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "zoom", "name": "Zoom", "category": "Communication", "description": "Schedule and join meetings.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "loom", "name": "Loom", "category": "Communication", "description": "Generate and share video messages.", "auth_type": "api_key", "oauth_status": "coming_soon" },
     { "slug": "telegram", "name": "Telegram", "category": "Communication", "description": "Send and receive messages.", "auth_type": "api_key", "oauth_status": "coming_soon" },
     { "slug": "twilio", "name": "Twilio", "category": "Communication", "description": "SMS, voice, and WhatsApp.", "auth_type": "api_key", "oauth_status": "coming_soon" },
 
-    { "slug": "notion", "name": "Notion", "category": "Productivity", "description": "Read and write pages and databases.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "notion", "name": "Notion", "category": "Productivity", "description": "Read and write pages and databases.", "auth_type": "oauth" },
     { "slug": "asana", "name": "Asana", "category": "Productivity", "description": "Create and update tasks.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "trello", "name": "Trello", "category": "Productivity", "description": "Boards, lists, cards.", "auth_type": "oauth", "oauth_status": "coming_soon" },
-    { "slug": "linear", "name": "Linear", "category": "Productivity", "description": "Issue tracker for product teams.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "linear", "name": "Linear", "category": "Productivity", "description": "Issue tracker for product teams.", "auth_type": "oauth" },
     { "slug": "jira", "name": "Jira", "category": "Productivity", "description": "Issue tracking and project management.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "calendly", "name": "Calendly", "category": "Productivity", "description": "Scheduling links and events.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "typeform", "name": "Typeform", "category": "Productivity", "description": "Forms and surveys.", "auth_type": "oauth", "oauth_status": "coming_soon" },
@@ -30,7 +30,7 @@
     { "slug": "aws", "name": "AWS", "category": "Developer", "description": "Amazon Web Services.", "auth_type": "api_key", "oauth_status": "coming_soon" },
     { "slug": "figma", "name": "Figma", "category": "Developer", "description": "Design files and dev mode.", "auth_type": "oauth", "oauth_status": "coming_soon" },
 
-    { "slug": "google-drive", "name": "Google Drive", "category": "Storage", "description": "Files and folders in your Google account.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "google-drive", "name": "Google Drive", "category": "Storage", "description": "Files and folders in your Google account.", "auth_type": "oauth" },
     { "slug": "dropbox", "name": "Dropbox", "category": "Storage", "description": "File sync and sharing.", "auth_type": "oauth", "system": true, "system_note": "Wired at platform level via local Dropbox sync — reference paths in agent memory." },
     { "slug": "microsoft-365", "name": "Microsoft 365", "category": "Storage", "description": "OneDrive, Word, Excel.", "auth_type": "oauth", "oauth_status": "coming_soon" },
 
@@ -40,7 +40,7 @@
     { "slug": "plaid", "name": "Plaid", "category": "Payments", "description": "Bank account connections.", "auth_type": "api_key", "oauth_status": "coming_soon" },
     { "slug": "quickbooks", "name": "QuickBooks", "category": "Payments", "description": "Accounting and bookkeeping.", "auth_type": "oauth", "oauth_status": "coming_soon" },
 
-    { "slug": "hubspot", "name": "HubSpot", "category": "CRM", "description": "Contacts, deals, marketing.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "hubspot", "name": "HubSpot", "category": "CRM", "description": "Contacts, deals, marketing.", "auth_type": "oauth" },
     { "slug": "salesforce", "name": "Salesforce", "category": "CRM", "description": "Enterprise CRM.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "pipedrive", "name": "Pipedrive", "category": "CRM", "description": "Sales pipeline.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "apollo", "name": "Apollo.io", "category": "CRM", "description": "Sales intelligence and outreach.", "auth_type": "api_key", "system": true, "system_note": "Wired at platform level. Jacob agent uses it for outreach." },
@@ -71,6 +71,17 @@
     { "slug": "zapier", "name": "Zapier", "category": "Automation", "description": "Workflow automation across apps.", "auth_type": "api_key", "oauth_status": "coming_soon" },
     { "slug": "make", "name": "Make", "category": "Automation", "description": "Visual automation (formerly Integromat).", "auth_type": "api_key", "oauth_status": "coming_soon" },
     { "slug": "n8n", "name": "n8n", "category": "Automation", "description": "Self-hostable workflow automation.", "auth_type": "api_key", "oauth_status": "coming_soon" },
-    { "slug": "pipedream", "name": "Pipedream", "category": "Automation", "description": "Serverless workflows.", "auth_type": "api_key", "oauth_status": "coming_soon" }
+    { "slug": "pipedream", "name": "Pipedream", "category": "Automation", "description": "Serverless workflows.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+
+    { "slug": "openai-images", "name": "OpenAI Images (DALL-E)", "category": "Image Generation", "description": "GPT-image-1 / DALL-E 3 from OpenAI.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "google-imagen", "name": "Google Imagen", "category": "Image Generation", "description": "Imagen 3 + Gemini 2.0 native image generation.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "flux", "name": "Flux (Black Forest Labs)", "category": "Image Generation", "description": "Flux Pro / Flux Dev / Flux Schnell models.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "recraft", "name": "Recraft", "category": "Image Generation", "description": "Brand-style image gen, vectors, mockups.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "ideogram", "name": "Ideogram", "category": "Image Generation", "description": "Typography-strong image generation.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "midjourney", "name": "Midjourney", "category": "Image Generation", "description": "Discord-based generation (API via 3rd-party).", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "leonardo", "name": "Leonardo.AI", "category": "Image Generation", "description": "Game / creative asset generation.", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "replicate", "name": "Replicate", "category": "Image Generation", "description": "Hosted models (SDXL, Flux, custom).", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "runway", "name": "Runway", "category": "Image Generation", "description": "Image + video generation (Gen-3).", "auth_type": "api_key", "oauth_status": "coming_soon" },
+    { "slug": "krea", "name": "Krea", "category": "Image Generation", "description": "Real-time image generation + upscaling.", "auth_type": "api_key", "oauth_status": "coming_soon" }
   ]
 }

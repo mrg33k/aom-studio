@@ -141,7 +141,16 @@ export default function IntegrationsModal({ open, onClose }) {
     })
   }, [tab, query, activeCategory, connectedMap])
 
-  const connect = useCallback((slug) => {
+  const connect = useCallback((slug, integration) => {
+    // OAuth providers redirect through /api/integrations/oauth/start which 302s
+    // to the provider's consent screen. The callback writes the row + comes back
+    // with ?integrations=connected&slug=<x>, which re-opens this modal.
+    if (integration?.auth_type === 'oauth') {
+      window.location.href = `/api/integrations/oauth/start?slug=${encodeURIComponent(slug)}`
+      return
+    }
+    // API-key integrations still use the stub flip until per-provider key entry
+    // forms land (each gets a small drawer for "paste your key").
     const next = { ...connectedMap, [slug]: { status: 'connected', connected_at: new Date().toISOString() } }
     setConnectedMap(next)
     saveLocalConnected(next)
@@ -337,13 +346,14 @@ export default function IntegrationsModal({ open, onClose }) {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => connect(i.slug)}
+                            onClick={() => connect(i.slug, i)}
+                            title={i.auth_type === 'oauth' ? `Sign in with ${i.name}` : `Connect ${i.name}`}
                             style={{
                               fontSize: 11, padding: '4px 10px', borderRadius: 8,
                               background: 'rgba(16,185,129,0.18)', color: (C.accent2 || '#34d399'),
                               border: '1px solid rgba(16,185,129,0.4)', cursor: 'pointer',
                               fontWeight: 600,
-                            }}>Connect</button>
+                            }}>{i.auth_type === 'oauth' ? 'Sign in' : 'Connect'}</button>
                         )}
                       </div>
                     </div>
