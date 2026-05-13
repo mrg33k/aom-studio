@@ -153,6 +153,18 @@ export default function Login() {
     if (!checkingSession && emailRef.current) emailRef.current.focus()
   }, [checkingSession])
 
+  // Auto-pick light/dark by local time of day (7am-7pm = light, else dark).
+  // Only writes when the user hasn't already set a preference manually —
+  // the in-app toggle (when it exists) is the override and must stick.
+  const seedAutoTheme = () => {
+    try {
+      if (localStorage.getItem('themeUserSet') === '1') return
+      const h = new Date().getHours()
+      const auto = h >= 7 && h < 19 ? 'light' : 'dark'
+      localStorage.setItem('theme', auto)
+    } catch {}
+  }
+
   const handleSignIn = async (e) => {
     e.preventDefault()
     if (loading) return
@@ -167,6 +179,7 @@ export default function Login() {
         setLoading(false)
         return
       }
+      seedAutoTheme()
       setSigningIn(true)
       setTimeout(() => navigate('/dashboard', { replace: true }), 1500)
     } catch {

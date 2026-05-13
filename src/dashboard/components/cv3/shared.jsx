@@ -70,27 +70,54 @@ export function Tab({ label, icon, active, onClick, badge, testid }) {
   )
 }
 
+// fallow-ignore-next-line complexity
 export function AgentAvatar({ name, color, size = 38 }) {
   const initial = (name || '?')[0].toUpperCase()
+
+  // If color is an image URL (http/data URI) or a CSS url() value, extract
+  // the URL and render as <img objectFit=cover> to prevent background-repeat
+  // tiling (the "4-square mosaic" bug when background-image tiles by default).
+  let imageUrl = null
+  if (color) {
+    if (color.startsWith('http') || color.startsWith('data:image')) {
+      imageUrl = color
+    } else if (color.startsWith('url(')) {
+      const m = color.match(/url\(['"]?([^'")\s]+)['"]?\)/)
+      if (m) imageUrl = m[1]
+    }
+  }
+
+  // sprites-v2 files are 2x2 idle-frame sheets. Render the top-left frame only
+  // (img sized 200% inside an overflow-hidden parent, positioned absolutely so
+  // flex centering doesn't pull the center crop in).
+  const isSpriteSheet = imageUrl && /\/sprites-v2\//.test(imageUrl)
+
   return (
     <div style={{
       width: size,
       height: size,
       borderRadius: size * 0.3,
-      background: color || '#3B9EFF',
+      background: imageUrl ? 'transparent' : (color || '#3B9EFF'),
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
       boxShadow: `0 0 0 1px rgba(255,255,255,0.08)`,
+      overflow: 'hidden',
+      position: isSpriteSheet ? 'relative' : undefined,
     }}>
-      <span style={{
-        fontSize: size * 0.42,
-        fontWeight: 700,
-        color: '#fff',
-        fontFamily: "'Inter', sans-serif",
-        lineHeight: 1,
-      }}>{initial}</span>
+      {imageUrl
+        ? (isSpriteSheet
+            ? <img src={imageUrl} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '200%', height: '200%', objectFit: 'cover', objectPosition: '0% 0%' }} />
+            : <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />)
+        : <span style={{
+            fontSize: size * 0.42,
+            fontWeight: 700,
+            color: '#fff',
+            fontFamily: "'Inter', sans-serif",
+            lineHeight: 1,
+          }}>{initial}</span>
+      }
     </div>
   )
 }
