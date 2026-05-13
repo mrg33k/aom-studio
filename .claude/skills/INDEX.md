@@ -1,8 +1,8 @@
-# Research Skills Index
+# Skills Index
 
-Organized by category. All skills output briefs to `docs/briefs/` and update `docs/briefs/INDEX.json`.
+Organized by category. Research skills output briefs to `docs/briefs/` and update `docs/briefs/INDEX.json`.
 
-See `.claude/skills/_research-template.md` for the shared intake/output contract.
+See `.claude/skills/_research-template.md` for the research intake/output contract.
 
 ---
 
@@ -20,6 +20,14 @@ See `.claude/skills/_research-template.md` for the shared intake/output contract
 | `/research-pattern` | `/research-pattern "<how do best X do Y>"` | Pull 10 examples, extract shared pattern. |
 | `/research-x-community` | `/research-x-community <niche>` | X/Twitter community map: influential voices + current conversation. |
 | `/research-podcast` | `/research-podcast <topic>` | Find best podcast episodes, pull transcripts, synthesize. |
+
+---
+
+## video- (Editing mission)
+
+| Skill | Trigger | When to use |
+|-------|---------|-------------|
+| `/video-cycle` | `/video-cycle "<brief>" [footage=<path>]` | Run one cycle of the video-editing mission (`docs/missions/video-editing/`). Raw cut → improvement operator → distill playbook. Use on every real video deliverable so the playbook compounds. |
 
 ---
 
