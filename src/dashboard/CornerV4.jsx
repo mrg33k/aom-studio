@@ -123,16 +123,13 @@ export default function CornerV4() {
   const stageFilesRef = useRef(null)
   const homeFileInputRef = useRef(null)
   const [showCommandsModal, setShowCommandsModal] = useState(false)
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [toast, setToast] = useState({ visible: false, message: '' })
   const showToast = useCallback((message) => setToast({ visible: true, message }), [])
   const prevDoneIdsRef = useRef(null)
 
   useEffect(() => {
     console.log('CornerV4 mounted')
-    const handleResize = () => setIsMobile(window.innerWidth <= 480)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   // ── Google OAuth callback toast ────────────────────────────────────────────
@@ -189,6 +186,18 @@ export default function CornerV4() {
   // useDataPipe provides agents, inboxItems, projectRooms (from agent_status),
   // and filters personal/non-personal tasks by the viewer's slug.
   const { agents, inboxItems, projectRooms, personalTodos } = useDataPipe(null, worldId, currentUserSlug)
+
+  // R5.1: no more "home" view. First paint = chat with a default agent (Rex
+  // if present, otherwise the first agent). Skips auto-select if the user
+  // already has a conversation in flight (e.g. landed on /cv4/project/:id).
+  useEffect(() => {
+    if (!agents || agents.length === 0) return
+    if (selectedAgent || conversationTarget) return
+    const target = agents.find(a => a.slug === 'rex') || agents[0]
+    if (!target) return
+    setSelectedAgent(target)
+    setConversationTarget({ name: target.name, type: 'agent' })
+  }, [agents, selectedAgent, conversationTarget])
 
   // Telephone mode (long-form record → transcribe → post to active super-agent).
   // Lives at this level so recording survives Home/Tasks/Chat navigation.
@@ -536,7 +545,7 @@ export default function CornerV4() {
       fontFamily: "'Inter', sans-serif",
     }}>
 
-      {/* ── NAV BAR ────────────────────────────────────────────────────────── */}
+      {/* ── NAV BAR (R5.1: single row, Chat|Tasks toggle, drawer button) ─── */}
       <nav
         aria-label="Main navigation"
         style={{
@@ -545,155 +554,127 @@ export default function CornerV4() {
           background: C.bg,
           borderBottom: '1px solid ' + C.border,
           display: 'flex',
-          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))',
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          paddingTop: 'env(safe-area-inset-top, 0px)',
+          gap: 12,
         }}
       >
+        {/* LEFT: Logo + World */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <AomLogo />
+          <WorldSelector
+            currentWorldId={worldId}
+            currentUser={currentUser}
+            onEnterWorld={handleEnterWorld}
+            onReturnToMyWorld={handleReturnToMyWorld}
+            isNightMode={true}
+            isMobile={false}
+          />
+        </div>
 
-        {/* Row 1: Logo + World (left) | Bell + Avatar (right) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 16px 0',
-        }}>
-          {/* Left: Logo + World switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <AomLogo />
-            <WorldSelector
-              currentWorldId={worldId}
-              currentUser={currentUser}
-              onEnterWorld={handleEnterWorld}
-              onReturnToMyWorld={handleReturnToMyWorld}
-              isNightMode={true}
-              isMobile={false}
+        {/* CENTER: Chat | Tasks toggle (the only navigation surface now) */}
+        <div style={{ display: 'flex', gap: 2 }}>
+          <Tab
+            label="Chat"
+            icon={<ChatIcon color={tab === 'chat' ? C.text : C.muted} />}
+            active={tab === 'chat'}
+            onClick={() => handleTabChange('chat')}
+            badge={<Badge count={unreadChat} />}
+          />
+          <Tab
+            label="Tasks"
+            icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
+            active={tab === 'tasks'}
+            onClick={() => handleTabChange('tasks')}
+            badge={<Badge count={activeTaskCount} color={C.yellow} />}
+          />
+        </div>
+
+        {/* RIGHT: GlobalCall + Bell + Phone + Drawer toggle + Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <GlobalCallButton />
+          <div style={{ position: 'relative' }}>
+            <BellIcon
+              count={totalUnread}
+              onClick={() => setNotifOpen(o => !o)}
             />
-          </div>
-
-          {/* Right: GlobalCall + Bell + Phone + Avatar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <GlobalCallButton />
-            <div style={{ position: 'relative' }}>
-              <BellIcon
-                count={totalUnread}
-                onClick={() => setNotifOpen(o => !o)}
+            {notifOpen && (
+              <NotificationsPanel
+                items={notifItems}
+                agents={agents}
+                onSelectAgent={handleSelectAgent}
+                onMarkAllRead={() => {
+                  const now = new Date().toISOString()
+                  setNotifReadAt(prev => {
+                    const next = { ...prev }
+                    for (const item of notifItems) next[item.agent] = now
+                    return next
+                  })
+                  setNotifOpen(false)
+                }}
+                onClose={() => setNotifOpen(false)}
               />
-              {notifOpen && (
-                <NotificationsPanel
-                  items={notifItems}
-                  agents={agents}
-                  onSelectAgent={handleSelectAgent}
-                  onMarkAllRead={() => {
-                    const now = new Date().toISOString()
-                    setNotifReadAt(prev => {
-                      const next = { ...prev }
-                      for (const item of notifItems) next[item.agent] = now
-                      return next
-                    })
-                    setNotifOpen(false)
-                  }}
-                  onClose={() => setNotifOpen(false)}
-                />
-              )}
-            </div>
-            {/* Phone recording nav icon — PR1 corner:phone-recording */}
-            <button
-              data-testid="nav-phone-icon"
-              title={telephone.isRecording ? 'Stop recording' : 'Phone recording'}
-              onClick={() => {
-                if (!telephone.isRecording && !telephone.isTranscribing) {
-                  setPhoneOverlayOpen(true)
-                }
-                telephone.toggle()
-              }}
-              disabled={telephone.isTranscribing}
-              style={{
-                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                background: telephone.isRecording
-                  ? 'rgba(239,68,68,0.15)'
-                  : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${telephone.isRecording ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                color: telephone.isRecording ? '#EF4444' : C.muted,
-                cursor: telephone.isTranscribing ? 'default' : 'pointer',
-                opacity: telephone.isTranscribing ? 0.5 : 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2.2"
-                strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </button>
-            <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
+            )}
           </div>
+          {/* Phone recording */}
+          <button
+            data-testid="nav-phone-icon"
+            title={telephone.isRecording ? 'Stop recording' : 'Phone recording'}
+            onClick={() => {
+              if (!telephone.isRecording && !telephone.isTranscribing) {
+                setPhoneOverlayOpen(true)
+              }
+              telephone.toggle()
+            }}
+            disabled={telephone.isTranscribing}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: telephone.isRecording
+                ? 'rgba(239,68,68,0.15)'
+                : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${telephone.isRecording ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: telephone.isRecording ? '#EF4444' : C.muted,
+              cursor: telephone.isTranscribing ? 'default' : 'pointer',
+              opacity: telephone.isTranscribing ? 0.5 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </button>
+          {/* Drawer toggle (Phase D will wire this to the side panel) */}
+          <button
+            data-testid="nav-drawer-toggle"
+            title={drawerOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setDrawerOpen(o => !o)}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: drawerOpen ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${drawerOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: drawerOpen ? C.accent : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <UserAvatar user={currentUser} onUserUpdate={setCurrentUser} />
         </div>
-
-        {/* Row 2: Tabs (left) | Stats (right) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 16px',
-        }}>
-          {/* Tabs — three pillars per VISION (Home, Chat, Tasks). Home and Chat
-              both route to tab='chat'; their active state splits on conversationTarget. */}
-          <div style={{ display: 'flex', gap: 2 }}>
-            <Tab
-              label="Home"
-              icon={<HomeIcon color={tab === 'chat' && !conversationTarget ? C.text : C.muted} />}
-              active={tab === 'chat' && !conversationTarget}
-              onClick={() => {
-                setSelectedAgent(null)
-                setConversationTarget(null)
-                setTab('chat')
-                setUnreadChat(0)
-              }}
-              badge={!conversationTarget ? <Badge count={unreadChat} /> : null}
-            />
-            <Tab
-              label="Chat"
-              icon={<ChatIcon color={tab === 'chat' && conversationTarget ? C.text : C.muted} />}
-              active={tab === 'chat' && !!conversationTarget}
-              onClick={() => {
-                if (conversationTarget) {
-                  setTab('chat')
-                  setUnreadChat(0)
-                }
-              }}
-              badge={conversationTarget ? <Badge count={unreadChat} /> : null}
-            />
-            <Tab
-              label="Tasks"
-              icon={<TasksIcon color={tab === 'tasks' ? C.text : C.muted} />}
-              active={tab === 'tasks'}
-              onClick={() => handleTabChange('tasks')}
-              badge={<Badge count={activeTaskCount} color={C.yellow} />}
-            />
-          </div>
-
-          {/* Nav stats: hidden on mobile (< 480px) */}
-          <div style={{
-            display: isMobile ? 'none' : 'flex',
-            alignItems: 'center',
-            gap: 12,
-            flexShrink: 0,
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.yellow, flexShrink: 0 }} />
-              <b style={{ color: C.text2 }}>{rightNow?.length || 0}</b> building
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.green, flexShrink: 0 }} />
-              <b style={{ color: C.text2 }}>{done?.length || 0}</b> done
-            </span>
-          </div>
-        </div>
-
       </nav>
 
       {/* ── CONTENT ────────────────────────────────────────────────────────── */}
@@ -702,117 +683,8 @@ export default function CornerV4() {
         {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
       </div>
 
-      {/* ── INPUT BAR (persistent -- hidden on chat / tasks tabs) ────────── */}
-      <div style={{
-        flexShrink: 0,
-        padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
-        background: C.bg,
-        borderTop: '1px solid ' + C.border,
-        display: (tab === 'chat' || tab === 'tasks') ? 'none' : undefined,
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          background: C.s1,
-          border: '1.5px solid ' + (inputBarFocused ? 'rgba(16,185,129,0.25)' : C.border2),
-          borderRadius: 26,
-          padding: '5px 5px 5px 16px',
-          maxWidth: 560,
-          margin: '0 auto',
-          boxShadow: inputBarFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
-          transition: 'border-color 0.25s, box-shadow 0.25s',
-        }}>
-          <input
-            type="text"
-            placeholder="Start typing or speaking..."
-            value={inputBarText}
-            onChange={e => setInputBarText(e.target.value)}
-            onFocus={() => { setInputBarFocused(true); handleInputBarFocus() }}
-            onBlur={() => setInputBarFocused(false)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleInputBarSend() } }}
-            style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              color: C.text,
-              fontSize: 15,
-              fontWeight: 500,
-              fontFamily: "'Inter', sans-serif",
-            }}
-          />
-          {/* Action buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* Hidden file input for home-tab attach flow */}
-            <input
-              type="file"
-              multiple
-              ref={homeFileInputRef}
-              style={{ display: 'none' }}
-              onChange={e => {
-                if (e.target.files?.length) {
-                  stageFilesRef.current?.(e.target.files)
-                  setTab('chat')
-                  setUnreadChat(0)
-                }
-                e.target.value = ''
-              }}
-            />
-            {/* Attach */}
-            <button
-              title="Attach"
-              onClick={() => homeFileInputRef.current?.click()}
-              style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'none', border: 'none',
-                color: C.muted, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-              </svg>
-            </button>
-            {/* Commands */}
-            <button
-              title="Commands"
-              onClick={() => setShowCommandsModal(true)}
-              style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'none', border: 'none',
-                color: C.muted, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
-              </svg>
-            </button>
-          </div>
-          {/* Send (shown when text present) */}
-          {inputBarText.trim() && (
-            <button
-              title="Send"
-              onClick={handleInputBarSend}
-              disabled={inputBarSending}
-              style={{
-                width: 42, height: 42, borderRadius: '50%',
-                background: C.accent, border: 'none',
-                color: '#000', cursor: inputBarSending ? 'default' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-                opacity: inputBarSending ? 0.6 : 1,
-                transition: 'transform 0.15s',
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
+      {/* R5.1: persistent home input bar removed. Chat is the always-on default,
+          and its composer (ThreadInputBar) lives inside ChatPanel. */}
 
       {/* ── COMMANDS PALETTE MODAL ───────────────────────────────────────── */}
       {showCommandsModal && (
