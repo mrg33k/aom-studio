@@ -798,40 +798,50 @@
   text-overflow: ellipsis;
 }
 
-.cv4-home__chip-row {
-  display: flex;
-  flex-wrap: wrap;
+/* Agent tiles — stacked typography: name on top, role label below.
+ * Cleaner than chip-with-inline-role; reads at a glance, no clunky
+ * baseline mismatch between italic serif name and uppercase mono role. */
+.cv4-home__agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
 }
-.cv4-home__chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 10px 16px;
+.cv4-home__agent-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
   background: transparent;
   border: 1px solid var(--cv4-hair-strong);
-  border-radius: 999px;
+  border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.18s var(--cv4-ease), border-color 0.18s var(--cv4-ease);
+  text-align: left;
+  transition: background 0.18s var(--cv4-ease), border-color 0.18s var(--cv4-ease), transform 0.12s var(--cv4-ease);
 }
-.cv4-home__chip:hover {
+.cv4-home__agent-tile:hover {
   background: var(--cv4-ink-2);
   border-color: var(--cv4-bone-3);
+  transform: translateY(-1px);
 }
-.cv4-home__chip-name {
+.cv4-home__agent-tile:active { transform: translateY(0); }
+.cv4-home__agent-tile__name {
   font-family: var(--cv4-font-display);
   font-style: italic;
-  font-size: 14px;
+  font-weight: 400;
+  font-size: 17px;
   color: var(--cv4-bone-0);
   letter-spacing: -0.005em;
+  line-height: 1.1;
 }
-.cv4-home__chip-role {
+.cv4-home__agent-tile__role {
   font-family: var(--cv4-font-mono);
-  font-size: 9.5px;
+  font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cv4-bone-3);
+  line-height: 1.1;
 }
 
 @media (max-width: 720px) {

@@ -7,6 +7,7 @@
 
 import { useMemo } from 'react'
 import { useCornerAuth, useCornerData, useCornerNav } from '../CornerContext.jsx'
+import { useChatConversationsCtx } from '../components/cv3/chat/ChatPanelContext.jsx'
 
 function timeAgo(iso) {
   if (!iso) return ''
@@ -36,12 +37,17 @@ export default function HomeView() {
   const { currentUser } = useCornerAuth()
   const { agents = [], projectRooms = [], inboxItems = [] } = useCornerData()
   const { handleSelectAgent, handleSelectProject } = useCornerNav()
+  // Project previews live in ChatPanel's conversations slice — same source
+  // cv3 ConversationsView uses. Keyed by `project:${slug}`; value =
+  // { text, timestamp, ... }.
+  const { projectPreviews = {} } = useChatConversationsCtx() || {}
 
   const displayName = currentUser?.user_metadata?.full_name?.split(' ')[0]
     || currentUser?.email?.split('@')[0]
     || 'there'
 
-  // Recent activity = inbox items + project rooms sorted by recency. Cap at 6.
+  // Recent activity = agent inbox + project previews, merged + sorted by ts.
+  // Cap at 6.
   const recent = useMemo(() => {
     const rows = []
     for (const item of inboxItems || []) {
@@ -57,20 +63,21 @@ export default function HomeView() {
       })
     }
     for (const p of projectRooms || []) {
-      if (!p?.lastMessageAt && !p?.last_message_at) continue
+      const preview = projectPreviews[`project:${p.slug}`]
+      if (!preview?.timestamp) continue
       rows.push({
-        key: `project:${p.slug}:${p.lastMessageAt || p.last_message_at}`,
+        key: `project:${p.slug}:${preview.timestamp}`,
         kind: 'project',
-        ts: p.lastMessageAt || p.last_message_at,
+        ts: preview.timestamp,
         label: p.name,
-        preview: p.lastMessagePreview || p.last_message_preview || '',
+        preview: preview.text || '',
         target: p,
       })
     }
     return rows.sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).slice(0, 6)
-  }, [agents, projectRooms, inboxItems])
+  }, [agents, projectRooms, inboxItems, projectPreviews])
 
-  // Top agents — first three from the agent list, for the quick-pick row.
+  // Top agents — first four from the agent list, for the quick-pick row.
   const quickAgents = (agents || []).slice(0, 4)
 
   const handlePick = (row) => {
@@ -125,15 +132,17 @@ export default function HomeView() {
             <div className="cv4-home__section-header">
               <span className="cv4-eyebrow">Talk to</span>
             </div>
-            <div className="cv4-home__chip-row">
+            <div className="cv4-home__agent-grid">
               {quickAgents.map((a) => (
                 <button
                   key={a.slug}
-                  className="cv4-home__chip"
+                  className="cv4-home__agent-tile"
                   onClick={() => handleSelectAgent(a)}
                 >
-                  <span className="cv4-home__chip-name">{a.name}</span>
-                  {a.role && <span className="cv4-home__chip-role">{a.role}</span>}
+                  <span className="cv4-home__agent-tile__name">{a.name}</span>
+                  {a.role && (
+                    <span className="cv4-home__agent-tile__role">{a.role}</span>
+                  )}
                 </button>
               ))}
             </div>
