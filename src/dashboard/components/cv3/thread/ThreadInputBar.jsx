@@ -5,6 +5,7 @@ import IntegrationsModal from '../IntegrationsModal.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
 import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import ImageGenPicker from '../shared/ImageGenPicker.jsx'
+import ComposerCommandsMenu from '../../../cv4/ComposerCommandsMenu.jsx'
 import {
   useChatCore,
   useChatSendCtx,
@@ -33,6 +34,10 @@ export default function ThreadInputBar() {
   // Caret position for slash-command autocomplete
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
+
+  // CV4 swaps the inert chevron for a vertical commands menu (image gen, etc.)
+  const isCv4 = typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')
+  const [commandsOpen, setCommandsOpen] = useState(false)
 
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
   // Auto-open the modal when the user lands back from the OAuth callback so
@@ -122,6 +127,7 @@ export default function ThreadInputBar() {
         <ImageGenPicker
           selectedImageTool={selectedImageTool}
           setSelectedImageTool={setSelectedImageTool}
+          hideTrigger={isCv4}
         />
         <input
           ref={inputRef}
@@ -172,18 +178,28 @@ export default function ThreadInputBar() {
               </svg>
             )}
           </button>
-          {/* Commands */}
-          <button title="Commands" onClick={() => {}} style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'none', border: 'none',
-            color: C.muted, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, transition: 'all 0.15s',
-          }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
-            </svg>
-          </button>
+          {/* Commands — CV4 wires this to the vertical commands menu (image
+              gen, etc.). CV3 keeps the inert chevron to stay untouched
+              until promotion. */}
+          {isCv4 ? (
+            <ComposerCommandsMenu
+              open={commandsOpen}
+              setOpen={setCommandsOpen}
+              setSelectedImageTool={setSelectedImageTool}
+            />
+          ) : (
+            <button title="Commands" onClick={() => {}} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'none', border: 'none',
+              color: C.muted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.15s',
+            }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+            </button>
+          )}
         </div>
         {/* Mic button (hidden when input or chips present) */}
         {!hasContent && (

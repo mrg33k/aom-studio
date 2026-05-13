@@ -17,7 +17,7 @@ export const IMAGE_TOOLS = [
 
 const TOOL_BY_ID = Object.fromEntries(IMAGE_TOOLS.map(t => [t.id, t]))
 
-export default function ImageGenPicker({ selectedImageTool, setSelectedImageTool }) {
+export default function ImageGenPicker({ selectedImageTool, setSelectedImageTool, hideTrigger = false }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
 
@@ -31,6 +31,10 @@ export default function ImageGenPicker({ selectedImageTool, setSelectedImageTool
   }, [open])
 
   const active = selectedImageTool ? TOOL_BY_ID[selectedImageTool] : null
+
+  // CV4 hides the standalone trigger (chip-only) — the new commands menu
+  // owns tool selection there. Nothing to render when no tool is active.
+  if (hideTrigger && !active) return null
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
