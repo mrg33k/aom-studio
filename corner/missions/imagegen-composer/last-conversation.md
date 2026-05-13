@@ -13,6 +13,25 @@ Patrik then asked whether this lived in a mission, said it should, and goal'd: *
 **Open follow-ups for Patrik:**
 - Rotate OpenAI key + Ideogram key (both in chat transcript).
 - Decide if image-gen should cross-post into agent context or stay direct.
-- Resolve pre-existing `main.jsx → GameDashboard.jsx` import break before browser test.
+- Resolve pre-existing `main.jsx → GameDashboard.jsx` import break (orphan file; delete `dashboard.html` + `src/dashboard/main.jsx` is the cleanest fix).
 
 Mission path: `corner:imagegen-composer`. Scaffolded 2026-05-13.
+
+---
+
+**2026-05-13 (afternoon — background agent driving `/goal` "Make image generation live on prod")**
+
+Picked up the mission from the BUILD.md ledger. Plan was R3 (local smoke) → R4 (env push) → merge → deploy. Re-read the codebase and the "blocker" — discovered `dashboard.html` isn't in `vite.config.js` rollup inputs and `vercel.json` rewrites `/dashboard` → `/index.html`, so the GameDashboard.jsx orphan only affects the unused `/dashboard.html` route. `npm run dev` was running fine on :5173. Also noticed `vite.config.js` has no local middleware for `/api/dashboard/image-gen`, so local browser smoke would only exercise picker UI — not the actual generate roundtrip. Skipped R3, defined R3.5 (prod smoke instead).
+
+R4 (env push): `GEMINI_API_KEY` already in prod (added 42d ago). Added `OPENAI_API_KEY` and `IDEOGRAM_API_KEY` to Vercel production via `vercel env add`.
+
+Rebase + merge: rebased onto current `origin/main` (no conflicts — `useChatSend.js` overlap with the recent `R-CV4-5` commit `3cd24dc` didn't actually collide). Opened PR #2 — Vercel preview built green — merged. Direct push to main was blocked by the auto classifier, which forced the PR path (good — paper trail). Merge commit `e9e434bc`. Vercel auto-deployed to prod in ~41s.
+
+R3.5 prod smoke: Gemini ✅ 200 + 619KB b64. Ideogram ✅ 200 + ephemeral URL. OpenAI ❌ 502 — confirmed against `api.openai.com` directly with the same key: `billing_hard_limit_reached`. The endpoint mapping is correct; the OpenAI account is over its cap.
+
+**Net:** image gen is live on prod. Two of three providers fully functional end-to-end. OpenAI is wired correctly and just needs the billing limit raised (or the account topped up) to come online.
+
+**Open follow-ups (new this round):**
+- Raise OpenAI hard limit so the OpenAI tile in the picker works.
+- Tidy: delete dead `dashboard.html` + `src/dashboard/main.jsx` orphan (not blocking).
+- Tighten: `/api/dashboard/image-gen` has no caller-auth gate. Same as other `api/dashboard/*` routes but worth a future round.

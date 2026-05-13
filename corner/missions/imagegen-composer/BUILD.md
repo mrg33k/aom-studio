@@ -41,16 +41,36 @@ Revised by background agent driving `/goal Image Generation - Make image generat
 
 **Replaced by R3.5:** prod smoke — curl `/api/dashboard/image-gen` on prod after deploy with each of `gemini`, `openai`, `ideogram` and confirm 200 + image payload.
 
-### R4 — Vercel env push (2026-05-13)
+### R4 — Vercel env push (✅ done 2026-05-13)
 
-`GEMINI_API_KEY` already exists in prod (added 42 days ago, confirmed via `vercel env ls production`). Only OpenAI and Ideogram need pushing:
+`GEMINI_API_KEY` already in prod (added 42 days ago, confirmed via `vercel env ls production`). Pushed the missing two:
 
 ```bash
 vercel env add OPENAI_API_KEY production
 vercel env add IDEOGRAM_API_KEY production
 ```
 
-**Status:** in progress.
+**Status:** done.
+
+### R4.5 — Merge & deploy (✅ done 2026-05-13)
+
+- Rebased worktree branch onto current `origin/main` (clean rebase, conflict surfaces on `useChatSend.js` from `3cd24dc` didn't actually overlap with image-gen branches).
+- Opened PR #2 → Vercel preview built green → merged via `gh pr merge --merge` (commit `e9e434bc`). Auto-redeploy to production succeeded (`https://aom-studio-2axy0el2w-aheads-projects-d2a4c70f.vercel.app` → Ready in ~41s).
+- Local cleanup of feature branch deferred — `gh pr merge --delete-branch` errored because main is checked out in the parent worktree path; remote branch still on origin. Non-blocking.
+
+### R3.5 — Prod smoke (✅ done 2026-05-13)
+
+`curl -X POST https://www.aheadofmarket.com/api/dashboard/image-gen` with `{"prompt": "a single red square on white"}`:
+
+| tool      | result | notes                                                                 |
+|-----------|--------|-----------------------------------------------------------------------|
+| gemini    | ✅ 200  | 619676-byte b64 payload                                               |
+| ideogram  | ✅ 200  | ephemeral URL (`https://ideogram.ai/api/images/ephemeral/…`)         |
+| openai    | ❌ 502  | provider returned `billing_hard_limit_reached` — endpoint mapping correct, account issue |
+
+OpenAI billing block was confirmed against `api.openai.com/v1/images/generations` directly with the same key — same error. Action: raise OpenAI hard limit (Patrik) or accept the OpenAI tile is dormant for now.
+
+**Status:** done. Feature is live on prod for Gemini + Ideogram; OpenAI dormant until billing fix.
 
 ### R5 — Persistence (deferred)
 
