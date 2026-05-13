@@ -250,6 +250,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/design/r65-live-thread" element={<R65LiveThread />} />
           <Route path="/ConradFoundation" element={<ConradFoundation />} />
+          <Route path="/conradfoundation" element={<ConradFoundation />} />
+          <Route path="/Conradfoundation" element={<ConradFoundation />} />
+          <Route path="/conrad-foundation" element={<ConradFoundation />} />
+          <Route path="/conrad" element={<ConradFoundation />} />
+          <Route path="/nancy" element={<ConradFoundation />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
