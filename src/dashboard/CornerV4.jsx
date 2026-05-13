@@ -50,6 +50,7 @@ import NotificationsPanel from './components/cv3/NotificationsPanel.jsx'
 import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordingOverlay.jsx'
 import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
+import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -145,6 +146,9 @@ export default function CornerV4() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
   const [drawerOpen, setDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+  // R7.1: Tasks panel lives in a right-side docked drawer on desktop. Open
+  // by default; toggle button sits in the second-row nav's right slot.
+  const [tasksDrawerOpen, setTasksDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
   const [toast, setToast] = useState({ visible: false, message: '' })
   const showToast = useCallback((message) => setToast({ visible: true, message }), [])
   const prevDoneIdsRef = useRef(null)
@@ -617,6 +621,17 @@ export default function CornerV4() {
           padding-left: 0 !important;
         }
 
+        /* ── R7.1: blend the drawers + chat into one continuous surface ────
+           Soften the dividers between left drawer, chat, right tasks drawer
+           so the eye reads them as one plane, not three separate boxes. */
+        [data-shell="cv4"] [data-cv4-drawer-docked="true"] {
+          border-right-color: rgba(255,255,255,0.04) !important;
+        }
+        [data-shell="cv4"] [data-cv4-tasks-drawer] {
+          border-left-color: rgba(255,255,255,0.04) !important;
+        }
+        /* Chat column max-width handled inline via [data-cv4-content-inner]. */
+
         /* ── R7: TASK VIEW BRUTALIST OVERHAUL ─────────────────────────────────
            Sharp rectangles, monospace screaming caps for section headers,
            hard borders, tighter rows. Targets TasksPanel via its existing
@@ -766,6 +781,9 @@ export default function CornerV4() {
         activeTaskCount={activeTaskCount}
         drawerOpen={drawerOpen}
         onToggleDrawer={() => setDrawerOpen(o => !o)}
+        tasksDrawerOpen={tasksDrawerOpen}
+        onToggleTasksDrawer={() => setTasksDrawerOpen(o => !o)}
+        isDesktop={isDesktop}
         selectedAgent={selectedAgent}
         conversationTarget={conversationTarget}
         agents={agents}
@@ -775,11 +793,12 @@ export default function CornerV4() {
         worldId={worldId}
       />
 
-      {/* ── MAIN ROW: docked drawer + content on desktop; content-only on mobile.
-          Mobile drawer continues to render as an overlay at the end of the tree
-          (it's position:fixed so the position in DOM doesn't matter). */}
+      {/* ── MAIN ROW (desktop): [Files drawer] [Chat (centered)] [Tasks drawer].
+          Both side drawers are closeable; chat caps its width on wide screens
+          so the eye doesn't have to dart left/right when both drawers are
+          collapsed. Mobile/tablet still uses the tab toggle in ContextNav. */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-        {isDesktop && (
+        {isDesktop && drawerOpen && (
           <CV4Drawer
             docked
             open={drawerOpen}
@@ -805,10 +824,39 @@ export default function CornerV4() {
             }}
           />
         )}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-          {tab === 'tasks' && <TasksPanel />}
-          {tab === 'chat'  && <ChatPanel key={selectedAgent?.slug || 'chat'} />}
+        <div data-cv4-content-col style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* Center the chat column on wide screens so messages don't hug the
+              left edge — especially when both side drawers are closed. */}
+          <div
+            data-cv4-content-inner
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              width: '100%',
+              maxWidth: isDesktop ? 840 : '100%',
+              margin: '0 auto',
+            }}
+          >
+            {(!isDesktop && tab === 'tasks') ? (
+              <TasksPanelCv4 />
+            ) : (
+              <ChatPanel key={selectedAgent?.slug || 'chat'} />
+            )}
+          </div>
         </div>
+        {isDesktop && tasksDrawerOpen && (
+          <aside
+            data-cv4-tasks-drawer
+            style={{
+              width: 340, flexShrink: 0,
+              background: C.bg,
+              borderLeft: '1px solid ' + C.border,
+              display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <TasksPanelCv4 />
+          </aside>
+        )}
       </div>
 
       {/* R5.1: persistent home input bar removed. Chat is the always-on default,
