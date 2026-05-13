@@ -43,6 +43,17 @@ If you are a background agent, you MUST:
 
 If you find yourself working without a mission attached and you are a background agent: **stop and surface that to the user** before continuing. Don't silently fix it after the fact.
 
+## CV4 is the active Corner-product design surface
+
+For any dashboard frontend work in this repo (`src/dashboard/`):
+
+- **Default target = CV4** (`src/dashboard/cv4-explore-v2/` static prototype + `src/dashboard/CornerV4.jsx` mounted at `/cv4`). Every new brief targets CV4 unless explicitly named otherwise.
+- **CornerV3 stays sacred.** Touch `src/dashboard/CornerV3.jsx` only for live-prod emergency fixes (shipped-feature regression, blocking user-facing breakage). Any CV3 patch needs a CV4 mirror or immediate follow-up.
+- **Pre-flight reads:** `src/dashboard/cv4-explore-v2/INVENTORY.md` + `cv4-explore-v2/DESIGN.md`. Match the design system (Instrument Serif / Hanken Grotesk / JetBrains Mono, deep cool-ink ground, warm bone text, AOM amber as the only accent).
+- **Legacy dead code — never touch:** `BoardView.jsx`, `GameDashboard.jsx`, `GameHUD.jsx`.
+
+The mission home is `corner/missions/cv4-redesign/` (in the AOM-EA repo, sibling to this one). Full doctrine in AOM-EA's `.claude/rules/cv4-is-the-active-design-surface.md`. Scope: Corner product frontend only — does NOT apply to other AOM project sites (Ambition, Skylar, Brandon, ISA, etc.), the marketing site, or static skill-built pages.
+
 ## Worktrees
 
 Background sessions and parallel agents must work in a `.claude/worktrees/<name>/` worktree (use `EnterWorktree`). The mission folder for the work goes in that worktree too, so it merges with the code.
