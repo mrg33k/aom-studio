@@ -86,6 +86,10 @@ export default function ChatPanel() {
   const [chatInputFocused, setChatInputFocused] = useState(false)
   const [inlineProject, setInlineProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  // Image-gen tool selection (left-side composer icon → popover → chip).
+  // null when not generating; 'gemini' | 'ideogram' | 'openai' when pinned.
+  // useChatSend reads this to branch from chat-bridge to /api/dashboard/image-gen.
+  const [selectedImageTool, setSelectedImageTool] = useState(null)
 
   // ── Paste chips (large paste → chip instead of inline text) ───────────────
   const [pasteChips, setPasteChips] = useState([])
@@ -321,6 +325,8 @@ export default function ChatPanel() {
     onMessageSent,
     pasteChipsRef,
     clearPasteChips,
+    selectedImageTool,
+    setSelectedImageTool,
   })
   // Populate the shared send refs from the returned callbacks — consumed
   // by useChatAttachments (auto-ack after upload) and useChatRecording
@@ -439,11 +445,14 @@ export default function ChatPanel() {
     setIsAgentTyping: bridge.setIsAgentTyping,
     // Paste chips: large paste collapses to chip in composer
     pasteChips, addPasteChip, removePasteChip,
+    // Image-gen tool selection — drives the left-side composer button.
+    selectedImageTool, setSelectedImageTool,
   }), [
     input, sending, send.handleSend, send.handleKeyDown, send.sendAgentText,
     send.sendProjectText, send.handleProjectSend, send.handleProjectKeyDown,
     bridge.isAgentTyping, bridge.setIsAgentTyping,
     pasteChips, addPasteChip, removePasteChip,
+    selectedImageTool,
   ])
 
   const attachValue = useMemo(() => ({
