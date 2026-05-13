@@ -23,13 +23,12 @@ export function timeShort(iso) {
   const m = Math.floor(diff / 60000)
   if (m < 1) return 'just now'
   if (m < 60) return `${m}m`
-  const h = Math.floor(m / 3600000 * 60)
+  const h = Math.floor(m / 60)
   if (h < 24) return `${h}h`
-  const d = new Date(iso)
-  const now = new Date()
-  const days = Math.floor((now - d) / 86400000)
+  const days = Math.floor(h / 24)
   if (days < 7) return `${days}d`
-  // Older — short date
+  // Older — short date M/D
+  const d = new Date(iso)
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
