@@ -58,7 +58,7 @@ function scoreSkill(skill, q) {
   return 0
 }
 
-export default function SlashCommandAutocomplete({ value, setValue, inputRef, caret }) {
+export default function SlashCommandAutocomplete({ value, setValue, inputRef, caret, onModalCommand }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState(0)
   const listRef = useRef(null)
@@ -86,6 +86,24 @@ export default function SlashCommandAutocomplete({ value, setValue, inputRef, ca
 
   const insertSkill = useCallback((skill) => {
     if (!active) return
+    // Modal-kind skills don't insert text — they dispatch to a modal handler
+    // and clear the slash token from the input.
+    if (skill.kind === 'modal') {
+      const before = value.slice(0, active.start)
+      const after = value.slice(active.end)
+      setValue(before + after)
+      setOpen(false)
+      const pos = before.length
+      setTimeout(() => {
+        const el = inputRef?.current
+        if (el && typeof el.setSelectionRange === 'function') {
+          el.focus()
+          el.setSelectionRange(pos, pos)
+        }
+        if (typeof onModalCommand === 'function') onModalCommand(skill.name)
+      }, 0)
+      return
+    }
     const before = value.slice(0, active.start)
     const after = value.slice(active.end)
     const trail = after.startsWith(' ') ? '' : ' '
@@ -101,7 +119,7 @@ export default function SlashCommandAutocomplete({ value, setValue, inputRef, ca
         el.setSelectionRange(pos, pos)
       }
     }, 0)
-  }, [active, value, setValue, inputRef])
+  }, [active, value, setValue, inputRef, onModalCommand])
 
   // Keyboard handling — bound to the input element
   useEffect(() => {
@@ -120,6 +138,14 @@ export default function SlashCommandAutocomplete({ value, setValue, inputRef, ca
         e.stopPropagation()
         const pick = matches[selected]
         if (pick) insertSkill(pick)
+      } else if (e.key === ' ' && active) {
+        // Space-trigger: exact match on a modal-kind skill dispatches without selection.
+        const exact = SKILLS.find(s => s.name.slice(1).toLowerCase() === active.query.toLowerCase() && s.kind === 'modal')
+        if (exact) {
+          e.preventDefault()
+          e.stopPropagation()
+          insertSkill(exact)
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault()
         setOpen(false)

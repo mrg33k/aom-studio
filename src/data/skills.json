@@ -3,6 +3,14 @@
   "source": ".claude/skills/INDEX.md",
   "skills": [
     {
+      "name": "/integrations",
+      "alias": "/integrations",
+      "description": "Manage connected integrations for your account",
+      "category": "account",
+      "categoryLabel": "Account",
+      "kind": "modal"
+    },
+    {
       "name": "/video-footage-review",
       "alias": "/footage-review",
       "description": "New footage arrived, need catalog + ratings",

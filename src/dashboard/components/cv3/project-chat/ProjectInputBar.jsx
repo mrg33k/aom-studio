@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
+import IntegrationsModal from '../IntegrationsModal.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
 import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import {
@@ -62,6 +63,11 @@ export default function ProjectInputBar() {
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
+  const [integrationsOpen, setIntegrationsOpen] = useState(false)
+  const handleModalCommand = useCallback((skillName) => {
+    if (skillName === '/integrations') setIntegrationsOpen(true)
+  }, [])
+
   const handlePaste = useCallback((e) => {
     const text = e.clipboardData?.getData('text') || ''
     if (shouldChipPaste(text)) {
@@ -97,7 +103,9 @@ export default function ProjectInputBar() {
           setValue={setInput}
           inputRef={inputRef}
           caret={caret}
+          onModalCommand={handleModalCommand}
         />
+        <IntegrationsModal open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
         <div style={{
           display: 'flex',
           alignItems: 'center',
