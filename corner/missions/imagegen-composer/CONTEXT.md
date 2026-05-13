@@ -2,9 +2,12 @@
 
 **Mission path:** `corner:imagegen-composer`
 **What it is:** Left-side composer icon → popover → pick Gemini/Ideogram/OpenAI → next prompt routes to `/api/dashboard/image-gen` → image renders inline as assistant message.
-**Status:** LIVE ON PROD — merged in PR #2 (commit `e9e434bc`) on 2026-05-13. Prod smoke confirms Gemini + Ideogram return 200; OpenAI is wired correctly but the API key has `billing_hard_limit_reached` (account issue, not code).
+**Status:** DONE — closed 2026-05-13. Merged via PR #2 (`e9e434bc`) and PR #3 (mission docs). Live on prod. Patrik confirmed completion.
 **Scaffolded:** 2026-05-13
 **Shipped to prod:** 2026-05-13
+**Closed:** 2026-05-13
+
+OpenAI billing-limit and key-rotation items are tracked as **non-code follow-ups** for Patrik (see last-conversation.md) — they don't reopen this mission.
 
 ## Current State (2026-05-13)
 

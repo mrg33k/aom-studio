@@ -35,3 +35,5 @@ R3.5 prod smoke: Gemini ✅ 200 + 619KB b64. Ideogram ✅ 200 + ephemeral URL. O
 - Raise OpenAI hard limit so the OpenAI tile in the picker works.
 - Tidy: delete dead `dashboard.html` + `src/dashboard/main.jsx` orphan (not blocking).
 - Tighten: `/api/dashboard/image-gen` has no caller-auth gate. Same as other `api/dashboard/*` routes but worth a future round.
+
+**Mission closed 2026-05-13** — Patrik replied "complete this project this is complete" after the prod smoke confirmed Gemini + Ideogram healthy. Status flipped IN PROGRESS → DONE in `CONTEXT.md`. Follow-ups above are tracked but do not reopen the mission; they belong to a future round or a different mission (e.g., a future `corner:api-hardening` for the auth-gate item).

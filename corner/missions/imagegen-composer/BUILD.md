@@ -1,6 +1,7 @@
 # Image Gen Composer Icon — Mission Build Plan
 
 **Started:** 2026-05-12
+**Closed:** 2026-05-13 (DONE — Patrik confirmed)
 **Mission path:** `corner:imagegen-composer`
 
 **Paired with this mission's `VISION.md`.** Round-by-round plan, scoped to this mission.
