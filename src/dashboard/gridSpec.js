@@ -2,7 +2,7 @@
 // Corner C2 Grid Spec - loaded from Steffen's c2-grid-spec.json
 // Machine-readable room positions, furniture, animations, colors
 
-export const GRID_SPEC = {
+const GRID_SPEC = {
   meta: {
     product: 'Corner',
     version: '1.0',
@@ -312,7 +312,7 @@ export const GRID_SPEC = {
 }
 
 // Derive a lookup map for rooms by id
-export const ROOM_MAP = {}
+const ROOM_MAP = {}
 for (const room of GRID_SPEC.rooms) {
   ROOM_MAP[room.id] = room
 }
@@ -342,7 +342,7 @@ AGENTS.push(
 // ─── PROJECT ROOMS ──────────────────────────────────────────────────────────
 // Project cubes on the grid alongside agent rooms. Use existing room styles
 // until Steffen designs proper project spaces. hidden=true to toggle off.
-export const PROJECTS = [
+const PROJECTS = [
   { slug: 'ambition-mechanical', name: 'Ambition', type: 'project', color: '#E85D26', statusColors: { active: '#E85D26', idle: '#8A5A3A', offline: '#3D2A1A' }, floor: 'wood-walnut', floorColor: '#8B6D4A', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['bobby', 'steffen', 'tony', 'cleo'] },
   { slug: 'corner', name: 'Corner', type: 'project', color: '#3B82F6', statusColors: { active: '#3B82F6', idle: '#2A5090', offline: '#1A2A50' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#90CAF9', monitorColor: '#90CAF9', hidden: false, team: ['bobby', 'elon', 'steve', 'steffen'] },
   { slug: 'isa-energy', name: 'ISA Energy', type: 'project', color: '#4CAF50', statusColors: { active: '#4CAF50', idle: '#2E7D32', offline: '#1B5E20' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#A5D6A7', monitorColor: '#A5D6A7', hidden: false, team: ['cleo', 'paige'] },
@@ -353,6 +353,7 @@ export const PROJECTS = [
   { slug: 'outreach', name: 'Outreach', type: 'project', color: '#26A69A', statusColors: { active: '#26A69A', idle: '#00897B', offline: '#00695C' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#80CBC4', monitorColor: '#80CBC4', hidden: false, team: ['jacob', 'alex'] },
   { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
   { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
+  { slug: 'conrad-foundation', name: 'Conrad Foundation', type: 'project', color: '#0EA5E9', statusColors: { active: '#0EA5E9', idle: '#0369A1', offline: '#0C4A6E' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#7DD3FC', monitorColor: '#7DD3FC', hidden: false, team: ['alex', 'steve', 'cleo'] },
   // ── Special rooms ──────────────────────────────────────────────────────────
   { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'rex', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'gary', 'pixel'] },
 ]
@@ -373,7 +374,7 @@ export const PROJECTS = [
 const _AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.slug, { ...a, type: 'agent', hidden: false }]))
 const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
 
-export const ALL_ROOMS = [
+const ALL_ROOMS = [
   // Row 0 -- Core team
   _AGENT_MAP['rex'],
   _AGENT_MAP['elon'],
@@ -396,6 +397,7 @@ export const ALL_ROOMS = [
   _PROJECT_MAP['nabi'],
   _PROJECT_MAP['outreach'],
   _PROJECT_MAP['ai-advisory'],
+  _PROJECT_MAP['conrad-foundation'],
   // Row 4 (overflow) -- On-set crew
   _AGENT_MAP['mark'],
   // Hidden -- not rendered on hex grid (still accessible in Board view, chat dropdowns, @mentions)
