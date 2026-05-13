@@ -4,6 +4,7 @@ import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import IntegrationsModal from '../IntegrationsModal.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
 import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
+import ImageGenPicker from '../shared/ImageGenPicker.jsx'
 import {
   useChatCore,
   useChatSendCtx,
@@ -21,6 +22,7 @@ export default function ThreadInputBar() {
     input, setInput, inputRef, sending,
     handleSend, handleKeyDown,
     pasteChips, addPasteChip, removePasteChip,
+    selectedImageTool, setSelectedImageTool,
   } = useChatSendCtx()
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
   const {
@@ -111,12 +113,16 @@ export default function ThreadInputBar() {
         display: 'flex',
         alignItems: 'center',
         background: C.s1,
-        border: '1.5px solid ' + (input.includes('>>') && input.split('>>').filter(s => s.trim()).length >= 2 ? 'rgba(99,102,241,0.40)' : chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
+        border: '1.5px solid ' + (input.includes('>>') && input.split('>>').filter(s => s.trim()).length >= 2 ? 'rgba(99,102,241,0.40)' : selectedImageTool ? 'rgba(245,158,11,0.35)' : chatInputFocused ? 'rgba(16,185,129,0.25)' : C.border2),
         borderRadius: 26,
-        padding: '5px 5px 5px 16px',
+        padding: '5px 5px 5px 8px',
         boxShadow: input.includes('>>') && input.split('>>').filter(s => s.trim()).length >= 2 ? '0 0 0 4px rgba(99,102,241,0.06), 0 4px 20px rgba(0,0,0,0.2)' : chatInputFocused ? '0 0 0 4px rgba(16,185,129,0.06), 0 4px 20px rgba(0,0,0,0.2)' : 'none',
         transition: 'border-color 0.25s, box-shadow 0.25s',
       }}>
+        <ImageGenPicker
+          selectedImageTool={selectedImageTool}
+          setSelectedImageTool={setSelectedImageTool}
+        />
         <input
           ref={inputRef}
           data-testid="thread-chat-input"
@@ -130,7 +136,7 @@ export default function ThreadInputBar() {
           onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
           onBlur={() => setChatInputFocused(false)}
           onPaste={handlePaste}
-          placeholder={`Message ${selectedAgent.name}...`}
+          placeholder={selectedImageTool ? 'Describe the image to generate...' : `Message ${selectedAgent.name}...`}
           style={{
             flex: 1,
             background: 'none',

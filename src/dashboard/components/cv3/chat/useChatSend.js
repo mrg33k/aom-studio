@@ -43,6 +43,8 @@ export default function useChatSend({
   onMessageSent,
   pasteChipsRef,
   clearPasteChips,
+  selectedImageTool,
+  setSelectedImageTool,
 }) {
   // R14e-3: read agents from CornerContext so sendProjectText can resolve the
   // EA slug from role flags instead of hardcoding 'elon'. Read here (not
@@ -56,6 +58,76 @@ export default function useChatSend({
   const replyToRef = useRef(null)
   useEffect(() => { replyToRef.current = replyTo }, [replyTo])
 
+  // ── Image-gen branch ──────────────────────────────────────────────────────
+  // When the user has selected an image tool in the composer (ImageGenPicker),
+  // send paths short-circuit here instead of POSTing to chat-bridge. Posts to
+  // /api/dashboard/image-gen with { tool, prompt, agent, project, client_id },
+  // shows an optimistic user message, then appends the result image as an
+  // assistant message when the response comes back. Clears the tool selection
+  // either way so the next message goes through the normal chat path.
+  const runImageGen = useCallback(async ({ tool, prompt, agentKey, projectSlug, clientId }) => {
+    if (!prompt?.trim() || !tool) return
+    const now = new Date().toISOString()
+    const tempUserId = `temp-imggen-user-${Date.now()}`
+    const tempAssistId = `temp-imggen-assist-${Date.now()}`
+    setMessages(prev => [...prev, {
+      id: tempUserId,
+      role: 'user',
+      agent: agentKey || selectedAgent?.slug || 'image-gen',
+      text: `🖼️ [${tool}] ${prompt}`,
+      timestamp: now,
+      source: 'corner-dashboard',
+    }, {
+      id: tempAssistId,
+      role: 'assistant',
+      agent: 'image-gen',
+      text: `Generating image with ${tool}…`,
+      timestamp: now,
+      source: 'image-gen',
+      pending: true,
+    }])
+    setSending(true)
+    try {
+      const resp = await authFetch('/api/dashboard/image-gen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tool,
+          prompt,
+          agent: agentKey || selectedAgent?.slug || null,
+          project: projectSlug || null,
+          client_id: clientId || worldId,
+          ...userIdentity,
+        }),
+      }).then(r => r.json()).catch(err => ({ error: String(err) }))
+      const errorText = resp?.error || (!resp?.url && !resp?.b64 ? 'No image returned' : null)
+      setMessages(prev => prev.map(m => {
+        if (m.id !== tempAssistId) return m
+        if (errorText) {
+          return { ...m, text: `Image generation failed (${tool}): ${errorText}`, pending: false, error: true }
+        }
+        const url = resp.url || (resp.b64 ? `data:image/png;base64,${resp.b64}` : null)
+        return {
+          ...m,
+          text: prompt,
+          attachments: url ? [{ url, mime: 'image/png', name: `${tool}-${Date.now()}.png` }] : [],
+          image_tool: tool,
+          pending: false,
+        }
+      }))
+      onMessageSent?.()
+    } catch (err) {
+      console.error('[ChatPanel] image-gen error:', err)
+      setMessages(prev => prev.map(m => m.id === tempAssistId
+        ? { ...m, text: `Image generation failed (${tool}): ${err?.message || err}`, pending: false, error: true }
+        : m))
+    } finally {
+      setSending(false)
+      setSelectedImageTool?.(null)
+      inputRef.current?.focus()
+    }
+  }, [setMessages, setSending, setSelectedImageTool, selectedAgent, worldId, userIdentity, onMessageSent, inputRef])
+
   // ── handleSend: text-input default for agent chat ─────────────────────────
   const handleSend = useCallback(async () => {
     // Fall back to the DOM value so programmatic input (browser automation,
@@ -63,6 +135,19 @@ export default function useChatSend({
     const rawText = (input || inputRef.current?.value || '').trim()
     const chips = pasteChipsRef?.current || []
     if ((!rawText && !chips.length) || sending || !selectedAgent) return
+    // Image-gen branch: when a tool is pinned, route to /api/dashboard/image-gen
+    // instead of chat-bridge. Skips the agent reply path entirely.
+    if (selectedImageTool) {
+      setInput('')
+      await runImageGen({
+        tool: selectedImageTool,
+        prompt: rawText,
+        agentKey: selectedAgent.slug,
+        projectSlug: null,
+        clientId: worldId,
+      })
+      return
+    }
     const cleanText = rawText
     const attSnapshot = pendingAttachmentsRef.current
     const chipsKey = chips.map(c => c.id).join(',')
@@ -146,7 +231,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [input, sending, selectedAgent, worldId, userIdentity, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, startBridgeStream, pendingAttachmentsRef, inputRef, onMessageSent])
+  }, [input, sending, selectedAgent, worldId, userIdentity, setInput, setSending, setMessages, setPendingAttachments, setReplyTo, setAgentPreviews, startBridgeStream, pendingAttachmentsRef, inputRef, onMessageSent, selectedImageTool, runImageGen])
 
   // ── sendAgentText: programmatic (voice transcription) ────────────────────
   const sendAgentText = useCallback(async (rawText) => {
@@ -246,6 +331,17 @@ export default function useChatSend({
       return
     }
     const trimmed = rawText?.trim() || ''
+    // Image-gen branch (project chat).
+    if (selectedImageTool && trimmed) {
+      await runImageGen({
+        tool: selectedImageTool,
+        prompt: trimmed,
+        agentKey: null,
+        projectSlug: selectedProject.slug,
+        clientId: selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId,
+      })
+      return
+    }
     // R14e-3: project chat still routes through the tenant's EA (same
     // envelope pattern R6 introduced — agent=<ea_slug>, project=<slug> —
     // so the EA's tmux listener + queue-task.py picks the right repo),
@@ -326,7 +422,7 @@ export default function useChatSend({
       inFlightSendRef.current = false
       inputRef.current?.focus()
     }
-  }, [selectedProject, worldId, userIdentity, agents, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef, onMessageSent])
+  }, [selectedProject, worldId, userIdentity, agents, startBridgeStream, setSending, setMessages, setPendingAttachments, setReplyTo, pendingAttachmentsRef, inputRef, onMessageSent, selectedImageTool, runImageGen])
 
   const handleProjectSend = useCallback(async () => {
     const hasChips = pasteChipsRef?.current?.length > 0
