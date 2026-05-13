@@ -59,6 +59,10 @@ export default function ChatPanel() {
     prefillMessage,
     setPrefillMessage,
     stageFilesRef,
+    // R-CV4-4: optional CV4 home override. When CV4 injects a node here
+    // (e.g. <HomeViewCv4 />), ChatPanel renders it instead of the cv3
+    // ConversationsView fallback. Undefined under V3 → defaults preserved.
+    cv4HomeView,
   } = useCornerNav()
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -560,7 +564,7 @@ export default function ChatPanel() {
   // ── Child view ────────────────────────────────────────────────────────────
   let view
   if ((projectId || inlineProject) && !selectedAgent) view = <ProjectChatView />
-  else if (!selectedAgent) view = <ConversationsView />
+  else if (!selectedAgent) view = cv4HomeView ?? <ConversationsView />
   else view = <ThreadView />
 
   // Provider nesting: Core is outermost (everything reads it); Prefs is next

@@ -141,7 +141,6 @@
 .cv4-row[data-active="true"] {
   background: var(--cv4-ink-2);
   color: var(--cv4-bone-0);
-  box-shadow: inset 2px 0 0 var(--cv4-amber);
 }
 .cv4-row__label {
   flex: 1;
@@ -669,4 +668,227 @@
 /* Mobile narrowing — collapse sidebar to icons under 900px */
 @media (max-width: 900px) {
   .cv4-rail { display: none; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Home view (CV4-native, replaces cv3 ConversationsView when CV4 mounted)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.cv4-home {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--cv4-ink-0);
+  padding: 56px 40px 40px;
+  display: flex;
+  justify-content: center;
+}
+.cv4-home__inner {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  animation: cv4FadeUp 0.4s var(--cv4-ease-out) both;
+}
+.cv4-home__eyebrow {
+  font-family: var(--cv4-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cv4-bone-3);
+  margin-bottom: 12px;
+}
+.cv4-home__greeting {
+  font-family: var(--cv4-font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 48px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--cv4-bone-0);
+  margin: 0;
+}
+.cv4-home__greeting-name {
+  color: var(--cv4-amber);
+}
+.cv4-home__lede {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--cv4-bone-2);
+  letter-spacing: 0.005em;
+  max-width: 520px;
+}
+
+.cv4-home__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cv4-home__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cv4-hair);
+}
+
+/* Recent grid — 2 cols desktop, 1 col mobile */
+.cv4-home__recent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.cv4-home__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--cv4-ink-1);
+  border: 1px solid var(--cv4-hair);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.18s var(--cv4-ease), border-color 0.18s var(--cv4-ease), transform 0.12s var(--cv4-ease);
+}
+.cv4-home__card:hover {
+  background: var(--cv4-ink-2);
+  border-color: var(--cv4-hair-strong);
+  transform: translateY(-1px);
+}
+.cv4-home__card:active { transform: translateY(0); }
+.cv4-home__card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.cv4-home__card-kind {
+  font-family: var(--cv4-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cv4-bone-3);
+}
+.cv4-home__card-kind--agent { color: var(--cv4-amber); }
+.cv4-home__card-time {
+  font-family: var(--cv4-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--cv4-bone-3);
+}
+.cv4-home__card-label {
+  font-family: var(--cv4-font-display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--cv4-bone-0);
+  letter-spacing: -0.01em;
+}
+.cv4-home__card-preview {
+  font-size: 12.5px;
+  color: var(--cv4-bone-3);
+  line-height: 1.45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+}
+
+.cv4-home__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cv4-home__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--cv4-hair-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.18s var(--cv4-ease), border-color 0.18s var(--cv4-ease);
+}
+.cv4-home__chip:hover {
+  background: var(--cv4-ink-2);
+  border-color: var(--cv4-bone-3);
+}
+.cv4-home__chip-name {
+  font-family: var(--cv4-font-display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--cv4-bone-0);
+  letter-spacing: -0.005em;
+}
+.cv4-home__chip-role {
+  font-family: var(--cv4-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cv4-bone-3);
+}
+
+@media (max-width: 720px) {
+  .cv4-home { padding: 32px 20px 24px; }
+  .cv4-home__greeting { font-size: 32px; }
+  .cv4-home__recent-grid { grid-template-columns: 1fr; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Chat messages — editorial restyle inside conversations
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* Hanken body inside any cv3 message tree under data-cv4 root */
+[data-cv4] .cv3-message,
+[data-cv4] [data-message-row],
+[data-cv4] .message-bubble {
+  font-family: var(--cv4-font-sans);
+}
+/* Restrained agent name accent: Instrument Serif italic */
+[data-cv4] [data-agent-name],
+[data-cv4] .agent-name,
+[data-cv4] .cv3-author-name {
+  font-family: var(--cv4-font-display);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Buttons — editorial restyle inside CV4 (applies broadly; specific
+ * overrides above for sidebar/topbar already set)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+[data-cv4] button:not(.cv4-row):not(.cv4-mission-row):not(.cv4-caret):not(.cv4-iconbtn):not(.cv4-tasks-pill):not(.cv4-cta-new):not(.cv4-account):not(.cv4-popover__item):not(.cv4-mission-chip__x):not(.cv4-home__card):not(.cv4-home__chip):not([class*="cv3"]) {
+  font-family: inherit;
+  letter-spacing: -0.005em;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * ThreadHeader editorial cleanup
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* The cv3 thread header carries a small banner above the message list with
+ * agent name + actions drawer + meters. Quiet it down in CV4 so it doesn't
+ * fight the topbar for attention. The drawer keeps its functionality; the
+ * actual relocation to a composer-left-icon-bar is queued as R-CV4-5
+ * (requires proper state lifting in ThreadHeader). */
+
+[data-cv4] [data-testid^="thread-header-drawer-"] button {
+  border-radius: 10px !important;
+  border-color: var(--cv4-hair-strong) !important;
+  background: transparent !important;
+  color: var(--cv4-bone-2) !important;
+  transition: background 0.16s var(--cv4-ease), color 0.16s var(--cv4-ease), border-color 0.16s var(--cv4-ease) !important;
+}
+[data-cv4] [data-testid^="thread-header-drawer-"] button:hover {
+  background: var(--cv4-ink-2) !important;
+  color: var(--cv4-bone-0) !important;
+  border-color: var(--cv4-bone-3) !important;
 }

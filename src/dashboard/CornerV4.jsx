@@ -46,6 +46,7 @@ import Sidebar from './cv4/Sidebar.jsx'
 import TopBar from './cv4/TopBar.jsx'
 import RightRail from './cv4/RightRail.jsx'
 import WorldSwitcherModal from './cv4/WorldSwitcherModal.jsx'
+import HomeView from './cv4/HomeView.jsx'
 import './cv4/cv4.css'
 
 // ── Toast notification ────────────────────────────────────────────────────────
@@ -432,6 +433,10 @@ export default function CornerV4() {
     // read this (CV4-aware send wrapper, future) attach mission_slug +
     // mission_project_slug into outgoing message metadata.
     selectedMission, clearMission: handleClearMission,
+    // R-CV4-4: CV4-native home view injected into ChatPanel's child-view
+    // selector. ChatPanel renders this instead of cv3 ConversationsView
+    // when no conversation is active. V3 leaves this undefined.
+    cv4HomeView: <HomeView />,
   }), [selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, stageFilesRef, selectedMission, handleClearMission])
 
   // ── Render ────────────────────────────────────────────────────────────────
