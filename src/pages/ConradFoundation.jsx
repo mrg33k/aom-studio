@@ -31,8 +31,9 @@ export default function ConradFoundation() {
   }, [])
 
   // Video deliverable from Cleo (task 42e4e77c) + poster frame from hero tile
-  const nancyVideoPath = '/ConradFoundation/nancy-sample-tile-v1.mp4'
-  const nancyStillPath = '/ConradFoundation/nancy-still-placeholder.jpg'
+  // ?v=2 cache-buster: edge had stale 404 cached from before first deploy of these assets
+  const nancyVideoPath = '/ConradFoundation/nancy-sample-tile-v1.mp4?v=2'
+  const nancyStillPath = '/ConradFoundation/nancy-still-placeholder.jpg?v=2'
   const nancyMastclassStill = '/ConradFoundation/nancy-expert-masterclass.jpg'
   const zoomMockupPath = '/ConradFoundation/zoom-mockup.jpg'
 
