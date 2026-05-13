@@ -1,13 +1,25 @@
 // POST /api/integrations/disconnect { slug }
 // Sets the user's integration row back to status='available' (preserves row history).
 
-import integrationsData from '../../src/data/integrations.json'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import { extractJwt } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const KNOWN_SLUGS = new Set(integrationsData.integrations.map(i => i.slug))
+function loadKnownSlugs() {
+  try {
+    const p = join(process.cwd(), 'src', 'data', 'integrations.json')
+    const raw = readFileSync(p, 'utf-8')
+    const data = JSON.parse(raw)
+    return new Set((Array.isArray(data.integrations) ? data.integrations : []).map(i => i.slug))
+  } catch {
+    return new Set()
+  }
+}
+
+const KNOWN_SLUGS = loadKnownSlugs()
 
 async function getUserId(req) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null
