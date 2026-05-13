@@ -63,6 +63,7 @@ const HomeR4Preview = lazy(() => import('./pages/HomeR4Preview.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
 const MunicipalityDirectory = lazy(() => import('./pages/MunicipalityDirectory.jsx'))
+const Blacknight = lazy(() => import('./pages/Blacknight.jsx'))
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 const IncludedHealthBrand = lazy(() => import('./pages/IncludedHealthBrand.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
@@ -257,6 +258,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/nancy" element={<ConradFoundation />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
+          <Route path="/blacknight" element={<Blacknight />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
