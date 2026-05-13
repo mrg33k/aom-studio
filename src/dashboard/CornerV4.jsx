@@ -632,6 +632,17 @@ export default function CornerV4() {
         }
         /* Chat column max-width handled inline via [data-cv4-content-inner]. */
 
+        /* ── R7.2: scrollbar styling — thin, dim, only when scrolling. The
+           chat scroll on the right edge was reading as distracting chrome. */
+        [data-shell="cv4"] *::-webkit-scrollbar { width: 6px; height: 6px; }
+        [data-shell="cv4"] *::-webkit-scrollbar-track { background: transparent; }
+        [data-shell="cv4"] *::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.06);
+          border-radius: 0;
+        }
+        [data-shell="cv4"] *::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+        [data-shell="cv4"] * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent; }
+
         /* ── R7: TASK VIEW BRUTALIST OVERHAUL ─────────────────────────────────
            Sharp rectangles, monospace screaming caps for section headers,
            hard borders, tighter rows. Targets TasksPanel via its existing
@@ -847,7 +858,9 @@ export default function CornerV4() {
           <aside
             data-cv4-tasks-drawer
             style={{
-              width: 340, flexShrink: 0,
+              // R7.2: ~20% of viewport, clamped sensibly so it stays readable.
+              width: 'clamp(300px, 20vw, 460px)',
+              flexShrink: 0,
               background: C.bg,
               borderLeft: '1px solid ' + C.border,
               display: 'flex', flexDirection: 'column',
