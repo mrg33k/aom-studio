@@ -1,18 +1,18 @@
 // CV4 HomeView switcher — pill picker top-right of the home pane.
 // URL ?home=v1|v2|v3 reads/writes the variant; localStorage persists it.
 //
-// R-CV4-6 — Editorial × Terminal hybrids:
-//   V1 — Letter    (editorial-leaning; italic serif + mono accents)
-//   V2 — Briefing  (balanced; terminal frames around italic-serif labels)
-//   V3 — Console   (terminal-leaning; one big editorial lead headline)
+// R-CV4-7 — Reference-screenshot match + variations:
+//   V1 — Reference (hero card + single column; closest to reference)
+//   V2 — Inline    (no hero; EA inline as first AGENTS row)
+//   V3 — TwoCol    (hero + 2-column desktop AGENTS / PROJECTS)
 
 import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'cv4-home-variant'
 const VARIANTS = [
-  { key: 'v1', label: 'V1', name: 'Letter' },
-  { key: 'v2', label: 'V2', name: 'Briefing' },
-  { key: 'v3', label: 'V3', name: 'Console' },
+  { key: 'v1', label: 'V1', name: 'Reference' },
+  { key: 'v2', label: 'V2', name: 'Inline' },
+  { key: 'v3', label: 'V3', name: 'TwoCol' },
 ]
 
 export function useHomeVariant() {
