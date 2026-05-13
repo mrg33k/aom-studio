@@ -535,7 +535,7 @@ export default function CornerV4() {
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
           <LiveCallProvider>
-    <div data-testid="dashboard-home-root" style={{
+    <div data-testid="dashboard-home-root" data-shell="cv4" style={{
       width: '100%',
       height: '100dvh',
       background: C.bg,
@@ -544,6 +544,11 @@ export default function CornerV4() {
       overflow: 'hidden',
       fontFamily: "'Inter', sans-serif",
     }}>
+      {/* R5.1 Phase C: composer action items live on the LEFT of the input on /cv4.
+          Scoped to [data-shell="cv4"] so /dashboard's composer is untouched. */}
+      <style>{`
+        [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
+      `}</style>
 
       {/* ── NAV BAR (R5.1: single row, Chat|Tasks toggle, drawer button) ─── */}
       <nav

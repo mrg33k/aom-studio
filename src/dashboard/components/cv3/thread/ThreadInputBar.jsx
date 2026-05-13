@@ -142,8 +142,9 @@ export default function ThreadInputBar() {
             fontFamily: "'Inter', sans-serif",
           }}
         />
-        {/* Action buttons inside pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* Action buttons inside pill. data-role="composer-actions" lets shells
+            (e.g. /cv4) reorder this cluster relative to the input via CSS. */}
+        <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Attach */}
           <button
             title="Attach"
