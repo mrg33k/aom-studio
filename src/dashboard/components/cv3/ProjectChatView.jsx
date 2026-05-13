@@ -30,7 +30,7 @@ import HandoffNudge from './shared/HandoffNudge.jsx'
 
 export default function ProjectChatView() {
   const { selectedProject } = useChatCore()
-  const { isRecording, isTranscribing } = useChatRecordingCtx()
+  const { isRecording, isTranscribing, micError: recMicError, lastTranscript } = useChatRecordingCtx()
   const { isVoiceActive } = useChatVoiceCtx()
   const {
     filesOpen, settingsOpen,
@@ -81,7 +81,7 @@ export default function ProjectChatView() {
 
       {isVoiceActive && <ProjectVoiceModeBar />}
 
-      {(isRecording || isTranscribing) && <ProjectRecordingStatusBar />}
+      {(isRecording || isTranscribing || recMicError || lastTranscript) && <ProjectRecordingStatusBar />}
 
       <HandoffNudge />
 

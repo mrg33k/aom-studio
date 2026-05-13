@@ -31,7 +31,7 @@ import HandoffNudge from './shared/HandoffNudge.jsx'
 export default function ThreadView() {
   const { selectedAgent } = useChatCore()
   const { isVoiceActive } = useChatVoiceCtx()
-  const { isRecording, isTranscribing } = useChatRecordingCtx()
+  const { isRecording, isTranscribing, micError: recMicError, lastTranscript } = useChatRecordingCtx()
   const {
     filesOpen, settingsOpen,
     profileOpen, setProfileOpen,
@@ -82,7 +82,7 @@ export default function ThreadView() {
 
       {isVoiceActive && <VoiceModeBar />}
 
-      {(isRecording || isTranscribing) && <RecordingStatusBar />}
+      {(isRecording || isTranscribing || recMicError || lastTranscript) && <RecordingStatusBar />}
 
       {isSuperAgentChat && <HandoffNudge />}
 

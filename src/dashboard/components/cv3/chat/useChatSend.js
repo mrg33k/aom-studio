@@ -141,14 +141,23 @@ export default function useChatSend({
 
   // ── sendAgentText: programmatic (voice transcription) ────────────────────
   const sendAgentText = useCallback(async (rawText) => {
-    if (!rawText?.trim() || !selectedAgent || !worldId) return
+    if (!rawText?.trim() || !selectedAgent || !worldId) {
+      console.warn('[sendAgentText] bailed: hasText=', !!rawText?.trim(), 'selectedAgent=', selectedAgent?.slug || null, 'worldId=', worldId || null)
+      return
+    }
     const attSnapshot = pendingAttachmentsRef.current
     const trimmed = rawText.trim()
     if (!trimmed) return
     const sig = `${selectedAgent.slug}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
-    if (inFlightSendRef.current) return
-    if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
+    if (inFlightSendRef.current) {
+      console.warn('[sendAgentText] bailed: already in flight')
+      return
+    }
+    if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) {
+      console.warn('[sendAgentText] bailed: dedup window (same text within 2s)')
+      return
+    }
     inFlightSendRef.current = true
     lastSendSigRef.current = { sig, ts: nowMs }
     const attSuffix = attSnapshot.length
@@ -223,7 +232,10 @@ export default function useChatSend({
   // ── sendProjectText: project chat send path ──────────────────────────────
   const sendProjectText = useCallback(async (rawText) => {
     const chips = pasteChipsRef?.current || []
-    if ((!rawText?.trim() && !chips.length) || !selectedProject || !worldId) return
+    if ((!rawText?.trim() && !chips.length) || !selectedProject || !worldId) {
+      console.warn('[sendProjectText] bailed: hasText=', !!rawText?.trim(), 'hasChips=', chips.length > 0, 'selectedProject=', selectedProject?.slug || null, 'worldId=', worldId || null)
+      return
+    }
     const trimmed = rawText?.trim() || ''
     // R14e-3: project chat still routes through the tenant's EA (same
     // envelope pattern R6 introduced — agent=<ea_slug>, project=<slug> —

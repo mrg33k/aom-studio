@@ -465,7 +465,8 @@ export default function ChatPanel() {
     handleMicToggle: recording.handleMicToggle,
     micError: recording.micError,
     isTranscribing: recording.isTranscribing,
-  }), [recording.isRecording, recording.recordingElapsed, recording.handleMicToggle, recording.micError, recording.isTranscribing])
+    lastTranscript: recording.lastTranscript,
+  }), [recording.isRecording, recording.recordingElapsed, recording.handleMicToggle, recording.micError, recording.isTranscribing, recording.lastTranscript])
 
   const voiceValue = useMemo(() => ({
     isVoiceActive, setIsVoiceActive, voiceChatRef,
