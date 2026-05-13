@@ -13,6 +13,7 @@
 // during transient tunnel outages.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { authFetch } from '../../../lib/authFetch.js'
+import { supabase } from '../../../lib/supabase.js'
 import { useSystemToast } from '../../../SystemToast.jsx'
 
 const TUNNEL_BASE = 'https://rag.aheadofmarket.com'
@@ -56,22 +57,25 @@ async function maybeCompressImage(file) {
 }
 
 async function uploadViaTunnel(file, world, mime) {
-  const tokRes = await authFetch('/api/dashboard/upload-token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ world }),
-  })
-  const tokData = await tokRes.json()
-  if (!tokRes.ok || !tokData?.token) {
-    const e = new Error(tokData?.error || 'upload token failed')
-    e.status = tokRes.status
+  // The rag-server validates the Supabase JWT directly -- no Vercel signing
+  // endpoint needed. The user's logged-in session already proves authorization.
+  let jwt = null
+  if (supabase) {
+    try {
+      const { data } = await supabase.auth.getSession()
+      jwt = data?.session?.access_token || null
+    } catch (_) { jwt = null }
+  }
+  if (!jwt) {
+    const e = new Error('not signed in (no Supabase session)')
+    e.status = 401
     throw e
   }
-  const uploadUrl = `${tokData.upload_url}?world=${encodeURIComponent(world)}&filename=${encodeURIComponent(file.name || 'upload.bin')}&mime=${encodeURIComponent(mime)}`
+  const uploadUrl = `${TUNNEL_BASE}/upload-file-binary?world=${encodeURIComponent(world)}&filename=${encodeURIComponent(file.name || 'upload.bin')}&mime=${encodeURIComponent(mime)}`
   const r = await fetch(uploadUrl, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${tokData.token}`,
+      'Authorization': `Bearer ${jwt}`,
       'Content-Type': mime,
     },
     body: file,
