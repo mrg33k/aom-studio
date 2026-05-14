@@ -363,9 +363,15 @@ export default function CV4ContextNav({
             }
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: tasksDrawerOpen ? 'rgba(234,179,8,0.14)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${tasksDrawerOpen ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              color: tasksDrawerOpen ? C.yellow : C.muted,
+              background: tasksDrawerOpen
+                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.14)' : 'rgba(16,185,129,0.15)')
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${tasksDrawerOpen
+                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.4)' : 'rgba(16,185,129,0.4)')
+                : 'rgba(255,255,255,0.08)'}`,
+              color: tasksDrawerOpen
+                ? (activeTool === 'mail' ? C.yellow : '#10B981')
+                : C.muted,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
@@ -378,7 +384,7 @@ export default function CV4ContextNav({
                 <polyline points="3 7 12 13 21 7"/>
               </svg>
             ) : (
-              <TasksIcon color={tasksDrawerOpen ? C.yellow : C.muted} />
+              <TasksIcon color={tasksDrawerOpen ? '#10B981' : 'currentColor'} />
             )}
             {activeTool !== 'mail' && activeTaskCount > 0 && (
               <span style={{
