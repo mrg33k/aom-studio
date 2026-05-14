@@ -60,9 +60,20 @@ export default async function handler(req, res) {
   const userId = await getUserId(req)
   if (!userId) return res.status(401).json({ error: 'not authenticated' })
 
+  // return_to lets callers (e.g. the onboarding flow) ask the callback to land
+  // them on a specific same-origin path instead of /dashboard. Must be a
+  // relative path starting with "/" and not "//" (no open redirects).
+  const rawReturnTo = (req.query?.return_to || '').toString()
+  let returnTo = null
+  if (rawReturnTo) {
+    if (rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') && !rawReturnTo.includes('://')) {
+      returnTo = rawReturnTo
+    }
+  }
+
   const redirectUri = buildRedirectUri(req)
   const nonce = randomBytes(8).toString('base64url')
-  const state = signState({ userId, slug, ts: Date.now(), nonce })
+  const state = signState({ userId, slug, ts: Date.now(), nonce, returnTo })
 
   const params = new URLSearchParams({
     client_id: creds.clientId,

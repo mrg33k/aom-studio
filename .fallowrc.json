@@ -25,5 +25,10 @@
   "ignoreDependencies": ["@anthropic-ai/sdk"],
   "duplicates": {
   },
-  "rules": {}
+  "rules": {},
+  "audit": {
+    "deadCodeBaseline": ".fallow/dead-code-baseline.json",
+    "healthBaseline": ".fallow/health-baseline.json",
+    "dupesBaseline": ".fallow/dupes-baseline.json"
+  }
 }

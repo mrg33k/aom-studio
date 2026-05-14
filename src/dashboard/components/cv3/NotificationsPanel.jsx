@@ -19,7 +19,7 @@ export default function NotificationsPanel({ items, agents, onSelectAgent, onMar
   }
 
   return (
-    <div ref={panelRef} style={{
+    <div ref={panelRef} data-cv4-notifications style={{
       position: 'absolute',
       top: 'calc(100% + 8px)',
       right: 0,

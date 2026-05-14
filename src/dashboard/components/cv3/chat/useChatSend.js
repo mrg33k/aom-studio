@@ -77,6 +77,7 @@ export default function useChatSend({
       text: `🖼️ [${tool}] ${prompt}`,
       timestamp: now,
       source: 'corner-dashboard',
+      ...userIdentity,
     }, {
       id: tempAssistId,
       role: 'assistant',
@@ -186,6 +187,7 @@ export default function useChatSend({
       text,
       timestamp: now,
       source: 'corner-dashboard',
+      ...userIdentity,
       ...(replyMeta ? { metadata: { reply_to: replyMeta } } : {}),
     }])
     // R27e: bump the context-fullness meter on each user send (agent chat).
@@ -277,6 +279,7 @@ export default function useChatSend({
       text,
       timestamp: now,
       source: 'corner-dashboard',
+      ...userIdentity,
       ...(replyMetaVoice ? { metadata: { reply_to: replyMetaVoice } } : {}),
     }])
     // R27e: bump the context-fullness meter on each user send (voice path).
@@ -389,6 +392,7 @@ export default function useChatSend({
       text,
       timestamp: now,
       source: 'corner-dashboard',
+      ...userIdentity,
       ...(replyMetaProj ? { metadata: { reply_to: replyMetaProj } } : {}),
     }])
     // R27e: bump the context-fullness meter on each user send (project chat).

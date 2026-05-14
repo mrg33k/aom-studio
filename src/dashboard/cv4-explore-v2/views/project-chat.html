@@ -256,6 +256,319 @@
         font-size: var(--fs-base);
       }
     }
+
+    /* ── Rail tabs (Context | Files) ─────────────────────────── */
+
+    .rail-tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: var(--sp-lg);
+      background-color: var(--c-dim-faint);
+      border-radius: 6px;
+      padding: 3px;
+    }
+
+    .rail-tab {
+      flex: 1;
+      padding: 6px var(--sp-sm);
+      background-color: transparent;
+      border: none;
+      border-radius: 4px;
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--c-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: unset;
+      min-width: unset;
+      height: auto;
+      letter-spacing: 0.02em;
+    }
+
+    .rail-tab:hover {
+      color: var(--c-text2);
+    }
+
+    .rail-tab.active {
+      background-color: var(--c-dim);
+      color: var(--c-text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Rail panels */
+    .rail-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Files panel styles ───────────────────────────────────── */
+
+    .files-panel-component {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .fp-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-md);
+    }
+
+    .fp-panel-title {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .fp-panel-project {
+      font-size: 11px;
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+    }
+
+    .fp-canonical {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: var(--sp-sm);
+    }
+
+    .fp-file-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: 7px var(--sp-sm);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      min-height: unset;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .fp-file-row:hover {
+      background-color: var(--c-dim-faint);
+    }
+
+    .fp-file-row:active {
+      background-color: var(--c-accent-light);
+    }
+
+    .fp-file-row.active {
+      background-color: var(--c-accent-glow);
+    }
+
+    .fp-file-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+      width: 18px;
+      text-align: center;
+      line-height: 1;
+      color: var(--c-text2);
+      user-select: none;
+    }
+
+    .fp-file-name {
+      flex: 1;
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fp-file-meta {
+      font-size: 11px;
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .fp-divider {
+      height: 1px;
+      background-color: var(--c-border);
+      margin: var(--sp-sm) 0 var(--sp-md) 0;
+    }
+
+    .fp-folders {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .fp-folder-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fp-folder-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: 7px var(--sp-sm);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      user-select: none;
+      min-height: unset;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .fp-folder-row:hover {
+      background-color: var(--c-dim-faint);
+    }
+
+    .fp-folder-row:active {
+      background-color: var(--c-accent-light);
+    }
+
+    .fp-folder-arrow {
+      font-size: 10px;
+      color: var(--c-muted);
+      width: 14px;
+      text-align: center;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+      line-height: 1;
+      margin-top: 1px;
+      display: inline-block;
+    }
+
+    .fp-folder-row.open .fp-folder-arrow {
+      transform: rotate(90deg);
+    }
+
+    .fp-folder-name {
+      flex: 1;
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fp-folder-count {
+      font-size: 11px;
+      color: var(--c-muted);
+      background-color: rgba(26,36,56,0.5);
+      border: 1px solid var(--c-border-faint);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: var(--ff-mono);
+      flex-shrink: 0;
+      min-width: 20px;
+      text-align: center;
+      user-select: none;
+    }
+
+    .fp-folder-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease-out;
+    }
+
+    .fp-folder-content.open {
+      max-height: 600px;
+    }
+
+    .fp-folder-inner {
+      padding: var(--sp-xs) 0 var(--sp-xs) 0;
+      border-left: 1px solid var(--c-border-faint);
+      margin-left: calc(var(--sp-sm) + 7px);
+    }
+
+    .fp-sub-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: 5px var(--sp-sm);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      min-height: unset;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .fp-sub-row:hover {
+      background-color: var(--c-dim-faint);
+    }
+
+    .fp-sub-row:active {
+      background-color: var(--c-accent-light);
+    }
+
+    .fp-sub-icon {
+      font-size: 11px;
+      color: var(--c-muted);
+      flex-shrink: 0;
+      width: 14px;
+      text-align: center;
+    }
+
+    .fp-sub-name {
+      font-size: var(--fs-xs);
+      color: var(--c-text2);
+      font-family: var(--ff-mono);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-label {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-md);
+      padding: 0 var(--sp-sm);
+    }
+
+    .pinned-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .pinned-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm);
+      border-radius: 5px;
+      text-decoration: none;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      transition: background-color 0.15s ease;
+    }
+
+    .pinned-item:hover {
+      background-color: var(--c-dim-faint);
+    }
+
+    .pinned-item.active {
+      background-color: var(--c-accent-glow);
+      color: var(--c-text);
+    }
+
+    .pinned-item-name {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -356,41 +669,255 @@
     </div>
   </div>
 
-  <!-- Right sidebar: project context + active tasks -->
-  <div class="rail-right">
-    <h3 class="sidebar-label">Current State</h3>
-    <div class="project-context-panel">
-      <div class="context-item">
-        <div class="context-item-label">Status</div>
-        <div class="context-item-content">Phase 2 in progress · 60% complete</div>
-      </div>
+  <!-- Right sidebar: tabbed Context | Files -->
+  <div class="rail-right" id="rail-right">
 
-      <div class="context-item">
-        <div class="context-item-label">Active Tasks</div>
-        <div class="context-task" onclick="openTask()">
-          <div class="context-task-title">Keyword research phase 2</div>
-          <div class="context-task-status">60% complete · Due tomorrow</div>
-        </div>
-        <div class="context-task" onclick="openTask()">
-          <div class="context-task-title">Brand refresh design direction</div>
-          <div class="context-task-status">Waiting for review</div>
-        </div>
-        <div class="context-task" onclick="openTask()">
-          <div class="context-task-title">Google Ads campaign setup</div>
-          <div class="context-task-status">Queued · Starts Monday</div>
-        </div>
-      </div>
+    <!-- Tab strip -->
+    <div class="rail-tabs" role="tablist">
+      <button class="rail-tab active" id="tab-context" role="tab" aria-selected="true"
+              onclick="switchRailTab('context')">Context</button>
+      <button class="rail-tab" id="tab-files" role="tab" aria-selected="false"
+              onclick="switchRailTab('files')">Files</button>
+    </div>
 
-      <div class="context-item">
-        <div class="context-item-label">Team</div>
-        <div class="context-item-content">Steffen (Brand) · Bobby (Web) · Cleo (Video)</div>
-      </div>
+    <!-- ── Context panel ───────────────────────────────────── -->
+    <div class="rail-panel" id="rail-panel-context" role="tabpanel">
+      <div class="project-context-panel">
+        <div class="context-item">
+          <div class="context-item-label">Status</div>
+          <div class="context-item-content">Phase 2 in progress · 60% complete</div>
+        </div>
 
-      <div class="context-item">
-        <div class="context-item-label">Last Update</div>
-        <div class="context-item-content">2 hours ago · Bobby completed keyword tier list</div>
+        <div class="context-item">
+          <div class="context-item-label">Active Tasks</div>
+          <div class="context-task" onclick="openTask()">
+            <div class="context-task-title">Keyword research phase 2</div>
+            <div class="context-task-status">60% complete · Due tomorrow</div>
+          </div>
+          <div class="context-task" onclick="openTask()">
+            <div class="context-task-title">Brand refresh design direction</div>
+            <div class="context-task-status">Waiting for review</div>
+          </div>
+          <div class="context-task" onclick="openTask()">
+            <div class="context-task-title">Google Ads campaign setup</div>
+            <div class="context-task-status">Queued · Starts Monday</div>
+          </div>
+        </div>
+
+        <div class="context-item">
+          <div class="context-item-label">Team</div>
+          <div class="context-item-content">Steffen (Brand) · Bobby (Web) · Cleo (Video)</div>
+        </div>
+
+        <div class="context-item">
+          <div class="context-item-label">Last Update</div>
+          <div class="context-item-content">2 hours ago · Bobby completed keyword tier list</div>
+        </div>
       </div>
     </div>
+
+    <!-- ── Files panel ─────────────────────────────────────── -->
+    <div class="rail-panel" id="rail-panel-files" role="tabpanel" style="display: none;">
+      <div class="files-panel-component">
+
+        <div class="fp-panel-header">
+          <span class="fp-panel-title">Files</span>
+          <span class="fp-panel-project">Ambition</span>
+        </div>
+
+        <!-- Five canonical files — flat at top, no folder wrapper -->
+        <div class="fp-canonical">
+
+          <button class="fp-file-row" onclick="fpOpenFile('VISION.md', this)">
+            <span class="fp-file-icon">📄</span>
+            <span class="fp-file-name">VISION</span>
+            <span class="fp-file-meta">2d ago</span>
+          </button>
+
+          <button class="fp-file-row" onclick="fpOpenFile('CONTEXT.md', this)">
+            <span class="fp-file-icon">📄</span>
+            <span class="fp-file-name">CONTEXT</span>
+            <span class="fp-file-meta">1h ago</span>
+          </button>
+
+          <button class="fp-file-row" onclick="fpOpenFile('BUILD.md', this)">
+            <span class="fp-file-icon">📄</span>
+            <span class="fp-file-name">BUILD</span>
+            <span class="fp-file-meta">3h ago</span>
+          </button>
+
+          <button class="fp-file-row" onclick="fpOpenFile('RESEARCH.md', this)">
+            <span class="fp-file-icon">📄</span>
+            <span class="fp-file-name">RESEARCH</span>
+            <span class="fp-file-meta">5d ago</span>
+          </button>
+
+          <button class="fp-file-row" onclick="fpOpenFile('PHONEBOOK.md', this)">
+            <span class="fp-file-icon">📄</span>
+            <span class="fp-file-name">PHONEBOOK</span>
+            <span class="fp-file-meta">1w ago</span>
+          </button>
+
+        </div>
+
+        <div class="fp-divider"></div>
+
+        <!-- Collapsed folder rows — all other files grouped by folder -->
+        <div class="fp-folders">
+
+          <!-- Project history & rules -->
+          <div class="fp-folder-wrap">
+            <button class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-hist')" aria-expanded="false">
+              <span class="fp-folder-arrow">▶</span>
+              <span class="fp-folder-name">Project history &amp; rules</span>
+              <span class="fp-folder-count">4</span>
+            </button>
+            <div class="fp-folder-content" id="fp-hist">
+              <div class="fp-folder-inner">
+                <button class="fp-sub-row" onclick="fpOpenFile('history.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">history.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('last-conversation.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">last-conversation.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('rules.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">rules.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('decisions.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">decisions.md</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- missions/ -->
+          <div class="fp-folder-wrap">
+            <button class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-missions')" aria-expanded="false">
+              <span class="fp-folder-arrow">▶</span>
+              <span class="fp-folder-name">missions/</span>
+              <span class="fp-folder-count">6</span>
+            </button>
+            <div class="fp-folder-content" id="fp-missions">
+              <div class="fp-folder-inner">
+                <button class="fp-sub-row" onclick="fpOpenFile('missions/brand-refresh', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">brand-refresh</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('missions/keyword-research', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">keyword-research</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('missions/google-ads', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">google-ads</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('missions/seo-overhaul', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">seo-overhaul</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('missions/social-calendar', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">social-calendar</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('missions/web-build', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">web-build</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- research/ -->
+          <div class="fp-folder-wrap">
+            <button class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-research')" aria-expanded="false">
+              <span class="fp-folder-arrow">▶</span>
+              <span class="fp-folder-name">research/</span>
+              <span class="fp-folder-count">4</span>
+            </button>
+            <div class="fp-folder-content" id="fp-research">
+              <div class="fp-folder-inner">
+                <button class="fp-sub-row" onclick="fpOpenFile('research/2026-05-01-competitor-analysis.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">2026-05-01-competitor-analysis.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('research/2026-04-20-keyword-deep-dive.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">2026-04-20-keyword-deep-dive.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('research/2026-04-10-industry-positioning.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">2026-04-10-industry-positioning.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('research/2026-03-15-brand-audit.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">2026-03-15-brand-audit.md</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- archive/ -->
+          <div class="fp-folder-wrap">
+            <button class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-archive')" aria-expanded="false">
+              <span class="fp-folder-arrow">▶</span>
+              <span class="fp-folder-name">archive/</span>
+              <span class="fp-folder-count">2</span>
+            </button>
+            <div class="fp-folder-content" id="fp-archive">
+              <div class="fp-folder-inner">
+                <button class="fp-sub-row" onclick="fpOpenFile('archive/2025-campaigns.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">2025-campaigns.md</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('archive/old-brand-assets.md', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">old-brand-assets.md</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- assets/ -->
+          <div class="fp-folder-wrap">
+            <button class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-assets')" aria-expanded="false">
+              <span class="fp-folder-arrow">▶</span>
+              <span class="fp-folder-name">assets/</span>
+              <span class="fp-folder-count">5</span>
+            </button>
+            <div class="fp-folder-content" id="fp-assets">
+              <div class="fp-folder-inner">
+                <button class="fp-sub-row" onclick="fpOpenFile('assets/logo-primary.svg', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">logo-primary.svg</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('assets/logo-dark.svg', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">logo-dark.svg</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('assets/brand-fonts.zip', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">brand-fonts.zip</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('assets/color-palette.pdf', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">color-palette.pdf</span>
+                </button>
+                <button class="fp-sub-row" onclick="fpOpenFile('assets/photography-guidelines.pdf', null)">
+                  <span class="fp-sub-icon">─</span>
+                  <span class="fp-sub-name">photography-guidelines.pdf</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Drawer (actions menu) -->
@@ -404,7 +931,7 @@
     </div>
     <div class="drawer-section">
       <h4>Project</h4>
-      <button class="btn-secondary" style="width: 100%; margin-bottom: var(--sp-md);">View All Files</button>
+      <button class="btn-secondary" style="width: 100%; margin-bottom: var(--sp-md);" onclick="openFileViewer(); toggleDrawer();">View All Files</button>
       <button class="btn-secondary" style="width: 100%; margin-bottom: var(--sp-md);">Edit Context</button>
       <button class="btn-secondary" style="width: 100%;">Archive Project</button>
     </div>
@@ -457,7 +984,7 @@
     }
 
     function openFileViewer() {
-      alert('File viewer coming in R75-v1');
+      switchRailTab('files');
     }
 
     function createTask() {
@@ -466,6 +993,41 @@
 
     function openTask() {
       alert('Task detail view coming in R75-v1');
+    }
+
+    // ── Rail tab switching ────────────────────────────────────
+    function switchRailTab(tab) {
+      const panels = { context: 'rail-panel-context', files: 'rail-panel-files' };
+      const tabs = { context: 'tab-context', files: 'tab-files' };
+
+      Object.keys(panels).forEach(key => {
+        const panel = document.getElementById(panels[key]);
+        const btn = document.getElementById(tabs[key]);
+        const isActive = key === tab;
+        if (panel) panel.style.display = isActive ? 'flex' : 'none';
+        if (btn) {
+          btn.classList.toggle('active', isActive);
+          btn.setAttribute('aria-selected', String(isActive));
+        }
+      });
+    }
+
+    // ── Files panel expand/collapse ───────────────────────────
+    function fpToggleFolder(rowEl, contentId) {
+      const content = document.getElementById(contentId);
+      if (!content) return;
+      const isOpen = content.classList.contains('open');
+      content.classList.toggle('open', !isOpen);
+      rowEl.classList.toggle('open', !isOpen);
+      rowEl.setAttribute('aria-expanded', String(!isOpen));
+    }
+
+    function fpOpenFile(path, rowEl) {
+      // Clear previous active state
+      document.querySelectorAll('.fp-file-row.active').forEach(r => r.classList.remove('active'));
+      if (rowEl) rowEl.classList.add('active');
+      console.log('[files-panel] open:', path);
+      // TODO: open in article reader overlay
     }
 
     document.addEventListener('DOMContentLoaded', () => {

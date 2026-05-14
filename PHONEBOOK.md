@@ -1,76 +1,133 @@
 # Codebase Phone Book
-> Auto-generated. This is WHERE things live across all AOM repos.
+> This is WHERE things live across all AOM repos.
 > Agents: use this to find files. Don't guess paths. Don't grep blindly.
 ## aom-studio (Dashboard, API, React frontend on Vercel)
 **Path:** /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio
 
-### HARD RULE
-- `src/dashboard/BoardView.jsx` is the ONLY dashboard view
-- ALL chat, agent columns, task lists, message rendering live in this ONE file
-- There is NO separate ChatMessageRenderer, GameView, or ChecklistMode
+### HARD RULES (as of R7.21 cutover, 2026-05-13)
+- **`/dashboard` and `/dashboard/*` render `CornerV4`** — the canonical user-facing dashboard.
+- **`/cv3` and `/cv3/*` render `CornerV3`** — the rollback escape hatch only. Do NOT add features here.
+- **`/cv4` and `/cv4/*`** render `CornerV4` too (legacy aliases preserved for direct CV4 routes).
+- Routing lives in `src/main.jsx`. If you flip a route, that's the file.
+- CV4 reuses the shared `components/cv3/` tree and re-skins it via a `[data-shell="cv4"]` CSS scope set on the CornerV4 root div. **Most CV4 visual changes are CSS in CornerV4.jsx's inline `<style>` block**, not new components. Only fork into `cv4/` when behavior diverges, not just styling.
+- Mission attachment is mandatory (see CLAUDE.md). Every non-trivial change goes under a `corner/missions/<slug>/`. Stub BUILD.md before your first code edit.
 
-### Dashboard UI
+### Dashboard shells (top of the tree)
 | File | What it does |
-|------|-------------|
-| `src/dashboard/AgentInfoPage.jsx` | AgentInfoPage.jsx |
-| `src/dashboard/ArchitectChat.jsx` | ArchitectChat.jsx |
-| `src/dashboard/AvatarTiles.jsx` | AvatarTiles.jsx |
-| `src/dashboard/BaseTierChat.jsx` | BaseTierChat.jsx |
-| `src/dashboard/BoardView.jsx` | BoardView.jsx |
-| `src/dashboard/ChecklistMode.jsx` | ChecklistMode.jsx |
-| `src/dashboard/Dashboard.jsx` | Dashboard.jsx |
-| `src/dashboard/FilesTab.jsx` | FilesTab.jsx |
-| `src/dashboard/FurnitureRenderer.jsx` | FurnitureRenderer.jsx |
-| `src/dashboard/GameDashboard.jsx` | GameDashboard.jsx |
-| `src/dashboard/GameHUD.jsx` | GameHUD.jsx |
-| `src/dashboard/HUDModeSwitcher.jsx` | HUDModeSwitcher.jsx |
-| `src/dashboard/HUDNotifications.jsx` | HUDNotifications.jsx |
-| `src/dashboard/HexGrid.jsx` | HexGrid.jsx |
-| `src/dashboard/MegaboardMode.jsx` | MegaboardMode.jsx |
+|------|--------------|
+| `src/main.jsx` | All app routing. `/dashboard` → CornerV4, `/cv3` → CornerV3, `/cv4` → CornerV4 (alias). |
+| `src/dashboard/CornerV4.jsx` | **Canonical dashboard shell.** Renders nav, CV4ContextNav, left CV4Drawer, centered ChatPanel, right TasksPanelCv4 (docked drawers on desktop, tab toggle on mobile). All CV4-specific CSS lives in the inline `<style>` block here, scoped via `[data-shell="cv4"]`. |
+| `src/dashboard/CornerV3.jsx` | Rollback shell at `/cv3`. Frozen — do not extend. Reads the same `useDataPipe` / `useTasks` hooks and the same `components/cv3/` chrome as CV4. |
+| `src/dashboard/CornerContext.jsx` | `CornerAuthProvider` + `CornerDataProvider` + `CornerNavProvider`. Sliced by update cadence so consumers don't re-render on unrelated changes. |
+| `src/dashboard/main.jsx` | Dashboard bundle entrypoint (separate from `src/main.jsx` app router). Imports `GameDashboard.jsx` — currently broken (see CLAUDE.md "Pre-existing build state"). |
+| `src/dashboard/OnboardingGuide.jsx` | First-run onboarding flow. |
+| `src/dashboard/SystemToast.jsx` | Global toast surface. |
 
-### Dashboard Components
-- `src/dashboard/components/AgentInfoTab.jsx`
-- `src/dashboard/components/AgentRevolver.jsx`
-- `src/dashboard/components/ChildPillsDrawer.jsx`
-- `src/dashboard/components/CompactStats.jsx`
-- `src/dashboard/components/CreateRoomModal.jsx`
-- `src/dashboard/components/FloatingActionButton.jsx`
-- `src/dashboard/components/HUDConstants.jsx`
-- `src/dashboard/components/ProjectCard.jsx`
-- `src/dashboard/components/SkillAutocomplete.jsx`
-- `src/dashboard/components/TaskContextMenu.jsx`
-- `src/dashboard/components/TaskDetailAccordion.jsx`
-- `src/dashboard/components/TaskLabelPill.jsx`
-- `src/dashboard/components/TaskPanel.jsx`
-- `src/dashboard/components/TypingIndicatorV2.jsx`
-- `src/dashboard/components/VoiceChat.jsx`
-- `src/dashboard/components/VoiceToggle.jsx`
-- `src/dashboard/components/WorldSelector.jsx`
+### CV4-specific components (`src/dashboard/cv4/`)
+Only shells that differ behaviorally from CV3 live here. Everything else stays in `components/cv3/` and re-skins via the data-shell scope.
+- `ComposerCommandsMenu.jsx` — purple sparkles icon left of the composer pill; image gen + skill commands.
+- `ContextNav.jsx` — second-row nav (hamburger · title · Chat|Tasks · tasks-drawer toggle).
+- `Drawer.jsx` — left "file browser" drawer: agents + projects + missions, docked on desktop ≥1024px, overlay below.
+- `MissionChip.jsx` — context chip rendered on the composer when a mission is attached from the drawer.
+- `TasksPanelCv4.jsx` — right-side tasks drawer with the brutalist task-card styling.
 
-### Dashboard Hooks
-- `src/dashboard/hooks/useDataPipe.js`
-- `src/dashboard/hooks/useLongPress.js`
-- `src/dashboard/hooks/useTasks.js`
+### Shared dashboard chrome (`src/dashboard/components/cv3/`)
+Used by **both** CornerV3 and CornerV4. CV4 styles many of these via `[data-shell="cv4"]` selectors — when redesigning, prefer CSS overrides in CornerV4's `<style>` block over forking.
+- `ChatPanel.jsx` — the centered chat column. Imports thread + project-chat sub-trees.
+- `TasksPanel.jsx` — CV3 tasks panel (the one CornerV3 renders; CV4 uses `TasksPanelCv4.jsx` instead).
+- `ConversationsView.jsx`, `ThreadView.jsx`, `ProjectChatView.jsx` — view-level switches inside ChatPanel.
+- `NotificationsPanel.jsx`, `UserAvatar.jsx`, `IntegrationsModal.jsx`, `SlashCommandAutocomplete.jsx`, `ContextMenu.jsx`, `TaskStatusCard.jsx`, `CleoWorkspaceDetail.jsx`, `CleoWorkspacesIndex.jsx` — top-level chrome.
+- `AgentCard.jsx`, `icons.jsx`, `shared.jsx` — atoms (Badge, Tab, BellIcon, icon SVGs).
 
-### API Endpoints
-- `api/dashboard/active-agents.js`
-- `api/dashboard/agent-status.js`
-- `api/dashboard/base-chat.js`
-- `api/dashboard/chat.js`
-- `api/dashboard/create-agents.js`
-- `api/dashboard/files.js`
-- `api/dashboard/finance.js`
-- `api/dashboard/poke-agent.js`
-- `api/dashboard/preferences.js`
-- `api/dashboard/setup-finance.js`
-- `api/dashboard/supabase-messages.js`
-- `api/dashboard/supabase-status.js`
-- `api/dashboard/support-chat.js`
-- `api/dashboard/task-action.js`
-- `api/dashboard/unstuck.js`
-- `api/dashboard/v2-gemini-chat.js`
-- `api/dashboard/v2-task-list.js`
-- `api/dashboard/v2-task-update.js`
+Sub-trees (each is the canonical place for that surface):
+- `chat/` — ChatPanelContext + hooks (`useChatSend`, `useChatAttachments`, `useChatMessages`, `useChatVoiceCtx`, `useChatContextMenuCtx`, `useChatRecording`, `useChatPrefs`, `useChatSettings`, `useChatConversations`, `useBridgeStream`).
+- `thread/` — agent chat surface: `ThreadInputBar.jsx` (THE composer used by /dashboard chat), `MessageList.jsx`, `ThreadHeader.jsx`, `FilesPanel.jsx`, `VoiceChatHost.jsx`, etc.
+- `project-chat/` — project chat surface: `ProjectInputBar.jsx` (composer for project rooms), `ProjectChatHeader.jsx`, `CanonFilesPanel.jsx`, `ProjectFilesPanel.jsx`, `ProjectSearchBar.jsx`, etc.
+- `tasks/` — task lifecycle sections (`ActiveTasksSection`, `WaitingTasksSection`, `BlockedTasksSection`, `DoneTasksSection`, `FailedTasksSection`, `ForemanTasksSection`, `PersonalTodosSection`), `TaskInputBar.jsx`, `CreateProjectModal.jsx`, `LivingParagraphCard.jsx`, `ProjectBriefingCard.jsx`, `WeeklyStatsCard.jsx`.
+- `conversations/` — home-state feed surface (`HomeSearchBar`, `HomeStateFeed`, `GreetingHero`, `EaHeroCard`, `AgentsList`, `ProjectsList`, `SearchResults`, `useHomeSearch`).
+- `voice/` — `GlobalCallButton.jsx`, `FloatingCallBar.jsx` (top-nav live call entry + bottom call bar).
+- `phone-recording/` — `PhoneRecordingOverlay.jsx`.
+- `session/`, `shared/`, `shared-rooms/` — onboarding tooltips, paste chips, image-gen picker, shared-room settings.
+
+### "I need to edit X" — quick map
+| You want to change… | Edit… |
+|---|---|
+| The composer pill (input + send + attach + mic) on the agent thread | `components/cv3/thread/ThreadInputBar.jsx` |
+| The composer pill on a project chat | `components/cv3/project-chat/ProjectInputBar.jsx` |
+| Message bubble rendering | `components/cv3/thread/MessageList.jsx` |
+| Slash-command autocomplete | `components/cv3/SlashCommandAutocomplete.jsx` |
+| CV4-only visual changes (typography, drawer blend, brutalist tasks) | CornerV4.jsx inline `<style>` block, scoped `[data-shell="cv4"]` |
+| Routes (`/dashboard`, `/cv3`, `/cv4`) | `src/main.jsx` |
+| Left drawer (CV4 file browser) | `cv4/Drawer.jsx` |
+| Second-row nav (CV4) | `cv4/ContextNav.jsx` |
+| Right tasks drawer (CV4 brutalist task list) | `cv4/TasksPanelCv4.jsx` |
+| CV3 task list (escape-hatch only) | `components/cv3/TasksPanel.jsx` + `components/cv3/tasks/*` |
+| Send-message logic (optimistic insert, supabase write, bridge stream) | `components/cv3/chat/useChatSend.js` |
+| What data ChatPanel sees (agents, projects, tasks) | `components/cv3/chat/ChatPanelContext.jsx` |
+| World/tenant data pipe | `hooks/useDataPipe.js` |
+| Task queries + buckets | `hooks/useTasks.js` |
+| Auth / current user slug | `hooks/useCurrentUserSlug.js` |
+| Voice call surface | `hooks/useVoiceChat.js` + `components/cv3/voice/*` + `components/cv3/thread/VoiceChatHost.jsx` |
+| Phone-recording (long-form record → transcribe → send) | `hooks/useTelephone.js` + `components/cv3/phone-recording/PhoneRecordingOverlay.jsx` |
+| Mission chip / mission attach on composer | `cv4/MissionChip.jsx`, `cv4/Drawer.jsx` (onSelectMission), CornerV4's `attachedMission` state |
+
+### Dashboard Hooks (`src/dashboard/hooks/`)
+- `useDataPipe.js` — single source of truth for agents, inboxItems, projectRooms, personalTodos. Filters by viewer slug.
+- `useTasks.js` — task buckets (queued, rightNow, waiting, done, allTasks) + `addOptimisticTask`.
+- `useCurrentUserSlug.js` — resolves viewer's slug inside the current tenant (`tenant_users.slug` keyed on auth.uid()).
+- `useTelephone.js` — long-form recording / transcribe / dispatch to active super-agent.
+- `useVoiceChat.js` — live voice call hook.
+- `useProjects.js` — project list with definitions merged.
+- `useCleoWorkspaces.js` — Cleo workspace list/detail.
+- `useLongPress.js` — generic long-press handler (used by task cards for context menus on mobile).
+- `useToast.jsx` — toast queue (alias to SystemToast).
+
+### API Endpoints (`api/dashboard/` — 71 endpoints)
+Grouped by surface. All are Vercel serverless functions.
+
+**Chat / messaging:**
+- `supabase-messages.js` — POST user/assistant messages. Primary write path from ThreadInputBar.
+- `chat-bridge.js` — streaming bridge to agent tmux sessions.
+- `chat.js`, `base-chat.js`, `haiku-chat.js`, `support-chat.js` — chat backends (legacy + tiered).
+- `message-steps.js`, `message-retention.js` — message lifecycle metadata.
+- `prune-context.js`, `clear-context.js` — context window management.
+
+**Agents:**
+- `active-agents.js`, `agent-status.js`, `agent-status-updater.js` — live agent registry + status pills.
+- `agent-customize.js`, `create-agents.js`, `reset-agent.js`, `poke-agent.js`, `update-agent-order.js` — agent CRUD.
+- `agent-voice.js`, `avatar.js` — agent voice + avatar.
+
+**Tasks:**
+- `task-action.js`, `retry-task.js`, `unstuck.js` — task state mutations.
+- `task-success-rate.js` — agent QA scoring.
+- `foreman-pause.js` — foreman gate.
+- `v2-task-list.js`, `v2-task-update.js` — v2 task surface.
+
+**Projects / missions:**
+- `missions.js`, `missions-created.js`, `scaffold-mission.js` — Corner mission CRUD.
+- `scaffold-project.js`, `create-project-from-chat.js`, `create-project-task.js` — project scaffolding.
+- `project-access.js`, `project-invite.js`, `project-shared.js`, `project-files.js`, `project-summary.js`, `project-narrative.js`, `project-paragraph.js` — project surface APIs.
+
+**Files / search:**
+- `file-content.js`, `file-search.js`, `file-upload.js`, `files.js`.
+- `recipes.js`, `doc-updates.js`, `git-history.js`.
+
+**Voice / phone:**
+- `voice-session.js`, `voice-handoff.js`, `voice-summary.js`, `voice-context-lookup.js`, `voice-context-update.js`.
+- `v2-transcribe-audio.js` — audio → text for telephone mode.
+
+**Imagegen:**
+- `image-gen.js` — composer image-gen entry.
+
+**Worlds / tenancy / auth:**
+- `worlds.js`, `create-world.js`, `get-directory-tenants.js`, `set-supabase-client-context.js`, `invite-create.js`, `project-invite.js`.
+- `onboarding-state.js`, `session-handoff.js`.
+
+**EA system / infra:**
+- `ea-system-prompt.js`, `ea-scaffold-batch.js`, `analyze-logs.js`, `env-vars.js`.
+- `preferences.js`, `cleo-workspaces.js`.
+- `finance.js`, `setup-finance.js`, `stripe-webhook.js`.
+- `supabase-status.js`.
 
 ### Pages
 - `src/pages/AmbitionBrandGuidelines.jsx`

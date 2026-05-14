@@ -15,15 +15,30 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://aheadofmarket.com'
 
-function failRedirect(res, reason) {
-  const u = `${APP_ORIGIN}/dashboard?integrations=error&reason=${encodeURIComponent(reason)}`
-  res.setHeader('Location', u)
+// Append query params to a path that may or may not already have a query
+// string. The path is trusted at this point — start.js validated it as a
+// same-origin relative path before signing it into state.
+function withParams(path, params) {
+  const sep = path.includes('?') ? '&' : '?'
+  const q = Object.entries(params)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&')
+  return `${path}${sep}${q}`
+}
+
+function failRedirect(res, reason, returnTo) {
+  const path = returnTo
+    ? withParams(returnTo, { integrations: 'error', reason })
+    : `/dashboard?integrations=error&reason=${encodeURIComponent(reason)}`
+  res.setHeader('Location', `${APP_ORIGIN}${path}`)
   return res.status(302).end()
 }
 
-function successRedirect(res, slug) {
-  const u = `${APP_ORIGIN}/dashboard?integrations=connected&slug=${encodeURIComponent(slug)}`
-  res.setHeader('Location', u)
+function successRedirect(res, slug, returnTo) {
+  const path = returnTo
+    ? withParams(returnTo, { integrations: 'connected', slug })
+    : `/dashboard?integrations=connected&slug=${encodeURIComponent(slug)}`
+  res.setHeader('Location', `${APP_ORIGIN}${path}`)
   return res.status(302).end()
 }
 
@@ -90,23 +105,25 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' })
 
   const { code, state, error: providerError } = req.query || {}
-  if (providerError) return failRedirect(res, `provider:${providerError}`)
-  if (!code || !state) return failRedirect(res, 'missing-code-or-state')
+  // Pre-state-verify errors can't honor return_to (we don't know it yet); fall
+  // through to /dashboard.
+  if (providerError) return failRedirect(res, `provider:${providerError}`, null)
+  if (!code || !state) return failRedirect(res, 'missing-code-or-state', null)
 
   const verified = verifyState(state.toString())
-  if (!verified) return failRedirect(res, 'invalid-state')
+  if (!verified) return failRedirect(res, 'invalid-state', null)
 
-  const { userId, slug } = verified
+  const { userId, slug, returnTo } = verified
   const provider = getProvider(slug)
-  if (!provider) return failRedirect(res, 'unknown-slug')
+  if (!provider) return failRedirect(res, 'unknown-slug', returnTo)
   const creds = getProviderCreds(slug)
-  if (!creds) return failRedirect(res, 'provider-creds-missing')
+  if (!creds) return failRedirect(res, 'provider-creds-missing', returnTo)
 
   let tokens
   try {
     tokens = await exchangeCode(provider, creds, code.toString(), buildRedirectUri(req))
   } catch (e) {
-    return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`)
+    return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
   let encrypted
@@ -120,7 +137,7 @@ export default async function handler(req, res) {
       obtained_at: Date.now(),
     })
   } catch (e) {
-    return failRedirect(res, `encrypt-failed:${e.message?.slice(0, 80) || 'unknown'}`)
+    return failRedirect(res, `encrypt-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
   const upsert = await upsertConnection({
@@ -129,7 +146,7 @@ export default async function handler(req, res) {
     tokenBlob: encrypted,
     providerProfile: tokens.team || tokens.workspace_name || null,
   })
-  if (!upsert.ok) return failRedirect(res, `db:${upsert.error.slice(0, 80)}`)
+  if (!upsert.ok) return failRedirect(res, `db:${upsert.error.slice(0, 80)}`, returnTo)
 
-  return successRedirect(res, slug)
+  return successRedirect(res, slug, returnTo)
 }

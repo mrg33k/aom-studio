@@ -36,7 +36,8 @@ export default function ThreadInputBar() {
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
 
   // CV4 swaps the inert chevron for a vertical commands menu (image gen, etc.)
-  const isCv4 = typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')
+  // R7.21 cutover: /dashboard renders CV4 too; cv4 mode = NOT on /cv3.
+  const isCv4 = typeof window !== 'undefined' && !window.location.pathname.startsWith('/cv3')
   const [commandsOpen, setCommandsOpen] = useState(false)
 
   const [integrationsOpen, setIntegrationsOpen] = useState(false)
@@ -58,6 +59,15 @@ export default function ThreadInputBar() {
     if (skillName === '/integrations') setIntegrationsOpen(true)
   }, [])
 
+  // CV4 commands menu dispatches 'cv4:open-integrations' so we can open
+  // the IntegrationsModal without wiring a context.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onOpen = () => setIntegrationsOpen(true)
+    window.addEventListener('cv4:open-integrations', onOpen)
+    return () => window.removeEventListener('cv4:open-integrations', onOpen)
+  }, [])
+
   const handlePaste = useCallback((e) => {
     const text = e.clipboardData?.getData('text') || ''
     if (shouldChipPaste(text)) {
@@ -71,7 +81,13 @@ export default function ThreadInputBar() {
   return (
     <div style={{
       flexShrink: 0,
-      padding: '8px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
+      // R7.22 (2026-05-13): composer sits flush to the viewport bottom.
+      // The previous `+ env(safe-area-inset-bottom)` was producing a
+      // ~100px white band under the pill on iPhone fullscreen / PWA
+      // (the home-indicator inset). Removed at the user's request so
+      // the pill anchors to the edge; iOS still renders the indicator
+      // overlay on top, and the 42px tap targets remain reachable.
+      padding: '8px 12px 10px',
       background: C.bg,
       borderTop: '1px solid ' + C.border,
     }}>

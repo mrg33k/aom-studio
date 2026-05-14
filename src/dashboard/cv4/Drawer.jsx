@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import missionsData from '../data/missions.json'
+import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 
 const PANEL_WIDTH = 300
 
@@ -19,6 +20,7 @@ export default function CV4Drawer({
   docked = false,
   agents = [],
   projectRooms = [],
+  worldId,
   selectedAgentSlug,
   selectedProjectSlug,
   onSelectAgent,
@@ -82,6 +84,7 @@ export default function CV4Drawer({
       selectedProjectSlug={selectedProjectSlug}
       selectedAgentSlug={selectedAgentSlug}
       agents={agents}
+      worldId={worldId}
       onSelectAgent={onSelectAgent}
       onSelectProject={onSelectProject}
       onSelectMission={onSelectMission}
@@ -198,6 +201,7 @@ function DrawerBody({
   selectedProjectSlug,
   selectedAgentSlug,
   agents,
+  worldId,
   onSelectAgent,
   onSelectProject,
   onSelectMission,
@@ -206,6 +210,15 @@ function DrawerBody({
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+      <DrawerSearchRow
+        projectRooms={projectRooms}
+        agents={agents}
+        worldId={worldId}
+        onSelectProject={onSelectProject}
+        onSelectAgent={onSelectAgent}
+        onClose={onClose}
+      />
+
       <TreeSection title="Projects">
         {projectRooms.length === 0 ? (
           <Empty label="No projects" />
@@ -261,6 +274,20 @@ function DrawerBody({
       </TreeSection>
 
       <TreeSection title="Account">
+        <PlainRow
+          icon={<ResetIcon />}
+          label="Reset to AOM"
+          onClick={() => {
+            try {
+              sessionStorage.removeItem('corner-world-override')
+              localStorage.removeItem('corner-world-override-persist')
+            } catch { /* ignore */ }
+            // Force a clean reload so every hook re-subscribes to the
+            // auth-derived world (no more sticky overrides).
+            // R7.21: stay on the entry-point base path (/dashboard or /cv4).
+            window.location.replace(window.location.pathname.startsWith('/cv4') ? '/cv4' : '/dashboard')
+          }}
+        />
         <PlainRow icon={<SignOutIcon />} label="Sign out" onClick={() => { onLogout?.(); onClose() }} />
       </TreeSection>
     </div>
@@ -352,6 +379,8 @@ function MissionRow({ mission, onClick }) {
 }
 
 function AgentRow({ agent, active, onClick }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  const spriteUrl = agent.slug ? `/corner/sprites-v2/${agent.slug}-sprite.png` : null
   return (
     <div
       data-row
@@ -364,14 +393,24 @@ function AgentRow({ agent, active, onClick }) {
       }}
     >
       <div style={{
-        width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 9, fontWeight: 800, color: C.muted,
         fontFamily: "'JetBrains Mono', monospace",
+        overflow: 'hidden',
       }}>
-        {(agent.name || '?')[0].toUpperCase()}
+        {spriteUrl && !imgFailed ? (
+          <img
+            src={spriteUrl}
+            alt=""
+            onError={() => setImgFailed(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' }}
+          />
+        ) : (
+          (agent.name || '?')[0].toUpperCase()
+        )}
       </div>
       <span style={{
         fontSize: 13, fontWeight: 500, color: active ? C.text : C.text2,
@@ -443,4 +482,249 @@ function SignOutIcon() {
       <line x1="21" y1="12" x2="9" y2="12"/>
     </svg>
   )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <circle cx="11" cy="11" r="7"/>
+      <line x1="21" y1="21" x2="16.5" y2="16.5"/>
+    </svg>
+  )
+}
+
+function ResetIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <polyline points="1 4 1 10 7 10"/>
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+    </svg>
+  )
+}
+
+// R7.15 — Search row directly under the EXPLORER header. Click expands
+// into an inline input that filters projects + agents; tapping a result
+// routes via the existing handlers. Stays out of the way when not in use.
+function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSelectAgent, onClose }) {
+  const [open, setOpen] = useState(false)
+  const {
+    searchQuery, setSearchQuery,
+    msgHits, taskHits, agentHits, projectHits, fileHits,
+    searching, showSearch,
+  } = useHomeSearch({ agents, projects: projectRooms, world: worldId })
+
+  const agentMap = useMemo(() => {
+    const m = new Map()
+    for (const a of (agents || [])) m.set(a.slug, a)
+    return m
+  }, [agents])
+  const projectMap = useMemo(() => {
+    const m = new Map()
+    for (const p of (projectRooms || [])) m.set(p.slug, p)
+    return m
+  }, [projectRooms])
+
+  const close = () => { setSearchQuery(''); setOpen(false) }
+  const goAgent = (slug) => {
+    const a = agentMap.get(slug); if (a) { onSelectAgent?.(a); onClose?.(); close() }
+  }
+  const goProject = (slug) => {
+    const p = projectMap.get(slug); if (p) { onSelectProject?.(p); onClose?.(); close() }
+  }
+  const goFromMessage = (m) => {
+    // Route to the agent/project that owns the message, then dispatch a
+    // scroll-to-message event the MessageList picks up to scroll + flash.
+    if (m.agent && agentMap.has(m.agent)) {
+      goAgent(m.agent)
+    } else if (m.project && projectMap.has(m.project)) {
+      goProject(m.project)
+    } else {
+      return
+    }
+    if (typeof window !== 'undefined' && m.id != null) {
+      // Slight delay so the agent/project navigation has time to mount and
+      // load the target thread's messages before we look up the element.
+      window.setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent('cv4:scroll-to-message', { detail: { messageId: m.id } }))
+        } catch (_) { /* ignore */ }
+      }, 350)
+    }
+  }
+
+  if (!open) {
+    return (
+      <div
+        data-cv4-drawer-search-row
+        onClick={() => setOpen(true)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 14px',
+          cursor: 'pointer',
+          color: C.muted,
+          fontSize: 11, fontWeight: 600,
+          letterSpacing: '0.06em', textTransform: 'uppercase',
+          fontFamily: "'JetBrains Mono', monospace",
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+      >
+        <SearchIcon />
+        <span>Search</span>
+      </div>
+    )
+  }
+
+  const anyHits = !!(projectHits.length || agentHits.length || msgHits.length || taskHits.length || fileHits.length)
+
+  return (
+    <div data-cv4-drawer-search-row data-open style={{
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      padding: '8px 10px 10px',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        padding: '6px 10px',
+      }}>
+        <SearchIcon />
+        <input
+          autoFocus
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Messages, tasks, files…"
+          style={{
+            flex: 1, background: 'transparent', border: 'none', outline: 'none',
+            color: C.text, fontFamily: "'Inter', sans-serif", fontSize: 13,
+          }}
+          onKeyDown={e => { if (e.key === 'Escape') close() }}
+        />
+        <button
+          onClick={close}
+          aria-label="Close search"
+          style={{
+            background: 'none', border: 'none', color: C.muted, cursor: 'pointer',
+            padding: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+          }}
+        >ESC</button>
+      </div>
+
+      {showSearch && (
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column' }}>
+          {projectHits.length > 0 && (
+            <SearchGroup title="Projects">
+              {projectHits.slice(0, 6).map(p => (
+                <SearchHitRow key={`s-p-${p.slug}`} onClick={() => goProject(p.slug)}>{p.name}</SearchHitRow>
+              ))}
+            </SearchGroup>
+          )}
+          {agentHits.length > 0 && (
+            <SearchGroup title="Agents">
+              {agentHits.slice(0, 6).map(a => (
+                <SearchHitRow key={`s-a-${a.slug}`} onClick={() => goAgent(a.slug)}>{a.name}</SearchHitRow>
+              ))}
+            </SearchGroup>
+          )}
+          {msgHits.length > 0 && (
+            <SearchGroup title="Messages">
+              {msgHits.slice(0, 6).map(m => (
+                <SearchHitRow
+                  key={`s-m-${m.id}`}
+                  onClick={() => goFromMessage(m)}
+                  meta={agentMap.get(m.agent)?.name || projectMap.get(m.project)?.name || m.agent || m.project}
+                >{truncate(m.text, 80)}</SearchHitRow>
+              ))}
+            </SearchGroup>
+          )}
+          {taskHits.length > 0 && (
+            <SearchGroup title="Tasks">
+              {taskHits.slice(0, 6).map(t => (
+                <SearchHitRow
+                  key={`s-t-${t.id}`}
+                  onClick={() => { if (t.project) goProject(t.project) }}
+                  meta={projectMap.get(t.project)?.name || t.project}
+                >{t.title || truncate(t.text, 80)}</SearchHitRow>
+              ))}
+            </SearchGroup>
+          )}
+          {fileHits.length > 0 && (
+            <SearchGroup title="Files">
+              {fileHits.slice(0, 6).map(f => (
+                <SearchHitRow
+                  key={`s-f-${f.path || f.slug || f.title}`}
+                  onClick={() => { if (f.project) goProject(f.project) }}
+                  meta={projectMap.get(f.project)?.name || f.project}
+                >{f.title || f.filename || f.slug}</SearchHitRow>
+              ))}
+            </SearchGroup>
+          )}
+          {!anyHits && !searching && (
+            <div style={{
+              marginTop: 4, padding: '6px 8px',
+              fontSize: 11, color: C.dim, fontStyle: 'italic',
+              fontFamily: "'Inter', sans-serif",
+            }}>No matches</div>
+          )}
+          {searching && !anyHits && (
+            <div style={{
+              marginTop: 4, padding: '6px 8px',
+              fontSize: 10, color: C.dim,
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+            }}>Searching…</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SearchGroup({ title, children }) {
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div style={{
+        fontSize: 9, fontWeight: 700, color: C.dim,
+        letterSpacing: '0.10em', textTransform: 'uppercase',
+        padding: '4px 4px 2px',
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>{title}</div>
+      {children}
+    </div>
+  )
+}
+
+function SearchHitRow({ children, meta, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        textAlign: 'left', padding: '6px 8px',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        color: C.text, fontSize: 13,
+        fontFamily: "'Inter', sans-serif",
+        display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 2,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+    >
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{children}</span>
+      {meta ? (
+        <span style={{
+          fontSize: 9, color: C.dim,
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.08em', textTransform: 'uppercase',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{meta}</span>
+      ) : null}
+    </button>
+  )
+}
+
+function truncate(s, n) {
+  if (!s) return ''
+  if (s.length <= n) return s
+  return s.slice(0, n).trim() + '…'
 }

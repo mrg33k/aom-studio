@@ -66,14 +66,18 @@ export default async function handler(req, res) {
   //           last_naming_nudge_at (EA cadence tracking), client_id scoping
   const { name, display_name, last_naming_nudge_at, client_id: clientIdParam } = req.query;
 
-  // Rename-only mode: slug + name, no status required
+  // Rename-only mode: slug + name, no status required.
+  // The same slug may refer to either an agent or a project (the chat
+  // settings UI doesn't tell us which), so we PATCH all three tables —
+  // agent_status, rooms, and projects. A non-matching slug is a no-op,
+  // which keeps the call cheap and correct in both cases.
   if (slug && name && !status) {
     const trimmedName = name.trim();
     const filter = clientIdParam
       ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
       : `slug=eq.${encodeURIComponent(slug)}`;
     try {
-      // Update agent_status name
+      // Update agent_status name (no-op if slug is a project)
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
       });
@@ -82,6 +86,12 @@ export default async function handler(req, res) {
         ? `id=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
         : `id=eq.${encodeURIComponent(slug)}`;
       await fetch(`${SUPABASE_URL}/rest/v1/rooms?${roomFilter}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
+      }).catch(() => {});
+      // Project rename: the projects table is the source of truth for the
+      // drawer list + project-chat header label. agent_status/rooms PATCHes
+      // above are no-ops for projects, so this was getting silently dropped.
+      await fetch(`${SUPABASE_URL}/rest/v1/projects?${filter}`, {
         method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
       }).catch(() => {});
       return res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });

@@ -1,0 +1,504 @@
+<!-- Files Panel Component — cv4-explore-v2 -->
+<!-- Fragment: project files list panel for right rail or side drawer -->
+<!-- Usage: data-include="components/files-panel.html" or inline into view -->
+<!-- Visual target: five canonical files flat at top, all other files in collapsed folders -->
+
+<style>
+  .files-panel-component {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Panel header (project label + search stub) */
+  .fp-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-md);
+  }
+
+  .fp-panel-title {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .fp-panel-project {
+    font-size: 11px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+  }
+
+  /* ── Canonical file rows (five flat at top) ─────────────── */
+
+  .fp-canonical {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--sp-sm);
+  }
+
+  .fp-file-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: 7px var(--sp-sm);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    min-height: 0;
+  }
+
+  .fp-file-row:hover {
+    background-color: var(--c-dim-faint);
+  }
+
+  .fp-file-row:active {
+    background-color: var(--c-accent-light);
+  }
+
+  .fp-file-row.active {
+    background-color: var(--c-accent-glow);
+  }
+
+  .fp-file-icon {
+    font-size: 13px;
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    line-height: 1;
+    color: var(--c-text2);
+    user-select: none;
+  }
+
+  .fp-file-name {
+    flex: 1;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fp-file-meta {
+    font-size: 11px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  /* ── Divider ───────────────────────────────────────────── */
+
+  .fp-divider {
+    height: 1px;
+    background-color: var(--c-border);
+    margin: var(--sp-sm) 0 var(--sp-md) 0;
+  }
+
+  /* ── Folder rows (collapsed by default) ─────────────────── */
+
+  .fp-folders {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .fp-folder-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fp-folder-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: 7px var(--sp-sm);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    user-select: none;
+    min-height: 0;
+  }
+
+  .fp-folder-row:hover {
+    background-color: var(--c-dim-faint);
+  }
+
+  .fp-folder-row:active {
+    background-color: var(--c-accent-light);
+  }
+
+  .fp-folder-arrow {
+    font-size: 10px;
+    color: var(--c-muted);
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    line-height: 1;
+    margin-top: 1px;
+    user-select: none;
+  }
+
+  .fp-folder-row.open > .fp-folder-arrow,
+  .fp-folder-row[aria-expanded="true"] .fp-folder-arrow {
+    transform: rotate(90deg);
+  }
+
+  .fp-folder-name {
+    flex: 1;
+    font-size: var(--fs-sm);
+    color: var(--c-text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fp-folder-name.history-group {
+    font-style: normal;
+    color: var(--c-text2);
+  }
+
+  .fp-folder-count {
+    font-size: 11px;
+    color: var(--c-muted);
+    background-color: rgba(26,36,56,0.5);
+    border: 1px solid var(--c-border-faint);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: var(--ff-mono);
+    flex-shrink: 0;
+    min-width: 20px;
+    text-align: center;
+    user-select: none;
+  }
+
+  /* ── Folder content (expand/collapse) ───────────────────── */
+
+  .fp-folder-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out;
+  }
+
+  .fp-folder-content.open {
+    max-height: 600px;
+  }
+
+  .fp-folder-inner {
+    padding: var(--sp-xs) 0 var(--sp-xs) 0;
+    border-left: 1px solid var(--c-border-faint);
+    margin-left: calc(var(--sp-sm) + 7px);
+  }
+
+  /* ── Sub-rows inside expanded folders ─────────────────── */
+
+  .fp-sub-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: 5px var(--sp-sm);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    min-height: 0;
+  }
+
+  .fp-sub-row:hover {
+    background-color: var(--c-dim-faint);
+  }
+
+  .fp-sub-row:active {
+    background-color: var(--c-accent-light);
+  }
+
+  .fp-sub-icon {
+    font-size: 11px;
+    color: var(--c-muted);
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+    user-select: none;
+  }
+
+  .fp-sub-name {
+    font-size: var(--fs-xs);
+    color: var(--c-text2);
+    font-family: var(--ff-mono);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fp-sub-date {
+    font-size: 10px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    flex-shrink: 0;
+  }
+
+  /* ── Empty state ─────────────────────────────────────────── */
+
+  .fp-empty {
+    padding: var(--sp-2xl) var(--sp-lg);
+    text-align: center;
+    color: var(--c-muted);
+    font-size: var(--fs-sm);
+  }
+
+  /* ── Mobile adjustments ──────────────────────────────────── */
+
+  @media (max-width: 1439px) {
+    .fp-file-row,
+    .fp-folder-row {
+      padding: var(--sp-sm);
+      min-height: 44px;
+    }
+
+    .fp-sub-row {
+      min-height: 40px;
+    }
+
+    .fp-file-meta {
+      display: none;
+    }
+  }
+</style>
+
+<div class="files-panel-component" id="files-panel-component">
+
+  <div class="fp-panel-header">
+    <span class="fp-panel-title">Files</span>
+    <span class="fp-panel-project">Ambition Mechanical</span>
+  </div>
+
+  <!-- ── Five canonical files — flat, no folder wrapper ─────── -->
+  <div class="fp-canonical">
+
+    <div class="fp-file-row" onclick="fpOpenFile('VISION.md')">
+      <span class="fp-file-icon">📄</span>
+      <span class="fp-file-name">VISION</span>
+      <span class="fp-file-meta">2d ago</span>
+    </div>
+
+    <div class="fp-file-row" onclick="fpOpenFile('CONTEXT.md')">
+      <span class="fp-file-icon">📄</span>
+      <span class="fp-file-name">CONTEXT</span>
+      <span class="fp-file-meta">1h ago</span>
+    </div>
+
+    <div class="fp-file-row" onclick="fpOpenFile('BUILD.md')">
+      <span class="fp-file-icon">📄</span>
+      <span class="fp-file-name">BUILD</span>
+      <span class="fp-file-meta">3h ago</span>
+    </div>
+
+    <div class="fp-file-row" onclick="fpOpenFile('RESEARCH.md')">
+      <span class="fp-file-icon">📄</span>
+      <span class="fp-file-name">RESEARCH</span>
+      <span class="fp-file-meta">5d ago</span>
+    </div>
+
+    <div class="fp-file-row" onclick="fpOpenFile('PHONEBOOK.md')">
+      <span class="fp-file-icon">📄</span>
+      <span class="fp-file-name">PHONEBOOK</span>
+      <span class="fp-file-meta">1w ago</span>
+    </div>
+
+  </div>
+
+  <div class="fp-divider"></div>
+
+  <!-- ── Collapsed folder rows ─────────────────────────────── -->
+  <div class="fp-folders">
+
+    <!-- Project history & rules -->
+    <div class="fp-folder-wrap">
+      <div class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-folder-history')" aria-expanded="false">
+        <span class="fp-folder-arrow">▶</span>
+        <span class="fp-folder-name history-group">Project history &amp; rules</span>
+        <span class="fp-folder-count">4</span>
+      </div>
+      <div class="fp-folder-content" id="fp-folder-history">
+        <div class="fp-folder-inner">
+          <div class="fp-sub-row" onclick="fpOpenFile('history.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">history.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('last-conversation.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">last-conversation.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('rules.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">rules.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('decisions.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">decisions.md</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- missions/ -->
+    <div class="fp-folder-wrap">
+      <div class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-folder-missions')" aria-expanded="false">
+        <span class="fp-folder-arrow">▶</span>
+        <span class="fp-folder-name">missions/</span>
+        <span class="fp-folder-count">6</span>
+      </div>
+      <div class="fp-folder-content" id="fp-folder-missions">
+        <div class="fp-folder-inner">
+          <div class="fp-sub-row" onclick="fpOpenFile('missions/brand-refresh')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">brand-refresh</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('missions/keyword-research')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">keyword-research</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('missions/google-ads')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">google-ads</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('missions/seo-overhaul')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">seo-overhaul</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('missions/social-calendar')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">social-calendar</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('missions/web-build')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">web-build</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- research/ -->
+    <div class="fp-folder-wrap">
+      <div class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-folder-research')" aria-expanded="false">
+        <span class="fp-folder-arrow">▶</span>
+        <span class="fp-folder-name">research/</span>
+        <span class="fp-folder-count">4</span>
+      </div>
+      <div class="fp-folder-content" id="fp-folder-research">
+        <div class="fp-folder-inner">
+          <div class="fp-sub-row" onclick="fpOpenFile('research/2026-05-01-competitor-analysis.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">2026-05-01-competitor-analysis.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('research/2026-04-20-keyword-deep-dive.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">2026-04-20-keyword-deep-dive.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('research/2026-04-10-industry-positioning.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">2026-04-10-industry-positioning.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('research/2026-03-15-brand-audit.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">2026-03-15-brand-audit.md</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- archive/ -->
+    <div class="fp-folder-wrap">
+      <div class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-folder-archive')" aria-expanded="false">
+        <span class="fp-folder-arrow">▶</span>
+        <span class="fp-folder-name">archive/</span>
+        <span class="fp-folder-count">2</span>
+      </div>
+      <div class="fp-folder-content" id="fp-folder-archive">
+        <div class="fp-folder-inner">
+          <div class="fp-sub-row" onclick="fpOpenFile('archive/2025-campaigns.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">2025-campaigns.md</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('archive/old-brand-assets.md')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">old-brand-assets.md</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- assets/ -->
+    <div class="fp-folder-wrap">
+      <div class="fp-folder-row" onclick="fpToggleFolder(this, 'fp-folder-assets')" aria-expanded="false">
+        <span class="fp-folder-arrow">▶</span>
+        <span class="fp-folder-name">assets/</span>
+        <span class="fp-folder-count">5</span>
+      </div>
+      <div class="fp-folder-content" id="fp-folder-assets">
+        <div class="fp-folder-inner">
+          <div class="fp-sub-row" onclick="fpOpenFile('assets/logo-primary.svg')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">logo-primary.svg</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('assets/logo-dark.svg')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">logo-dark.svg</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('assets/brand-fonts.zip')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">brand-fonts.zip</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('assets/color-palette.pdf')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">color-palette.pdf</span>
+          </div>
+          <div class="fp-sub-row" onclick="fpOpenFile('assets/photography-guidelines.pdf')">
+            <span class="fp-sub-icon">─</span>
+            <span class="fp-sub-name">photography-guidelines.pdf</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(function() {
+  function fpToggleFolder(rowEl, contentId) {
+    const content = document.getElementById(contentId);
+    if (!content) return;
+
+    const isOpen = content.classList.contains('open');
+    content.classList.toggle('open', !isOpen);
+    rowEl.classList.toggle('open', !isOpen);
+    rowEl.setAttribute('aria-expanded', String(!isOpen));
+  }
+
+  function fpOpenFile(path) {
+    // Stub: in live app, this would open the file in the article reader
+    const name = path.split('/').pop();
+    console.log('[files-panel] open:', path);
+
+    // Highlight active row
+    document.querySelectorAll('.fp-file-row.active').forEach(r => r.classList.remove('active'));
+    const rows = document.querySelectorAll('.fp-file-row');
+    rows.forEach(r => {
+      if (r.querySelector('.fp-file-name') && r.getAttribute('onclick') && r.getAttribute('onclick').includes(path)) {
+        r.classList.add('active');
+      }
+    });
+  }
+
+  window.fpToggleFolder = fpToggleFolder;
+  window.fpOpenFile = fpOpenFile;
+})();
+</script>

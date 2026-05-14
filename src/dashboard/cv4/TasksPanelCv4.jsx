@@ -1,34 +1,26 @@
-// TasksPanelCv4 — CV4 task panel.
+// TasksPanelCv4 — CV4 task drawer.
 //
-// Same data hooks as the CV3 TasksPanel (we reuse useTasksPanel +
-// TasksPanelProvider so all the section components still find their context).
-// Differences:
-//   - drops WeeklyStatsCard (the "progress chart")
-//   - reorders so Done sits ABOVE Files
-//   - caps Done at 3 with a Show-more disclosure (overrides CV3's
-//     shippedLimit default of 50)
-//   - tight brutalist body padding (no 28px gutter)
-//
-// R7.1 (2026-05-13).
+// R7.2 (2026-05-13): full redesign per feedback.
+//  - Each section has a clear summary line beneath its header.
+//  - Tasks render as checkbox rows (square = open, ☑ + strikethrough = done,
+//    ✕ = failed, ⏸ = waiting/blocked) so what's a task is unambiguous.
+//  - Done show-more bumps by 5 (not "all at once").
+//  - Filter scope auto-syncs with the active conversation: agent chat → All,
+//    project chat → that project. Pills still let the user override.
+//  - Lifts the WeeklyStatsCard ("progress chart") — REMOVED.
+//  - Tight rows, sharp brutalist headings, clean visual hierarchy.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
+import { useCornerNav } from '../CornerContext.jsx'
 import { useTasksPanel } from '../components/cv3/tasks/useTasksPanel.js'
 import { TasksPanelProvider, useTasksPanelCtx } from '../components/cv3/tasks/TasksPanelContext.jsx'
 import { TaskContextMenu } from '../components/cv3/ContextMenu.jsx'
 
-import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection } from '../components/cv3/tasks/FilesSection.jsx'
-import TaskDrawerProjectSummary from '../components/cv3/tasks/TaskDrawerProjectSummary.jsx'
-import TaskDrawerFileFAQ from '../components/cv3/tasks/TaskDrawerFileFAQ.jsx'
-import DocUpdatesStripe from '../components/cv3/shared/DocUpdateCard.jsx'
-import ActiveTasksSection from '../components/cv3/tasks/ActiveTasksSection.jsx'
-import ForemanTasksSection from '../components/cv3/tasks/ForemanTasksSection.jsx'
-import PersonalTodosSection from '../components/cv3/tasks/PersonalTodosSection.jsx'
-import WaitingTasksSection from '../components/cv3/tasks/WaitingTasksSection.jsx'
-import BlockedTasksSection from '../components/cv3/tasks/BlockedTasksSection.jsx'
-import FailedTasksSection from '../components/cv3/tasks/FailedTasksSection.jsx'
-import TaskInputBar from '../components/cv3/tasks/TaskInputBar.jsx'
+import { AllFilesSection, ProjectFilesSection, ProjectMissionsSection, MissionBreadcrumb, MissionScaffoldSection, CANON_ICONS } from '../components/cv3/tasks/FilesSection.jsx'
+import LivingParagraphCard from '../components/cv3/tasks/LivingParagraphCard.jsx'
 import CreateProjectModal from '../components/cv3/tasks/CreateProjectModal.jsx'
+import { useCornerAuth } from '../CornerContext.jsx'
 
 export default function TasksPanelCv4() {
   const ctx = useTasksPanel()
@@ -47,7 +39,8 @@ function TasksPanelCv4Body() {
     projectPills,
     toggleCreateProjectModal,
     startConversationalProjectCreation,
-    filteredActive, filteredCompleted,
+    filteredActive, filteredCompleted, filteredFailed, filteredBlocked,
+    waitingTasks,
     ctxToast,
     taskMenu, setTaskMenu,
     taskProjects,
@@ -55,149 +48,162 @@ function TasksPanelCv4Body() {
     handleTaskNeedsVerification,
     handleTaskResearch,
     handleTaskMoveTo,
-    setShippedLimit,
+    selectedBrief, briefHtml, briefLoading, closeBriefViewer,
   } = useTasksPanelCtx()
+  const { selectedAgent, conversationTarget, handleSelectProject, setPrefillMessage } = useCornerNav()
+  const { worldId } = useCornerAuth()
 
-  // Cap Done at 3 on first mount. CV3's hook defaults to 50; this is the only
-  // CV4 override. Show-more bumps by 10 each tap (smaller than CV3's 50).
+  // R7.2: when the active conversation changes, sync the task filter scope.
+  //  - Project chat → that project
+  //  - Agent chat / no project → All
+  // The user can still override with the pills.
   useEffect(() => {
-    setShippedLimit(3)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (conversationTarget?.type === 'project' && conversationTarget.slug) {
+      setActiveProject(conversationTarget.slug)
+    } else if (selectedAgent) {
+      setActiveProject('all')
+    }
+  }, [conversationTarget?.slug, conversationTarget?.type, selectedAgent?.slug, setActiveProject])
+
+  // Active = right_now + queued (no foreman dup); Failed and Blocked are split.
+  const waitingFiltered = useMemo(() => (waitingTasks || []).filter(t => {
+    if (searchQuery) {
+      const title = (t.title || t.text || '').toLowerCase()
+      if (!title.includes(searchQuery.toLowerCase())) return false
+    }
+    if (activeProject === 'all') return true
+    return (t.project || '').toLowerCase() === activeProject
+  }), [waitingTasks, searchQuery, activeProject])
+
+  const counts = {
+    active: filteredActive.length,
+    waiting: waitingFiltered.length,
+    blocked: filteredBlocked.length,
+    failed: filteredFailed.length,
+    done: filteredCompleted.length,
+    total: filteredActive.length + waitingFiltered.length + filteredBlocked.length + filteredFailed.length,
+  }
+
+  const scopeLabel = activeMissionPath
+    ? `corner:${activeMissionPath}`
+    : (activeProject && activeProject !== 'all')
+      ? (projectPills.find(p => p.slug === activeProject)?.name || activeProject)
+      : 'All projects'
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px 20px' }}>
+    <div data-cv4-tasks-body style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
+      {selectedBrief && (
+        <Cv4BriefViewer
+          brief={selectedBrief}
+          html={briefHtml}
+          loading={briefLoading}
+          onClose={closeBriefViewer}
+          onAskAboutFile={(text) => {
+            // Take the user from the file viewer to the project chat for
+            // that file's project, with the message pre-filled and tagged
+            // so the agent has explicit file context.
+            const projectSlug = selectedBrief?.project || activeProject
+            const filename = selectedBrief?.filename || selectedBrief?.slug || ''
+            const tag = filename ? `[About ${filename}] ` : ''
+            const prefill = `${tag}${text}`.trim()
+            setPrefillMessage?.(prefill)
+            if (projectSlug && projectSlug !== 'all') {
+              const proj = (taskProjects || []).find(p => p.slug === projectSlug)
+                || projectPills.find(p => p.slug === projectSlug)
+              if (proj) handleSelectProject?.({ name: proj.name, slug: proj.slug })
+            }
+            closeBriefViewer()
+          }}
+        />
+      )}
+      <div data-cv4-tasks-scroll style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 20px' }}>
 
-        {/* Search + project filter pills — the only piece the user explicitly
-            wants preserved. */}
-        <div style={{ marginBottom: 18 }}>
-          <div data-cv4-tasks-search style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: 'rgba(255,255,255,0.025)',
-            border: '1px solid ' + (searchFocused ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)'),
-            padding: '8px 12px',
-            marginBottom: 10,
-            transition: 'border-color 0.15s',
-          }}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Search tasks…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={{
-                flex: 1, background: 'none', border: 'none', outline: 'none',
-                color: C.text, fontSize: 13, fontWeight: 500,
-                fontFamily: "'Inter', sans-serif",
-              }}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} style={{
-                background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
-                fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0,
-              }}>×</button>
-            )}
-          </div>
+        {/* SCOPE — what we're looking at, top-of-panel. */}
+        <ScopeHeader label={scopeLabel} counts={counts} />
 
-          <div data-cv4-tasks-pills style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
-            {projectPills.map(p => {
-              const isActive = activeProject === p.slug
-              return (
-                <button
-                  key={p.slug}
-                  data-testid={`project-pill-${p.slug}`}
-                  onClick={() => setActiveProject(p.slug)}
-                  style={{
-                    padding: '5px 10px',
-                    fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    textTransform: 'uppercase',
-                    cursor: 'pointer', flexShrink: 0,
-                    border: isActive ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    background: isActive ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.025)',
-                    color: isActive ? C.accent : C.text2,
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.12s',
-                  }}
-                >{p.name}</button>
-              )
-            })}
-            <button
-              data-testid="start-new-project-recipe"
-              title="Create project — guided by your EA"
-              onClick={(e) => {
-                if (e.shiftKey || e.altKey) { toggleCreateProjectModal(); return }
-                startConversationalProjectCreation()
-              }}
-              onContextMenu={(e) => { e.preventDefault(); toggleCreateProjectModal() }}
-              style={{
-                padding: '5px 10px',
-                fontSize: 13, fontWeight: 700, lineHeight: 1,
-                cursor: 'pointer', flexShrink: 0,
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(255,255,255,0.02)',
-                color: C.text2,
-              }}
-            >+</button>
-          </div>
-        </div>
+        {/* Search + project pills. */}
+        <Filters
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+          searchFocused={searchFocused} setSearchFocused={setSearchFocused}
+          projectPills={projectPills}
+          activeProject={activeProject} setActiveProject={setActiveProject}
+          toggleCreateProjectModal={toggleCreateProjectModal}
+          startConversationalProjectCreation={startConversationalProjectCreation}
+        />
 
-        {/* Project / mission scope blocks — kept as-is; they're the FAQ/scaffold/missions trees.
-            We're keeping them above the live task list because they ARE the task list when
-            you've drilled into a specific project or mission. */}
-        {activeMissionPath && (
-          <div data-testid="mission-view" data-mission-path={activeMissionPath}>
-            <MissionBreadcrumb />
-            <MissionScaffoldSection />
-            <ProjectMissionsSection />
-          </div>
-        )}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && (
-          <div data-testid="project-card" data-slug={activeProject}>
-            <TaskDrawerProjectSummary />
-            <DocUpdatesStripe project={activeProject} limit={5} />
-            <TaskDrawerFileFAQ filename="VISION.md"   label="Vision"   testid="task-drawer-vision-faq"   iconColor="#A78BFA" />
-            <TaskDrawerFileFAQ filename="RESEARCH.md" label="Research" testid="task-drawer-research-faq" iconColor="#6EE7B7" />
-            <ProjectMissionsSection />
+        {/* Living narrative — the constantly-updated paragraph that keeps
+            you up to speed on the current scope. Same component the CV3
+            dashboard used; the writer pipeline + Supabase realtime
+            subscription are already wired. */}
+        {!searchQuery && !activeMissionPath && (
+          <div data-cv4-tasks-narrative style={{ marginBottom: 18 }}>
+            <h2 style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 14, fontWeight: 800,
+              letterSpacing: '0.05em', textTransform: 'uppercase',
+              color: C.text, margin: '0 0 8px 0', lineHeight: 1,
+            }}>Summary</h2>
+            <style>{`
+              [data-cv4-tasks-narrative] [data-testid="living-paragraph-text"] {
+                font-size: 12px !important;
+                font-weight: 400 !important;
+                line-height: 1.55 !important;
+                letter-spacing: 0 !important;
+                font-family: 'Inter', sans-serif !important;
+                color: ${C.text2} !important;
+              }
+              [data-cv4-tasks-narrative] [data-testid="living-paragraph"] > div > div:first-child {
+                width: 5px !important;
+                height: 5px !important;
+                margin-top: 8px !important;
+              }
+              [data-cv4-tasks-narrative] [data-testid="living-paragraph-read-more"] {
+                font-size: 10px !important;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+              }
+            `}</style>
+            <LivingParagraphCard world={worldId} activeProject={activeProject} />
           </div>
         )}
 
-        <PersonalTodosSection />
+        {/* Live state. */}
+        <TaskSection
+          title="Active" status="active" tasks={filteredActive}
+          summary={summarize('active', counts)}
+        />
+        <TaskSection
+          title="Needs input" status="waiting" tasks={waitingFiltered}
+          summary={summarize('waiting', counts)}
+        />
+        <TaskSection
+          title="Blocked" status="blocked" tasks={filteredBlocked}
+          summary={summarize('blocked', counts)}
+        />
+        <TaskSection
+          title="Failed" status="failed" tasks={filteredFailed}
+          summary={summarize('failed', counts)}
+        />
 
-        {/* Live task state — Right Now > Needs Input > Blocked > Failed > Foreman.
-            Stripped of WeeklyStatsCard (the "progress chart" the user asked us to remove). */}
-        <ActiveTasksSection />
-        <WaitingTasksSection />
-        <BlockedTasksSection />
-        <FailedTasksSection />
-        <ForemanTasksSection />
+        {/* Done — 3 visible, +5 per click. */}
+        <DoneSection tasks={filteredCompleted} />
 
-        {/* Done — 3 most recent + show more. Sits ABOVE Files per the new order. */}
-        <DoneSectionCv4 />
+        {/* Files at the bottom. */}
+        <FilesBlock activeProject={activeProject} activeMissionPath={activeMissionPath} searchQuery={searchQuery} />
 
-        {/* Files — bottom of the scroll. */}
-        {(!activeProject || activeProject === 'all') && !searchQuery && <AllFilesSection />}
-        {!activeMissionPath && activeProject && activeProject !== 'all' && <ProjectFilesSection />}
-        {activeMissionPath && <ProjectFilesSection />}
-
-        {/* Empty state */}
-        {filteredActive.length === 0 && filteredCompleted.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: C.muted, gap: 12, paddingTop: 60 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
-              {searchQuery || activeProject !== 'all' ? 'No matching tasks' : 'All clear'}
+        {/* Empty state. */}
+        {counts.total === 0 && filteredCompleted.length === 0 && (
+          <div style={{ textAlign: 'center', color: C.muted, paddingTop: 40 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>
+              {searchQuery ? 'No matches' : 'All clear'}
             </div>
-            <div style={{ fontSize: 12, color: C.dim }}>
-              {searchQuery || activeProject !== 'all' ? 'Try a different search or filter' : 'Nothing on your plate right now'}
+            <div style={{ fontSize: 11, color: C.dim }}>
+              {searchQuery ? 'Try a different search' : 'Nothing on your plate'}
             </div>
           </div>
         )}
       </div>
 
-      <TaskInputBar />
       <CreateProjectModal />
 
       <TaskContextMenu
@@ -226,120 +232,196 @@ function TasksPanelCv4Body() {
   )
 }
 
-/* CV4 Done section — 3 items collapsed by default, show-more bumps by 10.
-   Uses the shared context for click handlers; renders a much simpler card
-   (single line + meta strip) instead of the colored chrome on the CV3 cards. */
-function DoneSectionCv4() {
-  const {
-    filteredCompleted,
-    expandedTask, toggleTaskExpand,
-    openTaskMenu, startTaskLongPress, cancelTaskLongPress,
-    taskProjects,
-  } = useTasksPanelCtx()
-  const [showAll, setShowAll] = useState(false)
+function summarize(kind, c) {
+  if (kind === 'active')   return c.active === 0 ? 'Nothing in flight' : `${c.active} in flight`
+  if (kind === 'waiting')  return c.waiting === 0 ? 'Nothing pending' : `${c.waiting} awaiting input`
+  if (kind === 'blocked')  return c.blocked === 0 ? 'No blockers' : `${c.blocked} blocked`
+  if (kind === 'failed')   return c.failed === 0 ? 'No failures' : `${c.failed} need attention`
+  return ''
+}
 
-  if (filteredCompleted.length === 0) return null
-  const visible = showAll ? filteredCompleted : filteredCompleted.slice(0, 3)
-  const hidden = filteredCompleted.length - visible.length
-
+function ScopeHeader({ label, counts }) {
   return (
-    <div data-cv4-done style={{ marginBottom: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <h2
-          data-testid="task-column-header"
-          data-column="done"
+    <div data-cv4-tasks-scope style={{ marginBottom: 14 }}>
+      <div style={{
+        fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
+        textTransform: 'uppercase', color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace",
+        marginBottom: 4,
+      }}>Tasks · {label}</div>
+      <div style={{
+        fontSize: 22, fontWeight: 800,
+        fontFamily: "'JetBrains Mono', monospace",
+        color: C.text, letterSpacing: '-0.01em',
+        lineHeight: 1,
+        textTransform: 'uppercase',
+      }}>{counts.total === 0 ? 'All clear' : `${counts.total} open`}</div>
+      <div style={{
+        marginTop: 6,
+        display: 'flex', gap: 8, flexWrap: 'wrap',
+        fontSize: 10, fontWeight: 600,
+        fontFamily: "'JetBrains Mono', monospace",
+        color: C.muted, letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+      }}>
+        {counts.active   > 0 && <span style={{ color: '#34D399' }}>{counts.active} active</span>}
+        {counts.waiting  > 0 && <span style={{ color: '#FCD34D' }}>{counts.waiting} waiting</span>}
+        {counts.blocked  > 0 && <span style={{ color: '#A78BFA' }}>{counts.blocked} blocked</span>}
+        {counts.failed   > 0 && <span style={{ color: '#FCA5A5' }}>{counts.failed} failed</span>}
+        {counts.done     > 0 && <span style={{ color: C.muted }}>{counts.done} done</span>}
+      </div>
+    </div>
+  )
+}
+
+function Filters({
+  searchQuery, setSearchQuery, searchFocused, setSearchFocused,
+  projectPills, activeProject, setActiveProject,
+  toggleCreateProjectModal, startConversationalProjectCreation,
+}) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'rgba(255,255,255,0.025)',
+        border: '1px solid ' + (searchFocused ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)'),
+        padding: '7px 10px',
+        marginBottom: 8,
+        transition: 'border-color 0.15s',
+      }}>
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text" placeholder="Search…"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 18, fontWeight: 800,
-            color: C.text, letterSpacing: '0.02em',
-            textTransform: 'uppercase',
-            margin: 0, lineHeight: 1, flex: 1,
-            paddingBottom: 8,
-            borderBottom: '2px solid rgba(255,255,255,0.08)',
+            flex: 1, background: 'none', border: 'none', outline: 'none',
+            color: C.text, fontSize: 12, fontWeight: 500,
+            fontFamily: "'Inter', sans-serif",
           }}
-        >Done</h2>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11, fontWeight: 700, color: C.dim,
-          padding: '2px 7px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}>{filteredCompleted.length}</span>
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} style={{
+            background: 'none', border: 'none', cursor: 'pointer', color: C.muted,
+            fontSize: 14, lineHeight: 1, padding: 0, flexShrink: 0,
+          }}>×</button>
+        )}
       </div>
 
-      {visible.map((t) => {
-        const qa = t.qa_score || t.qaScore
-        const agent = t.agent_identity || t.agentIdentity
-        const project = t.project_name || t.projectName
-        const isFailed = t.status === 'failed'
-        return (
-          <div
-            key={t.id}
-            data-test-id="task-card-done"
-            data-task-id={t.id}
-            onClick={() => toggleTaskExpand(t.id)}
-            onContextMenu={(e) => openTaskMenu(e, t)}
-            onTouchStart={(e) => startTaskLongPress(e, t)}
-            onTouchEnd={cancelTaskLongPress}
-            onTouchMove={cancelTaskLongPress}
-            onTouchCancel={cancelTaskLongPress}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 10px',
-              borderBottom: '1px solid rgba(255,255,255,0.04)',
-              cursor: 'pointer',
-              opacity: isFailed ? 0.78 : 1,
-            }}
-          >
-            {/* Project color dot */}
-            {t.project_id && (() => {
-              const proj = taskProjects.find(p => String(p.id) === String(t.project_id))
-              return proj ? <span style={{ width: 6, height: 6, borderRadius: '50%', background: proj.color, flexShrink: 0 }} /> : null
-            })()}
-            {/* Title */}
-            <span style={{
-              flex: 1, minWidth: 0,
-              fontSize: 13, fontWeight: 500,
-              color: isFailed ? '#FCA5A5' : C.text2,
-              overflow: 'hidden', textOverflow: 'ellipsis',
-              whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
-            }}>{t.title || t.text || 'Untitled task'}</span>
-            {/* Meta */}
-            {(agent || project) && (
-              <span style={{
-                fontSize: 10, color: C.muted,
+      <div data-cv4-tasks-pills style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+        {projectPills.map(p => {
+          const isActive = activeProject === p.slug
+          return (
+            <button
+              key={p.slug}
+              data-testid={`project-pill-${p.slug}`}
+              onClick={() => setActiveProject(p.slug)}
+              style={{
+                padding: '4px 8px',
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
                 fontFamily: "'JetBrains Mono', monospace",
-                whiteSpace: 'nowrap', flexShrink: 0,
-              }}>
-                {[agent, project].filter(Boolean).join(' · ')}
-              </span>
-            )}
-            {qa != null && (
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                color: isFailed ? '#FCA5A5' : C.muted,
-                fontFamily: "'JetBrains Mono', monospace",
-                padding: '1px 5px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                flexShrink: 0,
-              }}>QA {qa}</span>
-            )}
-          </div>
-        )
-      })}
+                textTransform: 'uppercase',
+                cursor: 'pointer', flexShrink: 0,
+                border: isActive ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                background: isActive ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.02)',
+                color: isActive ? C.accent : C.text2,
+                whiteSpace: 'nowrap',
+                transition: 'all 0.12s',
+              }}
+            >{p.name}</button>
+          )
+        })}
+        <button
+          data-testid="start-new-project-recipe"
+          title="Create project"
+          onClick={(e) => {
+            if (e.shiftKey || e.altKey) { toggleCreateProjectModal(); return }
+            startConversationalProjectCreation()
+          }}
+          onContextMenu={(e) => { e.preventDefault(); toggleCreateProjectModal() }}
+          style={{
+            padding: '4px 8px',
+            fontSize: 12, fontWeight: 700, lineHeight: 1,
+            cursor: 'pointer', flexShrink: 0,
+            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.02)',
+            color: C.text2,
+          }}
+        >+</button>
+      </div>
+    </div>
+  )
+}
 
-      {!showAll && hidden > 0 && (
+function SectionHeader({ title, count, summary }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+        <h2 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 14, fontWeight: 800,
+          letterSpacing: '0.05em', textTransform: 'uppercase',
+          color: C.text, margin: 0, lineHeight: 1, flex: 1,
+        }}>{title}</h2>
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10, fontWeight: 700, color: C.dim,
+        }}>{count.toString().padStart(2, '0')}</span>
+      </div>
+      <div style={{
+        fontSize: 11, color: C.muted,
+        fontFamily: "'Inter', sans-serif",
+        marginBottom: 6,
+      }}>{summary}</div>
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 8 }} />
+    </div>
+  )
+}
+
+function TaskSection({ title, status, tasks, summary }) {
+  if (!tasks || tasks.length === 0) return null
+  return (
+    <div data-cv4-tasks-section data-status={status} style={{ marginBottom: 18 }}>
+      <SectionHeader title={title} count={tasks.length} summary={summary} />
+      <div>
+        {tasks.map(t => (
+          <TaskRow key={t.id} task={t} status={status} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DoneSection({ tasks }) {
+  const [shown, setShown] = useState(3)
+  if (!tasks || tasks.length === 0) return null
+  const visible = tasks.slice(0, shown)
+  const hidden = tasks.length - visible.length
+  return (
+    <div data-cv4-tasks-section data-status="done" style={{ marginBottom: 18 }}>
+      <SectionHeader
+        title="Done"
+        count={tasks.length}
+        summary={`${tasks.length} completed${tasks.length === 1 ? '' : ''}`}
+      />
+      <div>
+        {visible.map(t => <TaskRow key={t.id} task={t} status="done" />)}
+      </div>
+      {hidden > 0 && (
         <button
           data-testid="cv4-done-show-more"
-          onClick={() => setShowAll(true)}
+          onClick={() => setShown(s => s + 5)}
           style={{
             width: '100%', textAlign: 'center',
-            padding: '8px',
+            padding: '6px',
             marginTop: 4,
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11, fontWeight: 700,
-            letterSpacing: '0.05em', textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
             color: C.muted,
             background: 'transparent',
             border: '1px solid rgba(255,255,255,0.06)',
@@ -348,25 +430,683 @@ function DoneSectionCv4() {
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = C.text }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.muted }}
-        >Show {hidden} more</button>
+        >Show {Math.min(hidden, 5)} more</button>
       )}
-      {showAll && filteredCompleted.length > 3 && (
+      {shown > 3 && (
         <button
-          onClick={() => setShowAll(false)}
+          onClick={() => setShown(3)}
           style={{
             width: '100%', textAlign: 'center',
-            padding: '8px',
-            marginTop: 4,
+            padding: '6px', marginTop: 4,
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11, fontWeight: 700,
-            letterSpacing: '0.05em', textTransform: 'uppercase',
-            color: C.muted,
+            fontSize: 9, fontWeight: 700,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+            color: C.dim,
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: 'none',
             cursor: 'pointer',
           }}
         >Collapse</button>
       )}
+    </div>
+  )
+}
+
+function TaskRow({ task, status }) {
+  const {
+    expandedTask, toggleTaskExpand,
+    openTaskMenu, startTaskLongPress, cancelTaskLongPress,
+    taskProjects,
+  } = useTasksPanelCtx()
+  const t = task
+  const agent = t.agent_identity || t.agentIdentity || t.agent
+  const projectName = t.project_name || t.projectName
+  const projectId = t.project_id
+  const isDone = status === 'done'
+  const isFailed = status === 'failed' || t.status === 'failed'
+  const proj = projectId ? taskProjects.find(p => String(p.id) === String(projectId)) : null
+  return (
+    <div
+      data-test-id={isDone ? 'task-card-done' : 'task-card'}
+      data-task-id={t.id}
+      data-task-status={t.status}
+      onClick={() => toggleTaskExpand(t.id)}
+      onContextMenu={(e) => openTaskMenu(e, t)}
+      onTouchStart={(e) => startTaskLongPress(e, t)}
+      onTouchEnd={cancelTaskLongPress}
+      onTouchMove={cancelTaskLongPress}
+      onTouchCancel={cancelTaskLongPress}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        padding: '7px 8px',
+        borderBottom: '1px solid rgba(255,255,255,0.035)',
+        cursor: 'pointer',
+        transition: 'background 0.1s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <StatusIcon status={status} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 12.5, fontWeight: 500,
+          color: isDone ? C.muted : (isFailed ? '#FCA5A5' : C.text),
+          textDecoration: isDone ? 'line-through' : 'none',
+          textDecorationColor: 'rgba(148,163,184,0.4)',
+          lineHeight: 1.4,
+          overflow: 'hidden', textOverflow: 'ellipsis',
+          whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
+          marginBottom: (agent || projectName) ? 2 : 0,
+        }}>{t.title || t.text || 'Untitled task'}</div>
+        {(agent || projectName) && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 10, color: C.muted,
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            {proj && <span style={{ width: 5, height: 5, borderRadius: '50%', background: proj.color, flexShrink: 0 }} />}
+            {agent && <span>{agent}</span>}
+            {projectName && <span style={{ color: C.dim }}>· {projectName}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StatusIcon({ status }) {
+  if (status === 'done') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(16,185,129,0.18)" stroke="#34D399" strokeWidth="1.5"/>
+        <polyline points="7 12 11 16 17 8" fill="none" stroke="#34D399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )
+  }
+  if (status === 'failed') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(239,68,68,0.14)" stroke="#FCA5A5" strokeWidth="1.5"/>
+        <line x1="8" y1="8" x2="16" y2="16" stroke="#FCA5A5" strokeWidth="2.2" strokeLinecap="round"/>
+        <line x1="16" y1="8" x2="8" y2="16" stroke="#FCA5A5" strokeWidth="2.2" strokeLinecap="round"/>
+      </svg>
+    )
+  }
+  if (status === 'blocked') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(167,139,250,0.14)" stroke="#A78BFA" strokeWidth="1.5"/>
+        <line x1="9"  y1="8" x2="9"  y2="16" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="15" y1="8" x2="15" y2="16" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    )
+  }
+  if (status === 'waiting') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(252,211,77,0.14)" stroke="#FCD34D" strokeWidth="1.5"/>
+        <circle cx="12" cy="12" r="2.2" fill="#FCD34D"/>
+      </svg>
+    )
+  }
+  // active / default — empty square with a soft breathing dot so you can
+  // tell at a glance that work is in progress (not just sitting open).
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+      <style>{`
+        @keyframes cv4ActivePulse {
+          0%, 100% { opacity: 0.25; transform: scale(0.85); transform-origin: 12px 12px; }
+          50%      { opacity: 0.9;  transform: scale(1.05); transform-origin: 12px 12px; }
+        }
+        @keyframes cv4ActiveBorder {
+          0%, 100% { stroke: rgba(255,255,255,0.22); }
+          50%      { stroke: rgba(52,211,153,0.55); }
+        }
+      `}</style>
+      <rect x="3" y="3" width="18" height="18" rx="3"
+            fill="rgba(255,255,255,0.025)" strokeWidth="1.5"
+            style={{ animation: 'cv4ActiveBorder 2.4s ease-in-out infinite' }} />
+      <circle cx="12" cy="12" r="2.8" fill="#34D399"
+              style={{ animation: 'cv4ActivePulse 2.4s ease-in-out infinite', transformOrigin: '12px 12px' }} />
+    </svg>
+  )
+}
+
+function FilesBlock({ activeProject, activeMissionPath, searchQuery }) {
+  // Mission scope keeps the CV3 scaffold/breadcrumb (they're already
+  // dense + monospace and fit the file-browser feel).
+  if (activeMissionPath) {
+    return (
+      <div data-cv4-tasks-section data-status="files" style={{ marginTop: 8 }}>
+        <SectionHeader title="Files" count={0} summary="Mission scaffold + files" />
+        <MissionBreadcrumb />
+        <MissionScaffoldSection />
+        <ProjectMissionsSection />
+        <ProjectFilesSection />
+      </div>
+    )
+  }
+  // Project + All scope: render the new CV4 file-tree.
+  return <Cv4FileTree activeProject={activeProject} searchQuery={searchQuery} />
+}
+
+// R52 — five canonical CAPS files surfaced at the top of every project
+// view (VISION/BUILD/CONTEXT/RESEARCH/ROADMAP). Distinct icon per file.
+// Clicking a row opens that file via the existing brief-viewer handler
+// using the `source: 'canon'` lookup path.
+const CV4_PROJECT_CANON = [
+  { filename: 'VISION.md',   label: 'Vision',   color: '#A78BFA', iconKey: 'VISION' },
+  { filename: 'BUILD.md',    label: 'Build',    color: '#FBBF24', iconKey: 'BUILD' },
+  { filename: 'CONTEXT.md',  label: 'Context',  color: '#60A5FA', iconKey: 'CONTEXT' },
+  { filename: 'RESEARCH.md', label: 'Research', color: '#6EE7B7', iconKey: 'RESEARCH' },
+  { filename: 'ROADMAP.md',  label: 'Roadmap',  color: '#FB923C', iconKey: 'ROADMAP' },
+]
+
+/* CV4 file tree — same look as the left drawer's project/mission tree but
+   sourced from briefs (all-scope) or task briefs (project scope). Always
+   uncollapsed by default; folders expand to show their docs. */
+function Cv4FileTree({ activeProject, searchQuery }) {
+  const {
+    allBriefs, allBriefsLoading,
+    setAllBriefsOpen,
+    handleBriefClick,
+    taskBriefs,
+    taskAttachments,
+    taskMissions,
+    setActiveMissionPath,
+    taskProjects,
+  } = useTasksPanelCtx()
+
+  // Keep the underlying CV3 "open" state always-true so the data hooks
+  // continue to fetch + sync even though we don't use the collapse UI.
+  useEffect(() => { setAllBriefsOpen(true) }, [setAllBriefsOpen])
+
+  const isAll = !activeProject || activeProject === 'all'
+
+  // Group briefs by project for the All view.
+  const byProject = useMemo(() => {
+    if (!isAll) return null
+    const m = new Map()
+    for (const b of (allBriefs || [])) {
+      if (searchQuery) {
+        const t = (b.title || b.filename || '').toLowerCase()
+        if (!t.includes(searchQuery.toLowerCase())) continue
+      }
+      const key = b.project || 'misc'
+      if (!m.has(key)) m.set(key, [])
+      m.get(key).push(b)
+    }
+    return m
+  }, [allBriefs, isAll, searchQuery])
+
+  // Flat list for project scope: project briefs + (later) project files.
+  const projectBriefs = useMemo(() => {
+    if (isAll) return []
+    return (taskBriefs || []).filter(b => {
+      if (!searchQuery) return true
+      const t = (b.title || b.filename || '').toLowerCase()
+      return t.includes(searchQuery.toLowerCase())
+    })
+  }, [taskBriefs, isAll, searchQuery])
+
+  const [expanded, setExpanded] = useState(() => new Set())
+  // Auto-expand every project folder once data lands so the tree opens
+  // by default (per the "uncollapsed" requirement).
+  useEffect(() => {
+    if (!isAll || !byProject) return
+    setExpanded(prev => {
+      const next = new Set(prev)
+      for (const k of byProject.keys()) next.add(k)
+      return next
+    })
+  }, [byProject, isAll])
+
+  const toggle = (slug) => setExpanded(prev => {
+    const n = new Set(prev)
+    if (n.has(slug)) n.delete(slug); else n.add(slug)
+    return n
+  })
+
+  const projectName = (slug) => {
+    if (!slug || slug === 'misc') return 'Misc'
+    const proj = taskProjects?.find(p => p.slug === slug)
+    return proj?.name || PROJECT_LABELS[slug] || slug
+  }
+
+  const totalCount = isAll
+    ? Array.from(byProject?.values() || []).reduce((s, arr) => s + arr.length, 0)
+    : projectBriefs.length
+
+  return (
+    <div data-cv4-file-tree data-cv4-tasks-section data-status="files" style={{ marginTop: 8 }}>
+      <SectionHeader
+        title="Files"
+        count={totalCount}
+        summary={isAll
+          ? (totalCount === 0 ? 'No files yet' : 'All projects — grouped by project')
+          : (totalCount === 0 ? 'No files in this project' : `Files in ${projectName(activeProject)}`)
+        }
+      />
+      <div data-cv4-files-tree-inner>
+        {allBriefsLoading && (
+          <div style={{ padding: '8px 4px', fontSize: 10, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>
+        )}
+
+        {isAll && byProject && Array.from(byProject.entries()).map(([slug, briefs]) => {
+          const isExpanded = expanded.has(slug)
+          return (
+            <div key={slug}>
+              <TreeFolderRow
+                label={projectName(slug)}
+                count={briefs.length}
+                expanded={isExpanded}
+                onToggle={() => toggle(slug)}
+              />
+              {isExpanded && briefs.map((b, i) => (
+                <TreeDocRow
+                  key={`${slug}-${b.slug || b.filename || i}`}
+                  brief={b}
+                  onClick={() => handleBriefClick?.(b)}
+                />
+              ))}
+            </div>
+          )
+        })}
+
+        {!isAll && (
+          <Cv4ProjectCanon
+            activeProject={activeProject}
+            projectBriefs={projectBriefs}
+            taskAttachments={taskAttachments}
+            taskMissions={taskMissions}
+            setActiveMissionPath={setActiveMissionPath}
+            handleBriefClick={handleBriefClick}
+            searchQuery={searchQuery}
+          />
+        )}
+
+        {!allBriefsLoading && isAll && totalCount === 0 && (
+          <div style={{ padding: '6px 4px', fontSize: 11, color: C.muted, fontStyle: 'italic' }}>
+            {searchQuery ? 'No files match.' : 'No files yet.'}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// R52 — project file view: 5 canon CAPS rows at top + Missions/ + Files/
+// folders for the rest. Used in CV4 task drawer when project scope is
+// active and we are NOT drilled into a mission.
+function Cv4ProjectCanon({
+  activeProject, projectBriefs, taskAttachments, taskMissions,
+  setActiveMissionPath, handleBriefClick, searchQuery,
+}) {
+  const [missionsOpen, setMissionsOpen] = useState(true)
+  const [filesOpen, setFilesOpen] = useState(true)
+  const missions = Array.isArray(taskMissions) ? taskMissions : []
+  const attachments = Array.isArray(taskAttachments) ? taskAttachments : []
+  const filteredBriefs = projectBriefs || []
+
+  const onClickCanon = (entry) => {
+    handleBriefClick?.({
+      project: activeProject,
+      filename: entry.filename,
+      source: 'canon',
+      title: `${entry.label} — ${activeProject}`,
+    })
+  }
+
+  return (
+    <div data-testid="cv4-project-canon" data-project={activeProject}>
+      {/* Canon rows — five caps files, distinct icon each. */}
+      {CV4_PROJECT_CANON.map(entry => (
+        <Cv4CanonRow key={entry.filename} entry={entry} onClick={() => onClickCanon(entry)} />
+      ))}
+
+      {/* Missions folder */}
+      <TreeFolderRow
+        label="Missions"
+        count={missions.length}
+        expanded={missionsOpen}
+        onToggle={() => setMissionsOpen(v => !v)}
+      />
+      {missionsOpen && missions.length === 0 && (
+        <div style={{ padding: '4px 0 4px 36px', fontSize: 11, color: C.dim, fontStyle: 'italic' }}>
+          No missions yet.
+        </div>
+      )}
+      {missionsOpen && missions.map(m => (
+        <div
+          key={m.path}
+          data-row
+          data-mission-path={m.path}
+          onClick={() => setActiveMissionPath?.(m.path)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '3px 6px 3px 36px', cursor: 'pointer',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          {CANON_ICONS.FOLDER(C.muted)}
+          <span style={{
+            flex: 1, fontSize: 11.5, fontWeight: 500, color: C.text2,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{m.name}</span>
+          {m.file_count > 0 && (
+            <span style={{
+              fontSize: 9, color: C.dim,
+              fontFamily: "'JetBrains Mono', monospace",
+              flexShrink: 0,
+            }}>{m.file_count}</span>
+          )}
+        </div>
+      ))}
+
+      {/* Files folder — briefs + attachments. */}
+      <TreeFolderRow
+        label="Files"
+        count={filteredBriefs.length + attachments.length}
+        expanded={filesOpen}
+        onToggle={() => setFilesOpen(v => !v)}
+      />
+      {filesOpen && filteredBriefs.length === 0 && attachments.length === 0 && (
+        <div style={{ padding: '4px 0 4px 36px', fontSize: 11, color: C.dim, fontStyle: 'italic' }}>
+          {searchQuery ? 'No files match.' : 'No files yet.'}
+        </div>
+      )}
+      {filesOpen && filteredBriefs.map((b, i) => (
+        <TreeDocRow
+          key={`brief-${b.slug || b.filename || i}`}
+          brief={b}
+          onClick={() => handleBriefClick?.(b)}
+          indent={36}
+        />
+      ))}
+      {filesOpen && attachments.map((f, i) => (
+        <TreeDocRow
+          key={`att-${f.id || f.name || i}`}
+          brief={{ title: f.name || f.filename, dateFormatted: '' }}
+          onClick={() => { /* attachment clicks handled by ProjectFilesSection elsewhere */ }}
+          indent={36}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Cv4CanonRow({ entry, onClick }) {
+  const [hov, setHov] = useState(false)
+  const icon = CANON_ICONS[entry.iconKey] || CANON_ICONS.FOLDER
+  return (
+    <div
+      data-row
+      data-testid={`cv4-canon-${entry.filename}`}
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '4px 6px',
+        cursor: 'pointer',
+        background: hov ? 'rgba(255,255,255,0.03)' : 'transparent',
+        transition: 'background 0.12s',
+      }}
+    >
+      <span style={{ width: 14, display: 'inline-block', flexShrink: 0 }} />
+      {icon(entry.color)}
+      <span style={{
+        flex: 1, fontSize: 12, fontWeight: 600, color: C.text,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{entry.label}</span>
+      <span style={{
+        fontSize: 9, fontWeight: 600, color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace",
+        flexShrink: 0,
+      }}>{entry.filename}</span>
+    </div>
+  )
+}
+
+function TreeFolderRow({ label, count, expanded, onToggle }) {
+  return (
+    <div
+      data-row
+      onClick={onToggle}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 4,
+        padding: '4px 6px 4px 4px',
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        style={{ flexShrink: 0, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
+        <polyline points="9 6 15 12 9 18"/>
+      </svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        {expanded ? (
+          <>
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z"/>
+            <path d="M3 10h18l-2 8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </>
+        ) : (
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        )}
+      </svg>
+      <span style={{
+        flex: 1, fontSize: 12, fontWeight: 500, color: C.text2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{label}</span>
+      <span style={{
+        fontSize: 9, fontWeight: 700, color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace",
+        flexShrink: 0,
+      }}>{count}</span>
+    </div>
+  )
+}
+
+function TreeDocRow({ brief, onClick, indent = 24 }) {
+  const title = brief.title || brief.filename || 'Brief'
+  const date = brief.dateFormatted || brief.date || ''
+  return (
+    <div
+      data-row
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: `3px 6px 3px ${indent}px`,
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span style={{
+        flex: 1, fontSize: 11.5, fontWeight: 500, color: C.text2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>{title}</span>
+      {date && (
+        <span style={{
+          fontSize: 9, color: C.dim,
+          fontFamily: "'JetBrains Mono', monospace",
+          flexShrink: 0,
+        }}>{date}</span>
+      )}
+    </div>
+  )
+}
+
+// Project labels for the All-view folder names (matches CV3 mapping).
+const PROJECT_LABELS = {
+  'corner': 'Corner',
+  'ambition-mechanical': 'Ambition',
+  'aom-website': 'AOM Website',
+  'arsenal-directory': 'Arsenal',
+  'sourcing-directory': 'Sourcing',
+}
+
+// R7.13 — CV4-themed brief/file viewer with an inline composer at the bottom.
+// The composer routes the user's message into the project chat with a
+// `[About <filename>]` tag so the agent has explicit file context.
+function Cv4BriefViewer({ brief, html, loading, onClose, onAskAboutFile }) {
+  const [text, setText] = useState('')
+  const filename = brief?.filename || brief?.slug || ''
+  const displayName = (brief?.title || filename || 'File').replace(/\.md$/, '')
+  const subtitle = [brief?.agent, brief?.project, brief?.dateFormatted || brief?.date]
+    .filter(Boolean).join(' · ')
+
+  const submit = () => {
+    const t = text.trim()
+    if (!t) return
+    onAskAboutFile?.(t)
+    setText('')
+  }
+
+  return (
+    <div
+      data-cv4-brief-viewer
+      style={{
+        position: 'absolute', inset: 0, zIndex: 60,
+        background: C.bg,
+        display: 'flex', flexDirection: 'column',
+        fontFamily: "'Inter', sans-serif",
+      }}
+    >
+      {/* Header — back arrow + filename + project breadcrumb. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '12px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        flexShrink: 0,
+      }}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close file viewer"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            color: C.muted,
+            padding: '6px 10px',
+            cursor: 'pointer',
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 10, fontWeight: 700,
+            letterSpacing: '0.10em', textTransform: 'uppercase',
+            borderRadius: 2,
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 13, fontWeight: 800, letterSpacing: '0.03em',
+            color: C.text,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{displayName}</div>
+          {subtitle && (
+            <div style={{
+              fontSize: 10, color: C.dim, marginTop: 2,
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.05em', textTransform: 'uppercase',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{subtitle}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Scrollable file body. */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 24px' }}>
+        {loading ? (
+          <div style={{ color: C.dim, fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>
+        ) : (
+          <div
+            data-testid="cv4-brief-viewer-content"
+            className={`briefing-summary-body${brief?.source === 'scaffold' || (brief?.filename || '').endsWith('.md') ? ' article' : ''}`}
+            style={{ color: C.text, fontSize: 14, lineHeight: 1.6 }}
+            dangerouslySetInnerHTML={{ __html: html || '<p style="color:#94A3B8">No content.</p>' }}
+          />
+        )}
+      </div>
+
+      {/* Composer — ask about / suggest edits to this specific file. */}
+      <div style={{
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        padding: 10,
+        flexShrink: 0,
+        background: C.bg,
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap: 8,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          padding: '8px 10px',
+        }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                submit()
+              }
+            }}
+            placeholder={`Ask about or suggest an edit to ${filename || 'this file'}…`}
+            rows={1}
+            style={{
+              flex: 1,
+              background: 'transparent', border: 'none', outline: 'none',
+              color: C.text,
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 13, lineHeight: 1.4,
+              resize: 'none',
+              minHeight: 22, maxHeight: 120,
+            }}
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!text.trim()}
+            aria-label="Send"
+            style={{
+              width: 32, height: 32,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: text.trim() ? '#10B981' : 'rgba(255,255,255,0.06)',
+              border: '1px solid ' + (text.trim() ? '#10B981' : 'rgba(255,255,255,0.10)'),
+              color: text.trim() ? '#0A0A0A' : C.muted,
+              cursor: text.trim() ? 'pointer' : 'default',
+              borderRadius: 2,
+              flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <div style={{
+          marginTop: 6,
+          fontSize: 10, color: C.dim,
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.05em', textTransform: 'uppercase',
+        }}>
+          ↵ to send · referenced: {filename || '—'}
+        </div>
+      </div>
     </div>
   )
 }
