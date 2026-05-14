@@ -8,6 +8,17 @@
         "count": 2
       }
     },
+    "api/_lib/gmailClient.js": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
     "api/_lib/oauthCrypto.js": {
       "crap_high": {
         "count": 1
@@ -329,6 +340,38 @@
       }
     },
     "api/dashboard/invite-create.js": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "api/dashboard/mail/get.js": {
+      "crap_critical": {
+        "count": 2
+      }
+    },
+    "api/dashboard/mail/list.js": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      }
+    },
+    "api/dashboard/mail/send.js": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "api/dashboard/mail/signature.js": {
       "crap_critical": {
         "count": 1
       }
@@ -1113,7 +1156,7 @@
         "count": 1
       },
       "crap_critical": {
-        "count": 2
+        "count": 3
       },
       "crap_high": {
         "count": 3
@@ -1527,7 +1570,7 @@
         "count": 3
       },
       "crap_critical": {
-        "count": 4
+        "count": 5
       },
       "crap_high": {
         "count": 1
@@ -2083,6 +2126,22 @@
       },
       "crap_high": {
         "count": 5
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "src/dashboard/cv4/MailChip.jsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "src/dashboard/cv4/MailListPanel.jsx": {
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
       },
       "crap_moderate": {
         "count": 2
@@ -3136,21 +3195,21 @@
     "src/dashboard/components/cv3/project-chat/ProjectInputBar.jsx:complexity",
     "z-archive-corner-tests/corner-test-pass9.mjs:complexity",
     "src/dashboard/components/cv3/thread/ThreadHeader.jsx:complexity",
+    "src/dashboard/CornerV3.jsx:complexity",
     "z-archive-corner-tests/corner-test-pass11.mjs:complexity",
-    "src/dashboard/components/cv3/tasks/LivingParagraphCard.jsx:untested risk",
     "src/dashboard/components/cv3/chat/useChatSend.js:complexity",
+    "src/dashboard/components/cv3/tasks/LivingParagraphCard.jsx:untested risk",
     "src/dashboard/components/cv3/project-chat/ProjectChatHeader.jsx:complexity",
     "z-archive-corner-tests/corner-test-pass10.mjs:complexity",
     "src/dashboard/components/AgentInfoTab.jsx:complexity",
     "z-archive-corner-tests/corner-test-pass8.mjs:complexity",
     "src/dashboard/agentTypingPhrases.js:dead code",
+    "src/dashboard/components/cv3/thread/ThreadInputBar.jsx:complexity",
     "src/dashboard/components/cv3/TaskStatusCard.jsx:dead code",
     "src/dashboard/components/cv3/chat/useChatContextMenu.js:untested risk",
     "src/dashboard/components/cv3/conversations/useHomeSearch.js:untested risk",
     "api/dashboard/preferences.js:complexity",
-    "src/dashboard/components/cv3/thread/ThreadInputBar.jsx:complexity",
     "src/dashboard/hooks/useCleoWorkspaces.js:untested risk",
-    "src/dashboard/CornerV3.jsx:complexity",
     "src/dashboard/components/cv3/thread/MessageList.jsx:complexity",
     "z-archive-corner-tests/corner-test-pass5.mjs:complexity",
     "src/archive/ChatDashboard.jsx:complexity",
@@ -3165,6 +3224,7 @@
     "src/dashboard/components/cv3/chat/useChatSettings.js:untested risk",
     "src/dashboard/agentKnowledge.js:dead code",
     "src/dashboard/components/cv3/tasks/ForemanTasksSection.jsx:complexity",
+    "api/dashboard/mail/get.js:untested risk",
     "src/dashboard/components/cv3/thread/ThreadSettingsModal.jsx:complexity",
     "src/dashboard/components/cv3/tasks/ActiveTasksSection.jsx:complexity",
     "src/dashboard/components/cv3/chat/useChatMessages.js:untested risk",
@@ -3176,9 +3236,12 @@
     "src/pages/Blacknight.jsx:untested risk",
     "src/dashboard/components/VoiceChat.jsx:complexity",
     "src/dashboard/lib/fixtureClient.js:untested risk",
+    "api/dashboard/mail/list.js:complexity",
     "src/App.jsx:complexity",
+    "src/dashboard/CornerV4.jsx:complexity",
     "api/dashboard/worlds.js:untested risk",
     "api/dashboard/image-gen.js:untested risk",
+    "api/dashboard/mail/send.js:untested risk",
     "api/dashboard/supabase-messages.js:complexity",
     "api/integrations/list.js:untested risk",
     "api/dashboard/agent-status.js:complexity",

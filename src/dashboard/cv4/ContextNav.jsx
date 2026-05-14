@@ -34,6 +34,8 @@ export default function CV4ContextNav({
   onSelectAgent,
   onSelectProject,
   worldId,
+  activeTool = null,
+  onExitTool,
 }) {
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const switcherRef = useRef(null)
@@ -50,7 +52,14 @@ export default function CV4ContextNav({
   let title = 'Home'
   let dotColor = null
   let switchable = false
-  if (tab === 'tasks') {
+  if (activeTool === 'mail') {
+    // Mail Room takeover: title is the room, dot is amber so it reads as
+    // "tool mode" instead of an agent thread. Agent switcher stays disabled
+    // — to leave the room the user clears the tool via the exit affordance.
+    title = 'Mail Room'
+    dotColor = C.yellow
+    switchable = false
+  } else if (tab === 'tasks') {
     title = conversationTarget?.type === 'project' ? conversationTarget.name : 'Tasks'
     dotColor = conversationTarget?.type === 'project' ? (conversationTarget.color || C.yellow) : null
   } else if (selectedAgent) {
@@ -150,6 +159,23 @@ export default function CV4ContextNav({
               letterSpacing: '-0.01em',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{title}</span>
+          )}
+          {activeTool === 'mail' && onExitTool && (
+            <button
+              type="button"
+              onClick={onExitTool}
+              aria-label="Leave Mail Room"
+              title="Leave Mail Room"
+              style={{
+                marginLeft: 6, flexShrink: 0,
+                width: 20, height: 20, borderRadius: 5,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                color: C.muted, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, lineHeight: 1,
+              }}
+            >×</button>
           )}
 
           {switcherOpen && switchable && (
@@ -304,8 +330,16 @@ export default function CV4ContextNav({
           <button
             data-testid="cv4-tasks-drawer-toggle"
             onClick={onToggleTasksDrawer}
-            aria-label={tasksDrawerOpen ? 'Close tasks' : 'Open tasks'}
-            title={tasksDrawerOpen ? 'Close tasks' : 'Open tasks'}
+            aria-label={
+              activeTool === 'mail'
+                ? (tasksDrawerOpen ? 'Close mail' : 'Open mail')
+                : (tasksDrawerOpen ? 'Close tasks' : 'Open tasks')
+            }
+            title={
+              activeTool === 'mail'
+                ? (tasksDrawerOpen ? 'Close mail' : 'Open mail')
+                : (tasksDrawerOpen ? 'Close tasks' : 'Open tasks')
+            }
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
               background: tasksDrawerOpen ? 'rgba(234,179,8,0.14)' : 'rgba(255,255,255,0.04)',
@@ -317,8 +351,15 @@ export default function CV4ContextNav({
               position: 'relative',
             }}
           >
-            <TasksIcon color={tasksDrawerOpen ? C.yellow : C.muted} />
-            {activeTaskCount > 0 && (
+            {activeTool === 'mail' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <polyline points="3 7 12 13 21 7"/>
+              </svg>
+            ) : (
+              <TasksIcon color={tasksDrawerOpen ? C.yellow : C.muted} />
+            )}
+            {activeTool !== 'mail' && activeTaskCount > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -4,
                 minWidth: 14, height: 14, borderRadius: 7,

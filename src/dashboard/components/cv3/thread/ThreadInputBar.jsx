@@ -13,6 +13,8 @@ import {
   useChatVoiceCtx,
   useChatContextMenuCtx,
 } from '../chat/ChatPanelContext.jsx'
+import { useCornerNav } from '../../../CornerContext.jsx'
+import MailChip from '../../../cv4/MailChip.jsx'
 
 // CV3 pill input bar: hidden file input, optional reply/chain indicators,
 // slash-command autocomplete, attach button, commands stub, and the
@@ -31,6 +33,10 @@ export default function ThreadInputBar() {
     setVoiceMuted, setVoiceTranscriptText,
   } = useChatVoiceCtx()
   const { replyTo, setReplyTo } = useChatContextMenuCtx()
+  // CV4 Mail Room: when a mail is selected in the right rail it pins as a
+  // chip above the composer so the EA's next reply receives the email body
+  // as context. Cleared by the chip's × or by send completion.
+  const { activeTool, selectedMail, setSelectedMail } = useCornerNav()
   // Caret position for slash-command autocomplete
   const [caret, setCaret] = useState(null)
   const updateCaret = (e) => setCaret(e?.target?.selectionStart ?? null)
@@ -102,6 +108,9 @@ export default function ThreadInputBar() {
       />
       {replyTo && (
         <ReplyToChip target={replyTo} onDismiss={() => setReplyTo(null)} />
+      )}
+      {activeTool === 'mail' && selectedMail && (
+        <MailChip email={selectedMail} onClear={() => setSelectedMail(null)} />
       )}
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
       {input.includes('>>') && (() => {

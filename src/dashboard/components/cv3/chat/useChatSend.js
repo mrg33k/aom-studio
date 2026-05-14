@@ -10,9 +10,34 @@
 // the shell populates those refs from the returned callbacks so the
 // attach/recording hooks that consume the refs stay decoupled from Send.
 import { useCallback, useEffect, useRef } from 'react'
-import { useCornerData } from '../../../CornerContext.jsx'
+import { useCornerData, useCornerNav } from '../../../CornerContext.jsx'
 import { authFetch } from '../../../lib/authFetch.js'
 import { bumpContextMeter } from '../session/ContextFullnessMeter.jsx'
+
+// Wraps an email into a Mail Room context block prepended to the user's
+// message. The EA reads this and understands: "this is what we're replying
+// to. Use the /api/dashboard/mail/send tool when the user confirms send."
+function buildMailContext(email) {
+  if (!email) return ''
+  const from = email.from?.name
+    ? `${email.from.name} <${email.from.email}>`
+    : (email.from?.email || '(unknown)')
+  const subject = email.subject || '(no subject)'
+  const snippet = email.snippet || ''
+  return [
+    '[Mail Room context — the user wants to reply to this email]',
+    `From: ${from}`,
+    `Subject: ${subject}`,
+    `Gmail-ID: ${email.id}`,
+    email.threadId ? `Thread-ID: ${email.threadId}` : null,
+    '',
+    snippet ? `Preview: ${snippet}` : null,
+    '',
+    'Draft a reply with the user. When they say "send it" or "looks good — send", call /api/dashboard/mail/send with the resulting body. Always end with their signature (the server appends it automatically).',
+    '---',
+    '',
+  ].filter(v => v !== null).join('\n')
+}
 
 // fallow-ignore-next-line complexity
 const buildReplyMeta = (snap) => snap?.type === 'message' ? {
@@ -50,6 +75,9 @@ export default function useChatSend({
   // EA slug from role flags instead of hardcoding 'elon'. Read here (not
   // threaded via props) to keep all R14e-3 surface area inside cv3/chat/.
   const { agents } = useCornerData()
+  // CV4 Mail Room (corner:cv4-tools-mail R1): read selectedMail from
+  // CornerNav so handleSend can prepend the email context. Cleared on send.
+  const { activeTool, selectedMail, setSelectedMail } = useCornerNav()
   // ── Idempotency refs (block overlap + same-text within 2s) ───────────────
   const inFlightSendRef = useRef(false)
   const lastSendSigRef = useRef({ sig: '', ts: 0 })
@@ -57,6 +85,10 @@ export default function useChatSend({
   // Ref mirror of replyTo so handlers don't need it in their deps lists.
   const replyToRef = useRef(null)
   useEffect(() => { replyToRef.current = replyTo }, [replyTo])
+
+  // Ref mirror of selectedMail — keeps handleSend out of its deps list.
+  const selectedMailRef = useRef(null)
+  useEffect(() => { selectedMailRef.current = (activeTool === 'mail' ? selectedMail : null) }, [activeTool, selectedMail])
 
   // ── Image-gen branch ──────────────────────────────────────────────────────
   // When the user has selected an image tool in the composer (ImageGenPicker),
@@ -168,13 +200,16 @@ export default function useChatSend({
     const quotePrefix = replySnap?.snippet
       ? `> ${replySnap.type === 'task' ? `Re: task "${replySnap.label || ''}"` : 'Re'}: "${replySnap.snippet.length > 240 ? replySnap.snippet.slice(0, 237) + '…' : replySnap.snippet}"\n\n`
       : ''
-    const text = quotePrefix + cleanText + chipsSuffix + attSuffix
+    const mailSnap = selectedMailRef.current
+    const mailContext = buildMailContext(mailSnap)
+    const text = mailContext + quotePrefix + cleanText + chipsSuffix + attSuffix
     setInput('')
     if (chips.length) clearPasteChips?.()
     if (attSnapshot.length) setPendingAttachments([])
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
     if (replySnap) setReplyTo(null)
+    if (mailSnap) setSelectedMail(null)
 
     // Optimistic user message
     const now = new Date().toISOString()
