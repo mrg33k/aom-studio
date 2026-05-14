@@ -83,3 +83,22 @@ Retry session to smoke-test Mail Room flow. Findings:
 Chrome MCP unavailable in this session (same as prior). Screenshot-based verification not possible. Manual walkthrough at http://localhost:5190/cv4 is the remaining step.
 
 **Status:** in progress — all code verified correct, dev server clean. Blocked on: (1) Patrik adding 3 missing env vars, (2) manual/Chrome-MCP smoke-test walkthrough of the Mail Room UI.
+
+---
+
+## R2 — merge to main + prod deploy — 2026-05-13 (task e1f20a73)
+
+**Changes**
+
+- Stashed local uncommitted changes on main, pulled `origin/main` (integrations merge `88a9a60` + 14 prior commits now on main).
+- `git merge worktree-cv4-tools-mail --no-ff` — clean, zero conflicts. Merge SHA: **a57c5c5**.
+- `git push origin main` — triggered Vercel Git auto-deploy.
+- Vercel deploy `dpl_DaXDjxZ9mHGDV77MtBRsqtBu2fGK` reached state **READY** (production target) with commit "Merge branch 'worktree-cv4-tools-mail'".
+- Production URL `https://aheadofmarket.com/cv4` returns HTTP 200 (verified via curl).
+- Screenshots dir created: `corner/missions/cv4-tools-mail/screenshots/2026-05-13/` (AOM-EA side).
+
+**Chrome MCP smoke test**
+
+Chrome MCP tools (`mcp__claude-in-chrome__*`) remain unavailable in this session — not present in the deferred tools list. This is the third consecutive session with this blocker. Visual confirmation of Tools section + Mail Room rendering is still PENDING manual review by Patrik.
+
+**Status:** SHIPPED — branch merged to main, prod deploy live at https://aheadofmarket.com/cv4 (SHA a57c5c5). Frontend smoke test requires manual Chrome walk-through until Chrome MCP is available.
