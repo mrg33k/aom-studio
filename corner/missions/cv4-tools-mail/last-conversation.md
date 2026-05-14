@@ -75,3 +75,35 @@ Still unavailable. Screenshot-based UI verification remains blocked. Manual walk
 
 **Handoff**
 Branch ready. Patrik needs to: (1) add the 3 missing Vercel prod env vars, (2) open /cv4 in browser and walk through Tools → Mail to verify the Mail Room UI.
+
+---
+
+## 2026-05-14 — R3 fix: mobile tab bug + desktop toggle color (task fa8a15c4)
+
+Patrik reported via voice: Tools section and Mail Room not visible on desktop OR mobile.
+
+**Root cause**
+
+Full audit of deployed code (commit `d16a590`, Vercel `dpl_2gbCy3XYxP86bgpJG4JBGqkvCc4g`, READY):
+- The Tools section IS in Drawer.jsx, unconditionally rendered above Projects. No gate, no CSS hiding it.
+- The Vercel build succeeded without errors — code deployed correctly.
+- The mobile fix from task a4bd46d7 (`2b0407f`) was committed locally but NOT pushed to origin. Production was serving the broken version where `handleSelectTool('mail')` called `setTab('chat')` on mobile, but MailListPanel only renders when `tab === 'tasks'`.
+- Desktop ContextNav right-rail toggle: always showed amber highlight when `tasksDrawerOpen=true`, even in normal tasks mode. Should be green for tasks, amber only for mail.
+
+**Fixes shipped**
+
+- Pushed `2b0407f` (was local-only): mobile tab fix + amber envelope icon on mobile toggle.
+- Committed + pushed `c05b4c2`: ContextNav desktop right-rail toggle now green for tasks, amber for mail. Matches mobile toggle behavior.
+
+**Deploy**
+
+Pushed `d16a590..c05b4c2` → Vercel auto-deploy triggered → `dpl_5F5jHM6KbRAAbSSiKstYYKJEKuyK` BUILDING at time of handoff.
+
+**Chrome MCP**
+
+Still unavailable (4th consecutive session). Visual verification of both viewports requires manual browser walkthrough by Patrik.
+
+**Patrik still needs to add to Vercel prod env before Gmail API works:**
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `TOKEN_ENC_KEY`

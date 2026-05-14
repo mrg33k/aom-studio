@@ -102,3 +102,30 @@ Chrome MCP unavailable in this session (same as prior). Screenshot-based verific
 Chrome MCP tools (`mcp__claude-in-chrome__*`) remain unavailable in this session — not present in the deferred tools list. This is the third consecutive session with this blocker. Visual confirmation of Tools section + Mail Room rendering is still PENDING manual review by Patrik.
 
 **Status:** SHIPPED — branch merged to main, prod deploy live at https://aheadofmarket.com/cv4 (SHA a57c5c5). Frontend smoke test requires manual Chrome walk-through until Chrome MCP is available.
+
+---
+
+## R3 — Fix: Tools section + Mail Room invisible on desktop and mobile — 2026-05-14 (task fa8a15c4)
+
+**Root cause analysis**
+
+Patrik reported Tools section and Mail Room not visible on desktop OR mobile. After full audit:
+- Code DID land correctly: Tools section is in `Drawer.jsx` (unconditionally rendered above Projects), `MailListPanel` is imported in `CornerV4.jsx`, all state wiring correct.
+- Vercel build for `d16a590` succeeded with no errors.
+- **Mobile bug confirmed**: `handleSelectTool` (commit `2b0407f`, task a4bd46d7) was NOT pushed to origin. On mobile, clicking Mail called `setTab('chat')` but `MailListPanel` only renders when `tab === 'tasks'`, so the mail list never appeared.
+- **Desktop visual bug**: ContextNav right-rail toggle was always amber when `tasksDrawerOpen`, even in normal tasks mode (should be green for tasks, amber only for mail mode).
+
+**Changes**
+
+- `2b0407f` (was local-only, now pushed) — `CornerV4.jsx`: `handleSelectTool` uses `setTab(isDesktop ? 'chat' : 'tasks')` so mobile mail activation shows MailListPanel in the center column; `ContextNav.jsx`: mobile tab toggle shows amber envelope when activeTool==='mail'.
+- `c05b4c2` (new) — `ContextNav.jsx`: desktop right-rail toggle now uses green highlight for tasks mode, amber only for mail mode. Matches mobile toggle behavior.
+
+**Vercel deploy**
+
+Pushed `d16a590..c05b4c2` to origin/main → Vercel auto-deploy triggered → `dpl_5F5jHM6KbRAAbSSiKstYYKJEKuyK` BUILDING.
+
+**Chrome MCP smoke test**
+
+Chrome MCP unavailable (fourth consecutive session). Visual verification pending manual review.
+
+**Status:** SHIPPED — commits `2b0407f` + `c05b4c2` pushed, deploy in progress at https://aheadofmarket.com/cv4.
