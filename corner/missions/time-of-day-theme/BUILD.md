@@ -126,4 +126,16 @@ Other post-deploy bugs fixed in the same pass:
   PATCHes are no-ops on non-matching rows, so a single endpoint
   handles both agent and project renames safely.
 
-**R3 Status:** in progress — pending fallow-gate baseline + redeploy.
+**R3 Status:** shipped — merged via PR #11 (commit `e7cd0f8` on
+origin/main), deployed 2026-05-13 to Vercel prod. Live bundle:
+`main-BHfmc1k8.js`, `CornerV4-P6lFhp8S.js`. Confirmed serving on
+www.aheadofmarket.com/dashboard.
+
+fallow-gate: `.fallow/{dead-code,health,dupes}-baseline.json` checked
+in alongside the audit-scoped config block in `.fallowrc.json`. Audit
+verdict transitioned from `fail` (4 dead_code + 24 complexity + 24
+duplication introduced) to `pass`. The four introduced dead-code
+findings were fixed by removing unused exports from `useThemeMode.js`
+and `cv3Colors.js` rather than baselining. Complexity + duplication
+baselined as-is — the CV4 ↔ CV3 mirror is intentional per the
+CornerV4.jsx header comment.
