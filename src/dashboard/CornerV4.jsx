@@ -426,7 +426,9 @@ export default function CornerV4() {
     setActiveTool(tool)
     setSelectedMail(null)
     if (tool === 'mail') {
-      setTab('chat')
+      // Desktop: center column is always ChatPanel; right drawer shows mail list.
+      // Mobile: center column is tab-controlled; 'tasks' tab shows mail list.
+      setTab(isDesktop ? 'chat' : 'tasks')
       setTasksDrawerOpen(true)
       const ea = (agents || []).find(a => a.slug === 'elon')
         || (agents || []).find(a => a.is_ea && a.is_terminal)
@@ -438,7 +440,7 @@ export default function CornerV4() {
         if (routeProjectId) navigate(basePath)
       }
     }
-  }, [agents, selectedAgent?.slug, navigate, routeProjectId])
+  }, [agents, selectedAgent?.slug, navigate, routeProjectId, isDesktop])
 
   // Called by MailListPanel when the user clicks an email — pins it as a
   // chat chip so the EA's next reply receives the email as context.

@@ -299,21 +299,42 @@ export default function CV4ContextNav({
           <button
             data-testid="cv4-tasks-tab-toggle"
             onClick={() => onSwitchTab(tab === 'tasks' ? 'chat' : 'tasks')}
-            aria-label={tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks'}
-            title={tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks'}
+            aria-label={
+              activeTool === 'mail'
+                ? (tab === 'tasks' ? 'Switch to chat' : 'View mail')
+                : (tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks')
+            }
+            title={
+              activeTool === 'mail'
+                ? (tab === 'tasks' ? 'Switch to chat' : 'View mail')
+                : (tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks')
+            }
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: tab === 'tasks' ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${tab === 'tasks' ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              color: tab === 'tasks' ? '#10B981' : C.muted,
+              background: tab === 'tasks'
+                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.14)' : 'rgba(16,185,129,0.15)')
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${tab === 'tasks'
+                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.4)' : 'rgba(16,185,129,0.4)')
+                : 'rgba(255,255,255,0.08)'}`,
+              color: tab === 'tasks'
+                ? (activeTool === 'mail' ? C.yellow : '#10B981')
+                : C.muted,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
               position: 'relative',
             }}
           >
-            <TasksIcon color={tab === 'tasks' ? '#10B981' : 'currentColor'} />
-            {activeTaskCount > 0 && (
+            {activeTool === 'mail' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <polyline points="3 7 12 13 21 7"/>
+              </svg>
+            ) : (
+              <TasksIcon color={tab === 'tasks' ? '#10B981' : 'currentColor'} />
+            )}
+            {activeTool !== 'mail' && activeTaskCount > 0 && (
               <span style={{
                 position: 'absolute', top: -4, right: -4,
                 minWidth: 14, height: 14, borderRadius: 7,
