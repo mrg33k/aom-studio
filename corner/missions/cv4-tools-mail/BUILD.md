@@ -129,3 +129,28 @@ Pushed `d16a590..c05b4c2` to origin/main → Vercel auto-deploy triggered → `d
 Chrome MCP unavailable (fourth consecutive session). Visual verification pending manual review.
 
 **Status:** SHIPPED — commits `2b0407f` + `c05b4c2` pushed, deploy in progress at https://aheadofmarket.com/cv4.
+
+---
+
+## R3-A — Gmail not pulling diagnosis — 2026-05-14 (task 19b6a480)
+
+Patrik confirmed Tools + Mail Room surface works (R1/R2 shipped), but the email rail is empty — `hello@aom-inhouse.com` Gmail not pulling.
+
+**Diagnosis (three-cause checklist)**
+
+1. **Env vars** — CLEARED. `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `TOKEN_ENC_KEY` were flagged MISSING in R1 but were all added to production ~12 hours ago. No env var gap remains.
+
+2. **No Gmail OAuth row** — **ROOT CAUSE.** Queried `account_integrations` table: **0 rows total**. No Gmail consent flow has ever been completed for any user. `hello@aom-inhouse.com` is the Gmail inbox Patrik wants to connect, not a Corner auth account.
+
+3. **Live API error** — Not reached (no token row exists; `list.js` returns `{mode:'not-connected'}` → `NotConnected` UI renders correctly).
+
+**Full code review: no bugs found.** `authFetch → extractJwt → getUserIdFromRequest → loadRow → getGmailToken → list.js` chain is clean. `NotConnected` component renders "Connect Gmail" button pointing to `/api/integrations/oauth/start?slug=gmail`.
+
+**Research note:** `corner/missions/cv4-tools-mail/research/2026-05-14-gmail-not-pulling-hello-aom-inhouse.md`
+
+**Patrik action required:**
+1. Verify `https://aheadofmarket.com/api/integrations/oauth/callback` is registered in Google Cloud Console as an authorized redirect URI for the OAuth app.
+2. Navigate to `https://aheadofmarket.com/cv4` while signed in → Tools → Mail → click "Connect Gmail" → complete consent for `hello@aom-inhouse.com`.
+3. After consent, `account_integrations` will have a token row and the rail will populate within 30s.
+
+**Status:** GATED ON PATRIK — no code change needed; Patrik must complete Gmail OAuth consent before Part B (prioritization layer) can be verified live.

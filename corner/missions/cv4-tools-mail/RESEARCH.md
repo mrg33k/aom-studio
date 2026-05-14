@@ -31,6 +31,10 @@ Free / low-cost: Gmail API. Costly: model tokens. Our refresh strategy keeps the
 
 The poll uses `history.list?startHistoryId=<latest>` — if `history` is empty we don't re-fetch any messages.
 
+## Incident research
+
+- **2026-05-14 — Gmail not pulling for hello@aom-inhouse.com:** `research/2026-05-14-gmail-not-pulling-hello-aom-inhouse.md` — Root cause: no Gmail OAuth row in `account_integrations` (table has 0 rows). Env vars were added 12h prior. Fix: Patrik clicks "Connect Gmail" in the NotConnected empty state while signed in to Corner.
+
 ## Signature handling
 
 When sending we read the `signature` (HTML) field from the default `sendAs` entry. We append `<br><br>` + the signature inside the HTML body part of a `multipart/alternative` message. The text part is unsigned (most clients render HTML).

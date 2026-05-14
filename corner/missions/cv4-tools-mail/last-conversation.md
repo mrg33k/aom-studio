@@ -107,3 +107,24 @@ Still unavailable (4th consecutive session). Visual verification of both viewpor
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 - `TOKEN_ENC_KEY`
+
+---
+
+## 2026-05-14 — R3-A: Gmail-not-pulling diagnosis (task 19b6a480)
+
+Patrik confirmed the UI surface works (Tools section visible, Mail Room accessible) but the email rail is empty — `hello@aom-inhouse.com` not pulling.
+
+**Three-cause diagnostic (run in full)**
+
+1. **Env vars** — CLEARED. All three (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `TOKEN_ENC_KEY`) now present in Vercel production (added ~12h prior to this session).
+
+2. **No OAuth row** — **ROOT CAUSE confirmed.** Queried `account_integrations` table: 0 rows total. No Gmail OAuth consent flow has been completed for any user. `hello@aom-inhouse.com` is the Gmail inbox to connect, not a Corner auth account.
+
+3. **Code bugs** — None found. Full chain review: `authFetch → extractJwt → getUserIdFromRequest → loadRow → getGmailToken → list.js` is clean. `NotConnected` empty state renders "Connect Gmail" button correctly at `/api/integrations/oauth/start?slug=gmail`.
+
+**Research note landed:** `corner/missions/cv4-tools-mail/research/2026-05-14-gmail-not-pulling-hello-aom-inhouse.md`
+
+**Part B (prioritization layer) gated on:** Patrik completing Gmail OAuth consent. Steps:
+1. Verify `https://aheadofmarket.com/api/integrations/oauth/callback` is registered in Google Cloud Console as an authorized redirect URI.
+2. Browse to `https://aheadofmarket.com/cv4` → Tools → Mail → click "Connect Gmail" → grant scopes for `hello@aom-inhouse.com`.
+3. Token row lands in `account_integrations`, rail populates within 30s.
