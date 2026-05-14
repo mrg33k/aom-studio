@@ -52,3 +52,26 @@ Dev server confirmed running (port 5176, HTTP 200 on `/cv4`). Chrome MCP was not
 - `67cf85a` — fix(aom-studio): restore main.jsx entry — point to CornerV3
 
 Branch `worktree-cv4-tools-mail` pushed. Ready for Patrik signoff + env var injection + manual smoke test.
+
+---
+
+## 2026-05-13 — R1 re-verify session (task e554c608-b10c-4052-9729-44e61acb9b17)
+
+Retry task to smoke-test the Mail Room flow. All R1 code verified intact from prior session.
+
+**What was verified**
+- `main.jsx` fix (67cf85a) confirmed: imports `CornerV3` + `BrowserRouter`, no `GameDashboard` reference.
+- `Drawer.jsx` has Tools section with Mail entry active on `activeTool === 'mail'`.
+- `CornerV4.jsx` has full state wiring: `activeTool`, `selectedMail`, `handleSelectTool`, `MailListPanel`.
+- All four mail API routes present: `api/dashboard/mail/list.js`, `get.js`, `send.js`, `signature.js`.
+- Dev server starts cleanly on port 5190, HTTP 200 on `/` and `/cv4`.
+
+**Vercel env vars (re-confirmed missing)**
+- `GOOGLE_OAUTH_CLIENT_ID` ✗, `GOOGLE_OAUTH_CLIENT_SECRET` ✗, `TOKEN_ENC_KEY` ✗
+- `SUPABASE_URL` ✓, `SUPABASE_SERVICE_ROLE_KEY` ✓
+
+**Chrome MCP**
+Still unavailable. Screenshot-based UI verification remains blocked. Manual walkthrough at http://localhost:5190/cv4 is the remaining step.
+
+**Handoff**
+Branch ready. Patrik needs to: (1) add the 3 missing Vercel prod env vars, (2) open /cv4 in browser and walk through Tools → Mail to verify the Mail Room UI.

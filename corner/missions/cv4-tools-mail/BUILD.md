@@ -55,4 +55,31 @@ Ran `vercel env ls production` against aom-studio project. Findings:
 
 Dev server started successfully on port 5176 (ports 5173–5175 occupied by other Vite instances). Responds HTTP 200 for `/` and `/cv4`. Chrome MCP not available in this session — screenshot-based verification could not be completed. Smoke test of Mail Room UI is PENDING manual verification.
 
-**Status:** in progress — branch ready for Patrik signoff + env var injection. Smoke test pending (Chrome MCP unavailable; dev server confirmed running on :5176).
+**Status:** in progress — branch ready for Patrik signoff + env var injection. Smoke test pending (Chrome MCP unavailable across both sessions; dev server confirmed running on :5176 and :5190 with HTTP 200 on / and /cv4).
+
+---
+
+## R1 re-verify — 2026-05-13 (task e554c608)
+
+Retry session to smoke-test Mail Room flow. Findings:
+
+**Files verified**
+- `src/dashboard/main.jsx` — confirmed correctly imports `CornerV3` (fix from 67cf85a still in place).
+- `src/dashboard/cv4/Drawer.jsx` — Tools section with Mail entry present and active on `activeTool === 'mail'`.
+- `src/dashboard/CornerV4.jsx` — `activeTool`, `selectedMail`, `handleSelectTool`, `MailListPanel` import all confirmed wired.
+- `api/dashboard/mail/` — all four API routes present: `list.js`, `get.js`, `send.js`, `signature.js`.
+- `api/_lib/gmailClient.js` — present.
+
+**Dev server**
+- Started cleanly on port 5190. HTTP 200 on `/` and `/cv4`. No missing-import errors.
+
+**Vercel env audit (production, re-run)**
+- `SUPABASE_URL` ✓, `SUPABASE_SERVICE_ROLE_KEY` ✓
+- `GOOGLE_OAUTH_CLIENT_ID` ✗ MISSING
+- `GOOGLE_OAUTH_CLIENT_SECRET` ✗ MISSING
+- `TOKEN_ENC_KEY` ✗ MISSING
+
+**Chrome MCP smoke test**
+Chrome MCP unavailable in this session (same as prior). Screenshot-based verification not possible. Manual walkthrough at http://localhost:5190/cv4 is the remaining step.
+
+**Status:** in progress — all code verified correct, dev server clean. Blocked on: (1) Patrik adding 3 missing env vars, (2) manual/Chrome-MCP smoke-test walkthrough of the Mail Room UI.
