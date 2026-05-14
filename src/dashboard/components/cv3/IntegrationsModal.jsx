@@ -142,11 +142,18 @@ export default function IntegrationsModal({ open, onClose }) {
   }, [tab, query, activeCategory, connectedMap])
 
   const connect = useCallback((slug, integration) => {
-    // OAuth providers redirect through /api/integrations/oauth/start which 302s
-    // to the provider's consent screen. The callback writes the row + comes back
-    // with ?integrations=connected&slug=<x>, which re-opens this modal.
+    // OAuth providers: fetch the start endpoint with Authorization header so the
+    // JWT reaches the backend (top-level nav wouldn't carry it), then redirect to
+    // the returned Google/Slack/etc. consent URL client-side.
     if (integration?.auth_type === 'oauth') {
-      window.location.href = `/api/integrations/oauth/start?slug=${encodeURIComponent(slug)}`
+      authedFetch(`/api/integrations/oauth/start?slug=${encodeURIComponent(slug)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data?.authUrl) window.location.href = data.authUrl
+        })
+        .catch(() => {
+          window.location.href = `/api/integrations/oauth/start?slug=${encodeURIComponent(slug)}`
+        })
       return
     }
     // API-key integrations still use the stub flip until per-provider key entry

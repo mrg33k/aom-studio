@@ -89,6 +89,12 @@ export default async function handler(req, res) {
   }
 
   const authUrl = `${provider.authUrl}?${params.toString()}`
+  // Fetch-then-redirect callers (Authorization header present) get JSON so they
+  // can redirect client-side after attaching the JWT. Legacy top-level nav falls
+  // back to the 302.
+  if (req.headers?.authorization) {
+    return res.status(200).json({ authUrl })
+  }
   res.setHeader('Location', authUrl)
   return res.status(302).end()
 }
