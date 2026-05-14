@@ -231,13 +231,40 @@ function EmptyState() {
 }
 
 function NotConnected() {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const onConnect = async () => {
+    setErr('')
+    setBusy(true)
+    try {
+      // Fetch with Authorization header so the JWT reaches /oauth/start —
+      // a plain <a href> top-level nav 401s because no JWT is attached.
+      // Mirror the IntegrationsModal connect() pattern.
+      const r = await authFetch('/api/integrations/oauth/start?slug=gmail')
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}))
+        throw new Error(body?.error || `HTTP ${r.status}`)
+      }
+      const body = await r.json()
+      if (body?.authUrl) {
+        window.location.href = body.authUrl
+        return
+      }
+      throw new Error('no authUrl returned')
+    } catch (e) {
+      setErr(e.message || 'failed')
+      setBusy(false)
+    }
+  }
   return (
     <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>
         Mail needs your Gmail account. Connect it once and today's real-human mail will appear here.
       </div>
-      <a
-        href="/api/integrations/oauth/start?slug=gmail"
+      <button
+        type="button"
+        onClick={onConnect}
+        disabled={busy}
         style={{
           alignSelf: 'flex-start',
           padding: '6px 12px',
@@ -246,9 +273,13 @@ function NotConnected() {
           background: 'rgba(16,185,129,0.15)',
           border: `1px solid ${C.accent}`,
           color: C.accent,
-          textDecoration: 'none',
+          cursor: busy ? 'wait' : 'pointer',
+          opacity: busy ? 0.6 : 1,
         }}
-      >Connect Gmail</a>
+      >{busy ? 'Connecting…' : 'Connect Gmail'}</button>
+      {err && (
+        <div style={{ fontSize: 11, color: '#f87171', fontFamily: "'JetBrains Mono', monospace" }}>{err}</div>
+      )}
     </div>
   )
 }
