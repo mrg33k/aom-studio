@@ -105,24 +105,48 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' })
 
   const { code, state, error: providerError } = req.query || {}
+  console.log('[oauth/callback] hit', { hasCode: !!code, hasState: !!state, providerError: providerError || null })
   // Pre-state-verify errors can't honor return_to (we don't know it yet); fall
   // through to /dashboard.
-  if (providerError) return failRedirect(res, `provider:${providerError}`, null)
-  if (!code || !state) return failRedirect(res, 'missing-code-or-state', null)
+  if (providerError) {
+    console.warn('[oauth/callback] provider error', providerError)
+    return failRedirect(res, `provider:${providerError}`, null)
+  }
+  if (!code || !state) {
+    console.warn('[oauth/callback] missing code or state')
+    return failRedirect(res, 'missing-code-or-state', null)
+  }
 
   const verified = verifyState(state.toString())
-  if (!verified) return failRedirect(res, 'invalid-state', null)
+  if (!verified) {
+    console.warn('[oauth/callback] invalid state')
+    return failRedirect(res, 'invalid-state', null)
+  }
 
   const { userId, slug, returnTo } = verified
+  console.log('[oauth/callback] verified', { userId, slug, hasReturnTo: !!returnTo })
   const provider = getProvider(slug)
-  if (!provider) return failRedirect(res, 'unknown-slug', returnTo)
+  if (!provider) {
+    console.warn('[oauth/callback] unknown slug', slug)
+    return failRedirect(res, 'unknown-slug', returnTo)
+  }
   const creds = getProviderCreds(slug)
-  if (!creds) return failRedirect(res, 'provider-creds-missing', returnTo)
+  if (!creds) {
+    console.warn('[oauth/callback] provider creds missing', slug, provider.envPrefix)
+    return failRedirect(res, 'provider-creds-missing', returnTo)
+  }
 
   let tokens
   try {
     tokens = await exchangeCode(provider, creds, code.toString(), buildRedirectUri(req))
+    console.log('[oauth/callback] token exchange ok', {
+      hasAccess: !!tokens.access_token,
+      hasRefresh: !!tokens.refresh_token,
+      expiresIn: tokens.expires_in,
+      scope: tokens.scope ? tokens.scope.slice(0, 100) : null,
+    })
   } catch (e) {
+    console.error('[oauth/callback] exchange-failed', e.message)
     return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
@@ -136,7 +160,9 @@ export default async function handler(req, res) {
       scope: tokens.scope || null,
       obtained_at: Date.now(),
     })
+    console.log('[oauth/callback] encrypt ok', { blobLen: encrypted?.length })
   } catch (e) {
+    console.error('[oauth/callback] encrypt-failed', e.message)
     return failRedirect(res, `encrypt-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
@@ -146,7 +172,12 @@ export default async function handler(req, res) {
     tokenBlob: encrypted,
     providerProfile: tokens.team || tokens.workspace_name || null,
   })
-  if (!upsert.ok) return failRedirect(res, `db:${upsert.error.slice(0, 80)}`, returnTo)
+  console.log('[oauth/callback] upsert', upsert)
+  if (!upsert.ok) {
+    console.error('[oauth/callback] db-fail', upsert.error)
+    return failRedirect(res, `db:${upsert.error.slice(0, 80)}`, returnTo)
+  }
 
+  console.log('[oauth/callback] success', { userId, slug })
   return successRedirect(res, slug, returnTo)
 }

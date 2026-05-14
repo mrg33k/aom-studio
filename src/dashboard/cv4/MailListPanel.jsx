@@ -17,8 +17,21 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
   const [mode, setMode] = useState('loading') // loading | live | not-connected | error
   const [errorDetail, setErrorDetail] = useState('')
   const [lastFetched, setLastFetched] = useState(null)
+  const [oauthReason, setOauthReason] = useState('')
   const timerRef = useRef(null)
   const inflightRef = useRef(false)
+
+  // Pull the OAuth callback redirect's `reason` so the rail can surface a
+  // failed connect (encrypt-failed, db, exchange-failed, etc.) instead of
+  // silently rendering NotConnected with no clue why.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const u = new URL(window.location.href)
+    if (u.searchParams.get('integrations') === 'error') {
+      const reason = u.searchParams.get('reason') || 'unknown'
+      setOauthReason(reason)
+    }
+  }, [])
 
   const load = async ({ silent } = {}) => {
     if (inflightRef.current) return
@@ -87,7 +100,7 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
       />
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {mode === 'loading' && <Loading />}
-        {mode === 'not-connected' && <NotConnected />}
+        {mode === 'not-connected' && <NotConnected oauthReason={oauthReason} />}
         {mode === 'error' && <ErrorState detail={errorDetail} onRetry={() => load()} />}
         {mode === 'live' && emails.length === 0 && <EmptyState />}
         {mode === 'live' && emails.length > 0 && (
@@ -230,7 +243,7 @@ function EmptyState() {
   )
 }
 
-function NotConnected() {
+function NotConnected({ oauthReason }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const onConnect = async () => {
@@ -261,6 +274,19 @@ function NotConnected() {
       <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>
         Mail needs your Gmail account. Connect it once and today's real-human mail will appear here.
       </div>
+      {oauthReason && (
+        <div style={{
+          fontSize: 11, color: '#f87171',
+          padding: '8px 10px',
+          borderRadius: 6,
+          border: '1px solid rgba(248,113,113,0.35)',
+          background: 'rgba(248,113,113,0.08)',
+          fontFamily: "'JetBrains Mono', monospace",
+          wordBreak: 'break-all',
+        }}>
+          Last connect failed: {oauthReason}
+        </div>
+      )}
       <button
         type="button"
         onClick={onConnect}
