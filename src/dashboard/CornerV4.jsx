@@ -53,6 +53,7 @@ import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordi
 import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
+import MailListPanel from './cv4/MailListPanel.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -119,6 +120,12 @@ export default function CornerV4() {
   // R6.2: mission clicked from the drawer is "attached" to the composer
   // and rendered as a context chip. Cleared on send by useChatSend.
   const [attachedMission, setAttachedMission] = useState(null)
+  // CV4 Tools → Mail (corner:cv4-tools-mail R1): activeTool routes the
+  // right rail to MailListPanel and recolors ContextNav as the "Mail Room".
+  // selectedMail is the email the user just clicked — pinned as a chat chip
+  // until the EA sends a reply or the user clears it.
+  const [activeTool, setActiveTool] = useState(null)
+  const [selectedMail, setSelectedMail] = useState(null)
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -411,6 +418,34 @@ export default function CornerV4() {
     }
   }, [navigate])
 
+  // Mail tool: jump into the EA chat (the "Mail Room") and force the right
+  // rail open with the inbox list. If we can't find an EA agent yet, the
+  // toggle still flips — ChatPanel will land on whatever's selected and the
+  // mail rail still works on its own.
+  const handleSelectTool = useCallback((tool) => {
+    setActiveTool(tool)
+    setSelectedMail(null)
+    if (tool === 'mail') {
+      setTab('chat')
+      setTasksDrawerOpen(true)
+      const ea = (agents || []).find(a => a.slug === 'elon')
+        || (agents || []).find(a => a.is_ea && a.is_terminal)
+        || (agents || []).find(a => a.is_ea)
+      if (ea && ea.slug !== selectedAgent?.slug) {
+        setSelectedAgent(ea)
+        setConversationTarget({ name: ea.name, type: 'agent' })
+        const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+        if (routeProjectId) navigate(basePath)
+      }
+    }
+  }, [agents, selectedAgent?.slug, navigate, routeProjectId])
+
+  // Called by MailListPanel when the user clicks an email — pins it as a
+  // chat chip so the EA's next reply receives the email as context.
+  const handleSelectMail = useCallback((email) => {
+    setSelectedMail(email)
+  }, [])
+
   // Called by ChatPanel back button — clear conversation
   const handleBackFromConversation = useCallback(() => {
     setSelectedAgent(null)
@@ -537,8 +572,9 @@ export default function CornerV4() {
     handleSelectAgent, handleSelectProject, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
     attachedMission, setAttachedMission,
+    activeTool, selectedMail, setSelectedMail,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, attachedMission, stageFilesRef])
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1575,6 +1611,8 @@ export default function CornerV4() {
         onSelectAgent={handleSelectAgent}
         onSelectProject={handleSelectProject}
         worldId={worldId}
+        activeTool={activeTool}
+        onExitTool={() => setActiveTool(null)}
       />
 
       {/* ── MAIN ROW (desktop): [Files drawer] [Chat (centered)] [Tasks drawer].
@@ -1592,6 +1630,8 @@ export default function CornerV4() {
             worldId={worldId}
             selectedAgentSlug={selectedAgent?.slug}
             selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
+            activeTool={activeTool}
+            onSelectTool={handleSelectTool}
             onSelectAgent={handleSelectAgent}
             onSelectProject={handleSelectProject}
             onSelectMission={(mission, project) => {
@@ -1622,7 +1662,9 @@ export default function CornerV4() {
             }}
           >
             {(!isDesktop && tab === 'tasks') ? (
-              <TasksPanelCv4 />
+              activeTool === 'mail'
+                ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
+                : <TasksPanelCv4 />
             ) : (
               <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
@@ -1631,6 +1673,7 @@ export default function CornerV4() {
         {isDesktop && tasksDrawerOpen && (
           <aside
             data-cv4-tasks-drawer
+            data-cv4-mail-mode={activeTool === 'mail' ? 'true' : 'false'}
             style={{
               // R7.2: ~20% of viewport, clamped sensibly so it stays readable.
               width: 'clamp(300px, 20vw, 460px)',
@@ -1641,7 +1684,9 @@ export default function CornerV4() {
               overflow: 'hidden',
             }}
           >
-            <TasksPanelCv4 />
+            {activeTool === 'mail'
+              ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
+              : <TasksPanelCv4 />}
           </aside>
         )}
       </div>
@@ -1761,6 +1806,8 @@ export default function CornerV4() {
           worldId={worldId}
           selectedAgentSlug={selectedAgent?.slug}
           selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
+          activeTool={activeTool}
+          onSelectTool={handleSelectTool}
           onSelectAgent={handleSelectAgent}
           onSelectProject={handleSelectProject}
           onSelectMission={(mission, project) => {

@@ -23,6 +23,8 @@ export default function CV4Drawer({
   worldId,
   selectedAgentSlug,
   selectedProjectSlug,
+  activeTool = null,
+  onSelectTool,
   onSelectAgent,
   onSelectProject,
   onSelectMission,
@@ -85,6 +87,8 @@ export default function CV4Drawer({
       selectedAgentSlug={selectedAgentSlug}
       agents={agents}
       worldId={worldId}
+      activeTool={activeTool}
+      onSelectTool={onSelectTool}
       onSelectAgent={onSelectAgent}
       onSelectProject={onSelectProject}
       onSelectMission={onSelectMission}
@@ -202,6 +206,8 @@ function DrawerBody({
   selectedAgentSlug,
   agents,
   worldId,
+  activeTool,
+  onSelectTool,
   onSelectAgent,
   onSelectProject,
   onSelectMission,
@@ -218,6 +224,15 @@ function DrawerBody({
         onSelectAgent={onSelectAgent}
         onClose={onClose}
       />
+
+      <TreeSection title="Tools">
+        <ToolRow
+          icon={<MailIcon />}
+          label="Mail"
+          active={activeTool === 'mail'}
+          onClick={() => { onSelectTool?.('mail'); onClose() }}
+        />
+      </TreeSection>
 
       <TreeSection title="Projects">
         {projectRooms.length === 0 ? (
@@ -470,6 +485,45 @@ function DocIcon() {
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.muted, flexShrink: 0 }}>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
+    </svg>
+  )
+}
+
+function ToolRow({ icon, label, active, onClick }) {
+  return (
+    <div
+      data-row
+      data-active={active ? 'true' : 'false'}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '4px 14px',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{
+        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+        background: active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${active ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: active ? C.accent : C.muted,
+      }}>
+        {icon}
+      </div>
+      <span style={{
+        fontSize: 13, fontWeight: 500, color: active ? C.text : C.text2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        flex: 1,
+      }}>{label}</span>
+    </div>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <rect x="3" y="5" width="18" height="14" rx="2"/>
+      <polyline points="3 7 12 13 21 7"/>
     </svg>
   )
 }
