@@ -458,6 +458,7 @@ function TaskRow({ task, status }) {
     openTaskMenu, startTaskLongPress, cancelTaskLongPress,
     taskProjects,
   } = useTasksPanelCtx()
+  const { worldId } = useCornerAuth()
   const t = task
   const agent = t.agent_identity || t.agentIdentity || t.agent
   const projectName = t.project_name || t.projectName
@@ -465,6 +466,19 @@ function TaskRow({ task, status }) {
   const isDone = status === 'done'
   const isFailed = status === 'failed' || t.status === 'failed'
   const proj = projectId ? taskProjects.find(p => String(p.id) === String(projectId)) : null
+  // Multi-user prefix: when a task is requested by a different tenant than
+  // the viewing user, prepend `[<RequesterName>] ` so the viewer sees whose
+  // work it is. Falls back to the capitalized client_id slug — no
+  // display-name join is wired into this surface yet.
+  const rawTitle = t.title || t.text || 'Untitled task'
+  const rawClient = t.client_id || t.clientId || null
+  const isCrossTenant = rawClient && worldId && rawClient !== worldId
+  const requesterLabel = isCrossTenant
+    ? (rawClient.startsWith('shared:')
+        ? rawClient.slice('shared:'.length)
+        : rawClient.charAt(0).toUpperCase() + rawClient.slice(1))
+    : null
+  const displayTitle = requesterLabel ? `[${requesterLabel}] ${rawTitle}` : rawTitle
   return (
     <div
       data-test-id={isDone ? 'task-card-done' : 'task-card'}
@@ -497,7 +511,7 @@ function TaskRow({ task, status }) {
           overflow: 'hidden', textOverflow: 'ellipsis',
           whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
           marginBottom: (agent || projectName) ? 2 : 0,
-        }}>{t.title || t.text || 'Untitled task'}</div>
+        }}>{displayTitle}</div>
         {(agent || projectName) && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6,
