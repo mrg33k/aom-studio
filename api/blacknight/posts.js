@@ -41,8 +41,17 @@ export default async function handler(req, res) {
     return
   }
 
+  // Fall back to the newest row's updated_at when no successful refresh log
+  // exists yet — proves the data IS fresh even if the log row didn't land.
+  let latestRowUpdate = null
+  for (const r of rounds || []) {
+    if (r.updated_at && (!latestRowUpdate || r.updated_at > latestRowUpdate)) {
+      latestRowUpdate = r.updated_at
+    }
+  }
+
   res.status(200).json({
     rounds: rounds || [],
-    last_updated: lastRun?.ran_at || null,
+    last_updated: lastRun?.ran_at || latestRowUpdate || null,
   })
 }
