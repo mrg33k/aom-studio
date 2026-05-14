@@ -62,6 +62,8 @@ function stageBadge(stage) {
   return STAGE_BADGE[stage] || { bg: 'rgba(138,132,124,0.10)', fg: V4.textSecondary }
 }
 
+const MOBILE_BREAKPOINT = 760
+
 export default function Blacknight() {
   const [rounds, setRounds] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -70,6 +72,16 @@ export default function Blacknight() {
   const [search, setSearch] = useState('')
   const [sortCol, setSortCol] = useState('amount_usd')
   const [sortDir, setSortDir] = useState('desc')
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT,
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -144,7 +156,7 @@ export default function Blacknight() {
   return (
     <div style={{ minHeight: '100vh', background: V4.bg, color: V4.textPrimary, fontFamily: V4.space }}>
       {/* Header */}
-      <div style={{ borderBottom: `1px solid ${V4.border}`, padding: '40px 24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ borderBottom: `1px solid ${V4.border}`, padding: isMobile ? '28px 16px 20px' : '40px 24px 28px', maxWidth: 1400, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
           <h1 style={{
             fontFamily: V4.syne, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700,
@@ -175,7 +187,7 @@ export default function Blacknight() {
       </div>
 
       {/* Search */}
-      <div style={{ padding: '20px 24px 12px', maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ padding: isMobile ? '16px 16px 8px' : '20px 24px 12px', maxWidth: 1400, margin: '0 auto' }}>
         <input
           type="text"
           placeholder="Search company, sector, investor, round..."
@@ -190,12 +202,22 @@ export default function Blacknight() {
       </div>
 
       {/* Table */}
-      <div style={{ padding: '0 24px 60px', maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ padding: isMobile ? '0 16px 48px' : '0 24px 60px', maxWidth: 1400, margin: '0 auto' }}>
         {error && (
           <div style={{ padding: 16, background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)', borderRadius: 10, color: '#FCA5A5', marginBottom: 16 }}>
             Couldn't load rounds: {error}
           </div>
         )}
+        {isMobile ? (
+          <MobileList
+            loading={loading}
+            rounds={rounds}
+            filtered={filtered}
+            sortCol={sortCol}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
+        ) : (
         <div style={{ overflowX: 'auto', borderRadius: 14, border: `1px solid ${V4.border}`, background: V4.card }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -272,11 +294,136 @@ export default function Blacknight() {
             </tbody>
           </table>
         </div>
+        )}
 
         <p style={{ color: V4.textTertiary, fontSize: 11, marginTop: 16, fontFamily: V4.space }}>
           Data extracted by Claude from public Blacknight Space Labs posts. Not investment advice.
         </p>
       </div>
+    </div>
+  )
+}
+
+function MobileList({ loading, rounds, filtered, sortCol, sortDir, onSort }) {
+  const sortOptions = [
+    { key: 'amount_usd', label: 'Amount' },
+    { key: 'announced_date', label: 'Date' },
+    { key: 'company', label: 'Company' },
+    { key: 'round_stage', label: 'Round' },
+  ]
+  return (
+    <div>
+      {/* Sort chips — replaces clickable th's on mobile */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 4 }}>
+        {sortOptions.map(opt => {
+          const active = sortCol === opt.key
+          return (
+            <button
+              key={opt.key}
+              onClick={() => onSort(opt.key)}
+              style={{
+                flexShrink: 0,
+                padding: '6px 12px', borderRadius: 999,
+                background: active ? 'rgba(232,93,38,0.12)' : V4.card,
+                border: `1px solid ${active ? 'rgba(232,93,38,0.40)' : V4.border}`,
+                color: active ? V4.accent : V4.textSecondary,
+                fontFamily: V4.space, fontSize: 12, fontWeight: 600,
+                letterSpacing: '0.05em', cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              {opt.label}{active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+            </button>
+          )
+        })}
+      </div>
+
+      {loading && (
+        <div style={{ padding: 40, textAlign: 'center', color: V4.textSecondary, background: V4.card, border: `1px solid ${V4.border}`, borderRadius: 14 }}>
+          Loading rounds…
+        </div>
+      )}
+      {!loading && filtered.length === 0 && (
+        <div style={{ padding: 40, textAlign: 'center', color: V4.textSecondary, background: V4.card, border: `1px solid ${V4.border}`, borderRadius: 14 }}>
+          {rounds.length === 0 ? 'No rounds yet. Waiting for first refresh.' : 'No rounds match your search.'}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {!loading && filtered.map((r, i) => {
+          const badge = stageBadge(r.round_stage)
+          const investors = [
+            ...(r.lead_investor ? [r.lead_investor] : []),
+            ...((r.other_investors || []).filter(inv => inv && inv !== r.lead_investor)),
+          ]
+          return (
+            <div key={r.id || `${r.company}-${r.round_stage}-${i}`}
+              style={{
+                background: V4.card, border: `1px solid ${V4.border}`,
+                borderRadius: 12, padding: '14px 14px 12px',
+              }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                <div style={{ minWidth: 0, flex: '1 1 auto' }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: V4.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {r.company}
+                  </div>
+                  {r.round_stage && (
+                    <span style={{
+                      display: 'inline-block', marginTop: 6, padding: '3px 9px', borderRadius: 6,
+                      background: badge.bg, color: badge.fg, fontSize: 10, fontWeight: 600,
+                      letterSpacing: '0.05em',
+                    }}>
+                      {r.round_stage}
+                    </span>
+                  )}
+                </div>
+                <div style={{
+                  fontFamily: V4.syne, fontWeight: 700, fontSize: 18, color: V4.accent,
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {formatAmount(r.amount_usd, r.amount_display)}
+                </div>
+              </div>
+
+              {r.summary && (
+                <div style={{ color: V4.textTertiary, fontSize: 12, lineHeight: 1.45, marginTop: 8 }}>
+                  {r.summary}
+                </div>
+              )}
+
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '6px 14px',
+                marginTop: 10, paddingTop: 10, borderTop: `1px solid ${V4.border}`,
+                color: V4.textSecondary, fontSize: 11,
+              }}>
+                {r.sector && <MetaPill label="Sector" value={r.sector} />}
+                {investors.length > 0 && <MetaPill label="Investors" value={investors.join(', ')} />}
+                <MetaPill label="Announced" value={formatDate(r.announced_date)} />
+              </div>
+
+              {(r.post_url || r.source_url) && (
+                <a href={r.post_url || r.source_url} target="_blank" rel="noreferrer"
+                  style={{
+                    display: 'inline-block', marginTop: 10, color: V4.accent,
+                    fontSize: 12, textDecoration: 'none', fontWeight: 600,
+                  }}>
+                  open source ↗
+                </a>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function MetaPill({ label, value }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <span style={{ color: V4.textTertiary, textTransform: 'uppercase', letterSpacing: '0.1em', marginRight: 6, fontSize: 10 }}>
+        {label}
+      </span>
+      <span style={{ color: V4.textSecondary }}>{value}</span>
     </div>
   )
 }
