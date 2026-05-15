@@ -15,6 +15,29 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://aheadofmarket.com'
 
+// Best-effort persistent diagnostic. Writes to the events table so we can
+// query the failure trail long after Vercel rotates its runtime logs.
+async function logEvent(eventType, payload) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        agent: 'oauth-callback',
+        event_type: eventType,
+        payload,
+        timestamp: new Date().toISOString(),
+      }),
+    })
+  } catch { /* never throw out of diagnostics */ }
+}
+
 // Append query params to a path that may or may not already have a query
 // string. The path is trusted at this point — start.js validated it as a
 // same-origin relative path before signing it into state.
@@ -106,33 +129,38 @@ export default async function handler(req, res) {
 
   const { code, state, error: providerError } = req.query || {}
   console.log('[oauth/callback] hit', { hasCode: !!code, hasState: !!state, providerError: providerError || null })
-  // Pre-state-verify errors can't honor return_to (we don't know it yet); fall
-  // through to /dashboard.
+  await logEvent('oauth_callback_hit', { hasCode: !!code, hasState: !!state, providerError: providerError || null })
   if (providerError) {
     console.warn('[oauth/callback] provider error', providerError)
+    await logEvent('oauth_provider_error', { providerError })
     return failRedirect(res, `provider:${providerError}`, null)
   }
   if (!code || !state) {
     console.warn('[oauth/callback] missing code or state')
+    await logEvent('oauth_missing_code_or_state', { hasCode: !!code, hasState: !!state })
     return failRedirect(res, 'missing-code-or-state', null)
   }
 
   const verified = verifyState(state.toString())
   if (!verified) {
     console.warn('[oauth/callback] invalid state')
+    await logEvent('oauth_invalid_state', { stateLen: state.toString().length })
     return failRedirect(res, 'invalid-state', null)
   }
 
   const { userId, slug, returnTo } = verified
   console.log('[oauth/callback] verified', { userId, slug, hasReturnTo: !!returnTo })
+  await logEvent('oauth_state_verified', { userId, slug, hasReturnTo: !!returnTo })
   const provider = getProvider(slug)
   if (!provider) {
     console.warn('[oauth/callback] unknown slug', slug)
+    await logEvent('oauth_unknown_slug', { slug })
     return failRedirect(res, 'unknown-slug', returnTo)
   }
   const creds = getProviderCreds(slug)
   if (!creds) {
     console.warn('[oauth/callback] provider creds missing', slug, provider.envPrefix)
+    await logEvent('oauth_provider_creds_missing', { slug, envPrefix: provider.envPrefix })
     return failRedirect(res, 'provider-creds-missing', returnTo)
   }
 
@@ -145,8 +173,16 @@ export default async function handler(req, res) {
       expiresIn: tokens.expires_in,
       scope: tokens.scope ? tokens.scope.slice(0, 100) : null,
     })
+    await logEvent('oauth_exchange_ok', {
+      slug,
+      hasAccess: !!tokens.access_token,
+      hasRefresh: !!tokens.refresh_token,
+      expiresIn: tokens.expires_in,
+      scope: tokens.scope ? tokens.scope.slice(0, 200) : null,
+    })
   } catch (e) {
     console.error('[oauth/callback] exchange-failed', e.message)
+    await logEvent('oauth_exchange_failed', { slug, error: (e.message || '').slice(0, 500) })
     return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
@@ -161,8 +197,10 @@ export default async function handler(req, res) {
       obtained_at: Date.now(),
     })
     console.log('[oauth/callback] encrypt ok', { blobLen: encrypted?.length })
+    await logEvent('oauth_encrypt_ok', { slug, blobLen: encrypted?.length || 0 })
   } catch (e) {
     console.error('[oauth/callback] encrypt-failed', e.message)
+    await logEvent('oauth_encrypt_failed', { slug, error: (e.message || '').slice(0, 500) })
     return failRedirect(res, `encrypt-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
@@ -173,11 +211,13 @@ export default async function handler(req, res) {
     providerProfile: tokens.team || tokens.workspace_name || null,
   })
   console.log('[oauth/callback] upsert', upsert)
+  await logEvent('oauth_upsert', { slug, userId, ok: !!upsert.ok, error: upsert.error ? upsert.error.slice(0, 500) : null })
   if (!upsert.ok) {
     console.error('[oauth/callback] db-fail', upsert.error)
     return failRedirect(res, `db:${upsert.error.slice(0, 80)}`, returnTo)
   }
 
   console.log('[oauth/callback] success', { userId, slug })
+  await logEvent('oauth_success', { slug, userId })
   return successRedirect(res, slug, returnTo)
 }
