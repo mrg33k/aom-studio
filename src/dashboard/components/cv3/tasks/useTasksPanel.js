@@ -125,6 +125,10 @@ export function useTasksPanel() {
   const [waitingReplySending, setWaitingReplySending] = useState({})
 
   // ── Task thread expansion ──────────────────────────────────────────────
+  // R2 (corner:task-rooms): the drawer now loads BOTH legacy task-pipeline
+  // messages (agent='task:<id>') AND the new task-room messages keyed via
+  // metadata.task_id. Two queries merged client-side because the supabase-js
+  // .or() filter doesn't cleanly mix .eq on a column with a JSON-path filter.
   const toggleTaskExpand = useCallback(async (taskId) => {
     if (expandedTask === taskId) {
       setExpandedTask(null)
@@ -134,13 +138,31 @@ export function useTasksPanel() {
     setExpandedTask(taskId)
     setThreadLoading(true)
     try {
-      const { data } = await supabase
-        .from('messages')
-        .select('text,timestamp,role,source')
-        .eq('agent', `task:${taskId}`)
-        .order('timestamp', { ascending: true })
-        .limit(30)
-      setTaskThread(data || [])
+      const [legacyRes, roomRes] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('text,timestamp,role,source,metadata')
+          .eq('agent', `task:${taskId}`)
+          .order('timestamp', { ascending: true })
+          .limit(30),
+        supabase
+          .from('messages')
+          .select('text,timestamp,role,source,metadata')
+          .eq('metadata->>task_id', taskId)
+          .order('timestamp', { ascending: true })
+          .limit(30),
+      ])
+      const merged = [...(legacyRes.data || []), ...(roomRes.data || [])]
+      const seen = new Set()
+      const deduped = []
+      for (const m of merged) {
+        const key = `${m.timestamp}|${m.text}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        deduped.push(m)
+      }
+      deduped.sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
+      setTaskThread(deduped)
     } catch { setTaskThread([]) }
     setThreadLoading(false)
   }, [expandedTask])

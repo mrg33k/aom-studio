@@ -183,7 +183,8 @@ export default async function handler(req, res) {
       ...(file_size != null ? { file_size } : {}),
       // Threading (Follow-up right-click menu)
       ...(reply_to ? { reply_to } : {}),
-      // Extensible metadata (needs_verification flag, parent_task_id, crosspost source, etc.)
+      // Extensible metadata. Canonical keys: task_id (task-room scope; corner:task-rooms R2+),
+      // needs_verification, parent_task_id (legacy chain pointer), crosspost source, etc.
       ...(metadata && typeof metadata === 'object' ? { metadata } : {}),
     }
 
