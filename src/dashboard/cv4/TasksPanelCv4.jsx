@@ -160,7 +160,7 @@ function TasksPanelCv4Body() {
             you up to speed on the current scope. Same component the CV3
             dashboard used; the writer pipeline + Supabase realtime
             subscription are already wired. */}
-        {!searchQuery && !activeMissionPath && !focusedTaskId && (
+        {!searchQuery && !activeMissionPath && (
           <div data-cv4-tasks-narrative style={{ marginBottom: 18 }}>
             <h2 style={{
               fontFamily: "'JetBrains Mono', monospace",
