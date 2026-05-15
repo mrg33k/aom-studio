@@ -1,11 +1,11 @@
 // GET /api/dashboard/mail/list
 //
-// Returns the user's "today, from real humans" Gmail inbox, sorted newest
+// Returns the user's "last 10 days, from real humans" Gmail inbox, sorted newest
 // first. Used by the CV4 Mail rail when activeTool === 'mail'.
 //
 // Filter — both upstream (the q= search) and downstream (per-message header
 // pass):
-//   - newer_than:1d
+//   - newer_than:10d
 //   - not from the user themselves
 //   - not in promotions / social / updates / forums categories
 //   - no List-Unsubscribe, Precedence:bulk, or Auto-Submitted header
@@ -71,11 +71,11 @@ export default async function handler(req, res) {
   }
   if (!creds) return res.status(200).json({ emails: [], historyId: null, mode: 'not-connected' })
 
-  // Build the search query. Limit to ~50 candidates so we don't fan out into
-  // hundreds of per-message gets — the filter is strict enough that real
-  // humans surface in the top slice.
+  // Build the search query. Limit to ~150 candidates — the window is 10d so
+  // we need more headroom past the filter, but per-message gets are still
+  // cheap (metadata format) and Gmail caps single-page list at 500.
   const q = [
-    'newer_than:1d',
+    'newer_than:10d',
     '-from:me',
     '-category:promotions',
     '-category:social',
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
   ].join(' ')
   const listResp = await gmailFetch(
     creds.accessToken,
-    `/messages?q=${encodeURIComponent(q)}&maxResults=50`,
+    `/messages?q=${encodeURIComponent(q)}&maxResults=150`,
   )
   if (!listResp.ok) {
     const text = await listResp.text().catch(() => '')

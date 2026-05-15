@@ -1,4 +1,4 @@
-// CV4 MailListPanel — renders today's real-human emails in the right rail.
+// CV4 MailListPanel — renders the last 10 days of real-human emails in the right rail.
 //
 // Replaces TasksPanelCv4 when activeTool === 'mail'. Polls
 // /api/dashboard/mail/list every 30s while visible, 5min when hidden — no
@@ -122,7 +122,7 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
 
 function Header({ count, mode, lastFetched, onRefresh }) {
   const summary = mode === 'live'
-    ? `${count} ${count === 1 ? 'message' : 'messages'} today`
+    ? `${count} ${count === 1 ? 'message' : 'messages'} · last 10 days`
     : mode === 'not-connected' ? 'Gmail not connected'
     : mode === 'loading' ? 'Loading…'
     : 'Couldn\'t reach Gmail'
@@ -230,7 +230,7 @@ function MailRow({ email, active, onClick }) {
 function Loading() {
   return (
     <div style={{ padding: '24px 14px', color: C.muted, fontSize: 12 }}>
-      Pulling today's mail…
+      Pulling the last 10 days of mail…
     </div>
   )
 }
@@ -238,7 +238,7 @@ function Loading() {
 function EmptyState() {
   return (
     <div style={{ padding: '32px 18px', color: C.muted, fontSize: 13, lineHeight: 1.5 }}>
-      Inbox zero for today. Anything new from a real person lands here automatically.
+      Nothing from a real person in the last 10 days. Anything new lands here automatically.
     </div>
   )
 }
@@ -272,7 +272,7 @@ function NotConnected({ oauthReason }) {
   return (
     <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>
-        Mail needs your Gmail account. Connect it once and today's real-human mail will appear here.
+        Mail needs your Gmail account. Connect it once and your real-human mail from the last 10 days will appear here.
       </div>
       {oauthReason && (
         <div style={{
