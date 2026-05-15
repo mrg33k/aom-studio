@@ -134,6 +134,12 @@ export function useTasks(worldId) {
       for (const slug of sharedSlugsRef.current) {
         clientIds.push(`shared:${slug}`)
       }
+      // Patrik (aom) handles Ben as the single other tenant — surface
+      // Ben's tasks in Patrik's panel so the [Ben] prefix can fire.
+      // Revisit when a relationship table replaces this special case.
+      if (clientId === 'aom') {
+        clientIds.push('ben')
+      }
       const { data, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
