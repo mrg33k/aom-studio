@@ -54,6 +54,7 @@ import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
 import MailListPanel from './cv4/MailListPanel.jsx'
+import MailRoom from './cv4/MailRoom.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -126,6 +127,7 @@ export default function CornerV4() {
   // until the EA sends a reply or the user clears it.
   const [activeTool, setActiveTool] = useState(null)
   const [selectedMail, setSelectedMail] = useState(null)
+  const [mailRoomOpen, setMailRoomOpen] = useState(false)
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -446,6 +448,11 @@ export default function CornerV4() {
   // chat chip so the EA's next reply receives the email as context.
   const handleSelectMail = useCallback((email) => {
     setSelectedMail(email)
+    setMailRoomOpen(true)
+  }, [])
+
+  const handleBackFromMailRoom = useCallback(() => {
+    setMailRoomOpen(false)
   }, [])
 
   // Called by ChatPanel back button — clear conversation
@@ -1664,11 +1671,15 @@ export default function CornerV4() {
             }}
           >
             {(!isDesktop && tab === 'tasks') ? (
-              activeTool === 'mail'
-                ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
-                : <TasksPanelCv4 />
+              activeTool === 'mail' && mailRoomOpen && selectedMail
+                ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
+                : activeTool === 'mail'
+                  ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
+                  : <TasksPanelCv4 />
             ) : (
-              <ChatPanel key={selectedAgent?.slug || 'chat'} />
+              activeTool === 'mail' && mailRoomOpen && selectedMail
+                ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
+                : <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
           </div>
         </div>
