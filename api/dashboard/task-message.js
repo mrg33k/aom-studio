@@ -22,6 +22,7 @@
 //
 // Returns: { ok: true, message: <inserted row> } on success.
 
+import crypto from 'crypto'
 import { extractJwt } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -83,6 +84,7 @@ export default async function handler(req, res) {
   const taskClientId = taskRow?.client_id || clientId
 
   const payload = {
+    id: crypto.randomUUID(),            // messages.id is NOT NULL with no DB default
     agent: `task:${taskId}`,            // back-compat with legacy thread expansion
     text,
     role,
