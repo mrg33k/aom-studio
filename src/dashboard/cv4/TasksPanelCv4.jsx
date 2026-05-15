@@ -10,10 +10,11 @@
 //  - Lifts the WeeklyStatsCard ("progress chart") — REMOVED.
 //  - Tight rows, sharp brutalist headings, clean visual hierarchy.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { useCornerNav } from '../CornerContext.jsx'
 import { useTasksPanel } from '../components/cv3/tasks/useTasksPanel.js'
+import { authFetch } from '../lib/authFetch.js'
 import { TasksPanelProvider, useTasksPanelCtx } from '../components/cv3/tasks/TasksPanelContext.jsx'
 import { TaskContextMenu } from '../components/cv3/ContextMenu.jsx'
 
@@ -49,9 +50,30 @@ function TasksPanelCv4Body() {
     handleTaskResearch,
     handleTaskMoveTo,
     selectedBrief, briefHtml, briefLoading, closeBriefViewer,
+    // R5 corner:task-rooms — hash-driven auto-open from the tree.
+    expandedTask, toggleTaskExpand,
   } = useTasksPanelCtx()
   const { selectedAgent, conversationTarget, handleSelectProject, setPrefillMessage } = useCornerNav()
   const { worldId } = useCornerAuth()
+
+  // R5 corner:task-rooms — when the URL hash carries `task=<id>` (from the
+  // Drawer's TaskTreeRow click), auto-expand that row so the user lands
+  // inside the task room. The hash is cleared once the open fires.
+  useEffect(() => {
+    const apply = () => {
+      const h = (typeof window !== 'undefined' && window.location.hash) || ''
+      const m = h.match(/task=([0-9a-f-]{8,})/i)
+      if (!m) return
+      const taskId = m[1]
+      if (expandedTask !== taskId && typeof toggleTaskExpand === 'function') {
+        toggleTaskExpand(taskId)
+      }
+      try { history.replaceState(null, '', window.location.pathname + window.location.search) } catch { /* ignore */ }
+    }
+    apply()
+    window.addEventListener('hashchange', apply)
+    return () => window.removeEventListener('hashchange', apply)
+  }, [expandedTask, toggleTaskExpand])
 
   // R7.2: when the active conversation changes, sync the task filter scope.
   //  - Project chat → that project
@@ -457,6 +479,10 @@ function TaskRow({ task, status }) {
     expandedTask, toggleTaskExpand,
     openTaskMenu, startTaskLongPress, cancelTaskLongPress,
     taskProjects,
+    // R2 corner:task-rooms: per-task message scope (read-only drawer).
+    // The hook already dual-queries legacy task:<id> messages + new
+    // metadata.task_id messages and merges them — we just render here.
+    taskThread, threadLoading,
   } = useTasksPanelCtx()
   const { worldId } = useCornerAuth()
   const t = task
@@ -480,6 +506,7 @@ function TaskRow({ task, status }) {
     : null
   const displayTitle = requesterLabel ? `[${requesterLabel}] ${rawTitle}` : rawTitle
   return (
+    <>
     <div
       data-test-id={isDone ? 'task-card-done' : 'task-card'}
       data-task-id={t.id}
@@ -524,6 +551,123 @@ function TaskRow({ task, status }) {
           </div>
         )}
       </div>
+    </div>
+    {/* R2 corner:task-rooms — expanded read-only thread (legacy task:<id> + metadata.task_id merged). */}
+    {expandedTask === t.id && (
+      <div style={{
+        padding: '8px 12px 10px 30px',
+        borderBottom: '1px solid rgba(255,255,255,0.035)',
+        background: 'rgba(255,255,255,0.015)',
+      }}>
+        {threadLoading ? (
+          <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading thread...</div>
+        ) : (!taskThread || taskThread.length === 0) ? (
+          <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No messages yet.</div>
+        ) : taskThread.map((m, idx) => (
+          <div key={idx} data-test-id="task-thread-message" style={{
+            fontSize: 11.5, color: C.text2 || C.muted, lineHeight: 1.5,
+            padding: '3px 0',
+            fontFamily: "'JetBrains Mono', monospace",
+            borderBottom: idx < taskThread.length - 1 ? '1px solid rgba(255,255,255,0.025)' : 'none',
+            wordBreak: 'break-word',
+          }}>
+            <span style={{ color: C.dim, fontSize: 9.5 }}>
+              {(m.timestamp || '').slice(11, 19)}
+            </span>
+            {m.role && (
+              <span style={{ color: C.dim, fontSize: 9.5, marginLeft: 6 }}>
+                {String(m.role).toLowerCase()}
+              </span>
+            )}
+            {' '}
+            <span style={{ whiteSpace: 'pre-wrap' }}>{m.text}</span>
+          </div>
+        ))}
+        {/* R3 corner:task-rooms — mid-flight chat input. Renders for any task
+            the viewer can address (running, blocked, waiting, done, failed
+            once R4 lands; R3-only ships running + blocked + waiting). */}
+        {(t.status === 'running' || t.status === 'blocked' || t.status === 'waiting') && (
+          <TaskRoomChatInput taskId={t.id} clientId={worldId} taskStatus={t.status} />
+        )}
+        {/* R4 corner:task-rooms — post-completion follow-up. Same input, marked
+            so the API kicks off a fresh sub-agent dispatch with the prior
+            transcript re-hydrated as context. */}
+        {(t.status === 'done' || t.status === 'failed') && (
+          <TaskRoomChatInput taskId={t.id} clientId={worldId} taskStatus={t.status} terminal />
+        )}
+      </div>
+    )}
+  </>
+  )
+}
+
+function TaskRoomChatInput({ taskId, clientId, taskStatus, terminal = false }) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [err, setErr] = useState(null)
+  const send = useCallback(async () => {
+    const body = text.trim()
+    if (!body || sending) return
+    setSending(true); setErr(null)
+    try {
+      const r = await authFetch('/api/dashboard/task-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: taskId, text: body, client_id: clientId, terminal }),
+      })
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}))
+        throw new Error(j?.error || ('HTTP ' + r.status))
+      }
+      setText('')
+    } catch (e) {
+      setErr(e?.message || 'send failed')
+    } finally {
+      setSending(false)
+    }
+  }, [text, sending, taskId, clientId, terminal])
+  const placeholder = terminal
+    ? 'Follow up — a fresh agent picks up with the prior transcript.'
+    : (taskStatus === 'running'
+        ? 'Send a mid-flight message to the agent.'
+        : 'Send a message in this task room.')
+  return (
+    <div data-test-id="task-room-chat-input" style={{
+      marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-end',
+    }}>
+      <textarea
+        rows={1}
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => { if ((e.key === 'Enter') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() } }}
+        placeholder={placeholder}
+        disabled={sending}
+        style={{
+          flex: 1, minHeight: 26, maxHeight: 80, resize: 'none',
+          padding: '5px 8px',
+          fontSize: 11.5, lineHeight: 1.4,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: C.text, background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 6, outline: 'none',
+        }}
+      />
+      <button
+        onClick={send}
+        disabled={!text.trim() || sending}
+        style={{
+          padding: '5px 10px', fontSize: 10.5, fontWeight: 700,
+          letterSpacing: '0.05em', textTransform: 'uppercase',
+          fontFamily: "'JetBrains Mono', monospace",
+          color: text.trim() && !sending ? '#0e1117' : C.dim,
+          background: text.trim() && !sending ? '#F1C40F' : 'rgba(255,255,255,0.04)',
+          border: 'none', borderRadius: 6,
+          cursor: text.trim() && !sending ? 'pointer' : 'default',
+        }}
+      >{sending ? '…' : 'Send'}</button>
+      {err && (
+        <span style={{ color: '#FCA5A5', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", alignSelf: 'center' }}>{err}</span>
+      )}
     </div>
   )
 }

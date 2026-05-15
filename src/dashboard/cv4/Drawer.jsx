@@ -28,6 +28,7 @@ export default function CV4Drawer({
   onSelectAgent,
   onSelectProject,
   onSelectMission,
+  onSelectTask,
   onLogout,
 }) {
   useEffect(() => {
@@ -48,6 +49,38 @@ export default function CV4Drawer({
     for (const list of map.values()) list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     return map
   }, [])
+
+  // R5 corner:task-rooms — live missions-tree layered over the static catalog.
+  // Brings active task counts + ids under each mission so the rail can open
+  // task rooms directly from the tree.
+  const [tasksTree, setTasksTree] = useState(null)
+  useEffect(() => {
+    if (!open || !worldId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
+        if (!r.ok) return
+        const j = await r.json().catch(() => null)
+        if (!cancelled && j && Array.isArray(j.projects)) setTasksTree(j)
+      } catch { /* swallow — falls back to static-only rendering */ }
+    })()
+    return () => { cancelled = true }
+  }, [open, worldId])
+
+  // Index: project slug -> { missionSlug -> tasks[], unfiled: tasks[] }.
+  const tasksByProject = useMemo(() => {
+    const map = new Map()
+    if (!tasksTree) return map
+    for (const p of (tasksTree.projects || [])) {
+      const missions = new Map()
+      for (const m of (p.missions || [])) {
+        missions.set(m.slug, m.tasks || [])
+      }
+      map.set(p.slug, { missions, unfiled: p.unfiled_tasks || [] })
+    }
+    return map
+  }, [tasksTree])
 
   const [expanded, setExpanded] = useState(() => new Set(selectedProjectSlug ? [selectedProjectSlug] : []))
   useEffect(() => {
@@ -81,6 +114,8 @@ export default function CV4Drawer({
     <DrawerBody
       projectRooms={projectRooms}
       missionsByProject={missionsByProject}
+      tasksByProject={tasksByProject}
+      onSelectTask={onSelectTask}
       expanded={expanded}
       toggle={toggle}
       selectedProjectSlug={selectedProjectSlug}
@@ -200,6 +235,8 @@ export default function CV4Drawer({
 function DrawerBody({
   projectRooms,
   missionsByProject,
+  tasksByProject,
+  onSelectTask,
   expanded,
   toggle,
   selectedProjectSlug,
@@ -252,15 +289,53 @@ function DrawerBody({
                   onToggle={() => toggle(p.slug)}
                   onOpen={() => { onSelectProject?.(p); onClose() }}
                 />
-                {isExpanded && hasMissions && (
+                {isExpanded && (
                   <div>
-                    {missions.map(m => (
-                      <MissionRow
-                        key={`${p.slug}-${m.slug}`}
-                        mission={m}
-                        project={p}
+                    {hasMissions && missions.map(m => {
+                      // Mission slug as the tree expects: `<project>:<slug>`.
+                      const missionKey = `${p.slug}:${m.slug}`
+                      const liveTasks = tasksByProject?.get(p.slug)?.missions?.get(missionKey)
+                        || tasksByProject?.get(p.slug)?.missions?.get(m.slug)
+                        || []
+                      const isMissionExpanded = expanded.has(`${p.slug}::mission::${m.slug}`)
+                      return (
+                        <div key={`${p.slug}-${m.slug}`}>
+                          <MissionRow
+                            mission={m}
+                            project={p}
+                            taskCount={liveTasks.length}
+                            expanded={isMissionExpanded}
+                            onToggle={() => toggle(`${p.slug}::mission::${m.slug}`)}
+                            onClick={() => {
+                              onSelectMission?.(m, p)
+                              onClose()
+                            }}
+                          />
+                          {isMissionExpanded && liveTasks.length > 0 && (
+                            <div>
+                              {liveTasks.map(t => (
+                                <TaskTreeRow
+                                  key={t.id}
+                                  task={t}
+                                  onClick={() => {
+                                    onSelectTask?.(t, m, p)
+                                    onClose()
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {/* Unfiled tasks under this project (no mission_slug). */}
+                    {(tasksByProject?.get(p.slug)?.unfiled || []).map(t => (
+                      <TaskTreeRow
+                        key={t.id}
+                        task={t}
+                        unfiled
                         onClick={() => {
-                          onSelectMission?.(m, p)
+                          onSelectTask?.(t, null, p)
                           onClose()
                         }}
                       />
@@ -364,23 +439,54 @@ function FolderRow({ label, hasChildren, expanded, active, onToggle, onOpen }) {
   )
 }
 
-function MissionRow({ mission, onClick }) {
+function MissionRow({ mission, taskCount = 0, expanded = false, onToggle, onClick }) {
+  const hasTasks = taskCount > 0
   return (
     <div
       data-row
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '3px 10px 3px 36px',
+        padding: '3px 10px 3px 30px',
         cursor: 'pointer',
       }}
     >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); if (hasTasks && onToggle) onToggle() }}
+        aria-label={hasTasks ? (expanded ? 'Collapse tasks' : 'Expand tasks') : undefined}
+        style={{
+          width: 14, height: 14, padding: 0,
+          background: 'none', border: 'none',
+          cursor: hasTasks ? 'pointer' : 'default',
+          color: C.muted,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          opacity: hasTasks ? 1 : 0.2,
+        }}
+      >
+        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
+          <polyline points="9 6 15 12 9 18"/>
+        </svg>
+      </button>
       <DocIcon />
       <span style={{
         fontSize: 12, fontWeight: 500, color: C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
       }}>{mission.name}</span>
+      {hasTasks && (
+        <span style={{
+          fontSize: 9, fontWeight: 700,
+          letterSpacing: '0.05em',
+          color: C.muted, fontFamily: "'JetBrains Mono', monospace",
+          flexShrink: 0,
+          padding: '1px 5px',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 6,
+        }}>{taskCount}</span>
+      )}
       {mission.status && mission.status !== 'in-progress' && (
         <span style={{
           fontSize: 9, fontWeight: 700,
@@ -388,6 +494,49 @@ function MissionRow({ mission, onClick }) {
           color: C.muted, fontFamily: "'JetBrains Mono', monospace",
           flexShrink: 0,
         }}>{mission.status}</span>
+      )}
+    </div>
+  )
+}
+
+function TaskTreeRow({ task, unfiled = false, onClick }) {
+  // R5 corner:task-rooms — task tier under a mission (or directly under
+  // a project for unfiled tasks). Clicking opens the task room.
+  const isRunning = task.status === 'running'
+  const isFailed = task.status === 'failed'
+  const isWaiting = task.status === 'waiting' || task.status === 'blocked' || task.status === 'needs_input'
+  const dot = isRunning
+    ? '#10B981'
+    : (isFailed ? '#FCA5A5' : (isWaiting ? '#A78BFA' : C.muted))
+  return (
+    <div
+      data-row
+      data-test-id="task-tree-row"
+      data-task-id={task.id}
+      onClick={onClick}
+      title={task.title || ''}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: unfiled ? '2px 10px 2px 44px' : '2px 10px 2px 56px',
+        cursor: 'pointer',
+        fontSize: 11.5,
+      }}
+    >
+      <span style={{
+        width: 6, height: 6, borderRadius: '50%',
+        background: dot, flexShrink: 0,
+      }} />
+      <span style={{
+        color: isFailed ? '#FCA5A5' : C.text2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        flex: 1,
+        fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+      }}>{task.title || '(untitled)'}</span>
+      {task.agent && (
+        <span style={{
+          fontSize: 9, color: C.dim, fontFamily: "'JetBrains Mono', monospace",
+          flexShrink: 0,
+        }}>{task.agent}</span>
       )}
     </div>
   )

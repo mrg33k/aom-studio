@@ -1651,6 +1651,22 @@ export default function CornerV4() {
                 path: `corner:${mission.slug}`,
               })
             }}
+            onSelectTask={(task, mission, project) => {
+              // R5 corner:task-rooms — open the task room by routing to the
+              // tasks tool with the task id in the URL hash. TasksPanelCv4
+              // reads the hash and auto-expands the matching row.
+              if (project) handleSelectProject(project)
+              if (mission) {
+                setAttachedMission({
+                  slug: mission.slug,
+                  name: mission.name,
+                  projectSlug: project?.slug || null,
+                  path: `corner:${mission.slug}`,
+                })
+              }
+              if (handleSelectTool) handleSelectTool('tasks')
+              try { window.location.hash = `task=${task.id}` } catch { /* ignore */ }
+            }}
             onLogout={async () => {
               if (supabase) await supabase.auth.signOut().catch(() => {})
               window.location.href = '/'
@@ -1830,6 +1846,19 @@ export default function CornerV4() {
               projectSlug: project.slug,
               path: `corner:${mission.slug}`,
             })
+          }}
+          onSelectTask={(task, mission, project) => {
+            if (project) handleSelectProject(project)
+            if (mission) {
+              setAttachedMission({
+                slug: mission.slug,
+                name: mission.name,
+                projectSlug: project?.slug || null,
+                path: `corner:${mission.slug}`,
+              })
+            }
+            if (handleSelectTool) handleSelectTool('tasks')
+            try { window.location.hash = `task=${task.id}` } catch { /* ignore */ }
           }}
           onLogout={async () => {
             if (supabase) await supabase.auth.signOut().catch(() => {})
