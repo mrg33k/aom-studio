@@ -48,7 +48,7 @@ export const useCornerData = data.useSlice
 // Nav: per-click selection + composer prefill + tab routing callbacks.
 //   tab, setTab, handleTabChange
 //   selectedAgent, conversationTarget
-//   handleSelectAgent, handleSelectProject, handleBackFromConversation
+//   handleSelectAgent, handleSelectProject, handleSelectTask, handleBackFromConversation
 //   prefillMessage, setPrefillMessage
 //   stageFilesRef -- wired by ChatPanel to useChatAttachments.stageFiles; home-tab Attach button writes files here
 const nav = makeSlice('useCornerNav')

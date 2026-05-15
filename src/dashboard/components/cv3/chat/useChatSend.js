@@ -241,26 +241,56 @@ export default function useChatSend({
     }))
 
     try {
-      const bridgeResult = await authFetch('/api/dashboard/chat-bridge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent: selectedAgent.slug,
-          message: text,
-          room: selectedAgent.slug,
-          project: '',
-          client_id: worldId,
-          ...userIdentity,
-          ...(replyMeta ? { metadata: { reply_to: replyMeta } } : {}),
-        }),
-      }).then(r => r.json()).catch(() => null)
-      if (bridgeResult?.messageId) {
-        setMessages(prev => prev.map(m => m.id === tempUserId ? { ...m, id: bridgeResult.messageId } : m))
-        if (!bridgeResult.fallback) {
-          startBridgeStream(bridgeResult.messageId, selectedAgent.slug)
+      if (selectedAgent.isTaskRoom) {
+        // R6 corner:task-rooms — route through /api/dashboard/task-message.
+        // For done/failed tasks the endpoint enqueues a fresh follow-up
+        // task with the prior transcript re-hydrated; for running/blocked/
+        // waiting the message lands as a mid-flight nudge the sub-agent
+        // picks up via sub-agent-poll-inbox.sh. The chat template's
+        // realtime channel on `agent=task:<id>` delivers the insert back
+        // to this view automatically, so we drop the optimistic temp once
+        // the server row arrives.
+        const terminal = selectedAgent.taskStatus === 'done' || selectedAgent.taskStatus === 'failed'
+        const r = await authFetch('/api/dashboard/task-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: selectedAgent.taskId,
+            text,
+            client_id: selectedAgent.taskClientId || worldId,
+            terminal,
+          }),
+        })
+        const j = await r.json().catch(() => ({}))
+        if (!r.ok) {
+          throw new Error(j?.error || ('HTTP ' + r.status))
         }
+        if (j?.message?.id) {
+          setMessages(prev => prev.map(m => m.id === tempUserId ? { ...m, id: j.message.id } : m))
+        }
+        onMessageSent?.()
+      } else {
+        const bridgeResult = await authFetch('/api/dashboard/chat-bridge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: selectedAgent.slug,
+            message: text,
+            room: selectedAgent.slug,
+            project: '',
+            client_id: worldId,
+            ...userIdentity,
+            ...(replyMeta ? { metadata: { reply_to: replyMeta } } : {}),
+          }),
+        }).then(r => r.json()).catch(() => null)
+        if (bridgeResult?.messageId) {
+          setMessages(prev => prev.map(m => m.id === tempUserId ? { ...m, id: bridgeResult.messageId } : m))
+          if (!bridgeResult.fallback) {
+            startBridgeStream(bridgeResult.messageId, selectedAgent.slug)
+          }
+        }
+        onMessageSent?.()
       }
-      onMessageSent?.()
     } catch (err) {
       console.error('[ChatPanel] send error:', err)
     } finally {

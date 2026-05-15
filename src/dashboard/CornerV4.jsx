@@ -419,6 +419,33 @@ export default function CornerV4() {
     }
   }, [navigate])
 
+  // R6 corner:task-rooms — open the task room as a chat surface using the
+  // existing ThreadView (same chat template as agent + project chats).
+  // The task is encoded as a pseudo-agent with slug `task:<id>` — matches
+  // the convention already used by api/dashboard/task-message.js and
+  // scripts/sub-agent-reply.sh (both write messages with that agent value
+  // and metadata.task_id). One template, zero data-path changes, the
+  // chat surface "just works" for task rooms. Patrik's
+  // feedback_chats_are_one_template.md doctrine holds.
+  const handleSelectTask = useCallback((task) => {
+    if (!task || !task.id) return
+    const rawTitle = task.title || task.text || `Task ${String(task.id).slice(0, 8)}`
+    setSelectedAgent({
+      slug: `task:${task.id}`,
+      name: rawTitle,
+      isTaskRoom: true,
+      taskId: task.id,
+      taskStatus: task.status || null,
+      taskClientId: task.client_id || task.clientId || null,
+      taskProject: task.project || null,
+    })
+    setConversationTarget(null)
+    setTab('chat')
+    setUnreadChat(0)
+    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+    if (routeProjectId) navigate(basePath)
+  }, [navigate, routeProjectId])
+
   // Mail tool: jump into the EA chat (the "Mail Room") and force the right
   // rail open with the inbox list. If we can't find an EA agent yet, the
   // toggle still flips — ChatPanel will land on whatever's selected and the
@@ -454,15 +481,21 @@ export default function CornerV4() {
     setSelectedMail(null)
   }, [])
 
-  // Called by ChatPanel back button — clear conversation
+  // Called by ChatPanel back button — clear conversation. R6: when the
+  // user is backing out of a task room, return to the tasks tab instead of
+  // dropping to the home view. The task list IS the room directory.
   const handleBackFromConversation = useCallback(() => {
+    const wasTaskRoom = !!selectedAgent?.isTaskRoom
     setSelectedAgent(null)
     setConversationTarget(null)
     if (routeProjectId) {
       const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
       navigate(basePath)
     }
-  }, [navigate, routeProjectId])
+    if (wasTaskRoom) {
+      setTab('tasks')
+    }
+  }, [navigate, routeProjectId, selectedAgent?.isTaskRoom])
 
   // ── World switching ───────────────────────────────────────────────────────
 
@@ -577,12 +610,12 @@ export default function CornerV4() {
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,
     selectedAgent, conversationTarget,
-    handleSelectAgent, handleSelectProject, handleBackFromConversation,
+    handleSelectAgent, handleSelectProject, handleSelectTask, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
     attachedMission, setAttachedMission,
     activeTool, selectedMail, setSelectedMail,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef])
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleSelectTask, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 

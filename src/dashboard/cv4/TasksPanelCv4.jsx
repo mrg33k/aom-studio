@@ -53,37 +53,30 @@ function TasksPanelCv4Body() {
     // R5 corner:task-rooms — hash-driven auto-open from the tree.
     expandedTask, toggleTaskExpand,
   } = useTasksPanelCtx()
-  const { selectedAgent, conversationTarget, handleSelectProject, setPrefillMessage } = useCornerNav()
+  const { selectedAgent, conversationTarget, handleSelectProject, handleSelectTask, setPrefillMessage } = useCornerNav()
   const { worldId } = useCornerAuth()
 
-  // R5 corner:task-rooms — when the URL hash carries `task=<id>` (from
-  // the Drawer's TaskTreeRow click OR the chat input's follow-up hop),
-  // enter "focused task room" mode: render only that task, auto-expand
-  // it, and surface a back affordance that returns to the task list.
-  // The task IS the room.
-  const [focusedTaskId, setFocusedTaskId] = useState(null)
+  // R6 corner:task-rooms — when the URL hash carries `task=<id>` (from
+  // the Drawer's TaskTreeRow click), open the task as a chat room via
+  // handleSelectTask. The chat panel takes over. No in-panel focused
+  // mode; the task IS the room and rooms are full chat surfaces.
   useEffect(() => {
     const apply = () => {
       const h = (typeof window !== 'undefined' && window.location.hash) || ''
       const m = h.match(/task=([0-9a-f-]{8,})/i)
-      if (m) {
-        const taskId = m[1]
-        setFocusedTaskId(taskId)
-        if (expandedTask !== taskId && typeof toggleTaskExpand === 'function') {
-          toggleTaskExpand(taskId)
-        }
-      } else {
-        setFocusedTaskId(null)
+      if (!m) return
+      const taskId = m[1]
+      const all = [...filteredActive, ...waitingTasks, ...filteredBlocked, ...filteredFailed, ...filteredCompleted]
+      const task = all.find(t => t.id === taskId)
+      if (task && typeof handleSelectTask === 'function') {
+        handleSelectTask(task)
       }
+      try { history.replaceState(null, '', window.location.pathname + window.location.search) } catch { /* ignore */ }
     }
     apply()
     window.addEventListener('hashchange', apply)
     return () => window.removeEventListener('hashchange', apply)
-  }, [expandedTask, toggleTaskExpand])
-  const exitFocusedTask = useCallback(() => {
-    try { history.replaceState(null, '', window.location.pathname + window.location.search) } catch { /* ignore */ }
-    setFocusedTaskId(null)
-  }, [])
+  })
 
   // R7.2: when the active conversation changes, sync the task filter scope.
   //  - Project chat → that project
@@ -199,77 +192,32 @@ function TasksPanelCv4Body() {
           </div>
         )}
 
-        {/* R5 corner:task-rooms — focused-task-room back affordance.
-            "Hitting back would take you back to the task view." The
-            task IS the room; pressing back exits the room and restores
-            the full task list. */}
-        {focusedTaskId && (
-          <button
-            type="button"
-            onClick={exitFocusedTask}
-            data-cv4-focused-back
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: C.muted, fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
-              textTransform: 'uppercase', padding: '6px 0 12px 0',
-            }}
-          >
-            <span aria-hidden style={{ fontSize: 13, lineHeight: 1 }}>←</span>
-            <span>Back to tasks</span>
-          </button>
-        )}
-
-        {/* Live state. Each section auto-hides when its filtered array
-            is empty, so in focused mode at most one section header
-            renders (the section the focused task belongs to). */}
+        {/* Live state. */}
         <TaskSection
-          title="Active" status="active"
-          tasks={focusedTaskId ? filteredActive.filter(t => t.id === focusedTaskId) : filteredActive}
+          title="Active" status="active" tasks={filteredActive}
           summary={summarize('active', counts)}
         />
         <TaskSection
-          title="Needs input" status="waiting"
-          tasks={focusedTaskId ? waitingFiltered.filter(t => t.id === focusedTaskId) : waitingFiltered}
+          title="Needs input" status="waiting" tasks={waitingFiltered}
           summary={summarize('waiting', counts)}
         />
         <TaskSection
-          title="Blocked" status="blocked"
-          tasks={focusedTaskId ? filteredBlocked.filter(t => t.id === focusedTaskId) : filteredBlocked}
+          title="Blocked" status="blocked" tasks={filteredBlocked}
           summary={summarize('blocked', counts)}
         />
         <TaskSection
-          title="Failed" status="failed"
-          tasks={focusedTaskId ? filteredFailed.filter(t => t.id === focusedTaskId) : filteredFailed}
+          title="Failed" status="failed" tasks={filteredFailed}
           summary={summarize('failed', counts)}
         />
 
         {/* Done — 3 visible, +5 per click. */}
-        <DoneSection tasks={focusedTaskId ? filteredCompleted.filter(t => t.id === focusedTaskId) : filteredCompleted} />
+        <DoneSection tasks={filteredCompleted} />
 
-        {/* Files at the bottom. Hidden inside a focused task room. */}
-        {!focusedTaskId && (
-          <FilesBlock activeProject={activeProject} activeMissionPath={activeMissionPath} searchQuery={searchQuery} />
-        )}
+        {/* Files at the bottom. */}
+        <FilesBlock activeProject={activeProject} activeMissionPath={activeMissionPath} searchQuery={searchQuery} />
 
-        {/* Focused-task placeholder. Newly-enqueued follow-ups arrive
-            via Supabase realtime within ~1s; until then the section
-            arrays don't carry the row yet. Show a quiet "loading the
-            room" line instead of the global Empty state. */}
-        {focusedTaskId && filteredActive.concat(waitingFiltered, filteredBlocked, filteredFailed, filteredCompleted).every(t => t.id !== focusedTaskId) && (
-          <div style={{ textAlign: 'center', color: C.muted, paddingTop: 40 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>
-              Opening the room…
-            </div>
-            <div style={{ fontSize: 11, color: C.dim }}>
-              Waiting for the task to arrive
-            </div>
-          </div>
-        )}
-
-        {/* Empty state — only when NOT in a focused room. */}
-        {!focusedTaskId && counts.total === 0 && filteredCompleted.length === 0 && (
+        {/* Empty state. */}
+        {counts.total === 0 && filteredCompleted.length === 0 && (
           <div style={{ textAlign: 'center', color: C.muted, paddingTop: 40 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>
               {searchQuery ? 'No matches' : 'All clear'}
@@ -531,15 +479,11 @@ function DoneSection({ tasks }) {
 
 function TaskRow({ task, status }) {
   const {
-    expandedTask, toggleTaskExpand,
     openTaskMenu, startTaskLongPress, cancelTaskLongPress,
     taskProjects,
-    // R2 corner:task-rooms: per-task message scope (read-only drawer).
-    // The hook already dual-queries legacy task:<id> messages + new
-    // metadata.task_id messages and merges them — we just render here.
-    taskThread, threadLoading,
   } = useTasksPanelCtx()
   const { worldId } = useCornerAuth()
+  const { handleSelectTask } = useCornerNav()
   const t = task
   const agent = t.agent_identity || t.agentIdentity || t.agent
   const projectName = t.project_name || t.projectName
@@ -561,12 +505,11 @@ function TaskRow({ task, status }) {
     : null
   const displayTitle = requesterLabel ? `[${requesterLabel}] ${rawTitle}` : rawTitle
   return (
-    <>
     <div
       data-test-id={isDone ? 'task-card-done' : 'task-card'}
       data-task-id={t.id}
       data-task-status={t.status}
-      onClick={() => toggleTaskExpand(t.id)}
+      onClick={() => handleSelectTask && handleSelectTask(t)}
       onContextMenu={(e) => openTaskMenu(e, t)}
       onTouchStart={(e) => startTaskLongPress(e, t)}
       onTouchEnd={cancelTaskLongPress}
@@ -591,7 +534,7 @@ function TaskRow({ task, status }) {
           textDecorationColor: 'rgba(148,163,184,0.4)',
           lineHeight: 1.4,
           overflow: 'hidden', textOverflow: 'ellipsis',
-          whiteSpace: expandedTask === t.id ? 'normal' : 'nowrap',
+          whiteSpace: 'nowrap',
           marginBottom: (agent || projectName) ? 2 : 0,
         }}>{displayTitle}</div>
         {(agent || projectName) && (
@@ -606,143 +549,6 @@ function TaskRow({ task, status }) {
           </div>
         )}
       </div>
-    </div>
-    {/* R2 corner:task-rooms — expanded read-only thread (legacy task:<id> + metadata.task_id merged). */}
-    {expandedTask === t.id && (
-      <div style={{
-        padding: '8px 12px 10px 30px',
-        borderBottom: '1px solid rgba(255,255,255,0.035)',
-        background: 'rgba(255,255,255,0.015)',
-      }}>
-        {threadLoading ? (
-          <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>Loading thread...</div>
-        ) : (!taskThread || taskThread.length === 0) ? (
-          <div style={{ fontSize: 11, color: C.dim, fontFamily: "'JetBrains Mono', monospace" }}>No messages yet.</div>
-        ) : taskThread.map((m, idx) => (
-          <div key={idx} data-test-id="task-thread-message" style={{
-            fontSize: 11.5, color: C.text2 || C.muted, lineHeight: 1.5,
-            padding: '3px 0',
-            fontFamily: "'JetBrains Mono', monospace",
-            borderBottom: idx < taskThread.length - 1 ? '1px solid rgba(255,255,255,0.025)' : 'none',
-            wordBreak: 'break-word',
-          }}>
-            <span style={{ color: C.dim, fontSize: 9.5 }}>
-              {(m.timestamp || '').slice(11, 19)}
-            </span>
-            {m.role && (
-              <span style={{ color: C.dim, fontSize: 9.5, marginLeft: 6 }}>
-                {String(m.role).toLowerCase()}
-              </span>
-            )}
-            {' '}
-            <span style={{ whiteSpace: 'pre-wrap' }}>{m.text}</span>
-          </div>
-        ))}
-        {/* R3 corner:task-rooms — mid-flight chat input. Renders for any task
-            the viewer can address (running, blocked, waiting, done, failed
-            once R4 lands; R3-only ships running + blocked + waiting). */}
-        {(t.status === 'running' || t.status === 'blocked' || t.status === 'waiting') && (
-          <TaskRoomChatInput taskId={t.id} clientId={worldId} taskStatus={t.status} />
-        )}
-        {/* R4 corner:task-rooms — post-completion follow-up. Same input, marked
-            so the API kicks off a fresh sub-agent dispatch with the prior
-            transcript re-hydrated as context. */}
-        {(t.status === 'done' || t.status === 'failed') && (
-          <TaskRoomChatInput taskId={t.id} clientId={worldId} taskStatus={t.status} terminal />
-        )}
-      </div>
-    )}
-  </>
-  )
-}
-
-function TaskRoomChatInput({ taskId, clientId, taskStatus, terminal = false }) {
-  const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
-  const [err, setErr] = useState(null)
-  const send = useCallback(async () => {
-    const body = text.trim()
-    if (!body || sending) return
-    setSending(true); setErr(null)
-    try {
-      const r = await authFetch('/api/dashboard/task-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_id: taskId, text: body, client_id: clientId, terminal }),
-      })
-      const j = await r.json().catch(() => ({}))
-      if (!r.ok) {
-        throw new Error(j?.error || ('HTTP ' + r.status))
-      }
-      setText('')
-      // R4 corner:task-rooms — when the API enqueues a follow-up task,
-      // hop into its room so the user watches the live chain unfold
-      // there (instead of guessing whether the follow-up happened).
-      // The R5 hash-watcher in this same component auto-expands the
-      // matching row + the realtime subscription on tasks brings the
-      // queued row in within ~1s, after which the inline thread + step
-      // chain render under the new card.
-      const followupId = j && j.followup && j.followup.id
-      if (followupId) {
-        try { window.location.hash = `task=${followupId}` } catch { /* ignore */ }
-        // Best-effort scroll: retry for ~3s while the realtime row arrives.
-        let attempts = 0
-        const scroll = () => {
-          attempts++
-          const card = document.querySelector(`[data-task-id="${followupId}"]`)
-          if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); return }
-          if (attempts < 15) setTimeout(scroll, 200)
-        }
-        setTimeout(scroll, 200)
-      }
-    } catch (e) {
-      setErr(e?.message || 'send failed')
-    } finally {
-      setSending(false)
-    }
-  }, [text, sending, taskId, clientId, terminal])
-  const placeholder = terminal
-    ? 'Follow up — a fresh agent picks up with the prior transcript.'
-    : (taskStatus === 'running'
-        ? 'Send a mid-flight message to the agent.'
-        : 'Send a message in this task room.')
-  return (
-    <div data-test-id="task-room-chat-input" style={{
-      marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-end',
-    }}>
-      <textarea
-        rows={1}
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if ((e.key === 'Enter') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() } }}
-        placeholder={placeholder}
-        disabled={sending}
-        style={{
-          flex: 1, minHeight: 26, maxHeight: 80, resize: 'none',
-          padding: '5px 8px',
-          fontSize: 11.5, lineHeight: 1.4,
-          fontFamily: "'JetBrains Mono', monospace",
-          color: C.text, background: 'rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 6, outline: 'none',
-        }}
-      />
-      <button
-        onClick={send}
-        disabled={!text.trim() || sending}
-        style={{
-          padding: '5px 10px', fontSize: 10.5, fontWeight: 700,
-          letterSpacing: '0.05em', textTransform: 'uppercase',
-          fontFamily: "'JetBrains Mono', monospace",
-          color: text.trim() && !sending ? '#0e1117' : C.dim,
-          background: text.trim() && !sending ? '#F1C40F' : 'rgba(255,255,255,0.04)',
-          border: 'none', borderRadius: 6,
-          cursor: text.trim() && !sending ? 'pointer' : 'default',
-        }}
-      >{sending ? '…' : 'Send'}</button>
-      {err && (
-        <span style={{ color: '#FCA5A5', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", alignSelf: 'center' }}>{err}</span>
-      )}
     </div>
   )
 }
