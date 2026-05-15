@@ -127,7 +127,6 @@ export default function CornerV4() {
   // until the EA sends a reply or the user clears it.
   const [activeTool, setActiveTool] = useState(null)
   const [selectedMail, setSelectedMail] = useState(null)
-  const [mailRoomOpen, setMailRoomOpen] = useState(false)
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -447,12 +446,12 @@ export default function CornerV4() {
   // Called by MailListPanel when the user clicks an email — pins it as a
   // chat chip so the EA's next reply receives the email as context.
   const handleSelectMail = useCallback((email) => {
+    console.log('[MailRoom] handleSelectMail fired', email?.id, email?.subject)
     setSelectedMail(email)
-    setMailRoomOpen(true)
   }, [])
 
   const handleBackFromMailRoom = useCallback(() => {
-    setMailRoomOpen(false)
+    setSelectedMail(null)
   }, [])
 
   // Called by ChatPanel back button — clear conversation
@@ -1671,13 +1670,13 @@ export default function CornerV4() {
             }}
           >
             {(!isDesktop && tab === 'tasks') ? (
-              activeTool === 'mail' && mailRoomOpen && selectedMail
+              activeTool === 'mail' && selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
                 : activeTool === 'mail'
                   ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
                   : <TasksPanelCv4 />
             ) : (
-              activeTool === 'mail' && mailRoomOpen && selectedMail
+              activeTool === 'mail' && selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
                 : <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
