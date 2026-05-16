@@ -90,31 +90,72 @@ async function exchangeCode(provider, creds, code, redirectUri) {
   return r.json()
 }
 
-async function upsertConnection({ userId, slug, tokenBlob, providerProfile }) {
+async function upsertConnection({ userId, slug, tokenBlob, providerProfile, workspaceId, accountEmail }) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { ok: false, error: 'supabase env missing' }
-  const payload = {
-    user_id: userId,
+  const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  const now = new Date().toISOString()
+  const ownerCols = workspaceId
+    ? { workspace_id: workspaceId, user_id: null }
+    : { user_id: userId, workspace_id: null }
+  const body = {
+    ...ownerCols,
     integration_slug: slug,
     status: 'connected',
     credentials_ref: 'inline:v1',
     config: {
       tokens: tokenBlob,
+      account_email: accountEmail || null,
       profile: providerProfile || null,
+      connector_user_id: userId,
     },
-    connected_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    connected_at: now,
+    updated_at: now,
   }
+
+  // Workspace-owned: PostgREST can't unique-conflict on a JSON key, so
+  // read-then-write keyed on (workspace_id, slug, account_email).
+  if (workspaceId) {
+    const emailKey = encodeURIComponent(accountEmail || '')
+    const existing = await fetch(
+      `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=eq.${workspaceId}&integration_slug=eq.${slug}&config->>account_email=eq.${emailKey}&select=id&limit=1`,
+      { headers: svcHeaders },
+    )
+    const existingRow = existing.ok ? (await existing.json())[0] : null
+    if (existingRow) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${existingRow.id}`, {
+        method: 'PATCH',
+        headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(body),
+      })
+      if (!r.ok) {
+        const text = await r.text().catch(() => '')
+        return { ok: false, error: `supabase ws-patch ${r.status}: ${text.slice(0, 200)}` }
+      }
+      return { ok: true }
+    }
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations`, {
+      method: 'POST',
+      headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(body),
+    })
+    if (!r.ok) {
+      const text = await r.text().catch(() => '')
+      return { ok: false, error: `supabase ws-insert ${r.status}: ${text.slice(0, 200)}` }
+    }
+    return { ok: true }
+  }
+
+  // User-owned: existing on-conflict on the partial unique (user_id, slug).
   const r = await fetch(
     `${SUPABASE_URL}/rest/v1/account_integrations?on_conflict=user_id,integration_slug`,
     {
       method: 'POST',
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        ...svcHeaders,
         'Content-Type': 'application/json',
         Prefer: 'resolution=merge-duplicates,return=minimal',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     },
   )
   if (!r.ok) {
@@ -122,6 +163,18 @@ async function upsertConnection({ userId, slug, tokenBlob, providerProfile }) {
     return { ok: false, error: `supabase upsert ${r.status}: ${text.slice(0, 200)}` }
   }
   return { ok: true }
+}
+
+async function fetchGmailProfile(accessToken) {
+  try {
+    const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!r.ok) return null
+    return r.json()
+  } catch {
+    return null
+  }
 }
 
 export default async function handler(req, res) {
@@ -148,7 +201,7 @@ export default async function handler(req, res) {
     return failRedirect(res, 'invalid-state', null)
   }
 
-  const { userId, slug, returnTo } = verified
+  const { userId, slug, returnTo, workspaceId } = verified
   console.log('[oauth/callback] verified', { userId, slug, hasReturnTo: !!returnTo })
   await logEvent('oauth_state_verified', { userId, slug, hasReturnTo: !!returnTo })
   const provider = getProvider(slug)
@@ -204,11 +257,22 @@ export default async function handler(req, res) {
     return failRedirect(res, `encrypt-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
+  // Gmail: pull profile for account_email (needed for workspace collision check
+  // and for switcher display). Non-fatal if it fails — falls back to null.
+  let gmailProfile = null
+  let accountEmail = null
+  if (slug === 'gmail' && tokens.access_token) {
+    gmailProfile = await fetchGmailProfile(tokens.access_token)
+    accountEmail = gmailProfile?.emailAddress || null
+  }
+
   const upsert = await upsertConnection({
     userId,
     slug,
     tokenBlob: encrypted,
-    providerProfile: tokens.team || tokens.workspace_name || null,
+    providerProfile: gmailProfile || tokens.team || tokens.workspace_name || null,
+    workspaceId: workspaceId || null,
+    accountEmail,
   })
   console.log('[oauth/callback] upsert', upsert)
   await logEvent('oauth_upsert', { slug, userId, ok: !!upsert.ok, error: upsert.error ? upsert.error.slice(0, 500) : null })
