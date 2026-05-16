@@ -23,6 +23,7 @@
 
 import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
 import { assertCanUseConnection } from '../../_lib/mailAccess.js'
+import { buildBucketQuery } from '../../_lib/mailBuckets.js'
 
 const AUTOMATED_FROM = /(noreply|no-reply|notifications?|mailer-daemon|automated|donotreply|do-not-reply|postmaster|bounces?@)/i
 const SKIP_CATEGORIES = new Set(['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_UPDATES', 'CATEGORY_FORUMS'])
@@ -54,6 +55,35 @@ function isAutomated(msg) {
   return false
 }
 
+
+// "Awaiting reply" = thread whose tail message is from someone OTHER than the
+// account holder. For each unique threadId in the candidate set, fetch the
+// thread's tail and keep the candidate if the tail is external.
+async function applyAwaitingFilter(emails, creds) {
+  const accountEmail = (creds?.row?.config?.account_email || '').toLowerCase()
+  if (!accountEmail) return emails
+  const threadIds = [...new Set(emails.map(e => e.threadId).filter(Boolean))]
+  const tailByThread = {}
+  await Promise.all(threadIds.map(async tid => {
+    try {
+      const r = await gmailFetch(creds.accessToken, `/threads/${tid}?format=metadata&metadataHeaders=From`)
+      if (!r.ok) return
+      const t = await r.json()
+      const msgs = t.messages || []
+      if (!msgs.length) return
+      const tail = msgs[msgs.length - 1]
+      const fromHeader = (tail.payload?.headers || []).find(h => (h.name || '').toLowerCase() === 'from')
+      const fromVal = (fromHeader?.value || '').toLowerCase()
+      tailByThread[tid] = fromVal
+    } catch { /* ignore */ }
+  }))
+  return emails.filter(e => {
+    const fromVal = tailByThread[e.threadId]
+    if (!fromVal) return false
+    return !fromVal.includes(accountEmail)
+  })
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
@@ -82,18 +112,36 @@ export default async function handler(req, res) {
   }
   if (!creds) return res.status(200).json({ emails: [], historyId: null, mode: 'not-connected' })
 
-  // Build the search query. Limit to ~150 candidates — the window is 10d so
-  // we need more headroom past the filter, but per-message gets are still
-  // cheap (metadata format) and Gmail caps single-page list at 500.
-  const q = [
-    'newer_than:10d',
-    '-from:me',
-    '-category:promotions',
-    '-category:social',
-    '-category:updates',
-    '-category:forums',
-    '-label:list',
-  ].join(' ')
+  // Build the search query. Bucket-aware: when ?bucket=<slug> is passed,
+  // the mapper in mailBuckets.js owns the q/post-filter shape. Without a
+  // bucket, we keep the legacy "last 10 days, real humans" behavior so
+  // existing callers don't regress.
+  const bucketSlug = (req.query?.bucket || '').toString() || null
+  let q, postFilter = null
+  if (bucketSlug) {
+    const ctx = {
+      account_email: creds.row?.config?.account_email,
+      client_emails: creds.row?.config?.client_emails || [],
+      prospect_emails: creds.row?.config?.prospect_emails || [],
+    }
+    try {
+      const out = buildBucketQuery(bucketSlug, ctx)
+      q = out.q
+      postFilter = out.postFilter || null
+    } catch (e) {
+      return res.status(400).json({ error: e.message })
+    }
+  } else {
+    q = [
+      'newer_than:10d',
+      '-from:me',
+      '-category:promotions',
+      '-category:social',
+      '-category:updates',
+      '-category:forums',
+      '-label:list',
+    ].join(' ')
+  }
   const listResp = await gmailFetch(
     creds.accessToken,
     `/messages?q=${encodeURIComponent(q)}&maxResults=150`,
@@ -144,8 +192,19 @@ export default async function handler(req, res) {
   }
   emails.sort((a, b) => (b.date || 0) - (a.date || 0))
 
+  // Post-filters live AFTER the metadata fan-out so they can inspect headers
+  // and thread tails. 'awaiting' requires extra threads.get fan-out; 'empty'
+  // is the no-seed escape hatch for clients / prospects buckets.
+  let filtered = emails
+  if (postFilter === 'empty') {
+    filtered = []
+  } else if (postFilter === 'awaiting') {
+    filtered = await applyAwaitingFilter(emails, creds)
+  }
+
   return res.status(200).json({
-    emails,
+    emails: filtered,
+    bucket: bucketSlug,
     historyId: latestHistory ? latestHistory.toString() : null,
     mode: 'live',
   })
