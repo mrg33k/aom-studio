@@ -11,6 +11,28 @@ import { authFetch } from '../lib/authFetch.js'
 import ChatPanel from '../components/cv3/ChatPanel.jsx'
 
 export default function MailRoom({ email, onBack }) {
+  const [activeConnection, setActiveConnection] = useState(null)
+  useEffect(() => {
+    let canceled = false
+    async function run() {
+      try {
+        const r = await authFetch('/api/dashboard/mail/connections')
+        if (!r.ok) return
+        const body = await r.json()
+        const list = Array.isArray(body?.connections) ? body.connections : []
+        if (canceled) return
+        const ws = getUserWorld() || 'personal'
+        const key = `cv4.mail.activeConnection.${ws}`
+        const lastId = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null
+        const picked = list.find(c => c.id === lastId) || list[0] || null
+        setActiveConnection(picked)
+      } catch {
+        // ignore — surface stays hidden
+      }
+    }
+    run()
+    return () => { canceled = true }
+  }, [])
   const [expanded, setExpanded] = useState(false)
   const [body, setBody] = useState(null)
   const [bodyLoading, setBodyLoading] = useState(false)
@@ -82,6 +104,12 @@ export default function MailRoom({ email, onBack }) {
           fontSize: 17, fontWeight: 600, color: C.text, lineHeight: 1.3,
           fontFamily: "'Instrument Serif', 'Inter', serif", marginBottom: 6,
         }}>{email.subject || '(no subject)'}</div>
+        {activeConnection?.account_email && (
+          <div style={{
+            fontSize: 11, color: C.muted, marginTop: 4, marginBottom: 4,
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>sending from {activeConnection.account_email}</div>
+        )}
         <div style={{
           fontSize: 12, color: C.text2,
           display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap',
