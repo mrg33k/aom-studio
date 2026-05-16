@@ -56,6 +56,7 @@ const AmbitionPerformanceV2 = lazy(() => import('./pages/AmbitionPerformanceV2.j
 const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
+const MissionRoom = lazy(() => import('./dashboard/MissionRoom.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
 const CleoWorkspaceDetail = lazy(() => import('./dashboard/components/cv3/CleoWorkspaceDetail.jsx'))
 const BriefPage = lazy(() => import('./pages/BriefPage.jsx'))
@@ -286,6 +287,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* R21a: canonical per-project chat URL ("/dashboard/projects/<slug>/chat"). */}
           <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/dashboard/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          {/* corner:mission-rooms R3b — mission-as-clickable-unit. Standalone
+              page (not CornerV4) so the surface lands without risk to the
+              live chat machinery. R4 promotes missions to the drawer. */}
+          <Route path="/dashboard/mission/:missionSlug" element={<AuthGuard><MissionRoom /></AuthGuard>} />
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
