@@ -263,7 +263,27 @@ export default function MessageList({ roomType = 'agent' }) {
   // K2: awaitingResponse included for both room types. Previously project rooms
   // only had `sending || isAgentTyping`, causing the synthetic chain to collapse
   // prematurely when the POST returned but the assistant reply hadn't arrived yet.
-  const inFlight = sending || awaitingResponse || isAgentTyping
+  const inFlightRaw = sending || awaitingResponse || isAgentTyping
+
+  // corner:chat-reliability CR-2 -- terminal-event settling for task rooms.
+  // When the chat surface is a task room and the dispatched task has flipped
+  // to failed (no reply will ever land), settle the chain with a "Worker
+  // failed" final step instead of breathing "Still working" forever.
+  // Reads task status from allTasks (already loaded by useTasks).
+  const taskRoomId = selectedAgent?.isTaskRoom
+    ? (selectedAgent.taskId || (selectedAgent.slug?.startsWith('task:') ? selectedAgent.slug.slice(5) : null))
+    : null
+  const taskRow = taskRoomId && Array.isArray(allTasks)
+    ? allTasks.find(t => t.id === taskRoomId)
+    : null
+  const taskTerminalFailed = taskRow && (taskRow.status === 'failed')
+  // If the originating task was a followup, also watch for the followup row
+  // flipping failed. Followups are filtered from the visible list (R6.2)
+  // but useTasks returns them in allTasks before that derivation.
+  const followupFailed = taskRoomId && Array.isArray(allTasks)
+    ? allTasks.some(t => t.status === 'failed' && t.metadata && t.metadata.followup_of === taskRoomId)
+    : false
+  const inFlight = inFlightRaw && !(taskTerminalFailed || followupFailed)
 
   // R73-fix: wall-clock stall detection. Moves silence-detection out of
   // TypingIndicatorV2 (which resets its timer on every remount) into MessageList
@@ -1278,6 +1298,24 @@ export default function MessageList({ roomType = 'agent' }) {
             settled={false}
             isError={false}
             isStalled={chainStalled}
+            agentColor={roomColor}
+          />
+        </div>
+      )}
+      {/* corner:chat-reliability CR-2 -- task-room failure final step. */}
+      {(taskTerminalFailed || followupFailed) && inFlightRaw && (
+        <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+          <StepThread
+            steps={[{
+              id: 'task-room-failed',
+              step_index: 0,
+              text: taskTerminalFailed && taskRow?.error
+                ? `Worker failed: ${String(taskRow.error).slice(0, 200)}`
+                : 'Worker failed. Send another message to retry.',
+              status: 'error',
+            }]}
+            settled={true}
+            isError={true}
             agentColor={roomColor}
           />
           <TypingIndicatorV2

@@ -293,19 +293,26 @@ export function useTasks(worldId) {
 
   // ── Derived views ───────────────────────────────────────────────────────────
 
+  // Task-room follow-ups are dispatch plumbing -- the user already sees the
+  // originating task row and chats inside it. Surfacing the followup as its
+  // own row creates a duplicate the user mis-clicks into (corner:task-rooms
+  // R6.2). Filter them from every visible derivation. The row stays in
+  // Supabase and dispatch still runs; it's just invisible in the UI.
+  const visibleTasks = allTasks.filter(t => t.source !== 'task-room-followup')
+
   // Right Now bar: ONLY building or qa. Hard rule. No exceptions.
-  const rightNow = allTasks
+  const rightNow = visibleTasks
     .filter(t => RIGHT_NOW_STATUSES.has(t.status))
     .map(toRightNowPill)
 
   // Task queue: not yet building
-  const queued = allTasks.filter(t => QUEUED_STATUSES.has(t.status))
+  const queued = visibleTasks.filter(t => QUEUED_STATUSES.has(t.status))
 
   // Waiting for human input (skill tasks needing direction)
-  const waiting = allTasks.filter(t => WAITING_STATUSES.has(t.status))
+  const waiting = visibleTasks.filter(t => WAITING_STATUSES.has(t.status))
 
   // Completed section: done or failed (most recent first)
-  const done = allTasks
+  const done = visibleTasks
     .filter(t => DONE_STATUSES.has(t.status))
     .sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at))
 

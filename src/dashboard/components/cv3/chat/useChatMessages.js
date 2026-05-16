@@ -103,13 +103,21 @@ export default function useChatMessages({
     if (!selectedAgent || !supabase || !worldId) return
     setLoadingMsgs(true)
     setMessages([])
-    supabase
+    // corner:chat-reliability CR-2 -- task rooms back-fill: load by
+    // agent='task:<id>' OR metadata.task_id='<id>'. Picks up historical
+    // R3 rows where metadata was set but agent prefix was inconsistent.
+    const isTaskRoom = selectedAgent.slug?.startsWith('task:')
+    const taskRoomId = isTaskRoom ? selectedAgent.slug.slice(5) : null
+    let q = supabase
       .from('messages')
       .select('*')
       .eq('client_id', worldId)
-      .eq('agent', selectedAgent.slug)
-      .or('project.is.null,project.eq.')
-      .order('timestamp', { ascending: false })
+    if (isTaskRoom && taskRoomId) {
+      q = q.or(`agent.eq.${selectedAgent.slug},metadata->>task_id.eq.${taskRoomId}`)
+    } else {
+      q = q.eq('agent', selectedAgent.slug).or('project.is.null,project.eq.')
+    }
+    q.order('timestamp', { ascending: false })
       .limit(200)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
@@ -130,12 +138,19 @@ export default function useChatMessages({
     const refetchHistory = async () => {
       if (!active) return
       try {
-        const { data, error } = await supabase
+        // corner:chat-reliability CR-2 -- same union as initial load.
+        const isTaskRoom = selectedAgent.slug?.startsWith('task:')
+        const taskRoomId = isTaskRoom ? selectedAgent.slug.slice(5) : null
+        let q = supabase
           .from('messages')
           .select('*')
           .eq('client_id', worldId)
-          .eq('agent', selectedAgent.slug)
-          .or('project.is.null,project.eq.')
+        if (isTaskRoom && taskRoomId) {
+          q = q.or(`agent.eq.${selectedAgent.slug},metadata->>task_id.eq.${taskRoomId}`)
+        } else {
+          q = q.eq('agent', selectedAgent.slug).or('project.is.null,project.eq.')
+        }
+        const { data, error } = await q
           .order('timestamp', { ascending: false })
           .limit(200)
         if (!active || error || !Array.isArray(data)) return
@@ -153,12 +168,20 @@ export default function useChatMessages({
         return
       }
       if (msg.agent !== selectedAgent.slug) {
-        console.debug('[useChatMessages] agent-thread DROP: agent mismatch', { expected: selectedAgent.slug, got: msg.agent })
-        if (typeof window !== 'undefined') {
-          window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
-          window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
+        // corner:chat-reliability CR-2 -- task rooms accept rows tagged by
+        // metadata.task_id even when the agent field drifted. Keeps
+        // historical / cross-dispatch replies visible in the originating room.
+        const isTaskRoom = selectedAgent.slug?.startsWith('task:')
+        const taskRoomId = isTaskRoom ? selectedAgent.slug.slice(5) : null
+        const metaTaskId = msg.metadata && msg.metadata.task_id
+        if (!(isTaskRoom && metaTaskId && metaTaskId === taskRoomId)) {
+          console.debug('[useChatMessages] agent-thread DROP: agent mismatch', { expected: selectedAgent.slug, got: msg.agent })
+          if (typeof window !== 'undefined') {
+            window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
+            window.__R53_BLEED_LOG__.push({ side: 'agent-thread', expected: selectedAgent.slug, got: msg.agent, id: msg.id, ts: Date.now() })
+          }
+          return
         }
-        return
       }
       if (msg.project) {
         console.debug('[useChatMessages] agent-thread DROP: project-tagged message in agent thread', { project: msg.project })
