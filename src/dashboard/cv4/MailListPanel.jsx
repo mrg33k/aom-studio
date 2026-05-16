@@ -8,6 +8,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
+import { getUserWorld } from '../lib/clientConfig.js'
+import MailAccountSwitcher from './MailAccountSwitcher.jsx'
 
 const POLL_VISIBLE_MS = 30_000
 const POLL_HIDDEN_MS = 5 * 60_000
@@ -18,6 +20,8 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
   const [errorDetail, setErrorDetail] = useState('')
   const [lastFetched, setLastFetched] = useState(null)
   const [oauthReason, setOauthReason] = useState('')
+  const [connections, setConnections] = useState([])
+  const [activeConnection, setActiveConnection] = useState(null)
   const timerRef = useRef(null)
   const inflightRef = useRef(false)
 
@@ -33,12 +37,14 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
     }
   }, [])
 
-  const load = async ({ silent } = {}) => {
+  const load = async ({ silent, connectionId } = {}) => {
     if (inflightRef.current) return
     inflightRef.current = true
     if (!silent) setMode(m => (m === 'live' ? m : 'loading'))
     try {
-      const r = await authFetch('/api/dashboard/mail/list')
+      const cid = connectionId || activeConnection?.id
+      const qs = cid ? `?connection_id=${encodeURIComponent(cid)}` : ''
+      const r = await authFetch(`/api/dashboard/mail/list${qs}`)
       if (r.status === 401) {
         const body = await r.json().catch(() => ({}))
         if (body?.error === 'not-authenticated') { setMode('error'); setErrorDetail('not-authenticated') }
@@ -63,6 +69,28 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
     }
   }
 
+  // R7: fetch the user's visible Gmail connections and pick an active one.
+  // Re-runs whenever the user's world changes (the localStorage key is per-world).
+  useEffect(() => {
+    const workspaceId = getUserWorld() || 'personal'
+    async function loadConnections() {
+      try {
+        const r = await authFetch('/api/dashboard/mail/connections')
+        if (!r.ok) return
+        const body = await r.json()
+        const list = Array.isArray(body?.connections) ? body.connections : []
+        setConnections(list)
+        const key = `cv4.mail.activeConnection.${workspaceId}`
+        const lastId = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null
+        const restored = list.find(c => c.id === lastId) || list[0] || null
+        setActiveConnection(restored)
+      } catch {
+        // ignore — falls back to legacy slug-based path
+      }
+    }
+    loadConnections()
+  }, [])
+
   useEffect(() => {
     load()
     const schedule = () => {
@@ -85,7 +113,7 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
       if (timerRef.current) clearTimeout(timerRef.current)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeConnection?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div data-cv4-mail-panel style={{
@@ -98,6 +126,35 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
         lastFetched={lastFetched}
         onRefresh={() => load()}
       />
+      {activeConnection && (
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + C.border }}>
+          <MailAccountSwitcher
+            connections={connections}
+            active={activeConnection}
+            workspaceId={getUserWorld() || null}
+            workspaceName={(getUserWorld() || '').toUpperCase()}
+            onChange={(c) => {
+              setActiveConnection(c)
+              const key = `cv4.mail.activeConnection.${getUserWorld() || 'personal'}`
+              if (typeof window !== 'undefined') window.localStorage.setItem(key, c.id)
+              load({ silent: false, connectionId: c.id })
+            }}
+            onShared={() => {
+              // Re-pull connections so the row flips to Team in place.
+              authFetch('/api/dashboard/mail/connections')
+                .then(r => r.ok ? r.json() : null)
+                .then(body => {
+                  const list = Array.isArray(body?.connections) ? body.connections : []
+                  setConnections(list)
+                  const sameEmail = activeConnection?.account_email
+                  const flipped = list.find(c => c.account_email === sameEmail) || list[0] || null
+                  setActiveConnection(flipped)
+                })
+                .catch(() => {})
+            }}
+          />
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {mode === 'loading' && <Loading />}
         {mode === 'not-connected' && <NotConnected oauthReason={oauthReason} />}
