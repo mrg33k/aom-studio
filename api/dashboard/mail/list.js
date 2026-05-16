@@ -21,7 +21,8 @@
 //   mode: 'live' | 'not-connected'
 // }
 
-import { getUserIdFromRequest, getGmailToken, gmailFetch } from '../../_lib/gmailClient.js'
+import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 const AUTOMATED_FROM = /(noreply|no-reply|notifications?|mailer-daemon|automated|donotreply|do-not-reply|postmaster|bounces?@)/i
 const SKIP_CATEGORIES = new Set(['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_UPDATES', 'CATEGORY_FORUMS'])

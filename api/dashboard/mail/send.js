@@ -16,7 +16,8 @@
 //
 // The user's primary send-as signature is appended unless includeSignature===false.
 
-import { getUserIdFromRequest, getGmailToken, gmailFetch } from '../../_lib/gmailClient.js'
+import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 function encB64Url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')

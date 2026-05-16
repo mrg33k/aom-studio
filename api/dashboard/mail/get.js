@@ -7,7 +7,8 @@
 //   inReplyTo, references,   // headers needed to thread the reply
 // }
 
-import { getUserIdFromRequest, getGmailToken, gmailFetch, decodeBase64Url } from '../../_lib/gmailClient.js'
+import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch, decodeBase64Url } from '../../_lib/gmailClient.js'
+import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 function parseFrom(header) {
   if (!header) return { name: '', email: '' }

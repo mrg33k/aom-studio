@@ -2,7 +2,8 @@
 // Returns the user's primary Gmail send-as signature so the EA can append it
 // when sending. Response: { signatureHtml, signatureText, sendAsEmail, displayName }
 
-import { getUserIdFromRequest, getGmailToken, gmailFetch } from '../../_lib/gmailClient.js'
+import { getUserIdFromRequest, getGmailToken, getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { assertCanUseConnection } from '../../_lib/mailAccess.js'
 
 function htmlToText(html) {
   if (!html) return ''
