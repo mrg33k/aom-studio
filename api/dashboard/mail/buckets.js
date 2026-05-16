@@ -48,10 +48,20 @@ export default async function handler(req, res) {
     // no list yet) — surface 0 so the bucket header reflects the actual empty
     // state rather than Gmail's estimate for the fallback q.
     if (postFilter === 'empty') { counts[slug] = 0; return }
-    const r = await gmailFetch(creds.accessToken, `/messages?q=${encodeURIComponent(q)}&maxResults=1`)
+    // R8 fix (2026-05-16): Gmail's resultSizeEstimate is unreliable at
+    // maxResults=1 — it plateaus at ~201 for any non-trivial query, so every
+    // populated bucket displayed "201" in the rail regardless of the actual
+    // count (4–12 in live testing). Use the actual ID list instead; bump
+    // maxResults to 200 so the count reflects the real Gmail-side q= match.
+    // Append "+" when nextPageToken is present so the user knows the count
+    // is capped. This is still the unfiltered count (list.js applies an
+    // additional metadata-level isAutomated filter), but order of magnitude
+    // is now correct — single-digit shows as single-digit, not 201.
+    const r = await gmailFetch(creds.accessToken, `/messages?q=${encodeURIComponent(q)}&maxResults=200`)
     if (!r.ok) { counts[slug] = 0; return }
     const body = await r.json()
-    counts[slug] = body.resultSizeEstimate ?? (body.messages?.length || 0)
+    const n = body.messages?.length || 0
+    counts[slug] = body.nextPageToken ? `${n}+` : n
   }))
   return res.status(200).json({ counts, mode: 'live' })
 }
