@@ -38,6 +38,7 @@
     { "source": "/corner", "destination": "/index.html" },
     { "source": "/dashboard/agent/:slug", "destination": "/index.html" },
     { "source": "/dashboard/mission/:missionSlug", "destination": "/index.html" },
+    { "source": "/dashboard/missions", "destination": "/index.html" },
     { "source": "/dashboard/checklist", "destination": "/index.html" },
     { "source": "/dashboard/checklist/:slug", "destination": "/index.html" },
     { "source": "/dashboard/megaboard", "destination": "/index.html" },

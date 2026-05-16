@@ -57,6 +57,7 @@ const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 const MissionRoom = lazy(() => import('./dashboard/MissionRoom.jsx'))
+const MissionsIndex = lazy(() => import('./dashboard/MissionsIndex.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
 const CleoWorkspaceDetail = lazy(() => import('./dashboard/components/cv3/CleoWorkspaceDetail.jsx'))
 const BriefPage = lazy(() => import('./pages/BriefPage.jsx'))
@@ -291,6 +292,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               page (not CornerV4) so the surface lands without risk to the
               live chat machinery. R4 promotes missions to the drawer. */}
           <Route path="/dashboard/mission/:missionSlug" element={<AuthGuard><MissionRoom /></AuthGuard>} />
+          {/* corner:mission-rooms R5 — missions index. Demotes the task table
+              by giving missions their own primary navigation surface. */}
+          <Route path="/dashboard/missions" element={<AuthGuard><MissionsIndex /></AuthGuard>} />
           <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
