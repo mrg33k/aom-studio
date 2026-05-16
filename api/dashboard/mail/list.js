@@ -63,9 +63,19 @@ export default async function handler(req, res) {
   const userId = await getUserIdFromRequest(req)
   if (!userId) return res.status(401).json({ error: 'not-authenticated' })
 
+  const connectionId = (req.query?.connection_id || '').toString() || null
   let creds
   try {
-    creds = await getGmailToken(userId)
+    if (connectionId) {
+      try {
+        await assertCanUseConnection(userId, connectionId)
+      } catch (e) {
+        return res.status(e.status || 403).json({ error: e.message })
+      }
+      creds = await getGmailTokenByConnection(connectionId)
+    } else {
+      creds = await getGmailToken(userId)
+    }
   } catch (e) {
     return res.status(502).json({ error: 'gmail-auth', detail: e.message })
   }
