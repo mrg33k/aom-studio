@@ -123,6 +123,69 @@ export async function getGmailToken(userId) {
   return { accessToken: merged.access_token, profile: row.config.profile || null }
 }
 
+
+async function loadConnectionRow(connectionId) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connectionId}&integration_slug=eq.gmail&select=id,user_id,workspace_id,config,connected_at,updated_at&limit=1`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+  )
+  if (!r.ok) return null
+  const rows = await r.json()
+  return Array.isArray(rows) && rows.length ? rows[0] : null
+}
+
+async function writeConnectionRow(connectionId, configPatch) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connectionId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ config: configPatch, updated_at: new Date().toISOString() }),
+    },
+  )
+  return r.ok
+}
+
+// Same shape as getGmailToken but keyed on a specific connection row id.
+// Caller is responsible for checking access via mailAccess.assertCanUseConnection.
+export async function getGmailTokenByConnection(connectionId) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null
+  const row = await loadConnectionRow(connectionId)
+  if (!row || !row.config || !row.config.tokens) return null
+
+  const tokens = decryptJson(row.config.tokens)
+  const now = Date.now()
+  const expiresAt = tokens.expires_at
+    || (tokens.expires_in && row.connected_at
+        ? new Date(row.connected_at).getTime() + tokens.expires_in * 1000
+        : 0)
+
+  if (tokens.access_token && (!expiresAt || expiresAt - now > 60_000)) {
+    return { accessToken: tokens.access_token, profile: row.config.profile || null, row }
+  }
+  if (!tokens.refresh_token) return null
+  const refreshed = await refresh(tokens.refresh_token)
+  const merged = {
+    ...tokens,
+    access_token: refreshed.access_token,
+    expires_in: refreshed.expires_in,
+    expires_at: Date.now() + (refreshed.expires_in || 0) * 1000,
+    refresh_token: refreshed.refresh_token || tokens.refresh_token,
+    token_type: refreshed.token_type || tokens.token_type,
+    scope: refreshed.scope || tokens.scope,
+  }
+  await writeConnectionRow(connectionId, {
+    ...row.config,
+    tokens: encryptJson(merged),
+  })
+  return { accessToken: merged.access_token, profile: row.config.profile || null, row }
+}
+
 export async function gmailFetch(accessToken, path, init = {}) {
   const url = path.startsWith('http') ? path : `${GMAIL_BASE}${path}`
   const headers = {
