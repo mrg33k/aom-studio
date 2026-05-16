@@ -43,7 +43,11 @@ export default async function handler(req, res) {
 
   const counts = {}
   await Promise.all(BUCKET_SLUGS.map(async slug => {
-    const { q } = buildBucketQuery(slug, { account_email: accountEmail, client_emails: clientEmails, prospect_emails: prospectEmails })
+    const { q, postFilter } = buildBucketQuery(slug, { account_email: accountEmail, client_emails: clientEmails, prospect_emails: prospectEmails })
+    // postFilter==='empty' is the no-seed escape hatch (clients/prospects with
+    // no list yet) — surface 0 so the bucket header reflects the actual empty
+    // state rather than Gmail's estimate for the fallback q.
+    if (postFilter === 'empty') { counts[slug] = 0; return }
     const r = await gmailFetch(creds.accessToken, `/messages?q=${encodeURIComponent(q)}&maxResults=1`)
     if (!r.ok) { counts[slug] = 0; return }
     const body = await r.json()
