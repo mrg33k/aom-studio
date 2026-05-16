@@ -1,33 +1,45 @@
-// CV4 MailListPanel — renders the last 10 days of real-human emails in the right rail.
+// CV4 MailListPanel — renders the Mail rail with 7 collapsible bucket
+// filters (R6). Each bucket has its own count + lazy-loaded list. One
+// bucket open at a time; AWAITING REPLY expands by default.
 //
-// Replaces TasksPanelCv4 when activeTool === 'mail'. Polls
-// /api/dashboard/mail/list every 30s while visible, 5min when hidden — no
-// model tokens are burned by the refresh (Gmail API call only). Clicking
-// an email fires onSelectMail so CornerV4 can attach it to the EA chat.
+// R7 wired this panel to multi-account: the active workspace/personal
+// Gmail connection drives which inbox the buckets read from.
 
 import { useEffect, useRef, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 import { getUserWorld } from '../lib/clientConfig.js'
 import MailAccountSwitcher from './MailAccountSwitcher.jsx'
+import BucketSection from './BucketSection.jsx'
 
 const POLL_VISIBLE_MS = 30_000
 const POLL_HIDDEN_MS = 5 * 60_000
 
+const BUCKETS = [
+  { slug: 'awaiting-reply', label: 'AWAITING REPLY' },
+  { slug: 'today',          label: 'TODAY' },
+  { slug: 'clients',        label: 'CLIENTS' },
+  { slug: 'threads',        label: 'THREADS' },
+  { slug: 'prospects',      label: 'PROSPECTS' },
+  { slug: 'sent',           label: 'SENT' },
+  { slug: 'all',            label: 'ALL' },
+]
+const DEFAULT_BUCKET = 'awaiting-reply'
+
 export default function MailListPanel({ selectedMailId, onSelectMail }) {
-  const [emails, setEmails] = useState([])
-  const [mode, setMode] = useState('loading') // loading | live | not-connected | error
+  const [mode, setMode] = useState('loading')
   const [errorDetail, setErrorDetail] = useState('')
   const [lastFetched, setLastFetched] = useState(null)
   const [oauthReason, setOauthReason] = useState('')
   const [connections, setConnections] = useState([])
   const [activeConnection, setActiveConnection] = useState(null)
+  const [bucketCounts, setBucketCounts] = useState({})
+  const [bucketEmails, setBucketEmails] = useState({})
+  const [expandedBucket, setExpandedBucket] = useState(DEFAULT_BUCKET)
+  const [loadingBucket, setLoadingBucket] = useState(null)
   const timerRef = useRef(null)
-  const inflightRef = useRef(false)
+  const inflightCountsRef = useRef(false)
 
-  // Pull the OAuth callback redirect's `reason` so the rail can surface a
-  // failed connect (encrypt-failed, db, exchange-failed, etc.) instead of
-  // silently rendering NotConnected with no clue why.
   useEffect(() => {
     if (typeof window === 'undefined') return
     const u = new URL(window.location.href)
@@ -37,40 +49,50 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
     }
   }, [])
 
-  const load = async ({ silent, connectionId } = {}) => {
-    if (inflightRef.current) return
-    inflightRef.current = true
+  async function loadCounts({ silent } = {}) {
+    if (!activeConnection?.id) return
+    if (inflightCountsRef.current) return
+    inflightCountsRef.current = true
     if (!silent) setMode(m => (m === 'live' ? m : 'loading'))
     try {
-      const cid = connectionId || activeConnection?.id
-      const qs = cid ? `?connection_id=${encodeURIComponent(cid)}` : ''
-      const r = await authFetch(`/api/dashboard/mail/list${qs}`)
+      const r = await authFetch(`/api/dashboard/mail/buckets?connection_id=${encodeURIComponent(activeConnection.id)}`)
       if (r.status === 401) {
         const body = await r.json().catch(() => ({}))
-        if (body?.error === 'not-authenticated') { setMode('error'); setErrorDetail('not-authenticated') }
-        else { setMode('error'); setErrorDetail(body?.error || 'unauthorized') }
+        setMode('error'); setErrorDetail(body?.error || 'unauthorized')
         return
       }
       if (!r.ok) {
-        setMode('error')
-        setErrorDetail(`HTTP ${r.status}`)
+        setMode('error'); setErrorDetail(`HTTP ${r.status}`)
         return
       }
       const body = await r.json()
-      if (body.mode === 'not-connected') { setMode('not-connected'); setEmails([]); return }
-      setEmails(Array.isArray(body.emails) ? body.emails : [])
+      if (body.mode === 'not-connected') { setMode('not-connected'); setBucketCounts({}); return }
+      setBucketCounts(body.counts || {})
       setMode('live')
       setLastFetched(Date.now())
     } catch (e) {
-      setMode('error')
-      setErrorDetail(e.message || 'fetch-failed')
+      setMode('error'); setErrorDetail(e.message || 'fetch-failed')
     } finally {
-      inflightRef.current = false
+      inflightCountsRef.current = false
     }
   }
 
-  // R7: fetch the user's visible Gmail connections and pick an active one.
-  // Re-runs whenever the user's world changes (the localStorage key is per-world).
+  async function loadBucket(slug, { force } = {}) {
+    if (!activeConnection?.id || !slug) return
+    if (!force && bucketEmails[slug]) return
+    setLoadingBucket(slug)
+    try {
+      const r = await authFetch(`/api/dashboard/mail/list?connection_id=${encodeURIComponent(activeConnection.id)}&bucket=${encodeURIComponent(slug)}`)
+      if (!r.ok) return
+      const body = await r.json()
+      setBucketEmails(prev => ({ ...prev, [slug]: Array.isArray(body.emails) ? body.emails : [] }))
+    } catch {
+      // soft-fail per bucket
+    } finally {
+      setLoadingBucket(prev => (prev === slug ? null : prev))
+    }
+  }
+
   useEffect(() => {
     const workspaceId = getUserWorld() || 'personal'
     async function loadConnections() {
@@ -84,19 +106,27 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
         const lastId = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null
         const restored = list.find(c => c.id === lastId) || list[0] || null
         setActiveConnection(restored)
-      } catch {
-        // ignore — falls back to legacy slug-based path
-      }
+      } catch { /* ignore */ }
     }
     loadConnections()
   }, [])
 
   useEffect(() => {
-    load()
+    setBucketEmails({})
+    setBucketCounts({})
+    setExpandedBucket(DEFAULT_BUCKET)
+    if (!activeConnection?.id) return
+    loadCounts()
+    loadBucket(DEFAULT_BUCKET)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConnection?.id])
+
+  useEffect(() => {
     const schedule = () => {
       const ms = document.hidden ? POLL_HIDDEN_MS : POLL_VISIBLE_MS
       timerRef.current = setTimeout(async () => {
-        await load({ silent: true })
+        await loadCounts({ silent: true })
+        if (expandedBucket) await loadBucket(expandedBucket, { force: true })
         schedule()
       }, ms)
     }
@@ -104,7 +134,8 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
     const onVisibility = () => {
       if (!document.hidden) {
         if (timerRef.current) clearTimeout(timerRef.current)
-        load({ silent: true })
+        loadCounts({ silent: true })
+        if (expandedBucket) loadBucket(expandedBucket, { force: true })
         schedule()
       }
     }
@@ -113,7 +144,11 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
       if (timerRef.current) clearTimeout(timerRef.current)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [activeConnection?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConnection?.id, expandedBucket])
+
+  const totalCount = Object.values(bucketCounts).reduce((a, b) => a + (b || 0), 0)
+  const headerCount = bucketCounts[expandedBucket] ?? 0
 
   return (
     <div data-cv4-mail-panel style={{
@@ -121,10 +156,21 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
       overflow: 'hidden', fontFamily: "'Inter', sans-serif",
     }}>
       <Header
-        count={emails.length}
+        count={headerCount}
+        bucketLabel={(BUCKETS.find(b => b.slug === expandedBucket)?.label || '').toLowerCase()}
         mode={mode}
         lastFetched={lastFetched}
-        onRefresh={() => load()}
+        onRefresh={() => {
+          loadCounts()
+          if (expandedBucket) {
+            setBucketEmails(prev => {
+              const next = { ...prev }
+              delete next[expandedBucket]
+              return next
+            })
+            loadBucket(expandedBucket, { force: true })
+          }
+        }}
       />
       {activeConnection && (
         <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + C.border }}>
@@ -137,10 +183,8 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
               setActiveConnection(c)
               const key = `cv4.mail.activeConnection.${getUserWorld() || 'personal'}`
               if (typeof window !== 'undefined') window.localStorage.setItem(key, c.id)
-              load({ silent: false, connectionId: c.id })
             }}
             onShared={() => {
-              // Re-pull connections so the row flips to Team in place.
               authFetch('/api/dashboard/mail/connections')
                 .then(r => r.ok ? r.json() : null)
                 .then(body => {
@@ -158,28 +202,62 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {mode === 'loading' && <Loading />}
         {mode === 'not-connected' && <NotConnected oauthReason={oauthReason} />}
-        {mode === 'error' && <ErrorState detail={errorDetail} onRetry={() => load()} />}
-        {mode === 'live' && emails.length === 0 && <EmptyState />}
-        {mode === 'live' && emails.length > 0 && (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {emails.map(e => (
-              <MailRow
-                key={e.id}
-                email={e}
-                active={selectedMailId === e.id}
-                onClick={() => onSelectMail?.(e)}
-              />
-            ))}
-          </ul>
+        {mode === 'error' && <ErrorState detail={errorDetail} onRetry={() => loadCounts()} />}
+        {mode === 'live' && (
+          <div>
+            {BUCKETS.map(b => {
+              const count = bucketCounts[b.slug] ?? 0
+              const open = expandedBucket === b.slug
+              const emails = bucketEmails[b.slug] || []
+              return (
+                <BucketSection
+                  key={b.slug}
+                  slug={b.slug}
+                  label={b.label}
+                  count={count}
+                  open={open}
+                  loading={loadingBucket === b.slug}
+                  onToggle={(slug) => {
+                    const next = expandedBucket === slug ? null : slug
+                    setExpandedBucket(next)
+                    if (next) loadBucket(next)
+                  }}
+                >
+                  {emails.length === 0 && !(loadingBucket === b.slug) && (
+                    <div style={{ padding: '18px 14px', color: C.muted, fontSize: 12 }}>
+                      {totalCount === 0
+                        ? 'Nothing here yet.'
+                        : `No ${b.label.toLowerCase()} right now.`}
+                    </div>
+                  )}
+                  {loadingBucket === b.slug && (
+                    <div style={{ padding: '14px', color: C.muted, fontSize: 12 }}>Loading…</div>
+                  )}
+                  {emails.length > 0 && (
+                    <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                      {emails.map(e => (
+                        <MailRow
+                          key={e.id}
+                          email={e}
+                          active={selectedMailId === e.id}
+                          onClick={() => onSelectMail?.(e)}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </BucketSection>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-function Header({ count, mode, lastFetched, onRefresh }) {
+function Header({ count, bucketLabel, mode, lastFetched, onRefresh }) {
   const summary = mode === 'live'
-    ? `${count} ${count === 1 ? 'message' : 'messages'} · last 10 days`
+    ? `${count} ${count === 1 ? 'message' : 'messages'}${bucketLabel ? ` · ${bucketLabel}` : ''}`
     : mode === 'not-connected' ? 'Gmail not connected'
     : mode === 'loading' ? 'Loading…'
     : 'Couldn\'t reach Gmail'
@@ -287,15 +365,7 @@ function MailRow({ email, active, onClick }) {
 function Loading() {
   return (
     <div style={{ padding: '24px 14px', color: C.muted, fontSize: 12 }}>
-      Pulling the last 10 days of mail…
-    </div>
-  )
-}
-
-function EmptyState() {
-  return (
-    <div style={{ padding: '32px 18px', color: C.muted, fontSize: 13, lineHeight: 1.5 }}>
-      Nothing from a real person in the last 10 days. Anything new lands here automatically.
+      Loading buckets…
     </div>
   )
 }
@@ -307,9 +377,6 @@ function NotConnected({ oauthReason }) {
     setErr('')
     setBusy(true)
     try {
-      // Fetch with Authorization header so the JWT reaches /oauth/start —
-      // a plain <a href> top-level nav 401s because no JWT is attached.
-      // Mirror the IntegrationsModal connect() pattern.
       const r = await authFetch('/api/integrations/oauth/start?slug=gmail')
       if (!r.ok) {
         const body = await r.json().catch(() => ({}))
@@ -329,7 +396,7 @@ function NotConnected({ oauthReason }) {
   return (
     <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>
-        Mail needs your Gmail account. Connect it once and your real-human mail from the last 10 days will appear here.
+        Mail needs your Gmail account. Connect it once and your buckets will populate automatically.
       </div>
       {oauthReason && (
         <div style={{
