@@ -73,7 +73,24 @@ export default async function handler(req, res) {
 
   const redirectUri = buildRedirectUri(req)
   const nonce = randomBytes(8).toString('base64url')
-  const state = signState({ userId, slug, ts: Date.now(), nonce, returnTo })
+  // R7: scope=workspace means store the resulting token on the workspace row
+  // instead of the user row. Caller must be a member of the named workspace.
+  const scope = (req.query?.scope || 'user').toString()
+  let workspaceId = null
+  if (scope === 'workspace') {
+    const requested = (req.query?.workspace_id || '').toString()
+    if (!requested) return res.status(400).json({ error: 'workspace_id required when scope=workspace' })
+    const memCheck = await fetch(
+      `${SUPABASE_URL}/rest/v1/tenant_users?user_id=eq.${userId}&tenant_id=eq.${requested}&select=tenant_id&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+    )
+    const memRows = memCheck.ok ? await memCheck.json() : []
+    if (!Array.isArray(memRows) || !memRows.length) {
+      return res.status(403).json({ error: 'not a member of requested workspace' })
+    }
+    workspaceId = requested
+  }
+  const state = signState({ userId, slug, ts: Date.now(), nonce, returnTo, workspaceId })
 
   const params = new URLSearchParams({
     client_id: creds.clientId,
