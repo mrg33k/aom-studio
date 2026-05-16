@@ -151,6 +151,27 @@ async function writeConnectionRow(connectionId, configPatch) {
   return r.ok
 }
 
+// Self-heal: fetch Gmail profile and patch row.config.account_email if missing.
+// Only fires when the row is a Gmail connection AND account_email isn't set —
+// once patched it never fires again. Non-blocking from the caller's POV via
+// catch().
+async function backfillAccountEmail(connectionId, row, accessToken) {
+  try {
+    if (!row || row.integration_slug !== 'gmail') return
+    if (row.config && row.config.account_email) return
+    const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!r.ok) return
+    const profile = await r.json()
+    const email = profile && profile.emailAddress
+    if (!email) return
+    const nextConfig = { ...(row.config || {}), account_email: email, profile: { ...(row.config?.profile || {}), emailAddress: email } }
+    await writeConnectionRow(connectionId, nextConfig)
+    row.config = nextConfig
+  } catch { /* soft-fail; cosmetic only */ }
+}
+
 // Same shape as getGmailToken but keyed on a specific connection row id.
 // Caller is responsible for checking access via mailAccess.assertCanUseConnection.
 export async function getGmailTokenByConnection(connectionId) {
@@ -166,6 +187,7 @@ export async function getGmailTokenByConnection(connectionId) {
         : 0)
 
   if (tokens.access_token && (!expiresAt || expiresAt - now > 60_000)) {
+    await backfillAccountEmail(connectionId, row, tokens.access_token)
     return { accessToken: tokens.access_token, profile: row.config.profile || null, row }
   }
   if (!tokens.refresh_token) return null
@@ -183,6 +205,7 @@ export async function getGmailTokenByConnection(connectionId) {
     ...row.config,
     tokens: encryptJson(merged),
   })
+  await backfillAccountEmail(connectionId, row, merged.access_token)
   return { accessToken: merged.access_token, profile: row.config.profile || null, row }
 }
 
