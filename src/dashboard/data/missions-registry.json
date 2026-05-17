@@ -1,0 +1,777 @@
+{
+  "generated_at": "2026-05-17T20:23:00.097Z",
+  "missions": [
+    {
+      "slug": "corner:autonomy-loop",
+      "raw_slug": "autonomy-loop",
+      "project_slug": "corner",
+      "name": "Autonomy Loop",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/autonomy-loop"
+    },
+    {
+      "slug": "corner:brief-expansion",
+      "raw_slug": "brief-expansion",
+      "project_slug": "corner",
+      "name": "Brief Expansion",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/brief-expansion"
+    },
+    {
+      "slug": "corner:chat-reliability",
+      "raw_slug": "chat-reliability",
+      "project_slug": "corner",
+      "name": "Chat Reliability",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/chat-reliability"
+    },
+    {
+      "slug": "corner:cross-repo-routing",
+      "raw_slug": "cross-repo-routing",
+      "project_slug": "corner",
+      "name": "Cross Repo Routing",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/cross-repo-routing"
+    },
+    {
+      "slug": "corner:cutscene-on-entry",
+      "raw_slug": "cutscene-on-entry",
+      "project_slug": "corner",
+      "name": "Cutscene On Entry",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/cutscene-on-entry"
+    },
+    {
+      "slug": "corner:cv4-redesign",
+      "raw_slug": "cv4-redesign",
+      "project_slug": "corner",
+      "name": "Cv4 Redesign",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-05-13",
+      "path": "corner/missions/cv4-redesign"
+    },
+    {
+      "slug": "corner:cv4-tools-mail",
+      "raw_slug": "cv4-tools-mail",
+      "project_slug": "corner",
+      "name": "Cv4 Tools Mail",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/cv4-tools-mail"
+    },
+    {
+      "slug": "corner:cwd-wedge-resolution",
+      "raw_slug": "cwd-wedge-resolution",
+      "project_slug": "corner",
+      "name": "Cwd Wedge Resolution",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/cwd-wedge-resolution"
+    },
+    {
+      "slug": "corner:daemon-observability",
+      "raw_slug": "daemon-observability",
+      "project_slug": "corner",
+      "name": "Daemon Observability",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/daemon-observability"
+    },
+    {
+      "slug": "corner:dispatch-reliability",
+      "raw_slug": "dispatch-reliability",
+      "project_slug": "corner",
+      "name": "Dispatch Reliability",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/dispatch-reliability"
+    },
+    {
+      "slug": "corner:ea-naming",
+      "raw_slug": "ea-naming",
+      "project_slug": "corner",
+      "name": "Ea Naming",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/ea-naming"
+    },
+    {
+      "slug": "corner:effective-agents",
+      "raw_slug": "effective-agents",
+      "project_slug": "corner",
+      "name": "Effective Agents",
+      "status": "active",
+      "is_done": false,
+      "last_updated": "2026-05-16T00:00:00+00:00",
+      "path": "corner/missions/effective-agents"
+    },
+    {
+      "slug": "corner:failed-task-hygiene",
+      "raw_slug": "failed-task-hygiene",
+      "project_slug": "corner",
+      "name": "Failed Task Hygiene",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/failed-task-hygiene"
+    },
+    {
+      "slug": "corner:files-in-app",
+      "raw_slug": "files-in-app",
+      "project_slug": "corner",
+      "name": "Files In App",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/files-in-app"
+    },
+    {
+      "slug": "corner:imagegen-composer",
+      "raw_slug": "imagegen-composer",
+      "project_slug": "corner",
+      "name": "Imagegen Composer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/imagegen-composer"
+    },
+    {
+      "slug": "corner:integrations",
+      "raw_slug": "integrations",
+      "project_slug": "corner",
+      "name": "Integrations",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/integrations"
+    },
+    {
+      "slug": "corner:integrity-check",
+      "raw_slug": "integrity-check",
+      "project_slug": "corner",
+      "name": "Integrity Check",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/integrity-check"
+    },
+    {
+      "slug": "corner:launch-mvp",
+      "raw_slug": "launch-mvp",
+      "project_slug": "corner",
+      "name": "Launch Mvp",
+      "status": "live",
+      "is_done": false,
+      "last_updated": "2026-04-24T00:15:00+00:00",
+      "path": "corner/missions/launch-mvp"
+    },
+    {
+      "slug": "corner:launch-readiness",
+      "raw_slug": "launch-readiness",
+      "project_slug": "corner",
+      "name": "Launch Readiness",
+      "status": "opened 2026-04-26",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/launch-readiness"
+    },
+    {
+      "slug": "corner:live-call",
+      "raw_slug": "live-call",
+      "project_slug": "corner",
+      "name": "Live Call",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/live-call"
+    },
+    {
+      "slug": "corner:living-state-feed",
+      "raw_slug": "living-state-feed",
+      "project_slug": "corner",
+      "name": "Living State Feed",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/living-state-feed"
+    },
+    {
+      "slug": "corner:mission-first-enforcement",
+      "raw_slug": "mission-first-enforcement",
+      "project_slug": "corner",
+      "name": "Mission First Enforcement",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/mission-first-enforcement"
+    },
+    {
+      "slug": "corner:mission-janitor",
+      "raw_slug": "mission-janitor",
+      "project_slug": "corner",
+      "name": "Mission Janitor",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/mission-janitor"
+    },
+    {
+      "slug": "corner:mission-rooms",
+      "raw_slug": "mission-rooms",
+      "project_slug": "corner",
+      "name": "Mission Rooms",
+      "status": "reframed-tasks-retired-acceptance-is-mission-room-chat",
+      "is_done": false,
+      "last_updated": "2026-05-17T16:35:00+00:00",
+      "path": "corner/missions/mission-rooms"
+    },
+    {
+      "slug": "corner:needs-input-resume",
+      "raw_slug": "needs-input-resume",
+      "project_slug": "corner",
+      "name": "Needs Input Resume",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/needs-input-resume"
+    },
+    {
+      "slug": "corner:notifications",
+      "raw_slug": "notifications",
+      "project_slug": "corner",
+      "name": "Notifications",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/notifications"
+    },
+    {
+      "slug": "corner:onboarding-script",
+      "raw_slug": "onboarding-script",
+      "project_slug": "corner",
+      "name": "Onboarding Script",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/onboarding-script"
+    },
+    {
+      "slug": "corner:phone-recording",
+      "raw_slug": "phone-recording",
+      "project_slug": "corner",
+      "name": "Phone Recording",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/phone-recording"
+    },
+    {
+      "slug": "corner:project-from-chat",
+      "raw_slug": "project-from-chat",
+      "project_slug": "corner",
+      "name": "Project From Chat",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/project-from-chat"
+    },
+    {
+      "slug": "corner:promise-followup",
+      "raw_slug": "promise-followup",
+      "project_slug": "corner",
+      "name": "Promise Followup",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/promise-followup"
+    },
+    {
+      "slug": "corner:relay-respond-hygiene",
+      "raw_slug": "relay-respond-hygiene",
+      "project_slug": "corner",
+      "name": "Relay Respond Hygiene",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/relay-respond-hygiene"
+    },
+    {
+      "slug": "corner:self-healing-chats",
+      "raw_slug": "self-healing-chats",
+      "project_slug": "corner",
+      "name": "Self Healing Chats",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/self-healing-chats"
+    },
+    {
+      "slug": "corner:shared-rooms",
+      "raw_slug": "shared-rooms",
+      "project_slug": "corner",
+      "name": "Shared Rooms",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/shared-rooms"
+    },
+    {
+      "slug": "corner:studio-bridge",
+      "raw_slug": "studio-bridge",
+      "project_slug": "corner",
+      "name": "Studio Bridge",
+      "status": "sdk-native-bridge-shipped-r3-soak-pending",
+      "is_done": false,
+      "last_updated": "2026-05-17T13:30:00+00:00",
+      "path": "corner/missions/studio-bridge"
+    },
+    {
+      "slug": "corner:task-rooms",
+      "raw_slug": "task-rooms",
+      "project_slug": "corner",
+      "name": "Task Rooms",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/task-rooms"
+    },
+    {
+      "slug": "corner:tenant-isolation",
+      "raw_slug": "tenant-isolation",
+      "project_slug": "corner",
+      "name": "Tenant Isolation",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/tenant-isolation"
+    },
+    {
+      "slug": "corner:time-of-day-theme",
+      "raw_slug": "time-of-day-theme",
+      "project_slug": "corner",
+      "name": "Time Of Day Theme",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/time-of-day-theme"
+    },
+    {
+      "slug": "corner:world-picker",
+      "raw_slug": "world-picker",
+      "project_slug": "corner",
+      "name": "World Picker",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/world-picker"
+    },
+    {
+      "slug": "ambition-mechanical:ambition-social-clips",
+      "raw_slug": "ambition-social-clips",
+      "project_slug": "ambition-mechanical",
+      "name": "Ambition Social Clips",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/ambition-social-clips"
+    },
+    {
+      "slug": "ambition-mechanical:google-ads-launch",
+      "raw_slug": "google-ads-launch",
+      "project_slug": "ambition-mechanical",
+      "name": "Google Ads Launch",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/google-ads-launch"
+    },
+    {
+      "slug": "ambition-mechanical:linkedin-flood",
+      "raw_slug": "linkedin-flood",
+      "project_slug": "ambition-mechanical",
+      "name": "Linkedin Flood",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/linkedin-flood"
+    },
+    {
+      "slug": "ambition-mechanical:seo-organic",
+      "raw_slug": "seo-organic",
+      "project_slug": "ambition-mechanical",
+      "name": "Seo Organic",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/seo-organic"
+    },
+    {
+      "slug": "ambition-mechanical:social",
+      "raw_slug": "social",
+      "project_slug": "ambition-mechanical",
+      "name": "Social",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/social"
+    },
+    {
+      "slug": "ambition-mechanical:tiktok-respin",
+      "raw_slug": "tiktok-respin",
+      "project_slug": "ambition-mechanical",
+      "name": "Tiktok Respin",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/tiktok-respin"
+    },
+    {
+      "slug": "ambition-mechanical:website-v2",
+      "raw_slug": "website-v2",
+      "project_slug": "ambition-mechanical",
+      "name": "Website V2",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/ambition-mechanical/missions/website-v2"
+    },
+    {
+      "slug": "blacknight:page-launch",
+      "raw_slug": "page-launch",
+      "project_slug": "blacknight",
+      "name": "Page Launch",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/blacknight/missions/page-launch"
+    },
+    {
+      "slug": "brandon-wiley-documentary:wiley-park-launch",
+      "raw_slug": "wiley-park-launch",
+      "project_slug": "brandon-wiley-documentary",
+      "name": "Wiley Park Launch",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-04-23T19:13:53.551509+00:00",
+      "path": "corner/users/aom/projects/brandon-wiley-documentary/missions/wiley-park-launch"
+    },
+    {
+      "slug": "conrad-foundation:masterclass-proposal",
+      "raw_slug": "masterclass-proposal",
+      "project_slug": "conrad-foundation",
+      "name": "Masterclass Proposal",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
+    },
+    {
+      "slug": "conrad-foundation:water-master-classes",
+      "raw_slug": "water-master-classes",
+      "project_slug": "conrad-foundation",
+      "name": "Water Master Classes",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/conrad-foundation/missions/water-master-classes"
+    },
+    {
+      "slug": "corner:launch-mvp",
+      "raw_slug": "launch-mvp",
+      "project_slug": "corner",
+      "name": "Launch Mvp",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/corner/missions/launch-mvp"
+    },
+    {
+      "slug": "higher-orbits:documentary-scope",
+      "raw_slug": "documentary-scope",
+      "project_slug": "higher-orbits",
+      "name": "Documentary Scope",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/higher-orbits/missions/documentary-scope"
+    },
+    {
+      "slug": "included-health:client-summit-video",
+      "raw_slug": "client-summit-video",
+      "project_slug": "included-health",
+      "name": "Client Summit Video",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-04-23T19:14:35.958168+00:00",
+      "path": "corner/users/aom/projects/included-health/missions/client-summit-video"
+    },
+    {
+      "slug": "intelliplay:media-retainer-engine",
+      "raw_slug": "media-retainer-engine",
+      "project_slug": "intelliplay",
+      "name": "Media Retainer Engine",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-04-23T19:14:50.471133+00:00",
+      "path": "corner/users/aom/projects/intelliplay/missions/media-retainer-engine"
+    },
+    {
+      "slug": "isa-energy:disa-gaia-pricing",
+      "raw_slug": "disa-gaia-pricing",
+      "project_slug": "isa-energy",
+      "name": "Disa Gaia Pricing",
+      "status": "ACTIVE",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/isa-energy/missions/disa-gaia-pricing"
+    },
+    {
+      "slug": "isa-energy:isa-energy-film",
+      "raw_slug": "isa-energy-film",
+      "project_slug": "isa-energy",
+      "name": "Isa Energy Film",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-04-23T19:15:05.512730+00:00",
+      "path": "corner/users/aom/projects/isa-energy/missions/isa-energy-film"
+    },
+    {
+      "slug": "kohrs:broll-indexing",
+      "raw_slug": "broll-indexing",
+      "project_slug": "kohrs",
+      "name": "Broll Indexing",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/kohrs/missions/broll-indexing"
+    },
+    {
+      "slug": "kohrs:social-content-pipeline",
+      "raw_slug": "social-content-pipeline",
+      "project_slug": "kohrs",
+      "name": "Social Content Pipeline",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-04-23T19:15:23.345747+00:00",
+      "path": "corner/users/aom/projects/kohrs/missions/social-content-pipeline"
+    },
+    {
+      "slug": "pala:cinco-de-mayo-content",
+      "raw_slug": "cinco-de-mayo-content",
+      "project_slug": "pala",
+      "name": "Cinco De Mayo Content",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/pala/missions/cinco-de-mayo-content"
+    },
+    {
+      "slug": "s3c:s3c-brand",
+      "raw_slug": "s3c-brand",
+      "project_slug": "s3c",
+      "name": "S3c Brand",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-04-23T19:15:45.779385+00:00",
+      "path": "corner/users/aom/projects/s3c/missions/s3c-brand"
+    },
+    {
+      "slug": "skylar:aisiy-social-clips",
+      "raw_slug": "aisiy-social-clips",
+      "project_slug": "skylar",
+      "name": "Aisiy Social Clips",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/skylar/missions/aisiy-social-clips"
+    },
+    {
+      "slug": "space-rising:add-4-reports",
+      "raw_slug": "add-4-reports",
+      "project_slug": "space-rising",
+      "name": "Add 4 Reports",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/add-4-reports"
+    },
+    {
+      "slug": "space-rising:april-29-event",
+      "raw_slug": "april-29-event",
+      "project_slug": "space-rising",
+      "name": "April 29 Event",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/april-29-event"
+    },
+    {
+      "slug": "space-rising:directory-positioning",
+      "raw_slug": "directory-positioning",
+      "project_slug": "space-rising",
+      "name": "Directory Positioning",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/directory-positioning"
+    },
+    {
+      "slug": "space-rising:directory-promo",
+      "raw_slug": "directory-promo",
+      "project_slug": "space-rising",
+      "name": "Directory Promo",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/directory-promo"
+    },
+    {
+      "slug": "space-rising:funding-pursuits",
+      "raw_slug": "funding-pursuits",
+      "project_slug": "space-rising",
+      "name": "Funding Pursuits",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/funding-pursuits"
+    },
+    {
+      "slug": "space-rising:launch-readiness",
+      "raw_slug": "launch-readiness",
+      "project_slug": "space-rising",
+      "name": "Launch Readiness",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/launch-readiness"
+    },
+    {
+      "slug": "space-rising:podcast-pipeline",
+      "raw_slug": "podcast-pipeline",
+      "project_slug": "space-rising",
+      "name": "Podcast Pipeline",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/podcast-pipeline"
+    },
+    {
+      "slug": "sourcing:user-flow-audit",
+      "raw_slug": "user-flow-audit",
+      "project_slug": "sourcing",
+      "name": "User Flow Audit",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-05-12",
+      "path": "corner/users/ben/projects/sourcing/missions/user-flow-audit"
+    }
+  ],
+  "project_rollup": [
+    {
+      "slug": "corner",
+      "total": 39,
+      "in_flight": 39,
+      "done": 0
+    },
+    {
+      "slug": "ambition-mechanical",
+      "total": 7,
+      "in_flight": 7,
+      "done": 0
+    },
+    {
+      "slug": "blacknight",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "brandon-wiley-documentary",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "conrad-foundation",
+      "total": 2,
+      "in_flight": 2,
+      "done": 0
+    },
+    {
+      "slug": "higher-orbits",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "included-health",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "intelliplay",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "isa-energy",
+      "total": 2,
+      "in_flight": 2,
+      "done": 0
+    },
+    {
+      "slug": "kohrs",
+      "total": 2,
+      "in_flight": 2,
+      "done": 0
+    },
+    {
+      "slug": "pala",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "s3c",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "skylar",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "space-rising",
+      "total": 7,
+      "in_flight": 7,
+      "done": 0
+    },
+    {
+      "slug": "sourcing",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    }
+  ]
+}

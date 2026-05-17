@@ -91,14 +91,20 @@ function TasksPanelCv4Body() {
           done: tasks.filter(t => t.status === 'done' || t.status === 'completed').length,
           total: tasks.length,
         }
+        // mission-rooms reframe: a mission is "in flight" because it exists
+        // and isn't marked done — task counts are enrichment, not gating.
+        // Endpoint sets is_done from CONTEXT.md frontmatter. inFlight counts
+        // queued tasks if any (drives the "· N in flight" label) but always
+        // reads as at-least-1 when the mission itself is open so the pulse
+        // icon shows.
+        const isDone = !!m.is_done
         const inFlight = stats.active + stats.waiting + stats.blocked + stats.failed
-        const isDone = (m.status === 'done' || m.status === 'completed' || m.status === 'shipped')
-          || (stats.total > 0 && stats.done === stats.total)
         out.push({
           project: { slug: p.slug, name: p.name },
           mission: { slug: m.slug, name: m.name || m.slug, status: m.status, path: m.path || `corner:${m.slug}` },
           stats,
-          inFlight,
+          inFlight: isDone ? 0 : Math.max(inFlight, 1),
+          taskInFlight: inFlight,
           isDone,
         })
       }
@@ -1357,7 +1363,7 @@ function MissionRow({ missionEntry }) {
         }}>
           {proj && <span style={{ width: 5, height: 5, borderRadius: '50%', background: proj.color, flexShrink: 0 }} />}
           <span>{project.name}</span>
-          {inFlight > 0 && <span style={{ color: '#34D399' }}>{`· ${inFlight} in flight`}</span>}
+          {missionEntry.taskInFlight > 0 && <span style={{ color: '#34D399' }}>{`· ${missionEntry.taskInFlight} in flight`}</span>}
           {isDone && stats.done > 0 && <span style={{ color: C.dim }}>{`· ${stats.done} done`}</span>}
         </div>
       </div>

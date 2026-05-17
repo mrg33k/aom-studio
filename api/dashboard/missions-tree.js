@@ -26,6 +26,7 @@
 // Otherwise it lands in unfiled_tasks under the project.
 
 import { extractJwt } from '../_lib/verifyTenant.js'
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -87,13 +88,31 @@ export default async function handler(req, res) {
     if (r.ok) tasks = await r.json()
   } catch { tasks = [] }
 
-  // Build the project -> mission_slug -> tasks map.
+  // mission-rooms reframe: the mission is the unit of work, not the task.
+  // Seed every project + mission from the on-disk registry (built at
+  // build time by scripts/build-missions-registry.cjs from corner/missions
+  // and corner/users/<u>/projects/<p>/missions). Then enrich each mission
+  // with any active tasks queued against it. Missions without active tasks
+  // still surface — their status comes from the mission's CONTEXT.md.
   const projectMap = new Map()
   function getProject(slug, name) {
     if (!projectMap.has(slug)) {
       projectMap.set(slug, { slug, name: name || slug, missions: new Map(), unfiled_tasks: [] })
     }
     return projectMap.get(slug)
+  }
+
+  for (const m of (missionsRegistry?.missions || [])) {
+    const proj = getProject(m.project_slug)
+    proj.missions.set(m.slug, {
+      slug: m.slug,
+      name: m.name || m.raw_slug || m.slug,
+      status: m.status || null,
+      is_done: !!m.is_done,
+      last_updated: m.last_updated || null,
+      path: m.path || null,
+      tasks: [],
+    })
   }
 
   for (const t of tasks) {
@@ -104,8 +123,8 @@ export default async function handler(req, res) {
       missionSlug = t.metadata.mission_slug || t.metadata.mission || null
     }
     if (!missionSlug && typeof t.text === 'string') {
-      const m = t.text.match(/--mission\s+([\w:-]+)/)
-      if (m) missionSlug = m[1]
+      const mm = t.text.match(/--mission\s+([\w:-]+)/)
+      if (mm) missionSlug = mm[1]
     }
     const taskEntry = {
       id: t.id,
@@ -115,12 +134,20 @@ export default async function handler(req, res) {
       client_id: t.client_id,
     }
     if (missionSlug) {
-      // Strip the `<project>:` prefix for display when it matches the project.
-      const display = missionSlug.startsWith(projectSlug + ':')
-        ? missionSlug.slice(projectSlug.length + 1)
-        : missionSlug
       if (!proj.missions.has(missionSlug)) {
-        proj.missions.set(missionSlug, { slug: missionSlug, name: display, tasks: [] })
+        // Mission tagged on a task but not in the registry (legacy slug or
+        // freshly-scaffolded since the last build). Surface it anyway so
+        // the user can follow up.
+        const display = missionSlug.startsWith(projectSlug + ':')
+          ? missionSlug.slice(projectSlug.length + 1)
+          : missionSlug
+        proj.missions.set(missionSlug, {
+          slug: missionSlug,
+          name: display,
+          status: 'in-progress',
+          is_done: false,
+          tasks: [],
+        })
       }
       proj.missions.get(missionSlug).tasks.push(taskEntry)
     } else {
@@ -132,7 +159,10 @@ export default async function handler(req, res) {
   for (const proj of projectMap.values()) {
     const missions = []
     for (const m of proj.missions.values()) missions.push(m)
-    missions.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    missions.sort((a, b) => {
+      if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
+      return (a.name || '').localeCompare(b.name || '')
+    })
     projects.push({
       slug: proj.slug,
       name: proj.name,
@@ -142,5 +172,8 @@ export default async function handler(req, res) {
   }
   projects.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
 
-  return res.status(200).json({ projects })
+  return res.status(200).json({
+    projects,
+    registry_generated_at: missionsRegistry?.generated_at || null,
+  })
 }
