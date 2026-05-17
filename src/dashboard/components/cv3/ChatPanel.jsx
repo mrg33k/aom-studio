@@ -435,9 +435,11 @@ export default function ChatPanel() {
   ])
 
   // mission-rooms: when the room is scoped to a specific mission, only
-  // show messages tagged with that mission_slug. Outside a mission scope,
-  // strip messages that ARE mission-tagged so they don't bleed into the
-  // project-wide chat. One thread per mission, one project-wide thread.
+  // show messages tagged with that mission_slug. Outside a mission scope
+  // (the project-wide room), collapse consecutive runs of mission-tagged
+  // messages into a single condensed marker — keeps the project room from
+  // doubling as a transcript of every mission while still acknowledging
+  // "work was being done over there". Click → /cv4/project/<p>?mission=<m>.
   const visibleMessages = useMemo(() => {
     const arr = msgs.messages || []
     const targetMission = selectedProject?.missionSlug || null
@@ -445,7 +447,50 @@ export default function ChatPanel() {
       return arr.filter(m => (m?.metadata?.mission_slug || null) === targetMission)
     }
     if (selectedProject) {
-      return arr.filter(m => !m?.metadata?.mission_slug)
+      const out = []
+      let buf = null
+      const flush = () => {
+        if (!buf) return
+        out.push({
+          id: `mission-marker:${buf.firstId}`,
+          source: 'mission-marker',
+          role: 'system',
+          text: '',
+          timestamp: buf.lastTs,
+          metadata: {
+            mission_slug: buf.missionSlug,
+            mission_name: buf.missionName,
+            message_count: buf.count,
+            last_activity_ts: buf.lastTs,
+            project_slug: selectedProject.slug,
+          },
+        })
+        buf = null
+      }
+      for (const m of arr) {
+        const mission = m?.metadata?.mission_slug || null
+        if (mission) {
+          if (buf && buf.missionSlug === mission) {
+            buf.count += 1
+            buf.lastTs = m.timestamp || buf.lastTs
+          } else {
+            flush()
+            buf = {
+              missionSlug: mission,
+              missionName: m?.metadata?.mission_name || mission,
+              firstTs: m.timestamp,
+              lastTs: m.timestamp,
+              count: 1,
+              firstId: m.id,
+            }
+          }
+        } else {
+          flush()
+          out.push(m)
+        }
+      }
+      flush()
+      return out
     }
     return arr
   }, [msgs.messages, selectedProject?.missionSlug, selectedProject?.slug])

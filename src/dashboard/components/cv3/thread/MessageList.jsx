@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { C } from '../../../lib/cv3Colors.js'
 import { LinkifyText, AgentAvatar, formatChatTime } from '../shared.jsx'
 import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
@@ -20,6 +21,68 @@ import {
   useChatSearchCtx,
   useChatContextMenuCtx,
 } from '../chat/ChatPanelContext.jsx'
+
+function MissionMarkerCard({ msg, projectSlug, floatStyle }) {
+  // mission-rooms: condensed in-project marker that says "work was being
+  // done over in mission X" without re-printing the transcript. Click =
+  // navigate into that mission's room (URL-restore in CornerV4.jsx picks
+  // up ?mission= and switches the chat surface).
+  const navigate = useNavigate()
+  const cm = msg.metadata || {}
+  const missionSlug = cm.mission_slug
+  const missionName = cm.mission_name || missionSlug
+  const count = cm.message_count || 1
+  const lastTs = cm.last_activity_ts || msg.timestamp
+  const handleOpen = () => {
+    if (!projectSlug || !missionSlug) return
+    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+    navigate(`${basePath}/project/${projectSlug}?mission=${encodeURIComponent(missionSlug)}`)
+  }
+  return (
+    <div
+      data-testid="mission-marker"
+      data-mission-slug={missionSlug}
+      style={{ display: 'flex', justifyContent: 'center', marginBottom: 6, ...floatStyle }}
+    >
+      <button
+        type="button"
+        onClick={handleOpen}
+        style={{
+          maxWidth: '85%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '6px 12px',
+          borderRadius: 999,
+          background: 'rgba(148,163,184,0.06)',
+          border: '1px solid rgba(148,163,184,0.18)',
+          color: C.text2,
+          fontSize: 11,
+          letterSpacing: '0.01em',
+          cursor: 'pointer',
+          fontFamily: "'Inter', sans-serif",
+        }}
+      >
+        <span style={{
+          fontSize: 9,
+          fontWeight: 800,
+          color: C.muted,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          mission
+        </span>
+        <span style={{ fontWeight: 600, color: C.text }}>{missionName}</span>
+        <span style={{ color: C.muted }}>·</span>
+        <span style={{ color: C.muted }}>{count} {count === 1 ? 'message' : 'messages'}</span>
+        <span style={{ color: C.muted }}>·</span>
+        <span style={{ color: C.muted }}>{formatChatTime(lastTs)}</span>
+        <span style={{ marginLeft: 4, color: C.text2, opacity: 0.7 }}>open ›</span>
+      </button>
+    </div>
+  )
+}
 
 function isKickoffMessage(m) {
   const meta = m?.metadata
@@ -515,6 +578,19 @@ export default function MessageList({ roomType = 'agent' }) {
             formatTime: formatChatTime,
           })
           if (taskCard) return <div key={msg.id} style={floatStyle}>{taskCard}</div>
+
+          // Mission marker (project rooms only): a condensed pill that
+          // collapses a run of mission-tagged messages into one row.
+          if (isProject && msg.source === 'mission-marker') {
+            return (
+              <MissionMarkerCard
+                key={msg.id}
+                msg={msg}
+                projectSlug={selectedProject?.slug || msg.metadata?.project_slug}
+                floatStyle={floatStyle}
+              />
+            )
+          }
 
           // Chain card (agent rooms only).
           if (!isProject && msg.source === 'chain-card') {

@@ -17,7 +17,7 @@
 // Plan: corner/users/aom/missions/aom-website/research/2026-05-12-cv4-wd40-redesign-plan.md
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import skillsData from '../data/skills.json'
 import { supabase } from './lib/supabase.js'
 import {
@@ -110,6 +110,7 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
 export default function CornerV4() {
   const navigate = useNavigate()
   const { projectId: routeProjectId } = useParams()
+  const routeLocation = useLocation()
   const [currentUser, setCurrentUser]   = useState(null)
   const [authReady, setAuthReady]       = useState(false)
   const [worldId, setWorldId]           = useState(null)
@@ -231,13 +232,20 @@ export default function CornerV4() {
   // the chat panel actually re-renders into the project room).
   useEffect(() => {
     if (!routeProjectId) return
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(routeLocation.search || '')
     const missionSlug = params.get('mission')
-    if (!missionSlug) return
+    if (!missionSlug) {
+      // mission-rooms: search param dropped → return to the project's
+      // general chat (clear the mission scope but keep the project).
+      setConversationTarget(prev => {
+        if (!prev || !prev.missionSlug) return prev
+        if (prev.slug !== routeProjectId) return prev
+        return { name: prev.name || prev.slug, slug: prev.slug, type: 'project' }
+      })
+      return
+    }
     setSelectedAgent(null)
     setConversationTarget(prev => {
-      // Skip if already aligned (drawer just set it).
       if (prev && prev.slug === routeProjectId && prev.missionSlug === missionSlug) return prev
       return {
         name: missionSlug,
@@ -248,7 +256,7 @@ export default function CornerV4() {
         missionPath: `corner:${missionSlug}`,
       }
     })
-  }, [routeProjectId])
+  }, [routeProjectId, routeLocation.search])
 
   // User identity for multi-user message tracking (parent scope)
   const parentUserIdentity = useMemo(() => ({
