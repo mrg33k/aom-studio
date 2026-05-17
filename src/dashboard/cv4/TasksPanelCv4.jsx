@@ -56,6 +56,72 @@ function TasksPanelCv4Body() {
   const { selectedAgent, conversationTarget, handleSelectProject, handleSelectMission, handleSelectTask, setPrefillMessage } = useCornerNav()
   const { worldId } = useCornerAuth()
 
+  // mission-rooms: pull the missions-tree (one entry per project, each with
+  // its missions and underlying tasks). The Working / Completed sections
+  // render rows from THIS data, not from the raw tasks table — the surface
+  // is missions now, not tasks.
+  const [missionsTree, setMissionsTree] = useState(null)
+  useEffect(() => {
+    if (!worldId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
+        if (!r.ok) return
+        const j = await r.json().catch(() => null)
+        if (!cancelled && j && Array.isArray(j.projects)) setMissionsTree(j)
+      } catch { /* ignore — Working/Completed just stay empty */ }
+    })()
+    return () => { cancelled = true }
+  }, [worldId])
+
+  // Flat list of {project, mission, taskStats} with project + mission
+  // metadata zipped together so MissionRow can render a single row.
+  const allMissionsFlat = useMemo(() => {
+    if (!missionsTree?.projects) return []
+    const out = []
+    for (const p of missionsTree.projects) {
+      for (const m of (p.missions || [])) {
+        const tasks = m.tasks || []
+        const stats = {
+          active: tasks.filter(t => t.status === 'active' || t.status === 'queued' || t.status === 'running').length,
+          waiting: tasks.filter(t => t.status === 'waiting' || t.status === 'needs_input').length,
+          blocked: tasks.filter(t => t.status === 'blocked').length,
+          failed: tasks.filter(t => t.status === 'failed').length,
+          done: tasks.filter(t => t.status === 'done' || t.status === 'completed').length,
+          total: tasks.length,
+        }
+        const inFlight = stats.active + stats.waiting + stats.blocked + stats.failed
+        const isDone = (m.status === 'done' || m.status === 'completed' || m.status === 'shipped')
+          || (stats.total > 0 && stats.done === stats.total)
+        out.push({
+          project: { slug: p.slug, name: p.name },
+          mission: { slug: m.slug, name: m.name || m.slug, status: m.status, path: m.path || `corner:${m.slug}` },
+          stats,
+          inFlight,
+          isDone,
+        })
+      }
+    }
+    return out
+  }, [missionsTree])
+
+  const workingMissions = useMemo(() => {
+    return allMissionsFlat
+      .filter(x => !x.isDone)
+      .filter(x => activeProject === 'all' || x.project.slug === activeProject)
+      .filter(x => !searchQuery || (x.mission.name + ' ' + x.project.name).toLowerCase().includes(searchQuery.toLowerCase()))
+      .sort((a, b) => b.inFlight - a.inFlight)
+  }, [allMissionsFlat, activeProject, searchQuery])
+
+  const completedMissions = useMemo(() => {
+    return allMissionsFlat
+      .filter(x => x.isDone)
+      .filter(x => activeProject === 'all' || x.project.slug === activeProject)
+      .filter(x => !searchQuery || (x.mission.name + ' ' + x.project.name).toLowerCase().includes(searchQuery.toLowerCase()))
+  }, [allMissionsFlat, activeProject, searchQuery])
+
+
   // R6 corner:task-rooms — when the URL hash carries `task=<id>` (from
   // the Drawer's TaskTreeRow click), open the task as a chat room via
   // handleSelectTask. The chat panel takes over. No in-panel focused
@@ -195,26 +261,20 @@ function TasksPanelCv4Body() {
         {/* Pinned missions — surfaces missions the user has pinned. */}
         <PinnedMissionsSection />
 
-        {/* Live state. */}
-        <TaskSection
-          title="Working" status="active" tasks={filteredActive}
-          summary={summarize('active', counts)}
-        />
-        <TaskSection
-          title="Needs input" status="waiting" tasks={waitingFiltered}
-          summary={summarize('waiting', counts)}
-        />
-        <TaskSection
-          title="Blocked" status="blocked" tasks={filteredBlocked}
-          summary={summarize('blocked', counts)}
-        />
-        <TaskSection
-          title="Failed" status="failed" tasks={filteredFailed}
-          summary={summarize('failed', counts)}
+        {/* Working missions — missions with anything in flight. */}
+        <MissionSection
+          title="Working"
+          missions={workingMissions}
+          empty="Nothing in motion"
         />
 
-        {/* Done — 3 visible, +5 per click. */}
-        <DoneSection tasks={filteredCompleted} />
+        {/* Completed missions. */}
+        <MissionSection
+          title="Completed missions"
+          missions={completedMissions}
+          empty="No completed missions yet"
+          collapsedInitial
+        />
 
         {/* Files at the bottom. */}
         <FilesBlock activeProject={activeProject} activeMissionPath={activeMissionPath} searchQuery={searchQuery} />
@@ -1207,5 +1267,137 @@ function PinnedMissionsSection() {
       <SectionHeader title="Pinned missions" count={pinned.length} summary={`${pinned.length} pinned`} />
       {/* rows will render here when pinned data is wired */}
     </div>
+  )
+}
+
+
+// MissionSection -- list of mission rows. Tap a row to enter that mission room.
+// Empty state shows a single line; "Completed" sections collapse by default
+// and reveal on click so the eye doesn't have to scroll past everything done.
+function MissionSection({ title, missions = [], empty, collapsedInitial = false }) {
+  const [collapsed, setCollapsed] = useState(!!collapsedInitial)
+  const count = missions.length
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div
+        onClick={() => count > 0 && setCollapsed(c => !c)}
+        style={{ cursor: count > 0 ? 'pointer' : 'default', marginBottom: 8 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+          <h2 style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 14, fontWeight: 800,
+            letterSpacing: '0.05em', textTransform: 'uppercase',
+            color: C.text, margin: 0, lineHeight: 1, flex: 1,
+          }}>{title}</h2>
+          <span style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 10, fontWeight: 700, color: C.dim,
+          }}>{count.toString().padStart(2, '0')}</span>
+        </div>
+        <div style={{
+          fontSize: 10, color: C.muted,
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.04em', textTransform: 'uppercase',
+        }}>{count === 0 ? empty : `${count} mission${count === 1 ? '' : 's'}`}</div>
+      </div>
+      {!collapsed && missions.map(m => (
+        <MissionRow
+          key={`${m.project.slug}:${m.mission.slug}`}
+          missionEntry={m}
+        />
+      ))}
+    </div>
+  )
+}
+
+// MissionRow -- single mission. Tap = enter that mission's room. The dot
+// to the left pulses green when there's something in flight under this
+// mission, so a glance across the Working list tells you which missions
+// are doing something right now.
+function MissionRow({ missionEntry }) {
+  const { handleSelectMission } = useCornerNav()
+  const { taskProjects } = useTasksPanelCtx()
+  const { project, mission, stats, inFlight, isDone } = missionEntry
+  const proj = (taskProjects || []).find(p => p.slug === project.slug) || null
+  const handleClick = () => {
+    if (handleSelectMission) handleSelectMission(mission, project)
+  }
+  return (
+    <div
+      data-mission-row="true"
+      data-mission-slug={mission.slug}
+      onClick={handleClick}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        padding: '7px 8px',
+        borderBottom: '1px solid rgba(255,255,255,0.035)',
+        cursor: 'pointer',
+        transition: 'background 0.1s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <MissionStatusIcon inFlight={inFlight} isDone={isDone} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 12.5, fontWeight: 500,
+          color: isDone ? C.muted : C.text,
+          textDecoration: isDone ? 'line-through' : 'none',
+          textDecorationColor: 'rgba(148,163,184,0.4)',
+          lineHeight: 1.4,
+          overflow: 'hidden', textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          marginBottom: 2,
+        }}>{mission.name}</div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 10, color: C.muted,
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          {proj && <span style={{ width: 5, height: 5, borderRadius: '50%', background: proj.color, flexShrink: 0 }} />}
+          <span>{project.name}</span>
+          {inFlight > 0 && <span style={{ color: '#34D399' }}>{`· ${inFlight} in flight`}</span>}
+          {isDone && stats.done > 0 && <span style={{ color: C.dim }}>{`· ${stats.done} done`}</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MissionStatusIcon({ inFlight, isDone }) {
+  if (isDone) {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(16,185,129,0.18)" stroke="#34D399" strokeWidth="1.5"/>
+        <polyline points="7 12 11 16 17 8" fill="none" stroke="#34D399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )
+  }
+  if (inFlight > 0) {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+        <style>{`
+          @keyframes cv4MissionPulse {
+            0%, 100% { opacity: 0.25; transform: scale(0.85); }
+            50%      { opacity: 0.9;  transform: scale(1.05); }
+          }
+          @keyframes cv4MissionBorder {
+            0%, 100% { stroke: rgba(255,255,255,0.22); }
+            50%      { stroke: rgba(52,211,153,0.55); }
+          }
+        `}</style>
+        <rect x="3" y="3" width="18" height="18" rx="3"
+              fill="rgba(255,255,255,0.025)" strokeWidth="1.5"
+              style={{ animation: 'cv4MissionBorder 2.4s ease-in-out infinite' }} />
+        <circle cx="12" cy="12" r="2.8" fill="#34D399"
+                style={{ animation: 'cv4MissionPulse 2.4s ease-in-out infinite', transformOrigin: '12px 12px' }} />
+      </svg>
+    )
+  }
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+      <rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.5"/>
+    </svg>
   )
 }
