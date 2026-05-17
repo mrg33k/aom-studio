@@ -463,6 +463,10 @@ export default function useChatSend({
     // R27e: bump the context-fullness meter on each user send (project chat).
     bumpContextMeter(agentKey)
 
+    // R3 corner:mission-rooms — if the user entered this room via a
+    // mission click, selectedProject carries missionSlug. Pass it through
+    // so the bridge can load the mission scaffold as system prompt.
+    const missionSlugForSend = selectedProject?.missionSlug || null
     try {
       const bridgeResult = await authFetch('/api/dashboard/chat-bridge', {
         method: 'POST',
@@ -472,9 +476,15 @@ export default function useChatSend({
           message: text,
           room: `project:${projectSlug}`,
           project: projectSlug,
+          ...(missionSlugForSend ? { mission: missionSlugForSend } : {}),
           client_id: projectClientId,
           ...userIdentity,
-          ...(replyMetaProj ? { metadata: { reply_to: replyMetaProj } } : {}),
+          ...(replyMetaProj || missionSlugForSend
+            ? { metadata: {
+                ...(replyMetaProj ? { reply_to: replyMetaProj } : {}),
+                ...(missionSlugForSend ? { mission_slug: missionSlugForSend } : {}),
+              } }
+            : {}),
         }),
       }).then(r => r.json()).catch(() => null)
       if (bridgeResult?.messageId) {
