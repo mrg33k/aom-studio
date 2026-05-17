@@ -1887,15 +1887,7 @@ export default function CornerV4() {
           onSelectTool={handleSelectTool}
           onSelectAgent={handleSelectAgent}
           onSelectProject={handleSelectProject}
-          onSelectMission={(mission, project) => {
-            handleSelectProject(project)
-            setAttachedMission({
-              slug: mission.slug,
-              name: mission.name,
-              projectSlug: project.slug,
-              path: `corner:${mission.slug}`,
-            })
-          }}
+          onSelectMission={(mission, project) => handleSelectMission(mission, project)}
           onSelectTask={(task, mission, project) => {
             if (project) handleSelectProject(project)
             if (mission) {
