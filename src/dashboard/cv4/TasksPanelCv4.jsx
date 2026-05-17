@@ -53,7 +53,7 @@ function TasksPanelCv4Body() {
     // R5 corner:task-rooms — hash-driven auto-open from the tree.
     expandedTask, toggleTaskExpand,
   } = useTasksPanelCtx()
-  const { selectedAgent, conversationTarget, handleSelectProject, handleSelectTask, setPrefillMessage } = useCornerNav()
+  const { selectedAgent, conversationTarget, handleSelectProject, handleSelectMission, handleSelectTask, setPrefillMessage } = useCornerNav()
   const { worldId } = useCornerAuth()
 
   // R6 corner:task-rooms — when the URL hash carries `task=<id>` (from
@@ -655,6 +655,10 @@ function Cv4FileTree({ activeProject, searchQuery }) {
     setActiveMissionPath,
     taskProjects,
   } = useTasksPanelCtx()
+  // R3 corner:mission-rooms — file-manager mission/project clicks navigate
+  // into the same chat rooms the drawer does. Two entry points, one
+  // conversation surface.
+  const { handleSelectProject, handleSelectMission } = useCornerNav()
 
   // Keep the underlying CV3 "open" state always-true so the data hooks
   // continue to fetch + sync even though we don't use the collapse UI.
@@ -736,10 +740,18 @@ function Cv4FileTree({ activeProject, searchQuery }) {
           return (
             <div key={slug}>
               <TreeFolderRow
+                testId={`cv4-file-tree-project-${slug}`}
                 label={projectName(slug)}
                 count={briefs.length}
                 expanded={isExpanded}
                 onToggle={() => toggle(slug)}
+                onLabelClick={slug && slug !== 'misc' && handleSelectProject
+                  ? () => {
+                      const proj = (taskProjects || []).find(p => p.slug === slug)
+                        || { slug, name: projectName(slug) }
+                      handleSelectProject(proj)
+                    }
+                  : undefined}
               />
               {isExpanded && briefs.map((b, i) => (
                 <TreeDocRow
@@ -761,6 +773,8 @@ function Cv4FileTree({ activeProject, searchQuery }) {
             setActiveMissionPath={setActiveMissionPath}
             handleBriefClick={handleBriefClick}
             searchQuery={searchQuery}
+            handleSelectMission={handleSelectMission}
+            taskProjects={taskProjects}
           />
         )}
 
@@ -780,6 +794,7 @@ function Cv4FileTree({ activeProject, searchQuery }) {
 function Cv4ProjectCanon({
   activeProject, projectBriefs, taskAttachments, taskMissions,
   setActiveMissionPath, handleBriefClick, searchQuery,
+  handleSelectMission, taskProjects,
 }) {
   const [missionsOpen, setMissionsOpen] = useState(true)
   const [filesOpen, setFilesOpen] = useState(true)
@@ -820,7 +835,15 @@ function Cv4ProjectCanon({
           key={m.path}
           data-row
           data-mission-path={m.path}
-          onClick={() => setActiveMissionPath?.(m.path)}
+          data-testid={`cv4-file-tree-mission-${m.slug}`}
+          onClick={() => {
+            // R3 corner:mission-rooms — file-manager mission click navigates
+            // into the mission room (same surface as drawer mission click).
+            const proj = (taskProjects || []).find(p => p.slug === activeProject)
+              || { slug: activeProject, name: activeProject }
+            if (handleSelectMission) handleSelectMission(m, proj)
+            else setActiveMissionPath?.(m.path)
+          }}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '3px 6px 3px 36px', cursor: 'pointer',
@@ -908,25 +931,36 @@ function Cv4CanonRow({ entry, onClick }) {
   )
 }
 
-function TreeFolderRow({ label, count, expanded, onToggle }) {
+function TreeFolderRow({ label, count, expanded, onToggle, onLabelClick, testId }) {
+  // R3 corner:mission-rooms — when onLabelClick is provided (e.g. a real
+  // project folder in the All view), clicking the label navigates into
+  // that room; the chevron + folder icon still toggle in place. Callers
+  // that don't pass onLabelClick get the original whole-row toggle UX.
+  const labelInteractive = typeof onLabelClick === 'function'
   return (
     <div
       data-row
-      onClick={onToggle}
+      data-testid={testId}
+      onClick={labelInteractive ? undefined : onToggle}
       style={{
         display: 'flex', alignItems: 'center', gap: 4,
         padding: '4px 6px 4px 4px',
-        cursor: 'pointer',
+        cursor: labelInteractive ? 'default' : 'pointer',
         position: 'relative',
       }}
       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-        style={{ flexShrink: 0, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
+      <svg
+        onClick={labelInteractive ? (e) => { e.stopPropagation(); onToggle?.() } : undefined}
+        width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        style={{ flexShrink: 0, cursor: labelInteractive ? 'pointer' : 'inherit', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
         <polyline points="9 6 15 12 9 18"/>
       </svg>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <svg
+        onClick={labelInteractive ? (e) => { e.stopPropagation(); onToggle?.() } : undefined}
+        width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        style={{ flexShrink: 0, cursor: labelInteractive ? 'pointer' : 'inherit' }}>
         {expanded ? (
           <>
             <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z"/>
@@ -936,10 +970,13 @@ function TreeFolderRow({ label, count, expanded, onToggle }) {
           <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         )}
       </svg>
-      <span style={{
-        flex: 1, fontSize: 12, fontWeight: 500, color: C.text2,
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>{label}</span>
+      <span
+        onClick={labelInteractive ? (e) => { e.stopPropagation(); onLabelClick() } : undefined}
+        style={{
+          flex: 1, fontSize: 12, fontWeight: 500, color: C.text2,
+          cursor: labelInteractive ? 'pointer' : 'inherit',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{label}</span>
       <span style={{
         fontSize: 9, fontWeight: 700, color: C.dim,
         fontFamily: "'JetBrains Mono', monospace",

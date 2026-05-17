@@ -62,6 +62,18 @@ async function writeFallbackToSupabase(body) {
     }
   }
 
+  // R3 corner:mission-rooms — when the dashboard chat-send carries
+  // `mission` (because the user entered the room via a mission click),
+  // merge it into the row's metadata as `mission_slug`. bridge.py R1 reads
+  // `metadata.mission_slug` to load the mission's CONTEXT/VISION/BUILD as
+  // SDK system-prompt context. Existing `body.metadata` keys (reply_to,
+  // etc.) survive the merge.
+  const missionSlugFromBody = (body.mission && String(body.mission).trim()) || null
+  const incomingMeta = (body.metadata && typeof body.metadata === 'object') ? body.metadata : null
+  const mergedMeta = (missionSlugFromBody || incomingMeta)
+    ? { ...(incomingMeta || {}), ...(missionSlugFromBody ? { mission_slug: missionSlugFromBody } : {}) }
+    : null
+
   const payload = {
     id: body.id || crypto.randomUUID(),
     agent: body.agent || 'elon',
@@ -72,6 +84,7 @@ async function writeFallbackToSupabase(body) {
     ...(resolvedProject ? { project: resolvedProject } : {}),
     ...(body.user_id ? { user_id: body.user_id } : {}),
     ...(body.user_name ? { user_name: body.user_name } : {}),
+    ...(mergedMeta ? { metadata: mergedMeta } : {}),
   }
 
   const url = `${SUPABASE_URL}/rest/v1/messages`
@@ -378,6 +391,9 @@ export default async function handler(req, res) {
           agent,
           room: body.room || agent,
           project: body.project || '',
+          // R3 corner:mission-rooms — forward mission scope so bridge.py
+          // can load mission CONTEXT/VISION/BUILD into the SDK system prompt.
+          ...(body.mission ? { mission: body.mission, metadata: { mission_slug: body.mission } } : {}),
           user_name: body.user_name || 'Patrik',
           user_id: body.user_id || '',
           thread_id: body.thread_id || body.client_id || '',

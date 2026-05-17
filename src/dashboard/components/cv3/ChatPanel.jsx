@@ -56,6 +56,7 @@ export default function ChatPanel() {
     handleSelectAgent: onSelectAgent,
     handleSelectProject: onSelectProject,
     handleBackFromConversation: onBack,
+    conversationTarget,
     prefillMessage,
     setPrefillMessage,
     stageFilesRef,
@@ -172,21 +173,34 @@ export default function ChatPanel() {
   }, [dbProjects, projectRooms])
 
   const selectedProject = useMemo(() => {
-    if (inlineProject) return inlineProject
+    // R3 corner:mission-rooms — when the room scope was entered via a
+    // mission click (drawer or file-manager), conversationTarget carries
+    // missionSlug + missionName. Surface them on selectedProject so the
+    // chat-send path can pass them through to the bridge.
+    const missionScope = conversationTarget?.missionSlug && conversationTarget?.slug === projectId
+      ? {
+          missionSlug: conversationTarget.missionSlug,
+          missionName: conversationTarget.missionName,
+          missionPath: conversationTarget.missionPath,
+        }
+      : null
+    if (inlineProject) return missionScope ? { ...inlineProject, ...missionScope } : inlineProject
     if (!projectId) return null
     if (projects?.length) {
       const found =
         projects.find(p => String(p.id) === String(projectId)) ||
         projects.find(p => String(p.slug).toLowerCase() === String(projectId).toLowerCase())
-      if (found) return found
+      if (found) return missionScope ? { ...found, ...missionScope } : found
     }
     // Match by id first (legacy /dashboard/project/:projectId), then by
     // slug (R21a /dashboard/projects/:slug/chat). Both routes hand us the
     // same useParams key so one lookup covers both shapes.
     // Synthetic fallback: if projects haven't loaded yet (e.g. Supabase loading),
     // still resolve the project from the URL slug so the input bar is usable.
-    return { id: projectId, slug: projectId, name: projectId }
-  }, [projectId, projects, inlineProject])
+    return missionScope
+      ? { id: projectId, slug: projectId, name: projectId, ...missionScope }
+      : { id: projectId, slug: projectId, name: projectId }
+  }, [projectId, projects, inlineProject, conversationTarget?.missionSlug, conversationTarget?.missionName, conversationTarget?.missionPath, conversationTarget?.slug])
 
   // Reset session-hygiene counters and paste chips when conversation changes.
   // Must come AFTER selectedProject is defined above — referencing it in a dep

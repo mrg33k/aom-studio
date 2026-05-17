@@ -419,6 +419,30 @@ export default function CornerV4() {
     }
   }, [navigate])
 
+  // R3 corner:mission-rooms — clicking a mission in the drawer OR in the
+  // tasks-view file manager routes into a focused chat surface scoped to
+  // that mission. Same chat template as a project/agent room; the room
+  // is keyed by project+mission so the bridge loads mission CONTEXT/VISION/
+  // BUILD as starting context (bridge.py R1) and `mission_slug` rides on
+  // every outgoing message's metadata so the SDK reply is mission-aware.
+  const handleSelectMission = useCallback((mission, project) => {
+    if (!mission || !project) return
+    setSelectedAgent(null)
+    setConversationTarget({
+      name: mission.name || mission.slug,
+      slug: project.slug,
+      type: 'project',
+      missionSlug: mission.slug,
+      missionName: mission.name || mission.slug,
+      missionPath: mission.path || `corner:${mission.slug}`,
+    })
+    setAttachedMission(null)
+    setTab('chat')
+    setUnreadChat(0)
+    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+    navigate(`${basePath}/project/${project.slug}`)
+  }, [navigate])
+
   // R6 corner:task-rooms — open the task room as a chat surface using the
   // existing ThreadView (same chat template as agent + project chats).
   // The task is encoded as a pseudo-agent with slug `task:<id>` — matches
@@ -610,12 +634,12 @@ export default function CornerV4() {
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,
     selectedAgent, conversationTarget,
-    handleSelectAgent, handleSelectProject, handleSelectTask, handleBackFromConversation,
+    handleSelectAgent, handleSelectProject, handleSelectMission, handleSelectTask, handleBackFromConversation,
     prefillMessage, setPrefillMessage,
     attachedMission, setAttachedMission,
     activeTool, selectedMail, setSelectedMail,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleSelectTask, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef])
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleSelectMission, handleSelectTask, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1675,15 +1699,7 @@ export default function CornerV4() {
             onSelectTool={handleSelectTool}
             onSelectAgent={handleSelectAgent}
             onSelectProject={handleSelectProject}
-            onSelectMission={(mission, project) => {
-              handleSelectProject(project)
-              setAttachedMission({
-                slug: mission.slug,
-                name: mission.name,
-                projectSlug: project.slug,
-                path: `corner:${mission.slug}`,
-              })
-            }}
+            onSelectMission={(mission, project) => handleSelectMission(mission, project)}
             onSelectTask={(task, mission, project) => {
               // R5 corner:task-rooms — open the task room by routing to the
               // tasks tool with the task id in the URL hash. TasksPanelCv4
