@@ -285,7 +285,29 @@ function DrawerBody({
           <Empty label="No projects" />
         ) : (
           projectRooms.map(p => {
-            const missions = missionsByProject.get(p.slug) || []
+            // R4 — prefer the live registry-backed tree (from missions-tree
+            // API), fall back to the static missions.json catalog. The
+            // registry is authoritative; the static catalog is stale.
+            const staticMissions = missionsByProject.get(p.slug) || []
+            const liveMeta = tasksByProject?.get(p.slug)?.missionMeta
+            const missions = (liveMeta && liveMeta.size > 0)
+              ? Array.from(liveMeta.entries()).map(([key, meta]) => {
+                  const rawSlug = key.startsWith(`${p.slug}:`)
+                    ? key.slice(p.slug.length + 1)
+                    : key
+                  const display = rawSlug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                  return {
+                    slug: rawSlug,
+                    name: display,
+                    status: meta?.status || null,
+                    is_done: !!meta?.is_done,
+                    projectSlug: p.slug,
+                  }
+                }).sort((a, b) => {
+                  if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
+                  return (a.name || '').localeCompare(b.name || '')
+                })
+              : staticMissions
             const isExpanded = expanded.has(p.slug)
             const hasMissions = missions.length > 0
             return (
