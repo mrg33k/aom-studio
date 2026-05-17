@@ -88,6 +88,29 @@ export default async function handler(req, res) {
     if (r.ok) tasks = await r.json()
   } catch { tasks = [] }
 
+  // R4 — fetch the newest message per mission_slug so the drawer can light
+  // an "active" dot from real activity instead of the flat mission status
+  // field. Pulls the last 14 days of mission-tagged messages and reduces
+  // to one row per mission (the first hit wins because results come back
+  // desc by created_at). Capped at 500 rows to keep the response tight.
+  const missionLastSeenAt = new Map()
+  try {
+    const sinceIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/messages?select=created_at,metadata&metadata->>mission_slug=not.is.null&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=500`,
+      { headers: supabaseHeaders() },
+    )
+    if (r.ok) {
+      const rows = await r.json()
+      for (const row of (rows || [])) {
+        const slug = row?.metadata?.mission_slug
+        const at = row?.created_at
+        if (!slug || !at) continue
+        if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
+      }
+    }
+  } catch { /* dot just won't light; missions still render */ }
+
   // mission-rooms reframe: the mission is the unit of work, not the task.
   // Seed every project + mission from the on-disk registry (built at
   // build time by scripts/build-missions-registry.cjs from corner/missions
@@ -110,6 +133,7 @@ export default async function handler(req, res) {
       status: m.status || null,
       is_done: !!m.is_done,
       last_updated: m.last_updated || null,
+      last_message_at: missionLastSeenAt.get(m.slug) || null,
       path: m.path || null,
       tasks: [],
     })
@@ -146,6 +170,7 @@ export default async function handler(req, res) {
           name: display,
           status: 'in-progress',
           is_done: false,
+          last_message_at: missionLastSeenAt.get(missionSlug) || null,
           tasks: [],
         })
       }
