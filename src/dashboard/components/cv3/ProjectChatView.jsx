@@ -15,6 +15,7 @@ import {
 } from './chat/ChatPanelContext.jsx'
 
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
+import MissionStateCard from './project-chat/MissionStateCard.jsx'
 import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
 import CanonFilesPanel from './project-chat/CanonFilesPanel.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
@@ -50,6 +51,15 @@ export default function ProjectChatView() {
       <TaskStatusCardStyles />
 
       <ProjectChatHeader />
+
+      {selectedProject?.missionSlug && (
+        <MissionStateCard
+          projectSlug={selectedProject?.slug}
+          missionSlug={selectedProject.missionSlug}
+          missionName={selectedProject.missionName}
+          onAskStarter={(text) => { try { sendProjectText?.(text) } catch (_) {} }}
+        />
+      )}
 
       {/* R41: recipes book in GRAND view -- project chat surface doesn't
           scope to a single agent. Every recipe, organized by category, with

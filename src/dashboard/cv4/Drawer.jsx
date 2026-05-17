@@ -69,15 +69,23 @@ export default function CV4Drawer({
   }, [open, worldId])
 
   // Index: project slug -> { missionSlug -> tasks[], unfiled: tasks[] }.
+  // R4 — also expose a per-mission meta map (last_message_at etc) so the
+  // drawer can light its "active" dot from real activity, not status field.
   const tasksByProject = useMemo(() => {
     const map = new Map()
     if (!tasksTree) return map
     for (const p of (tasksTree.projects || [])) {
       const missions = new Map()
+      const missionMeta = new Map()
       for (const m of (p.missions || [])) {
         missions.set(m.slug, m.tasks || [])
+        missionMeta.set(m.slug, {
+          last_message_at: m.last_message_at || null,
+          status: m.status || null,
+          is_done: !!m.is_done,
+        })
       }
-      map.set(p.slug, { missions, unfiled: p.unfiled_tasks || [] })
+      map.set(p.slug, { missions, missionMeta, unfiled: p.unfiled_tasks || [] })
     }
     return map
   }, [tasksTree])
@@ -297,6 +305,9 @@ function DrawerBody({
                       const liveTasks = tasksByProject?.get(p.slug)?.missions?.get(missionKey)
                         || tasksByProject?.get(p.slug)?.missions?.get(m.slug)
                         || []
+                      const liveMeta = tasksByProject?.get(p.slug)?.missionMeta?.get(missionKey)
+                        || tasksByProject?.get(p.slug)?.missionMeta?.get(m.slug)
+                        || null
                       const isMissionExpanded = expanded.has(`${p.slug}::mission::${m.slug}`)
                       return (
                         <div key={`${p.slug}-${m.slug}`}>
@@ -304,6 +315,7 @@ function DrawerBody({
                             mission={m}
                             project={p}
                             taskCount={liveTasks.length}
+                            lastMessageAt={liveMeta?.last_message_at || null}
                             expanded={isMissionExpanded}
                             onToggle={() => toggle(`${p.slug}::mission::${m.slug}`)}
                             onClick={() => {
@@ -439,11 +451,25 @@ function FolderRow({ label, hasChildren, expanded, active, onToggle, onOpen }) {
   )
 }
 
-function MissionRow({ mission, taskCount = 0, expanded = false, onToggle, onClick }) {
+function MissionRow({ mission, taskCount = 0, lastMessageAt = null, expanded = false, onToggle, onClick }) {
   const hasTasks = taskCount > 0
+  // R4 — active = a task in flight OR a message in the last 24h. The flat
+  // mission.status field is no longer the signal. Status pill still shows
+  // for "shipped"/"done"/etc., but the live dot tracks real activity.
+  const recentChat = (() => {
+    if (!lastMessageAt) return false
+    const then = new Date(lastMessageAt).getTime()
+    if (!Number.isFinite(then)) return false
+    return (Date.now() - then) < (24 * 60 * 60 * 1000)
+  })()
+  const isActive = hasTasks || recentChat
   return (
     <div
       data-row
+      data-active={isActive ? 'true' : undefined}
+      data-test-id="mission-row"
+      data-mission-slug={mission?.slug || ''}
+      data-mission-active={isActive ? 'true' : 'false'}
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
@@ -471,8 +497,25 @@ function MissionRow({ mission, taskCount = 0, expanded = false, onToggle, onClic
         </svg>
       </button>
       <DocIcon />
+      {/* R4 — small active dot: lit only when real activity is happening.
+          Reserves the gutter so titles align whether the dot is on or not. */}
+      <span
+        data-active-dot
+        title={isActive
+          ? (hasTasks
+            ? `${taskCount} active task${taskCount === 1 ? '' : 's'}`
+            : 'Recent chat in this room')
+          : ''}
+        style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: isActive ? '#10B981' : 'transparent',
+          boxShadow: isActive ? '0 0 0 1px rgba(16,185,129,0.35)' : 'none',
+          flexShrink: 0,
+        }}
+      />
       <span style={{
-        fontSize: 12, fontWeight: 500, color: C.text2,
+        fontSize: 12, fontWeight: 500,
+        color: isActive ? C.text : C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
       }}>{mission.name}</span>
