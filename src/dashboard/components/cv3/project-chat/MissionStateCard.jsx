@@ -71,6 +71,13 @@ export default function MissionStateCard({
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // UI-first: the moment the user clicks "Where are we?", the activity
+  // has begun. Hide the button immediately — don't wait for the server
+  // round-trip or a re-fetch to confirm message_count > 0. The CTA is
+  // for empty rooms; clicking it makes the room no longer empty.
+  const [kicked, setKicked] = useState(false)
+  // Reset kicked when the room actually changes.
+  useEffect(() => { setKicked(false) }, [projectSlug, missionSlug])
 
   useEffect(() => {
     if (!projectSlug || !missionSlug) {
@@ -101,7 +108,7 @@ export default function MissionStateCard({
   const lastTouchedIso = data?.last_message_at || data?.last_updated_disk || null
   const lastTouchedLabel = lastTouchedIso ? timeAgo(lastTouchedIso) : null
   const lastTouchedSource = data?.last_message_at ? 'chat' : (data?.last_updated_disk ? 'disk' : null)
-  const isEmptyRoom = data && (data.message_count || 0) === 0
+  const isEmptyRoom = data && (data.message_count || 0) === 0 && !kicked
 
   return (
     <div
@@ -185,7 +192,7 @@ export default function MissionStateCard({
         {isEmptyRoom && typeof onAskStarter === 'function' && (
           <button
             type="button"
-            onClick={() => onAskStarter('Where are we on this mission?')}
+            onClick={() => { setKicked(true); onAskStarter('Where are we on this mission?') }}
             style={{
               fontSize: 11, fontWeight: 600, fontFamily: "'Inter', sans-serif",
               padding: '4px 10px',
