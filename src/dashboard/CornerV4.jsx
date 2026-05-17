@@ -226,13 +226,16 @@ export default function CornerV4() {
   // mission-rooms: read ?mission= from the URL on mount and persist mission
   // scope on the conversationTarget. Lets a direct link to
   // /cv4/project/:slug?mission=:missionSlug land the user inside the mission
-  // room, not the project's general chat.
+  // room, not the project's general chat or the previously-selected 1:1
+  // agent surface (clearing selectedAgent mirrors handleSelectMission so
+  // the chat panel actually re-renders into the project room).
   useEffect(() => {
     if (!routeProjectId) return
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const missionSlug = params.get('mission')
     if (!missionSlug) return
+    setSelectedAgent(null)
     setConversationTarget(prev => {
       // Skip if already aligned (drawer just set it).
       if (prev && prev.slug === routeProjectId && prev.missionSlug === missionSlug) return prev
