@@ -293,6 +293,12 @@ export default function CornerV4() {
   useEffect(() => {
     if (!agents || agents.length === 0) return
     if (selectedAgent || conversationTarget) return
+    // mission-rooms: if the URL is on a project (or mission) page, the
+    // URL-restore effect below owns the conversationTarget. Don't race
+    // against it by defaulting to Elon's 1:1 — that wins the same-render
+    // setSelectedAgent battle and the user lands on Elon instead of the
+    // project room they navigated to.
+    if (routeProjectId) return
     const target =
       agents.find(a => a.slug === 'elon')
       || agents.find(a => a.is_ea && a.is_terminal)
@@ -301,7 +307,7 @@ export default function CornerV4() {
     if (!target) return
     setSelectedAgent(target)
     setConversationTarget({ name: target.name, type: 'agent' })
-  }, [agents, selectedAgent, conversationTarget])
+  }, [agents, selectedAgent, conversationTarget, routeProjectId])
 
   // Telephone mode (long-form record → transcribe → post to active super-agent).
   // Lives at this level so recording survives Home/Tasks/Chat navigation.
