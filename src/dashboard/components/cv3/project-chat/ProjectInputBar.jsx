@@ -198,7 +198,7 @@ export default function ProjectInputBar() {
             onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
             onBlur={() => setChatInputFocused(false)}
             onPaste={handlePaste}
-            placeholder={selectedImageTool ? 'Describe the image to generate...' : `Message ${selectedProject?.name || 'project'}...`}
+            placeholder={selectedImageTool ? 'Describe the image to generate...' : `Message ${selectedProject?.missionName || selectedProject?.name || 'project'}...`}
             style={{
               flex: 1,
               background: 'none',

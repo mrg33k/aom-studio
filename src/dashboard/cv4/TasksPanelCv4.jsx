@@ -192,9 +192,12 @@ function TasksPanelCv4Body() {
           </div>
         )}
 
+        {/* Pinned missions — surfaces missions the user has pinned. */}
+        <PinnedMissionsSection />
+
         {/* Live state. */}
         <TaskSection
-          title="Active" status="active" tasks={filteredActive}
+          title="Working" status="active" tasks={filteredActive}
           summary={summarize('active', counts)}
         />
         <TaskSection
@@ -273,7 +276,7 @@ function ScopeHeader({ label, counts }) {
         textTransform: 'uppercase', color: C.dim,
         fontFamily: "'JetBrains Mono', monospace",
         marginBottom: 4,
-      }}>Tasks · {label}</div>
+      }}>Missions · {label}</div>
       <div style={{
         fontSize: 22, fontWeight: 800,
         fontFamily: "'JetBrains Mono', monospace",
@@ -337,7 +340,7 @@ function Filters({
         )}
       </div>
 
-      <div data-cv4-tasks-pills style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+      <div data-cv4-tasks-pills onWheel={(e) => { if (e.deltaY !== 0 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.currentTarget.scrollLeft += e.deltaY } }} style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {projectPills.map(p => {
           const isActive = activeProject === p.slug
           return (
@@ -429,7 +432,7 @@ function DoneSection({ tasks }) {
   return (
     <div data-cv4-tasks-section data-status="done" style={{ marginBottom: 18 }}>
       <SectionHeader
-        title="Done"
+        title="Completed missions"
         count={tasks.length}
         summary={`${tasks.length} completed${tasks.length === 1 ? '' : ''}`}
       />
@@ -1183,6 +1186,26 @@ function Cv4BriefViewer({ brief, html, loading, onClose, onAskAboutFile }) {
           ↵ to send · referenced: {filename || '—'}
         </div>
       </div>
+    </div>
+  )
+}
+
+
+// PinnedMissionsSection -- placeholder for user-pinned missions.
+// R3 follow-up (mission-rooms): the model is missions, not tasks. Pinned
+// gives the user a always-on shortcut to the missions they care about.
+// Renders nothing until pinned-mission data flows in; once it does, this
+// list shows the mission name, the room it lives in, and a tap drops
+// into the mission room.
+function PinnedMissionsSection() {
+  // TODO: read pinned-missions list from auth scope / Supabase. For now,
+  // surface nothing so the panel stays clean.
+  const pinned = []
+  if (!pinned.length) return null
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <SectionHeader title="Pinned missions" count={pinned.length} summary={`${pinned.length} pinned`} />
+      {/* rows will render here when pinned data is wired */}
     </div>
   )
 }

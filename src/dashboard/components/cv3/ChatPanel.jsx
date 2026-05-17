@@ -434,14 +434,30 @@ export default function ChatPanel() {
     refetchProjects,
   ])
 
+  // mission-rooms: when the room is scoped to a specific mission, only
+  // show messages tagged with that mission_slug. Outside a mission scope,
+  // strip messages that ARE mission-tagged so they don't bleed into the
+  // project-wide chat. One thread per mission, one project-wide thread.
+  const visibleMessages = useMemo(() => {
+    const arr = msgs.messages || []
+    const targetMission = selectedProject?.missionSlug || null
+    if (targetMission) {
+      return arr.filter(m => (m?.metadata?.mission_slug || null) === targetMission)
+    }
+    if (selectedProject) {
+      return arr.filter(m => !m?.metadata?.mission_slug)
+    }
+    return arr
+  }, [msgs.messages, selectedProject?.missionSlug, selectedProject?.slug])
+
   const messagesValue = useMemo(() => ({
-    messages: msgs.messages, setMessages: msgs.setMessages,
+    messages: visibleMessages, setMessages: msgs.setMessages,
     loadingMsgs: msgs.loadingMsgs,
     messagesEndRef: msgs.messagesEndRef,
     messagesRef: msgs.messagesRef,
     userProfiles: msgs.userProfiles,
     stepsByMessageId: msgs.stepsByMessageId || {},  // R65-impl
-  }), [msgs.messages, msgs.setMessages, msgs.loadingMsgs, msgs.messagesEndRef, msgs.messagesRef, msgs.userProfiles, msgs.stepsByMessageId])
+  }), [visibleMessages, msgs.setMessages, msgs.loadingMsgs, msgs.messagesEndRef, msgs.messagesRef, msgs.userProfiles, msgs.stepsByMessageId])
 
   const sendValue = useMemo(() => ({
     input, setInput, inputRef,
