@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import missionsData from '../data/missions.json'
 import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
+import { authFetch } from '../lib/authFetch.js'
 
 const PANEL_WIDTH = 300
 
@@ -59,7 +60,7 @@ export default function CV4Drawer({
     let cancelled = false
     ;(async () => {
       try {
-        const r = await fetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
+        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
         if (!r.ok) return
         const j = await r.json().catch(() => null)
         if (!cancelled && j && Array.isArray(j.projects)) setTasksTree(j)

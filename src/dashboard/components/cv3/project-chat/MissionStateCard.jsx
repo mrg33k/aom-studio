@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
+import { authFetch } from '../../../lib/authFetch.js'
 
 function timeAgo(iso) {
   if (!iso) return null
@@ -80,7 +81,7 @@ export default function MissionStateCard({
     ;(async () => {
       try {
         const url = `/api/dashboard/mission-state?project=${encodeURIComponent(projectSlug)}&mission=${encodeURIComponent(missionSlug)}`
-        const r = await fetch(url, { credentials: 'include' })
+        const r = await authFetch(url, { credentials: 'include' })
         if (!r.ok) {
           if (!cancelled) { setError(`HTTP ${r.status}`); setLoading(false) }
           return
