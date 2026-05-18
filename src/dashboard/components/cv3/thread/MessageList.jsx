@@ -354,6 +354,8 @@ export default function MessageList({ roomType = 'agent' }) {
   // message has been unanswered for 45s and the thread is still in-flight.
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [floatMode, setFloatMode] = useState(false)
+  const [isAtBottom, setIsAtBottom] = useState(true)
+  const isAtBottomRef = useRef(true)
   const lastUserMsgRef = useRef(null)
 
   useEffect(() => {
@@ -460,35 +462,49 @@ export default function MessageList({ roomType = 'agent' }) {
     return -1
   }, [visibleMessages])
 
-  // Activate float mode the moment a send lands; deactivate 500ms after reply arrives.
+  // Activate float mode the moment a send lands, but ONLY if the user is
+  // engaged with the current turn (within 240px of bottom). If they're
+  // scrolled up reading history, leave them alone. Deactivate 500ms after
+  // the reply arrives.
+  const scrollListRef = useRef(null)
   useEffect(() => {
-    if (inFlight) { setFloatMode(true); return }
+    if (inFlight) {
+      if (isAtBottomRef.current) setFloatMode(true)
+      return
+    }
     const t = setTimeout(() => setFloatMode(false), 500)
     return () => clearTimeout(t)
   }, [inFlight])
 
-  // Scroll last user message to top of panel when float mode activates.
-  const scrollListRef = useRef(null)
+  // Scroll last user message into view when float mode activates. Use
+  // block:'nearest' so the browser only scrolls when the element isn't
+  // already visible — no yank when the user's msg is already on screen.
   useEffect(() => {
     if (!floatMode || !lastUserMsgRef.current) return
-    lastUserMsgRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    lastUserMsgRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [floatMode])
 
-  // corner:mission-rooms — scroll-up detection. If the user manually scrolls
-  // up while in-flight, exit float mode so history opacity restores and they
-  // can read. Previously float mode pinned the user message AND faded earlier
-  // messages to 0.12 opacity, which read as "scroll-back is broken" even
-  // though the container was technically scrollable.
+  // Track scroll position + scroll-up intent. Exits float mode on any upward
+  // scroll (lowered from -24 to -6 so trackpad nudges also count) and keeps
+  // `isAtBottom` fresh for the float-activation gate above.
   useEffect(() => {
     const el = scrollListRef.current
     if (!el) return
     let lastScrollTop = el.scrollTop
+    const measure = () => {
+      const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      const atBottom = fromBottom < 240
+      isAtBottomRef.current = atBottom
+      setIsAtBottom(atBottom)
+    }
     const onScroll = () => {
       const dy = el.scrollTop - lastScrollTop
       lastScrollTop = el.scrollTop
-      if (dy < -24 && floatMode) setFloatMode(false)
+      if (dy < -6 && floatMode) setFloatMode(false)
+      measure()
     }
     el.addEventListener('scroll', onScroll, { passive: true })
+    measure()
     return () => el.removeEventListener('scroll', onScroll)
   }, [floatMode])
 
