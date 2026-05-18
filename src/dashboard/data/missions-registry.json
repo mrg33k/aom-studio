@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T16:35:10.623Z",
+  "generated_at": "2026-05-18T18:21:43.727Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -57,15 +57,15 @@
       "path": "corner/missions/composer"
     },
     {
-      "slug": "corner:context-panel",
-      "raw_slug": "context-panel",
+      "slug": "corner:right-menu",
+      "raw_slug": "right-menu",
       "project_slug": "corner",
       "workstream": null,
-      "name": "Context Panel",
+      "name": "Right Menu",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/context-panel"
+      "path": "corner/missions/right-menu"
     },
     {
       "slug": "corner:corner-ui-cv4",
@@ -255,26 +255,26 @@
       "path": "corner/missions/shared-rooms"
     },
     {
-      "slug": "corner:sidebar",
-      "raw_slug": "sidebar",
+      "slug": "corner:left-menu",
+      "raw_slug": "left-menu",
       "project_slug": "corner",
       "workstream": null,
-      "name": "Sidebar",
+      "name": "Left Menu",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/sidebar"
+      "path": "corner/missions/left-menu"
     },
     {
-      "slug": "corner:sidebar-tools",
-      "raw_slug": "sidebar-tools",
+      "slug": "corner:left-menu-tools",
+      "raw_slug": "left-menu-tools",
       "project_slug": "corner",
       "workstream": null,
-      "name": "Sidebar Tools",
+      "name": "Left Menu Tools",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/sidebar-tools"
+      "path": "corner/missions/left-menu-tools"
     },
     {
       "slug": "corner:slash-commands",
