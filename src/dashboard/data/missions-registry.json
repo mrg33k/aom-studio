@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T06:29:09.997Z",
+  "generated_at": "2026-05-18T14:40:25.729Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -22,6 +22,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/attachments"
+    },
+    {
+      "slug": "corner:bridge",
+      "raw_slug": "bridge",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Bridge",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/bridge"
     },
     {
       "slug": "corner:chat-messages",
@@ -651,6 +662,83 @@
       "path": "corner/users/aom/projects/space-rising/missions/april-29-event"
     },
     {
+      "slug": "space-rising:articles-page",
+      "raw_slug": "articles-page",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Articles Page",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/articles-page"
+    },
+    {
+      "slug": "space-rising:company-profile",
+      "raw_slug": "company-profile",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Company Profile",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/company-profile"
+    },
+    {
+      "slug": "space-rising:deal-bank",
+      "raw_slug": "deal-bank",
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Deal Bank",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/deal-bank"
+    },
+    {
+      "slug": "space-rising:deal-bank-completed",
+      "raw_slug": "deal-bank-completed",
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Deal Bank Completed",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/deal-bank-completed"
+    },
+    {
+      "slug": "space-rising:deal-bank-investments",
+      "raw_slug": "deal-bank-investments",
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Deal Bank Investments",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/deal-bank-investments"
+    },
+    {
+      "slug": "space-rising:deal-bank-investors",
+      "raw_slug": "deal-bank-investors",
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Deal Bank Investors",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/deal-bank-investors"
+    },
+    {
+      "slug": "space-rising:directory-home",
+      "raw_slug": "directory-home",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Directory Home",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/directory-home"
+    },
+    {
       "slug": "space-rising:directory-positioning",
       "raw_slug": "directory-positioning",
       "project_slug": "space-rising",
@@ -673,6 +761,28 @@
       "path": "corner/users/aom/projects/space-rising/missions/directory-promo"
     },
     {
+      "slug": "space-rising:events-page",
+      "raw_slug": "events-page",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Events Page",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/events-page"
+    },
+    {
+      "slug": "space-rising:footer",
+      "raw_slug": "footer",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Footer",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/footer"
+    },
+    {
       "slug": "space-rising:funding-pursuits",
       "raw_slug": "funding-pursuits",
       "project_slug": "space-rising",
@@ -682,6 +792,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/space-rising/missions/funding-pursuits"
+    },
+    {
+      "slug": "space-rising:jobs-page",
+      "raw_slug": "jobs-page",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Jobs Page",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/jobs-page"
     },
     {
       "slug": "space-rising:launch-readiness",
@@ -695,6 +816,39 @@
       "path": "corner/users/aom/projects/space-rising/missions/launch-readiness"
     },
     {
+      "slug": "space-rising:marketplace-page",
+      "raw_slug": "marketplace-page",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Marketplace Page",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/marketplace-page"
+    },
+    {
+      "slug": "space-rising:member-dashboard",
+      "raw_slug": "member-dashboard",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Member Dashboard",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/member-dashboard"
+    },
+    {
+      "slug": "space-rising:membership-page",
+      "raw_slug": "membership-page",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Membership Page",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/membership-page"
+    },
+    {
       "slug": "space-rising:podcast-pipeline",
       "raw_slug": "podcast-pipeline",
       "project_slug": "space-rising",
@@ -704,6 +858,61 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/space-rising/missions/podcast-pipeline"
+    },
+    {
+      "slug": "space-rising:reports-page",
+      "raw_slug": "reports-page",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Reports Page",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/reports-page"
+    },
+    {
+      "slug": "space-rising:signin-flow",
+      "raw_slug": "signin-flow",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Signin Flow",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/signin-flow"
+    },
+    {
+      "slug": "space-rising:signup-flow",
+      "raw_slug": "signup-flow",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Signup Flow",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/signup-flow"
+    },
+    {
+      "slug": "space-rising:top-nav",
+      "raw_slug": "top-nav",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Top Nav",
+      "status": "NEW",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/top-nav"
+    },
+    {
+      "slug": "space-rising:website",
+      "raw_slug": "website",
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Website",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/website"
     },
     {
       "slug": "sourcing:user-flow-audit",
@@ -720,8 +929,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 30,
-      "in_flight": 30,
+      "total": 31,
+      "in_flight": 31,
       "done": 0
     },
     {
@@ -804,8 +1013,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 8,
-      "in_flight": 8,
+      "total": 26,
+      "in_flight": 26,
       "done": 0
     },
     {
