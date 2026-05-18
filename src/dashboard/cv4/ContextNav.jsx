@@ -290,11 +290,44 @@ export default function CV4ContextNav({
         </div>
       </div>
 
-      {/* RIGHT: mail toggle only. corner:mission-rooms — the tasks tab was
-          retired 2026-05-17 (no chrome talks tasks). The mobile/desktop
-          tasks-tab toggles are gone; the mail tool keeps its toggle since
-          mail is a real surface. */}
+      {/* RIGHT: missions toggle + mail toggle.
+          Missions button is shown when the user is in a project room (conversationTarget.type
+          === 'project'). It mirrors the left search/menu button in size and style.
+          It sits to the LEFT of the mail button so: [missions] [mail] — left-to-right
+          priority matches the conceptual hierarchy (navigation > tool mode).
+          Mail button only appears when activeTool === 'mail'. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
+        {/* Missions button — opens the left drawer scrolled to the missions tree
+            for the current project. Active (green tint) when the user is already
+            inside a specific mission room (missionSlug set on conversationTarget). */}
+        {conversationTarget?.type === 'project' && (
+          <button
+            data-testid="cv4-context-missions-toggle"
+            onClick={onToggleDrawer}
+            aria-label="View missions"
+            title="View missions"
+            style={{
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: conversationTarget?.missionSlug
+                ? 'rgba(16,185,129,0.15)'
+                : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${conversationTarget?.missionSlug
+                ? 'rgba(16,185,129,0.4)'
+                : 'rgba(255,255,255,0.08)'}`,
+              color: conversationTarget?.missionSlug ? C.accent : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            {/* Flag icon — same stroke style as the search icon (1.9–2 stroke width). */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+              <line x1="4" y1="22" x2="4" y2="15"/>
+            </svg>
+          </button>
+        )}
         {!isDesktop && activeTool === 'mail' && (
           <button
             data-testid="cv4-mail-tab-toggle"
