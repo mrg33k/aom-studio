@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-17T20:23:00.097Z",
+  "generated_at": "2026-05-18T00:32:15.225Z",
   "missions": [
     {
       "slug": "corner:autonomy-loop",
@@ -236,9 +236,9 @@
       "raw_slug": "mission-rooms",
       "project_slug": "corner",
       "name": "Mission Rooms",
-      "status": "reframed-tasks-retired-acceptance-is-mission-room-chat",
+      "status": "r1-r2-r3-shipped-end-to-end-gate-pending",
       "is_done": false,
-      "last_updated": "2026-05-17T16:35:00+00:00",
+      "last_updated": "2026-05-17T14:30:00+00:00",
       "path": "corner/missions/mission-rooms"
     },
     {
@@ -482,16 +482,6 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
     },
     {
-      "slug": "conrad-foundation:water-master-classes",
-      "raw_slug": "water-master-classes",
-      "project_slug": "conrad-foundation",
-      "name": "Water Master Classes",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/conrad-foundation/missions/water-master-classes"
-    },
-    {
       "slug": "corner:launch-mvp",
       "raw_slug": "launch-mvp",
       "project_slug": "corner",
@@ -709,8 +699,8 @@
     },
     {
       "slug": "conrad-foundation",
-      "total": 2,
-      "in_flight": 2,
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
