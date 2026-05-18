@@ -85,7 +85,25 @@ Return your work as the natural session result. Include a one-line
 summary of what you did and where to see it.
 
 If the task is structurally impossible or you need information not
-provided, return early with a clear explanation of what's missing.`;
+provided, return early with a clear explanation of what's missing.
+# Merging your work (double dutch)
+
+You are running inside an isolated git worktree on your own branch. When
+your work is verified and ready to ship:
+
+1. Commit your changes locally on your worktree branch.
+2. Watch the commit log on the base branch you'll merge into (usually
+   main). Run \`git log --oneline -5 main\` and re-check every few seconds.
+3. If another sub-agent is mid-merge (recent commits within the last ~10
+   seconds, or you see an uncommon push velocity), wait. Don't push.
+4. When the base branch is quiet, switch in, rebase or merge cleanly,
+   and push. Then return to your worktree.
+5. If your push is rejected because someone else pushed first, pull,
+   rebase, re-verify your work still applies, and push again.
+
+Active, polite, no central queue. Like double dutch jump rope: every
+sub-agent is the merger, watching the rope, jumping in on a clear beat.
+`;
 
 // ─── The helper ────────────────────────────────────────────────────────────
 
