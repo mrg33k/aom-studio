@@ -1,26 +1,6 @@
 {
-  "generated_at": "2026-05-18T00:32:15.225Z",
+  "generated_at": "2026-05-18T00:38:26.900Z",
   "missions": [
-    {
-      "slug": "corner:autonomy-loop",
-      "raw_slug": "autonomy-loop",
-      "project_slug": "corner",
-      "name": "Autonomy Loop",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/autonomy-loop"
-    },
-    {
-      "slug": "corner:brief-expansion",
-      "raw_slug": "brief-expansion",
-      "project_slug": "corner",
-      "name": "Brief Expansion",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/brief-expansion"
-    },
     {
       "slug": "corner:chat-reliability",
       "raw_slug": "chat-reliability",
@@ -72,46 +52,6 @@
       "path": "corner/missions/cv4-tools-mail"
     },
     {
-      "slug": "corner:cwd-wedge-resolution",
-      "raw_slug": "cwd-wedge-resolution",
-      "project_slug": "corner",
-      "name": "Cwd Wedge Resolution",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/cwd-wedge-resolution"
-    },
-    {
-      "slug": "corner:daemon-observability",
-      "raw_slug": "daemon-observability",
-      "project_slug": "corner",
-      "name": "Daemon Observability",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/daemon-observability"
-    },
-    {
-      "slug": "corner:dispatch-reliability",
-      "raw_slug": "dispatch-reliability",
-      "project_slug": "corner",
-      "name": "Dispatch Reliability",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/dispatch-reliability"
-    },
-    {
-      "slug": "corner:ea-naming",
-      "raw_slug": "ea-naming",
-      "project_slug": "corner",
-      "name": "Ea Naming",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/ea-naming"
-    },
-    {
       "slug": "corner:effective-agents",
       "raw_slug": "effective-agents",
       "project_slug": "corner",
@@ -120,16 +60,6 @@
       "is_done": false,
       "last_updated": "2026-05-16T00:00:00+00:00",
       "path": "corner/missions/effective-agents"
-    },
-    {
-      "slug": "corner:failed-task-hygiene",
-      "raw_slug": "failed-task-hygiene",
-      "project_slug": "corner",
-      "name": "Failed Task Hygiene",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/failed-task-hygiene"
     },
     {
       "slug": "corner:files-in-app",
@@ -162,16 +92,6 @@
       "path": "corner/missions/integrations"
     },
     {
-      "slug": "corner:integrity-check",
-      "raw_slug": "integrity-check",
-      "project_slug": "corner",
-      "name": "Integrity Check",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/integrity-check"
-    },
-    {
       "slug": "corner:launch-mvp",
       "raw_slug": "launch-mvp",
       "project_slug": "corner",
@@ -182,16 +102,6 @@
       "path": "corner/missions/launch-mvp"
     },
     {
-      "slug": "corner:launch-readiness",
-      "raw_slug": "launch-readiness",
-      "project_slug": "corner",
-      "name": "Launch Readiness",
-      "status": "opened 2026-04-26",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/launch-readiness"
-    },
-    {
       "slug": "corner:live-call",
       "raw_slug": "live-call",
       "project_slug": "corner",
@@ -200,26 +110,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/live-call"
-    },
-    {
-      "slug": "corner:living-state-feed",
-      "raw_slug": "living-state-feed",
-      "project_slug": "corner",
-      "name": "Living State Feed",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/living-state-feed"
-    },
-    {
-      "slug": "corner:mission-first-enforcement",
-      "raw_slug": "mission-first-enforcement",
-      "project_slug": "corner",
-      "name": "Mission First Enforcement",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/mission-first-enforcement"
     },
     {
       "slug": "corner:mission-janitor",
@@ -240,26 +130,6 @@
       "is_done": false,
       "last_updated": "2026-05-17T14:30:00+00:00",
       "path": "corner/missions/mission-rooms"
-    },
-    {
-      "slug": "corner:needs-input-resume",
-      "raw_slug": "needs-input-resume",
-      "project_slug": "corner",
-      "name": "Needs Input Resume",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/needs-input-resume"
-    },
-    {
-      "slug": "corner:notifications",
-      "raw_slug": "notifications",
-      "project_slug": "corner",
-      "name": "Notifications",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/notifications"
     },
     {
       "slug": "corner:onboarding-script",
@@ -302,16 +172,6 @@
       "path": "corner/missions/promise-followup"
     },
     {
-      "slug": "corner:relay-respond-hygiene",
-      "raw_slug": "relay-respond-hygiene",
-      "project_slug": "corner",
-      "name": "Relay Respond Hygiene",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/relay-respond-hygiene"
-    },
-    {
       "slug": "corner:self-healing-chats",
       "raw_slug": "self-healing-chats",
       "project_slug": "corner",
@@ -340,16 +200,6 @@
       "is_done": false,
       "last_updated": "2026-05-17T13:30:00+00:00",
       "path": "corner/missions/studio-bridge"
-    },
-    {
-      "slug": "corner:task-rooms",
-      "raw_slug": "task-rooms",
-      "project_slug": "corner",
-      "name": "Task Rooms",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/task-rooms"
     },
     {
       "slug": "corner:tenant-isolation",
@@ -675,8 +525,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 39,
-      "in_flight": 39,
+      "total": 24,
+      "in_flight": 24,
       "done": 0
     },
     {
