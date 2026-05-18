@@ -64,6 +64,8 @@
     { "source": "/finance", "destination": "/index.html" },
     { "source": "/directory", "destination": "/index.html" },
     { "source": "/blacknight", "destination": "/index.html" },
+    { "source": "/space-rising", "destination": "/index.html" },
+    { "source": "/space-rising/:path*", "destination": "/index.html" },
     { "source": "/change-password", "destination": "/index.html" },
     { "source": "/elon-room", "destination": "/index.html" },
     { "source": "/design/:path*", "destination": "/index.html" },
