@@ -633,8 +633,17 @@
   </div>
 
   <script>
-    // R-MP-4: load mission tree for the active project + render workstream-grouped.
-    (async function loadMissionTree() {
+    // R-MP-4 + R-DC-6: load mission tree, subscribe to messages-inserts so
+    // mission activity dots light up live without polling. True missions-table
+    // Realtime depends on R-MP-3 schema migration (DDL — outside this round).
+    let __missionTreeReloadDebounce = null;
+    function __scheduleTreeReload() {
+      clearTimeout(__missionTreeReloadDebounce);
+      __missionTreeReloadDebounce = setTimeout(loadMissionTree, 1500);
+    }
+
+    async function loadMissionTree() {
+      // Re-entrant — used by both initial load and Realtime-triggered reload.
       try {
         const params = new URLSearchParams(window.location.search);
         const activeProject = params.get('project') || 'ambition-mechanical';
@@ -678,11 +687,33 @@
         el.dataset.loading = 'false';
       } catch (err) {
         var el = document.getElementById('mission-tree');
-        if (el) {
+        if (el && el.dataset.loading === 'true') {
           el.innerHTML = '<div style="font-size: var(--fs-xs); color: var(--c-text2);">Could not load missions.</div>';
           el.dataset.loading = 'false';
         }
         console.warn('[mission-tree] load failed', err);
+      }
+    }
+
+    // Initial load
+    loadMissionTree();
+
+    // R-DC-6: live-update dots when new mission-tagged messages arrive.
+    // Uses the existing supabase client if exposed globally; otherwise
+    // skips silently and relies on the next page load.
+    (function wireRealtime() {
+      try {
+        var sb = window.supabase || (window.AOM_SUPABASE && window.AOM_SUPABASE.client);
+        if (!sb || !sb.channel) return;
+        var channelId = 'mission-tree-' + Math.random().toString(36).slice(2, 8);
+        sb.channel(channelId)
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function (payload) {
+            var slug = payload && payload.new && payload.new.metadata && payload.new.metadata.mission_slug;
+            if (slug) __scheduleTreeReload();
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('[mission-tree] realtime subscribe failed', err);
       }
     })();
 
