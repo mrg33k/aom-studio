@@ -1,0 +1,303 @@
+<!--
+  mission-tree.html — R-MP-1 (read-only nested workstream + sub-mission tree)
+
+  Mission: corner:mission-panel
+  Round: R-MP-1.5 (port of R-MP-1 mockup from corner/missions/mission-panel/mockups/)
+  Status: read-only, NOT wired to live data. R-MP-2 adds the
+  /api/missions/tree endpoint + Realtime subscription. R-MP-3+ adds
+  drag-drop, rename, etc.
+
+  Patrik's decisions (2026-05-17):
+  - Workstreams prefolded by default (Q1).
+  - No Failed section (SDK Q1 reframe — there is no such thing as a
+    failed mission). Status dots: emerald = active, hollow = done,
+    gray = pending. Never red.
+  - Active section at top: surfaces in-flight work across all workstreams.
+  - Sort: Active section, then full tree under "All workstreams".
+
+  This file is NOT included by any view yet. To preview, open the
+  standalone mockup at corner/missions/mission-panel/mockups/r-mp-1-tree-component.html.
+  Wiring into project-chat.html sidebar is R-MP-2.
+-->
+
+<style data-cv4 data-component="mission-tree">
+  [data-cv4] .mt-root {
+    font-family: var(--ff-sans);
+    color: var(--c-text);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    padding: var(--sp-md) 0;
+  }
+
+  [data-cv4] .mt-section-label {
+    text-transform: uppercase;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--c-text2);
+    letter-spacing: 0.05em;
+    margin: var(--sp-lg) 0 var(--sp-sm);
+  }
+
+  [data-cv4] .mt-project {
+    margin-bottom: var(--sp-md);
+  }
+
+  [data-cv4] .mt-project-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: var(--sp-sm) var(--sp-md);
+    color: var(--c-text);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background-color 120ms ease;
+  }
+
+  [data-cv4] .mt-project-row:hover {
+    background-color: var(--c-dim);
+  }
+
+  [data-cv4] .mt-project-row.active {
+    background-color: var(--c-dim);
+    color: var(--c-accent);
+  }
+
+  [data-cv4] .mt-project-name {
+    flex: 1;
+    font-weight: var(--fw-medium);
+  }
+
+  [data-cv4] .mt-project-count {
+    font-size: var(--fs-xs);
+    color: var(--c-muted);
+  }
+
+  [data-cv4] .mt-workstreams {
+    margin-left: var(--sp-md);
+    border-left: 1px solid var(--c-border);
+    padding-left: var(--sp-sm);
+  }
+
+  [data-cv4] .mt-workstream {
+    margin: var(--sp-xs) 0;
+  }
+
+  [data-cv4] details.mt-workstream-details > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: var(--sp-xs) var(--sp-sm);
+    border-radius: 4px;
+    color: var(--c-text2);
+    font-size: var(--fs-xs);
+    text-transform: lowercase;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-xs);
+    transition: background-color 120ms ease;
+  }
+
+  [data-cv4] details.mt-workstream-details > summary:hover {
+    background-color: var(--c-dim);
+    color: var(--c-text);
+  }
+
+  [data-cv4] details.mt-workstream-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  [data-cv4] .mt-disclosure {
+    display: inline-block;
+    width: 10px;
+    transition: transform 120ms ease;
+    color: var(--c-muted);
+  }
+
+  [data-cv4] details.mt-workstream-details[open] > summary .mt-disclosure {
+    transform: rotate(90deg);
+  }
+
+  [data-cv4] .mt-workstream-name {
+    flex: 1;
+    font-weight: var(--fw-medium);
+  }
+
+  [data-cv4] .mt-sub-count {
+    color: var(--c-muted);
+    font-size: var(--fs-xs);
+  }
+
+  [data-cv4] .mt-submissions {
+    margin: var(--sp-xs) 0 var(--sp-xs) var(--sp-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  [data-cv4] .mt-submission {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: var(--sp-xs) var(--sp-sm);
+    color: var(--c-text);
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: var(--fs-xs);
+    transition: background-color 120ms ease;
+  }
+
+  [data-cv4] .mt-submission:hover {
+    background-color: var(--c-dim);
+  }
+
+  [data-cv4] .mt-submission.active {
+    color: var(--c-accent);
+    background-color: var(--c-dim);
+  }
+
+  [data-cv4] .mt-submission-name {
+    flex: 1;
+  }
+
+  [data-cv4] .mt-submission-status {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--c-muted);
+  }
+
+  [data-cv4] .mt-submission-status.active {
+    background-color: var(--c-accent);
+  }
+
+  [data-cv4] .mt-submission-status.done {
+    background-color: transparent;
+    border: 1px solid var(--c-muted);
+  }
+</style>
+
+<!--
+  Static demo data: ambition-mechanical's proposed 6-workstream layout.
+  R-MP-2 replaces this with dynamic render from /api/missions/tree?project=<slug>.
+-->
+<div data-cv4>
+  <div class="mt-root">
+
+    <div class="mt-section-label">Active</div>
+    <div class="mt-submissions" style="margin-left: var(--sp-md);">
+      <a href="#" class="mt-submission active">
+        <span class="mt-submission-status active"></span>
+        <span class="mt-submission-name">hero</span>
+        <span class="mt-sub-count">website</span>
+      </a>
+      <a href="#" class="mt-submission">
+        <span class="mt-submission-status active"></span>
+        <span class="mt-submission-name">lp-restaurant-hvac</span>
+        <span class="mt-sub-count">google-ads</span>
+      </a>
+      <a href="#" class="mt-submission">
+        <span class="mt-submission-status active"></span>
+        <span class="mt-submission-name">brand-page</span>
+        <span class="mt-sub-count">brand</span>
+      </a>
+    </div>
+
+    <div class="mt-section-label">All workstreams</div>
+
+    <div class="mt-project">
+      <a href="./project-chat.html?project=ambition-mechanical" class="mt-project-row active">
+        <span class="mt-project-name">Ambition Mechanical</span>
+        <span class="mt-project-count">6 · 25 missions</span>
+      </a>
+
+      <div class="mt-workstreams">
+
+        <details class="mt-workstream-details mt-workstream">
+          <summary>
+            <span class="mt-disclosure">▶</span>
+            <span class="mt-workstream-name">website</span>
+            <span class="mt-sub-count">13</span>
+          </summary>
+          <div class="mt-submissions">
+            <a href="#" class="mt-submission"><span class="mt-submission-status active"></span><span class="mt-submission-name">hero</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">top-bar</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">what-we-do</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">testimonials</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">how-to-hire</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">about-page</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">projects-page</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">contact-page</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status done"></span><span class="mt-submission-name">footer</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status done"></span><span class="mt-submission-name">privacy-banner</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">services-grid</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">careers-page</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">404-page</span></a>
+          </div>
+        </details>
+
+        <details class="mt-workstream-details mt-workstream">
+          <summary>
+            <span class="mt-disclosure">▶</span>
+            <span class="mt-workstream-name">google-ads</span>
+            <span class="mt-sub-count">5</span>
+          </summary>
+          <div class="mt-submissions">
+            <a href="#" class="mt-submission"><span class="mt-submission-status active"></span><span class="mt-submission-name">lp-restaurant-hvac</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">lp-emergency-hvac</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">lp-walk-in-cooler-repair</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">lp-rtu-service</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">campaign-structure</span></a>
+          </div>
+        </details>
+
+        <details class="mt-workstream-details mt-workstream">
+          <summary>
+            <span class="mt-disclosure">▶</span>
+            <span class="mt-workstream-name">brand</span>
+            <span class="mt-sub-count">2</span>
+          </summary>
+          <div class="mt-submissions">
+            <a href="#" class="mt-submission"><span class="mt-submission-status active"></span><span class="mt-submission-name">brand-page</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">color-system</span></a>
+          </div>
+        </details>
+
+        <details class="mt-workstream-details mt-workstream">
+          <summary>
+            <span class="mt-disclosure">▶</span>
+            <span class="mt-workstream-name">project-case-studies</span>
+            <span class="mt-sub-count">2</span>
+          </summary>
+          <div class="mt-submissions">
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">projects-gallery</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">per-project-video</span></a>
+          </div>
+        </details>
+
+        <details class="mt-workstream-details mt-workstream">
+          <summary>
+            <span class="mt-disclosure">▶</span>
+            <span class="mt-workstream-name">photography</span>
+            <span class="mt-sub-count">2</span>
+          </summary>
+          <div class="mt-submissions">
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">jobsite-photography</span></a>
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">team-portraits</span></a>
+          </div>
+        </details>
+
+        <details class="mt-workstream-details mt-workstream">
+          <summary>
+            <span class="mt-disclosure">▶</span>
+            <span class="mt-workstream-name">social</span>
+            <span class="mt-sub-count">1</span>
+          </summary>
+          <div class="mt-submissions">
+            <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">social-edits</span></a>
+          </div>
+        </details>
+
+      </div>
+    </div>
+
+  </div>
+</div>

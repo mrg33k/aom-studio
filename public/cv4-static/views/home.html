@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <base href="/cv4/views/">
-  <title>Corner v4 — Ahead of Market</title>
+  <title>Dashboard — Ahead of Market</title>
   <link rel="stylesheet" href="../styles/tokens.css">
   <link rel="stylesheet" href="../styles/base.css">
   <link rel="stylesheet" href="../styles/animations.css">
@@ -226,19 +225,19 @@
       <!-- Populated dynamically or via data-include -->
       <a href="./project-chat.html?project=corner" class="pinned-item">
         <span class="pinned-item-name">Corner</span>
-        <span class="pinned-item-meta">6 active</span>
+        <span class="pinned-item-meta" aria-label="6 active missions">6 active</span>
       </a>
       <a href="./project-chat.html?project=ambition-mechanical" class="pinned-item">
         <span class="pinned-item-name">Ambition</span>
-        <span class="pinned-item-meta">3 active</span>
+        <span class="pinned-item-meta" aria-label="3 active missions">3 active</span>
       </a>
       <a href="./project-chat.html?project=isa-energy" class="pinned-item">
         <span class="pinned-item-name">ISA Energy</span>
-        <span class="pinned-item-meta">2 active</span>
+        <span class="pinned-item-meta" aria-label="2 active missions">2 active</span>
       </a>
       <a href="./project-chat.html?project=pala" class="pinned-item">
         <span class="pinned-item-name">Pala</span>
-        <span class="pinned-item-meta">1 active</span>
+        <span class="pinned-item-meta" aria-label="1 active mission">1 active</span>
       </a>
     </div>
   </div>
@@ -250,7 +249,7 @@
         <!-- Greeting: time-aware (morning/afternoon/evening/late-night) -->
         <div>
           <h1 class="greeting-hero" id="greeting-text">Good morning, Patrik</h1>
-          <p class="greeting-subtext">5 tasks waiting, 2 messages, 1 approval pending</p>
+          <p class="greeting-subtext">5 missions in flight, 2 messages, 1 approval pending</p>
         </div>
 
         <!-- Search bar -->
@@ -265,14 +264,14 @@
           <div class="feed-container">
             <div class="feed-item task">
               <div class="feed-item-title">R75-g2: Finish CV4 v2 hand-author</div>
-              <div class="feed-item-meta">Due in 2 hours • Corner mission</div>
+              <div class="feed-item-meta">In flight • Corner mission</div>
             </div>
             <div class="feed-item message">
               <div class="feed-item-title">Steffen: Brand refresh feedback</div>
               <div class="feed-item-meta">Just now • Needs response</div>
             </div>
             <div class="feed-item system">
-              <div class="feed-item-title">ISA Energy project stale (7 days)</div>
+              <div class="feed-item-title">ISA Energy project quiet 7 days</div>
               <div class="feed-item-meta">Archive or reactivate?</div>
             </div>
           </div>
@@ -286,7 +285,7 @@
               Open Corner
             </button>
             <button class="btn-secondary" onclick="location.href='./tasks.html'">
-              View All Tasks
+              View All Missions
             </button>
             <button class="btn-secondary" onclick="startVoiceRecording()">
               Start Voice Call
@@ -323,42 +322,6 @@
     </div>
   </div>
 
-  <!-- Cut-scene overlay (hidden by default, shown on return) -->
-  <div class="cutscene-overlay" id="cutscene" style="display: none;">
-    <div class="cutscene-content">
-      <h2 class="cutscene-title">Previously On</h2>
-      <div class="cutscene-items">
-        <div class="cutscene-item">
-          <strong>Stale project</strong>
-          <p style="font-size: var(--fs-sm); color: var(--c-text2); margin-top: var(--sp-sm);">
-            ISA Energy hasn't moved in 7 days. Archive or reactivate?
-          </p>
-          <div style="display: flex; gap: var(--sp-md); margin-top: var(--sp-md);">
-            <button class="btn-secondary" onclick="archiveProject('isa-energy')">Archive</button>
-            <button class="btn-primary" onclick="openProject('isa-energy')">Reactivate</button>
-          </div>
-        </div>
-        <div class="cutscene-item">
-          <strong>Needs input</strong>
-          <p style="font-size: var(--fs-sm); color: var(--c-text2); margin-top: var(--sp-sm);">
-            Steffen waiting on color feedback for brand refresh
-          </p>
-          <button class="btn-primary" style="margin-top: var(--sp-md);" onclick="location.href='./chat-1on1.html?agent=steffen'">
-            Reply to Steffen
-          </button>
-        </div>
-        <div class="cutscene-item">
-          <strong>Skill recommendation</strong>
-          <p style="font-size: var(--fs-sm); color: var(--c-text2); margin-top: var(--sp-sm);">
-            Try /video-pipeline for the Ambition batch cleanup
-          </p>
-          <button class="btn-secondary" style="margin-top: var(--sp-md);" onclick="dismissCutScene()">
-            Got it
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Floating call bar (shown when call is active) -->
   <div class="floating-call-bar" id="floating-call-bar" style="display: none;">
@@ -389,23 +352,6 @@
       document.getElementById('greeting-text').textContent = greeting;
     }
 
-    // Show cut-scene on first return (sessionStorage flag)
-    function checkCutScene() {
-      if (!sessionStorage.getItem('cutscene-shown')) {
-        document.getElementById('cutscene').style.display = 'flex';
-        sessionStorage.setItem('cutscene-shown', 'true');
-      }
-    }
-
-    function dismissCutScene() {
-      document.getElementById('cutscene').style.display = 'none';
-    }
-
-    function archiveProject(slug) {
-      console.log('Archive project:', slug);
-      dismissCutScene();
-    }
-
     function openProject(slug) {
       location.href = `./project-chat.html?project=${slug}`;
     }
@@ -426,7 +372,6 @@
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       updateGreeting();
-      checkCutScene();
 
       // Search functionality stub
       document.getElementById('search-btn').addEventListener('click', () => {

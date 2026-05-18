@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tasks — Ahead of Market</title>
+  <title>Missions — Ahead of Market</title>
   <link rel="stylesheet" href="../styles/tokens.css">
   <link rel="stylesheet" href="../styles/base.css">
   <link rel="stylesheet" href="../styles/animations.css">
@@ -225,7 +225,7 @@
 
     <h3 class="sidebar-label">Filters</h3>
     <div style="display: flex; flex-direction: column; gap: var(--sp-sm);">
-      <button class="filter-btn active" onclick="filterTasks('all')">All Tasks</button>
+      <button class="filter-btn active" onclick="filterTasks('all')">All Missions</button>
       <button class="filter-btn" onclick="filterTasks('right-now')">Right Now</button>
       <button class="filter-btn" onclick="filterTasks('scheduled')">Scheduled</button>
       <button class="filter-btn" onclick="filterTasks('inbox')">Inbox</button>
@@ -246,8 +246,8 @@
   <!-- Center: tasks list -->
   <div class="rail-center">
     <div class="tasks-header">
-      <h1>Tasks</h1>
-      <button class="btn-primary" onclick="createTask()">New Task</button>
+      <h1>Missions</h1>
+      <button class="btn-primary" onclick="createTask()">New Mission</button>
     </div>
 
     <div class="view-content">
@@ -443,7 +443,7 @@
     }
 
     function openTask(el) {
-      alert('Task detail view not yet implemented');
+      alert('Mission detail view not yet implemented');
     }
 
     function completeTask(btn) {
@@ -457,7 +457,7 @@
     }
 
     function createTask() {
-      alert('Create task UI not yet implemented');
+      alert('Create mission UI not yet implemented');
     }
 
     function openChat(agent) {

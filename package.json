@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/generate-briefs-index.js && node scripts/build-missions-registry.cjs",
+    "prebuild": "node scripts/generate-briefs-index.js && node scripts/build-missions-registry.cjs && node scripts/sync-cv4-static.cjs",
     "build": "vite build",
     "generate-briefs": "node scripts/generate-briefs-index.js",
     "enrich-municipalities": "node scripts/enrich-municipality-contacts.js",
