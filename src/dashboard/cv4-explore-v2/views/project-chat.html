@@ -595,20 +595,110 @@
       </a>
     </div>
 
+    <!-- R-MP-4: nested workstream + mission tree, live from /api/dashboard/missions-tree.
+         Status dots: emerald (active) / hollow (done) / gray (pending). Never red. -->
+    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Missions</h3>
+    <div id="mission-tree" class="mission-tree" data-loading="true">
+      <div class="mission-tree-loading" style="font-size: var(--fs-xs); color: var(--c-text2);">Loading missions…</div>
+    </div>
+    <style>
+      [data-cv4] .mission-tree { display: flex; flex-direction: column; gap: var(--sp-xs); font-size: var(--fs-sm); }
+      [data-cv4] .mt-workstream { margin-bottom: var(--sp-sm); }
+      [data-cv4] .mt-workstream-label {
+        text-transform: uppercase; font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold); color: var(--c-text2);
+        letter-spacing: 0.05em; margin: var(--sp-md) 0 var(--sp-xs);
+      }
+      [data-cv4] .mt-mission {
+        display: flex; align-items: center; gap: var(--sp-sm);
+        padding: var(--sp-xs) var(--sp-md); border-radius: 6px;
+        color: var(--c-text); text-decoration: none;
+        transition: background-color 120ms ease;
+      }
+      [data-cv4] .mt-mission:hover { background-color: var(--c-dim); }
+      [data-cv4] .mt-mission.active { background-color: rgba(16,185,129,0.12); }
+      [data-cv4] .mt-mission-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+      [data-cv4] .mt-mission-dot.s-active { background-color: var(--c-accent, #10b981); }
+      [data-cv4] .mt-mission-dot.s-done { background-color: transparent; border: 1px solid var(--c-text2); }
+      [data-cv4] .mt-mission-dot.s-pending { background-color: var(--c-muted, #6b7280); }
+      [data-cv4] .mt-mission-name { flex: 1; }
+    </style>
+
     <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Quick Actions</h3>
     <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
       <button class="btn-secondary" onclick="startVoiceCall()">Start Voice Call</button>
       <button class="btn-secondary" onclick="openFileViewer()">View Project Files</button>
-      <button class="btn-secondary" onclick="createTask()">Create Task</button>
+      <button class="btn-secondary" onclick="createTask()">Create Mission</button>
     </div>
   </div>
+
+  <script>
+    // R-MP-4: load mission tree for the active project + render workstream-grouped.
+    (async function loadMissionTree() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const activeProject = params.get('project') || 'ambition-mechanical';
+        const world = params.get('world') || 'aom';
+        const resp = await fetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(world), {
+          headers: { Authorization: 'Bearer ' + (window.AOM_JWT || '') },
+        });
+        if (!resp.ok) throw new Error('http ' + resp.status);
+        const data = await resp.json();
+        const project = (data.projects || []).find(function (p) { return p.slug === activeProject; });
+        const el = document.getElementById('mission-tree');
+        if (!el) return;
+        if (!project || !project.workstreams || !project.workstreams.length) {
+          el.innerHTML = '<div style="font-size: var(--fs-xs); color: var(--c-text2);">No missions yet.</div>';
+          el.dataset.loading = 'false';
+          return;
+        }
+        const activeMission = params.get('mission');
+        const parts = [];
+        for (var i = 0; i < project.workstreams.length; i++) {
+          var ws = project.workstreams[i];
+          if (!ws.missions || !ws.missions.length) continue;
+          parts.push('<div class="mt-workstream"><div class="mt-workstream-label">' + escapeHtml(ws.name) + '</div>');
+          for (var j = 0; j < ws.missions.length; j++) {
+            var m = ws.missions[j];
+            var statusClass = m.is_done ? 's-done' : (m.last_message_at ? 's-active' : 's-pending');
+            var isActive = m.slug === activeMission ? ' active' : '';
+            var href = './project-chat.html?project=' + encodeURIComponent(activeProject)
+              + '&world=' + encodeURIComponent(world)
+              + '&mission=' + encodeURIComponent(m.slug);
+            parts.push(
+              '<a class="mt-mission' + isActive + '" href="' + href + '" data-mission="' + escapeHtml(m.slug) + '">'
+              + '<span class="mt-mission-dot ' + statusClass + '" aria-hidden="true"></span>'
+              + '<span class="mt-mission-name">' + escapeHtml(m.name) + '</span>'
+              + '</a>'
+            );
+          }
+          parts.push('</div>');
+        }
+        el.innerHTML = parts.join('');
+        el.dataset.loading = 'false';
+      } catch (err) {
+        var el = document.getElementById('mission-tree');
+        if (el) {
+          el.innerHTML = '<div style="font-size: var(--fs-xs); color: var(--c-text2);">Could not load missions.</div>';
+          el.dataset.loading = 'false';
+        }
+        console.warn('[mission-tree] load failed', err);
+      }
+    })();
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+  </script>
 
   <!-- Center: project chat thread -->
   <div class="rail-center" style="display: flex; flex-direction: column;">
     <div class="project-chat-header">
       <div>
         <div class="project-chat-header-title">Ambition Mechanical</div>
-        <div class="project-chat-header-context">EA · 5 active missions · Last update 2 hours ago</div>
+        <div class="project-chat-header-context">EA · 5 active tasks · Last update 2 hours ago</div>
       </div>
       <div class="project-chat-header-actions">
         <button title="Call" onclick="startVoiceCall()">☎️</button>
@@ -619,7 +709,7 @@
     <div class="project-chat-messages" id="messages">
       <!-- Project chat messages load here dynamically -->
       <div class="message assistant">
-        <div>Good morning. Ambition has 5 active missions right now. Phase 2 keyword research is 60% complete, and the brand refresh is queued for your review. What would you like to focus on first?</div>
+        <div>Good morning. Ambition has 5 active tasks right now. Phase 2 keyword research is 60% complete, and the brand refresh is queued for your review. What would you like to focus on first?</div>
         <div class="message-timestamp">10:34 AM</div>
         <div class="message-steps">
           <div class="step done">
@@ -628,7 +718,7 @@
           </div>
           <div class="step done">
             <div class="step-dot"></div>
-            <div class="step-text">Reviewed active missions</div>
+            <div class="step-text">Reviewed active tasks</div>
           </div>
         </div>
       </div>
