@@ -16,9 +16,12 @@
 // existing-mission equivalent of launch-kicks-the-agent for missions
 // that already have an on-disk home.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { authFetch } from '../../../lib/authFetch.js'
+
+const AUTO_LEAVE_MS = 15000
+const SWIPE_THRESHOLD_PX = 60
 
 function timeAgo(iso) {
   if (!iso) return null
@@ -71,6 +74,53 @@ export default function MissionStateCard({
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // UI-first: the moment the user clicks "Where are we?", the activity
+  // has begun. Hide the button immediately — don't wait for the server
+  // round-trip or a re-fetch to confirm message_count > 0. The CTA is
+  // for empty rooms; clicking it makes the room no longer empty.
+  const [kicked, setKicked] = useState(false)
+  // Dismiss: card leaves on user X-click, swipe, or after AUTO_LEAVE_MS.
+  // The card persists on arrival (per Patrik 2026-05-17 evening) instead
+  // of vanishing the moment activity starts.
+  const [dismissed, setDismissed] = useState(false)
+  // Reset both flags when the room actually changes.
+  useEffect(() => { setKicked(false); setDismissed(false) }, [projectSlug, missionSlug])
+  // Auto-leave timer. Resets if the user touches/hovers the card.
+  const cardRef = useRef(null)
+  const touchStartXRef = useRef(null)
+  const [autoLeaveDeadline, setAutoLeaveDeadline] = useState(() => Date.now() + AUTO_LEAVE_MS)
+  useEffect(() => {
+    setAutoLeaveDeadline(Date.now() + AUTO_LEAVE_MS)
+  }, [projectSlug, missionSlug])
+  useEffect(() => {
+    if (dismissed) return
+    const remaining = Math.max(0, autoLeaveDeadline - Date.now())
+    const t = setTimeout(() => setDismissed(true), remaining)
+    return () => clearTimeout(t)
+  }, [dismissed, autoLeaveDeadline])
+  const bumpAutoLeave = () => setAutoLeaveDeadline(Date.now() + AUTO_LEAVE_MS)
+  // Swipe handlers (mobile): horizontal swipe past threshold dismisses.
+  const onTouchStart = (e) => {
+    touchStartXRef.current = e.touches?.[0]?.clientX ?? null
+    bumpAutoLeave()
+  }
+  const onTouchMove = (e) => {
+    if (touchStartXRef.current == null || !cardRef.current) return
+    const dx = (e.touches?.[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
+    cardRef.current.style.transform = `translateX(${dx}px)`
+    cardRef.current.style.opacity = String(Math.max(0, 1 - Math.abs(dx) / 200))
+  }
+  const onTouchEnd = (e) => {
+    if (touchStartXRef.current == null || !cardRef.current) return
+    const dx = (e.changedTouches?.[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
+    if (Math.abs(dx) > SWIPE_THRESHOLD_PX) {
+      setDismissed(true)
+    } else {
+      cardRef.current.style.transform = ''
+      cardRef.current.style.opacity = ''
+    }
+    touchStartXRef.current = null
+  }
 
   useEffect(() => {
     if (!projectSlug || !missionSlug) {
@@ -96,17 +146,23 @@ export default function MissionStateCard({
   }, [projectSlug, missionSlug])
 
   if (!projectSlug || !missionSlug) return null
+  if (dismissed) return null
 
   const displayName = data?.name || missionName || missionSlug
   const lastTouchedIso = data?.last_message_at || data?.last_updated_disk || null
   const lastTouchedLabel = lastTouchedIso ? timeAgo(lastTouchedIso) : null
   const lastTouchedSource = data?.last_message_at ? 'chat' : (data?.last_updated_disk ? 'disk' : null)
-  const isEmptyRoom = data && (data.message_count || 0) === 0
+  const isEmptyRoom = data && (data.message_count || 0) === 0 && !kicked
 
   return (
     <div
+      ref={cardRef}
       data-mission-state-card
       data-mission-slug={data?.slug || missionSlug}
+      onMouseEnter={bumpAutoLeave}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       style={{
         margin: '10px 14px 4px 14px',
         padding: '11px 13px 10px 13px',
@@ -116,6 +172,8 @@ export default function MissionStateCard({
         fontFamily: "'Inter', sans-serif",
         display: 'flex', flexDirection: 'column', gap: 6,
         flexShrink: 0,
+        transition: 'transform 0.25s ease, opacity 0.25s ease',
+        touchAction: 'pan-y',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -125,6 +183,25 @@ export default function MissionStateCard({
           flex: 1,
         }}>{displayName}</span>
         {data && <StatusPill status={data.status} is_done={data.is_done} />}
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss mission card"
+          data-test-id="mission-state-card-dismiss"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: C.muted,
+            fontSize: 16,
+            lineHeight: 1,
+            padding: '2px 4px',
+            cursor: 'pointer',
+            opacity: 0.5,
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.5' }}
+        >×</button>
       </div>
 
       {loading && (
@@ -185,7 +262,7 @@ export default function MissionStateCard({
         {isEmptyRoom && typeof onAskStarter === 'function' && (
           <button
             type="button"
-            onClick={() => onAskStarter('Where are we on this mission?')}
+            onClick={() => { setKicked(true); onAskStarter('Where are we on this mission?') }}
             style={{
               fontSize: 11, fontWeight: 600, fontFamily: "'Inter', sans-serif",
               padding: '4px 10px',

@@ -468,9 +468,28 @@ export default function MessageList({ roomType = 'agent' }) {
   }, [inFlight])
 
   // Scroll last user message to top of panel when float mode activates.
+  const scrollListRef = useRef(null)
   useEffect(() => {
     if (!floatMode || !lastUserMsgRef.current) return
     lastUserMsgRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [floatMode])
+
+  // corner:mission-rooms — scroll-up detection. If the user manually scrolls
+  // up while in-flight, exit float mode so history opacity restores and they
+  // can read. Previously float mode pinned the user message AND faded earlier
+  // messages to 0.12 opacity, which read as "scroll-back is broken" even
+  // though the container was technically scrollable.
+  useEffect(() => {
+    const el = scrollListRef.current
+    if (!el) return
+    let lastScrollTop = el.scrollTop
+    const onScroll = () => {
+      const dy = el.scrollTop - lastScrollTop
+      lastScrollTop = el.scrollTop
+      if (dy < -24 && floatMode) setFloatMode(false)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
   }, [floatMode])
 
   // Dev affordance for R75-r65-e gate script.
@@ -490,6 +509,7 @@ export default function MessageList({ roomType = 'agent' }) {
   return (
     <>
     <div
+      ref={scrollListRef}
       data-testid={isProject ? 'project-message-list' : undefined}
       data-float-mode={floatMode ? 'true' : undefined}
       style={{
@@ -568,8 +588,11 @@ export default function MessageList({ roomType = 'agent' }) {
       {visibleMessages.map((msg, idx, arr) => {
           const isLastUserMsg = floatMode && idx === lastUserMsgIdx
           const fadedByFloat = floatMode && idx < lastUserMsgIdx
+          // corner:mission-rooms — softened from 0.12 → 0.42 so users can still
+          // see their context history during in-flight. 0.12 read as "history
+          // gone" + paired with scroll-pin made scroll-back feel broken.
           const floatStyle = fadedByFloat
-            ? { opacity: 0.12, transition: 'opacity 0.35s ease' }
+            ? { opacity: 0.42, transition: 'opacity 0.35s ease' }
             : { transition: 'opacity 0.35s ease' }
 
           // Task status cards (Steffen's CV3 design).
@@ -1349,20 +1372,33 @@ export default function MessageList({ roomType = 'agent' }) {
                   />
                 </div>
               )}
-              {/* c76e17f9: bridge from user bubble to synthetic chain on turn 2+. */}
-              {isUser && !isFirstTurn && inFlight && idx === arr.length - 1 && !userBubbleSteps && (
-                <div aria-hidden="true" style={{ paddingLeft: 28, display: 'flex', height: 12 }}>
-                  <div style={{ width: 20, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.06)' }} />
-                  </div>
+              {/* corner:mission-rooms — synthetic chain INLINE under the user's
+                  bubble (any turn, not just turn 2+). Earlier doctrine put the
+                  synthetic chain at the bottom of the message list, which read
+                  as "5 seconds of nothing" because the dots were spatially
+                  detached from where the user's eye was. Now the chain shows
+                  immediately, tightly coupled to the user's message. */}
+              {isUser && inFlight && idx === arr.length - 1 && !userBubbleSteps && syntheticSteps.length > 0 && (
+                <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
+                  <StepThread
+                    steps={syntheticSteps}
+                    settled={false}
+                    isError={false}
+                    isStalled={chainStalled}
+                    agentColor={roomColor}
+                  />
                 </div>
               )}
             </React.Fragment>
           )
         })}
 
-      {/* R75-r65-g: progressive synthetic chain + stall-CTA typing indicator. */}
-      {inFlight && (
+      {/* R75-r65-g: progressive synthetic chain + stall-CTA typing indicator.
+          corner:mission-rooms — only fires when the user message is NOT the
+          last visible item (which is the only case where the inline-under-
+          user-bubble chain doesn't cover). Otherwise the inline render owns
+          the chain so it's tightly coupled to the user's bubble. */}
+      {inFlight && lastUserMsgIdx !== visibleMessages.length - 1 && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
           <StepThread
             steps={syntheticSteps.length > 0 ? syntheticSteps : [{
