@@ -1,26 +1,6 @@
 {
-  "generated_at": "2026-05-18T00:38:26.900Z",
+  "generated_at": "2026-05-18T01:03:59.956Z",
   "missions": [
-    {
-      "slug": "corner:chat-reliability",
-      "raw_slug": "chat-reliability",
-      "project_slug": "corner",
-      "name": "Chat Reliability",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/chat-reliability"
-    },
-    {
-      "slug": "corner:cross-repo-routing",
-      "raw_slug": "cross-repo-routing",
-      "project_slug": "corner",
-      "name": "Cross Repo Routing",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/cross-repo-routing"
-    },
     {
       "slug": "corner:cutscene-on-entry",
       "raw_slug": "cutscene-on-entry",
@@ -50,16 +30,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/cv4-tools-mail"
-    },
-    {
-      "slug": "corner:effective-agents",
-      "raw_slug": "effective-agents",
-      "project_slug": "corner",
-      "name": "Effective Agents",
-      "status": "active",
-      "is_done": false,
-      "last_updated": "2026-05-16T00:00:00+00:00",
-      "path": "corner/missions/effective-agents"
     },
     {
       "slug": "corner:files-in-app",
@@ -92,16 +62,6 @@
       "path": "corner/missions/integrations"
     },
     {
-      "slug": "corner:launch-mvp",
-      "raw_slug": "launch-mvp",
-      "project_slug": "corner",
-      "name": "Launch Mvp",
-      "status": "live",
-      "is_done": false,
-      "last_updated": "2026-04-24T00:15:00+00:00",
-      "path": "corner/missions/launch-mvp"
-    },
-    {
       "slug": "corner:live-call",
       "raw_slug": "live-call",
       "project_slug": "corner",
@@ -112,16 +72,6 @@
       "path": "corner/missions/live-call"
     },
     {
-      "slug": "corner:mission-janitor",
-      "raw_slug": "mission-janitor",
-      "project_slug": "corner",
-      "name": "Mission Janitor",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/mission-janitor"
-    },
-    {
       "slug": "corner:mission-rooms",
       "raw_slug": "mission-rooms",
       "project_slug": "corner",
@@ -130,6 +80,16 @@
       "is_done": false,
       "last_updated": "2026-05-17T14:30:00+00:00",
       "path": "corner/missions/mission-rooms"
+    },
+    {
+      "slug": "corner:new-project-flow",
+      "raw_slug": "new-project-flow",
+      "project_slug": "corner",
+      "name": "New Project Flow",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/new-project-flow"
     },
     {
       "slug": "corner:onboarding-script",
@@ -152,36 +112,6 @@
       "path": "corner/missions/phone-recording"
     },
     {
-      "slug": "corner:project-from-chat",
-      "raw_slug": "project-from-chat",
-      "project_slug": "corner",
-      "name": "Project From Chat",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/project-from-chat"
-    },
-    {
-      "slug": "corner:promise-followup",
-      "raw_slug": "promise-followup",
-      "project_slug": "corner",
-      "name": "Promise Followup",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/promise-followup"
-    },
-    {
-      "slug": "corner:self-healing-chats",
-      "raw_slug": "self-healing-chats",
-      "project_slug": "corner",
-      "name": "Self Healing Chats",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/self-healing-chats"
-    },
-    {
       "slug": "corner:shared-rooms",
       "raw_slug": "shared-rooms",
       "project_slug": "corner",
@@ -190,26 +120,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/shared-rooms"
-    },
-    {
-      "slug": "corner:studio-bridge",
-      "raw_slug": "studio-bridge",
-      "project_slug": "corner",
-      "name": "Studio Bridge",
-      "status": "sdk-native-bridge-shipped-r3-soak-pending",
-      "is_done": false,
-      "last_updated": "2026-05-17T13:30:00+00:00",
-      "path": "corner/missions/studio-bridge"
-    },
-    {
-      "slug": "corner:tenant-isolation",
-      "raw_slug": "tenant-isolation",
-      "project_slug": "corner",
-      "name": "Tenant Isolation",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/tenant-isolation"
     },
     {
       "slug": "corner:time-of-day-theme",
@@ -330,16 +240,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
-    },
-    {
-      "slug": "corner:launch-mvp",
-      "raw_slug": "launch-mvp",
-      "project_slug": "corner",
-      "name": "Launch Mvp",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/corner/missions/launch-mvp"
     },
     {
       "slug": "higher-orbits:documentary-scope",
@@ -525,8 +425,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 24,
-      "in_flight": 24,
+      "total": 14,
+      "in_flight": 14,
       "done": 0
     },
     {
