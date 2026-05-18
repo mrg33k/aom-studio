@@ -264,26 +264,13 @@ export default function CornerV4() {
     user_name: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || null,
   }), [currentUser?.id])
 
+  // corner:mission-rooms — tasks retired 2026-05-17. Keeping the useTasks
+  // call so downstream consumers (MessageList task-room failure branch,
+  // TasksPanelCv4, etc.) don't crash before they're cut in their own
+  // rounds. queued/rightNow/waiting/done/allTasks will all be empty arrays
+  // once the tasks table query returns nothing. The "task completed" toast
+  // is gone — no chrome talks tasks anymore.
   const { queued, rightNow, waiting, done, allTasks, refresh: refreshTasks, addOptimisticTask } = useTasks(worldId)
-
-  // ── Toast: detect newly completed tasks ──────────────────────────────────────
-  useEffect(() => {
-    if (!done) return
-    if (prevDoneIdsRef.current === null) {
-      // Seed on first load -- no toast for already-done tasks
-      prevDoneIdsRef.current = new Set(done.map(t => t.id))
-      return
-    }
-    const newDone = done.filter(t => !prevDoneIdsRef.current.has(t.id))
-    if (newDone.length > 0) {
-      const task = newDone[0]
-      const title = task.title || task.text || 'Task'
-      const label = title.length > 45 ? title.slice(0, 45) + '...' : title
-      const wasBuilt = task.qa_score != null && task.qa_score > 0
-      setToast({ visible: true, message: `${label} ${wasBuilt ? 'shipped.' : 'done.'}` })
-    }
-    prevDoneIdsRef.current = new Set(done.map(t => t.id))
-  }, [done])
   // R14e-4 (viewing-user model): the viewer's slug inside this tenant.
   // Resolved from `tenant_users.slug` keyed on auth.uid() + current worldId.
   // AOM tenant: Patrik → 'patrik', Ash → 'ash'. Future personal tenants:

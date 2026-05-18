@@ -216,7 +216,7 @@ function TasksPanelCv4Body() {
       <div data-cv4-tasks-scroll style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 20px' }}>
 
         {/* SCOPE — what we're looking at, top-of-panel. */}
-        <ScopeHeader label={scopeLabel} counts={counts} />
+        <ScopeHeader label={scopeLabel} counts={{ missionCount: workingMissions.length }} />
 
         {/* Search + project pills. */}
         <Filters
@@ -335,6 +335,10 @@ function summarize(kind, c) {
 }
 
 function ScopeHeader({ label, counts }) {
+  // corner:mission-rooms — tasks retired 2026-05-17. Header is just the
+  // scope label + mission count. No task-derived "4 OPEN / 1 ACTIVE /
+  // 3 FAILED / 244 DONE" line; those counts came from the tasks table.
+  const missionCount = (counts && counts.missionCount) || 0
   return (
     <div data-cv4-tasks-scope style={{ marginBottom: 14 }}>
       <div style={{
@@ -349,21 +353,7 @@ function ScopeHeader({ label, counts }) {
         color: C.text, letterSpacing: '-0.01em',
         lineHeight: 1,
         textTransform: 'uppercase',
-      }}>{counts.total === 0 ? 'All clear' : `${counts.total} open`}</div>
-      <div style={{
-        marginTop: 6,
-        display: 'flex', gap: 8, flexWrap: 'wrap',
-        fontSize: 10, fontWeight: 600,
-        fontFamily: "'JetBrains Mono', monospace",
-        color: C.muted, letterSpacing: '0.04em',
-        textTransform: 'uppercase',
-      }}>
-        {counts.active   > 0 && <span style={{ color: '#34D399' }}>{counts.active} active</span>}
-        {counts.waiting  > 0 && <span style={{ color: '#FCD34D' }}>{counts.waiting} waiting</span>}
-        {counts.blocked  > 0 && <span style={{ color: '#A78BFA' }}>{counts.blocked} blocked</span>}
-        {counts.failed   > 0 && <span style={{ color: '#FCA5A5' }}>{counts.failed} failed</span>}
-        {counts.done     > 0 && <span style={{ color: C.muted }}>{counts.done} done</span>}
-      </div>
+      }}>{missionCount === 0 ? 'No missions' : `${missionCount} missions`}</div>
     </div>
   )
 }
@@ -1363,8 +1353,7 @@ function MissionRow({ missionEntry }) {
         }}>
           {proj && <span style={{ width: 5, height: 5, borderRadius: '50%', background: proj.color, flexShrink: 0 }} />}
           <span>{project.name}</span>
-          {missionEntry.taskInFlight > 0 && <span style={{ color: '#34D399' }}>{`· ${missionEntry.taskInFlight} in flight`}</span>}
-          {isDone && stats.done > 0 && <span style={{ color: C.dim }}>{`· ${stats.done} done`}</span>}
+          {/* corner:mission-rooms — "N in flight" / "N done" removed. Tasks retired 2026-05-17. */}
         </div>
       </div>
     </div>

@@ -76,17 +76,10 @@ export default async function handler(req, res) {
   // Mirror the Path A widen from useTasks.js so aom viewers see Ben tasks.
   if (clientId === 'aom') clientIds.push('ben')
 
-  // Load all active tasks for those client_ids.
-  const inClause = encodeURIComponent('(' + clientIds.map(c => '"' + c + '"').join(',') + ')')
-  const statusClause = encodeURIComponent('(' + ACTIVE_STATUSES.map(s => '"' + s + '"').join(',') + ')')
-  let tasks = []
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?select=id,title,status,agent_identity,agent,project,metadata,client_id&client_id=in.${inClause}&status=in.${statusClause}&order=priority.desc,created_at.desc&limit=500`,
-      { headers: supabaseHeaders() },
-    )
-    if (r.ok) tasks = await r.json()
-  } catch { tasks = [] }
+  // corner:mission-rooms — tasks retired 2026-05-17 (Patrik). The mission
+  // registry + per-mission last_message_at is the only signal now. No more
+  // task query, no more "1 in flight" labels, no more unfiled_tasks.
+  const tasks = []
 
   // R4 — fetch the newest message per mission_slug so the drawer can light
   // an "active" dot from real activity instead of the flat mission status

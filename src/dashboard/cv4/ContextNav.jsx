@@ -290,113 +290,53 @@ export default function CV4ContextNav({
         </div>
       </div>
 
-      {/* RIGHT: mobile gets a single icon-only Tasks toggle; desktop gets
-          the docked tasks-drawer toggle. The compaction/storage meters
-          have been removed — the UX no longer surfaces them since the
-          context behavior is reliable enough to be invisible. */}
+      {/* RIGHT: mail toggle only. corner:mission-rooms — the tasks tab was
+          retired 2026-05-17 (no chrome talks tasks). The mobile/desktop
+          tasks-tab toggles are gone; the mail tool keeps its toggle since
+          mail is a real surface. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
-        {!isDesktop && (
+        {!isDesktop && activeTool === 'mail' && (
           <button
-            data-testid="cv4-tasks-tab-toggle"
+            data-testid="cv4-mail-tab-toggle"
             onClick={() => onSwitchTab(tab === 'tasks' ? 'chat' : 'tasks')}
-            aria-label={
-              activeTool === 'mail'
-                ? (tab === 'tasks' ? 'Switch to chat' : 'View mail')
-                : (tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks')
-            }
-            title={
-              activeTool === 'mail'
-                ? (tab === 'tasks' ? 'Switch to chat' : 'View mail')
-                : (tab === 'tasks' ? 'Switch to chat' : 'Switch to tasks')
-            }
+            aria-label={tab === 'tasks' ? 'Switch to chat' : 'View mail'}
+            title={tab === 'tasks' ? 'Switch to chat' : 'View mail'}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: tab === 'tasks'
-                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.14)' : 'rgba(16,185,129,0.15)')
-                : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${tab === 'tasks'
-                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.4)' : 'rgba(16,185,129,0.4)')
-                : 'rgba(255,255,255,0.08)'}`,
-              color: tab === 'tasks'
-                ? (activeTool === 'mail' ? C.yellow : '#10B981')
-                : C.muted,
+              background: tab === 'tasks' ? 'rgba(234,179,8,0.14)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${tab === 'tasks' ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: tab === 'tasks' ? C.yellow : C.muted,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
-              position: 'relative',
             }}
           >
-            {activeTool === 'mail' ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="5" width="18" height="14" rx="2"/>
-                <polyline points="3 7 12 13 21 7"/>
-              </svg>
-            ) : (
-              <TasksIcon color={tab === 'tasks' ? '#10B981' : 'currentColor'} />
-            )}
-            {activeTool !== 'mail' && activeTaskCount > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4,
-                minWidth: 14, height: 14, borderRadius: 7,
-                background: C.yellow,
-                fontSize: 9, fontWeight: 800, color: '#000',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0 4px',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>{activeTaskCount}</span>
-            )}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <polyline points="3 7 12 13 21 7"/>
+            </svg>
           </button>
         )}
-        {isDesktop && onToggleTasksDrawer && (
+        {isDesktop && onToggleTasksDrawer && activeTool === 'mail' && (
           <button
-            data-testid="cv4-tasks-drawer-toggle"
+            data-testid="cv4-mail-drawer-toggle"
             onClick={onToggleTasksDrawer}
-            aria-label={
-              activeTool === 'mail'
-                ? (tasksDrawerOpen ? 'Close mail' : 'Open mail')
-                : (tasksDrawerOpen ? 'Close tasks' : 'Open tasks')
-            }
-            title={
-              activeTool === 'mail'
-                ? (tasksDrawerOpen ? 'Close mail' : 'Open mail')
-                : (tasksDrawerOpen ? 'Close tasks' : 'Open tasks')
-            }
+            aria-label={tasksDrawerOpen ? 'Close mail' : 'Open mail'}
+            title={tasksDrawerOpen ? 'Close mail' : 'Open mail'}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: tasksDrawerOpen
-                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.14)' : 'rgba(16,185,129,0.15)')
-                : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${tasksDrawerOpen
-                ? (activeTool === 'mail' ? 'rgba(234,179,8,0.4)' : 'rgba(16,185,129,0.4)')
-                : 'rgba(255,255,255,0.08)'}`,
-              color: tasksDrawerOpen
-                ? (activeTool === 'mail' ? C.yellow : '#10B981')
-                : C.muted,
+              background: tasksDrawerOpen ? 'rgba(234,179,8,0.14)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${tasksDrawerOpen ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: tasksDrawerOpen ? C.yellow : C.muted,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
-              position: 'relative',
             }}
           >
-            {activeTool === 'mail' ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="5" width="18" height="14" rx="2"/>
-                <polyline points="3 7 12 13 21 7"/>
-              </svg>
-            ) : (
-              <TasksIcon color={tasksDrawerOpen ? '#10B981' : 'currentColor'} />
-            )}
-            {activeTool !== 'mail' && activeTaskCount > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4,
-                minWidth: 14, height: 14, borderRadius: 7,
-                background: C.yellow,
-                fontSize: 9, fontWeight: 800, color: '#000',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0 4px',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>{activeTaskCount}</span>
-            )}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <polyline points="3 7 12 13 21 7"/>
+            </svg>
           </button>
         )}
       </div>

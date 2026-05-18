@@ -323,58 +323,25 @@ function DrawerBody({
                 {isExpanded && (
                   <div>
                     {hasMissions && missions.map(m => {
-                      // Mission slug as the tree expects: `<project>:<slug>`.
+                      // corner:mission-rooms — tasks retired 2026-05-17. Only
+                      // last_message_at metadata drives the active dot; no
+                      // task tree, no expand-tasks, no unfiled tasks section.
                       const missionKey = `${p.slug}:${m.slug}`
-                      const liveTasks = tasksByProject?.get(p.slug)?.missions?.get(missionKey)
-                        || tasksByProject?.get(p.slug)?.missions?.get(m.slug)
-                        || []
                       const liveMeta = tasksByProject?.get(p.slug)?.missionMeta?.get(missionKey)
                         || tasksByProject?.get(p.slug)?.missionMeta?.get(m.slug)
                         || null
-                      const isMissionExpanded = expanded.has(`${p.slug}::mission::${m.slug}`)
                       return (
-                        <div key={`${p.slug}-${m.slug}`}>
-                          <MissionRow
-                            mission={m}
-                            project={p}
-                            taskCount={liveTasks.length}
-                            lastMessageAt={liveMeta?.last_message_at || null}
-                            expanded={isMissionExpanded}
-                            onToggle={() => toggle(`${p.slug}::mission::${m.slug}`)}
-                            onClick={() => {
-                              onSelectMission?.(m, p)
-                              onClose()
-                            }}
-                          />
-                          {isMissionExpanded && liveTasks.length > 0 && (
-                            <div>
-                              {liveTasks.map(t => (
-                                <TaskTreeRow
-                                  key={t.id}
-                                  task={t}
-                                  onClick={() => {
-                                    onSelectTask?.(t, m, p)
-                                    onClose()
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        <MissionRow
+                          key={`${p.slug}-${m.slug}`}
+                          mission={m}
+                          lastMessageAt={liveMeta?.last_message_at || null}
+                          onClick={() => {
+                            onSelectMission?.(m, p)
+                            onClose()
+                          }}
+                        />
                       )
                     })}
-                    {/* Unfiled tasks under this project (no mission_slug). */}
-                    {(tasksByProject?.get(p.slug)?.unfiled || []).map(t => (
-                      <TaskTreeRow
-                        key={t.id}
-                        task={t}
-                        unfiled
-                        onClick={() => {
-                          onSelectTask?.(t, null, p)
-                          onClose()
-                        }}
-                      />
-                    ))}
                   </div>
                 )}
               </div>
@@ -474,18 +441,17 @@ function FolderRow({ label, hasChildren, expanded, active, onToggle, onOpen }) {
   )
 }
 
-function MissionRow({ mission, taskCount = 0, lastMessageAt = null, expanded = false, onToggle, onClick }) {
-  const hasTasks = taskCount > 0
-  // R4 — active = a task in flight OR a message in the last 24h. The flat
-  // mission.status field is no longer the signal. Status pill still shows
-  // for "shipped"/"done"/etc., but the live dot tracks real activity.
+function MissionRow({ mission, lastMessageAt = null, onClick }) {
+  // corner:mission-rooms — tasks retired 2026-05-17. Active dot is now
+  // driven by recent chat in the mission room only. No task count badge,
+  // no expand-tasks chevron, no taskCount prop.
   const recentChat = (() => {
     if (!lastMessageAt) return false
     const then = new Date(lastMessageAt).getTime()
     if (!Number.isFinite(then)) return false
     return (Date.now() - then) < (24 * 60 * 60 * 1000)
   })()
-  const isActive = hasTasks || recentChat
+  const isActive = recentChat
   return (
     <div
       data-row
@@ -496,39 +462,14 @@ function MissionRow({ mission, taskCount = 0, lastMessageAt = null, expanded = f
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '3px 10px 3px 30px',
+        padding: '3px 10px 3px 44px',
         cursor: 'pointer',
       }}
     >
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); if (hasTasks && onToggle) onToggle() }}
-        aria-label={hasTasks ? (expanded ? 'Collapse tasks' : 'Expand tasks') : undefined}
-        style={{
-          width: 14, height: 14, padding: 0,
-          background: 'none', border: 'none',
-          cursor: hasTasks ? 'pointer' : 'default',
-          color: C.muted,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-          opacity: hasTasks ? 1 : 0.2,
-        }}
-      >
-        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
-          <polyline points="9 6 15 12 9 18"/>
-        </svg>
-      </button>
       <DocIcon />
-      {/* R4 — small active dot: lit only when real activity is happening.
-          Reserves the gutter so titles align whether the dot is on or not. */}
       <span
         data-active-dot
-        title={isActive
-          ? (hasTasks
-            ? `${taskCount} active task${taskCount === 1 ? '' : 's'}`
-            : 'Recent chat in this room')
-          : ''}
+        title={isActive ? 'Recent chat in this room' : ''}
         style={{
           width: 6, height: 6, borderRadius: '50%',
           background: isActive ? '#10B981' : 'transparent',
@@ -542,17 +483,6 @@ function MissionRow({ mission, taskCount = 0, lastMessageAt = null, expanded = f
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
       }}>{mission.name}</span>
-      {hasTasks && (
-        <span style={{
-          fontSize: 9, fontWeight: 700,
-          letterSpacing: '0.05em',
-          color: C.muted, fontFamily: "'JetBrains Mono', monospace",
-          flexShrink: 0,
-          padding: '1px 5px',
-          background: 'rgba(255,255,255,0.04)',
-          borderRadius: 6,
-        }}>{taskCount}</span>
-      )}
       {mission.status && mission.status !== 'in-progress' && (
         <span style={{
           fontSize: 9, fontWeight: 700,
@@ -863,7 +793,7 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
           autoFocus
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Messages, tasks, files…"
+          placeholder="Messages, files…"
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
             color: C.text, fontFamily: "'Inter', sans-serif", fontSize: 13,
@@ -908,17 +838,7 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
               ))}
             </SearchGroup>
           )}
-          {taskHits.length > 0 && (
-            <SearchGroup title="Tasks">
-              {taskHits.slice(0, 6).map(t => (
-                <SearchHitRow
-                  key={`s-t-${t.id}`}
-                  onClick={() => { if (t.project) goProject(t.project) }}
-                  meta={projectMap.get(t.project)?.name || t.project}
-                >{t.title || truncate(t.text, 80)}</SearchHitRow>
-              ))}
-            </SearchGroup>
-          )}
+          {/* corner:mission-rooms — Tasks search group removed 2026-05-17. */}
           {fileHits.length > 0 && (
             <SearchGroup title="Files">
               {fileHits.slice(0, 6).map(f => (
