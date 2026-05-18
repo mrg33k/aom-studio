@@ -23,6 +23,11 @@ import { useCornerAuth, useCornerData, useCornerNav } from '../../CornerContext.
 import ProjectChatView from './ProjectChatView.jsx'
 import ConversationsView from './ConversationsView.jsx'
 import ThreadView from './ThreadView.jsx'
+import missionsRegistry from '../../data/missions-registry.json'
+import { buildSlugLookup, missionSlugsMatch } from '../../data/canonicalize-mission-slug.js'
+
+// Built once per module load. Tiny (84 entries today); fine to hold in memory.
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
 import { GREETINGS, VOICE_OPTIONS } from './chat/chatConstants.js'
 import useBridgeStream from './chat/useBridgeStream.js'
@@ -444,7 +449,11 @@ export default function ChatPanel() {
     const arr = msgs.messages || []
     const targetMission = selectedProject?.missionSlug || null
     if (targetMission) {
-      return arr.filter(m => (m?.metadata?.mission_slug || null) === targetMission)
+      return arr.filter(m => {
+        const stored = m?.metadata?.mission_slug || null
+        if (!stored) return false
+        return missionSlugsMatch(stored, targetMission, MISSION_SLUG_LOOKUP)
+      })
     }
     if (selectedProject) {
       const out = []

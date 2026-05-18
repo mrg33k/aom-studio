@@ -89,10 +89,15 @@ async function readContextBody(missionEntry) {
   return ''
 }
 
-async function lastMessageStats(missionSlug) {
+async function lastMessageStats(canonicalSlug, rawSlug) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { last_message_at: null, message_count: 0 }
   try {
-    const filter = `metadata->>mission_slug=eq.${encodeURIComponent(missionSlug)}`
+    // Match both canonical "<project>:<mission>" and legacy bare "<mission>"
+    // forms — historical rows from before slug normalization used the bare form.
+    // See canonicalize-mission-slug.js for the drift backstory.
+    const forms = rawSlug && rawSlug !== canonicalSlug ? [canonicalSlug, rawSlug] : [canonicalSlug]
+    const inExpr = '(' + forms.map(s => '"' + s + '"').join(',') + ')'
+    const filter = `metadata->>mission_slug=in.${encodeURIComponent(inExpr)}`
     const newestR = await fetch(
       `${SUPABASE_URL}/rest/v1/messages?select=created_at&${filter}&order=created_at.desc&limit=1`,
       { headers: supabaseHeaders() },
@@ -155,7 +160,7 @@ export default async function handler(req, res) {
   const qualified = entry.slug
   const [ctx, msgStats] = await Promise.all([
     readContextBody(entry),
-    lastMessageStats(qualified),
+    lastMessageStats(qualified, entry?.raw_slug || null),
   ])
   const { headline, next_line } = parseBodyHints(ctx)
 

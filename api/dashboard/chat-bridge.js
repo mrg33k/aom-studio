@@ -12,6 +12,9 @@
 import crypto from 'crypto'
 import { detectProjectFromText, detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
+import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -68,7 +71,11 @@ async function writeFallbackToSupabase(body) {
   // `metadata.mission_slug` to load the mission's CONTEXT/VISION/BUILD as
   // SDK system-prompt context. Existing `body.metadata` keys (reply_to,
   // etc.) survive the merge.
-  const missionSlugFromBody = (body.mission && String(body.mission).trim()) || null
+  // Normalize mission_slug to canonical "<project>:<mission>" form. Legacy
+  // send paths sometimes pass the bare slug, which splits the room view.
+  // canonicalize-mission-slug.js documents the drift.
+  const rawMissionFromBody = (body.mission && String(body.mission).trim()) || null
+  const missionSlugFromBody = canonicalizeMissionSlug(rawMissionFromBody, MISSION_SLUG_LOOKUP)
   const incomingMeta = (body.metadata && typeof body.metadata === 'object') ? body.metadata : null
   const mergedMeta = (missionSlugFromBody || incomingMeta)
     ? { ...(incomingMeta || {}), ...(missionSlugFromBody ? { mission_slug: missionSlugFromBody } : {}) }
@@ -393,7 +400,7 @@ export default async function handler(req, res) {
           project: body.project || '',
           // R3 corner:mission-rooms — forward mission scope so bridge.py
           // can load mission CONTEXT/VISION/BUILD into the SDK system prompt.
-          ...(body.mission ? { mission: body.mission, metadata: { mission_slug: body.mission } } : {}),
+          ...(body.mission ? (() => { const canon = canonicalizeMissionSlug(String(body.mission).trim(), MISSION_SLUG_LOOKUP); return { mission: canon, metadata: { mission_slug: canon } } })() : {}),
           user_name: body.user_name || 'Patrik',
           user_id: body.user_id || '',
           thread_id: body.thread_id || body.client_id || '',

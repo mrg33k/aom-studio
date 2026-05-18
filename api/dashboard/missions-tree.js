@@ -27,6 +27,8 @@
 
 import { extractJwt } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
+import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -96,9 +98,10 @@ export default async function handler(req, res) {
     if (r.ok) {
       const rows = await r.json()
       for (const row of (rows || [])) {
-        const slug = row?.metadata?.mission_slug
+        const rawSlug = row?.metadata?.mission_slug
         const at = row?.created_at
-        if (!slug || !at) continue
+        if (!rawSlug || !at) continue
+        const slug = canonicalizeMissionSlug(rawSlug, MISSION_SLUG_LOOKUP)
         if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
       }
     }
