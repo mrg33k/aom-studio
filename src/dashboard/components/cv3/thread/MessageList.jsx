@@ -508,6 +508,60 @@ export default function MessageList({ roomType = 'agent' }) {
     return () => el.removeEventListener('scroll', onScroll)
   }, [floatMode])
 
+  // corner:bridge R5b — auto-scroll to bottom on room enter + on new
+  // message arrival, never while the user is scrolled up reading.
+  //
+  // (1) Room load finished: when loadingMsgs transitions true → false,
+  //     pin to bottom. Two rAFs catch images / step-thread chains that
+  //     lay out a frame later.
+  // (2) Room switch via cached path (loadingMsgs never flipped): also
+  //     pin on selectedAgent/selectedProject slug change.
+  // (3) New message arrival: pin only if user was already at bottom.
+  //     If they're scrolled up, leave their position alone.
+  const prevLoadingRef = useRef(loadingMsgs)
+  useEffect(() => {
+    const el = scrollListRef.current
+    if (!el) return
+    const justFinishedLoading = prevLoadingRef.current && !loadingMsgs
+    prevLoadingRef.current = loadingMsgs
+    if (!justFinishedLoading) return
+    const pin = () => {
+      el.scrollTop = el.scrollHeight
+      isAtBottomRef.current = true
+      setIsAtBottom(true)
+    }
+    requestAnimationFrame(() => {
+      pin()
+      requestAnimationFrame(pin)
+    })
+  }, [loadingMsgs])
+
+  const roomKey = `${selectedAgent?.slug || ''}::${selectedProject?.slug || ''}`
+  const prevRoomKeyRef = useRef(roomKey)
+  useEffect(() => {
+    if (prevRoomKeyRef.current === roomKey) return
+    prevRoomKeyRef.current = roomKey
+    const el = scrollListRef.current
+    if (!el) return
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight
+      isAtBottomRef.current = true
+      setIsAtBottom(true)
+    })
+  }, [roomKey])
+
+  const prevMsgCountRef = useRef(visibleMessages.length)
+  useEffect(() => {
+    const el = scrollListRef.current
+    const grew = visibleMessages.length > prevMsgCountRef.current
+    prevMsgCountRef.current = visibleMessages.length
+    if (!grew || !el) return
+    if (!isAtBottomRef.current) return
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight
+    })
+  }, [visibleMessages.length])
+
   // Dev affordance for R75-r65-e gate script.
   useEffect(() => {
     if (!import.meta.env.DEV) return
