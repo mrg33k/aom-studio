@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T18:21:43.727Z",
+  "generated_at": "2026-05-18T20:56:49.974Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -57,17 +57,6 @@
       "path": "corner/missions/composer"
     },
     {
-      "slug": "corner:right-menu",
-      "raw_slug": "right-menu",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Right Menu",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/right-menu"
-    },
-    {
       "slug": "corner:corner-ui-cv4",
       "raw_slug": "corner-ui-cv4",
       "project_slug": "corner",
@@ -123,6 +112,28 @@
       "path": "corner/missions/integrations"
     },
     {
+      "slug": "corner:left-menu",
+      "raw_slug": "left-menu",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Left Menu",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/left-menu"
+    },
+    {
+      "slug": "corner:left-menu-tools",
+      "raw_slug": "left-menu-tools",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Left Menu Tools",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/left-menu-tools"
+    },
+    {
       "slug": "corner:login",
       "raw_slug": "login",
       "project_slug": "corner",
@@ -143,6 +154,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/mail-room"
+    },
+    {
+      "slug": "corner:mission-marker",
+      "raw_slug": "mission-marker",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Mission Marker",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/mission-marker"
     },
     {
       "slug": "corner:mission-panel",
@@ -211,6 +233,17 @@
       "path": "corner/missions/record-conversation"
     },
     {
+      "slug": "corner:right-menu",
+      "raw_slug": "right-menu",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Right Menu",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/right-menu"
+    },
+    {
       "slug": "corner:room-header",
       "raw_slug": "room-header",
       "project_slug": "corner",
@@ -253,28 +286,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/shared-rooms"
-    },
-    {
-      "slug": "corner:left-menu",
-      "raw_slug": "left-menu",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Left Menu",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/left-menu"
-    },
-    {
-      "slug": "corner:left-menu-tools",
-      "raw_slug": "left-menu-tools",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Left Menu Tools",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/left-menu-tools"
     },
     {
       "slug": "corner:slash-commands",
@@ -495,6 +506,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/higher-orbits/missions/documentary-scope"
+    },
+    {
+      "slug": "higher-orbits:mini-doc-series-pitch",
+      "raw_slug": "mini-doc-series-pitch",
+      "project_slug": "higher-orbits",
+      "workstream": null,
+      "name": "Mini Doc Series Pitch",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/higher-orbits/missions/mini-doc-series-pitch"
     },
     {
       "slug": "included-health:client-summit-video",
@@ -882,6 +904,17 @@
       "path": "corner/users/aom/projects/space-rising/missions/website"
     },
     {
+      "slug": "sourcing:deal-bank-schema",
+      "raw_slug": "deal-bank-schema",
+      "project_slug": "sourcing",
+      "workstream": null,
+      "name": "Deal Bank Schema",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": "2026-05-18",
+      "path": "corner/users/ben/projects/sourcing/missions/deal-bank-schema"
+    },
+    {
       "slug": "sourcing:user-flow-audit",
       "raw_slug": "user-flow-audit",
       "project_slug": "sourcing",
@@ -896,8 +929,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 31,
-      "in_flight": 31,
+      "total": 32,
+      "in_flight": 32,
       "done": 0
     },
     {
@@ -932,8 +965,8 @@
     },
     {
       "slug": "higher-orbits",
-      "total": 1,
-      "in_flight": 1,
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     },
     {
@@ -986,8 +1019,8 @@
     },
     {
       "slug": "sourcing",
-      "total": 1,
-      "in_flight": 1,
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     }
   ]
