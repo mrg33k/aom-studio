@@ -61,20 +61,20 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 **Design notes:**
 - User message pins to top, agent chain below (VISION pillar 1)
 - Step thread UI (breathing dots for in_progress, settled dots for done)
-- Message status labels (pending, sent, failed)
+- Message status labels (pending, sent). No failed surface — see R-DC-4 doctrine.
 - Right-click context menu (copy, edit, delete, follow-up options)
 
 ---
 
 ### 3. TasksPanel
 **File:** `src/dashboard/components/cv3/TasksPanel.jsx` (850+ LOC split across 9 task section components)  
-**Responsibility:** Task queue + project briefing surface. Shows task sections: active, waiting, blocked, done, failed. Includes project cards, living paragraph, weekly stats.  
+**Responsibility:** Mission queue + project briefing surface. Shows mission sections: active, waiting, blocked, done. NO Failed section per Patrik SDK Q1 (2026-05-17) — failures happen at dispatch level inside a mission, not to the mission itself. Includes project cards, living paragraph, weekly stats.  
 **Key subcomponents (all in `tasks/` folder):**
 - ActiveTasksSection (queued + in_progress)
 - WaitingTasksSection (needs_input, needs_verification)
 - BlockedTasksSection (blocked by dependency)
 - DoneTasksSection (completed tasks)
-- FailedTasksSection (failed)
+- ARCHIVED: FailedTasksSection — removed per R-DC-4 (no Failed surface, ever).
 - ForemanTasksSection (foreman-owned tasks)
 - PersonalTodosSection (owner personal todos)
 - FilesSection (AllFiles, ProjectFiles, ProjectMissions, MissionBreadcrumb, MissionScaffold)
@@ -184,7 +184,7 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 - Each message: avatar + name + timestamp + content + status label
 - Step thread rendering (breathing dots for in_progress steps)
 - Right-click context menu (copy, edit, delete, follow-up, research)
-- Message status: pending (ghost), sent (checkmark), failed (error color)
+- Message status: pending (ghost), sent (checkmark). No failed style.
 
 **StepThread** → `components/step-thread.html`
 - Visual chain of steps under an agent message
@@ -268,9 +268,7 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 - Task card UI same as active
 - Collapsible section (default closed)
 
-**FailedTasksSection** → `components/failed-tasks-section.html`
-- Heading: "Failed" (icon + count)
-- Failed tasks with error message
+**[Removed] FailedTasksSection** — per R-DC-4 + Patrik SDK Q1 (2026-05-17): no Failed surface user-facing. Audit-level failures live in the `tasks` table only.
 - "Retry" button
 - Task card UI same as active
 
@@ -336,7 +334,7 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 - Clear all button
 
 **TaskStatusCard** → `components/task-status-card.html`
-- Card showing task status: queued / in_progress / done / failed
+- Card showing mission status: queued / in_progress / done (no failed user-facing — audit table only)
 - Animated status indicator (spinner for in_progress)
 - Brief summary text
 - Action buttons if applicable
@@ -559,7 +557,7 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS. This 
 - [ ] `components/waiting-tasks-section.html`
 - [ ] `components/blocked-tasks-section.html`
 - [ ] `components/done-tasks-section.html`
-- [ ] `components/failed-tasks-section.html`
+- [REMOVED] `components/failed-tasks-section.html` — see R-DC-4 doctrine.
 - [ ] `components/foreman-tasks-section.html`
 - [ ] `components/personal-todos-section.html`
 - [ ] `components/project-briefing-card.html`
