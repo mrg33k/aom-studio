@@ -7,7 +7,7 @@
 // R6.1 / R6.3 = projects+missions tree as a file browser.
 // R6.6 (2026-05-13) = docked mode so the sidebar is always-on at >=1024px.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import missionsData from '../data/missions.json'
 import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
@@ -54,20 +54,50 @@ export default function CV4Drawer({
   // R5 corner:task-rooms — live missions-tree layered over the static catalog.
   // Brings active task counts + ids under each mission so the rail can open
   // task rooms directly from the tree.
+  //
+  // R-refresh (2026-05-18): extracted into a loadTree callback so the user can
+  // manually refresh (button in the Explorer header) and so the tree auto-
+  // refreshes on window focus + document visibility change.
   const [tasksTree, setTasksTree] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Keep a ref to the latest worldId so the stable loadTree callback can
+  // always use the current value without re-creating on every worldId change.
+  const worldIdRef = useRef(worldId)
+  useEffect(() => { worldIdRef.current = worldId }, [worldId])
+
+  const loadTree = useCallback(async () => {
+    const wid = worldIdRef.current
+    if (!wid) return
+    setRefreshing(true)
+    try {
+      const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(wid)}`, { credentials: 'include' })
+      if (!r.ok) return
+      const j = await r.json().catch(() => null)
+      if (j && Array.isArray(j.projects)) setTasksTree(j)
+    } catch { /* swallow — falls back to static-only rendering */ }
+    setRefreshing(false)
+  }, [])
+
+  // Initial load whenever the drawer becomes visible or worldId changes.
   useEffect(() => {
-    if (!open || !worldId) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
-        if (!r.ok) return
-        const j = await r.json().catch(() => null)
-        if (!cancelled && j && Array.isArray(j.projects)) setTasksTree(j)
-      } catch { /* swallow — falls back to static-only rendering */ }
-    })()
-    return () => { cancelled = true }
-  }, [open, worldId])
+    if (!worldId) return
+    if (!docked && !open) return  // overlay mode: only load when drawer is open
+    loadTree()
+  }, [open, worldId, docked]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-refresh on window focus and document visibility change so the tree
+  // picks up any disk changes made while the user was away from the tab.
+  useEffect(() => {
+    const onFocus = () => { if (worldIdRef.current) loadTree() }
+    const onVis   = () => { if (!document.hidden && worldIdRef.current) loadTree() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [loadTree])
 
   // Index: project slug -> { missionSlug -> tasks[], unfiled: tasks[] }.
   // R4 — also expose a per-mission meta map (last_message_at etc) so the
@@ -109,6 +139,7 @@ export default function CV4Drawer({
   const sharedStyles = (
     <style>{`
       @keyframes cv4DrawerFade { from { opacity: 0 } to { opacity: 1 } }
+      @keyframes cv4Spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
       [data-cv4-drawer] [data-row]:hover { background: rgba(255,255,255,0.035); }
       [data-cv4-drawer] [data-row][data-active="true"] { background: rgba(16,185,129,0.08); }
       [data-cv4-drawer] [data-row][data-active="true"]::before {
@@ -116,6 +147,11 @@ export default function CV4Drawer({
         background: ${C.accent}; border-radius: 0 2px 2px 0;
       }
       [data-cv4-drawer] [data-row] { position: relative; }
+      [data-cv4-refresh-btn] { opacity: 0.45; transition: opacity 0.15s, color 0.15s; }
+      [data-cv4-refresh-btn]:hover { opacity: 1; }
+      [data-cv4-refresh-btn][data-spinning="true"] svg {
+        animation: cv4Spin 0.8s linear infinite;
+      }
     `}</style>
   )
 
@@ -158,6 +194,7 @@ export default function CV4Drawer({
       >
         {sharedStyles}
         <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '12px 14px 10px',
           borderBottom: '1px solid ' + C.border,
         }}>
@@ -168,6 +205,23 @@ export default function CV4Drawer({
           }}>
             Explorer
           </span>
+          <button
+            data-cv4-refresh-btn
+            data-spinning={refreshing ? 'true' : 'false'}
+            onClick={loadTree}
+            aria-label="Refresh"
+            title="Refresh"
+            disabled={refreshing}
+            style={{
+              width: 22, height: 22, borderRadius: 5,
+              background: 'none', border: 'none',
+              color: C.muted, cursor: refreshing ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 0, flexShrink: 0,
+            }}
+          >
+            <RefreshIcon />
+          </button>
         </div>
         {body}
       </aside>
@@ -223,17 +277,36 @@ export default function CV4Drawer({
           }}>
             Explorer
           </span>
-          <button
-            onClick={onClose}
-            aria-label="Close menu"
-            style={{
-              width: 24, height: 24, borderRadius: 6,
-              background: 'none', border: 'none',
-              color: C.muted, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, lineHeight: 1,
-            }}
-          >×</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              data-cv4-refresh-btn
+              data-spinning={refreshing ? 'true' : 'false'}
+              onClick={loadTree}
+              aria-label="Refresh"
+              title="Refresh"
+              disabled={refreshing}
+              style={{
+                width: 22, height: 22, borderRadius: 5,
+                background: 'none', border: 'none',
+                color: C.muted, cursor: refreshing ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 0, flexShrink: 0,
+              }}
+            >
+              <RefreshIcon />
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Close menu"
+              style={{
+                width: 24, height: 24, borderRadius: 6,
+                background: 'none', border: 'none',
+                color: C.muted, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, lineHeight: 1,
+              }}
+            >×</button>
+          </div>
         </div>
         {body}
       </aside>
@@ -697,6 +770,15 @@ function ResetIcon() {
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
       <polyline points="1 4 1 10 7 10"/>
       <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+    </svg>
+  )
+}
+
+function RefreshIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
     </svg>
   )
 }
