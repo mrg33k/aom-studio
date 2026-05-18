@@ -646,9 +646,21 @@ export default function useChatMessages({
     return () => clearTimeout(timer)
   }, [messages, stepsByMessageId])
 
-  // ── Auto-scroll to bottom on new messages ────────────────────────────────
+  // ── Auto-scroll to bottom on new messages, only when near bottom ─────────
+  // Earlier doctrine scrolled unconditionally, which trapped the user at the
+  // bottom: every step-row insert or background message refetch yanked them
+  // back down mid-read. Now we only auto-scroll if the user is already within
+  // 160px of the bottom (i.e. actively reading the current turn). If they've
+  // scrolled up to read history, they stay put.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const anchor = messagesEndRef.current
+    if (!anchor) return
+    const scroller = anchor.parentElement
+    if (!scroller) { anchor.scrollIntoView({ behavior: 'smooth' }); return }
+    const fromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight
+    if (fromBottom < 160) {
+      anchor.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   // ── Fetch user profiles for shared-chat avatars ──────────────────────────
