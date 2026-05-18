@@ -123,6 +123,8 @@ export default async function handler(req, res) {
     proj.missions.set(m.slug, {
       slug: m.slug,
       name: m.name || m.raw_slug || m.slug,
+      // R-MP-3 — workstream grouping. Null means top-level / Other bucket.
+      workstream: m.workstream || null,
       status: m.status || null,
       is_done: !!m.is_done,
       last_updated: m.last_updated || null,
@@ -181,10 +183,38 @@ export default async function handler(req, res) {
       if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
       return (a.name || '').localeCompare(b.name || '')
     })
+
+    // R-MP-3 — group by workstream. Missions with workstream:null fall
+    // into the "Other" bucket. Workstream order: alphabetical by name,
+    // with "Other" last so explicit workstreams render at the top.
+    const workstreamMap = new Map()
+    for (const m of missions) {
+      const ws = m.workstream || '_other'
+      if (!workstreamMap.has(ws)) workstreamMap.set(ws, [])
+      workstreamMap.get(ws).push(m)
+    }
+    const workstreams = []
+    for (const [slug, list] of workstreamMap.entries()) {
+      workstreams.push({
+        slug,
+        name: slug === '_other' ? 'Other' : deriveDisplayName(slug),
+        missions: list,
+      })
+    }
+    workstreams.sort((a, b) => {
+      if (a.slug === '_other') return 1
+      if (b.slug === '_other') return -1
+      return (a.name || '').localeCompare(b.name || '')
+    })
+
     projects.push({
       slug: proj.slug,
       name: proj.name,
+      // Flat list kept for backwards-compat with existing consumers
+      // (Drawer.jsx + the cv4 mission-tree mockup before R-MP-4 wires
+      // the nested shape). Nested workstreams added in parallel.
       missions,
+      workstreams,
       unfiled_tasks: proj.unfiled_tasks,
     })
   }
@@ -194,4 +224,10 @@ export default async function handler(req, res) {
     projects,
     registry_generated_at: missionsRegistry?.generated_at || null,
   })
+}
+
+function deriveDisplayName(slug) {
+  return String(slug || '')
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
 }

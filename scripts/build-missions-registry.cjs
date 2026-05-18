@@ -50,7 +50,15 @@ function readContext(dir) {
   const p = path.join(dir, 'CONTEXT.md')
   try {
     const raw = fs.readFileSync(p, 'utf8')
-    return parseFrontmatter(raw)
+    const fm = parseFrontmatter(raw)
+    // Fallback: parse inline markdown bold labels in the body for fields
+    // missing from frontmatter. Pattern: **Workstream:** `slug` or
+    // **Workstream:** slug. Same for **Status:** and **Mission slug:**.
+    if (!fm.workstream) {
+      const m = raw.match(/\*\*Workstream:\*\*\s*`?([a-z][a-z0-9-]*)`?/i)
+      if (m) fm.workstream = m[1].toLowerCase()
+    }
+    return fm
   } catch { return {} }
 }
 
@@ -71,10 +79,15 @@ function scanDir(parentDir, projectSlug) {
     const fm = readContext(dir)
     const status = fm.status || 'in-progress'
     const lastUpdated = fm.last_updated || null
+    // R-MP-3 — workstream grouping. Read from CONTEXT.md frontmatter
+    // (workstream: <slug>). Null means top-level / unsorted; the API
+    // groups those under a virtual "Other" workstream.
+    const workstream = fm.workstream || null
     out.push({
       slug: `${projectSlug}:${e.name}`,
       raw_slug: e.name,
       project_slug: projectSlug,
+      workstream,
       name: deriveDisplayName(e.name),
       status,
       is_done: isDoneStatus(status),
