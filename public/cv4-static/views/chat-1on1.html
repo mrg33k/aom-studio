@@ -1276,6 +1276,12 @@
         </div>
         <div class="chat-header-actions">
           <button class="chat-action-btn" title="Voice call" aria-label="Start voice call" onclick="startVoiceCall()">☎</button>
+          <button class="chat-action-btn" title="Missions" aria-label="View missions" onclick="toggleMissionsOverlay()" id="missions-btn-1on1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+              <line x1="4" y1="22" x2="4" y2="15"/>
+            </svg>
+          </button>
           <button class="chat-action-btn" title="Agent profile" aria-label="View agent profile" onclick="showAgentProfile()">ℹ</button>
           <button class="chat-action-btn" title="Settings" aria-label="Open settings" onclick="showSettings()">⋯</button>
         </div>
@@ -1880,6 +1886,153 @@ Direction C (Engineering Blue) → Coral to blue ⚠ full identity shift</pre>
         true,
         () => showToast('success', 'Session cleared')
       );
+    }
+
+    /* ─── Missions overlay (R-MP-1.5 wired) ─────────────────────────────── */
+    function toggleMissionsOverlay() {
+      let overlay = document.getElementById('missions-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'missions-overlay';
+        overlay.style.cssText = [
+          'position:fixed',
+          'top:0',
+          'right:0',
+          'bottom:0',
+          'width:320px',
+          'background:var(--c-s1)',
+          'border-left:1px solid var(--c-border)',
+          'overflow-y:auto',
+          'z-index:200',
+          'padding:var(--sp-lg)',
+          'display:flex',
+          'flex-direction:column',
+          'gap:0',
+          'transition:transform 0.25s ease',
+          'transform:translateX(100%)',
+        ].join(';');
+        overlay.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-lg);">
+            <span style="font-size:var(--fs-xs);font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:0.06em;color:var(--c-muted);">Missions</span>
+            <button onclick="toggleMissionsOverlay()" style="background:transparent;border:none;cursor:pointer;color:var(--c-muted);font-size:18px;padding:0;line-height:1;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">×</button>
+          </div>
+          <div data-cv4 id="missions-overlay-tree"></div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Inject mission tree styles once
+        if (!document.querySelector('style[data-component="mission-tree"]')) {
+          const s = document.createElement('style');
+          s.setAttribute('data-cv4', '');
+          s.setAttribute('data-component', 'mission-tree');
+          s.textContent = `
+            [data-cv4] .mt-root{font-family:var(--ff-sans);color:var(--c-text);font-size:var(--fs-sm);line-height:var(--lh-normal);padding:var(--sp-md) 0}
+            [data-cv4] .mt-section-label{text-transform:uppercase;font-size:var(--fs-xs);font-weight:var(--fw-semibold);color:var(--c-text2);letter-spacing:.05em;margin:var(--sp-lg) 0 var(--sp-sm)}
+            [data-cv4] .mt-project{margin-bottom:var(--sp-md)}
+            [data-cv4] .mt-project-row{display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);color:var(--c-text);text-decoration:none;border-radius:6px;transition:background-color 120ms ease}
+            [data-cv4] .mt-project-row:hover{background-color:var(--c-dim)}
+            [data-cv4] .mt-project-row.active{background-color:var(--c-dim);color:var(--c-accent)}
+            [data-cv4] .mt-project-name{flex:1;font-weight:var(--fw-medium)}
+            [data-cv4] .mt-project-count{font-size:var(--fs-xs);color:var(--c-muted)}
+            [data-cv4] .mt-workstreams{margin-left:var(--sp-md);border-left:1px solid var(--c-border);padding-left:var(--sp-sm)}
+            [data-cv4] .mt-workstream{margin:var(--sp-xs) 0}
+            [data-cv4] details.mt-workstream-details>summary{list-style:none;cursor:pointer;padding:var(--sp-xs) var(--sp-sm);border-radius:4px;color:var(--c-text2);font-size:var(--fs-xs);text-transform:lowercase;display:flex;align-items:center;gap:var(--sp-xs);transition:background-color 120ms ease}
+            [data-cv4] details.mt-workstream-details>summary:hover{background-color:var(--c-dim);color:var(--c-text)}
+            [data-cv4] details.mt-workstream-details>summary::-webkit-details-marker{display:none}
+            [data-cv4] .mt-disclosure{display:inline-block;width:10px;transition:transform 120ms ease;color:var(--c-muted)}
+            [data-cv4] details.mt-workstream-details[open]>summary .mt-disclosure{transform:rotate(90deg)}
+            [data-cv4] .mt-workstream-name{flex:1;font-weight:var(--fw-medium)}
+            [data-cv4] .mt-sub-count{color:var(--c-muted);font-size:var(--fs-xs)}
+            [data-cv4] .mt-submissions{margin:var(--sp-xs) 0 var(--sp-xs) var(--sp-lg);display:flex;flex-direction:column;gap:2px}
+            [data-cv4] .mt-submission{display:flex;align-items:center;gap:var(--sp-sm);padding:var(--sp-xs) var(--sp-sm);color:var(--c-text);text-decoration:none;border-radius:4px;font-size:var(--fs-xs);transition:background-color 120ms ease}
+            [data-cv4] .mt-submission:hover{background-color:var(--c-dim)}
+            [data-cv4] .mt-submission.active{color:var(--c-accent);background-color:var(--c-dim)}
+            [data-cv4] .mt-submission-name{flex:1}
+            [data-cv4] .mt-submission-status{width:6px;height:6px;border-radius:50%;background-color:var(--c-muted)}
+            [data-cv4] .mt-submission-status.active{background-color:var(--c-accent)}
+            [data-cv4] .mt-submission-status.done{background-color:transparent;border:1px solid var(--c-muted)}
+          `;
+          document.head.appendChild(s);
+        }
+
+        // Populate tree
+        document.getElementById('missions-overlay-tree').innerHTML = `
+          <div class="mt-root">
+            <div class="mt-section-label">Active</div>
+            <div class="mt-submissions" style="margin-left:var(--sp-md)">
+              <a href="./project-chat.html?project=ambition-mechanical" class="mt-submission active">
+                <span class="mt-submission-status active"></span>
+                <span class="mt-submission-name">hero</span>
+                <span class="mt-sub-count">website</span>
+              </a>
+              <a href="./project-chat.html?project=ambition-mechanical" class="mt-submission">
+                <span class="mt-submission-status active"></span>
+                <span class="mt-submission-name">lp-restaurant-hvac</span>
+                <span class="mt-sub-count">google-ads</span>
+              </a>
+              <a href="./project-chat.html?project=ambition-mechanical" class="mt-submission">
+                <span class="mt-submission-status active"></span>
+                <span class="mt-submission-name">brand-page</span>
+                <span class="mt-sub-count">brand</span>
+              </a>
+            </div>
+            <div class="mt-section-label">All workstreams</div>
+            <div class="mt-project">
+              <a href="./project-chat.html?project=ambition-mechanical" class="mt-project-row active">
+                <span class="mt-project-name">Ambition Mechanical</span>
+                <span class="mt-project-count">6 · 25 missions</span>
+              </a>
+              <div class="mt-workstreams">
+                <details class="mt-workstream-details mt-workstream">
+                  <summary><span class="mt-disclosure">▶</span><span class="mt-workstream-name">website</span><span class="mt-sub-count">13</span></summary>
+                  <div class="mt-submissions">
+                    <a href="#" class="mt-submission"><span class="mt-submission-status active"></span><span class="mt-submission-name">hero</span></a>
+                    <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">top-bar</span></a>
+                    <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">what-we-do</span></a>
+                    <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">testimonials</span></a>
+                    <a href="#" class="mt-submission"><span class="mt-submission-status done"></span><span class="mt-submission-name">footer</span></a>
+                  </div>
+                </details>
+                <details class="mt-workstream-details mt-workstream">
+                  <summary><span class="mt-disclosure">▶</span><span class="mt-workstream-name">google-ads</span><span class="mt-sub-count">5</span></summary>
+                  <div class="mt-submissions">
+                    <a href="#" class="mt-submission"><span class="mt-submission-status active"></span><span class="mt-submission-name">lp-restaurant-hvac</span></a>
+                    <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">lp-emergency-hvac</span></a>
+                  </div>
+                </details>
+                <details class="mt-workstream-details mt-workstream">
+                  <summary><span class="mt-disclosure">▶</span><span class="mt-workstream-name">brand</span><span class="mt-sub-count">2</span></summary>
+                  <div class="mt-submissions">
+                    <a href="#" class="mt-submission"><span class="mt-submission-status active"></span><span class="mt-submission-name">brand-page</span></a>
+                    <a href="#" class="mt-submission"><span class="mt-submission-status"></span><span class="mt-submission-name">color-system</span></a>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Animate in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => { overlay.style.transform = 'translateX(0)'; });
+        });
+
+        // Accent the button
+        const btn = document.getElementById('missions-btn-1on1');
+        if (btn) { btn.style.color = 'var(--c-accent)'; btn.style.borderColor = 'var(--c-accent)'; }
+      } else {
+        // Toggle: close if open, open if closed
+        const isOpen = overlay.style.transform === 'translateX(0px)' || overlay.style.transform === 'translateX(0)';
+        if (isOpen) {
+          overlay.style.transform = 'translateX(100%)';
+          const btn = document.getElementById('missions-btn-1on1');
+          if (btn) { btn.style.color = ''; btn.style.borderColor = ''; }
+        } else {
+          overlay.style.transform = 'translateX(0)';
+          const btn = document.getElementById('missions-btn-1on1');
+          if (btn) { btn.style.color = 'var(--c-accent)'; btn.style.borderColor = 'var(--c-accent)'; }
+        }
+      }
     }
 
     /* ─── Step item expand on click ─────────────────────────────────────── */
