@@ -1,35 +1,65 @@
 {
-  "generated_at": "2026-05-18T01:03:59.956Z",
+  "generated_at": "2026-05-18T01:33:01.965Z",
   "missions": [
     {
-      "slug": "corner:cutscene-on-entry",
-      "raw_slug": "cutscene-on-entry",
+      "slug": "corner:about-screens",
+      "raw_slug": "about-screens",
       "project_slug": "corner",
-      "name": "Cutscene On Entry",
+      "name": "About Screens",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/cutscene-on-entry"
+      "path": "corner/missions/about-screens"
     },
     {
-      "slug": "corner:cv4-redesign",
-      "raw_slug": "cv4-redesign",
+      "slug": "corner:attachments",
+      "raw_slug": "attachments",
       "project_slug": "corner",
-      "name": "Cv4 Redesign",
+      "name": "Attachments",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/attachments"
+    },
+    {
+      "slug": "corner:chat-messages",
+      "raw_slug": "chat-messages",
+      "project_slug": "corner",
+      "name": "Chat Messages",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/chat-messages"
+    },
+    {
+      "slug": "corner:composer",
+      "raw_slug": "composer",
+      "project_slug": "corner",
+      "name": "Composer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/composer"
+    },
+    {
+      "slug": "corner:context-panel",
+      "raw_slug": "context-panel",
+      "project_slug": "corner",
+      "name": "Context Panel",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/context-panel"
+    },
+    {
+      "slug": "corner:corner-ui-cv4",
+      "raw_slug": "corner-ui-cv4",
+      "project_slug": "corner",
+      "name": "Corner Ui Cv4",
       "status": "in-progress",
       "is_done": false,
       "last_updated": "2026-05-13",
-      "path": "corner/missions/cv4-redesign"
-    },
-    {
-      "slug": "corner:cv4-tools-mail",
-      "raw_slug": "cv4-tools-mail",
-      "project_slug": "corner",
-      "name": "Cv4 Tools Mail",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/cv4-tools-mail"
+      "path": "corner/missions/corner-ui-cv4"
     },
     {
       "slug": "corner:files-in-app",
@@ -42,14 +72,14 @@
       "path": "corner/missions/files-in-app"
     },
     {
-      "slug": "corner:imagegen-composer",
-      "raw_slug": "imagegen-composer",
+      "slug": "corner:image-gen",
+      "raw_slug": "image-gen",
       "project_slug": "corner",
-      "name": "Imagegen Composer",
+      "name": "Image Gen",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/imagegen-composer"
+      "path": "corner/missions/image-gen"
     },
     {
       "slug": "corner:integrations",
@@ -62,54 +92,104 @@
       "path": "corner/missions/integrations"
     },
     {
-      "slug": "corner:live-call",
-      "raw_slug": "live-call",
+      "slug": "corner:login",
+      "raw_slug": "login",
       "project_slug": "corner",
-      "name": "Live Call",
+      "name": "Login",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/live-call"
+      "path": "corner/missions/login"
     },
     {
-      "slug": "corner:mission-rooms",
-      "raw_slug": "mission-rooms",
+      "slug": "corner:mail-room",
+      "raw_slug": "mail-room",
       "project_slug": "corner",
-      "name": "Mission Rooms",
-      "status": "r1-r2-r3-shipped-end-to-end-gate-pending",
-      "is_done": false,
-      "last_updated": "2026-05-17T14:30:00+00:00",
-      "path": "corner/missions/mission-rooms"
-    },
-    {
-      "slug": "corner:new-project-flow",
-      "raw_slug": "new-project-flow",
-      "project_slug": "corner",
-      "name": "New Project Flow",
+      "name": "Mail Room",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/new-project-flow"
+      "path": "corner/missions/mail-room"
     },
     {
-      "slug": "corner:onboarding-script",
-      "raw_slug": "onboarding-script",
+      "slug": "corner:mission-panel",
+      "raw_slug": "mission-panel",
       "project_slug": "corner",
-      "name": "Onboarding Script",
+      "name": "Mission Panel",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/onboarding-script"
+      "path": "corner/missions/mission-panel"
     },
     {
-      "slug": "corner:phone-recording",
-      "raw_slug": "phone-recording",
+      "slug": "corner:new-projects",
+      "raw_slug": "new-projects",
       "project_slug": "corner",
-      "name": "Phone Recording",
+      "name": "New Projects",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/phone-recording"
+      "path": "corner/missions/new-projects"
+    },
+    {
+      "slug": "corner:notifications",
+      "raw_slug": "notifications",
+      "project_slug": "corner",
+      "name": "Notifications",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/notifications"
+    },
+    {
+      "slug": "corner:onboarding",
+      "raw_slug": "onboarding",
+      "project_slug": "corner",
+      "name": "Onboarding",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/onboarding"
+    },
+    {
+      "slug": "corner:project-list",
+      "raw_slug": "project-list",
+      "project_slug": "corner",
+      "name": "Project List",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/project-list"
+    },
+    {
+      "slug": "corner:record-conversation",
+      "raw_slug": "record-conversation",
+      "project_slug": "corner",
+      "name": "Record Conversation",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/record-conversation"
+    },
+    {
+      "slug": "corner:room-header",
+      "raw_slug": "room-header",
+      "project_slug": "corner",
+      "name": "Room Header",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/room-header"
+    },
+    {
+      "slug": "corner:room-switcher",
+      "raw_slug": "room-switcher",
+      "project_slug": "corner",
+      "name": "Room Switcher",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/room-switcher"
     },
     {
       "slug": "corner:shared-rooms",
@@ -122,24 +202,84 @@
       "path": "corner/missions/shared-rooms"
     },
     {
-      "slug": "corner:time-of-day-theme",
-      "raw_slug": "time-of-day-theme",
+      "slug": "corner:sidebar",
+      "raw_slug": "sidebar",
       "project_slug": "corner",
-      "name": "Time Of Day Theme",
+      "name": "Sidebar",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/time-of-day-theme"
+      "path": "corner/missions/sidebar"
     },
     {
-      "slug": "corner:world-picker",
-      "raw_slug": "world-picker",
+      "slug": "corner:sidebar-tools",
+      "raw_slug": "sidebar-tools",
       "project_slug": "corner",
-      "name": "World Picker",
+      "name": "Sidebar Tools",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/world-picker"
+      "path": "corner/missions/sidebar-tools"
+    },
+    {
+      "slug": "corner:slash-commands",
+      "raw_slug": "slash-commands",
+      "project_slug": "corner",
+      "name": "Slash Commands",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/slash-commands"
+    },
+    {
+      "slug": "corner:slash-settings",
+      "raw_slug": "slash-settings",
+      "project_slug": "corner",
+      "name": "Slash Settings",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/slash-settings"
+    },
+    {
+      "slug": "corner:theme-and-density",
+      "raw_slug": "theme-and-density",
+      "project_slug": "corner",
+      "name": "Theme And Density",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/theme-and-density"
+    },
+    {
+      "slug": "corner:top-nav",
+      "raw_slug": "top-nav",
+      "project_slug": "corner",
+      "name": "Top Nav",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/top-nav"
+    },
+    {
+      "slug": "corner:user-settings",
+      "raw_slug": "user-settings",
+      "project_slug": "corner",
+      "name": "User Settings",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/user-settings"
+    },
+    {
+      "slug": "corner:voice-chat",
+      "raw_slug": "voice-chat",
+      "project_slug": "corner",
+      "name": "Voice Chat",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/voice-chat"
     },
     {
       "slug": "ambition-mechanical:ambition-social-clips",
@@ -425,8 +565,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 14,
-      "in_flight": 14,
+      "total": 28,
+      "in_flight": 28,
       "done": 0
     },
     {
