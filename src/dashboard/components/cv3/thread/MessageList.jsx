@@ -1361,34 +1361,48 @@ export default function MessageList({ roomType = 'agent' }) {
                 )}
               </div>
               </div>{/* end hover wrapper */}
-              {/* R75-r65-f: under-user step chain, indented to agent-avatar column. */}
-              {userBubbleSteps && (
-                <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
-                  <StepThread
-                    steps={userBubbleSteps}
-                    settled={hasAssistantReply}
-                    isError={false}
-                    agentColor={roomColor}
-                  />
-                </div>
-              )}
-              {/* corner:mission-rooms — synthetic chain INLINE under the user's
-                  bubble (any turn, not just turn 2+). Earlier doctrine put the
-                  synthetic chain at the bottom of the message list, which read
-                  as "5 seconds of nothing" because the dots were spatially
-                  detached from where the user's eye was. Now the chain shows
-                  immediately, tightly coupled to the user's message. */}
-              {isUser && inFlight && idx === arr.length - 1 && !userBubbleSteps && syntheticSteps.length > 0 && (
-                <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
-                  <StepThread
-                    steps={syntheticSteps}
-                    settled={false}
-                    isError={false}
-                    isStalled={chainStalled}
-                    agentColor={roomColor}
-                  />
-                </div>
-              )}
+              {/* corner:mission-rooms — under-user step chain.
+                  Last user bubble while in-flight: MERGE synthetic phases
+                  with any real backend steps so the chain keeps animating
+                  through 4 phases even after the backend emits its single
+                  baseline step 0. Real steps win by step_index when present
+                  (text + status from backend); synthetic phases fill the
+                  gaps so the chain feels alive instead of freezing on
+                  "Read your message" the moment the backend row lands.
+                  Historical user bubbles render their real steps as-is. */}
+              {(() => {
+                const isLast = isUser && idx === arr.length - 1
+                const liveMerge = isLast && inFlight && !hasAssistantReply
+                if (!liveMerge && !userBubbleSteps) return null
+                let displaySteps
+                let settledFlag
+                if (liveMerge) {
+                  const real = userBubbleSteps || []
+                  const syn = syntheticSteps || []
+                  const maxLen = Math.max(real.length, syn.length)
+                  displaySteps = []
+                  for (let i = 0; i < maxLen; i++) {
+                    if (real[i]) displaySteps.push(real[i])
+                    else if (syn[i]) displaySteps.push(syn[i])
+                  }
+                  settledFlag = false
+                } else {
+                  displaySteps = userBubbleSteps
+                  settledFlag = hasAssistantReply
+                }
+                if (!displaySteps || displaySteps.length === 0) return null
+                return (
+                  <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
+                    <StepThread
+                      steps={displaySteps}
+                      settled={settledFlag}
+                      isError={false}
+                      isStalled={liveMerge ? chainStalled : false}
+                      agentColor={roomColor}
+                    />
+                  </div>
+                )
+              })()}
             </React.Fragment>
           )
         })}
