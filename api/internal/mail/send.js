@@ -1,0 +1,197 @@
+// POST /api/internal/mail/send
+//
+// Internal-auth endpoint for terminal agents (Elon, Studio tmux sessions).
+// No user JWT required. Authentication via X-Internal-Key header matched
+// against SUPABASE_SERVICE_ROLE_KEY — already present in Vercel env and
+// in the AOM-EA local .env, so no new env vars needed.
+//
+// This endpoint exists because the terminal EA has no user JWT — it runs in
+// a tmux Claude Code session without access to Patrik's browser session.
+// The dashboard /api/dashboard/mail/send requires a user JWT, which the
+// terminal can't provide. This internal path skips user auth and goes
+// straight to the connection-scoped token via getGmailTokenByConnection.
+//
+// Auth: X-Internal-Key header must equal SUPABASE_SERVICE_ROLE_KEY.
+//
+// Body: {
+//   connection_id,      // account_integrations.id of the workspace Gmail connection
+//   to,                 // [{name?, email}, ...] or "Name <email@example.com>" strings
+//   cc?, bcc?,
+//   subject,
+//   bodyHtml,           // HTML body (server appends signature)
+//   bodyText?,          // optional plaintext (auto-derived from HTML if omitted)
+//   threadId?,          // Gmail thread-id for replies
+//   inReplyTo?,         // In-Reply-To header value
+//   references?,        // References header value
+//   includeSignature?   // default true
+// }
+//
+// Response: { ok: true, id, threadId } on success.
+
+import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// ─── RFC 822 helpers (mirrored from api/dashboard/mail/send.js) ─────────────
+
+function encB64Url(buf) {
+  return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function fmtAddress(a) {
+  if (typeof a === 'string') return a
+  if (!a || !a.email) return ''
+  if (a.name) {
+    const escaped = a.name.replace(/"/g, '\\"')
+    return `"${escaped}" <${a.email}>`
+  }
+  return a.email
+}
+
+function fmtAddressList(list) {
+  if (typeof list === 'string') return list
+  if (!Array.isArray(list)) return ''
+  return list.map(fmtAddress).filter(Boolean).join(', ')
+}
+
+function htmlToText(html) {
+  if (!html) return ''
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim()
+}
+
+async function fetchSignature(accessToken) {
+  const r = await gmailFetch(accessToken, '/settings/sendAs')
+  if (!r.ok) return { signatureHtml: '', sendAsEmail: null, displayName: null }
+  const body = await r.json()
+  const entries = body.sendAs || []
+  const def = entries.find(e => e.isDefault) || entries.find(e => e.isPrimary) || entries[0]
+  if (!def) return { signatureHtml: '', sendAsEmail: null, displayName: null }
+  return {
+    signatureHtml: def.signature || '',
+    sendAsEmail: def.sendAsEmail || null,
+    displayName: def.displayName || null,
+  }
+}
+
+function buildRfc822({ from, to, cc, bcc, subject, bodyHtml, bodyText, inReplyTo, references }) {
+  const boundary = `=_corner_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`
+  const headers = []
+  headers.push(`From: ${from}`)
+  if (to) headers.push(`To: ${to}`)
+  if (cc) headers.push(`Cc: ${cc}`)
+  if (bcc) headers.push(`Bcc: ${bcc}`)
+  headers.push(`Subject: ${subject}`)
+  headers.push('MIME-Version: 1.0')
+  if (inReplyTo) headers.push(`In-Reply-To: ${inReplyTo}`)
+  if (references) headers.push(`References: ${references}`)
+  headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`)
+  const lines = [headers.join('\r\n'), '']
+  lines.push(`--${boundary}`)
+  lines.push('Content-Type: text/plain; charset="UTF-8"')
+  lines.push('Content-Transfer-Encoding: 7bit')
+  lines.push('')
+  lines.push(bodyText)
+  lines.push('')
+  lines.push(`--${boundary}`)
+  lines.push('Content-Type: text/html; charset="UTF-8"')
+  lines.push('Content-Transfer-Encoding: 7bit')
+  lines.push('')
+  lines.push(bodyHtml)
+  lines.push('')
+  lines.push(`--${boundary}--`)
+  return lines.join('\r\n')
+}
+
+// ─── Handler ────────────────────────────────────────────────────────────────
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Internal-Key')
+  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
+
+  // Internal auth: X-Internal-Key must match SUPABASE_SERVICE_ROLE_KEY.
+  // This key is already in Vercel env and in AOM-EA .env — no new vars needed.
+  const internalKey = (req.headers['x-internal-key'] || '').trim()
+  if (!SUPABASE_SERVICE_ROLE_KEY || !internalKey || internalKey !== SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(401).json({ error: 'unauthorized' })
+  }
+
+  let payload
+  try {
+    payload = typeof req.body === 'object' ? req.body : JSON.parse(req.body || '{}')
+  } catch {
+    return res.status(400).json({ error: 'invalid-json' })
+  }
+
+  const {
+    connection_id,
+    to,
+    cc,
+    bcc,
+    subject,
+    bodyHtml,
+    bodyText,
+    threadId,
+    inReplyTo,
+    references,
+    includeSignature,
+  } = payload
+
+  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  if (!to || !subject || !bodyHtml) return res.status(400).json({ error: 'to, subject, bodyHtml required' })
+
+  // Load Gmail tokens directly via connection_id (no user JWT needed).
+  const creds = await getGmailTokenByConnection(connection_id)
+  if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
+
+  const sig = await fetchSignature(creds.accessToken)
+  const fromHeader = sig.sendAsEmail
+    ? fmtAddress({ name: sig.displayName || '', email: sig.sendAsEmail })
+    : (creds.profile?.email ? fmtAddress({ email: creds.profile.email }) : '')
+  if (!fromHeader) return res.status(502).json({ error: 'no-send-as-address' })
+
+  let finalBodyHtml = String(bodyHtml)
+  if (includeSignature !== false && sig.signatureHtml) {
+    finalBodyHtml = `${finalBodyHtml}<br><br>${sig.signatureHtml}`
+  }
+  const finalBodyText = (bodyText && String(bodyText)) || htmlToText(finalBodyHtml)
+
+  const raw = buildRfc822({
+    from: fromHeader,
+    to: fmtAddressList(to),
+    cc: cc ? fmtAddressList(cc) : '',
+    bcc: bcc ? fmtAddressList(bcc) : '',
+    subject: String(subject),
+    bodyHtml: finalBodyHtml,
+    bodyText: finalBodyText,
+    inReplyTo: inReplyTo || '',
+    references: references || '',
+  })
+
+  const sendResp = await gmailFetch(creds.accessToken, '/messages/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      raw: encB64Url(raw),
+      threadId: threadId || undefined,
+    }),
+  })
+
+  if (!sendResp.ok) {
+    const text = await sendResp.text().catch(() => '')
+    return res.status(502).json({ error: 'gmail-send', status: sendResp.status, detail: text.slice(0, 300) })
+  }
+
+  const sent = await sendResp.json()
+  return res.status(200).json({ ok: true, id: sent.id, threadId: sent.threadId })
+}
