@@ -17,7 +17,7 @@ import {
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
 import MissionStateCard from './project-chat/MissionStateCard.jsx'
 import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
-import CanonFilesPanel from './project-chat/CanonFilesPanel.jsx'
+import CanonFilesPanel from './project-chat/CornerFilesPanel.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
 import ProjectSearchBar from './project-chat/ProjectSearchBar.jsx'
 import ProjectSearchResults from './project-chat/ProjectSearchResults.jsx'
