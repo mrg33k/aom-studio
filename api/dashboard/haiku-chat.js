@@ -208,13 +208,37 @@ async function executeTool(name, args, ctx) {
         },
       }
 
+      // R-SDK-3: feature-flagged Managed Agents API path. When
+      // USE_SDK_DISPATCH=true, route through dispatch() so the sub-agent runs
+      // in Anthropic infra instead of being picked up by task-runner.sh.
+      // Default false until the R-SDK-1.5 smoke test runs in production.
+      if (process.env.USE_SDK_DISPATCH === 'true') {
+        try {
+          const { dispatch } = await import('../lib/dispatch.js')
+          const result = await dispatch({
+            prompt: description,
+            agentName: 'claude',
+            missionSlug: missionSlug || undefined,
+            projectSlug: projectSlug || undefined,
+            title,
+            model: model === 'sonnet' ? 'claude-sonnet-4-6' : model === 'haiku' ? 'claude-haiku-4-5-20251001' : 'claude-opus-4-7',
+          })
+          writeToSupabase('assistant', `task:${result.dispatchId}`, `dispatched via SDK by ${ctx.slug} from haiku-chat: ${title}`, 'haiku-chat-dispatch', '', ctx.clientId).catch(() => {})
+          return { success: true, task_id: result.dispatchId, title, status: 'queued', project: projectSlug, dispatch_runtime: 'sdk-managed-agents' }
+        } catch (err) {
+          // Soft fallback: legacy Supabase insert path still runs so the
+          // user never sees a tool error. Rollout stays reversible.
+          console.error('[haiku-chat] SDK dispatch failed, falling back to legacy queue:', err)
+        }
+      }
+
       const inserted = await sbRest('POST', 'tasks', row)
       const task = Array.isArray(inserted) ? inserted[0] : inserted
       if (!task?.id) throw new Error('Task insert returned no row')
 
       writeToSupabase('assistant', `task:${task.id}`, `queued by ${ctx.slug} from haiku-chat: ${title}`, 'haiku-chat-dispatch', '', ctx.clientId).catch(() => {})
 
-      return { success: true, task_id: task.id, title: task.title, status: task.status, project: projectSlug }
+      return { success: true, task_id: task.id, title: task.title, status: task.status, project: projectSlug, dispatch_runtime: 'legacy-task-runner' }
     }
 
     case 'query_tasks': {
