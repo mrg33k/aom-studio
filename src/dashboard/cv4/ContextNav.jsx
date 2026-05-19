@@ -297,24 +297,24 @@ export default function CV4ContextNav({
           priority matches the conceptual hierarchy (navigation > tool mode).
           Mail button only appears when activeTool === 'mail'. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
-        {/* Missions button — opens the left drawer scrolled to the missions tree
-            for the current project. Active (green tint) when the user is already
+        {/* Missions button — opens the RIGHT tasks/missions drawer.
+            Active (green tint) when the right drawer is open or the user is
             inside a specific mission room (missionSlug set on conversationTarget). */}
         {conversationTarget?.type === 'project' && (
           <button
             data-testid="cv4-context-missions-toggle"
-            onClick={onToggleDrawer}
+            onClick={onToggleTasksDrawer}
             aria-label="View missions"
             title="View missions"
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: conversationTarget?.missionSlug
+              background: (tasksDrawerOpen || conversationTarget?.missionSlug)
                 ? 'rgba(16,185,129,0.15)'
                 : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${conversationTarget?.missionSlug
+              border: `1px solid ${(tasksDrawerOpen || conversationTarget?.missionSlug)
                 ? 'rgba(16,185,129,0.4)'
                 : 'rgba(255,255,255,0.08)'}`,
-              color: conversationTarget?.missionSlug ? C.accent : C.muted,
+              color: (tasksDrawerOpen || conversationTarget?.missionSlug) ? C.accent : C.muted,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
