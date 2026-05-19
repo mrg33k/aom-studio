@@ -53,6 +53,7 @@ import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordi
 import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
+import RightMenu from './cv4/RightMenu.jsx'
 import MailListPanel from './cv4/MailListPanel.jsx'
 import MailRoom from './cv4/MailRoom.jsx'
 
@@ -1767,7 +1768,7 @@ export default function CornerV4() {
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
                 : activeTool === 'mail'
                   ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
-                  : <TasksPanelCv4 />
+                  : <RightMenu />
             ) : (
               activeTool === 'mail' && selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
@@ -1791,7 +1792,7 @@ export default function CornerV4() {
           >
             {activeTool === 'mail'
               ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
-              : <TasksPanelCv4 />}
+              : <RightMenu />}
           </aside>
         )}
       </div>
