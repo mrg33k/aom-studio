@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
@@ -272,7 +272,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/conrad-foundation" element={<ConradFoundation />} />
           <Route path="/conrad" element={<ConradFoundation />} />
           <Route path="/nancy" element={<ConradFoundation />} />
-          <Route path="/higher-orbits" element={<HigherOrbitsPitch />} />
+          <Route path="/higher-orbits" element={<Navigate to="/higherorbits" replace />} />
           <Route path="/higherorbits" element={<HigherOrbitsPitchAZCT />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
