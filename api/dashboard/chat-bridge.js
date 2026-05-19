@@ -46,6 +46,11 @@ async function writeFallbackToSupabase(body) {
   // Project tag detection runs here too so a user's `[project:slug]` mention
   // gets the `project` field + shared-thread crosspost without round-tripping
   // through the browser. See api/_lib/crosspost.js.
+  // shouldCrossPost tracks whether a crosspost to shared:<project> is warranted.
+  // Only true when the user explicitly tags [project:slug] in a 1:1 agent chat.
+  // Project-room sends already have a dedicated client_id thread — crossposting
+  // them creates the duplicate row that was appearing in Supabase.
+  let shouldCrossPost = false
   let resolvedProject = (body.project && body.project.trim()) ? body.project.trim() : null
   if (!resolvedProject) {
     // Gate fuzzy project detection on project-scoped rooms. For agent 1:1 rooms
@@ -60,8 +65,11 @@ async function writeFallbackToSupabase(body) {
         supabaseUrl: SUPABASE_URL,
         headers: supabaseHeaders(),
       })
+      // Already in a project room — no crosspost needed, the room IS the thread.
     } else {
       resolvedProject = detectProjectTag(messageText)
+      // Explicit [project:slug] tag in a 1:1 chat — crosspost to shared thread.
+      if (resolvedProject) shouldCrossPost = true
     }
   }
 
@@ -103,7 +111,7 @@ async function writeFallbackToSupabase(body) {
   const inserted = sbRes.ok ? await sbRes.json() : null
   const insertedRow = inserted?.[0] || payload
 
-  if (resolvedProject) {
+  if (resolvedProject && shouldCrossPost) {
     await crossPostToProjectThread({
       supabaseUrl: SUPABASE_URL,
       headers: supabaseHeaders(),
