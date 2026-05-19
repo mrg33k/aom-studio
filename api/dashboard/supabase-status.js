@@ -55,9 +55,10 @@ export default async function handler(req, res) {
     const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done] = await Promise.all([
       supabaseGet('agent_status', `order=slug${clientFilter}`),
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
-      // Non-completed, non-blocked tasks (legacy statuses only -- queued, active, todo, working, done, rejected, failed)
-      // V2 statuses (classifying, planning, building, qa) are fetched separately below as tasksV2Active.
-      supabaseGet('tasks', `status=not.in.(completed,blocked,classifying,planning,building,qa)&order=created_at.desc${clientFilter}`),
+      // Legacy active tasks ONLY. Allowlist (not denylist) so v2 terminal
+      // statuses (done/failed/cancelled) can never slip through unbounded -- that
+      // bug pulled 700+ stale rows / 4MB per dashboard load (2026-05-18).
+      supabaseGet('tasks', `status=in.(queued,active,todo,working,needs_input)&order=created_at.desc&limit=100${clientFilter}`),
       // Recent completed tasks (legacy: status=completed only -- v2 done/failed fetched below)
       supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
       supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc${clientFilter}`),
