@@ -12,7 +12,51 @@
   <link rel="stylesheet" href="styles/mobile.css">
 
   <style>
-    /* Home-specific layout */
+    /* 3-column grid on desktop */
+    @media (min-width: 1440px) {
+      body {
+        display: grid;
+        grid-template-columns: var(--cw-desktop-left) 1fr var(--cw-desktop-right);
+        grid-template-rows: 1fr;
+        height: 100vh;
+        overflow: hidden;
+        gap: 0;
+      }
+
+      .left-rail {
+        grid-column: 1;
+        background-color: var(--c-s1);
+        border-right: 1px solid var(--c-border);
+        padding: var(--sp-lg) var(--sp-md);
+        overflow-y: auto;
+      }
+
+      .center-rail {
+        grid-column: 2;
+        background-color: var(--c-s1);
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .right-rail {
+        grid-column: 3;
+        background-color: var(--c-s1-faint);
+        border-left: 1px solid var(--c-border);
+        padding: var(--sp-lg) var(--sp-md);
+        overflow-y: auto;
+      }
+    }
+
+    /* Mobile: hide rails, full-width center */
+    @media (max-width: 1439px) {
+      .left-rail,
+      .right-rail {
+        display: none;
+      }
+    }
+
+    /* ─── Home-specific styles ───────────────────────────────── */
+
     .home-hero {
       padding: var(--sp-3xl) var(--sp-2xl);
       background-color: var(--c-s1);
@@ -148,6 +192,54 @@
       background-color: var(--c-accent);
     }
 
+    /* ─── Left rail stub ─────────────────────────────────────── */
+
+    .sidebar-label {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-md);
+      padding: 0 var(--sp-sm);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-sm);
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      transition: background-color 120ms ease, color 120ms ease;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover {
+      background-color: var(--c-dim);
+      color: var(--c-text);
+    }
+
+    .nav-item.active {
+      background-color: var(--c-dim);
+      color: var(--c-accent);
+    }
+
+    .nav-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--c-accent);
+      flex-shrink: 0;
+    }
+
+    .nav-dot.idle {
+      background-color: var(--c-muted);
+    }
+
     @media (max-width: 1439px) {
       .greeting {
         font-size: var(--fs-2xl);
@@ -168,117 +260,192 @@
   </style>
 </head>
 <body>
-  <div class="home-hero">
-    <h1 class="greeting">Good morning, Patrik.</h1>
-    <p class="subheading">What are you working on right now?</p>
 
-    <div class="search-bar">
-      <input
-        type="text"
-        placeholder="Search projects, tasks, agents..."
-        aria-label="Search"
-      >
-      <button aria-label="Search">→</button>
-    </div>
-  </div>
+  <!-- ── Left rail: agents + projects nav ─────────────────────── -->
+  <aside class="left-rail">
+    <h3 class="sidebar-label">Agents</h3>
 
-  <div class="projects-section">
-    <h2 class="section-label">Active Projects</h2>
+    <a href="chat-1on1.html?agent=elon" class="nav-item">
+      <span class="nav-dot"></span>
+      Elon
+    </a>
+    <a href="chat-1on1.html?agent=studio" class="nav-item">
+      <span class="nav-dot"></span>
+      Studio
+    </a>
+    <a href="chat-1on1.html?agent=steffen" class="nav-item">
+      <span class="nav-dot idle"></span>
+      Steffen
+    </a>
+    <a href="chat-1on1.html?agent=cleo" class="nav-item">
+      <span class="nav-dot idle"></span>
+      Cleo
+    </a>
+    <a href="chat-1on1.html?agent=bobby" class="nav-item">
+      <span class="nav-dot"></span>
+      Bobby
+    </a>
 
-    <div class="projects-grid">
-      <a href="project-chat.html?id=corner" class="project-card">
-        <h3 class="project-name">Corner</h3>
-        <p class="project-summary">Platform operating system for autonomous work. Live voice calls, task routing, real-time project state.</p>
-        <div class="project-meta">
-          <div class="meta-item">
-            <span class="status-dot"></span>
-            In Flight
-          </div>
-          <div class="meta-item">12 tasks</div>
-        </div>
-      </a>
+    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Projects</h3>
 
-      <a href="project-chat.html?id=ambition" class="project-card">
-        <h3 class="project-name">Ambition</h3>
-        <p class="project-summary">Mechanical engineering agency website. Portfolio, case studies, team visibility.</p>
-        <div class="project-meta">
-          <div class="meta-item">
-            <span class="status-dot"></span>
-            In Flight
-          </div>
-          <div class="meta-item">8 tasks</div>
-        </div>
-      </a>
+    <a href="project-chat.html?id=corner" class="nav-item active">
+      <span class="nav-dot"></span>
+      Corner
+    </a>
+    <a href="project-chat.html?id=ambition" class="nav-item">
+      <span class="nav-dot"></span>
+      Ambition
+    </a>
+    <a href="project-chat.html?id=skylar" class="nav-item">
+      <span class="nav-dot idle"></span>
+      Skylar
+    </a>
+    <a href="project-chat.html?id=space-rising" class="nav-item">
+      <span class="nav-dot idle"></span>
+      Space Rising
+    </a>
+    <a href="project-chat.html?id=isa-energy" class="nav-item">
+      <span class="nav-dot idle"></span>
+      ISA Energy
+    </a>
+  </aside>
 
-      <a href="project-chat.html?id=skylar" class="project-card">
-        <h3 class="project-name">Skylar</h3>
-        <p class="project-summary">Mental health coaching platform. Real-time session notes, progress tracking, care coordination.</p>
-        <div class="project-meta">
-          <div class="meta-item">
-            <span class="status-dot"></span>
-            In Flight
-          </div>
-          <div class="meta-item">6 tasks</div>
-        </div>
-      </a>
+  <!-- ── Center: main home content ─────────────────────────────── -->
+  <main class="center-rail">
+    <div class="home-hero">
+      <h1 class="greeting" id="greeting-text">Good morning, Patrik.</h1>
+      <p class="subheading">What are you working on right now?</p>
 
-      <a href="project-chat.html?id=space-rising" class="project-card">
-        <h3 class="project-name">Space Rising</h3>
-        <p class="project-summary">Climate tech startup. Dashboard for carbon credit tracking, investor relations site.</p>
-        <div class="project-meta">
-          <div class="meta-item">
-            <span class="status-dot"></span>
-            In Flight
-          </div>
-          <div class="meta-item">4 tasks</div>
-        </div>
-      </a>
-
-      <a href="project-chat.html?id=isa-energy" class="project-card">
-        <h3 class="project-name">ISA Energy</h3>
-        <p class="project-summary">Smart grid analytics. Real-time consumption data, demand forecasting, pricing strategy.</p>
-        <div class="project-meta">
-          <div class="meta-item">
-            <span class="status-dot"></span>
-            In Flight
-          </div>
-          <div class="meta-item">5 tasks</div>
-        </div>
-      </a>
-
-      <a href="project-chat.html?id=pala" class="project-card">
-        <h3 class="project-name">Pala</h3>
-        <p class="project-summary">Community platform for cultural organizations. Events, member management, fundraising.</p>
-        <div class="project-meta">
-          <div class="meta-item">
-            <span class="status-dot"></span>
-            In Flight
-          </div>
-          <div class="meta-item">3 tasks</div>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <div class="projects-section">
-    <h2 class="section-label">Recent Activity</h2>
-
-    <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
-      <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-accent); border-radius: 4px;">
-        <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Elon queued 3 tasks on Ambition</p>
-        <p style="font-size: var(--fs-xs); color: var(--c-muted);">2 hours ago</p>
-      </div>
-
-      <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-info); border-radius: 4px;">
-        <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Steffen marked 2 tasks done on Corner</p>
-        <p style="font-size: var(--fs-xs); color: var(--c-muted);">5 hours ago</p>
-      </div>
-
-      <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-accent); border-radius: 4px;">
-        <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Studio sent an update on Space Rising</p>
-        <p style="font-size: var(--fs-xs); color: var(--c-muted);">8 hours ago</p>
+      <div class="search-bar">
+        <input
+          type="text"
+          placeholder="Search projects, tasks, agents..."
+          aria-label="Search"
+        >
+        <button aria-label="Search">→</button>
       </div>
     </div>
-  </div>
+
+    <div class="projects-section">
+      <h2 class="section-label">Active Projects</h2>
+
+      <div class="projects-grid">
+        <a href="project-chat.html?id=corner" class="project-card">
+          <h3 class="project-name">Corner</h3>
+          <p class="project-summary">Platform operating system for autonomous work. Live voice calls, task routing, real-time project state.</p>
+          <div class="project-meta">
+            <div class="meta-item">
+              <span class="status-dot"></span>
+              In Flight
+            </div>
+            <div class="meta-item">12 tasks</div>
+          </div>
+        </a>
+
+        <a href="project-chat.html?id=ambition" class="project-card">
+          <h3 class="project-name">Ambition</h3>
+          <p class="project-summary">Mechanical engineering agency website. Portfolio, case studies, team visibility.</p>
+          <div class="project-meta">
+            <div class="meta-item">
+              <span class="status-dot"></span>
+              In Flight
+            </div>
+            <div class="meta-item">8 tasks</div>
+          </div>
+        </a>
+
+        <a href="project-chat.html?id=skylar" class="project-card">
+          <h3 class="project-name">Skylar</h3>
+          <p class="project-summary">Mental health coaching platform. Real-time session notes, progress tracking, care coordination.</p>
+          <div class="project-meta">
+            <div class="meta-item">
+              <span class="status-dot"></span>
+              In Flight
+            </div>
+            <div class="meta-item">6 tasks</div>
+          </div>
+        </a>
+
+        <a href="project-chat.html?id=space-rising" class="project-card">
+          <h3 class="project-name">Space Rising</h3>
+          <p class="project-summary">Climate tech startup. Dashboard for carbon credit tracking, investor relations site.</p>
+          <div class="project-meta">
+            <div class="meta-item">
+              <span class="status-dot"></span>
+              In Flight
+            </div>
+            <div class="meta-item">4 tasks</div>
+          </div>
+        </a>
+
+        <a href="project-chat.html?id=isa-energy" class="project-card">
+          <h3 class="project-name">ISA Energy</h3>
+          <p class="project-summary">Smart grid analytics. Real-time consumption data, demand forecasting, pricing strategy.</p>
+          <div class="project-meta">
+            <div class="meta-item">
+              <span class="status-dot"></span>
+              In Flight
+            </div>
+            <div class="meta-item">5 tasks</div>
+          </div>
+        </a>
+
+        <a href="project-chat.html?id=pala" class="project-card">
+          <h3 class="project-name">Pala</h3>
+          <p class="project-summary">Community platform for cultural organizations. Events, member management, fundraising.</p>
+          <div class="project-meta">
+            <div class="meta-item">
+              <span class="status-dot"></span>
+              In Flight
+            </div>
+            <div class="meta-item">3 tasks</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <div class="projects-section">
+      <h2 class="section-label">Recent Activity</h2>
+
+      <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
+        <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-accent); border-radius: 4px;">
+          <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Elon queued 3 tasks on Ambition</p>
+          <p style="font-size: var(--fs-xs); color: var(--c-muted);">2 hours ago</p>
+        </div>
+
+        <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-info); border-radius: 4px;">
+          <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Steffen marked 2 tasks done on Corner</p>
+          <p style="font-size: var(--fs-xs); color: var(--c-muted);">5 hours ago</p>
+        </div>
+
+        <div style="padding: var(--sp-md); background-color: var(--c-dim-faint); border-left: 3px solid var(--c-accent); border-radius: 4px;">
+          <p style="font-size: var(--fs-sm); color: var(--c-text); margin-bottom: var(--sp-sm);">Studio sent an update on Space Rising</p>
+          <p style="font-size: var(--fs-xs); color: var(--c-muted);">8 hours ago</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── Right rail: right-menu (global scope on home) ─────────── -->
+  <!-- Global scope: no data-rm-project = shows all projects' missions + tasks -->
+  <!-- R2 note: swap data-include inclusion when served from dev server -->
+  <aside class="right-rail">
+    <div data-include="components/right-menu.html"></div>
+  </aside>
+
+  <script src="include.js"></script>
+  <script>
+    // Time-aware greeting (R74 spec)
+    (function () {
+      var h = new Date().getHours();
+      var greeting =
+        h >= 6 && h < 12  ? 'Good morning, Patrik.' :
+        h >= 12 && h < 17 ? 'Good afternoon, Patrik.' :
+        h >= 17 && h < 21 ? 'Good evening, Patrik.' :
+        'Burning the midnight oil, Patrik.';
+      var el = document.getElementById('greeting-text');
+      if (el) el.textContent = greeting;
+    })();
+  </script>
 </body>
 </html>

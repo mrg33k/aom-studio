@@ -1,0 +1,516 @@
+<!--
+  right-menu.html — R-RM-1 (2026-05-18)
+  Mission: corner:right-menu
+  Round: R1 — initial build, stub data
+
+  Three vertical sections top-to-bottom:
+    1. MISSIONS   — all missions sorted by last-touched (most recent message activity)
+    2. ACTIVE TASKS — running + queued tasks scoped to the current room / project
+    3. COMPLETED  — done tasks, per-room, capped at 10 visible, show-more expander
+
+  Status dot vocabulary (matches mission-tree.html — NEVER red):
+    .rm-dot (gray)            = idle, no active or queued tasks
+    .rm-dot.active (emerald)  = has at least one running task
+    .rm-dot.queued (amber)    = has queued tasks but no running tasks
+    .rm-dot.done (hollow)     = not used for missions (missions never complete per Patrik SDK Q1)
+
+  Task status pills:
+    .rm-pill.running  = emerald label
+    .rm-pill.queued   = amber label
+
+  Composition decision (R1):
+    Built as a NEW flat-list component. mission-tree.html stays as the nested
+    workstream tree (project → workstream → sub-mission). These serve different
+    purposes: mission-tree for structure, right-menu for recency-sorted quick navigation.
+    Both can coexist in the same right rail in a future round.
+
+  R2 wiring contract (Supabase):
+    MISSIONS:
+      SELECT m.*, MAX(msg.created_at) as last_touched
+      FROM missions m
+      LEFT JOIN messages msg ON msg.client_id = m.project_slug
+      GROUP BY m.id
+      ORDER BY last_touched DESC NULLS LAST;
+      Realtime: subscribe to messages channel.
+
+    ACTIVE TASKS (project-scoped):
+      SELECT * FROM tasks
+      WHERE status IN ('running', 'queued')
+        AND metadata->>'project' = $currentProject  -- null = global (home view)
+      ORDER BY created_at DESC;
+      Realtime: subscribe to tasks channel, filter by project slug.
+
+    COMPLETED (project-scoped):
+      SELECT * FROM tasks
+      WHERE status = 'done'
+        AND metadata->>'project' = $currentProject
+      ORDER BY updated_at DESC
+      LIMIT 10;
+      Realtime: same subscription, filter for status = 'done'.
+
+  Scope signal for R2:
+    Read data-rm-project attribute on .rm-root.
+    If present → project-scoped active + completed sections.
+    If absent  → global (all projects), used on home.html.
+
+  Mobile behavior:
+    On screens < 1440px, the right rail is hidden. A toggle button in
+    the mobile header (class .rm-mobile-toggle) can open the right-menu
+    as a drawer. The drawer is wired in R2 with the JS toggle.
+-->
+
+<style data-cv4 data-component="right-menu">
+  /* ─── Section structure ─────────────────────────────────────── */
+
+  [data-cv4] .rm-root {
+    font-family: var(--ff-sans);
+    color: var(--c-text);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    padding: 0;
+  }
+
+  [data-cv4] .rm-section {
+    margin-bottom: var(--sp-lg);
+  }
+
+  /* Section label — matches mt-section-label from mission-tree.html */
+  [data-cv4] .rm-section-label {
+    text-transform: uppercase;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--c-text2);
+    letter-spacing: 0.05em;
+    margin: var(--sp-lg) 0 var(--sp-sm);
+    padding: 0 var(--sp-sm);
+  }
+
+  /* ─── Status dots ───────────────────────────────────────────── */
+
+  [data-cv4] .rm-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--c-muted);
+    transition: background-color 200ms ease;
+  }
+
+  [data-cv4] .rm-dot.active {
+    background-color: var(--c-accent);
+    animation: breathing-dot 2s ease-in-out infinite;
+  }
+
+  [data-cv4] .rm-dot.queued {
+    background-color: var(--c-warning);
+  }
+
+  [data-cv4] .rm-dot.done {
+    background-color: transparent;
+    border: 1px solid var(--c-muted);
+  }
+
+  /* ─── Mission rows ──────────────────────────────────────────── */
+
+  [data-cv4] .rm-mission-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  [data-cv4] .rm-mission-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: var(--sp-xs) var(--sp-sm);
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--c-text);
+    transition: background-color 120ms ease;
+    min-height: 32px;
+  }
+
+  [data-cv4] .rm-mission-row:hover {
+    background-color: var(--c-dim);
+  }
+
+  [data-cv4] .rm-mission-row.current {
+    background-color: var(--c-dim);
+    color: var(--c-accent);
+  }
+
+  [data-cv4] .rm-mission-name {
+    flex: 1;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-cv4] .rm-mission-project {
+    font-size: var(--fs-xs);
+    color: var(--c-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-cv4] .rm-mission-age {
+    font-size: 10px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ─── Task rows (active + completed) ───────────────────────── */
+
+  [data-cv4] .rm-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  [data-cv4] .rm-task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-sm);
+    padding: var(--sp-xs) var(--sp-sm);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+    min-height: 36px;
+  }
+
+  [data-cv4] .rm-task-row:hover {
+    background-color: var(--c-dim);
+  }
+
+  /* Agent initial avatar */
+  [data-cv4] .rm-agent-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--c-dim);
+    border: 1px solid var(--c-border);
+    font-size: 9px;
+    font-weight: var(--fw-bold);
+    color: var(--c-text2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    text-transform: uppercase;
+    font-family: var(--ff-mono);
+  }
+
+  [data-cv4] .rm-task-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  [data-cv4] .rm-task-title {
+    font-size: var(--fs-xs);
+    color: var(--c-text);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  [data-cv4] .rm-task-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-xs);
+    margin-top: 2px;
+  }
+
+  [data-cv4] .rm-task-age {
+    font-size: 10px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+  }
+
+  /* ─── Status pills ──────────────────────────────────────────── */
+
+  [data-cv4] .rm-pill {
+    font-size: 10px;
+    font-weight: var(--fw-semibold);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    text-transform: lowercase;
+    font-family: var(--ff-mono);
+  }
+
+  [data-cv4] .rm-pill.running {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--c-accent);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  [data-cv4] .rm-pill.queued {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: var(--c-warning);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+
+  /* ─── Completed task rows ───────────────────────────────────── */
+
+  [data-cv4] .rm-task-row.done .rm-task-title {
+    color: var(--c-text2);
+  }
+
+  [data-cv4] .rm-task-row.done .rm-agent-badge {
+    opacity: 0.6;
+  }
+
+  /* ─── Empty state ───────────────────────────────────────────── */
+
+  [data-cv4] .rm-empty {
+    font-size: var(--fs-xs);
+    color: var(--c-muted);
+    padding: var(--sp-sm) var(--sp-sm);
+    font-style: italic;
+  }
+
+  /* ─── Show more / divider ───────────────────────────────────── */
+
+  [data-cv4] .rm-hidden {
+    display: none;
+  }
+
+  [data-cv4] .rm-show-more {
+    width: 100%;
+    padding: var(--sp-xs) var(--sp-sm);
+    background: transparent;
+    border: none;
+    color: var(--c-muted);
+    font-size: var(--fs-xs);
+    cursor: pointer;
+    text-align: left;
+    transition: color 120ms ease;
+    font-family: var(--ff-sans);
+    margin-top: 2px;
+  }
+
+  [data-cv4] .rm-show-more:hover {
+    color: var(--c-text2);
+  }
+
+  [data-cv4] .rm-divider {
+    border: none;
+    border-top: 1px solid var(--c-border);
+    margin: var(--sp-md) 0;
+    opacity: 0.5;
+  }
+</style>
+
+<div data-cv4>
+  <div class="rm-root" data-rm-project="corner">
+
+    <!-- ──────────────── 1. MISSIONS ──────────────── -->
+    <div class="rm-section">
+      <div class="rm-section-label">Missions</div>
+
+      <div class="rm-mission-list">
+
+        <!-- running — touched just now -->
+        <a href="#" class="rm-mission-row current">
+          <span class="rm-dot active"></span>
+          <span class="rm-mission-name">right-menu</span>
+          <span class="rm-mission-project">corner</span>
+          <span class="rm-mission-age">now</span>
+        </a>
+
+        <!-- running — touched moments ago -->
+        <a href="#" class="rm-mission-row">
+          <span class="rm-dot active"></span>
+          <span class="rm-mission-name">cv4-redesign</span>
+          <span class="rm-mission-project">corner</span>
+          <span class="rm-mission-age">5m</span>
+        </a>
+
+        <!-- running — Steffen active -->
+        <a href="#" class="rm-mission-row">
+          <span class="rm-dot active"></span>
+          <span class="rm-mission-name">brand-page</span>
+          <span class="rm-mission-project">ambition</span>
+          <span class="rm-mission-age">1h</span>
+        </a>
+
+        <!-- queued — Bobby queued hero work -->
+        <a href="#" class="rm-mission-row">
+          <span class="rm-dot queued"></span>
+          <span class="rm-mission-name">hero</span>
+          <span class="rm-mission-project">ambition</span>
+          <span class="rm-mission-age">2h</span>
+        </a>
+
+        <!-- idle — last active yesterday -->
+        <a href="#" class="rm-mission-row">
+          <span class="rm-dot"></span>
+          <span class="rm-mission-name">mission-panel</span>
+          <span class="rm-mission-project">corner</span>
+          <span class="rm-mission-age">5h</span>
+        </a>
+
+        <!-- idle -->
+        <a href="#" class="rm-mission-row">
+          <span class="rm-dot"></span>
+          <span class="rm-mission-name">task-rooms</span>
+          <span class="rm-mission-project">corner</span>
+          <span class="rm-mission-age">1d</span>
+        </a>
+
+        <!-- idle -->
+        <a href="#" class="rm-mission-row">
+          <span class="rm-dot"></span>
+          <span class="rm-mission-name">lp-restaurant-hvac</span>
+          <span class="rm-mission-project">ambition</span>
+          <span class="rm-mission-age">2d</span>
+        </a>
+
+      </div>
+    </div>
+
+    <hr class="rm-divider">
+
+    <!-- ──────────────── 2. ACTIVE TASKS ──────────────── -->
+    <!-- Scoped to the current room (data-rm-project on .rm-root) -->
+    <!-- R2: filter tasks WHERE metadata.project = data-rm-project, status IN ('running','queued') -->
+    <div class="rm-section">
+      <div class="rm-section-label">Active Tasks</div>
+
+      <div class="rm-task-list">
+
+        <div class="rm-task-row">
+          <div class="rm-agent-badge">Bo</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Right menu R1 component</div>
+            <div class="rm-task-meta">
+              <span class="rm-pill running">running</span>
+              <span class="rm-task-age">15m</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rm-task-row">
+          <div class="rm-agent-badge">St</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">CV4 home view layout</div>
+            <div class="rm-task-meta">
+              <span class="rm-pill queued">queued</span>
+              <span class="rm-task-age">1h</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rm-task-row">
+          <div class="rm-agent-badge">Bo</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Mission tree wiring R-MP-2</div>
+            <div class="rm-task-meta">
+              <span class="rm-pill queued">queued</span>
+              <span class="rm-task-age">2h</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <hr class="rm-divider">
+
+    <!-- ──────────────── 3. COMPLETED ──────────────── -->
+    <!-- Scoped to the current room; most recent first; show 5, then expander -->
+    <!-- R2: tasks WHERE status='done' AND metadata.project = data-rm-project ORDER BY updated_at DESC LIMIT 10 -->
+    <div class="rm-section">
+      <div class="rm-section-label">Completed</div>
+
+      <div class="rm-task-list">
+
+        <div class="rm-task-row done">
+          <div class="rm-agent-badge">St</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Mission tree component R-MP-1.5</div>
+            <div class="rm-task-meta">
+              <span class="rm-task-age">2h ago</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rm-task-row done">
+          <div class="rm-agent-badge">Bo</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">CV4 project-chat view R1</div>
+            <div class="rm-task-meta">
+              <span class="rm-task-age">5h ago</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rm-task-row done">
+          <div class="rm-agent-badge">Sf</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Design tokens audit</div>
+            <div class="rm-task-meta">
+              <span class="rm-task-age">8h ago</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Initially hidden — show-more reveals these -->
+        <div class="rm-task-row done rm-hidden">
+          <div class="rm-agent-badge">St</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Step thread component</div>
+            <div class="rm-task-meta">
+              <span class="rm-task-age">yesterday</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rm-task-row done rm-hidden">
+          <div class="rm-agent-badge">Bo</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Deploy CV4 prototype to Vercel</div>
+            <div class="rm-task-meta">
+              <span class="rm-task-age">yesterday</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rm-task-row done rm-hidden">
+          <div class="rm-agent-badge">El</div>
+          <div class="rm-task-body">
+            <div class="rm-task-title">Supabase tasks schema migration</div>
+            <div class="rm-task-meta">
+              <span class="rm-task-age">2d ago</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button
+        class="rm-show-more"
+        onclick="
+          this.closest('.rm-section').querySelectorAll('.rm-hidden').forEach(el => el.style.display = 'flex');
+          this.style.display = 'none';
+        "
+      >
+        + 3 more completed
+      </button>
+
+    </div>
+
+  </div>
+</div>
