@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Internal Scope Sheet — Higher Orbits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ink: #0A0F1E;
+      --ink-2: #131A2C;
+      --ink-3: #1C2440;
+      --line: #2A3556;
+      --line-soft: #1F2840;
+      --bone: #F4EFE6;
+      --bone-dim: #C9C2B5;
+      --bone-mute: #8C8779;
+      --amber: #E8A23D;
+      --amber-soft: #B5802F;
+      --warn-bg: #2A1F12;
+      --warn-line: #5A3F1E;
+      --warn-text: #F4C77A;
+      --good: #6FB58F;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--ink);
+      color: var(--bone);
+      font-family: 'Hanken Grotesk', system-ui, -apple-system, Segoe UI, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 28px 28px 96px;
+    }
+    /* Header bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0 12px;
+      border-bottom: 1px solid var(--line-soft);
+      margin-bottom: 36px;
+      font-size: 13px;
+      color: var(--bone-mute);
+      letter-spacing: 0.02em;
+    }
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--bone);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .mark-dot {
+      width: 8px; height: 8px; border-radius: 2px;
+      background: var(--amber);
+      box-shadow: 0 0 0 3px rgba(232,162,61,0.12);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bone-dim);
+      background: rgba(255,255,255,0.02);
+    }
+    .badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--amber);
+    }
+    /* Title */
+    h1.title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(36px, 5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--bone);
+      margin-bottom: 14px;
+    }
+    .subtitle {
+      color: var(--bone-dim);
+      font-size: 17px;
+      max-width: 640px;
+      margin-bottom: 8px;
+    }
+    .subtitle .em {
+      color: var(--amber);
+      font-style: italic;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 19px;
+    }
+    .meta-row {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--bone-mute);
+    }
+    .meta-row span strong {
+      color: var(--bone-dim);
+      font-weight: 500;
+    }
+
+    /* TL;DR card */
+    .tldr {
+      margin-top: 40px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(232,162,61,0.06) 0%, rgba(232,162,61,0.015) 100%);
+      border-radius: 8px;
+      padding: 26px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tldr::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; background: var(--amber);
+    }
+    .tldr-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--amber);
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .tldr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .tldr-cell .label {
+      font-size: 12px;
+      color: var(--bone-mute);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .tldr-cell .val {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-weight: 500;
+      font-size: 22px;
+      color: var(--bone);
+      letter-spacing: -0.01em;
+    }
+    .tldr-cell .hint {
+      font-size: 12px;
+      color: var(--bone-mute);
+      margin-top: 4px;
+    }
+    .tldr-summary {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 14px;
+      color: var(--bone-dim);
+      line-height: 1.6;
+    }
+    @media (max-width: 640px) {
+      .tldr-grid { grid-template-columns: 1fr; gap: 18px; }
+    }
+
+    /* Sections */
+    section.sec {
+      margin-top: 56px;
+    }
+    .sec-num {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h2.sec-h {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--bone);
+      margin-bottom: 16px;
+    }
+    h3.sub-h {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: 0.01em;
+      color: var(--bone);
+      margin: 22px 0 10px;
+    }
+    p { margin-bottom: 14px; color: var(--bone-dim); }
+    p strong { color: var(--bone); font-weight: 600; }
+    p em { color: var(--bone-mute); }
+
+    ul.bullets {
+      list-style: none;
+      padding-left: 0;
+      margin-bottom: 14px;
+    }
+    ul.bullets li {
+      padding-left: 22px;
+      position: relative;
+      color: var(--bone-dim);
+      margin-bottom: 6px;
+      line-height: 1.55;
+    }
+    ul.bullets li::before {
+      content: '';
+      position: absolute;
+      left: 4px; top: 11px;
+      width: 6px; height: 1px;
+      background: var(--amber);
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 16px 0 20px;
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.015);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line-soft);
+      vertical-align: top;
+    }
+    th {
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bone-mute);
+      background: rgba(255,255,255,0.02);
+    }
+    td { color: var(--bone-dim); }
+    tr:last-child td { border-bottom: none; }
+    tr.total td {
+      background: rgba(232,162,61,0.05);
+      color: var(--bone);
+      font-weight: 600;
+    }
+    tr.total td .num,
+    .num {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-weight: 500;
+    }
+
+    /* Warning callouts */
+    .warn {
+      margin: 18px 0;
+      border-left: 3px solid var(--amber);
+      background: var(--warn-bg);
+      border-radius: 4px;
+      padding: 14px 18px 14px 18px;
+      color: var(--warn-text);
+      font-size: 14px;
+      line-height: 1.55;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .warn .icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--amber);
+    }
+    .warn strong { color: var(--amber); font-weight: 600; }
+
+    /* Open Questions */
+    .questions {
+      margin-top: 24px;
+    }
+    .q-group {
+      margin-bottom: 32px;
+    }
+    .q-group-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--amber);
+      font-weight: 600;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .q {
+      border-left: 2px solid var(--line);
+      padding: 12px 0 12px 18px;
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .q.critical { border-left-color: var(--amber); background: rgba(232,162,61,0.04); padding-left: 18px; }
+    .q-num {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 13px;
+      color: var(--amber);
+      font-weight: 600;
+      padding-top: 1px;
+    }
+    .q-body strong {
+      color: var(--bone);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .q-body { color: var(--bone-dim); font-size: 14.5px; }
+
+    /* Footer */
+    footer.foot {
+      margin-top: 80px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line-soft);
+      color: var(--bone-mute);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+    footer .foot-mark {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--bone-dim);
+      font-weight: 500;
+    }
+
+    /* Print friendly */
+    @media print {
+      body { background: white; color: black; }
+      .topbar, .badge { display: none; }
+      .tldr, table, .warn { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="mark"><span class="mark-dot"></span> AOM</div>
+      <div class="badge"><span class="dot"></span> Internal Scope Sheet · For Review</div>
+    </div>
+
+    <h1 class="title">Higher Orbits — Mini-Doc Pitch</h1>
+    <div class="subtitle">Internal Scope Sheet. <span class="em">Draft for Patrik sign-off.</span> Not for client.</div>
+
+    <div class="meta-row">
+      <span><strong>Mission:</strong> aom:higher-orbits:mini-doc-series-pitch</span>
+      <span><strong>Built:</strong> 2026-05-18 by Alex</span>
+      <span><strong>Status:</strong> Awaiting sign-off · Pre-M3 pricing</span>
+    </div>
+
+    <!-- TL;DR -->
+    <div class="tldr">
+      <div class="tldr-label">TL;DR — Bottom Line</div>
+      <div class="tldr-grid">
+        <div class="tldr-cell">
+          <div class="label">Internal Cost (full range)</div>
+          <div class="val">$55,700 – $76,200</div>
+          <div class="hint">52 person-days + travel + gear + post</div>
+        </div>
+        <div class="tldr-cell">
+          <div class="label">Planning Budget</div>
+          <div class="val">$60K – $70K</div>
+          <div class="hint">What to assume for booking + cashflow</div>
+        </div>
+        <div class="tldr-cell">
+          <div class="label">Client Quote Range</div>
+          <div class="val">$78K – $115K</div>
+          <div class="hint">30–50% margin on internal cost</div>
+        </div>
+      </div>
+      <div class="tldr-summary">
+        3-person Phoenix crew, mid-to-late June 2026. One TV-quality hero piece (5–10 min), plus a 48-hr recap, social cuts, photo set, and an optional teaser. Two pre-event interview trips folded into the budget. 10 open questions block M3 pricing — see bottom.
+      </div>
+    </div>
+
+    <!-- 1. What We're Scoping -->
+    <section class="sec">
+      <div class="sec-num">01</div>
+      <h2 class="sec-h">What We're Scoping</h2>
+      <p>AOM sends a 3-person crew (Phoenix-based) to Deerfield, IL for the 100th Higher Orbits Go For Launch! event. The shoot anchors a hero deliverable — a 5–to-10 min TV-quality piece — while the same footage powers four additional deliverables. Pre-production includes 2–3 remote interview shoots (travel-to-subject) to gather alumni and mentor voices before the Chicago trip.</p>
+
+      <h3 class="sub-h">In scope</h3>
+      <ul class="bullets">
+        <li>Hero piece (5–10 min TV episode)</li>
+        <li>2-day-turnaround recap (60–90 sec), delivered within 48 hours of the event</li>
+        <li>Social cuts pack (4–6 short verticals)</li>
+        <li>Hero photo set (30–50 edited stills)</li>
+        <li>Optional pre-event teaser (~30 sec) — priced separately below</li>
+        <li>2–3 remote interview shoots (pre-event, travel-to-subject)</li>
+      </ul>
+
+      <h3 class="sub-h">Out of scope</h3>
+      <ul class="bullets">
+        <li>Full series episodes beyond the Chicago kickoff hero piece</li>
+        <li>Client PR / distribution strategy (could be an add-on pitch)</li>
+        <li>Motion graphics / animation beyond basic title cards</li>
+        <li>Original music score (library licensing assumed — see §7)</li>
+      </ul>
+
+      <p><strong>Event date assumption:</strong> Mid-to-late June 2026. Exact date TBD — affects booking windows for travel.</p>
+    </section>
+
+    <!-- 2. Crew -->
+    <section class="sec">
+      <div class="sec-num">02</div>
+      <h2 class="sec-h">Crew</h2>
+
+      <h3 class="sub-h">Roles on Chicago shoot</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Role</th><th>Person</th><th>Doubles As</th></tr></thead>
+        <tbody>
+          <tr><td>DP / Director</td><td>[TBD — Cam A]</td><td>Director</td></tr>
+          <tr><td>B-Cam Operator</td><td>[TBD — Cam B]</td><td>Stills shooter</td></tr>
+          <tr><td>Producer</td><td>[TBD]</td><td>On-set logistics, interview direction</td></tr>
+        </tbody>
+      </table></div>
+      <p>One cam doubles as director. One cam doubles on stills. Three people total.</p>
+
+      <h3 class="sub-h">Person-days by role and phase</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Phase</th><th>DP/Director</th><th>B-Cam/Stills</th><th>Producer</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>Pre-pro (PHX, admin + planning)</td><td class="num">2</td><td>—</td><td class="num">5</td><td class="num">7</td></tr>
+          <tr><td>Remote interviews (2 trips, 2 crew each)</td><td class="num">4</td><td>—</td><td class="num">4</td><td class="num">8</td></tr>
+          <tr><td>Chicago — travel days (in/out)</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">6</td></tr>
+          <tr><td>Chicago — production days (3–4 on ground)</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">12</td></tr>
+          <tr><td>Post — hero piece (edit, color, sound)</td><td class="num">12</td><td>—</td><td class="num">2</td><td class="num">14</td></tr>
+          <tr><td>Post — recap, social, photo edit</td><td class="num">5</td><td class="num">2</td><td class="num">1</td><td class="num">8</td></tr>
+          <tr><td>Post — optional teaser (separate line)</td><td class="num">1</td><td>—</td><td>—</td><td class="num">1</td></tr>
+          <tr class="total"><td>Total person-days</td><td class="num">30</td><td class="num">8</td><td class="num">14</td><td class="num">52</td></tr>
+        </tbody>
+      </table></div>
+      <p><em>If 3 remote interview trips instead of 2: add 2 person-days.</em></p>
+
+      <h3 class="sub-h">Crew cost estimate</h3>
+      <div class="warn">
+        <div class="icon">⚠</div>
+        <div><strong>Patrik to validate.</strong> Day rates below are market estimates for documentary freelance (2025–2026). Replace with AOM's actual internal rates before M3 pricing is built. If Patrik/Ash/team are the crew, allocation differs materially.</div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Role</th><th>Est. Day Rate</th><th>Days</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          <tr><td>DP / Director</td><td class="num">$850 – $1,100</td><td class="num">30</td><td class="num">$25,500 – $33,000</td></tr>
+          <tr><td>B-Cam / Stills</td><td class="num">$550 – $750</td><td class="num">8</td><td class="num">$4,400 – $6,000</td></tr>
+          <tr><td>Producer</td><td class="num">$650 – $850</td><td class="num">14</td><td class="num">$9,100 – $11,900</td></tr>
+          <tr class="total"><td>Crew subtotal</td><td></td><td class="num">52</td><td class="num">$39,000 – $50,900</td></tr>
+        </tbody>
+      </table></div>
+      <p><em>Market basis: professional documentary freelance rates. Source: DISA pricing analysis on file.</em></p>
+    </section>
+
+    <!-- 3. Chicago Travel -->
+    <section class="sec">
+      <div class="sec-num">03</div>
+      <h2 class="sec-h">Chicago Travel + Lodging</h2>
+
+      <h3 class="sub-h">Flights</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Unit</th><th>Qty</th><th>Est.</th></tr></thead>
+        <tbody>
+          <tr><td>PHX → ORD or MDW, RT (econ, 4–6 wks out)</td><td class="num">$280–$420/person</td><td>3 people</td><td class="num">$840 – $1,260</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-h">Ground transport in Chicago</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Unit</th><th>Qty</th><th>Est.</th></tr></thead>
+        <tbody>
+          <tr><td>Airport transfers (rideshare)</td><td class="num">$50–$80</td><td>2 trips</td><td class="num">$100 – $160</td></tr>
+          <tr><td>Daily transport (rideshare)</td><td class="num">$80–$120/day</td><td>4 days</td><td class="num">$320 – $480</td></tr>
+          <tr><td>Gear transport (van/SUV rental)</td><td class="num">$80–$120/day</td><td>4 days</td><td class="num">$320 – $480</td></tr>
+          <tr class="total"><td>Ground subtotal</td><td></td><td></td><td class="num">$740 – $1,120</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-h">Lodging + per diems</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Unit</th><th>Qty</th><th>Est.</th></tr></thead>
+        <tbody>
+          <tr><td>Hotel rooms near Deerfield, IL</td><td class="num">$130–$200/night</td><td>2 rooms × 4.5 nights</td><td class="num">$1,170 – $1,800</td></tr>
+          <tr><td>Meals + incidentals</td><td class="num">$75/day/person</td><td>3 people × 5 days</td><td class="num">$1,125</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-h">Chicago travel subtotal</h3>
+      <div class="table-wrap"><table>
+        <tbody>
+          <tr><td>Flights</td><td class="num">$840 – $1,260</td></tr>
+          <tr><td>Ground transport</td><td class="num">$740 – $1,120</td></tr>
+          <tr><td>Lodging</td><td class="num">$1,170 – $1,800</td></tr>
+          <tr><td>Per diems</td><td class="num">$1,125</td></tr>
+          <tr class="total"><td>Chicago travel total</td><td class="num">$3,875 – $5,305</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 4. Remote Interview Shoots -->
+    <section class="sec">
+      <div class="sec-num">04</div>
+      <h2 class="sec-h">Remote Interview Shoots (Pre-Event)</h2>
+      <p>2 to 3 remote interviews, travel-to-subject. Assumed 2-person crew (DP + producer) for each. 2-day trip per interview (travel day + shoot day). Specific cities unknown until Higher Orbits confirms who we're interviewing.</p>
+      <div class="table-wrap"><table>
+        <thead>
+          <tr><th>Item</th><th>Unit</th><th>2 trips</th><th>3 trips</th><th>Est. (2)</th><th>Est. (3)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Flights (2 people, RT econ)</td><td class="num">$300–$500/pp</td><td>4 tix</td><td>6 tix</td><td class="num">$1,200 – $2,000</td><td class="num">$1,800 – $3,000</td></tr>
+          <tr><td>Hotel (1 night/trip)</td><td class="num">$130–$180/night</td><td>2 nights</td><td>3 nights</td><td class="num">$260 – $360</td><td class="num">$390 – $540</td></tr>
+          <tr><td>Per diems</td><td class="num">$75/day</td><td>8 pd</td><td>12 pd</td><td class="num">$600</td><td class="num">$900</td></tr>
+          <tr><td>Incidentals + ground</td><td>flat</td><td>per trip</td><td>per trip</td><td class="num">$300</td><td class="num">$450</td></tr>
+          <tr class="total"><td>Remote interview subtotal</td><td></td><td></td><td></td><td class="num">$2,360 – $3,260</td><td class="num">$3,540 – $4,890</td></tr>
+        </tbody>
+      </table></div>
+      <p><em>Base scope uses 2 trips; 3 is upside. Recommend scoping to 2 confirmed interview subjects and a Chicago grab-during-event as the third.</em></p>
+    </section>
+
+    <!-- 5. Gear -->
+    <section class="sec">
+      <div class="sec-num">05</div>
+      <h2 class="sec-h">Gear</h2>
+
+      <h3 class="sub-h">AOM-owned (no rental cost assumed)</h3>
+      <ul class="bullets">
+        <li>Camera A (primary cinema cam)</li>
+        <li>Camera B (B-cam)</li>
+        <li>Stills camera (doubles from Cam B)</li>
+        <li>DJI Mic / lav audio kit</li>
+        <li>Basic lighting (portable panels)</li>
+        <li>Memory cards, batteries, accessories</li>
+      </ul>
+
+      <div class="warn">
+        <div class="icon">⚠</div>
+        <div><strong>Patrik to confirm:</strong> does AOM own a drone? If not, add a drone rental line. Drone footage would significantly improve Deerfield event coverage (establishing shots, outdoor b-roll).</div>
+      </div>
+
+      <h3 class="sub-h">Possible rentals</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>If Needed</th><th>Unit</th><th>Est.</th></tr></thead>
+        <tbody>
+          <tr><td>Drone rental (if AOM doesn't own)</td><td>contingent</td><td class="num">$350–$500/day × 2</td><td class="num">$700 – $1,000</td></tr>
+          <tr><td>Additional lighting rig (indoor)</td><td>likely</td><td class="num">$200–$350/day × 2</td><td class="num">$400 – $700</td></tr>
+          <tr><td>Additional audio (backup lavs, mixer)</td><td>possible</td><td>flat</td><td class="num">$150 – $300</td></tr>
+          <tr><td>Consumables (media, batteries, tape)</td><td>yes</td><td>flat</td><td class="num">$200 – $400</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Gear rental subtotal (no drone):</strong> <span class="num">$750 – $1,400</span><br />
+      <strong>Gear rental subtotal (with drone):</strong> <span class="num">$1,450 – $2,400</span></p>
+    </section>
+
+    <!-- 6. Post Production -->
+    <section class="sec">
+      <div class="sec-num">06</div>
+      <h2 class="sec-h">Post Production</h2>
+      <p>All post is AOM-executed in Phoenix after the Chicago shoot. The recap requires a dedicated fast-track edit track to hit the 48-hour delivery window.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Deliverable</th><th>Days</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Hero piece — assembly + rough cut</td><td class="num">4</td><td>5–10 min doc is a heavy lift</td></tr>
+          <tr><td>Hero piece — refinement + client revisions</td><td class="num">3</td><td>1 round included; 2nd on request</td></tr>
+          <tr><td>Hero piece — color grade</td><td class="num">2</td><td>Full grade, not just a LUT bake</td></tr>
+          <tr><td>Hero piece — sound design + music</td><td class="num">1.5</td><td>Library source (see §7)</td></tr>
+          <tr><td>Hero piece — final delivery + format export</td><td class="num">0.5</td><td>TV + web formats</td></tr>
+          <tr class="total"><td>Hero piece subtotal</td><td class="num">11</td><td></td></tr>
+          <tr><td>2-day-turnaround recap (60–90 sec)</td><td class="num">1.5</td><td>Begins night of event</td></tr>
+          <tr><td>Social cuts pack (4–6 verticals)</td><td class="num">3</td><td>Repurposed from hero footage</td></tr>
+          <tr><td>Photo culling + editing (30–50 finals)</td><td class="num">1.5</td><td>From ~500–1,000 RAW selects</td></tr>
+          <tr><td>Optional teaser (~30 sec pre-event)</td><td class="num">1</td><td>From pre-pro interview footage</td></tr>
+          <tr class="total"><td>Total post days</td><td class="num">18.5</td><td>17.5 without optional teaser</td></tr>
+        </tbody>
+      </table></div>
+      <p><em>Post is covered in crew labor above (DP/editor + producer review days in the crew table). No separate facility/edit suite cost if editing in-house.</em></p>
+    </section>
+
+    <!-- 7. Music -->
+    <section class="sec">
+      <div class="sec-num">07</div>
+      <h2 class="sec-h">Music Licensing</h2>
+      <p>Hero piece and cuts use library music, not original score (per Patrik's direction). Library tracks are AOM-sourced and licensed.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Est.</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Hero piece (5–10 min) — sync license, 2 tracks</td><td class="num">$400 – $800</td><td>Musicbed / Artlist / Epidemic Sound</td></tr>
+          <tr><td>Social cuts (4–6 pieces) — sync license</td><td class="num">$200 – $400</td><td>Single platform license often covers</td></tr>
+          <tr><td>Recap — sync license</td><td class="num">$150 – $300</td><td></td></tr>
+          <tr class="total"><td>Music subtotal</td><td class="num">$750 – $1,500</td><td></td></tr>
+        </tbody>
+      </table></div>
+      <div class="warn">
+        <div class="icon">⚠</div>
+        <div><strong>Optional:</strong> if the hero piece warrants an original score (space-themed, cinematic ambition), Suno or a composer would add <span class="num">$1,500–$5,000</span>. Not recommended unless library search comes up empty for the right feel. Default to library.</div>
+      </div>
+    </section>
+
+    <!-- 8. PM + Overhead -->
+    <section class="sec">
+      <div class="sec-num">08</div>
+      <h2 class="sec-h">PM + Overhead</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Est.</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Project management (comms, approvals, scheduling, delivery)</td><td class="num">$2,000 – $3,500</td><td>~15% of DP/producer labor</td></tr>
+          <tr><td>Cloud storage / backup (4–5 shoot days ≈ 3–4TB raw)</td><td class="num">$300 – $600</td><td>Dropbox Business overage</td></tr>
+          <tr><td>Production insurance (liability + equipment)</td><td class="num">$500 – $1,200</td><td>Short-term policy for Chicago travel</td></tr>
+          <tr><td>File archival + project handoff</td><td class="num">$200 – $400</td><td>Masters, selects, exports organized</td></tr>
+          <tr class="total"><td>Overhead subtotal</td><td class="num">$3,000 – $5,700</td><td></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 9. Contingency -->
+    <section class="sec">
+      <div class="sec-num">09</div>
+      <h2 class="sec-h">Contingency</h2>
+      <p>10–15% of all costs above (excluding crew, which already carries some buffer in the day-count estimate).</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Base</th><th>10%</th><th>15%</th></tr></thead>
+        <tbody>
+          <tr><td>Hard costs only (travel + gear + music + overhead): ~$9K–$17K</td><td class="num">$900 – $1,700</td><td class="num">$1,350 – $2,550</td></tr>
+          <tr><td>Full project including crew: ~$48K–$74K</td><td class="num">$4,800 – $7,400</td><td class="num">$7,200 – $11,100</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Recommend 12% contingency</strong> across the full budget. Standard for event-driven shoots with external travel — weather, access delays, and rescheduling are realistic risks.</p>
+    </section>
+
+    <!-- 10. Bottom line -->
+    <section class="sec">
+      <div class="sec-num">10</div>
+      <h2 class="sec-h">Bottom Line — Internal Cost Estimate</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Category</th><th>Low</th><th>High</th></tr></thead>
+        <tbody>
+          <tr><td>Crew (52 person-days, market rates)</td><td class="num">$39,000</td><td class="num">$50,900</td></tr>
+          <tr><td>Chicago travel + lodging</td><td class="num">$3,875</td><td class="num">$5,305</td></tr>
+          <tr><td>Remote interview travel (2 trips base)</td><td class="num">$2,360</td><td class="num">$3,260</td></tr>
+          <tr><td>Gear rental (no drone)</td><td class="num">$750</td><td class="num">$1,400</td></tr>
+          <tr><td>Music licensing</td><td class="num">$750</td><td class="num">$1,500</td></tr>
+          <tr><td>PM + overhead</td><td class="num">$3,000</td><td class="num">$5,700</td></tr>
+          <tr><td>Subtotal before contingency</td><td class="num">$49,735</td><td class="num">$68,065</td></tr>
+          <tr><td>Contingency (12%)</td><td class="num">$5,970</td><td class="num">$8,170</td></tr>
+          <tr class="total"><td>Total internal cost</td><td class="num">$55,700</td><td class="num">$76,200</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>For planning:</strong> budget this engagement at approximately <span class="num">$60,000–$70,000</span> internal cost.</p>
+      <p><em>This is what the project costs AOM to execute. Client pricing (M3) adds margin on top. Rule of thumb for AOM: 30–50% margin on production projects. That puts the client quote range at <span class="num">$78,000–$115,000</span> before any packaging decisions.</em></p>
+
+      <h3 class="sub-h">Adds (optional)</h3>
+      <ul class="bullets">
+        <li><strong>Optional teaser:</strong> adds ~<span class="num">$500–$1,000</span> internal cost (1 post day + extra interview footage).</li>
+        <li><strong>Drone:</strong> adds <span class="num">$700–$1,000</span> to gear.</li>
+        <li><strong>3rd remote interview trip:</strong> adds <span class="num">$1,180–$1,630</span> to travel.</li>
+      </ul>
+    </section>
+
+    <!-- 11. Open Questions -->
+    <section class="sec">
+      <div class="sec-num">11</div>
+      <h2 class="sec-h">Open Questions + Assumptions</h2>
+      <p>Patrik to validate before M3 pricing.</p>
+
+      <div class="questions">
+
+        <div class="q-group">
+          <div class="q-group-label">Critical — Needs Answer Before M3 Pricing</div>
+
+          <div class="q critical">
+            <div class="q-num">01</div>
+            <div class="q-body"><strong>Crew day rates.</strong> Day rates above are market estimates for documentary freelancers, not AOM's actual internal rates. If Patrik/Ash/team are the crew, allocation may differ significantly. Confirm: what are the day rates or cost allocation for each crew role?</div>
+          </div>
+          <div class="q critical">
+            <div class="q-num">02</div>
+            <div class="q-body"><strong>Event date.</strong> Exact June 2026 date for the Deerfield 100th event is unknown. Affects flight booking windows, lodging availability, pricing.</div>
+          </div>
+          <div class="q critical">
+            <div class="q-num">03</div>
+            <div class="q-body"><strong>Drone.</strong> Does AOM own a drone suitable for this shoot? If not, add the rental line.</div>
+          </div>
+        </div>
+
+        <div class="q-group">
+          <div class="q-group-label">Scope Clarifications</div>
+
+          <div class="q">
+            <div class="q-num">04</div>
+            <div class="q-body"><strong>Remote interview locations.</strong> Who are the 2–3 subjects and where? Directly affects flight costs. Could be Chicago-based (fold into main trip) or different cities entirely.</div>
+          </div>
+          <div class="q">
+            <div class="q-num">05</div>
+            <div class="q-body"><strong>Photo delivery.</strong> What format/resolution does Michelle expect? Any licensing requirements (nonprofit use, social, press kit)?</div>
+          </div>
+          <div class="q">
+            <div class="q-num">06</div>
+            <div class="q-body"><strong>Is the teaser in scope?</strong> Decision needed on whether the ~30-sec pre-event teaser is a base deliverable or an add-on. Shifts timing slightly — needs interview footage early enough to build it a week before the event.</div>
+          </div>
+          <div class="q">
+            <div class="q-num">07</div>
+            <div class="q-body"><strong>Crew composition.</strong> Is this Patrik + Ash + one more? Or all hires? Affects whether to frame costs as internal labor allocation or subcontractor rates.</div>
+          </div>
+        </div>
+
+        <div class="q-group">
+          <div class="q-group-label">Pricing Structure (for M3)</div>
+
+          <div class="q">
+            <div class="q-num">08</div>
+            <div class="q-body"><strong>How to present pricing.</strong> Options: (a) all-in project fee, (b) production day rate + post, (c) milestone-based bundle. For a nonprofit, an all-in "production partnership" package likely feels cleanest and most fundable for Michelle (she can take it to sponsors/board).</div>
+          </div>
+          <div class="q">
+            <div class="q-num">09</div>
+            <div class="q-body"><strong>Nonprofit rate consideration.</strong> Higher Orbits is a 501(c)(3). Offer a nonprofit discount, or position as full market price given scale, travel, and deliverable count? Recommend pricing at market and framing the investment as what it takes to tell the story right — not discounting.</div>
+          </div>
+          <div class="q">
+            <div class="q-num">10</div>
+            <div class="q-body"><strong>Payment structure.</strong> Recommend milestone-based: 30% deposit to confirm and book travel, 40% at shoot wrap, 30% at final delivery. Three milestones keeps both sides protected.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span class="foot-mark"><span class="mark-dot"></span> AOM</span> &nbsp;·&nbsp; Built 2026-05-18 by Alex &nbsp;·&nbsp; Mission: <span class="num">aom:higher-orbits:mini-doc-series-pitch</span> &nbsp;·&nbsp; Internal review only — do not share with client.
+    </footer>
+  </div>
+</body>
+</html>
