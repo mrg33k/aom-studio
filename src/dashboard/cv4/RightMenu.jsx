@@ -1,4 +1,4 @@
-// RightMenu.jsx — CV4 right-rail redesign (corner:right-menu R2)
+// RightMenu.jsx — CV4 right-rail redesign (corner:right-menu R2 + R-S1 typography pass)
 //
 // Three vertical sections:
 //   1. MISSIONS   — all missions sorted by last-touched (message activity)
@@ -10,7 +10,7 @@
 // Completed section holds completed *tasks*, not missions.
 //
 // Mission: corner:right-menu
-// Round: R2 — React port + Supabase wiring
+// Round: R-S1 — Steffen typography redesign (two-line mission rows, left-stripe status, no pill chrome)
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -56,9 +56,10 @@ function StatusDot({ status }) {
   return (
     <span style={{
       display: 'inline-block',
-      width: 6, height: 6,
+      width: 7, height: 7,
       borderRadius: '50%',
       flexShrink: 0,
+      marginTop: 4,
       background: bg,
       animation: pulse ? 'rm-breathe 2s ease-in-out infinite' : 'none',
     }} />
@@ -74,8 +75,8 @@ function SectionLabel({ children }) {
       fontSize: 10,
       fontWeight: 700,
       color: C.muted,
-      letterSpacing: '0.08em',
-      padding: '12px 12px 4px',
+      letterSpacing: '0.12em',
+      padding: '20px 12px 8px',
       fontFamily: "'Inter', sans-serif",
     }}>{children}</div>
   )
@@ -84,51 +85,62 @@ function SectionLabel({ children }) {
 // ── Mission row ─────────────────────────────────────────────────────────────
 
 function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
+  const stripeColor = isCurrent
+    ? C.accent
+    : dotStatus === 'queued'
+    ? 'rgba(245,158,11,0.5)'
+    : 'transparent'
+
   return (
     <div style={{
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: 6,
-      padding: '5px 12px',
-      borderRadius: 4,
+      padding: '7px 12px',
       cursor: 'pointer',
       transition: 'background 120ms ease',
-      minHeight: 28,
-      background: isCurrent ? C.s2 : 'transparent',
+      minHeight: 34,
+      borderLeft: '2px solid ' + stripeColor,
+      background: isCurrent ? 'rgba(16,185,129,0.04)' : 'transparent',
     }}
       onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = C.s1 }}
       onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent' }}
     >
       <StatusDot status={dotStatus} />
-      <span style={{
-        flex: 1,
-        fontSize: 11,
-        fontWeight: 500,
-        color: isCurrent ? C.accent : C.text,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        fontFamily: "'Inter', sans-serif",
-      }}>{mission.slug || mission.name || 'unnamed'}</span>
-      <span style={{
-        fontSize: 10,
-        color: C.muted,
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-        maxWidth: 60,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        fontFamily: "'Inter', sans-serif",
-      }}>{projectSlug}</span>
-      {ageLabel && (
+      {/* Two-line layout: name on top, project + age below */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
-          fontSize: 10,
-          color: C.muted,
-          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 13,
+          fontWeight: 500,
+          lineHeight: 1.3,
+          color: isCurrent ? C.accent : C.text,
           whiteSpace: 'nowrap',
-          flexShrink: 0,
-        }}>{ageLabel}</span>
-      )}
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          fontFamily: "'Inter', sans-serif",
+        }}>{mission.slug || mission.name || 'unnamed'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            fontSize: 11,
+            fontWeight: 400,
+            lineHeight: 1.2,
+            color: C.muted,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontFamily: "'Inter', sans-serif",
+          }}>{projectSlug}</span>
+          {ageLabel && (
+            <span style={{
+              fontSize: 10,
+              color: C.muted,
+              fontFamily: "'JetBrains Mono', monospace",
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}>{ageLabel}</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -141,17 +153,24 @@ function TaskRow({ task, isDone }) {
   const title = task.title || task.text || '(untitled)'
   const status = task.status
 
+  const isRunning = status === 'running' || status === 'building'
+  const isQueued = status === 'queued' || status === 'planning' || status === 'classifying'
+  const stripeColor = isRunning
+    ? C.accent
+    : isQueued
+    ? 'rgba(245,158,11,0.5)'
+    : 'transparent'
+
   return (
     <div style={{
       display: 'flex',
       alignItems: 'flex-start',
       gap: 8,
-      padding: '5px 12px',
-      borderRadius: 4,
+      padding: '7px 12px',
       cursor: 'pointer',
-      minHeight: 32,
+      minHeight: 34,
       transition: 'background 120ms ease',
-      opacity: isDone ? 0.7 : 1,
+      borderLeft: '2px solid ' + (isDone ? 'transparent' : stripeColor),
     }}
       onMouseEnter={e => e.currentTarget.style.background = C.s1}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -172,14 +191,16 @@ function TaskRow({ task, isDone }) {
         marginTop: 1,
         textTransform: 'uppercase',
         fontFamily: "'JetBrains Mono', monospace",
+        opacity: isDone ? 0.45 : 1,
       }}>{badge}</div>
 
       {/* Task body */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 11,
-          color: isDone ? C.text2 : C.text,
-          lineHeight: 1.35,
+          fontSize: 12,
+          fontWeight: 500,
+          color: isDone ? C.muted : C.text,
+          lineHeight: 1.4,
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
@@ -187,9 +208,9 @@ function TaskRow({ task, isDone }) {
           fontFamily: "'Inter', sans-serif",
           textDecoration: isDone ? 'line-through' : 'none',
         }}>{title}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
           {!isDone && (
-            <StatusPill status={status} />
+            <StatusIndicator status={status} />
           )}
           <span style={{
             fontSize: 10,
@@ -202,41 +223,46 @@ function TaskRow({ task, isDone }) {
   )
 }
 
-// ── Status pill ──────────────────────────────────────────────────────────────
+// ── Status indicator (dot + mono text, no pill chrome) ──────────────────────
 
-function StatusPill({ status }) {
+function StatusIndicator({ status }) {
   const isRunning = status === 'running' || status === 'building'
   const isQueued = status === 'queued' || status === 'planning' || status === 'classifying'
   const isWaiting = status === 'waiting' || status === 'needs_input'
   const isFailed = status === 'failed'
 
-  let bg, color, border, label
+  let color, label
   if (isRunning) {
-    bg = 'rgba(16,185,129,0.15)'; color = C.accent; border = 'rgba(16,185,129,0.3)'; label = 'running'
+    color = C.accent; label = 'running'
   } else if (isQueued) {
-    bg = 'rgba(234,179,8,0.12)'; color = C.yellow; border = 'rgba(234,179,8,0.25)'; label = 'queued'
+    color = C.yellow; label = 'queued'
   } else if (isWaiting) {
-    bg = 'rgba(96,165,250,0.12)'; color = C.blue; border = 'rgba(96,165,250,0.25)'; label = 'waiting'
+    color = C.blue; label = 'waiting'
   } else if (isFailed) {
-    bg = 'rgba(239,68,68,0.12)'; color = C.red; border = 'rgba(239,68,68,0.25)'; label = 'failed'
+    color = C.red; label = 'failed'
   } else {
     return null
   }
 
   return (
     <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
       fontSize: 10,
-      fontWeight: 600,
-      padding: '1px 5px',
-      borderRadius: 3,
-      letterSpacing: '0.03em',
-      flexShrink: 0,
-      textTransform: 'lowercase',
       fontFamily: "'JetBrains Mono', monospace",
-      background: bg,
       color,
-      border: '1px solid ' + border,
-    }}>{label}</span>
+      flexShrink: 0,
+    }}>
+      <span style={{
+        width: 5, height: 5,
+        borderRadius: '50%',
+        background: color,
+        display: 'inline-block',
+        flexShrink: 0,
+      }} />
+      {label}
+    </span>
   )
 }
 
@@ -247,8 +273,8 @@ function Divider() {
     <div style={{
       height: 1,
       background: C.border,
-      margin: '8px 12px',
-      opacity: 0.5,
+      margin: '4px 0',
+      opacity: 0.3,
     }} />
   )
 }
@@ -420,7 +446,7 @@ export default function RightMenu() {
           onClick={() => setShowAllCompleted(true)}
           style={{
             width: '100%',
-            padding: '4px 12px',
+            padding: '6px 12px',
             background: 'transparent',
             border: 'none',
             color: C.muted,
