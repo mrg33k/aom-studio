@@ -290,42 +290,55 @@ export default function CV4ContextNav({
         </div>
       </div>
 
-      {/* RIGHT: missions toggle + mail toggle.
-          Missions button is shown when the user is in a project room (conversationTarget.type
-          === 'project'). It mirrors the left search/menu button in size and style.
-          It sits to the LEFT of the mail button so: [missions] [mail] — left-to-right
-          priority matches the conceptual hierarchy (navigation > tool mode).
+      {/* RIGHT: tasks/missions toggle + mail toggle.
+          Tasks/missions button shows in ALL non-mail contexts — this was the bug:
+          it was previously gated to project rooms only, so in agent chats (the
+          default view) there was no button and no way to open the right rail.
+          Fix (2026-05-18): condition changed from `conversationTarget?.type === 'project'`
+          to `activeTool !== 'mail'` so the button is always present.
           Mail button only appears when activeTool === 'mail'. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
-        {/* Missions button — opens the RIGHT tasks/missions drawer.
-            Active (green tint) when the right drawer is open or the user is
-            inside a specific mission room (missionSlug set on conversationTarget). */}
-        {conversationTarget?.type === 'project' && (
+        {/* Tasks/missions panel toggle — opens the RIGHT drawer (desktop) or
+            switches to tasks tab (mobile). Active (green tint) when the right
+            drawer is open or the user is inside a specific mission room. */}
+        {activeTool !== 'mail' && (
           <button
             data-testid="cv4-context-missions-toggle"
-            onClick={onToggleTasksDrawer}
-            aria-label="View missions"
-            title="View missions"
+            onClick={() => isDesktop
+              ? onToggleTasksDrawer?.()
+              : onSwitchTab(tab === 'tasks' ? 'chat' : 'tasks')
+            }
+            aria-label={conversationTarget?.type === 'project' ? 'View missions' : 'View tasks'}
+            title={conversationTarget?.type === 'project' ? 'View missions' : 'View tasks'}
             style={{
               width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: (tasksDrawerOpen || conversationTarget?.missionSlug)
+              background: ((isDesktop ? tasksDrawerOpen : tab === 'tasks') || conversationTarget?.missionSlug)
                 ? 'rgba(16,185,129,0.15)'
                 : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${(tasksDrawerOpen || conversationTarget?.missionSlug)
+              border: `1px solid ${((isDesktop ? tasksDrawerOpen : tab === 'tasks') || conversationTarget?.missionSlug)
                 ? 'rgba(16,185,129,0.4)'
                 : 'rgba(255,255,255,0.08)'}`,
-              color: (tasksDrawerOpen || conversationTarget?.missionSlug) ? C.accent : C.muted,
+              color: ((isDesktop ? tasksDrawerOpen : tab === 'tasks') || conversationTarget?.missionSlug) ? C.accent : C.muted,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s',
             }}
           >
-            {/* Flag icon — same stroke style as the search icon (1.9–2 stroke width). */}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-              <line x1="4" y1="22" x2="4" y2="15"/>
-            </svg>
+            {conversationTarget?.type === 'project' ? (
+              /* Flag icon — missions context (project room). */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+            ) : (
+              /* Right-panel icon — generic tasks/missions context (agent chat, home). */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="15" y1="3" x2="15" y2="21"/>
+              </svg>
+            )}
           </button>
         )}
         {!isDesktop && activeTool === 'mail' && (
