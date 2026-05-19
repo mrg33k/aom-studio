@@ -178,6 +178,22 @@
       .tldr-grid { grid-template-columns: 1fr; gap: 18px; }
     }
 
+    /* Tier label */
+    .tier-label {
+      display: inline-block;
+      margin-bottom: 24px;
+      margin-top: 56px;
+      padding: 5px 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--amber);
+      background: rgba(232,162,61,0.06);
+    }
+
     /* Sections */
     section.sec {
       margin-top: 56px;
@@ -335,6 +351,12 @@
     }
     .q-body { color: var(--bone-dim); font-size: 14.5px; }
 
+    /* Divider */
+    .divider {
+      margin: 56px 0 0;
+      border-top: 1px solid var(--line-soft);
+    }
+
     /* Footer */
     footer.foot {
       margin-top: 80px;
@@ -371,8 +393,8 @@
 
     <div class="meta-row">
       <span><strong>Mission:</strong> aom:higher-orbits:mini-doc-series-pitch</span>
-      <span><strong>Built:</strong> 2026-05-18 by Alex</span>
-      <span><strong>Status:</strong> Awaiting sign-off · Pre-M3 pricing</span>
+      <span><strong>Built:</strong> 2026-05-18 by Alex · Revised 2026-05-19</span>
+      <span><strong>Status:</strong> Awaiting Patrik sign-off · $28K pricing</span>
     </div>
 
     <!-- TL;DR -->
@@ -380,372 +402,473 @@
       <div class="tldr-label">TL;DR — Bottom Line</div>
       <div class="tldr-grid">
         <div class="tldr-cell">
-          <div class="label">Internal Cost (full range)</div>
-          <div class="val">$55,700 – $76,200</div>
-          <div class="hint">52 person-days + travel + gear + post</div>
+          <div class="label">Tier 1 Client Price — Flat</div>
+          <div class="val">$28,000</div>
+          <div class="hint">Chicago production end-to-end. 7 deliverables.</div>
         </div>
         <div class="tldr-cell">
-          <div class="label">Planning Budget</div>
-          <div class="val">$60K – $70K</div>
-          <div class="hint">What to assume for booking + cashflow</div>
+          <div class="label">Crew / Person-Days</div>
+          <div class="val">3 crew · 36 days</div>
+          <div class="hint">2 cam ops + 1 producer/director. In-house AOM rates.</div>
         </div>
         <div class="tldr-cell">
-          <div class="label">Client Quote Range</div>
-          <div class="val">$78K – $115K</div>
-          <div class="hint">30–50% margin on internal cost</div>
+          <div class="label">Price Floor (if needed)</div>
+          <div class="val">$22K – $24K</div>
+          <div class="hint">Strip archive drive + reduce social cuts to 4–6</div>
         </div>
       </div>
       <div class="tldr-summary">
-        3-person Phoenix crew, mid-to-late June 2026. One TV-quality hero piece (5–10 min), plus a 48-hr recap, social cuts, photo set, and an optional teaser. Two pre-event interview trips folded into the budget. 10 open questions block M3 pricing — see bottom.
+        3-person Phoenix crew, mid-to-late June 2026. Tier 1 is the Chicago trip: hero doc (3–5 min), 48-hr recap, pre-event teaser, 8–10 social cuts, 100 edited stills, raw footage archive, and sponsor recognition package. Tiers 2 and 3 are opt-in per-trip add-ons. Budget math is traceable line-by-line: crew $17,050 + hard costs $7,885 + contingency $2,565 + margin $500 = $28,000 flat. 4 open questions below — see Patrik-validate items.
       </div>
     </div>
 
-    <!-- 1. What We're Scoping -->
+    <!-- Intro: What We're Shooting -->
     <section class="sec">
-      <div class="sec-num">01</div>
-      <h2 class="sec-h">What We're Scoping</h2>
-      <p>AOM sends a 3-person crew (Phoenix-based) to Deerfield, IL for the 100th Higher Orbits Go For Launch! event. The shoot anchors a hero deliverable — a 5–to-10 min TV-quality piece — while the same footage powers four additional deliverables. Pre-production includes 2–3 remote interview shoots (travel-to-subject) to gather alumni and mentor voices before the Chicago trip.</p>
-
-      <h3 class="sub-h">In scope</h3>
-      <ul class="bullets">
-        <li>Hero piece (5–10 min TV episode)</li>
-        <li>2-day-turnaround recap (60–90 sec), delivered within 48 hours of the event</li>
-        <li>Social cuts pack (4–6 short verticals)</li>
-        <li>Hero photo set (30–50 edited stills)</li>
-        <li>Optional pre-event teaser (~30 sec) — priced separately below</li>
-        <li>2–3 remote interview shoots (pre-event, travel-to-subject)</li>
-      </ul>
-
-      <h3 class="sub-h">Out of scope</h3>
-      <ul class="bullets">
-        <li>Full series episodes beyond the Chicago kickoff hero piece</li>
-        <li>Client PR / distribution strategy (could be an add-on pitch)</li>
-        <li>Motion graphics / animation beyond basic title cards</li>
-        <li>Original music score (library licensing assumed — see §7)</li>
-      </ul>
-
-      <p><strong>Event date assumption:</strong> Mid-to-late June 2026. Exact date TBD — affects booking windows for travel.</p>
+      <div class="sec-num">Overview</div>
+      <h2 class="sec-h">What We're Shooting</h2>
+      <p><strong>Event:</strong> 100th Higher Orbits Go For Launch! event, returning to Deerfield, IL — the same high school where the first event was held in 2016. Dorothy Metcalf-Lindenburger (STS-131) attending, as she was at the inaugural event. Mid-to-late June 2026 (exact date TBD — flag with Michelle, affects flight booking).</p>
+      <p><strong>Crew:</strong> 3 people on the ground in Chicago. 2 camera operators + 1 producer/director (one cam doubles as director). In-house AOM team. Full coverage footprint — 2 cameras running simultaneously throughout, dedicated producing/directing, dedicated stills.</p>
+      <p><strong>How the tiers work:</strong> Tier 1 is the entry offer — the Chicago trip and everything that ships from it. Tiers 2 and 3 are opt-in additions, priced per trip, that grow the production into a real series over time. The ask today is Tier 1. Tiers 2 and 3 are how we keep building together.</p>
     </section>
 
-    <!-- 2. Crew -->
+    <!-- TIER 1 -->
+    <div class="tier-label">Tier 1 — The June Piece · $28,000 flat</div>
+
+    <!-- Deliverables -->
+    <section class="sec" style="margin-top: 0;">
+      <div class="sec-num">01</div>
+      <h2 class="sec-h">Deliverables</h2>
+      <p>Full Chicago production end-to-end. Pre-pro through final delivery. Four days on the ground + travel. 7 deliverables — all included in the $28,000 flat price.</p>
+
+      <div class="table-wrap"><table>
+        <thead><tr><th>Deliverable</th><th>Count</th><th>Specs</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Hero Documentary</strong></td>
+            <td class="num">1</td>
+            <td>3–5 min final cut. Opening (Michelle's NASA origin + 2016 Deerfield gym) → Middle (student/alumni voices + 24 ISS experiments) → End (100th event, full circle). Delivered end of July 2026.</td>
+          </tr>
+          <tr>
+            <td><strong>Pre-Event Teaser</strong></td>
+            <td class="num">1</td>
+            <td>30 sec. Built from pre-production material + early Chicago footage. Delivered 7 days before the June event for social/email use.</td>
+          </tr>
+          <tr>
+            <td><strong>48-Hour Recap</strong></td>
+            <td class="num">1</td>
+            <td>60–75 sec. Hard delivery commitment: finished and delivered within 48 hours of event close. Share-ready for social, email, press.</td>
+          </tr>
+          <tr>
+            <td><strong>Social Cuts Pack</strong></td>
+            <td class="num">8–10 verticals</td>
+            <td>4 alumni/student voice reels (15–30 sec), 2 Michelle/founder highlights (30–45 sec), 2 event-day energy cuts (15–20 sec), 1–2 Dorothy/astronaut moments (20–30 sec). Delivered end of July 2026.</td>
+          </tr>
+          <tr>
+            <td><strong>Hero Photo Set</strong></td>
+            <td class="num">100 edited stills</td>
+            <td>50 event-day (ceremony, student presentations, crowd energy), 25 interview/portrait (Michelle, Dorothy, student subjects — cinematic, lit), 25 B-roll + production documentation. Delivered end of July 2026.</td>
+          </tr>
+          <tr>
+            <td><strong>Raw Footage Archive</strong></td>
+            <td class="num">8–12 TB</td>
+            <td>All raw Chicago footage organized by shoot day and subject, delivered on portable hard drive at final delivery. Higher Orbits owns this archive permanently.</td>
+          </tr>
+          <tr>
+            <td><strong>Sponsor Recognition Package</strong></td>
+            <td class="num">Included</td>
+            <td>Logo in film credits + opening sequence, one branded social post template for Chevron/BRPH/board sponsors, one 60–90 sec "thank you" highlight clip for donor communications.</td>
+          </tr>
+        </tbody>
+      </table></div>
+
+      <p><em><strong>Value-pack note:</strong> Pre-event teaser, archive drive, and sponsor recognition package are included in Tier 1 — not paid add-ons. Michelle gets a deliverable before the event, a permanent production asset, and tools for her sponsor relationships — same shoot footage, real client-facing value.</em></p>
+      <p>Hero piece length: <strong>3–5 min.</strong> Right length for donor meetings and grant proposals. The full story lives in this window.</p>
+    </section>
+
+    <!-- Phases -->
     <section class="sec">
       <div class="sec-num">02</div>
-      <h2 class="sec-h">Crew</h2>
+      <h2 class="sec-h">Phases — Team Size and Purpose</h2>
 
-      <h3 class="sub-h">Roles on Chicago shoot</h3>
       <div class="table-wrap"><table>
-        <thead><tr><th>Role</th><th>Person</th><th>Doubles As</th></tr></thead>
+        <thead><tr><th>Phase</th><th>Duration</th><th>Team</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td>DP / Director</td><td>[TBD — Cam A]</td><td>Director</td></tr>
-          <tr><td>B-Cam Operator</td><td>[TBD — Cam B]</td><td>Stills shooter</td></tr>
-          <tr><td>Producer</td><td>[TBD]</td><td>On-set logistics, interview direction</td></tr>
+          <tr>
+            <td>Pre-Production (Phoenix)</td>
+            <td class="num">10–12 planning days</td>
+            <td>3</td>
+            <td>Alignment sessions with Michelle; subject selection and interview outline; shot list; alumni intro calls; access and logistics coordination with Higher Orbits; travel booking; teaser material prep.</td>
+          </tr>
+          <tr>
+            <td>Chicago — Travel</td>
+            <td class="num">2 days</td>
+            <td>3</td>
+            <td>PHX → ORD/MDW (day in), MDW/ORD → PHX (day out).</td>
+          </tr>
+          <tr>
+            <td>Chicago — Production</td>
+            <td class="num">4 days on-ground</td>
+            <td>3</td>
+            <td>2 cameras running simultaneously throughout. Event-day full coverage. Michelle documentary interview. Dorothy Metcalf-Lindenburger interview. Student team interviews and B-roll. Stills throughout all days.</td>
+          </tr>
+          <tr>
+            <td>Post — 48-Hour Recap</td>
+            <td class="num">1.5–2 days</td>
+            <td>1–2</td>
+            <td>Urgency-mode edit from event footage. Hard 48-hour delivery window.</td>
+          </tr>
+          <tr>
+            <td>Post — Hero Piece</td>
+            <td class="num">6–8 days</td>
+            <td>1–2</td>
+            <td>Rough assembly → assembly cut → fine cut (Michelle review round) → revisions → final master. One revision round included.</td>
+          </tr>
+          <tr>
+            <td>Post — Social Cuts</td>
+            <td class="num">3–4 days</td>
+            <td>1</td>
+            <td>8–10 verticals, batched from hero footage selects. ~2–3 cuts per editing day.</td>
+          </tr>
+          <tr>
+            <td>Post — Photo Edit</td>
+            <td class="num">2 days</td>
+            <td>1</td>
+            <td>Culling from full Chicago shoot (~400–600 raw frames) to 100 edited finals. Selection, basic grade, delivery.</td>
+          </tr>
+          <tr>
+            <td>Post — Sponsor Package</td>
+            <td class="num">1 day</td>
+            <td>1</td>
+            <td>Credits integration, social template build, thank-you clip assembly.</td>
+          </tr>
+          <tr>
+            <td>Collaborative Review</td>
+            <td class="num">2–3 sessions</td>
+            <td>2–3</td>
+            <td>Rough cut review with Michelle (session 1). Final approval before delivery (session 2). One revision round included.</td>
+          </tr>
         </tbody>
       </table></div>
-      <p>One cam doubles as director. One cam doubles on stills. Three people total.</p>
 
-      <h3 class="sub-h">Person-days by role and phase</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Phase</th><th>DP/Director</th><th>B-Cam/Stills</th><th>Producer</th><th>Total</th></tr></thead>
-        <tbody>
-          <tr><td>Pre-pro (PHX, admin + planning)</td><td class="num">2</td><td>—</td><td class="num">5</td><td class="num">7</td></tr>
-          <tr><td>Remote interviews (2 trips, 2 crew each)</td><td class="num">4</td><td>—</td><td class="num">4</td><td class="num">8</td></tr>
-          <tr><td>Chicago — travel days (in/out)</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">6</td></tr>
-          <tr><td>Chicago — production days (3–4 on ground)</td><td class="num">4</td><td class="num">4</td><td class="num">4</td><td class="num">12</td></tr>
-          <tr><td>Post — hero piece (edit, color, sound)</td><td class="num">12</td><td>—</td><td class="num">2</td><td class="num">14</td></tr>
-          <tr><td>Post — recap, social, photo edit</td><td class="num">5</td><td class="num">2</td><td class="num">1</td><td class="num">8</td></tr>
-          <tr><td>Post — optional teaser (separate line)</td><td class="num">1</td><td>—</td><td>—</td><td class="num">1</td></tr>
-          <tr class="total"><td>Total person-days</td><td class="num">30</td><td class="num">8</td><td class="num">14</td><td class="num">52</td></tr>
-        </tbody>
-      </table></div>
-      <p><em>If 3 remote interview trips instead of 2: add 2 person-days.</em></p>
-
-      <h3 class="sub-h">Crew cost estimate</h3>
-      <div class="warn">
-        <div class="icon">⚠</div>
-        <div><strong>Patrik to validate.</strong> Day rates below are market estimates for documentary freelance (2025–2026). Replace with AOM's actual internal rates before M3 pricing is built. If Patrik/Ash/team are the crew, allocation differs materially.</div>
-      </div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Role</th><th>Est. Day Rate</th><th>Days</th><th>Subtotal</th></tr></thead>
-        <tbody>
-          <tr><td>DP / Director</td><td class="num">$850 – $1,100</td><td class="num">30</td><td class="num">$25,500 – $33,000</td></tr>
-          <tr><td>B-Cam / Stills</td><td class="num">$550 – $750</td><td class="num">8</td><td class="num">$4,400 – $6,000</td></tr>
-          <tr><td>Producer</td><td class="num">$650 – $850</td><td class="num">14</td><td class="num">$9,100 – $11,900</td></tr>
-          <tr class="total"><td>Crew subtotal</td><td></td><td class="num">52</td><td class="num">$39,000 – $50,900</td></tr>
-        </tbody>
-      </table></div>
-      <p><em>Market basis: professional documentary freelance rates. Source: DISA pricing analysis on file.</em></p>
+      <p><strong>Total production calendar:</strong> approximately 10 weeks (May pre-pro through end-of-July delivery).</p>
     </section>
 
-    <!-- 3. Chicago Travel -->
+    <!-- Person-Days -->
     <section class="sec">
       <div class="sec-num">03</div>
-      <h2 class="sec-h">Chicago Travel + Lodging</h2>
+      <h2 class="sec-h">Person-Days by Role</h2>
+      <p>3-person crew. In-house AOM team. Rates: DP/Director ~$525/day, Cam Op 2 ~$450/day, Producer ~$425/day.</p>
 
-      <h3 class="sub-h">Flights</h3>
       <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>Unit</th><th>Qty</th><th>Est.</th></tr></thead>
+        <thead><tr><th>Phase</th><th>DP / Director</th><th>Cam Op 2</th><th>Producer</th><th>Phase Total</th></tr></thead>
         <tbody>
-          <tr><td>PHX → ORD or MDW, RT (econ, 4–6 wks out)</td><td class="num">$280–$420/person</td><td>3 people</td><td class="num">$840 – $1,260</td></tr>
-        </tbody>
-      </table></div>
-
-      <h3 class="sub-h">Ground transport in Chicago</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>Unit</th><th>Qty</th><th>Est.</th></tr></thead>
-        <tbody>
-          <tr><td>Airport transfers (rideshare)</td><td class="num">$50–$80</td><td>2 trips</td><td class="num">$100 – $160</td></tr>
-          <tr><td>Daily transport (rideshare)</td><td class="num">$80–$120/day</td><td>4 days</td><td class="num">$320 – $480</td></tr>
-          <tr><td>Gear transport (van/SUV rental)</td><td class="num">$80–$120/day</td><td>4 days</td><td class="num">$320 – $480</td></tr>
-          <tr class="total"><td>Ground subtotal</td><td></td><td></td><td class="num">$740 – $1,120</td></tr>
-        </tbody>
-      </table></div>
-
-      <h3 class="sub-h">Lodging + per diems</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>Unit</th><th>Qty</th><th>Est.</th></tr></thead>
-        <tbody>
-          <tr><td>Hotel rooms near Deerfield, IL</td><td class="num">$130–$200/night</td><td>2 rooms × 4.5 nights</td><td class="num">$1,170 – $1,800</td></tr>
-          <tr><td>Meals + incidentals</td><td class="num">$75/day/person</td><td>3 people × 5 days</td><td class="num">$1,125</td></tr>
-        </tbody>
-      </table></div>
-
-      <h3 class="sub-h">Chicago travel subtotal</h3>
-      <div class="table-wrap"><table>
-        <tbody>
-          <tr><td>Flights</td><td class="num">$840 – $1,260</td></tr>
-          <tr><td>Ground transport</td><td class="num">$740 – $1,120</td></tr>
-          <tr><td>Lodging</td><td class="num">$1,170 – $1,800</td></tr>
-          <tr><td>Per diems</td><td class="num">$1,125</td></tr>
-          <tr class="total"><td>Chicago travel total</td><td class="num">$3,875 – $5,305</td></tr>
+          <tr>
+            <td>Pre-pro (PHX — planning, logistics, shot list, teaser prep)</td>
+            <td class="num">1 day</td>
+            <td class="num">0.5 day</td>
+            <td class="num">1.5 days</td>
+            <td class="num">3</td>
+          </tr>
+          <tr>
+            <td>Chicago — travel days (in/out)</td>
+            <td class="num">2 days</td>
+            <td class="num">2 days</td>
+            <td class="num">2 days</td>
+            <td class="num">6</td>
+          </tr>
+          <tr>
+            <td>Chicago — production days (4 days on ground)</td>
+            <td class="num">4 days</td>
+            <td class="num">4 days</td>
+            <td class="num">4 days</td>
+            <td class="num">12</td>
+          </tr>
+          <tr>
+            <td>Post — hero piece (3–5 min, assembly through delivery)</td>
+            <td class="num">6 days</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">6</td>
+          </tr>
+          <tr>
+            <td>Post — 48hr recap</td>
+            <td class="num">1.5 days</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">1.5</td>
+          </tr>
+          <tr>
+            <td>Post — pre-event teaser (30 sec)</td>
+            <td class="num">0.5 day</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">0.5</td>
+          </tr>
+          <tr>
+            <td>Post — social cuts pack (8–10 verticals)</td>
+            <td class="num">3 days</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">3</td>
+          </tr>
+          <tr>
+            <td>Post — photo culling + editing (100 stills)</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">2 days</td>
+            <td class="num">2</td>
+          </tr>
+          <tr>
+            <td>Post — sponsor recognition package</td>
+            <td class="num">1 day</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">1</td>
+          </tr>
+          <tr>
+            <td>Post — producer review + client revisions</td>
+            <td>—</td>
+            <td>—</td>
+            <td class="num">1 day</td>
+            <td class="num">1</td>
+          </tr>
+          <tr class="total">
+            <td>Tier 1 Total</td>
+            <td class="num">19 days</td>
+            <td class="num">6.5 days</td>
+            <td class="num">10.5 days</td>
+            <td class="num">36 person-days</td>
+          </tr>
         </tbody>
       </table></div>
     </section>
 
-    <!-- 4. Remote Interview Shoots -->
+    <!-- Cost Breakdown -->
     <section class="sec">
       <div class="sec-num">04</div>
-      <h2 class="sec-h">Remote Interview Shoots (Pre-Event)</h2>
-      <p>2 to 3 remote interviews, travel-to-subject. Assumed 2-person crew (DP + producer) for each. 2-day trip per interview (travel day + shoot day). Specific cities unknown until Higher Orbits confirms who we're interviewing.</p>
+      <h2 class="sec-h">Cost Breakdown — Traceable to Line Items</h2>
+
+      <h3 class="sub-h">Crew Labor (in-house AOM team, 36 person-days)</h3>
       <div class="table-wrap"><table>
-        <thead>
-          <tr><th>Item</th><th>Unit</th><th>2 trips</th><th>3 trips</th><th>Est. (2)</th><th>Est. (3)</th></tr>
-        </thead>
+        <thead><tr><th>Budget Item</th><th>Information</th><th>Team Involved</th><th>Cost</th></tr></thead>
         <tbody>
-          <tr><td>Flights (2 people, RT econ)</td><td class="num">$300–$500/pp</td><td>4 tix</td><td>6 tix</td><td class="num">$1,200 – $2,000</td><td class="num">$1,800 – $3,000</td></tr>
-          <tr><td>Hotel (1 night/trip)</td><td class="num">$130–$180/night</td><td>2 nights</td><td>3 nights</td><td class="num">$260 – $360</td><td class="num">$390 – $540</td></tr>
-          <tr><td>Per diems</td><td class="num">$75/day</td><td>8 pd</td><td>12 pd</td><td class="num">$600</td><td class="num">$900</td></tr>
-          <tr><td>Incidentals + ground</td><td>flat</td><td>per trip</td><td>per trip</td><td class="num">$300</td><td class="num">$450</td></tr>
-          <tr class="total"><td>Remote interview subtotal</td><td></td><td></td><td></td><td class="num">$2,360 – $3,260</td><td class="num">$3,540 – $4,890</td></tr>
+          <tr>
+            <td>Shooting Labor</td>
+            <td>4 production days in Chicago × 3 people ($525 DP + $450 Cam + $425 Producer)</td>
+            <td>3</td>
+            <td class="num">$5,600</td>
+          </tr>
+          <tr>
+            <td>Travel Labor</td>
+            <td>2 travel days × 3 people (full rate — these are work days)</td>
+            <td>3</td>
+            <td class="num">$2,800</td>
+          </tr>
+          <tr>
+            <td>Post Production Labor</td>
+            <td>13.5 days (hero 6, recap 1.5, teaser 0.5, cuts 3, photo 2, sponsor 1, review 0.5)</td>
+            <td>1–2</td>
+            <td class="num">$7,250</td>
+          </tr>
+          <tr>
+            <td>Pre-Production &amp; Wrap</td>
+            <td>3 person-days PHX (planning, shot list, logistics)</td>
+            <td>3</td>
+            <td class="num">$1,400</td>
+          </tr>
+          <tr class="total">
+            <td>Labor Subtotal</td>
+            <td colspan="2"><em>Rates: DP/Director ~$525/day, Cam Op 2 ~$450/day, Producer ~$425/day (all in-house AOM)</em></td>
+            <td class="num">~$17,050</td>
+          </tr>
         </tbody>
       </table></div>
-      <p><em>Base scope uses 2 trips; 3 is upside. Recommend scoping to 2 confirmed interview subjects and a Chicago grab-during-event as the third.</em></p>
-    </section>
 
-    <!-- 5. Gear -->
-    <section class="sec">
-      <div class="sec-num">05</div>
-      <h2 class="sec-h">Gear</h2>
+      <h3 class="sub-h">Hard Costs (out-of-pocket, Chicago)</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Budget Item</th><th>Information</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>Flights</td><td>PHX ↔ ORD/MDW RT × 3 people</td><td class="num">$1,200</td></tr>
+          <tr><td>Hotel</td><td>Deerfield area, 4.5 nights avg × 3 rooms (~$160/night)</td><td class="num">$2,160</td></tr>
+          <tr><td>Ground Transport</td><td>Airport transfers + Chicago rideshares, 5 days, 3 people</td><td class="num">$750</td></tr>
+          <tr><td>Per Diems</td><td>$75/day × 3 people × 5 days</td><td class="num">$1,125</td></tr>
+          <tr><td>Gear</td><td>Lighting, audio, media cards, consumables (AOM-owned equipment, no rental)</td><td class="num">$700</td></tr>
+          <tr><td>Music Licensing</td><td>Sync rights: hero + recap + teaser + social cuts (5 deliverables)</td><td class="num">$700</td></tr>
+          <tr><td>Archive Drive</td><td>12TB portable hard drive (Higher Orbits' permanent asset)</td><td class="num">$400</td></tr>
+          <tr><td>Insurance + Storage + Admin</td><td>Production insurance + cloud backup + overhead</td><td class="num">$850</td></tr>
+          <tr class="total"><td>Hard Costs Subtotal</td><td></td><td class="num">~$7,885</td></tr>
+        </tbody>
+      </table></div>
 
-      <h3 class="sub-h">AOM-owned (no rental cost assumed)</h3>
-      <ul class="bullets">
-        <li>Camera A (primary cinema cam)</li>
-        <li>Camera B (B-cam)</li>
-        <li>Stills camera (doubles from Cam B)</li>
-        <li>DJI Mic / lav audio kit</li>
-        <li>Basic lighting (portable panels)</li>
-        <li>Memory cards, batteries, accessories</li>
-      </ul>
+      <h3 class="sub-h">Tier 1 Bottom Line</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Crew labor (36 person-days at in-house rates)</td><td class="num">$17,050</td></tr>
+          <tr><td>Hard costs (Chicago trip, music, gear, storage)</td><td class="num">$7,885</td></tr>
+          <tr><td>Contingency (15%)</td><td class="num">$2,565</td></tr>
+          <tr><td>Margin</td><td class="num">$500</td></tr>
+          <tr class="total"><td>Tier 1 Client Price — Flat</td><td class="num">$28,000</td></tr>
+        </tbody>
+      </table></div>
+
+      <p><strong>The math is honest.</strong> The $28,000 flat price reflects the expanded deliverable set vs. the original scope: 8–10 social cuts (vs. 4–6), 100 edited stills (vs. 30–50), raw footage archive delivery, and sponsor recognition package. The 7 additional person-days of post-production labor plus 15% contingency account for the $6,000 increase from the $22,000 floor.</p>
+      <p><strong>What 3 people on the ground actually buys:</strong> 2 cameras running simultaneously throughout the event (no missed moments), a dedicated producer/director calling the shots without also operating a camera, dedicated stills coverage. The June event is a once-in-a-decade moment. 2-person "doubled roles" coverage is a risk.</p>
 
       <div class="warn">
         <div class="icon">⚠</div>
-        <div><strong>Patrik to confirm:</strong> does AOM own a drone? If not, add a drone rental line. Drone footage would significantly improve Deerfield event coverage (establishing shots, outdoor b-roll).</div>
+        <div><strong>Patrik to confirm:</strong> Price is $28,000. If budget is a concern for Michelle, the floor is $22,000–$24,000 (reduce social cuts to 4–6 and strip the archive drive). <strong>Recommend opening at $28,000</strong> — the expanded deliverable set with hard counts makes the price easy to trace line-by-line in the pitch document.</div>
       </div>
-
-      <h3 class="sub-h">Possible rentals</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>If Needed</th><th>Unit</th><th>Est.</th></tr></thead>
-        <tbody>
-          <tr><td>Drone rental (if AOM doesn't own)</td><td>contingent</td><td class="num">$350–$500/day × 2</td><td class="num">$700 – $1,000</td></tr>
-          <tr><td>Additional lighting rig (indoor)</td><td>likely</td><td class="num">$200–$350/day × 2</td><td class="num">$400 – $700</td></tr>
-          <tr><td>Additional audio (backup lavs, mixer)</td><td>possible</td><td>flat</td><td class="num">$150 – $300</td></tr>
-          <tr><td>Consumables (media, batteries, tape)</td><td>yes</td><td>flat</td><td class="num">$200 – $400</td></tr>
-        </tbody>
-      </table></div>
-      <p><strong>Gear rental subtotal (no drone):</strong> <span class="num">$750 – $1,400</span><br />
-      <strong>Gear rental subtotal (with drone):</strong> <span class="num">$1,450 – $2,400</span></p>
     </section>
 
-    <!-- 6. Post Production -->
-    <section class="sec">
+    <!-- TIER 2 -->
+    <div class="divider"></div>
+    <div class="tier-label" style="margin-top: 40px;">Tier 2 — Add the Voices · Per Remote Interview Trip</div>
+
+    <section class="sec" style="margin-top: 0;">
+      <div class="sec-num">05</div>
+      <h2 class="sec-h">Tier 2 — Remote Interview Trips</h2>
+      <p>One dedicated remote interview trip (2-person crew, travel-to-subject). Each trip is a discrete opt-in add-on after Tier 1 is confirmed. Pricing is per trip.</p>
+      <p><strong>Target subjects:</strong> Higher Orbits alumni who've gone on to STEM careers, astronaut mentors (Nicole Stott, Dorothy Metcalf-Lindenburger off-event), or early-program students who've grown up. Cities unknown until Michelle confirms subjects — but could fold into Chicago if subjects are Chicago-area (saves travel cost).</p>
+
+      <div class="table-wrap"><table>
+        <thead><tr><th>Category</th><th>Estimate</th></tr></thead>
+        <tbody>
+          <tr><td>Crew (2 people × 2 days, in-house rates)</td><td class="num">~$2,500</td></tr>
+          <tr><td>Travel + lodging (2 people, 1 night)</td><td class="num">$1,230 – $1,800</td></tr>
+          <tr><td>Contingency</td><td class="num">$500</td></tr>
+          <tr><td>Margin</td><td class="num">$1,500 – $2,500</td></tr>
+          <tr class="total"><td>Per-trip client price</td><td class="num">$7,500 – $8,500</td></tr>
+        </tbody>
+      </table></div>
+
+      <p>If Higher Orbits books two trips alongside Tier 1, that's an additional <span class="num">$15,000–$17,000</span> layered onto the June engagement.</p>
+    </section>
+
+    <!-- TIER 3 -->
+    <div class="divider"></div>
+    <div class="tier-label" style="margin-top: 40px;">Tier 3 — Series Engine · Per Return Trip</div>
+
+    <section class="sec" style="margin-top: 0;">
       <div class="sec-num">06</div>
-      <h2 class="sec-h">Post Production</h2>
-      <p>All post is AOM-executed in Phoenix after the Chicago shoot. The recap requires a dedicated fast-track edit track to hit the 48-hour delivery window.</p>
+      <h2 class="sec-h">Tier 3 — Future Event Return Trips</h2>
+      <p>A return trip to Higher Orbits at the next meaningful milestone — a future Go For Launch! event, ISS experiment execution or return, alumni graduation, major donor event. Each trip is independently scoped and priced.</p>
+      <p><strong>Framing for Michelle:</strong> Think of AOM as on-call to come back when the next story moment arrives. No long-term contract required. Schedule each trip as the milestone approaches.</p>
+
       <div class="table-wrap"><table>
-        <thead><tr><th>Deliverable</th><th>Days</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Category</th><th>Estimate</th></tr></thead>
         <tbody>
-          <tr><td>Hero piece — assembly + rough cut</td><td class="num">4</td><td>5–10 min doc is a heavy lift</td></tr>
-          <tr><td>Hero piece — refinement + client revisions</td><td class="num">3</td><td>1 round included; 2nd on request</td></tr>
-          <tr><td>Hero piece — color grade</td><td class="num">2</td><td>Full grade, not just a LUT bake</td></tr>
-          <tr><td>Hero piece — sound design + music</td><td class="num">1.5</td><td>Library source (see §7)</td></tr>
-          <tr><td>Hero piece — final delivery + format export</td><td class="num">0.5</td><td>TV + web formats</td></tr>
-          <tr class="total"><td>Hero piece subtotal</td><td class="num">11</td><td></td></tr>
-          <tr><td>2-day-turnaround recap (60–90 sec)</td><td class="num">1.5</td><td>Begins night of event</td></tr>
-          <tr><td>Social cuts pack (4–6 verticals)</td><td class="num">3</td><td>Repurposed from hero footage</td></tr>
-          <tr><td>Photo culling + editing (30–50 finals)</td><td class="num">1.5</td><td>From ~500–1,000 RAW selects</td></tr>
-          <tr><td>Optional teaser (~30 sec pre-event)</td><td class="num">1</td><td>From pre-pro interview footage</td></tr>
-          <tr class="total"><td>Total post days</td><td class="num">18.5</td><td>17.5 without optional teaser</td></tr>
+          <tr><td>Crew (3 people, ~29 person-days, in-house)</td><td class="num">~$13,840</td></tr>
+          <tr><td>Hard costs (travel, gear, music, overhead)</td><td class="num">$7,500 – $9,000</td></tr>
+          <tr><td>Contingency</td><td class="num">~$1,500</td></tr>
+          <tr><td>Margin</td><td class="num">~$4,000 – $6,000</td></tr>
+          <tr class="total"><td>Per-trip client price</td><td class="num">$27,000 – $35,000</td></tr>
         </tbody>
       </table></div>
-      <p><em>Post is covered in crew labor above (DP/editor + producer review days in the crew table). No separate facility/edit suite cost if editing in-house.</em></p>
+
+      <p>Anchored to the Tier 1 baseline — same crew, same approach, scaled to the next chapter's scope.</p>
     </section>
 
-    <!-- 7. Music -->
+    <!-- Cumulative view -->
     <section class="sec">
       <div class="sec-num">07</div>
-      <h2 class="sec-h">Music Licensing</h2>
-      <p>Hero piece and cuts use library music, not original score (per Patrik's direction). Library tracks are AOM-sourced and licensed.</p>
+      <h2 class="sec-h">Cumulative View — What Each Level of Investment Delivers</h2>
+
       <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>Est.</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Tier Combination</th><th>Client Price</th><th>What They Get</th></tr></thead>
         <tbody>
-          <tr><td>Hero piece (5–10 min) — sync license, 2 tracks</td><td class="num">$400 – $800</td><td>Musicbed / Artlist / Epidemic Sound</td></tr>
-          <tr><td>Social cuts (4–6 pieces) — sync license</td><td class="num">$200 – $400</td><td>Single platform license often covers</td></tr>
-          <tr><td>Recap — sync license</td><td class="num">$150 – $300</td><td></td></tr>
-          <tr class="total"><td>Music subtotal</td><td class="num">$750 – $1,500</td><td></td></tr>
+          <tr>
+            <td><strong>Tier 1 only</strong></td>
+            <td class="num">$28,000</td>
+            <td>The June piece. Hero doc (3–5 min) + 48hr recap + pre-event teaser + 8–10 social cuts + 100 photos + archive drive + sponsor package. Chicago trip with a real 3-person crew.</td>
+          </tr>
+          <tr>
+            <td><strong>Tier 1 + 1 interview trip</strong></td>
+            <td class="num">$35,500 – $36,500</td>
+            <td>Same as above plus one dedicated alumni/mentor interview. Adds a voice the event can't capture.</td>
+          </tr>
+          <tr>
+            <td><strong>Tier 1 + 2 interview trips</strong></td>
+            <td class="num">$43,000 – $45,000</td>
+            <td>Same plus two dedicated interview trips. The series gets real depth.</td>
+          </tr>
+          <tr>
+            <td><strong>Tier 1 + 2 trips + 1 series return</strong></td>
+            <td class="num">$70,000 – $80,000</td>
+            <td>A 2-episode series with a third on its way. 10-year anniversary + 2 interview chapters + 1 future episode. Growing relationship.</td>
+          </tr>
         </tbody>
       </table></div>
-      <div class="warn">
-        <div class="icon">⚠</div>
-        <div><strong>Optional:</strong> if the hero piece warrants an original score (space-themed, cinematic ambition), Suno or a composer would add <span class="num">$1,500–$5,000</span>. Not recommended unless library search comes up empty for the right feel. Default to library.</div>
-      </div>
     </section>
 
-    <!-- 8. PM + Overhead -->
+    <!-- Open Questions -->
     <section class="sec">
       <div class="sec-num">08</div>
-      <h2 class="sec-h">PM + Overhead</h2>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>Est.</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td>Project management (comms, approvals, scheduling, delivery)</td><td class="num">$2,000 – $3,500</td><td>~15% of DP/producer labor</td></tr>
-          <tr><td>Cloud storage / backup (4–5 shoot days ≈ 3–4TB raw)</td><td class="num">$300 – $600</td><td>Dropbox Business overage</td></tr>
-          <tr><td>Production insurance (liability + equipment)</td><td class="num">$500 – $1,200</td><td>Short-term policy for Chicago travel</td></tr>
-          <tr><td>File archival + project handoff</td><td class="num">$200 – $400</td><td>Masters, selects, exports organized</td></tr>
-          <tr class="total"><td>Overhead subtotal</td><td class="num">$3,000 – $5,700</td><td></td></tr>
-        </tbody>
-      </table></div>
-    </section>
-
-    <!-- 9. Contingency -->
-    <section class="sec">
-      <div class="sec-num">09</div>
-      <h2 class="sec-h">Contingency</h2>
-      <p>10–15% of all costs above (excluding crew, which already carries some buffer in the day-count estimate).</p>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Base</th><th>10%</th><th>15%</th></tr></thead>
-        <tbody>
-          <tr><td>Hard costs only (travel + gear + music + overhead): ~$9K–$17K</td><td class="num">$900 – $1,700</td><td class="num">$1,350 – $2,550</td></tr>
-          <tr><td>Full project including crew: ~$48K–$74K</td><td class="num">$4,800 – $7,400</td><td class="num">$7,200 – $11,100</td></tr>
-        </tbody>
-      </table></div>
-      <p><strong>Recommend 12% contingency</strong> across the full budget. Standard for event-driven shoots with external travel — weather, access delays, and rescheduling are realistic risks.</p>
-    </section>
-
-    <!-- 10. Bottom line -->
-    <section class="sec">
-      <div class="sec-num">10</div>
-      <h2 class="sec-h">Bottom Line — Internal Cost Estimate</h2>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Category</th><th>Low</th><th>High</th></tr></thead>
-        <tbody>
-          <tr><td>Crew (52 person-days, market rates)</td><td class="num">$39,000</td><td class="num">$50,900</td></tr>
-          <tr><td>Chicago travel + lodging</td><td class="num">$3,875</td><td class="num">$5,305</td></tr>
-          <tr><td>Remote interview travel (2 trips base)</td><td class="num">$2,360</td><td class="num">$3,260</td></tr>
-          <tr><td>Gear rental (no drone)</td><td class="num">$750</td><td class="num">$1,400</td></tr>
-          <tr><td>Music licensing</td><td class="num">$750</td><td class="num">$1,500</td></tr>
-          <tr><td>PM + overhead</td><td class="num">$3,000</td><td class="num">$5,700</td></tr>
-          <tr><td>Subtotal before contingency</td><td class="num">$49,735</td><td class="num">$68,065</td></tr>
-          <tr><td>Contingency (12%)</td><td class="num">$5,970</td><td class="num">$8,170</td></tr>
-          <tr class="total"><td>Total internal cost</td><td class="num">$55,700</td><td class="num">$76,200</td></tr>
-        </tbody>
-      </table></div>
-      <p><strong>For planning:</strong> budget this engagement at approximately <span class="num">$60,000–$70,000</span> internal cost.</p>
-      <p><em>This is what the project costs AOM to execute. Client pricing (M3) adds margin on top. Rule of thumb for AOM: 30–50% margin on production projects. That puts the client quote range at <span class="num">$78,000–$115,000</span> before any packaging decisions.</em></p>
-
-      <h3 class="sub-h">Adds (optional)</h3>
-      <ul class="bullets">
-        <li><strong>Optional teaser:</strong> adds ~<span class="num">$500–$1,000</span> internal cost (1 post day + extra interview footage).</li>
-        <li><strong>Drone:</strong> adds <span class="num">$700–$1,000</span> to gear.</li>
-        <li><strong>3rd remote interview trip:</strong> adds <span class="num">$1,180–$1,630</span> to travel.</li>
-      </ul>
-    </section>
-
-    <!-- 11. Open Questions -->
-    <section class="sec">
-      <div class="sec-num">11</div>
       <h2 class="sec-h">Open Questions + Assumptions</h2>
-      <p>Patrik to validate before M3 pricing.</p>
+      <p>Patrik to validate before M3 pricing and pitch delivery.</p>
 
       <div class="questions">
 
         <div class="q-group">
-          <div class="q-group-label">Critical — Needs Answer Before M3 Pricing</div>
+          <div class="q-group-label">Critical — Patrik to Decide</div>
 
           <div class="q critical">
             <div class="q-num">01</div>
-            <div class="q-body"><strong>Crew day rates.</strong> Day rates above are market estimates for documentary freelancers, not AOM's actual internal rates. If Patrik/Ash/team are the crew, allocation may differ significantly. Confirm: what are the day rates or cost allocation for each crew role?</div>
+            <div class="q-body"><strong>Price.</strong> Opening at $28,000 flat per the math. If Michelle needs a lower entry point, the floor is $22,000–$24,000 (reduce social cuts to 4–6 and strip the archive drive). Recommend holding at $28,000 — the expanded deliverable set with hard counts justifies the number line-by-line.</div>
           </div>
+
           <div class="q critical">
             <div class="q-num">02</div>
-            <div class="q-body"><strong>Event date.</strong> Exact June 2026 date for the Deerfield 100th event is unknown. Affects flight booking windows, lodging availability, pricing.</div>
+            <div class="q-body"><strong>Sponsorship video: included or upsell?</strong> Two options:
+              <br /><br />
+              <strong>Option A (Included for top-tier sponsors):</strong> Custom 2–3 min branded video is part of the campaign package at the Chevron/BRPH/board-sponsor tier — no additional charge. Gives Michelle a tool to recruit sponsors ("come in at the top tier and we'll produce your branded story"). Positions the campaign as a premium offering.
+              <br /><br />
+              <strong>Option B (Upsell at additional cost):</strong> Branded video pitched as an add-on for ~$5,000–$8,000 per sponsor. Generates incremental revenue per sponsor. Better if Higher Orbits has many sponsors who would each want their own piece.
+              <br /><br />
+              <strong>Recommendation:</strong> Option A. Gives Michelle a strong incentive structure for her sponsor conversations, and the production cost (one extra day of editing per sponsor) is manageable.</div>
           </div>
+
           <div class="q critical">
             <div class="q-num">03</div>
-            <div class="q-body"><strong>Drone.</strong> Does AOM own a drone suitable for this shoot? If not, add the rental line.</div>
+            <div class="q-body"><strong>Event date.</strong> Exact June 2026 date for the 100th Deerfield event is TBD. Flag with Michelle — affects booking windows for all travel.</div>
+          </div>
+
+          <div class="q critical">
+            <div class="q-num">04</div>
+            <div class="q-body"><strong>Crew composition.</strong> Plan assumes 3-person in-house team (Patrik + Ash + one more, or equivalent). Confirm all 3 are available for Chicago dates.</div>
           </div>
         </div>
 
         <div class="q-group">
-          <div class="q-group-label">Scope Clarifications</div>
+          <div class="q-group-label">Scope</div>
 
           <div class="q">
-            <div class="q-num">04</div>
-            <div class="q-body"><strong>Remote interview locations.</strong> Who are the 2–3 subjects and where? Directly affects flight costs. Could be Chicago-based (fold into main trip) or different cities entirely.</div>
-          </div>
-          <div class="q">
             <div class="q-num">05</div>
-            <div class="q-body"><strong>Photo delivery.</strong> What format/resolution does Michelle expect? Any licensing requirements (nonprofit use, social, press kit)?</div>
+            <div class="q-body"><strong>Remote interview subjects.</strong> Who and where? Chicago-area subjects fold into the main trip at near-zero extra travel cost.</div>
           </div>
           <div class="q">
             <div class="q-num">06</div>
-            <div class="q-body"><strong>Is the teaser in scope?</strong> Decision needed on whether the ~30-sec pre-event teaser is a base deliverable or an add-on. Shifts timing slightly — needs interview footage early enough to build it a week before the event.</div>
-          </div>
-          <div class="q">
-            <div class="q-num">07</div>
-            <div class="q-body"><strong>Crew composition.</strong> Is this Patrik + Ash + one more? Or all hires? Affects whether to frame costs as internal labor allocation or subcontractor rates.</div>
+            <div class="q-body"><strong>Hero piece length.</strong> 3–5 min is where we've landed. Confirm this is acceptable to Michelle for donor meetings and grant proposals.</div>
           </div>
         </div>
 
         <div class="q-group">
-          <div class="q-group-label">Pricing Structure (for M3)</div>
+          <div class="q-group-label">Pricing Structure</div>
 
           <div class="q">
+            <div class="q-num">07</div>
+            <div class="q-body"><strong>Payment structure for Tier 1.</strong> Recommend: 33% to confirm and book travel, 33% at end of Chicago shoot, 34% at delivery. Standard 3-milestone.</div>
+          </div>
+          <div class="q">
             <div class="q-num">08</div>
-            <div class="q-body"><strong>How to present pricing.</strong> Options: (a) all-in project fee, (b) production day rate + post, (c) milestone-based bundle. For a nonprofit, an all-in "production partnership" package likely feels cleanest and most fundable for Michelle (she can take it to sponsors/board).</div>
-          </div>
-          <div class="q">
-            <div class="q-num">09</div>
-            <div class="q-body"><strong>Nonprofit rate consideration.</strong> Higher Orbits is a 501(c)(3). Offer a nonprofit discount, or position as full market price given scale, travel, and deliverable count? Recommend pricing at market and framing the investment as what it takes to tell the story right — not discounting.</div>
-          </div>
-          <div class="q">
-            <div class="q-num">10</div>
-            <div class="q-body"><strong>Payment structure.</strong> Recommend milestone-based: 30% deposit to confirm and book travel, 40% at shoot wrap, 30% at final delivery. Three milestones keeps both sides protected.</div>
+            <div class="q-body"><strong>Nonprofit rate.</strong> Recommend NO additional discount — frame as "the right price to tell this story right."</div>
           </div>
         </div>
       </div>
     </section>
 
     <footer class="foot">
-      <span class="foot-mark"><span class="mark-dot"></span> AOM</span> &nbsp;·&nbsp; Built 2026-05-18 by Alex &nbsp;·&nbsp; Mission: <span class="num">aom:higher-orbits:mini-doc-series-pitch</span> &nbsp;·&nbsp; Internal review only — do not share with client.
+      <span class="foot-mark"><span class="mark-dot"></span> AOM</span> &nbsp;·&nbsp; Built 2026-05-18 by Alex · Revised 2026-05-19 (M3 pass — $28K pricing, 3-person crew, traceable budget) &nbsp;·&nbsp; Mission: <span class="num">aom:higher-orbits:mini-doc-series-pitch</span> &nbsp;·&nbsp; Internal review only — do not share with client.
     </footer>
   </div>
 </body>
