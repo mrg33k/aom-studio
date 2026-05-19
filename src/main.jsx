@@ -84,6 +84,8 @@ const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
+// corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
+const ReaderDemo = lazy(() => import('./dashboard/pages/ReaderDemo.jsx'))
 import './index.css'
 
 function ConstructionRedirect() {
@@ -306,6 +308,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
           {/* CV4 alias paths (kept during transition) */}
+          {/* corner:files-in-app R79-f2 — reader primitive demo. No AuthGuard
+              so the demo renders against bundled fixtures without needing a
+              signed-in session. Real production wiring lands in R79-f3. */}
+          <Route path="/cv4/reader-demo" element={<ReaderDemo />} />
           <Route path="/cv4" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
