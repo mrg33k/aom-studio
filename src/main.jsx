@@ -83,6 +83,7 @@ const TenantSignupPage = lazy(() => import('./pages/TenantSignupPage.jsx'))
 const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
+const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
 import './index.css'
 
 function ConstructionRedirect() {
@@ -270,6 +271,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/conrad" element={<ConradFoundation />} />
           <Route path="/nancy" element={<ConradFoundation />} />
           <Route path="/higher-orbits" element={<HigherOrbitsPitch />} />
+          <Route path="/higherorbits" element={<HigherOrbitsPitchAZCT />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
           <Route path="/blacknight" element={<Blacknight />} />
