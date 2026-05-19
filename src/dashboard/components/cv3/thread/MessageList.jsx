@@ -1143,11 +1143,19 @@ export default function MessageList({ roomType = 'agent' }) {
                       || (msg.text && msg.text.startsWith('Attached file: ')
                             ? msg.text.replace('Attached file: ', '').split('\n')[0]
                             : msg.file_name || null)
+                    // R79-f10: also read metadata.attachments (agent outbound multi-attach
+                    // stored in JSONB, not a top-level column). Priority: msg.attachments
+                    // (local React state, e.g. image-gen) > metadata.attachments (DB,
+                    // multi-attach from relay-respond.py --attach x2) > single-url path.
+                    const metaAtts = (msg.metadata?.attachments && Array.isArray(msg.metadata.attachments) && msg.metadata.attachments.length)
+                      ? msg.metadata.attachments : null
                     const atts = (msg.attachments && msg.attachments.length)
                       ? msg.attachments
-                      : attUrl
-                        ? [{ url: attUrl, mime: attMime, size: attSize, name: attName }]
-                        : []
+                      : metaAtts
+                        ? metaAtts
+                        : attUrl
+                          ? [{ url: attUrl, mime: attMime, size: attSize, name: attName }]
+                          : []
                     if (!atts.length) return null
                     const hasText = msg.text && !(attUrl && msg.text.startsWith('Attached file: '))
                     const isMulti = atts.length > 1
