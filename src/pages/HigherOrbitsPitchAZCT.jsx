@@ -463,49 +463,19 @@ export default function HigherOrbitsPitchAZCT() {
             HIGHER ORBITS
           </h1>
 
-          {/* Tagline decision */}
+          {/* Tagline — locked to "Ten Years to the Stars" */}
           <div style={{ marginBottom: 40 }}>
-            <div style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 10,
-              letterSpacing: '0.28em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.5)',
-              marginBottom: 16
+            <p style={{
+              fontFamily: 'Hanken Grotesk, system-ui, sans-serif',
+              fontSize: 'clamp(22px, 3.5vw, 36px)',
+              fontStyle: 'italic',
+              color: 'rgba(255,255,255,0.92)',
+              lineHeight: 1.25,
+              fontWeight: 400,
+              margin: 0
             }}>
-              ⚑ Tagline — Patrik picks one before sharing
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              {['Ten Years to the Stars', 'From Classroom to Orbit', 'The Story of Higher Orbits'].map((tag, i) => (
-                <div key={i} style={{
-                  border: '1.5px dashed rgba(232,93,38,0.7)',
-                  borderRadius: 4,
-                  padding: '10px 18px',
-                  background: 'rgba(232,93,38,0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10
-                }}>
-                  <span style={{
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: 10,
-                    color: '#E85D26',
-                    letterSpacing: '0.2em',
-                    textTransform: 'uppercase'
-                  }}>
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  <span style={{
-                    fontFamily: 'Hanken Grotesk, system-ui, sans-serif',
-                    fontSize: 17,
-                    color: '#fff',
-                    fontStyle: 'italic'
-                  }}>
-                    "{tag}"
-                  </span>
-                </div>
-              ))}
-            </div>
+              Ten Years to the Stars
+            </p>
           </div>
 
           {/* Subline */}
