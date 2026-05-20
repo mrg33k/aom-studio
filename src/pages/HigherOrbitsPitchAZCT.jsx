@@ -685,14 +685,29 @@ export default function HigherOrbitsPitchAZCT() {
 
             <SubLabel>Objective</SubLabel>
             <BodyP>
-              Capture Higher Orbits' decade of impact through the lens of the 100th Go For Launch! event — the same high school gym in Deerfield, Illinois where the first event happened in 2016, with Dorothy Metcalf-Lindenburger, who flew aboard STS-131 and was there at the inaugural event, returning for the milestone. A film built for every room Higher Orbits will ever need to walk into: donor meetings, grant panels, school assemblies, board presentations, and the world at large.
+              A film built on a Past / Present / Future arc. Michelle's story is the spine. The 100th Go For Launch! event in Deerfield — same high school gym where it all began in 2016, with Dorothy Metcalf-Lindenburger returning — is the present-tense centerpiece. The conclusion looks forward to the next decade. A film built for every room Higher Orbits will ever need to walk into: donor meetings, grant panels, school assemblies, board presentations, and the world at large.
             </BodyP>
 
             <SubLabel>Structure</SubLabel>
+            <BodyP style={{ marginBottom: 4, fontStyle: 'italic', color: '#555' }}>
+              Past, Present, Future. Michelle's story bookends. The event is the meat.
+            </BodyP>
             <StructureTable rows={[
-              ['Opening', '"A decade ago, a NASA flight controller walked into a high school gym in Deerfield, Illinois. The students in that room didn\'t just learn about space. They built real science experiments. Those experiments flew to the International Space Station."'],
-              ['Middle', '"What Higher Orbits built over ten years — 24 experiments in orbit, 3,000 student alumni, 100 events across 23 states — and what it cost Michelle to build it. Alumni voices proving what got made."'],
-              ['End', '"June 2026. The 100th event. Same gym. Same astronaut. The story comes full circle."']
+              ['Intro — Michelle\'s Story (Past)', (
+                <span style={{ fontStyle: 'normal' }}>
+                  Who Michelle is and how she got here. NASA flight controller. The founding of Higher Orbits. A simple day-in-the-life — what her actual work looks like. How she's shaped alumni over ten years. <em style={{ fontStyle: 'italic' }}>Add-in:</em> a background story on one alumnus, staff member, or student whose path she changed.
+                </span>
+              )],
+              ['Meat — The Day Of (Present)', (
+                <span style={{ fontStyle: 'normal' }}>
+                  The 100th Go For Launch! event in Deerfield. The ten-year anniversary moment. The room, the students, Dorothy walking in, the experiments getting handed off. This is the heart of the film — the present-tense proof that the work is alive and accelerating. <em style={{ fontStyle: 'italic' }}>Add-in:</em> an Alexis cover story, OR a highlight on a new project or upcoming Go For Launch! event in motion.
+                </span>
+              )],
+              ['Conclusion — Why She Inspires (Future)', (
+                <span style={{ fontStyle: 'normal' }}>
+                  Why Michelle keeps doing this. Why the next ten years matter more than the last ten. Forward-looking voices — students just entering the program, mentors signing on for the next decade, sponsors who see the runway. The 100th event is not a finish line. It's a launch.
+                </span>
+              )]
             ]} />
 
             <Distribution>
