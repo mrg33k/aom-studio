@@ -683,29 +683,60 @@ export default function HigherOrbitsPitchAZCT() {
           <div style={{ flex: 1, minWidth: 280 }}>
             <SectionTitle size="xl">The Hero Film</SectionTitle>
 
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              marginTop: 12,
+              marginBottom: 24,
+              paddingBottom: 18,
+              borderBottom: '1px solid rgba(0,0,0,0.08)'
+            }}>
+              <div style={{
+                fontSize: 11,
+                fontFamily: 'JetBrains Mono, monospace',
+                letterSpacing: '0.25em',
+                textTransform: 'uppercase',
+                color: '#555',
+                fontWeight: 700
+              }}>
+                <span style={{ color: '#111' }}>Style</span>&nbsp;&nbsp;Documentary-style
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontFamily: 'JetBrains Mono, monospace',
+                letterSpacing: '0.25em',
+                textTransform: 'uppercase',
+                color: '#555',
+                fontWeight: 700
+              }}>
+                <span style={{ color: '#111' }}>Audience</span>&nbsp;&nbsp;Media / Press &nbsp;&middot;&nbsp; Sponsors / Funders
+              </div>
+            </div>
+
             <SubLabel>Objective</SubLabel>
             <BodyP>
-              A film built on a Past / Present / Future arc. Michelle's story is the spine. The 100th Go For Launch! event in Deerfield — same high school gym where it all began in 2016, with Dorothy Metcalf-Lindenburger returning — is the present-tense centerpiece. The conclusion looks forward to the next decade. A film built for every room Higher Orbits will ever need to walk into: donor meetings, grant panels, school assemblies, board presentations, and the world at large.
+              A documentary built in three acts. Michelle Lucas is the spine. The 100th Go For Launch! event in Deerfield is the present-tense centerpiece. The film is purpose-built for the rooms that grow Higher Orbits next: the press desks that decide what story to tell, and the sponsors and funders who decide what to invest in.
             </BodyP>
 
             <SubLabel>Structure</SubLabel>
             <BodyP style={{ marginBottom: 4, fontStyle: 'italic', color: '#555' }}>
-              Past, Present, Future. Michelle's story bookends. The event is the meat.
+              The Root, The Moment, The Ripple. Michelle's story bookends. The event is the meat.
             </BodyP>
             <StructureTable rows={[
-              ['Intro — Michelle\'s Story (Past)', (
+              ['Act 1 — The Root (Past)', (
                 <span style={{ fontStyle: 'normal' }}>
-                  Who Michelle is and how she got here. NASA flight controller. The founding of Higher Orbits. A simple day-in-the-life — what her actual work looks like. How she's shaped alumni over ten years. <em style={{ fontStyle: 'italic' }}>Add-in:</em> a background story on one alumnus, staff member, or student whose path she changed.
+                  Open on Michelle Lucas — but frame her for someone who may be meeting her for the first time. Establish her credibility and humanity in the same breath: who she was before Higher Orbits, the defining moments that drove her to build something, and the mission she's been quietly executing for a decade. A simple day in her life grounds the viewer before the scale of the story lands. Weave in one alumni, staff member, or student whose background adds texture — a real face that shows funders and press who this program actually reaches.
                 </span>
               )],
-              ['Meat — The Day Of (Present)', (
+              ['Act 2 — The Moment (Present)', (
                 <span style={{ fontStyle: 'normal' }}>
-                  The 100th Go For Launch! event in Deerfield. The ten-year anniversary moment. The room, the students, Dorothy walking in, the experiments getting handed off. This is the heart of the film — the present-tense proof that the work is alive and accelerating. <em style={{ fontStyle: 'italic' }}>Add-in:</em> an Alexis cover story, OR a highlight on a new project or upcoming Go For Launch! event in motion.
+                  Place the viewer inside the 10th Anniversary and 100th Go For Launch! session. For press, this is the news hook — a milestone worth covering. For sponsors, this is proof of concept — a decade of execution in one room. Highlight Alexis's story or a standout project or upcoming event to show the program has velocity, not just history.
                 </span>
               )],
-              ['Conclusion — Why She Inspires (Future)', (
+              ['Act 3 — The Ripple (Future)', (
                 <span style={{ fontStyle: 'normal' }}>
-                  Why Michelle keeps doing this. Why the next ten years matter more than the last ten. Forward-looking voices — students just entering the program, mentors signing on for the next decade, sponsors who see the runway. The 100th event is not a finish line. It's a launch.
+                  Make the case for why this matters beyond the milestone. For funders, this is the investment thesis — Michelle's influence on students is compounding. For media, this is the larger cultural story — what happens when someone builds something that genuinely works? Close with forward momentum and a clear sense that the next 10 years are just beginning.
                 </span>
               )]
             ]} />
