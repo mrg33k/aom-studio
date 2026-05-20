@@ -490,100 +490,30 @@ export default function HigherOrbitsPitchAZCT() {
         </div>
       </section>
 
-      {/* ── S2: CORE MISSION ───────────────────────────── */}
-      <LightSection id="core-mission" noBorderTop>
-        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <SectionTitle size="md">Core Mission</SectionTitle>
+      {/* ── S2: OUR INTENT ────────────────────────────── */}
+      <LightSection id="our-intent" noBorderTop>
+        <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Image for tone */}
+          <div style={{ flex: '0 0 340px', minWidth: 260 }}>
+            <ImgPlaceholder aspect="75%" label="Michelle Lucas · Higher Orbits · Go For Launch!" />
+          </div>
 
-          {/* Michelle's pullquote */}
-          <blockquote style={{
-            fontFamily: 'Instrument Serif, Georgia, serif',
-            fontSize: 'clamp(20px, 3vw, 28px)',
-            lineHeight: 1.5,
-            color: '#111',
-            fontStyle: 'italic',
-            margin: '0 0 40px',
-            padding: 0,
-            border: 'none'
-          }}>
-            "I would be highly honored to have you create a story around my legacy and how I created Higher Orbits."
-          </blockquote>
-          <p className="ho-body" style={{ fontSize: 14, color: '#666', marginBottom: 48 }}>
-            — Michelle Lucas, Founder &amp; CEO, Higher Orbits
-          </p>
-        </div>
+          {/* Content */}
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <SectionTitle size="md">Our Intent</SectionTitle>
 
-        {/* Formula decision */}
-        <DecisionWrapper
-          title="Pick one formula before sharing with Michelle"
-          options={[
-            <><strong>Legacy formula:</strong> Legacy = Founder + Alumni + Mission</>,
-            <><strong>Proof formula:</strong> 10 Years = 24 Experiments + 3,000 Students + 100 Events</>
-          ]}
-        />
+            <BodyP style={{ fontSize: 18, color: '#111', fontWeight: 500 }}>
+              We want Higher Orbits to walk into the next ten years with the visibility the last ten have earned.
+            </BodyP>
 
-        {/* Visual formula - render both */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48, marginTop: 48, justifyContent: 'center' }}>
-          {[
-            {
-              label: 'DRAFT OPTION A',
-              items: ['Legacy', '=', 'Founder', '+', 'Alumni', '+', 'Mission']
-            },
-            {
-              label: 'DRAFT OPTION B',
-              items: ['10 Years', '=', '24 Experiments', '+', '3,000 Students', '+', '100 Events']
-            }
-          ].map((formula, fi) => (
-            <div key={fi} style={{
-              flex: 1, minWidth: 260,
-              border: fi === 0 ? '1.5px dashed rgba(232,93,38,0.6)' : '1.5px dashed rgba(232,93,38,0.4)',
-              borderRadius: 6,
-              padding: '24px 20px',
-              background: 'rgba(232,93,38,0.02)'
-            }}>
-              <div style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 10,
-                letterSpacing: '0.25em',
-                textTransform: 'uppercase',
-                color: '#E85D26',
-                marginBottom: 16
-              }}>{formula.label}</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                {formula.items.map((item, ii) => {
-                  const isOp = item === '=' || item === '+';
-                  return (
-                    <div key={ii} style={{ textAlign: 'center' }}>
-                      {!isOp ? (
-                        <div>
-                          <div style={{
-                            width: 72, height: 56,
-                            background: '#e8e4df',
-                            borderRadius: 4,
-                            marginBottom: 8,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                          }}>
-                            <span style={{ fontSize: 10, color: '#888', fontFamily: 'JetBrains Mono' }}>photo</span>
-                          </div>
-                          <p className="ho-body" style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{item}</p>
-                        </div>
-                      ) : (
-                        <p className="ho-body" style={{ fontSize: 22, fontWeight: 700, color: '#111', marginBottom: 24 }}>{item}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+            <BodyP>
+              For a decade, Michelle Lucas has built a program where students design real science experiments that fly to the International Space Station. The work is undeniable. The story is undertold. This film exists to change that — to put Higher Orbits in front of the donors, sponsors, press, and policymakers who should already know the name.
+            </BodyP>
 
-        {/* Body paragraph */}
-        <div style={{ maxWidth: 780, margin: '48px auto 0' }}>
-          <BodyP>
-            Higher Orbits built something most nonprofit founders only dream about: a program where high school students design real scientific experiments, watch them leave the atmosphere, and see astronauts conduct them aboard the International Space Station. Ten years of doing that — 24 experiments flown, 3,000 student alumni, 100 events across 23 states — and the broader world still doesn't know the name.
-          </BodyP>
-          <BodyP style={{ fontWeight: 600 }}>That changes with this campaign.</BodyP>
+            <BodyP>
+              We bring AOM's documentary craft to a story that doesn't need embellishment. It needs to be told well, told once, and used for years.
+            </BodyP>
+          </div>
         </div>
       </LightSection>
 
