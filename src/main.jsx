@@ -85,6 +85,7 @@ const TenantSignupPage = lazy(() => import('./pages/TenantSignupPage.jsx'))
 const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const HolisticBalance = lazy(() => import('./pages/HolisticBalance.jsx'))
+const AOMStats = lazy(() => import('./pages/AOMStats.jsx'))
 const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
 // corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
@@ -281,6 +282,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/conrad-foundation" element={<ConradFoundation />} />
           <Route path="/conrad" element={<ConradFoundation />} />
           <Route path="/nancy" element={<ConradFoundation />} />
+          <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
           <Route path="/higher-orbits" element={<Navigate to="/higherorbits" replace />} />
