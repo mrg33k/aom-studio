@@ -48,6 +48,14 @@ const brands = [
     fontClass: 'font-headline',
   },
   {
+    name: 'Artlink',
+    full: 'One mark. Two colors.',
+    description: 'Quiet authority built on restraint. A geometric wordmark, a single red accent, and the disciplined use of negative space. NeutraFace Bold + Light. Referred via Arsenal GPA.',
+    accentColor: '#CD2127',
+    link: '/brands/artlink',
+    fontClass: 'font-headline',
+  },
+  {
     name: 'Space Rising',
     full: 'Arizona Space Congress',
     description: "Arizona's space economy is launching. Visual identity for Space Rising and the Arizona Space Congress — dark, cosmic, and grounded in desert reality.",

@@ -20,6 +20,7 @@ const S3CBrand = lazy(() => import('./pages/S3CBrand.jsx'))
 const V2VBrand = lazy(() => import('./pages/V2VBrand.jsx'))
 const ValorBrand = lazy(() => import('./pages/ValorBrand.jsx'))
 const SpaceRisingBrand = lazy(() => import('./pages/SpaceRisingBrand.jsx'))
+const ArtlinkBrand = lazy(() => import('./pages/ArtlinkBrand.jsx'))
 const SpaceRisingDealBankCompleted = lazy(() => import('./pages/SpaceRisingDealBankCompleted.jsx'))
 const AmbitionBrandGuidelines = lazy(() => import('./pages/AmbitionBrandGuidelines.jsx'))
 const AmbitionBrandGuidelinesV2 = lazy(() => import('./pages/AmbitionBrandGuidelinesV2.jsx'))
@@ -227,6 +228,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/s3c" element={<S3CBrand />} />
           <Route path="/brands/v2v" element={<V2VBrand />} />
           <Route path="/brands/valor" element={<ValorBrand />} />
+          <Route path="/brands/artlink" element={<ArtlinkBrand />} />
           <Route path="/brands/space-rising" element={<SpaceRisingBrand />} />
           <Route path="/space-rising/deal-bank/completed" element={<SpaceRisingDealBankCompleted />} />
           <Route path="/social" element={<Social />} />
@@ -279,6 +281,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/higherorbits" element={<HigherOrbitsPitchAZCT />} />
           <Route path="/finance" element={<FinanceTracker />} />
           <Route path="/directory" element={<MunicipalityDirectory />} />
+          <Route path="/artlink" element={<ArtlinkBrand />} />
           <Route path="/blacknight" element={<Blacknight />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
           <Route path="/login" element={<Login />} />
