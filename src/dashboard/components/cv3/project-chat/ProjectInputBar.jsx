@@ -120,11 +120,15 @@ export default function ProjectInputBar() {
       background: C.bg,
       borderTop: '1px solid ' + C.border,
     }}>
+      {/* No `accept` attribute: any file type is allowed. Setting `accept="*/*"` was
+          tree-shaken by Vite/Terser as redundant and produced no DOM attribute,
+          which was fine semantically but invited drift — leaving the attribute off
+          source-side makes "no filter" the explicit, unambiguous default. R79-f13
+          spreadsheet-upload defensive pass 2026-05-21. */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept="*/*"
         style={{ display: 'none' }}
         onChange={handleFileSelection}
       />
