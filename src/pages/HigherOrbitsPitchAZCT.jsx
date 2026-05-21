@@ -537,42 +537,27 @@ export default function HigherOrbitsPitchAZCT() {
           {/* Right: three stacked element rows */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>
             {/* The Hero Piece */}
-            <div style={{ display: 'flex', gap: 36, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <div style={{ flex: '0 0 340px', minWidth: 240 }}>
-                <ImgPlaceholder aspect="62%" label="Go For Launch! · 100th event · Deerfield gymnasium" />
-              </div>
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Hero Piece</div>
-                <BodyP>
-                  The centerpiece. A TV-quality documentary built around the 100th Go For Launch! event — the same Deerfield, Illinois high school where the first event happened in 2016, with the same astronaut who was there on day one. Michelle's origin story, the students who made it real, the full-circle moment that ten years of work was always building toward. This film lives in donor meetings, grant proposals, board presentations, and school assemblies for years after June.
-                </BodyP>
-              </div>
+            <div>
+              <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Hero Piece</div>
+              <BodyP>
+                The centerpiece. A TV-quality documentary built around the 100th Go For Launch! event — the same Deerfield, Illinois high school where the first event happened in 2016, with the same astronaut who was there on day one. Michelle's origin story, the students who made it real, the full-circle moment that ten years of work was always building toward. This film lives in donor meetings, grant proposals, board presentations, and school assemblies for years after June.
+              </BodyP>
             </div>
 
             {/* The Campaign Pack */}
-            <div style={{ display: 'flex', gap: 36, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <div style={{ flex: '0 0 340px', minWidth: 240 }}>
-                <ImgPlaceholder aspect="62%" label="Social content · Recap cuts · Event energy" />
-              </div>
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Campaign Pack</div>
-                <BodyP>
-                  Everything that lives around the hero piece and keeps the story moving. A 30-second pre-event teaser before Chicago. A 60–75 second recap ready within 48 hours of the event closing — while it's still news. Eight to ten short social cuts that let Higher Orbits' alumni, sponsors, and audience share the story on every channel they use. The campaign pack is what turns a June event into a months-long content engine.
-                </BodyP>
-              </div>
+            <div>
+              <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Campaign Pack</div>
+              <BodyP>
+                Everything that lives around the hero piece and keeps the story moving. A 30-second pre-event teaser before Chicago. A 60–75 second recap ready within 48 hours of the event closing — while it's still news. Eight to ten short social cuts that let Higher Orbits' alumni, sponsors, and audience share the story on every channel they use. <em>We work together to select what goes out and when — nothing posts without Michelle's sign-off.</em> The campaign pack is what turns a June event into a months-long content engine.
+              </BodyP>
             </div>
 
             {/* The Living Archive */}
-            <div style={{ display: 'flex', gap: 36, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <div style={{ flex: '0 0 340px', minWidth: 240 }}>
-                <ImgPlaceholder aspect="62%" label="Photo archive · Raw footage · Sponsor package" />
-              </div>
-              <div style={{ flex: 1, minWidth: 240 }}>
-                <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Living Archive</div>
-                <BodyP>
-                  One hundred edited stills from the event and production. Eight to twelve terabytes of organized raw footage. A sponsor recognition package — credits, branded social templates, a thank-you clip — that Michelle can put in front of Chevron, BRPH, and board-level sponsors immediately after Chicago. The archive is Higher Orbits' permanent visual record of its most important milestone.
-                </BodyP>
-              </div>
+            <div>
+              <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Living Archive</div>
+              <BodyP>
+                One hundred edited stills from the event and production. Eight to twelve terabytes of organized raw footage. A sponsor recognition package — credits, branded social templates, a thank-you clip — that Michelle can put in front of Chevron, BRPH, and board-level sponsors immediately after Chicago. The archive is Higher Orbits' permanent visual record of its most important milestone.
+              </BodyP>
             </div>
           </div>
         </div>
@@ -698,65 +683,11 @@ export default function HigherOrbitsPitchAZCT() {
         </div>
       </LightSection>
 
-      {/* ── S6: ENGAGE THE COMMUNITY ───────────────────── */}
-      <LightSection id="community">
-        <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Images */}
-          <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgReal
-              src="/images/higherorbits/nasa-iss059-crystal-hague.jpg"
-              alt="NASA astronaut Nick Hague performing a student-designed microgravity crystal experiment aboard the ISS"
-              aspect="65%"
-            />
-            <ImgPlaceholder aspect="65%" label="Social media · phone · content in hand" />
-            <ImgPlaceholder aspect="65%" label="Color grading · DaVinci Resolve" />
-          </div>
-
-          {/* Content */}
-          <div style={{ flex: 1, minWidth: 280 }}>
-            <SectionTitle size="xl">Engage the Community</SectionTitle>
-
-            <SubLabel>Objective</SubLabel>
-            <BodyP>
-              Build a media footprint around the anniversary that lives well beyond June — content that travels further than the event itself ever could and keeps working for Higher Orbits long after Chicago.
-            </BodyP>
-
-            <SubLabel>Collaborative Approach</SubLabel>
-            <BodyP>
-              We work with Michelle and the Higher Orbits team to select what goes out and when. Nothing posts without sign-off. The process is collaborative, not handed over.
-            </BodyP>
-
-            <div className="ho-body" style={{ fontWeight: 700, fontSize: 18, color: '#111', marginTop: 28, marginBottom: 16 }}>
-              Postable Content <em style={{ fontWeight: 400, fontSize: 16, color: '#555' }}>(Not just a bunch of stuff)</em>
-            </div>
-
-            <PostableRow label="Pre-Event Teaser" text="30 seconds. Built from pre-production material and early Chicago footage. Delivered 7 days before the Deerfield event for social and email distribution. Builds anticipation among the donor and alumni network in the week before the 100th milestone happens." />
-            <PostableRow label="48-Hour Recap" text="60–75 seconds. Finished the night of the event, delivered within 48 hours of closing. The milestone while it's still news — shareable immediately for social, email, and press." />
-            <PostableRow label="Social Cuts" text="8–10 short verticals from the hero footage. Four alumni and student voice reels (15–30 sec), two Michelle and founder highlight cuts (30–45 sec), two event-day energy cuts (15–20 sec), one to two Dorothy and astronaut mentor moments (20–30 sec). Instagram, TikTok, LinkedIn — the story lands where people actually scroll." />
-            <PostableRow label="Photos" text="100 edited stills from the full shoot. 50 event-day (ceremony, student presentations, crowd energy), 25 interview and portrait (Michelle, Dorothy, student subjects — cinematic and lit), 25 B-roll and production documentation. Press kit, donor newsletter, grant applications, social graphics." />
-
-            <Distribution>
-              Higher Orbits' own social channels. Email to the existing donor and alumni list. Press outreach to aerospace, STEM, and education media. Website as the permanent archive — every asset lives there.
-            </Distribution>
-          </div>
-        </div>
-      </LightSection>
-
       {/* ── S7: SPONSORSHIP ───────────────────────────── */}
       <LightSection id="sponsorship">
-        <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Images */}
-          <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgReal
-              src="/images/higherorbits/nasa-ksc-launch.jpg"
-              alt="Rocket Lab Electron launch carrying NASA experiments to low Earth orbit"
-              aspect="65%"
-            />
-            <ImgPlaceholder aspect="65%" label="Corporate partnership · professional presentation" />
-          </div>
-
+        <div>
           {/* Content */}
-          <div style={{ flex: 1, minWidth: 280 }}>
+          <div style={{ maxWidth: 800 }}>
             <SectionTitle size="xl">Empowering Impact Through Partnership</SectionTitle>
 
             <BodyP>
@@ -904,7 +835,13 @@ export default function HigherOrbitsPitchAZCT() {
               Reach the donors, sponsors, and institutions who should be funding Higher Orbits — but haven't found it yet. The 100th event is the moment this story earns its largest possible audience.
             </p>
             <p className="ho-body" style={{ fontSize: 20, color: '#fff', lineHeight: 1.5, fontWeight: 500 }}>
-              Establish Higher Orbits as the most visible student spaceflight program in the country, at the moment it has earned that position. Twenty-four experiments flown. Three thousand alumni. A hundred events.
+              Establish Higher Orbits as the most visible student spaceflight program in the country, at the moment it has earned that position. Twenty-four experiments flown. Three thousand alumni. A hundred events. The credibility is already there. The story just needs to be told at scale.
+            </p>
+            <p className="ho-body" style={{ fontSize: 20, color: '#fff', lineHeight: 1.5, fontWeight: 500 }}>
+              Reinforce that this is a launch point, not a finish line. Higher Orbits is thriving and just getting started. The 100th milestone is a beginning.
+            </p>
+            <p className="ho-body" style={{ fontSize: 20, color: '#fff', lineHeight: 1.5, fontWeight: 500 }}>
+              Build a permanent media archive — social proof and evergreen content that travels into every grant proposal, donor meeting, school assembly, and sponsor deck for years. The archive outlasts the anniversary cycle.
             </p>
             <p className="ho-body" style={{ fontSize: 20, color: '#fff', lineHeight: 1.5, fontWeight: 500 }}>
               Honor the decade of work: Michelle's origin, the alumni who built their futures at a Go For Launch! workshop, the astronauts who showed up year after year because the mission genuinely matters.
@@ -912,24 +849,6 @@ export default function HigherOrbitsPitchAZCT() {
           </div>
         </div>
       </DarkSection>
-
-      {/* ── S12: BIG PICTURE BENEFITS ─────────────────── */}
-      <LightSection id="big-picture">
-        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <SectionTitle size="xl">Big Picture Benefits for Higher Orbits</SectionTitle>
-        </div>
-        <div style={{ maxWidth: 720, margin: '40px auto 0', display: 'flex', flexDirection: 'column', gap: 28 }}>
-          <BodyP style={{ fontSize: 18, fontWeight: 500, color: '#111' }}>
-            Reinforce that Higher Orbits is thriving — with 24 experiments to the ISS, 3,000 alumni, and 100 events across 23 states — and is just getting started. The 100th milestone is not a conclusion. It is a launch point.
-          </BodyP>
-          <BodyP style={{ fontSize: 18, fontWeight: 500, color: '#111' }}>
-            Create a permanent media archive of social proof and evergreen content that travels into every grant proposal, donor meeting, school assembly, and sponsor deck for years to come. The archive outlasts the anniversary cycle.
-          </BodyP>
-          <BodyP style={{ fontSize: 18, fontWeight: 500, color: '#111' }}>
-            Expand Higher Orbits' brand presence across YouTube, LinkedIn, Instagram, and the press outlets covering STEM education and commercial spaceflight. The campaign we build from the June footage is the foundation for everything that follows.
-          </BodyP>
-        </div>
-      </LightSection>
 
       {/* ── S13: VISUAL INSPIRATION ───────────────────── */}
       <DarkSection id="visual-inspiration">
@@ -947,17 +866,13 @@ export default function HigherOrbitsPitchAZCT() {
           </div>
         </div>
 
-        {/* 4-column × 2-row grid — space imagery */}
+        {/* 4-column × 1-row grid — space imagery */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
           {[
-            { src: '/images/higherorbits/unsplash-shuttle-over-earth.jpg', alt: 'Space shuttle flying over Earth' },
-            { src: '/images/higherorbits/nasa-iss055-genes-arnold.jpg', alt: 'NASA astronaut Ricky Arnold conducting student genetic research aboard the ISS' },
             { src: '/images/higherorbits/nasa-jsc2024-students-cricket.jpg', alt: 'Students preparing hardware for an ISS experiment mission' },
-            { src: '/images/higherorbits/unsplash-saturn.jpg', alt: 'Saturn with rings in dark space' },
-            { src: '/images/higherorbits/unsplash-orion-nebula.jpg', alt: 'Orion nebula shining among stars' },
-            { src: '/images/higherorbits/nasa-iss059-crystal-hague.jpg', alt: 'Astronaut performing student microgravity crystal experiment on the ISS' },
-            { src: '/images/higherorbits/unsplash-galaxies-stars.jpg', alt: 'Galaxies and stars in vast night sky' },
-            { src: '/images/higherorbits/unsplash-moon.jpg', alt: 'Full moon in dark night sky' },
+            { src: '/images/higherorbits/nasa-iss055-genes-arnold.jpg', alt: 'NASA astronaut Ricky Arnold conducting student genetic research aboard the ISS' },
+            { src: '/images/higherorbits/unsplash-shuttle-over-earth.jpg', alt: 'Space shuttle flying over Earth' },
+            { src: '/images/higherorbits/unsplash-earth-from-space.jpg', alt: 'Earth from space — cosmic close' },
           ].map((img, i) => (
             <div key={i} style={{ aspectRatio: '16/10', borderRadius: 2, overflow: 'hidden' }}>
               <img
