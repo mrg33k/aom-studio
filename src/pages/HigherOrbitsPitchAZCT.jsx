@@ -42,8 +42,8 @@ const FONTS = `
     .ho-table tbody { display: block; }
     .ho-table tr {
       display: block;
-      background: #fff !important;
-      border: 1px solid #e5e2de;
+      background: #f9f5ef !important;
+      border: 1px solid #ddd3c4;
       border-radius: 4px;
       margin-bottom: 14px;
       overflow: hidden;
@@ -227,17 +227,18 @@ function ImgPlaceholder({ aspect = '56.25%', label = 'Photo placeholder', dark =
 
 /* ─── Section header (bold, AZCT style) ────────────────────────────── */
 function SectionTitle({ children, size = 'lg' }) {
+  const isDisplay = size === 'xl';
   const sizes = {
     sm: { fontSize: 18, fontWeight: 700 },
     md: { fontSize: 22, fontWeight: 700 },
     lg: { fontSize: 28, fontWeight: 700 },
-    xl: { fontSize: 36, fontWeight: 800 },
+    xl: { fontSize: 44, fontStyle: 'italic', fontWeight: 400 },
   };
   return (
-    <h2 className="ho-body" style={{
+    <h2 className={isDisplay ? 'ho-display' : 'ho-body'} style={{
       ...sizes[size],
       color: '#111',
-      lineHeight: 1.15,
+      lineHeight: 1.1,
       letterSpacing: '-0.01em',
       marginBottom: 24
     }}>
@@ -281,7 +282,7 @@ function AZCTTable({ headers, rows, lastRowBold = false, highlightLast = false }
             const isHighlighted = highlightLast && isLast;
             return (
               <tr key={ri} className={isHighlighted ? 'ho-row-highlight' : ''} style={{
-                background: isHighlighted ? '#111' : ri % 2 === 0 ? '#fff' : '#fafaf9',
+                background: isHighlighted ? '#111' : ri % 2 === 0 ? '#f9f5ef' : '#f1ece3',
               }}>
                 {row.map((cell, ci) => {
                   const cellIsEmpty = cell === '' || cell == null;
@@ -292,8 +293,8 @@ function AZCTTable({ headers, rows, lastRowBold = false, highlightLast = false }
                       className={cellIsEmpty && !isHighlighted ? 'ho-empty-cell' : ''}
                       style={{
                         padding: '14px 18px',
-                        borderBottom: `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#e5e2de'}`,
-                        borderRight: ci < row.length - 1 ? `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#e5e2de'}` : 'none',
+                        borderBottom: `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#d8cfc4'}`,
+                        borderRight: ci < row.length - 1 ? `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#d8cfc4'}` : 'none',
                         color: isHighlighted ? '#fff' : '#111',
                         fontWeight: isHighlighted || (lastRowBold && isLast) ? 700 : 400,
                         fontSize: isHighlighted ? 16 : 15,
@@ -326,7 +327,7 @@ function StructureTable({ rows }) {
       }}>
         <tbody>
           {rows.map(([label, text], i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #e5e2de' }}>
+            <tr key={i} style={{ borderBottom: '1px solid #d8cfc4' }}>
               <td style={{
                 width: 110,
                 padding: '16px 18px',
@@ -334,7 +335,7 @@ function StructureTable({ rows }) {
                 color: '#111',
                 verticalAlign: 'top',
                 whiteSpace: 'nowrap',
-                borderRight: '1px solid #e5e2de'
+                borderRight: '1px solid #d8cfc4'
               }}>{label}</td>
               <td style={{
                 padding: '16px 18px',
@@ -361,7 +362,7 @@ function PostableRow({ label, text }) {
     <div style={{
       display: 'flex',
       gap: 0,
-      borderBottom: '1px solid #e5e2de',
+      borderBottom: '1px solid #d8cfc4',
       padding: '16px 0'
     }}>
       <div className="ho-body" style={{
@@ -423,8 +424,8 @@ function LightSection({ children, id, noBorderTop = false }) {
       id={id}
       className="ho-light-section"
       style={{
-        background: '#fff',
-        borderTop: noBorderTop ? 'none' : '1px solid #e5e2de',
+        background: '#f4ede2',
+        borderTop: noBorderTop ? 'none' : '1px solid #ddd3c4',
         padding: '80px 0'
       }}
     >
@@ -506,7 +507,7 @@ export default function HigherOrbitsPitchAZCT() {
   useSEO();
 
   return (
-    <div className="ho-body" style={{ background: '#fff', color: '#111', minHeight: '100vh' }}>
+    <div className="ho-body" style={{ background: '#f4ede2', color: '#111', minHeight: '100vh' }}>
       <style>{FONTS}</style>
 
       {/* ═══════════════════════════════════════════════════
@@ -561,12 +562,11 @@ export default function HigherOrbitsPitchAZCT() {
 
           {/* Tagline — locked to "Ten Years to the Stars" */}
           <div style={{ marginBottom: 40 }}>
-            <p style={{
-              fontFamily: 'Hanken Grotesk, system-ui, sans-serif',
-              fontSize: 'clamp(22px, 3.5vw, 36px)',
+            <p className="ho-display" style={{
+              fontSize: 'clamp(28px, 4.5vw, 52px)',
               fontStyle: 'italic',
-              color: 'rgba(255,255,255,0.92)',
-              lineHeight: 1.25,
+              color: 'rgba(255,255,255,0.95)',
+              lineHeight: 1.15,
               fontWeight: 400,
               margin: 0
             }}>
@@ -644,8 +644,8 @@ export default function HigherOrbitsPitchAZCT() {
               </div>
             </div>
 
-            {/* The Campaign Pack */}
-            <div className="ho-core-bucket" style={{ display: 'flex', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {/* The Campaign Pack — image RIGHT for layout rhythm */}
+            <div className="ho-core-bucket" style={{ display: 'flex', flexDirection: 'row-reverse', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
               <div style={{ flex: '0 0 280px', minWidth: 240 }}>
                 <ImgReal
                   src="/images/higherorbits/gemini/core-bucket-campaign-pack.jpg"
@@ -684,16 +684,7 @@ export default function HigherOrbitsPitchAZCT() {
       {/* ── S4: THE HERO PIECE ─────────────────────────── */}
       <LightSection id="hero-piece">
         <div className="ho-img-text-row" style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Images column — Gemini cohesive set */}
-          <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgReal
-              src="/images/higherorbits/gemini/hero-film-section.jpg"
-              alt="Young woman scientist at lab workbench under warm desk lamp, holding small breadboard experiment hardware"
-              aspect="66%"
-            />
-          </div>
-
-          {/* Content column */}
+          {/* Content column — FIRST so it appears LEFT on desktop */}
           <div style={{ flex: 1, minWidth: 280 }}>
             <SectionTitle size="xl">The Hero Film</SectionTitle>
 
@@ -759,22 +750,22 @@ export default function HigherOrbitsPitchAZCT() {
               Premier at the Deerfield event itself — the room where it all started. Post to YouTube for search visibility and permanent reach. Share on LinkedIn, where donors, sponsors, and aerospace professionals actually watch. Distribute in every Higher Orbits grant proposal, donor meeting, and board presentation going forward. The hero piece doesn't expire — it earns its keep for years.
             </Distribution>
           </div>
+
+          {/* Image column — SECOND so it appears RIGHT on desktop */}
+          <div style={{ flex: '0 0 340px', minWidth: 260 }}>
+            <ImgReal
+              src="/images/higherorbits/gemini/hero-film-section.jpg"
+              alt="Young woman scientist at lab workbench under warm desk lamp, holding small breadboard experiment hardware"
+              aspect="66%"
+            />
+          </div>
         </div>
       </LightSection>
 
       {/* ── S5: MEET THE ALUMNI ────────────────────────── */}
       <LightSection id="alumni">
         <div className="ho-img-text-row" style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Images — Gemini cohesive set */}
-          <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgReal
-              src="/images/higherorbits/gemini/alumni-section.jpg"
-              alt="Young Black woman STEM professional in white lab coat at research bench"
-              aspect="66%"
-            />
-          </div>
-
-          {/* Content */}
+          {/* Content — FIRST so it appears LEFT on desktop */}
           <div style={{ flex: 1, minWidth: 280 }}>
             <SectionTitle size="xl">Meet the Alumni</SectionTitle>
 
@@ -793,6 +784,15 @@ export default function HigherOrbitsPitchAZCT() {
             <Distribution>
               Alumni and mentors sharing their own cuts through their own networks — the reach multiplier that no amount of Higher Orbits' own posting could replicate. Recruitment content for future Go For Launch! participants: a student watching another student's story is the most powerful pitch for the program that exists. Sponsor and grant presentations showing real outcomes, not projected ones.
             </Distribution>
+          </div>
+
+          {/* Image — SECOND so it appears RIGHT on desktop */}
+          <div style={{ flex: '0 0 340px', minWidth: 260 }}>
+            <ImgReal
+              src="/images/higherorbits/gemini/alumni-section.jpg"
+              alt="Young Black woman STEM professional in white lab coat at research bench"
+              aspect="66%"
+            />
           </div>
         </div>
       </LightSection>
@@ -826,18 +826,21 @@ export default function HigherOrbitsPitchAZCT() {
               <p style={{ marginBottom: 12 }}>A professionally produced 2–3 minute branded video that tells the sponsor's story alongside Higher Orbits — their commitment to STEM education, their partnership with a program that has actually sent student experiments to the International Space Station.</p>
               <p style={{ marginBottom: 16, fontStyle: 'italic', color: '#555' }}>Perfect for the sponsor's own website, board presentations, and corporate social platforms.</p>
 
-              {/* Decision: Option A vs B */}
-              <DecisionWrapper
-                title="Two options for the custom video — pick one before sharing with Michelle"
-                options={[
-                  <>
-                    <strong>Option A (Included for top-tier sponsors — Recommended):</strong> The custom branded video is included as part of the campaign for Chevron-level sponsors at no additional charge. Michelle can use this to actively recruit top-tier sponsors: <em>"Come in at the top-tier level and we will produce your company's story from the same shoot."</em> This creates a real financial incentive for sponsors to enter at the highest tier and gives Michelle leverage in sponsor conversations she wouldn't otherwise have. One extra post-production day per sponsor; cost is absorbed in the campaign margin.
-                  </>,
-                  <>
-                    <strong>Option B (Upsell at additional cost):</strong> The branded video is offered as an add-on for ~$5,000–$8,000 per sponsor, available to any sponsor who wants one. Generates incremental revenue per sponsor. Better fit if Higher Orbits has many mid-tier sponsors who would each want their own piece independently.
-                  </>
-                ]}
-              />
+              {/* Option A — included for top-tier sponsors (locked) */}
+              <div style={{
+                background: 'rgba(0,0,0,0.05)',
+                borderLeft: '3px solid rgba(0,0,0,0.2)',
+                borderRadius: '0 3px 3px 0',
+                padding: '18px 20px',
+                marginTop: 16
+              }}>
+                <p className="ho-body" style={{ fontSize: 15, color: '#1a1a1a', lineHeight: 1.65, margin: 0 }}>
+                  <strong>Included for top-tier sponsors (Chevron-level).</strong> The branded video is built from the same Chicago shoot and delivered alongside the hero piece — no additional charge. Michelle can use this directly in sponsor conversations: <em>"Come in at the top-tier level and we'll produce your company's story from the same shoot."</em>
+                </p>
+                <p className="ho-body" style={{ fontSize: 13, color: '#777', marginTop: 10, marginBottom: 0, fontStyle: 'italic' }}>
+                  Custom branded videos for non-Chevron-tier sponsors available as an add-on ($5–8K per sponsor).
+                </p>
+              </div>
             </BenefitBlock>
 
             <BenefitBlock number="3" title="Visibility Across Campaign Assets">
