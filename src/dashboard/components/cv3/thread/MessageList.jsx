@@ -1067,7 +1067,7 @@ export default function MessageList({ roomType = 'agent' }) {
                     </div>
                   )}
                   {/* Text bubble */}
-                  {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url) && msg.text.startsWith('Attached file: ')) && (() => {
+                  {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url || msg.metadata?.attachments?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text))) && (() => {
                     const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
                     // Subtle outline on the bubble whose context-menu is open.
                     const isMenuTarget = msgMenu?.message?.id === msg.id
@@ -1157,7 +1157,7 @@ export default function MessageList({ roomType = 'agent' }) {
                           ? [{ url: attUrl, mime: attMime, size: attSize, name: attName }]
                           : []
                     if (!atts.length) return null
-                    const hasText = msg.text && !(attUrl && msg.text.startsWith('Attached file: '))
+                    const hasText = msg.text && !((attUrl || metaAtts?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text)))
                     const isMulti = atts.length > 1
                     const items = atts.map((att, attIdx) => {
                       const isImage = att.mime && att.mime.startsWith('image/')

@@ -3,9 +3,27 @@ import { useChatMessagesCtx } from '../chat/ChatPanelContext.jsx'
 
 // Shared-files drawer opened from the thread header. Lists every message that
 // carries an attachment_url as a thumbnail (images) or chip (files).
+// R79-f13: also shows multi-file messages (metadata.attachments array).
 export default function FilesPanel() {
   const { messages } = useChatMessagesCtx()
-  const fileMessages = messages.filter(m => m.attachment_url)
+  // Expand each message into individual file entries for display.
+  // Single-file messages: {msg, url, mime, name}
+  // Multi-file messages (metadata.attachments): one entry per attached file.
+  const fileEntries = []
+  for (const m of messages) {
+    const metaAtts = m.metadata?.attachments
+    if (Array.isArray(metaAtts) && metaAtts.length > 0) {
+      for (const att of metaAtts) {
+        if (att?.url) fileEntries.push({ key: `${m.id}-${att.url}`, url: att.url, mime: att.mime, name: att.name })
+      }
+    } else if (m.attachment_url) {
+      const metaAtt = m.metadata?.attachment
+      const rawName = m.text && m.text.startsWith('Attached file: ')
+        ? m.text.replace('Attached file: ', '').split('\n')[0]
+        : metaAtt?.name || m.file_name || 'File'
+      fileEntries.push({ key: m.id, url: m.attachment_url, mime: m.file_mime_type || metaAtt?.mime, name: rawName })
+    }
+  }
   return (
     <div style={{
       borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -16,19 +34,17 @@ export default function FilesPanel() {
       <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
         Shared Files
       </div>
-      {fileMessages.length === 0 ? (
+      {fileEntries.length === 0 ? (
         <div style={{ fontSize: 13, color: C.muted, padding: '8px 0' }}>No files shared in this chat yet.</div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {fileMessages.map((m, i) => {
-            const isImage = m.file_mime_type && m.file_mime_type.startsWith('image/')
-            const rawName = m.text && m.text.startsWith('Attached file: ')
-              ? m.text.replace('Attached file: ', '').split('\n')[0]
-              : m.file_name || 'File'
+          {fileEntries.map(({ key, url, mime, name }) => {
+            const isImage = mime && mime.startsWith('image/')
+            const rawName = name || 'File'
             return (
               <a
-                key={m.id || i}
-                href={m.attachment_url}
+                key={key}
+                href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ textDecoration: 'none', flexShrink: 0 }}
@@ -39,7 +55,7 @@ export default function FilesPanel() {
                     border: '1px solid rgba(255,255,255,0.1)',
                     background: 'rgba(255,255,255,0.03)',
                   }}>
-                    <img src={m.attachment_url} alt={rawName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={url} alt={rawName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ) : (
                   <div style={{

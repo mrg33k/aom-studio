@@ -210,58 +210,13 @@ export default function useChatAttachments({
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
     setUploading(true)
+
+    // Upload all files, collecting results (failed files show toasts; successes bundle into one message)
+    const uploaded = []
     for (const file of files) {
       try {
         const result = await uploadOneFile(file, clientId)
-        const publicUrl = result.full_url
-
-        const attachmentMeta = {
-          url: publicUrl,
-          mime: result.mime_type,
-          size: result.size ?? file.size,
-          name: file.name,
-        }
-
-        // Optimistic message. Top-level attachment_url + metadata.attachment
-        // because migration 016 (the messages.attachment_url column) hasn't
-        // landed in prod yet -- runtime carries the data in metadata.attachment
-        // until 20260512000003_messages_attachment_columns.sql applies, then
-        // top-level columns light up too. MessageList reads both shapes.
-        const tempId = `temp-attach-${Date.now()}`
-        setMessages(prev => [...prev, {
-          id: tempId,
-          role: 'user',
-          agent: agentKey,
-          text: `Attached file: ${file.name}\n${publicUrl}`,
-          timestamp: new Date().toISOString(),
-          source: 'corner-dashboard',
-          attachment_url: publicUrl,
-          file_mime_type: result.mime_type,
-          file_size: result.size ?? file.size,
-          metadata: { attachment: attachmentMeta },
-        }])
-
-        const attachText = `Attached file: ${file.name}\n${publicUrl}`
-        authFetch('/api/dashboard/supabase-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent: agentKey,
-            text: attachText,
-            role: 'user',
-            source: 'corner-dashboard',
-            client_id: clientId,
-            metadata: { attachment: attachmentMeta },
-            ...userIdentity,
-          }),
-        })
-          .then(r => r.json())
-          .then(data => {
-            if (data?.message?.id) {
-              setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
-            }
-          })
-          .catch(() => {})
+        uploaded.push({ file, result })
       } catch (err) {
         console.error('[ChatPanel] file attach error:', err)
         surfaceUploadError(err, file.name)
@@ -269,11 +224,77 @@ export default function useChatAttachments({
     }
     setUploading(false)
 
-    if (files.length > 0 && selectedProject && sendProjectTextRef?.current) {
-      const names = files.map(f => f.name).join(', ')
-      const autoMsg = files.length === 1
+    if (!uploaded.length) return
+
+    // Build a SINGLE message carrying all successfully-uploaded files.
+    // Single-file path: keep the "Attached file: name\nurl" shape the listener/
+    // bridge already parse for [Local path: ...] hints.
+    // Multi-file path: "Attached N files: name1, name2…\nurl1\nurl2…" — the
+    // listener/bridge find all RAG URLs in the text body via regex and emit the
+    // [Local paths (handle each per its instruction): ...] block.  metadata uses
+    // the plural `attachments` array; MessageList reads both shapes.
+    const attachmentMetas = uploaded.map(({ file, result }) => ({
+      url: result.full_url,
+      mime: result.mime_type,
+      size: result.size ?? file.size,
+      name: file.name,
+    }))
+
+    let attachText, metadata
+    if (attachmentMetas.length === 1) {
+      const att = attachmentMetas[0]
+      attachText = `Attached file: ${att.name}\n${att.url}`
+      metadata = { attachment: att }
+    } else {
+      const names = attachmentMetas.map(a => a.name).join(', ')
+      const urls = attachmentMetas.map(a => a.url).join('\n')
+      attachText = `Attached ${attachmentMetas.length} files: ${names}\n${urls}`
+      metadata = { attachments: attachmentMetas }
+    }
+
+    const firstAtt = attachmentMetas[0]
+
+    // Optimistic message (single row for all attachments).
+    const tempId = `temp-attach-${Date.now()}`
+    setMessages(prev => [...prev, {
+      id: tempId,
+      role: 'user',
+      agent: agentKey,
+      text: attachText,
+      timestamp: new Date().toISOString(),
+      source: 'corner-dashboard',
+      attachment_url: firstAtt.url,
+      file_mime_type: firstAtt.mime,
+      file_size: firstAtt.size,
+      metadata,
+    }])
+
+    authFetch('/api/dashboard/supabase-messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent: agentKey,
+        text: attachText,
+        role: 'user',
+        source: 'corner-dashboard',
+        client_id: clientId,
+        metadata,
+        ...userIdentity,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data?.message?.id) {
+          setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
+        }
+      })
+      .catch(() => {})
+
+    if (selectedProject && sendProjectTextRef?.current) {
+      const names = uploaded.map(r => r.file.name).join(', ')
+      const autoMsg = uploaded.length === 1
         ? `I just uploaded ${names}. Can you confirm you got it?`
-        : `I just uploaded ${files.length} files: ${names}. Can you confirm you got them?`
+        : `I just uploaded ${uploaded.length} files: ${names}. Can you confirm you got them?`
       setTimeout(() => sendProjectTextRef.current?.(autoMsg), 500)
     }
   }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError])
