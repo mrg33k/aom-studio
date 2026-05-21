@@ -89,6 +89,10 @@ const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
 // corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
 const ReaderDemo = lazy(() => import('./dashboard/pages/ReaderDemo.jsx'))
+// corner:files-in-app R79-f3 — local demo of the FilesPanel primitive
+// (rail-shaped panel + reader modal), mounted against ambition-mechanical by
+// default; ?slug=<project-slug> overrides.
+const FilesPanelDemo = lazy(() => import('./dashboard/pages/FilesPanelDemo.jsx'))
 import './index.css'
 
 function ConstructionRedirect() {
@@ -321,6 +325,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               so the demo renders against bundled fixtures without needing a
               signed-in session. Real production wiring lands in R79-f3. */}
           <Route path="/cv4/reader-demo" element={<ReaderDemo />} />
+          <Route path="/cv4/files-demo" element={<FilesPanelDemo />} />
           <Route path="/cv4" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />

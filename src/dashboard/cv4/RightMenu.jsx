@@ -17,6 +17,7 @@ import { C } from '../lib/cv3Colors.js'
 import { useCornerAuth, useCornerNav } from '../CornerContext.jsx'
 import { useTasks } from '../hooks/useTasks.js'
 import { authFetch } from '../lib/authFetch.js'
+import FilesPanel from './FilesPanel.jsx'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -463,6 +464,16 @@ export default function RightMenu() {
           + {hiddenCompletedCount} more completed
         </button>
       )}
+
+      <Divider />
+
+      {/* ── 4. FILES (R79-f3, mission: corner:files-in-app) ───────
+          Last section per VISION rail order (Missions • Search • Pills •
+          Summary • Pinned • Working • Completed • Files). Renders the
+          current project's canon / tape / research drops / missions tree
+          and opens the ProjectFileReader (R79-f2) as a fullscreen modal
+          when a row is tapped. Stub when no project is selected. */}
+      <FilesPanel projectSlug={currentProject} />
 
       {/* Bottom breathing room */}
       <div style={{ height: 24, flexShrink: 0 }} />
