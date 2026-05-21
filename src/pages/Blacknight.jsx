@@ -165,17 +165,26 @@ export default function Blacknight() {
             Space funding tracker
           </h1>
           <span style={{ color: V4.accent, fontSize: 14, fontWeight: 600, letterSpacing: '0.05em' }}>
-            via Blacknight Space Labs
+            2026 YTD
           </span>
         </div>
         <p style={{ color: V4.textSecondary, fontSize: 14, lineHeight: 1.6, maxWidth: 720, marginTop: 14 }}>
-          Every funding round covered by{' '}
+          All publicly announced space-industry funding rounds since January 1, 2026 — aggregated from{' '}
+          <a href="https://payloadspace.com" target="_blank" rel="noreferrer"
+             style={{ color: V4.textPrimary, textDecoration: 'underline', textDecorationColor: V4.border }}>Payload</a>
+          {', '}
+          <a href="https://spacenews.com" target="_blank" rel="noreferrer"
+             style={{ color: V4.textPrimary, textDecoration: 'underline', textDecorationColor: V4.border }}>SpaceNews</a>
+          {', '}
+          <a href="https://techcrunch.com/tag/space/" target="_blank" rel="noreferrer"
+             style={{ color: V4.textPrimary, textDecoration: 'underline', textDecorationColor: V4.border }}>TechCrunch</a>
+          {', '}
           <a href="https://www.linkedin.com/company/blacknightspacelabs/posts/?feedView=all"
              target="_blank" rel="noreferrer"
              style={{ color: V4.textPrimary, textDecoration: 'underline', textDecorationColor: V4.border }}>
-            Blacknight Space Labs on LinkedIn
+            Blacknight Space Labs
           </a>
-          , extracted into a single table. Refreshed daily.
+          {', and more. Each row links directly to the source announcement. Refreshed daily.'}
         </p>
 
         {/* Stats */}
@@ -297,7 +306,7 @@ export default function Blacknight() {
         )}
 
         <p style={{ color: V4.textTertiary, fontSize: 11, marginTop: 16, fontFamily: V4.space }}>
-          Data extracted by Claude from public Blacknight Space Labs posts. Not investment advice.
+          Data aggregated by Claude from public sources (Payload, SpaceNews, TechCrunch, Crunchbase, Blacknight Space Labs, and others). Not investment advice.
         </p>
       </div>
     </div>

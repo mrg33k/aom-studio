@@ -17,14 +17,35 @@ const CRON_SECRET = process.env.CRON_SECRET
 
 const supabase = SUPABASE_SERVICE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY) : null
 
-const EXTRACTION_PROMPT = `You are scraping the LinkedIn company page for "Blacknight Space Labs" (https://www.linkedin.com/company/blacknightspacelabs). They post regular announcements about space-company funding rounds.
+// Today's date for the prompt — injected at runtime so refreshes stay accurate.
+const TODAY = new Date().toISOString().slice(0, 10)
 
-Use the web_search tool to find their most recent posts. Search queries to try:
-- "Blacknight Space Labs" funding announcement site:linkedin.com
-- "Blacknight Space Labs" Series A OR Series B OR seed
-- site:linkedin.com/company/blacknightspacelabs
+const EXTRACTION_PROMPT = `You are building a comprehensive database of publicly announced space-industry funding rounds from January 1, 2026 through ${TODAY}.
 
-For every distinct funding round you can find from their posts, extract the structured record. Return ONLY a JSON array (no prose, no markdown fences) of objects with these exact keys:
+Use the web_search tool as many times as needed. Try as many of these searches as possible within your allowed uses, prioritising variety of sources:
+
+Search 1: space startup "funding round" OR "raised" 2026 site:techcrunch.com
+Search 2: space company investment 2026 site:spacenews.com
+Search 3: space funding 2026 site:payloadspace.com
+Search 4: "Blacknight Space Labs" funding announcement 2026
+Search 5: space company "series A" OR "series B" OR "series C" 2026 million
+Search 6: space startup funding 2026 site:crunchbase.com
+Search 7: satellite OR launch OR "space tourism" funding raised 2026 SpaceCapital OR "Space Capital"
+Search 8: space company raised million 2026 -site:twitter.com
+Search 9: space industry investment Q1 2026 OR Q2 2026
+Search 10: rocket OR satellite OR lunar OR orbital company funding 2026
+
+Collect every DISTINCT funding round you find that was announced between 2026-01-01 and ${TODAY}. The space-industry scope is broad — include:
+- Launch vehicles / rockets
+- Satellites (comms, earth observation, navigation, weather)
+- In-space propulsion, servicing, or manufacturing
+- Space tourism / transportation
+- Defense / national security space
+- Lunar, Mars, or asteroid-resource companies
+- Space ground-systems software or hardware
+- Space-adjacent deep-tech where space is the primary market
+
+Return ONLY a JSON array (no prose, no markdown fences) of objects with these exact keys:
 
 [
   {
@@ -36,20 +57,23 @@ For every distinct funding round you can find from their posts, extract the stru
     "lead_investor": "Lead investor name or null",
     "other_investors": ["Investor 1", "Investor 2"],
     "announced_date": "2026-04-15",
-    "post_url": "https://www.linkedin.com/posts/...",
-    "source_url": "https://www.linkedin.com/posts/...",
+    "post_url": null,
+    "source_url": "https://techcrunch.com/2026/04/15/...",
     "summary": "One sentence summary of the round.",
-    "raw_post": "Full text of the LinkedIn post if extractable, else null"
+    "raw_post": null
   }
 ]
 
 Rules:
 - amount_usd is an integer in USD ("$65M" → 65000000, "$1.2B" → 1200000000). Use null if undisclosed.
-- announced_date is ISO YYYY-MM-DD, or null if unknown.
+- announced_date is ISO YYYY-MM-DD, or null if unknown. Only include rounds from 2026-01-01 to ${TODAY}.
 - other_investors is an array (possibly empty).
+- source_url must be the most authoritative public URL for the announcement (TechCrunch > SpaceNews > Payload > company press release > LinkedIn post). This field is REQUIRED — do not leave it null unless you truly cannot find any URL.
+- For Blacknight Space Labs posts on LinkedIn, use the LinkedIn post URL as source_url (and post_url).
 - If a field can't be determined, use null (or [] for other_investors).
-- Return ALL rounds found, not just the most recent.
+- Return ALL rounds found across all sources, deduplicated by company + round stage.
 - Do not invent data. If the company name is unclear, skip the row.
+- Aim to be comprehensive — the goal is 30-80+ rows covering every publicly known round.
 - Output MUST be a valid JSON array and nothing else.`
 
 function extractJsonArray(text) {
@@ -70,9 +94,9 @@ function extractJsonArray(text) {
 
 async function callClaudeForRounds() {
   const requestBody = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
-    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }],
+    model: 'claude-sonnet-4-5-20251001',
+    max_tokens: 8192,
+    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 10 }],
     messages: [{ role: 'user', content: EXTRACTION_PROMPT }],
   }
 
