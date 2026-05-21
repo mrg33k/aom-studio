@@ -34,6 +34,84 @@ const FONTS = `
   .ho-display { font-family: 'Instrument Serif', Georgia, serif; }
   .ho-body    { font-family: 'Hanken Grotesk', system-ui, sans-serif; }
   .ho-mono    { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; }
+
+  @media (max-width: 768px) {
+    /* Tables collapse to stacked cards on mobile */
+    .ho-table { font-size: 14px; }
+    .ho-table thead { display: none; }
+    .ho-table tbody { display: block; }
+    .ho-table tr {
+      display: block;
+      background: #fff !important;
+      border: 1px solid #e5e2de;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .ho-table tr.ho-row-highlight { background: #111 !important; border-color: #111; }
+    .ho-table tr.ho-row-highlight td { color: #fff !important; }
+    .ho-table tr.ho-row-highlight td::before { color: rgba(255,255,255,0.55) !important; }
+    .ho-table td {
+      display: block;
+      width: 100% !important;
+      text-align: left !important;
+      padding: 12px 16px !important;
+      border-right: none !important;
+      border-bottom: 1px solid #e5e2de !important;
+      white-space: normal !important;
+      box-sizing: border-box;
+    }
+    .ho-table td:last-child { border-bottom: none !important; }
+    .ho-table td::before {
+      content: attr(data-label);
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .ho-table td.ho-empty-cell { display: none; }
+
+    /* Why Does This Matter — single column on mobile */
+    .ho-why-grid { display: block !important; }
+    .ho-why-grid > div { margin-bottom: 24px; }
+    .ho-why-grid > div:last-child { margin-bottom: 0; }
+    .ho-why-grid h2 { font-size: 32px !important; }
+    .ho-why-grid p { font-size: 17px !important; }
+
+    /* Dark section padding tightens on mobile */
+    .ho-dark-section { padding: 56px 0 !important; }
+    .ho-dark-section .ho-inner,
+    .ho-light-section .ho-inner { padding: 0 24px !important; }
+    .ho-light-section { padding: 56px 0 !important; }
+
+    /* Visual Inspiration — 2x2 on mobile */
+    .ho-inspo-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .ho-inspo-header { flex-direction: column !important; }
+    .ho-inspo-header > div:last-child { max-width: none !important; }
+    .ho-inspo-header p { text-align: left !important; }
+
+    /* Cover hero tightens on mobile */
+    .ho-cover { min-height: 70vh !important; }
+    .ho-cover-inner { padding: 0 24px 40px !important; }
+
+    /* Image+text rows: image gets full width on mobile */
+    .ho-img-text-row { gap: 28px !important; }
+    .ho-img-text-row > div:first-child { flex: 1 1 100% !important; }
+    .ho-img-text-row > div:last-child  { flex: 1 1 100% !important; }
+
+    /* Core elements grid: single column on mobile */
+    .ho-core-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .ho-core-bucket { gap: 20px !important; }
+    .ho-core-bucket > div:first-child { flex: 1 1 100% !important; min-width: 0 !important; }
+    .ho-core-bucket > div:last-child { flex: 1 1 100% !important; }
+
+    /* CTA section steps wrap better */
+    .ho-cta-steps { flex-direction: column !important; gap: 14px !important; }
+  }
 `;
 
 /* ─── Decision Placeholder ──────────────────────────────────────────── */
@@ -172,7 +250,7 @@ function SectionTitle({ children, size = 'lg' }) {
 function AZCTTable({ headers, rows, lastRowBold = false, highlightLast = false }) {
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{
+      <table className="ho-table" style={{
         width: '100%',
         borderCollapse: 'collapse',
         fontFamily: 'Hanken Grotesk, system-ui, sans-serif',
@@ -202,24 +280,31 @@ function AZCTTable({ headers, rows, lastRowBold = false, highlightLast = false }
             const isLast = ri === rows.length - 1;
             const isHighlighted = highlightLast && isLast;
             return (
-              <tr key={ri} style={{
+              <tr key={ri} className={isHighlighted ? 'ho-row-highlight' : ''} style={{
                 background: isHighlighted ? '#111' : ri % 2 === 0 ? '#fff' : '#fafaf9',
               }}>
-                {row.map((cell, ci) => (
-                  <td key={ci} style={{
-                    padding: '14px 18px',
-                    borderBottom: `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#e5e2de'}`,
-                    borderRight: ci < row.length - 1 ? `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#e5e2de'}` : 'none',
-                    color: isHighlighted ? '#fff' : '#111',
-                    fontWeight: isHighlighted || (lastRowBold && isLast) ? 700 : 400,
-                    fontSize: isHighlighted ? 16 : 15,
-                    textAlign: ci === 0 ? 'left' : ci === row.length - 1 ? 'right' : 'center',
-                    verticalAlign: 'top',
-                    lineHeight: 1.5
-                  }}>
-                    {cell}
-                  </td>
-                ))}
+                {row.map((cell, ci) => {
+                  const cellIsEmpty = cell === '' || cell == null;
+                  return (
+                    <td
+                      key={ci}
+                      data-label={headers[ci] || ''}
+                      className={cellIsEmpty && !isHighlighted ? 'ho-empty-cell' : ''}
+                      style={{
+                        padding: '14px 18px',
+                        borderBottom: `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#e5e2de'}`,
+                        borderRight: ci < row.length - 1 ? `1px solid ${isHighlighted ? 'rgba(255,255,255,0.1)' : '#e5e2de'}` : 'none',
+                        color: isHighlighted ? '#fff' : '#111',
+                        fontWeight: isHighlighted || (lastRowBold && isLast) ? 700 : 400,
+                        fontSize: isHighlighted ? 16 : 15,
+                        textAlign: ci === 0 ? 'left' : ci === row.length - 1 ? 'right' : 'center',
+                        verticalAlign: 'top',
+                        lineHeight: 1.5
+                      }}>
+                      {cell}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}
@@ -336,13 +421,14 @@ function LightSection({ children, id, noBorderTop = false }) {
   return (
     <section
       id={id}
+      className="ho-light-section"
       style={{
         background: '#fff',
         borderTop: noBorderTop ? 'none' : '1px solid #e5e2de',
         padding: '80px 0'
       }}
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px' }}>
+      <div className="ho-inner" style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px' }}>
         {children}
       </div>
     </section>
@@ -354,12 +440,13 @@ function DarkSection({ children, id }) {
   return (
     <section
       id={id}
+      className="ho-dark-section"
       style={{
         background: '#000',
         padding: '100px 0'
       }}
     >
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px' }}>
+      <div className="ho-inner" style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px' }}>
         {children}
       </div>
     </section>
@@ -427,15 +514,15 @@ export default function HigherOrbitsPitchAZCT() {
       ═══════════════════════════════════════════════════ */}
 
       {/* ── S1: COVER ─────────────────────────────────── */}
-      <section id="cover" style={{ background: '#000', position: 'relative', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        {/* Hero photo — Earth at night from orbit */}
+      <section id="cover" className="ho-cover" style={{ background: '#000', position: 'relative', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        {/* Hero photo — Gemini cohesive set: silhouette + twilight sky */}
         <div style={{
           position: 'absolute', inset: 0,
           overflow: 'hidden'
         }}>
           <img
-            src="/images/higherorbits/unsplash-earth-from-space.jpg"
-            alt="Earth at night, photographed from orbit"
+            src="/images/higherorbits/gemini/cover-hero.jpg"
+            alt="Teenage girl silhouette on a high-desert ridge looking up at the twilight sky"
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
@@ -451,7 +538,7 @@ export default function HigherOrbitsPitchAZCT() {
         </div>
 
         {/* Cover content */}
-        <div style={{
+        <div className="ho-cover-inner" style={{
           position: 'relative',
           maxWidth: 1100,
           margin: '0 auto',
@@ -501,10 +588,14 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S2: OUR INTENT ────────────────────────────── */}
       <LightSection id="our-intent" noBorderTop>
-        <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Image for tone */}
+        <div className="ho-img-text-row" style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Image for tone — Gemini documentary interview portrait */}
           <div style={{ flex: '0 0 340px', minWidth: 260 }}>
-            <ImgPlaceholder aspect="75%" label="Michelle Lucas · Higher Orbits · Go For Launch!" />
+            <ImgReal
+              src="/images/higherorbits/gemini/inspo-2-interview-setup.jpg"
+              alt="Documentary interview subject lit warmly with bokeh background"
+              aspect="75%"
+            />
           </div>
 
           {/* Content */}
@@ -528,36 +619,63 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S3: CORE ELEMENTS ─────────────────────────── */}
       <LightSection id="core-elements">
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '48px 40px', alignItems: 'start' }}>
+        <div className="ho-core-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '48px 40px', alignItems: 'start' }}>
           {/* Left: "Core Elements" label */}
           <div>
             <SectionTitle size="lg">Core Elements</SectionTitle>
           </div>
 
-          {/* Right: three stacked element rows */}
+          {/* Right: three image + text bucket rows */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>
             {/* The Hero Piece */}
-            <div>
-              <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Hero Piece</div>
-              <BodyP>
-                The centerpiece. A TV-quality documentary built around the 100th Go For Launch! event — the same Deerfield, Illinois high school where the first event happened in 2016, with the same astronaut who was there on day one. Michelle's origin story, the students who made it real, the full-circle moment that ten years of work was always building toward. This film lives in donor meetings, grant proposals, board presentations, and school assemblies for years after June.
-              </BodyP>
+            <div className="ho-core-bucket" style={{ display: 'flex', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ flex: '0 0 280px', minWidth: 240 }}>
+                <ImgReal
+                  src="/images/higherorbits/gemini/core-bucket-hero-piece.jpg"
+                  alt="Young man on wood floor in front of tall window at dusk, watching stars emerge"
+                  aspect="75%"
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Hero Piece</div>
+                <BodyP>
+                  The centerpiece. A TV-quality documentary built around the 100th Go For Launch! event — the same Deerfield, Illinois high school where the first event happened in 2016, with the same astronaut who was there on day one. Michelle's origin story, the students who made it real, the full-circle moment that ten years of work was always building toward. This film lives in donor meetings, grant proposals, board presentations, and school assemblies for years after June.
+                </BodyP>
+              </div>
             </div>
 
             {/* The Campaign Pack */}
-            <div>
-              <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Campaign Pack</div>
-              <BodyP>
-                Everything that lives around the hero piece and keeps the story moving. A 30-second pre-event teaser before Chicago. A 60–75 second recap ready within 48 hours of the event closing — while it's still news. Eight to ten short social cuts that let Higher Orbits' alumni, sponsors, and audience share the story on every channel they use. <em>We work together to select what goes out and when — nothing posts without Michelle's sign-off.</em> The campaign pack is what turns a June event into a months-long content engine.
-              </BodyP>
+            <div className="ho-core-bucket" style={{ display: 'flex', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ flex: '0 0 280px', minWidth: 240 }}>
+                <ImgReal
+                  src="/images/higherorbits/gemini/core-bucket-campaign-pack.jpg"
+                  alt="Hands holding a smartphone playing a vertical event video, warm side-light"
+                  aspect="75%"
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Campaign Pack</div>
+                <BodyP>
+                  Everything that lives around the hero piece and keeps the story moving. A 30-second pre-event teaser before Chicago. A 60–75 second recap ready within 48 hours of the event closing — while it's still news. Eight to ten short social cuts that let Higher Orbits' alumni, sponsors, and audience share the story on every channel they use. <em>We work together to select what goes out and when — nothing posts without Michelle's sign-off.</em> The campaign pack is what turns a June event into a months-long content engine.
+                </BodyP>
+              </div>
             </div>
 
             {/* The Living Archive */}
-            <div>
-              <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Living Archive</div>
-              <BodyP>
-                One hundred edited stills from the event and production. Eight to twelve terabytes of organized raw footage. A sponsor recognition package — credits, branded social templates, a thank-you clip — that Michelle can put in front of Chevron, BRPH, and board-level sponsors immediately after Chicago. The archive is Higher Orbits' permanent visual record of its most important milestone.
-              </BodyP>
+            <div className="ho-core-bucket" style={{ display: 'flex', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ flex: '0 0 280px', minWidth: 240 }}>
+                <ImgReal
+                  src="/images/higherorbits/gemini/core-bucket-living-archive.jpg"
+                  alt="Wooden desk with contact sheet and prints under a warm brass desk lamp"
+                  aspect="75%"
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 12 }}>The Living Archive</div>
+                <BodyP>
+                  One hundred edited stills from the event and production. Eight to twelve terabytes of organized raw footage. A sponsor recognition package — credits, branded social templates, a thank-you clip — that Michelle can put in front of Chevron, BRPH, and board-level sponsors immediately after Chicago. The archive is Higher Orbits' permanent visual record of its most important milestone.
+                </BodyP>
+              </div>
             </div>
           </div>
         </div>
@@ -565,16 +683,14 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S4: THE HERO PIECE ─────────────────────────── */}
       <LightSection id="hero-piece">
-        <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Images column */}
+        <div className="ho-img-text-row" style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Images column — Gemini cohesive set */}
           <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ImgReal
-              src="/images/higherorbits/nasa-iss052-genes-experiment.jpg"
-              alt="NASA astronaut Peggy Whitson conducting a student-designed Genes in Space experiment aboard the International Space Station"
-              aspect="58%"
+              src="/images/higherorbits/gemini/hero-film-section.jpg"
+              alt="Young woman scientist at lab workbench under warm desk lamp, holding small breadboard experiment hardware"
+              aspect="66%"
             />
-            <ImgPlaceholder aspect="58%" label="Go For Launch! event — Deerfield gym" />
-            <ImgPlaceholder aspect="58%" label="Production crew / filming on location" />
           </div>
 
           {/* Content column */}
@@ -648,16 +764,14 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S5: MEET THE ALUMNI ────────────────────────── */}
       <LightSection id="alumni">
-        <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Images */}
+        <div className="ho-img-text-row" style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Images — Gemini cohesive set */}
           <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <ImgReal
-              src="/images/higherorbits/nasa-jsc2024-students-cricket.jpg"
-              alt="Students preparing hardware for an ISS experiment mission"
-              aspect="65%"
+              src="/images/higherorbits/gemini/alumni-section.jpg"
+              alt="Young Black woman STEM professional in white lab coat at research bench"
+              aspect="66%"
             />
-            <ImgPlaceholder aspect="65%" label="Student teams mid-build · workshop presentation" />
-            <ImgPlaceholder aspect="65%" label="Astronaut mentor at Go For Launch! event" />
           </div>
 
           {/* Content */}
@@ -818,7 +932,7 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S11: WHY DOES THIS MATTER ─────────────────── */}
       <DarkSection id="why-it-matters">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="ho-why-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
           <div>
             <h2 className="ho-body" style={{
               fontSize: 40,
@@ -852,7 +966,7 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S13: VISUAL INSPIRATION ───────────────────── */}
       <DarkSection id="visual-inspiration">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
+        <div className="ho-inspo-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
           <div>
             <h2 className="ho-body" style={{ fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: 8 }}>Visual Inspiration</h2>
             <p className="ho-body" style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>
@@ -861,18 +975,18 @@ export default function HigherOrbitsPitchAZCT() {
           </div>
           <div style={{ maxWidth: 300 }}>
             <p className="ho-body" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'right', lineHeight: 1.5 }}>
-              This is inspiration only — reference frames for the visual aesthetic we bring to Chicago. We do not own these images.
+              Reference frames for the visual aesthetic we bring to Chicago.
             </p>
           </div>
         </div>
 
-        {/* 4-column × 1-row grid — space imagery */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        {/* 4×1 desktop / 2×2 mobile — cohesive documentary stills */}
+        <div className="ho-inspo-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
           {[
-            { src: '/images/higherorbits/nasa-jsc2024-students-cricket.jpg', alt: 'Students preparing hardware for an ISS experiment mission' },
-            { src: '/images/higherorbits/nasa-iss055-genes-arnold.jpg', alt: 'NASA astronaut Ricky Arnold conducting student genetic research aboard the ISS' },
-            { src: '/images/higherorbits/unsplash-shuttle-over-earth.jpg', alt: 'Space shuttle flying over Earth' },
-            { src: '/images/higherorbits/unsplash-earth-from-space.jpg', alt: 'Earth from space — cosmic close' },
+            { src: '/images/higherorbits/gemini/inspo-1-student-presenting.jpg', alt: 'High school student holding clear experiment housing, mid-sentence to classmates' },
+            { src: '/images/higherorbits/gemini/inspo-2-interview-setup.jpg', alt: 'Documentary interview subject lit warmly with bokeh background' },
+            { src: '/images/higherorbits/gemini/hero-film-section.jpg', alt: 'Young woman scientist at lab workbench, contemplative' },
+            { src: '/images/higherorbits/gemini/alumni-section.jpg', alt: 'Young Black woman STEM professional in lab coat at research bench' },
           ].map((img, i) => (
             <div key={i} style={{ aspectRatio: '16/10', borderRadius: 2, overflow: 'hidden' }}>
               <img
@@ -884,9 +998,6 @@ export default function HigherOrbitsPitchAZCT() {
             </div>
           ))}
         </div>
-        <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 12, fontStyle: 'italic' }}>
-          This is inspiration we do not own these images, they are just for reference while planning and shooting
-        </p>
       </DarkSection>
 
       {/* ── S15: LET'S BRING THIS VISION TO LIFE ─────── */}
@@ -914,7 +1025,7 @@ export default function HigherOrbitsPitchAZCT() {
             }}>
               Next Steps
             </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div className="ho-cta-steps" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
               {[
                 'Confirm the June event date',
                 'Begin pre-production immediately',
