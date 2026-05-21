@@ -93,6 +93,31 @@ function DecisionWrapper({ title, options }) {
   );
 }
 
+/* ─── Real Image ────────────────────────────────────────────────────── */
+function ImgReal({ src, alt, aspect = '66%' }) {
+  return (
+    <div style={{
+      position: 'relative',
+      paddingTop: aspect,
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
+      />
+    </div>
+  );
+}
+
 /* ─── Image Placeholder ─────────────────────────────────────────────── */
 function ImgPlaceholder({ aspect = '56.25%', label = 'Photo placeholder', dark = false }) {
   return (
@@ -403,41 +428,25 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S1: COVER ─────────────────────────────────── */}
       <section id="cover" style={{ background: '#000', position: 'relative', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        {/* Hero photo placeholder */}
+        {/* Hero photo — Earth at night from orbit */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(135deg, #0a0a1a 0%, #0d1b2e 30%, #102038 60%, #0a1520 100%)',
           overflow: 'hidden'
         }}>
-          {/* Starfield / space gradient overlay */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(ellipse at 30% 50%, rgba(30,60,100,0.4) 0%, transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(60,30,80,0.3) 0%, transparent 50%)',
-          }} />
-          <div style={{
-            position: 'absolute', top: 0, right: 0, width: '60%', height: '100%',
-            background: 'linear-gradient(to bottom left, rgba(20,80,160,0.15) 0%, transparent 60%)',
-          }} />
-          {/* Center placeholder text */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <div style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 11,
-              letterSpacing: '0.3em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.2)',
-              textAlign: 'center'
-            }}>
-              Hero photo<br />Students with hardware · Astronaut with students<br />Go For Launch! event in motion
-            </div>
-          </div>
+          <img
+            src="/images/higherorbits/unsplash-earth-from-space.jpg"
+            alt="Earth at night, photographed from orbit"
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center'
+            }}
+          />
           {/* Dark gradient overlay for text legibility */}
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.2) 100%)'
+            background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.15) 100%)'
           }} />
         </div>
 
@@ -574,7 +583,11 @@ export default function HigherOrbitsPitchAZCT() {
         <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Images column */}
           <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgPlaceholder aspect="58%" label="Documentary cinematic setup" />
+            <ImgReal
+              src="/images/higherorbits/nasa-iss052-genes-experiment.jpg"
+              alt="NASA astronaut Peggy Whitson conducting a student-designed Genes in Space experiment aboard the International Space Station"
+              aspect="58%"
+            />
             <ImgPlaceholder aspect="58%" label="Go For Launch! event — Deerfield gym" />
             <ImgPlaceholder aspect="58%" label="Production crew / filming on location" />
           </div>
@@ -653,7 +666,11 @@ export default function HigherOrbitsPitchAZCT() {
         <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Images */}
           <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgPlaceholder aspect="65%" label="Alumni in their professional environment today" />
+            <ImgReal
+              src="/images/higherorbits/nasa-jsc2024-students-cricket.jpg"
+              alt="Students preparing hardware for an ISS experiment mission"
+              aspect="65%"
+            />
             <ImgPlaceholder aspect="65%" label="Student teams mid-build · workshop presentation" />
             <ImgPlaceholder aspect="65%" label="Astronaut mentor at Go For Launch! event" />
           </div>
@@ -686,7 +703,11 @@ export default function HigherOrbitsPitchAZCT() {
         <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Images */}
           <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgPlaceholder aspect="65%" label="Team working on edit · post-production" />
+            <ImgReal
+              src="/images/higherorbits/nasa-iss059-crystal-hague.jpg"
+              alt="NASA astronaut Nick Hague performing a student-designed microgravity crystal experiment aboard the ISS"
+              aspect="65%"
+            />
             <ImgPlaceholder aspect="65%" label="Social media · phone · content in hand" />
             <ImgPlaceholder aspect="65%" label="Color grading · DaVinci Resolve" />
           </div>
@@ -726,7 +747,11 @@ export default function HigherOrbitsPitchAZCT() {
         <div style={{ display: 'flex', gap: 60, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Images */}
           <div style={{ flex: '0 0 340px', minWidth: 260, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <ImgPlaceholder aspect="65%" label="Event crowd · community gathering" />
+            <ImgReal
+              src="/images/higherorbits/nasa-ksc-launch.jpg"
+              alt="Rocket Lab Electron launch carrying NASA experiments to low Earth orbit"
+              aspect="65%"
+            />
             <ImgPlaceholder aspect="65%" label="Corporate partnership · professional presentation" />
           </div>
 
@@ -922,29 +947,31 @@ export default function HigherOrbitsPitchAZCT() {
           </div>
         </div>
 
-        {/* 4-column grid */}
+        {/* 4-column × 2-row grid — space imagery */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
           {[
-            'Close-up vérité interview',
-            'Students mid-build with hardware',
-            'Interview with depth of field — warm natural light',
-            'Event energy — crowd and astronaut',
-            'Classroom tools and workspaces',
-            'Portrait with gravity — documentary style',
-            'Alumni in professional environments',
-            'Mentor and student moment',
-            'Go For Launch! ceremony',
-            'Equipment and lab settings',
-            'Archival event footage',
-            'Mission control aesthetic'
-          ].map((label, i) => (
-            <div key={i} style={{ aspectRatio: '16/10', background: 'rgba(255,255,255,0.08)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: 'rgba(255,255,255,0.3)', textAlign: 'center', lineHeight: 1.4 }}>
-                {label}
-              </span>
+            { src: '/images/higherorbits/unsplash-shuttle-over-earth.jpg', alt: 'Space shuttle flying over Earth' },
+            { src: '/images/higherorbits/nasa-iss055-genes-arnold.jpg', alt: 'NASA astronaut Ricky Arnold conducting student genetic research aboard the ISS' },
+            { src: '/images/higherorbits/nasa-jsc2024-students-cricket.jpg', alt: 'Students preparing hardware for an ISS experiment mission' },
+            { src: '/images/higherorbits/unsplash-saturn.jpg', alt: 'Saturn with rings in dark space' },
+            { src: '/images/higherorbits/unsplash-orion-nebula.jpg', alt: 'Orion nebula shining among stars' },
+            { src: '/images/higherorbits/nasa-iss059-crystal-hague.jpg', alt: 'Astronaut performing student microgravity crystal experiment on the ISS' },
+            { src: '/images/higherorbits/unsplash-galaxies-stars.jpg', alt: 'Galaxies and stars in vast night sky' },
+            { src: '/images/higherorbits/unsplash-moon.jpg', alt: 'Full moon in dark night sky' },
+          ].map((img, i) => (
+            <div key={i} style={{ aspectRatio: '16/10', borderRadius: 2, overflow: 'hidden' }}>
+              <img
+                src={img.src}
+                alt={img.alt}
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             </div>
           ))}
         </div>
+        <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 12, fontStyle: 'italic' }}>
+          This is inspiration we do not own these images, they are just for reference while planning and shooting
+        </p>
       </DarkSection>
 
       {/* ── S14: VISUAL INSPIRATION (cont.) ───────────── */}
@@ -961,26 +988,29 @@ export default function HigherOrbitsPitchAZCT() {
           </p>
         </div>
 
-        {/* 3-column grid */}
+        {/* 3-column × 2-row grid — space and subject imagery */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {[
-            'Alumni in university lab today',
-            'Professional environment — STEM career',
-            'Researcher at work',
-            'Alumni in engineering role',
-            'Workspace — open office / research setting',
-            'STEM professional at laptop',
-            'Student presenting at Go For Launch!',
-            'Astronaut mentor — giving time and mission',
-            'Archival moments cut against present-day Chicago'
-          ].map((label, i) => (
-            <div key={i} style={{ aspectRatio: '16/10', background: 'rgba(255,255,255,0.07)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.3)', textAlign: 'center', lineHeight: 1.5 }}>
-                {label}
-              </span>
+            { src: '/images/higherorbits/unsplash-spiral-galaxy.jpg', alt: 'Spiral galaxy with stars in background' },
+            { src: '/images/higherorbits/unsplash-star-cluster.jpg', alt: 'Star cluster in night sky' },
+            { src: '/images/higherorbits/nasa-iss052-genes-experiment.jpg', alt: 'NASA astronaut Peggy Whitson conducting student-designed experiment aboard ISS' },
+            { src: '/images/higherorbits/nasa-ksc-launch.jpg', alt: 'Rocket launch carrying experiments to orbit' },
+            { src: '/images/higherorbits/unsplash-earth-from-space.jpg', alt: 'Earth at night photographed from orbit' },
+            { src: '/images/higherorbits/unsplash-galaxies-stars.jpg', alt: 'Galaxies and stars in vast night sky' },
+          ].map((img, i) => (
+            <div key={i} style={{ aspectRatio: '16/10', borderRadius: 2, overflow: 'hidden' }}>
+              <img
+                src={img.src}
+                alt={img.alt}
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             </div>
           ))}
         </div>
+        <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 12, fontStyle: 'italic' }}>
+          This is inspiration we do not own these images, they are just for reference while planning and shooting
+        </p>
       </DarkSection>
 
       {/* ── S15: LET'S BRING THIS VISION TO LIFE ─────── */}
