@@ -63,6 +63,7 @@
     { "source": "/accept-invite", "destination": "/index.html" },
     { "source": "/finance", "destination": "/index.html" },
     { "source": "/directory", "destination": "/index.html" },
+    { "source": "/artlink", "destination": "/index.html" },
     { "source": "/blacknight", "destination": "/index.html" },
     { "source": "/space-rising", "destination": "/index.html" },
     { "source": "/space-rising/:path*", "destination": "/index.html" },
