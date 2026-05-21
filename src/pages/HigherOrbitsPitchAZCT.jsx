@@ -82,6 +82,11 @@ const FONTS = `
     margin-bottom: 18px;
   }
 
+  /* Scrim panel — contained dark surface behind paragraph text on full-bleed sections */
+  .ho-hero-scrim {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+
   /* ── Mobile ─────────────────────────────────────────────────────── */
   @media (max-width: 768px) {
     .ho-hero {
@@ -89,6 +94,10 @@ const FONTS = `
     }
     .ho-hero-content {
       padding: 56px 24px;
+    }
+    .ho-hero-scrim {
+      padding: 22px 20px !important;
+      max-width: 100% !important;
     }
     .ho-hero h1.ho-cover-title {
       font-size: 14vw !important;
@@ -189,6 +198,7 @@ function HeroSection({
   align = 'bottom-left', // bottom-left | bottom-right | bottom-center | top-left | top-center | center
   gradient,
   minHeight = '100vh',
+  scrim = true, // wrap content in a contained dark panel for paragraph readability
   children
 }) {
   const defaultGradient = {
@@ -246,7 +256,19 @@ function HeroSection({
           textAlign,
         }}
       >
-        <div style={{ maxWidth: 760, width: '100%' }}>
+        <div
+          className={scrim ? 'ho-hero-scrim' : ''}
+          style={scrim ? {
+            maxWidth: 720,
+            width: '100%',
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            padding: '32px 36px',
+            borderRadius: 6,
+            border: '1px solid rgba(255,255,255,0.06)',
+          } : { maxWidth: 760, width: '100%' }}
+        >
           {children}
         </div>
       </div>
@@ -544,7 +566,7 @@ export default function HigherOrbitsPitchAZCT() {
       */}
       <HeroSection
         id="our-intent"
-        bgImage="/images/higherorbits/gemini/core-bucket-hero-piece.jpg"
+        bgImage="/images/higherorbits/gemini/our-intent-students-iss-hardware.jpg"
         bgPosition="center 30%"
         align="bottom-left"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.82) 100%)"
@@ -568,7 +590,7 @@ export default function HigherOrbitsPitchAZCT() {
       */}
       <HeroSection
         id="core-hero-piece"
-        bgImage="/images/higherorbits/gemini/core-bucket-hero-piece.jpg"
+        bgImage="/images/higherorbits/gemini/hero-piece-documentary-in-room.jpg"
         bgPosition="center 60%"
         align="bottom-left"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.85) 100%)"
@@ -619,7 +641,7 @@ export default function HigherOrbitsPitchAZCT() {
       {/* ── S6a: HERO FILM OPENER (full-bleed image moment) ──── */}
       <HeroSection
         id="hero-film"
-        bgImage="/images/higherorbits/gemini/hero-film-section.jpg"
+        bgImage="/images/higherorbits/gemini/hero-film-michelle-archetype.jpg"
         bgPosition="center 30%"
         align="bottom-left"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.85) 100%)"
@@ -677,7 +699,7 @@ export default function HigherOrbitsPitchAZCT() {
       {/* ── S7a: MEET THE ALUMNI OPENER ─────────────── */}
       <HeroSection
         id="alumni"
-        bgImage="/images/higherorbits/gemini/alumni-section.jpg"
+        bgImage="/images/higherorbits/gemini/alumni-aerospace-engineer.jpg"
         bgPosition="center 30%"
         align="bottom-right"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.85) 100%)"
@@ -718,7 +740,7 @@ export default function HigherOrbitsPitchAZCT() {
       {/* ── S8a: EMPOWERING IMPACT OPENER ──────────── */}
       <HeroSection
         id="sponsorship"
-        bgImage="/images/higherorbits/gemini/inspo-2-interview-setup.jpg"
+        bgImage="/images/higherorbits/gemini/sponsorship-board-screening.jpg"
         bgPosition="center"
         align="bottom-left"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.85) 100%)"
