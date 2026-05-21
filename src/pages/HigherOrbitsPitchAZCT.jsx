@@ -646,7 +646,7 @@ export default function HigherOrbitsPitchAZCT() {
         align="bottom-left"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.85) 100%)"
       >
-        <div className="ho-eyebrow">Act 1 · The Centerpiece</div>
+        <div className="ho-eyebrow">The Centerpiece</div>
         <HeroTitle italic size="lg">The Hero Film</HeroTitle>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 26 }}>
           <div className="ho-mono" style={{ color: 'rgba(255,255,255,0.85)' }}>
@@ -704,7 +704,7 @@ export default function HigherOrbitsPitchAZCT() {
         align="bottom-right"
         gradient="linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.85) 100%)"
       >
-        <div className="ho-eyebrow">Act 2 · The Through-Line</div>
+        <div className="ho-eyebrow">The Through-Line</div>
         <HeroTitle italic size="lg">Meet the Alumni</HeroTitle>
         <HeroBodyP>
           Put real student and alumni voices at the center of the story. Higher Orbits' difference isn't the curriculum — it's the result: experiments that actually flew, students who actually built them, STEM careers and paths that actually changed. The alumni are the proof. This section of the film is the through-line Michelle explicitly asked for.
@@ -815,7 +815,7 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S9: DELIVERABLES ──────────────────── */}
       <DataSection id="deliverables">
-        <DataTitle eyebrow="Act 2 · What you get">
+        <DataTitle eyebrow="What you get">
           Project Deliverables
         </DataTitle>
         <DataTable
@@ -834,7 +834,7 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S10: TIMELINE ──────────────────── */}
       <DataSection id="timeline">
-        <DataTitle eyebrow="Act 2 · The plan">
+        <DataTitle eyebrow="The plan">
           Project Timeline
         </DataTitle>
         <DataTable
@@ -857,7 +857,7 @@ export default function HigherOrbitsPitchAZCT() {
 
       {/* ── S11: BUDGET ──────────────────── */}
       <DataSection id="budget">
-        <DataTitle eyebrow="Act 2 · The investment">
+        <DataTitle eyebrow="The investment">
           Project Budget Summary
         </DataTitle>
         <DataTable
