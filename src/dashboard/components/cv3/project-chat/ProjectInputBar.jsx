@@ -124,7 +124,7 @@ export default function ProjectInputBar() {
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept="*/*"
         style={{ display: 'none' }}
         onChange={handleFileSelection}
       />
