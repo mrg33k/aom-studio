@@ -974,45 +974,6 @@ export default function HigherOrbitsPitchAZCT() {
         </p>
       </DarkSection>
 
-      {/* ── S14: VISUAL INSPIRATION (cont.) ───────────── */}
-      <DarkSection id="visual-inspiration-2">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
-          <div>
-            <h2 className="ho-body" style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Visual Inspiration</h2>
-            <p className="ho-body" style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>
-              "The Future of Higher Orbits Is Bright."
-            </p>
-          </div>
-          <p className="ho-body" style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', maxWidth: 300, textAlign: 'right', lineHeight: 1.5 }}>
-            Reference images for interview and subject-focused coverage — the alumni, the mentors, the students.
-          </p>
-        </div>
-
-        {/* 3-column × 2-row grid — space and subject imagery */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-          {[
-            { src: '/images/higherorbits/unsplash-spiral-galaxy.jpg', alt: 'Spiral galaxy with stars in background' },
-            { src: '/images/higherorbits/unsplash-star-cluster.jpg', alt: 'Star cluster in night sky' },
-            { src: '/images/higherorbits/nasa-iss052-genes-experiment.jpg', alt: 'NASA astronaut Peggy Whitson conducting student-designed experiment aboard ISS' },
-            { src: '/images/higherorbits/nasa-ksc-launch.jpg', alt: 'Rocket launch carrying experiments to orbit' },
-            { src: '/images/higherorbits/unsplash-earth-from-space.jpg', alt: 'Earth at night photographed from orbit' },
-            { src: '/images/higherorbits/unsplash-galaxies-stars.jpg', alt: 'Galaxies and stars in vast night sky' },
-          ].map((img, i) => (
-            <div key={i} style={{ aspectRatio: '16/10', borderRadius: 2, overflow: 'hidden' }}>
-              <img
-                src={img.src}
-                alt={img.alt}
-                loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-          ))}
-        </div>
-        <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 12, fontStyle: 'italic' }}>
-          This is inspiration we do not own these images, they are just for reference while planning and shooting
-        </p>
-      </DarkSection>
-
       {/* ── S15: LET'S BRING THIS VISION TO LIFE ─────── */}
       <DarkSection id="cta">
         <div style={{ maxWidth: 900 }}>
