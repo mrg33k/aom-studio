@@ -12,6 +12,8 @@
 // Returns {ok: true, project_id, slug, name} on success.
 // On collision: idempotent — returns existing project row.
 
+import { randomUUID } from 'node:crypto'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -118,32 +120,55 @@ async function scaffoldProject(projectId, slug, clientId) {
   }
 }
 
-// Post forward-link message to 1:1 chat
-async function postForwardLinkMessage(clientId, agentSlug, projectSlug, projectName) {
-  const msg = {
-    role: 'assistant',
-    client_id: clientId,
-    agent_slug: agentSlug,
-    project_id: null, // stays in 1:1 chat
-    source: 'project-forward-link',
-    text: `Project created: **${projectName}** (${projectSlug}). Click here to continue in the project room.`,
-    metadata: {
-      project_slug: projectSlug,
-      project_name: projectName,
-    },
-    timestamp: new Date().toISOString(),
-  }
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/supabase_messages`, {
+// Post a row to the canonical `messages` table.
+// NOTE (2026-05-22, R78-p8): the prior version wrote to `supabase_messages`,
+// which does NOT exist (404) — so the forward-link silently never landed.
+// The room + 1:1 surfaces both read from `messages`, filtered by
+// client_id + (project = slug for a room | project null for the 1:1).
+async function postMessage(row) {
+  // `messages.id` has no DB default — every insert must supply its own UUID.
+  const body = { id: randomUUID(), ...row }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
     method: 'POST',
     headers: { ...dbHeaders, Prefer: 'return=representation' },
-    body: JSON.stringify(msg),
+    body: JSON.stringify(body),
   })
-
   if (!res.ok) {
     const err = await res.text()
-    console.warn(`Failed to post forward-link message: ${err}`)
+    console.warn(`Failed to post message (${row.source}): ${err}`)
+    return false
   }
+  return true
+}
+
+// Forward-link in the 1:1 chat (project: null = stays in the EA 1:1).
+async function postForwardLinkMessage(clientId, agentSlug, projectSlug, projectName) {
+  return postMessage({
+    role: 'assistant',
+    client_id: clientId,
+    agent: agentSlug,
+    project: null, // stays in the 1:1 with the EA
+    source: 'project-forward-link',
+    text: `Project created: **${projectName}** (${projectSlug}). Click here to continue in the project room.`,
+    metadata: { project_slug: projectSlug, project_name: projectName },
+    timestamp: new Date().toISOString(),
+  })
+}
+
+// Opening greeting INSIDE the new project's room so it's alive on arrival.
+// R78-p8 — a freshly-made room is never cold/silent; the EA greets and asks
+// the user to describe the project so the room can self-build (R78-p10).
+async function postRoomKickoffMessage(clientId, agentSlug, projectSlug, projectName) {
+  return postMessage({
+    role: 'assistant',
+    client_id: clientId,
+    agent: agentSlug,
+    project: projectSlug, // lands in the new project's room
+    source: 'agent-kickoff',
+    text: `This is **${projectName}**. Tell me about this project — what is it, and what do you want to get done here? Once you do, I'll set the room up around your answer.`,
+    metadata: { project_slug: projectSlug, kickoff: true },
+    timestamp: new Date().toISOString(),
+  })
 }
 
 export default async function handler(req, res) {
@@ -167,8 +192,16 @@ export default async function handler(req, res) {
     // Scaffold mission files (idempotent — checks for existing stubs)
     await scaffoldProject(project.id, slug, client_id)
 
-    // Post forward-link message to 1:1 chat
-    await postForwardLinkMessage(
+    // Greet INSIDE the new room first so it's alive the moment the user walks in.
+    const kickoffOk = await postRoomKickoffMessage(
+      client_id,
+      agent_slug || 'ea',
+      slug,
+      name || slug
+    )
+
+    // Then drop the forward-link in the 1:1 so the user can navigate over.
+    const forwardOk = await postForwardLinkMessage(
       client_id,
       agent_slug || 'ea',
       slug,
@@ -180,6 +213,8 @@ export default async function handler(req, res) {
       project_id: project.id,
       slug: project.slug,
       name: project.name,
+      kickoff_posted: kickoffOk,
+      forward_link_posted: forwardOk,
     })
   } catch (err) {
     console.error('create-project-from-chat error:', err)
