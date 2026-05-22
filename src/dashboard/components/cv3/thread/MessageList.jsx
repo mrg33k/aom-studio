@@ -256,7 +256,13 @@ function isSummaryMessage(msg, arr, idx) {
 // transcripts (agent only), kickoff partitioning and DocUpdatesStripe (project
 // only), MessageChecks/MessageStatusLabel (agent only), attachments (agent only).
 // K2 fix: awaitingResponse is now included in inFlight for both room types.
-export default function MessageList({ roomType = 'agent' }) {
+// Wrapped in React.memo (see bottom of file). The composer's `input` state
+// lives one component up in ChatPanel, so every keystroke re-renders the whole
+// ChatPanel tree. Without memo this heavy list re-rendered per keystroke and,
+// crucially, queued behind those renders so a SENT message painted ~3s late.
+// memo + the keystroke-stable send context (2026-05-22) keep this list out of
+// the typing path; it now only re-renders when messages/steps actually change.
+function MessageList({ roomType = 'agent' }) {
   const isProject = roomType === 'project'
 
   const {
@@ -1571,3 +1577,10 @@ export default function MessageList({ roomType = 'agent' }) {
     </>
   )
 }
+
+// memo: MessageList takes only the stable `roomType` prop, so it re-renders
+// only when a context it consumes (messages / steps / send-state / search)
+// actually changes — NOT on every keystroke as ChatPanel re-renders above it.
+// This is half of the 2026-05-22 send-latency fix (the other half is splitting
+// `input` out of the send context in ChatPanelContext.jsx).
+export default React.memo(MessageList)

@@ -9,6 +9,7 @@ import ComposerCommandsMenu from '../../../cv4/ComposerCommandsMenu.jsx'
 import {
   useChatCore,
   useChatSendCtx,
+  useChatComposerCtx,
   useChatAttachmentsCtx,
   useChatVoiceCtx,
   useChatContextMenuCtx,
@@ -21,12 +22,13 @@ import MailChip from '../../../cv4/MailChip.jsx'
 // mic-or-send button that toggles between voice mode and send.
 export default function ThreadInputBar() {
   const { selectedAgent, chatInputFocused, setChatInputFocused } = useChatCore()
+  const { sending } = useChatSendCtx()
   const {
-    input, setInput, inputRef, sending,
+    input, setInput, inputRef,
     handleSend, handleKeyDown,
     pasteChips, addPasteChip, removePasteChip,
     selectedImageTool, setSelectedImageTool,
-  } = useChatSendCtx()
+  } = useChatComposerCtx()
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
   const {
     isVoiceActive, setIsVoiceActive, voiceChatRef,

@@ -43,6 +43,7 @@ import {
   ChatCoreProvider,
   ChatMessagesProvider,
   ChatSendProvider,
+  ChatComposerProvider,
   ChatAttachmentsProvider,
   ChatRecordingProvider,
   ChatVoiceProvider,
@@ -513,28 +514,41 @@ export default function ChatPanel() {
     stepsByMessageId: msgs.stepsByMessageId || {},  // R65-impl
   }), [visibleMessages, msgs.setMessages, msgs.loadingMsgs, msgs.messagesEndRef, msgs.messagesRef, msgs.userProfiles, msgs.stepsByMessageId])
 
+  // Keystroke-stable. Consumed by MessageList + ThreadView + ProjectChatView +
+  // the voice hosts. Deliberately excludes `input` and the input-bound handlers
+  // (those moved to composerValue) so this reference does NOT change while the
+  // user types — that's what stops the whole message thread from re-rendering
+  // on every keystroke and makes a sent message paint instantly. (2026-05-22)
   const sendValue = useMemo(() => ({
-    input, setInput, inputRef,
     sending, setSending,
-    handleSend: send.handleSend,
-    handleKeyDown: send.handleKeyDown,
     sendAgentText: send.sendAgentText,
     sendProjectText: send.sendProjectText,
-    handleProjectSend: send.handleProjectSend,
-    handleProjectKeyDown: send.handleProjectKeyDown,
     sendAgentTextRef, sendProjectTextRef,
     isAgentTyping: bridge.isAgentTyping,
     // R73: expose setters so TypingIndicatorV2's stall-clear CTA can unmount
     // itself after firing /api/dashboard/clear-context.
     setIsAgentTyping: bridge.setIsAgentTyping,
+  }), [
+    sending, send.sendAgentText, send.sendProjectText,
+    bridge.isAgentTyping, bridge.setIsAgentTyping,
+  ])
+
+  // Keystroke-volatile. Only the input bars (ThreadInputBar / ProjectInputBar)
+  // read this slice, so its per-keystroke churn is contained to the composer
+  // and never reaches the message thread.
+  const composerValue = useMemo(() => ({
+    input, setInput, inputRef,
+    handleSend: send.handleSend,
+    handleKeyDown: send.handleKeyDown,
+    handleProjectSend: send.handleProjectSend,
+    handleProjectKeyDown: send.handleProjectKeyDown,
     // Paste chips: large paste collapses to chip in composer
     pasteChips, addPasteChip, removePasteChip,
     // Image-gen tool selection — drives the left-side composer button.
     selectedImageTool, setSelectedImageTool,
   }), [
-    input, sending, send.handleSend, send.handleKeyDown, send.sendAgentText,
-    send.sendProjectText, send.handleProjectSend, send.handleProjectKeyDown,
-    bridge.isAgentTyping, bridge.setIsAgentTyping,
+    input, send.handleSend, send.handleKeyDown,
+    send.handleProjectSend, send.handleProjectKeyDown,
     pasteChips, addPasteChip, removePasteChip,
     selectedImageTool,
   ])
@@ -676,13 +690,15 @@ export default function ChatPanel() {
               <ChatRecordingProvider value={recordingValue}>
                 <ChatAttachmentsProvider value={attachValue}>
                   <ChatSendProvider value={sendValue}>
-                    <ChatSettingsProvider value={settingsValue}>
-                      <ChatSearchProvider value={searchValue}>
-                        <ChatContextMenuProvider value={ctxMenuValue}>
-                          {view}
-                        </ChatContextMenuProvider>
-                      </ChatSearchProvider>
-                    </ChatSettingsProvider>
+                    <ChatComposerProvider value={composerValue}>
+                      <ChatSettingsProvider value={settingsValue}>
+                        <ChatSearchProvider value={searchValue}>
+                          <ChatContextMenuProvider value={ctxMenuValue}>
+                            {view}
+                          </ChatContextMenuProvider>
+                        </ChatSearchProvider>
+                      </ChatSettingsProvider>
+                    </ChatComposerProvider>
                   </ChatSendProvider>
                 </ChatAttachmentsProvider>
               </ChatRecordingProvider>

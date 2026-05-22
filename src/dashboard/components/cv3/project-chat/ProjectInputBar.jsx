@@ -11,6 +11,7 @@ import { useCornerNav } from '../../../CornerContext.jsx'
 import {
   useChatCore,
   useChatSendCtx,
+  useChatComposerCtx,
   useChatAttachmentsCtx,
   useChatVoiceCtx,
   useChatContextMenuCtx,
@@ -27,11 +28,12 @@ export default function ProjectInputBar() {
     prefillMessage, setPrefillMessage,
     worldId, currentUser,
   } = useChatCore()
+  const { sending, sendProjectText } = useChatSendCtx()
   const {
-    input, setInput, inputRef, sending, sendProjectText,
+    input, setInput, inputRef,
     pasteChips, addPasteChip, removePasteChip,
     selectedImageTool, setSelectedImageTool,
-  } = useChatSendCtx()
+  } = useChatComposerCtx()
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx()
   const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx()
   const { replyTo, setReplyTo } = useChatContextMenuCtx()

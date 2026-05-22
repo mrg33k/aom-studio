@@ -34,10 +34,24 @@ const msgs = makeSlice('useChatMessagesCtx')
 export const ChatMessagesProvider = msgs.Provider
 export const useChatMessagesCtx = msgs.useSlice
 
-// Send: composer input, in-flight state, send callbacks, bridge stream.
+// Send: in-flight state + keystroke-stable send callbacks + bridge stream.
+// NOTE: the composer's `input` text and the input-bound handlers (handleSend,
+// handleKeyDown, handleProjectSend, handleProjectKeyDown) deliberately do NOT
+// live here — they changed on every keystroke, which gave this slice a new
+// value reference per keystroke and re-rendered MessageList (a consumer) for
+// every character typed. They moved to the `composer` slice below so this
+// slice stays stable while typing. See 2026-05-22 send-latency fix.
 const send = makeSlice('useChatSendCtx')
 export const ChatSendProvider = send.Provider
 export const useChatSendCtx = send.useSlice
+
+// Composer: keystroke-volatile state. `input` text + the send/keydown handlers
+// that close over it. Only the input bars (ThreadInputBar / ProjectInputBar)
+// consume this slice, so its per-keystroke churn no longer reaches the message
+// thread. Splitting this out is what makes a sent message paint instantly.
+const composer = makeSlice('useChatComposerCtx')
+export const ChatComposerProvider = composer.Provider
+export const useChatComposerCtx = composer.useSlice
 
 // Attachments: pending attachments + legacy upload-as-message flow.
 const attach = makeSlice('useChatAttachmentsCtx')
