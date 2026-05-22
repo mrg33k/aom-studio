@@ -21,6 +21,7 @@ export default function CV4Drawer({
   docked = false,
   agents = [],
   projectRooms = [],
+  notifItems = [],
   worldId,
   selectedAgentSlug,
   selectedProjectSlug,
@@ -50,6 +51,23 @@ export default function CV4Drawer({
     for (const list of map.values()) list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     return map
   }, [])
+
+  // corner:notifications R2 — green dot next to a project / mission that has an
+  // unread notification. notifItems is already filtered by per-room read state
+  // in CornerV4, so a dot clears once the room is opened (handleSelectProject /
+  // handleSelectMission stamp the read time). A project dot lights when the
+  // project room OR any mission under it has unread.
+  const { projectNotif, missionNotif } = useMemo(() => {
+    const projectNotif = new Set() // project slug
+    const missionNotif = new Set() // full "project:mission" slug
+    for (const item of (notifItems || [])) {
+      const projSlug = item.project ||
+        (item.missionSlug && item.missionSlug.includes(':') ? item.missionSlug.slice(0, item.missionSlug.indexOf(':')) : null)
+      if (projSlug) projectNotif.add(projSlug)
+      if (item.missionSlug) missionNotif.add(item.missionSlug)
+    }
+    return { projectNotif, missionNotif }
+  }, [notifItems])
 
   // R5 corner:task-rooms — live missions-tree layered over the static catalog.
   // Brings active task counts + ids under each mission so the rail can open
@@ -390,6 +408,7 @@ function DrawerBody({
                   hasChildren={hasMissions}
                   expanded={isExpanded}
                   active={selectedProjectSlug === p.slug}
+                  hasNotif={projectNotif.has(p.slug)}
                   onToggle={() => toggle(p.slug)}
                   onOpen={() => { onSelectProject?.(p); onClose() }}
                 />
@@ -408,6 +427,7 @@ function DrawerBody({
                           key={`${p.slug}-${m.slug}`}
                           mission={m}
                           lastMessageAt={liveMeta?.last_message_at || null}
+                          hasNotif={missionNotif.has(missionKey)}
                           onClick={() => {
                             onSelectMission?.(m, p)
                             onClose()
@@ -473,7 +493,7 @@ function TreeSection({ title, children }) {
   )
 }
 
-function FolderRow({ label, hasChildren, expanded, active, onToggle, onOpen }) {
+function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onToggle, onOpen }) {
   return (
     <div
       data-row
@@ -510,21 +530,34 @@ function FolderRow({ label, hasChildren, expanded, active, onToggle, onOpen }) {
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
       }}>{label}</span>
+      {hasNotif && (
+        <span
+          data-notif-dot
+          title="New message in this project"
+          style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: '#10B981',
+            boxShadow: '0 0 0 2px rgba(16,185,129,0.25)',
+            flexShrink: 0, marginLeft: 4,
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function MissionRow({ mission, lastMessageAt = null, onClick }) {
-  // corner:mission-rooms — tasks retired 2026-05-17. Active dot is now
-  // driven by recent chat in the mission room only. No task count badge,
-  // no expand-tasks chevron, no taskCount prop.
+function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick }) {
+  // corner:mission-rooms — tasks retired 2026-05-17. Active dot is driven by
+  // recent chat in the mission room. corner:notifications R2 — the same dot
+  // also lights for an unread notification, which takes the headline meaning
+  // (a notification is a stronger signal than "recent activity").
   const recentChat = (() => {
     if (!lastMessageAt) return false
     const then = new Date(lastMessageAt).getTime()
     if (!Number.isFinite(then)) return false
     return (Date.now() - then) < (24 * 60 * 60 * 1000)
   })()
-  const isActive = recentChat
+  const isActive = hasNotif || recentChat
   return (
     <div
       data-row
@@ -542,11 +575,12 @@ function MissionRow({ mission, lastMessageAt = null, onClick }) {
       <DocIcon />
       <span
         data-active-dot
-        title={isActive ? 'Recent chat in this room' : ''}
+        data-notif={hasNotif ? 'true' : undefined}
+        title={hasNotif ? 'New message in this room' : (isActive ? 'Recent chat in this room' : '')}
         style={{
-          width: 6, height: 6, borderRadius: '50%',
+          width: hasNotif ? 7 : 6, height: hasNotif ? 7 : 6, borderRadius: '50%',
           background: isActive ? '#10B981' : 'transparent',
-          boxShadow: isActive ? '0 0 0 1px rgba(16,185,129,0.35)' : 'none',
+          boxShadow: hasNotif ? '0 0 0 2px rgba(16,185,129,0.25)' : (isActive ? '0 0 0 1px rgba(16,185,129,0.35)' : 'none'),
           flexShrink: 0,
         }}
       />

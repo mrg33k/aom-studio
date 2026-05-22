@@ -447,6 +447,9 @@ export default function CornerV4() {
     setTab('chat')
     setUnreadChat(0)
     if (project?.slug) {
+      // corner:notifications R2 — opening the project room clears its
+      // project-level notification dot (roomKey = project slug).
+      setNotifReadAt(prev => ({ ...prev, [project.slug]: new Date().toISOString() }))
       const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
       navigate(`${basePath}/project/${project.slug}`)
     }
@@ -472,6 +475,9 @@ export default function CornerV4() {
     setAttachedMission(null)
     setTab('chat')
     setUnreadChat(0)
+    // corner:notifications R2 — opening the mission room clears that mission's
+    // notification dot (roomKey = full mission_slug "project:mission").
+    setNotifReadAt(prev => ({ ...prev, [`${project.slug}:${mission.slug}`]: new Date().toISOString() }))
     const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
     navigate(`${basePath}/project/${project.slug}?mission=${encodeURIComponent(mission.slug)}`)
   }, [navigate])
@@ -1753,6 +1759,7 @@ export default function CornerV4() {
             onClose={() => setDrawerOpen(false)}
             agents={agents}
             projectRooms={projectRooms}
+            notifItems={notifItems}
             worldId={worldId}
             selectedAgentSlug={selectedAgent?.slug}
             selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
@@ -1941,6 +1948,7 @@ export default function CornerV4() {
           onClose={() => setDrawerOpen(false)}
           agents={agents}
           projectRooms={projectRooms}
+          notifItems={notifItems}
           worldId={worldId}
           selectedAgentSlug={selectedAgent?.slug}
           selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
