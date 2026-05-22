@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T20:56:49.974Z",
+  "generated_at": "2026-05-22T05:48:36.689Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -68,15 +68,15 @@
       "path": "corner/missions/corner-ui-cv4"
     },
     {
-      "slug": "corner:cv4-redesign",
-      "raw_slug": "cv4-redesign",
+      "slug": "corner:dashboard-speed",
+      "raw_slug": "dashboard-speed",
       "project_slug": "corner",
       "workstream": null,
-      "name": "Cv4 Redesign",
+      "name": "Dashboard Speed",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/missions/cv4-redesign"
+      "path": "corner/missions/dashboard-speed"
     },
     {
       "slug": "corner:files-in-app",
@@ -88,6 +88,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/files-in-app"
+    },
+    {
+      "slug": "corner:followups",
+      "raw_slug": "followups",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Followups",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/followups"
     },
     {
       "slug": "corner:image-gen",
@@ -145,39 +156,6 @@
       "path": "corner/missions/login"
     },
     {
-      "slug": "corner:multi-tenant",
-      "raw_slug": "multi-tenant",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Multi-Tenant",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/multi-tenant"
-    },
-    {
-      "slug": "corner:tenant-isolation",
-      "raw_slug": "tenant-isolation",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Tenant Isolation",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/tenant-isolation"
-    },
-    {
-      "slug": "corner:stability-checkpoint",
-      "raw_slug": "stability-checkpoint",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Stability Checkpoint",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/stability-checkpoint"
-    },
-    {
       "slug": "corner:mail-room",
       "raw_slug": "mail-room",
       "project_slug": "corner",
@@ -209,6 +187,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/mission-panel"
+    },
+    {
+      "slug": "corner:multi-tenant",
+      "raw_slug": "multi-tenant",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Multi Tenant",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/multi-tenant"
     },
     {
       "slug": "corner:new-projects",
@@ -341,6 +330,28 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/slash-settings"
+    },
+    {
+      "slug": "corner:stability-checkpoint",
+      "raw_slug": "stability-checkpoint",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Stability Checkpoint",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/stability-checkpoint"
+    },
+    {
+      "slug": "corner:tenant-isolation",
+      "raw_slug": "tenant-isolation",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Tenant Isolation",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/tenant-isolation"
     },
     {
       "slug": "corner:theme-and-density",
@@ -486,6 +497,72 @@
       "path": "corner/users/aom/projects/ambition-mechanical/missions/website-v2"
     },
     {
+      "slug": "andocia-deal:deal-shape",
+      "raw_slug": "deal-shape",
+      "project_slug": "andocia-deal",
+      "workstream": null,
+      "name": "Deal Shape",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/andocia-deal/missions/deal-shape"
+    },
+    {
+      "slug": "andocia-deal:investor-research",
+      "raw_slug": "investor-research",
+      "project_slug": "andocia-deal",
+      "workstream": null,
+      "name": "Investor Research",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/andocia-deal/missions/investor-research"
+    },
+    {
+      "slug": "andocia-deal:stats-page",
+      "raw_slug": "stats-page",
+      "project_slug": "andocia-deal",
+      "workstream": null,
+      "name": "Stats Page",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/andocia-deal/missions/stats-page"
+    },
+    {
+      "slug": "andocia-deal:valuation",
+      "raw_slug": "valuation",
+      "project_slug": "andocia-deal",
+      "workstream": null,
+      "name": "Valuation",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/andocia-deal/missions/valuation"
+    },
+    {
+      "slug": "artlink:brand-page",
+      "raw_slug": "brand-page",
+      "project_slug": "artlink",
+      "workstream": null,
+      "name": "Brand Page",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/artlink/missions/brand-page"
+    },
+    {
+      "slug": "artlink:site-pitch",
+      "raw_slug": "site-pitch",
+      "project_slug": "artlink",
+      "workstream": null,
+      "name": "Site Pitch",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/artlink/missions/site-pitch"
+    },
+    {
       "slug": "blacknight:page-launch",
       "raw_slug": "page-launch",
       "project_slug": "blacknight",
@@ -550,6 +627,28 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/higher-orbits/missions/mini-doc-series-pitch"
+    },
+    {
+      "slug": "holistic-balance:course-mapping",
+      "raw_slug": "course-mapping",
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "Course Mapping",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/course-mapping"
+    },
+    {
+      "slug": "holistic-balance:holistic-balance-page",
+      "raw_slug": "holistic-balance-page",
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "Holistic Balance Page",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/holistic-balance-page"
     },
     {
       "slug": "included-health:client-summit-video",
@@ -962,8 +1061,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 32,
-      "in_flight": 32,
+      "total": 36,
+      "in_flight": 36,
       "done": 0
     },
     {
@@ -976,6 +1075,18 @@
       "slug": "ambition-mechanical",
       "total": 8,
       "in_flight": 8,
+      "done": 0
+    },
+    {
+      "slug": "andocia-deal",
+      "total": 4,
+      "in_flight": 4,
+      "done": 0
+    },
+    {
+      "slug": "artlink",
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     },
     {
@@ -998,6 +1109,12 @@
     },
     {
       "slug": "higher-orbits",
+      "total": 2,
+      "in_flight": 2,
+      "done": 0
+    },
+    {
+      "slug": "holistic-balance",
       "total": 2,
       "in_flight": 2,
       "done": 0
