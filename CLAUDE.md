@@ -52,7 +52,7 @@ For any dashboard frontend work in this repo (`src/dashboard/`):
 - **Pre-flight reads:** `src/dashboard/cv4-explore-v2/INVENTORY.md` + `cv4-explore-v2/DESIGN.md`. Match the design system (Instrument Serif / Hanken Grotesk / JetBrains Mono, deep cool-ink ground, warm bone text, AOM amber as the only accent).
 - **Legacy dead code — never touch:** `BoardView.jsx`, `GameDashboard.jsx`, `GameHUD.jsx`.
 
-The mission home is `corner/missions/cv4-redesign/` (in the AOM-EA repo, sibling to this one). Full doctrine in AOM-EA's `.claude/rules/cv4-is-the-active-design-surface.md`. Scope: Corner product frontend only — does NOT apply to other AOM project sites (Ambition, Skylar, Brandon, ISA, etc.), the marketing site, or static skill-built pages.
+The mission home is `corner/missions/corner-ui-cv4/` (in the AOM-EA repo, sibling to this one). Full doctrine in AOM-EA's `.claude/rules/cv4-is-the-active-design-surface.md`. Scope: Corner product frontend only — does NOT apply to other AOM project sites (Ambition, Skylar, Brandon, ISA, etc.), the marketing site, or static skill-built pages.
 
 ## Worktrees
 
