@@ -2,7 +2,19 @@ import { useEffect, useRef } from 'react'
 import { C, agentColors } from '../../lib/cv3Colors.js'
 import { formatChatTime } from './shared.jsx'
 
-export default function NotificationsPanel({ items, agents, onSelectAgent, onMarkAllRead, onClose }) {
+// corner:notifications R1 — turn a slug ("corner:notifications", "ambition-mechanical")
+// into a readable room name ("Notifications", "Ambition Mechanical").
+function prettifyRoom(slug) {
+  if (!slug) return ''
+  const bare = slug.includes(':') ? slug.slice(slug.lastIndexOf(':') + 1) : slug
+  return bare
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+export default function NotificationsPanel({ items, agents, onSelectNotification, onSelectAgent, onMarkAllRead, onClose }) {
   const panelRef = useRef(null)
 
   useEffect(() => {
@@ -68,10 +80,21 @@ export default function NotificationsPanel({ items, agents, onSelectAgent, onMar
         ) : items.map(item => {
           const agent = agentMap[item.agent]
           const color = agentColors[item.agent] || C.accent
+          // Room-aware label: name the room when the notification belongs to one,
+          // else fall back to "<agent> replied" for 1:1 agent threads.
+          const roomName = item.missionSlug
+            ? prettifyRoom(item.missionSlug)
+            : (item.project ? prettifyRoom(item.project) : null)
+          const title = roomName ? `New in ${roomName}` : `${agent?.name || item.agent} replied`
+          const handleClick = () => {
+            if (onSelectNotification) onSelectNotification(item)
+            else onSelectAgent(agent || { slug: item.agent, name: item.agent })
+            onClose()
+          }
           return (
             <button
-              key={item.id || item.agent}
-              onClick={() => { onSelectAgent(agent || { slug: item.agent, name: item.agent }); onClose() }}
+              key={item.id || item.roomKey || item.agent}
+              onClick={handleClick}
               style={{
                 width: '100%', textAlign: 'left',
                 display: 'flex', alignItems: 'flex-start', gap: 10,
@@ -96,7 +119,7 @@ export default function NotificationsPanel({ items, agents, onSelectAgent, onMar
                     fontFamily: "'Inter', sans-serif",
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
-                    {agent?.name || item.agent} replied
+                    {title}
                   </span>
                   <span style={{
                     fontSize: 10, color: C.muted,

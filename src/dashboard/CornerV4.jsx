@@ -323,11 +323,15 @@ export default function CornerV4() {
     return () => clearTimeout(t)
   }, [telephone.lastTranscript, telephone.isRecording, telephone.isTranscribing])
 
-  // Notifications: filter inboxItems by per-agent read timestamps (session-only)
+  // Notifications: filter inboxItems by per-ROOM read timestamps (session-only).
+  // corner:notifications R1 — read state keys on roomKey so opening one room's
+  // notification doesn't silence another room from the same agent. Fall back to
+  // agent for any legacy item missing roomKey.
   const notifItems = useMemo(() => {
-    return (inboxItems || []).filter(item =>
-      item.agent && (!notifReadAt[item.agent] || item.timestamp > notifReadAt[item.agent])
-    )
+    return (inboxItems || []).filter(item => {
+      const key = item.roomKey || item.agent
+      return key && (!notifReadAt[key] || item.timestamp > notifReadAt[key])
+    })
   }, [inboxItems, notifReadAt])
 
   const totalUnread = notifItems.length
@@ -471,6 +475,33 @@ export default function CornerV4() {
     const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
     navigate(`${basePath}/project/${project.slug}?mission=${encodeURIComponent(mission.slug)}`)
   }, [navigate])
+
+  // corner:notifications R1 — a notification opens the ROOM its message lives
+  // in, not the agent that sent it. Routes to the mission room when the item
+  // carries a mission_slug, else the project room when it carries a project,
+  // else the 1:1 agent thread. Then marks that room's notification read.
+  const handleSelectNotification = useCallback((item) => {
+    if (!item) return
+    if (item.missionSlug) {
+      // mission_slug is the full path "project:mission" (e.g. "corner:notifications").
+      // handleSelectMission puts mission.slug in the URL as the bare slug and
+      // rebuilds the path as `corner:<slug>`, so split off the project prefix.
+      const colon = item.missionSlug.indexOf(':')
+      const projectSlug = item.project || (colon > -1 ? item.missionSlug.slice(0, colon) : 'corner')
+      const missionBare = colon > -1 ? item.missionSlug.slice(colon + 1) : item.missionSlug
+      handleSelectMission(
+        { slug: missionBare, name: missionBare, path: item.missionSlug },
+        { slug: projectSlug, name: projectSlug }
+      )
+    } else if (item.project) {
+      handleSelectProject({ slug: item.project, name: item.project })
+    } else {
+      const agent = (agents || []).find(a => a.slug === item.agent) || { slug: item.agent, name: item.agent }
+      handleSelectAgent(agent)
+    }
+    const key = item.roomKey || item.agent
+    if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
+  }, [agents, handleSelectMission, handleSelectProject, handleSelectAgent])
 
   // R6 corner:task-rooms — open the task room as a chat surface using the
   // existing ThreadView (same chat template as agent + project chats).
@@ -1648,12 +1679,13 @@ export default function CornerV4() {
               <NotificationsPanel
                 items={notifItems}
                 agents={agents}
+                onSelectNotification={handleSelectNotification}
                 onSelectAgent={handleSelectAgent}
                 onMarkAllRead={() => {
                   const now = new Date().toISOString()
                   setNotifReadAt(prev => {
                     const next = { ...prev }
-                    for (const item of notifItems) next[item.agent] = now
+                    for (const item of notifItems) next[item.roomKey || item.agent] = now
                     return next
                   })
                   setNotifOpen(false)

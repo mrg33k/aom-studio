@@ -416,30 +416,49 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           setCompletedFeed(completed)
         }
 
-        // Compute unread inbox items: assistant messages newer than user's last message per agent
+        // Compute unread inbox items: assistant messages newer than the user's
+        // last message IN THAT ROOM. corner:notifications R1 — a notification
+        // points to the ROOM, not the agent. Every message row already carries
+        // `project` and `metadata.mission_slug` (verified live DB 2026-05-22);
+        // the old builder discarded both and de-duped one-card-per-agent, which
+        // collapsed multiple rooms into a single agent card. Now: one card per
+        // room (mission room > project room > 1:1 agent thread).
         if (data.messages) {
-          // Messages arrive oldest-first (reversed in supabase-status.js)
-          const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
+          // Messages arrive oldest-first (reversed in supabase-status.js).
+          // roomKey identifies the room a message belongs to. It must resolve
+          // identically for the user message and the assistant reply in the
+          // same room: mission rooms key on mission_slug, project rooms on
+          // project, 1:1 agent threads on `agent:<slug>`.
+          const roomKey = (m) =>
+            (m.metadata && m.metadata.mission_slug) ||
+            m.project ||
+            (m.agent ? `agent:${m.agent}` : null)
+          const roomLastSeen = {} // roomKey -> timestamp of last dashboard user message
           for (const msg of data.messages) {
             if (msg.role === 'user' && msg.source === 'corner-dashboard') {
-              agentLastSeen[msg.agent] = msg.timestamp
+              const k = roomKey(msg)
+              if (k) roomLastSeen[k] = msg.timestamp
             }
           }
           const unread = []
-          const seenAgents = new Set() // one card per agent max
+          const seenRooms = new Set() // one card per room max
           for (const msg of [...data.messages].reverse()) { // newest first
-            if (msg.role === 'assistant' && msg.agent && !seenAgents.has(msg.agent)) {
-              const lastSeen = agentLastSeen[msg.agent]
-              if (!lastSeen || msg.timestamp > lastSeen) {
-                seenAgents.add(msg.agent)
-                const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
-                unread.push({
-                  agent: msg.agent,
-                  text: preview,
-                  timestamp: msg.timestamp,
-                  id: msg.id,
-                })
-              }
+            if (msg.role !== 'assistant' || !msg.agent) continue
+            const k = roomKey(msg)
+            if (!k || seenRooms.has(k)) continue
+            const lastSeen = roomLastSeen[k]
+            if (!lastSeen || msg.timestamp > lastSeen) {
+              seenRooms.add(k)
+              const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
+              unread.push({
+                agent: msg.agent,
+                project: msg.project || null,
+                missionSlug: (msg.metadata && msg.metadata.mission_slug) || null,
+                roomKey: k,
+                text: preview,
+                timestamp: msg.timestamp,
+                id: msg.id,
+              })
             }
           }
           setInboxItems(unread)
