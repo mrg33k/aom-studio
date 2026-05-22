@@ -455,6 +455,43 @@ export default function CornerV4() {
     }
   }, [navigate])
 
+  // R78-p9 corner:new-projects — self-serve creation. The "+ New project"
+  // door in the drawer opens a name popup; on submit we create the room and
+  // drop the user straight into it, where the agent's kickoff greeting
+  // (posted server-side by create-project-from-chat) is already waiting.
+  const [newRoomModal, setNewRoomModal] = useState(null) // null | { kind: 'project' | 'mission', parentSlug?, parentName? }
+  const [creatingRoom, setCreatingRoom]  = useState(false)
+  const [createRoomError, setCreateRoomError] = useState(null)
+
+  const slugify = (s) =>
+    (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
+
+  const handleCreateProject = useCallback(async (rawName) => {
+    const name = (rawName || '').trim()
+    if (!name || !worldId) return
+    const slug = slugify(name) || `room-${Date.now().toString(36)}`
+    setCreatingRoom(true)
+    setCreateRoomError(null)
+    try {
+      const r = await authFetch('/api/dashboard/create-project-from-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, name, client_id: worldId }),
+      })
+      const j = await r.json().catch(() => null)
+      if (r.ok && j && j.ok) {
+        setNewRoomModal(null)
+        handleSelectProject({ slug: j.slug || slug, name: j.name || name })
+      } else {
+        setCreateRoomError((j && j.error) || 'Could not create the project. Try again.')
+      }
+    } catch (e) {
+      setCreateRoomError('Could not create the project. Try again.')
+    } finally {
+      setCreatingRoom(false)
+    }
+  }, [worldId, handleSelectProject])
+
   // R3 corner:mission-rooms — clicking a mission in the drawer OR in the
   // tasks-view file manager routes into a focused chat surface scoped to
   // that mission. Same chat template as a project/agent room; the room
@@ -1767,6 +1804,7 @@ export default function CornerV4() {
             onSelectTool={handleSelectTool}
             onSelectAgent={handleSelectAgent}
             onSelectProject={handleSelectProject}
+            onNewProject={() => setNewRoomModal({ kind: 'project' })}
             onSelectMission={(mission, project) => handleSelectMission(mission, project)}
             onSelectTask={(task, mission, project) => {
               // R5 corner:task-rooms — open the task room by routing to the
@@ -1956,6 +1994,7 @@ export default function CornerV4() {
           onSelectTool={handleSelectTool}
           onSelectAgent={handleSelectAgent}
           onSelectProject={handleSelectProject}
+          onNewProject={() => setNewRoomModal({ kind: 'project' })}
           onSelectMission={(mission, project) => handleSelectMission(mission, project)}
           onSelectTask={(task, mission, project) => {
             if (project) handleSelectProject(project)
@@ -1977,11 +2016,116 @@ export default function CornerV4() {
         />
       )}
 
+      {newRoomModal && (
+        <NewRoomModal
+          kind={newRoomModal.kind}
+          busy={creatingRoom}
+          error={createRoomError}
+          onSubmit={(name) => {
+            if (newRoomModal.kind === 'project') handleCreateProject(name)
+          }}
+          onClose={() => { if (!creatingRoom) { setNewRoomModal(null); setCreateRoomError(null) } }}
+        />
+      )}
+
       <FloatingCallBar />
     </div>
           </LiveCallProvider>
         </CornerNavProvider>
       </CornerDataProvider>
     </CornerAuthProvider>
+  )
+}
+
+// R78-p9 corner:new-projects — the "name it" popup for self-serve creation.
+// Stupid simple: one field, Enter to create. On submit the caller creates the
+// room and drops the user into it, where the agent's kickoff greeting waits.
+function NewRoomModal({ kind = 'project', busy = false, error = null, onSubmit, onClose }) {
+  const [name, setName] = useState('')
+  const label = kind === 'mission' ? 'mission' : 'project'
+  const canSubmit = !!name.trim() && !busy
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 400,
+        background: 'rgba(0,0,0,0.55)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20,
+        animation: 'cv4DrawerFade 0.15s ease-out',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(420px, 92vw)',
+          background: C.bg,
+          border: '1px solid ' + C.border,
+          borderRadius: 14,
+          padding: '22px 22px 18px',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{
+          fontFamily: "'Instrument Serif', Georgia, serif",
+          fontSize: 25, lineHeight: 1.1, color: C.text, marginBottom: 6,
+        }}>
+          New {label}
+        </div>
+        <div style={{
+          fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+          fontSize: 13, color: C.muted, marginBottom: 16,
+        }}>
+          Name it. You'll land in the room and we'll set it up from there.
+        </div>
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && canSubmit) onSubmit(name)
+            if (e.key === 'Escape' && !busy) onClose()
+          }}
+          placeholder={kind === 'mission' ? 'e.g. Hero section' : 'e.g. Phoenix Bakery'}
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid ' + C.border,
+            borderRadius: 8, padding: '10px 12px',
+            color: C.text, fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+            fontSize: 15, outline: 'none', marginBottom: error ? 8 : 18,
+          }}
+        />
+        {error && (
+          <div style={{
+            color: '#FCA5A5', fontSize: 12, marginBottom: 14,
+            fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+          }}>{error}</div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <button
+            onClick={onClose}
+            disabled={busy}
+            style={{
+              background: 'none', border: 'none', color: C.muted,
+              fontSize: 13, fontWeight: 600, cursor: busy ? 'default' : 'pointer',
+              padding: '8px 12px', fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+            }}
+          >Cancel</button>
+          <button
+            onClick={() => canSubmit && onSubmit(name)}
+            disabled={!canSubmit}
+            style={{
+              background: canSubmit ? C.accent : 'rgba(255,255,255,0.08)',
+              color: canSubmit ? '#0b0b0c' : C.muted,
+              border: 'none', borderRadius: 8, padding: '8px 16px',
+              fontSize: 13, fontWeight: 700,
+              cursor: canSubmit ? 'pointer' : 'default',
+              fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+            }}
+          >{busy ? 'Creating…' : `Create ${label}`}</button>
+        </div>
+      </div>
+    </div>
   )
 }

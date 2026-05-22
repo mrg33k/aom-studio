@@ -29,6 +29,7 @@ export default function CV4Drawer({
   onSelectTool,
   onSelectAgent,
   onSelectProject,
+  onNewProject,
   onSelectMission,
   onSelectTask,
   onLogout,
@@ -191,6 +192,7 @@ export default function CV4Drawer({
       onSelectTool={onSelectTool}
       onSelectAgent={onSelectAgent}
       onSelectProject={onSelectProject}
+      onNewProject={onNewProject}
       onSelectMission={onSelectMission}
       onLogout={onLogout}
       onClose={docked ? () => {} : onClose}
@@ -351,6 +353,7 @@ function DrawerBody({
   onSelectTool,
   onSelectAgent,
   onSelectProject,
+  onNewProject,
   onSelectMission,
   onLogout,
   onClose,
@@ -375,7 +378,26 @@ function DrawerBody({
         />
       </TreeSection>
 
-      <TreeSection title="Projects">
+      <TreeSection
+        title="Projects"
+        action={onNewProject ? (
+          <button
+            data-cv4-new-project
+            onClick={(e) => { e.stopPropagation(); onNewProject() }}
+            aria-label="New project"
+            title="New project"
+            style={{
+              background: 'none', border: '1px solid ' + C.border, borderRadius: 5,
+              color: C.muted, cursor: 'pointer', padding: '1px 7px 2px',
+              fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontFamily: "'JetBrains Mono', monospace",
+              display: 'flex', alignItems: 'center', gap: 3, lineHeight: 1.4,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.muted }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border }}
+          >+ New</button>
+        ) : null}
+      >
         {projectRooms.length === 0 ? (
           <Empty label="No projects" />
         ) : (
@@ -483,15 +505,20 @@ function DrawerBody({
   )
 }
 
-function TreeSection({ title, children }) {
+function TreeSection({ title, action = null, children }) {
   return (
     <div style={{ marginBottom: 6 }}>
       <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '8px 14px 4px',
-        fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: C.dim,
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>{title}</div>
+      }}>
+        <span style={{
+          fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
+          textTransform: 'uppercase', color: C.dim,
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>{title}</span>
+        {action}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column' }}>{children}</div>
     </div>
   )
