@@ -178,6 +178,8 @@ export default function CV4Drawer({
       projectRooms={projectRooms}
       missionsByProject={missionsByProject}
       tasksByProject={tasksByProject}
+      projectNotif={projectNotif}
+      missionNotif={missionNotif}
       onSelectTask={onSelectTask}
       expanded={expanded}
       toggle={toggle}
@@ -336,6 +338,8 @@ function DrawerBody({
   projectRooms,
   missionsByProject,
   tasksByProject,
+  projectNotif = new Set(),
+  missionNotif = new Set(),
   onSelectTask,
   expanded,
   toggle,
