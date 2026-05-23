@@ -48,6 +48,7 @@ export default function ComposerCommandsMenu({
   const {
     filesOpen, setFilesOpen,
     settingsOpen, setSettingsOpen,
+    setSettingsTab,
     profileOpen, setProfileOpen,
     recipesOpen, setRecipesOpen,
     canonFilesOpen, setCanonFilesOpen,
@@ -179,6 +180,23 @@ export default function ComposerCommandsMenu({
                 active={filesOpen}
                 testid="cv4-commands-files"
               />
+              {/* 4a. Collaborators (project rooms only) — M11: surfaced
+                   out of Settings as a top-level command. Opens the existing
+                   Settings modal pre-pointed at the Collaborators tab so
+                   the underlying invite UI keeps working. */}
+              {selectedProject?.id && (
+                <MenuRow
+                  icon={<UsersIcon />}
+                  label="Collaborators"
+                  detail="Invite, view members"
+                  onClick={() => {
+                    setSettingsTab?.('Collaborators')
+                    setSettingsOpen(true)
+                    setOpen(false)
+                  }}
+                  testid={`cv4-commands-collaborators-${selectedProject?.slug || 'project'}`}
+                />
+              )}
               {/* 4b. Integrations — opens the IntegrationsModal owned by
                    ThreadInputBar / ProjectInputBar via a global event. */}
               <MenuRow
@@ -420,6 +438,17 @@ function PhoneIcon({ recording }) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+    </svg>
+  )
+}
+
+function UsersIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   )
 }
