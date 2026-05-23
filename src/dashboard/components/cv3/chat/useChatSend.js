@@ -419,7 +419,21 @@ export default function useChatSend({
     // Fallback to 'elon' only when the agents payload hasn't loaded —
     // prevents a blank agent slug in the optimistic POST during cold
     // boot. Once agents are in, the role-based lookup wins.
-    const agentKey = agents?.find(a => a.is_ea && a.is_terminal)?.slug
+    // Pick the EA that has historically owned this project. R14e-3 fell back
+    // to "first is_ea+is_terminal globally" which resolves to 'elon' for AOM,
+    // but the mission-rooms R3 flow (May 21) started routing all mission room
+    // sends through this path. That meant Elon began answering in mission rooms
+    // where Rex's entire conversation history lives → cross-agent context bleed
+    // showing up as "out of context" replies. Corner's mission rooms have been
+    // Rex's since May 19; honor that continuity. General per-project EA mapping
+    // is a follow-up (see corner/missions/chat-messages/research/
+    // 2026-05-23-mission-slug-leak-cross-room-context.md R2).
+    const projectEAOverride =
+      selectedProject?.slug === 'corner' && agents?.some(a => a.slug === 'rex')
+        ? 'rex'
+        : null
+    const agentKey = projectEAOverride
+      || agents?.find(a => a.is_ea && a.is_terminal)?.slug
       || agents?.find(a => a.is_ea)?.slug
       || 'elon'
     const projectSlug = selectedProject.slug
