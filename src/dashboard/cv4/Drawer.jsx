@@ -30,6 +30,7 @@ export default function CV4Drawer({
   onSelectAgent,
   onSelectProject,
   onNewProject,
+  onNewMission,
   onSelectMission,
   onSelectTask,
   onLogout,
@@ -193,6 +194,7 @@ export default function CV4Drawer({
       onSelectAgent={onSelectAgent}
       onSelectProject={onSelectProject}
       onNewProject={onNewProject}
+      onNewMission={onNewMission}
       onSelectMission={onSelectMission}
       onLogout={onLogout}
       onClose={docked ? () => {} : onClose}
@@ -354,6 +356,7 @@ function DrawerBody({
   onSelectAgent,
   onSelectProject,
   onNewProject,
+  onNewMission,
   onSelectMission,
   onLogout,
   onClose,
@@ -461,6 +464,10 @@ function DrawerBody({
                         />
                       )
                     })}
+                    {/* R78-p9b — new mission door: always visible when expanded */}
+                    {onNewMission && (
+                      <NewMissionRow onClick={() => onNewMission(p)} />
+                    )}
                   </div>
                 )}
               </div>
@@ -733,6 +740,43 @@ function PlainRow({ icon, label, onClick }) {
     >
       {icon}
       <span style={{ fontSize: 13, fontWeight: 500, color: C.text2 }}>{label}</span>
+    </div>
+  )
+}
+
+// R78-p9b — "New mission" row at the bottom of an expanded project's mission list.
+// Clicking opens the NewRoomModal without closing the drawer.
+function NewMissionRow({ onClick }) {
+  return (
+    <div
+      data-row
+      data-cv4-new-mission
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '3px 10px 3px 44px',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.querySelector('[data-label]').style.color = C.muted }}
+      onMouseLeave={(e) => { e.currentTarget.querySelector('[data-label]').style.color = C.dim }}
+    >
+      <span style={{
+        width: 12, height: 12, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: C.dim,
+      }}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </span>
+      <span
+        data-label
+        style={{
+          fontSize: 11.5, fontWeight: 500, color: C.dim,
+          fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+          userSelect: 'none',
+        }}
+      >New mission</span>
     </div>
   )
 }

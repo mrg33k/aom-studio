@@ -492,6 +492,38 @@ export default function CornerV4() {
     }
   }, [worldId, handleSelectProject])
 
+  // R78-p9b corner:new-projects — self-serve mission creation. The "New mission"
+  // row in an expanded project triggers a name popup; on submit we scaffold the
+  // mission and drop the user into its room, where the kickoff greeting waits.
+  const handleCreateMission = useCallback(async (rawName, parentSlug, parentName) => {
+    const name = (rawName || '').trim()
+    if (!name || !worldId || !parentSlug) return
+    const slug = slugify(name) || `mission-${Date.now().toString(36)}`
+    setCreatingRoom(true)
+    setCreateRoomError(null)
+    try {
+      const r = await authFetch('/api/dashboard/create-mission-from-drawer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_slug: parentSlug, mission_slug: slug, name, client_id: worldId }),
+      })
+      const j = await r.json().catch(() => null)
+      if (r.ok && j && j.ok) {
+        setNewRoomModal(null)
+        handleSelectMission(
+          { slug: j.mission_slug || slug, name: j.name || name },
+          { slug: parentSlug, name: parentName || parentSlug }
+        )
+      } else {
+        setCreateRoomError((j && j.error) || 'Could not create the mission. Try again.')
+      }
+    } catch (e) {
+      setCreateRoomError('Could not create the mission. Try again.')
+    } finally {
+      setCreatingRoom(false)
+    }
+  }, [worldId, handleSelectMission])
+
   // R3 corner:mission-rooms — clicking a mission in the drawer OR in the
   // tasks-view file manager routes into a focused chat surface scoped to
   // that mission. Same chat template as a project/agent room; the room
@@ -1805,6 +1837,7 @@ export default function CornerV4() {
             onSelectAgent={handleSelectAgent}
             onSelectProject={handleSelectProject}
             onNewProject={() => setNewRoomModal({ kind: 'project' })}
+            onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
             onSelectMission={(mission, project) => handleSelectMission(mission, project)}
             onSelectTask={(task, mission, project) => {
               // R5 corner:task-rooms — open the task room by routing to the
@@ -1995,6 +2028,7 @@ export default function CornerV4() {
           onSelectAgent={handleSelectAgent}
           onSelectProject={handleSelectProject}
           onNewProject={() => setNewRoomModal({ kind: 'project' })}
+          onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
           onSelectMission={(mission, project) => handleSelectMission(mission, project)}
           onSelectTask={(task, mission, project) => {
             if (project) handleSelectProject(project)
@@ -2023,6 +2057,7 @@ export default function CornerV4() {
           error={createRoomError}
           onSubmit={(name) => {
             if (newRoomModal.kind === 'project') handleCreateProject(name)
+            else if (newRoomModal.kind === 'mission') handleCreateMission(name, newRoomModal.parentSlug, newRoomModal.parentName)
           }}
           onClose={() => { if (!creatingRoom) { setNewRoomModal(null); setCreateRoomError(null) } }}
         />
