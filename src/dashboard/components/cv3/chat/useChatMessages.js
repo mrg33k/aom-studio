@@ -311,11 +311,18 @@ export default function useChatMessages({
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
     setLoadingMsgs(true)
     setMessages([])
+    // M10: project chat messages can live under EITHER the world's client_id
+    // (legacy/owner-world writes) OR the canonical `shared:<slug>` channel
+    // (crossposts, cross-tenant collaboration). Query both so a project room
+    // surfaces its full history regardless of which routing convention the
+    // sender used. Project + agent filter still scopes to this room.
     const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
+    const sharedCid = `shared:${selectedProject.slug}`
+    const clientIds = projCid === sharedCid ? [sharedCid] : [projCid, sharedCid]
     supabase
       .from('messages')
       .select('*')
-      .eq('client_id', projCid)
+      .in('client_id', clientIds)
       .or(`project.eq.${selectedProject.slug},agent.eq.project:${selectedProject.slug}`)
       .order('timestamp', { ascending: false })
       .limit(200)
@@ -337,10 +344,14 @@ export default function useChatMessages({
     const refetchHistory = async () => {
       if (!active) return
       try {
+        // M10: same OR logic as initial load — match both world-keyed and
+        // shared:<slug> client_ids so cross-tenant messages aren't dropped.
+        const sharedCid = `shared:${selectedProject.slug}`
+        const clientIds = projCid === sharedCid ? [sharedCid] : [projCid, sharedCid]
         const { data, error } = await supabase
           .from('messages')
           .select('*')
-          .eq('client_id', projCid)
+          .in('client_id', clientIds)
           .or(`project.eq.${selectedProject.slug},agent.eq.project:${selectedProject.slug}`)
           .order('timestamp', { ascending: false })
           .limit(200)
@@ -353,9 +364,13 @@ export default function useChatMessages({
     const handleInsert = (payload) => {
       const msg = payload.new
       console.debug('[useChatMessages] project-thread INSERT', { id: msg?.id, agent: msg?.agent, role: msg?.role, client_id: msg?.client_id, project: msg?.project })
-      if (msg.client_id !== projCid) {
-        console.debug('[useChatMessages] project-thread DROP: client_id mismatch', { expected: projCid, got: msg.client_id })
-        console.warn('[R53] dropped cross-tenant project message', { expected: projCid, got: msg.client_id, id: msg.id })
+      // M10: accept both the world-keyed projCid AND the canonical
+      // shared:<slug> channel. The project + agent filter below still scopes
+      // to this room, so cross-tenant bleed remains blocked.
+      const sharedCid = `shared:${selectedProject.slug}`
+      if (msg.client_id !== projCid && msg.client_id !== sharedCid) {
+        console.debug('[useChatMessages] project-thread DROP: client_id mismatch', { expected: [projCid, sharedCid], got: msg.client_id })
+        console.warn('[R53] dropped cross-tenant project message', { expected: [projCid, sharedCid], got: msg.client_id, id: msg.id })
         return
       }
       const isForThisProject =
@@ -420,16 +435,19 @@ export default function useChatMessages({
     const subscribe = () => {
       if (!active) return
       try { if (channel) supabase.removeChannel(channel) } catch (_) {}
+      // M10: subscribe on project column so both world-keyed and shared:<slug>
+      // inserts reach handleInsert. handleInsert enforces the dual-client_id
+      // match before accepting, so cross-tenant rows are still rejected.
       channel = supabase
-        .channel(`cv3-project-${projCid}-${selectedProject.slug}-${Date.now()}`)
+        .channel(`cv3-project-${selectedProject.slug}-${Date.now()}`)
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `project=eq.${selectedProject.slug}` },
           handleInsert,
         )
         .on(
           'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `client_id=eq.${projCid}` },
+          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `project=eq.${selectedProject.slug}` },
           handleUpdate,
         )
         .subscribe((status) => {
