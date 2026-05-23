@@ -280,7 +280,7 @@ export default function CornerV4() {
 
   // useDataPipe provides agents, inboxItems, projectRooms (from agent_status),
   // and filters personal/non-personal tasks by the viewer's slug.
-  const { agents, inboxItems, projectRooms, personalTodos } = useDataPipe(null, worldId, currentUserSlug)
+  const { agents, inboxItems, projectRooms, personalTodos, refetch: refetchData } = useDataPipe(null, worldId, currentUserSlug)
 
   // corner:shared-rooms M8 — world-transition reset.
   // The auto-select effect below pins selectedAgent on first paint. On a slow
@@ -501,6 +501,9 @@ export default function CornerV4() {
       if (r.ok && j && j.ok) {
         setNewRoomModal(null)
         handleSelectProject({ slug: j.slug || slug, name: j.name || name })
+        // R78-p9c: force an immediate refetch so the new project appears in the
+        // drawer without waiting for the 60s poll or a Realtime message INSERT.
+        refetchData && refetchData()
       } else {
         setCreateRoomError((j && j.error) || 'Could not create the project. Try again.')
       }
@@ -509,7 +512,7 @@ export default function CornerV4() {
     } finally {
       setCreatingRoom(false)
     }
-  }, [worldId, handleSelectProject])
+  }, [worldId, handleSelectProject, refetchData])
 
   // R3 corner:mission-rooms — clicking a mission in the drawer OR in the
   // tasks-view file manager routes into a focused chat surface scoped to
@@ -560,6 +563,8 @@ export default function CornerV4() {
           { slug: j.mission_slug || slug, name: j.name || name },
           { slug: parentSlug, name: parentName || parentSlug }
         )
+        // R78-p9c: refresh so the new mission appears in the drawer immediately.
+        refetchData && refetchData()
       } else {
         setCreateRoomError((j && j.error) || 'Could not create the mission. Try again.')
       }
@@ -568,7 +573,7 @@ export default function CornerV4() {
     } finally {
       setCreatingRoom(false)
     }
-  }, [worldId, handleSelectMission])
+  }, [worldId, handleSelectMission, refetchData])
 
 
   // corner:notifications R1 — a notification opens the ROOM its message lives

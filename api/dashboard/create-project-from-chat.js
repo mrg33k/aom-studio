@@ -120,6 +120,34 @@ async function scaffoldProject(projectId, slug, clientId) {
   }
 }
 
+// R78-p9c fix: UPSERT an agent_status row so the new project appears via the
+// primary fromAgents display path in useDataPipe. Without this, new projects
+// only exist in the `projects` table and rely on the fragile `fromDefs` secondary
+// path — which silently returns [] on any fetch error and has recency_weight NULL
+// ordering ambiguity. Existing projects have BOTH a `projects` row AND an
+// `agent_status` row; this brings user-created projects to parity.
+async function upsertAgentStatusProject(slug, name, clientId, color) {
+  const payload = {
+    slug,
+    name: name || slug,
+    type: 'project',
+    client_id: clientId,
+    color: color || '#6B8AB0',
+    is_active: true,
+  }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/agent_status`, {
+    method: 'POST',
+    headers: { ...dbHeaders, Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    console.warn(`Failed to upsert agent_status for ${slug}: ${err}`)
+    return false
+  }
+  return true
+}
+
 // Post a row to the canonical `messages` table.
 // NOTE (2026-05-22, R78-p8): the prior version wrote to `supabase_messages`,
 // which does NOT exist (404) — so the forward-link silently never landed.
@@ -188,6 +216,12 @@ export default async function handler(req, res) {
   try {
     // Create or fetch existing project row
     const project = await createProjectRow(slug, name, client_id)
+
+    // R78-p9c: UPSERT into agent_status so the new project appears in the drawer
+    // via the primary fromAgents path (same as all existing projects). Without this,
+    // the project only has a `projects` table row and relies on the fragile fromDefs
+    // secondary path which silently fails on any fetch error.
+    await upsertAgentStatusProject(slug, name || slug, client_id, '#6B8AB0')
 
     // Scaffold mission files (idempotent — checks for existing stubs)
     await scaffoldProject(project.id, slug, client_id)
