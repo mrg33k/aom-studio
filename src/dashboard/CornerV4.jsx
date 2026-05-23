@@ -282,6 +282,25 @@ export default function CornerV4() {
   // and filters personal/non-personal tasks by the viewer's slug.
   const { agents, inboxItems, projectRooms, personalTodos } = useDataPipe(null, worldId, currentUserSlug)
 
+  // corner:shared-rooms M8 — world-transition reset.
+  // The auto-select effect below pins selectedAgent on first paint. On a slow
+  // auth resolve (or an admin world-override flip) the agents list changes
+  // out from under us — e.g. Ben logs in: first render uses the default 'aom'
+  // clientId because auth hasn't resolved, lands on Elon, then arsenal resolves
+  // and agents becomes [ea] but selectedAgent is still elon. Without this
+  // reset, the early-return below blocks re-selection and Ben stays in Elon's
+  // (non-existent for him) room. Reset only fires when the current selection
+  // is genuinely orphaned from the new world's agent list — mid-conversation
+  // users whose agent IS in the new list don't get clobbered.
+  useEffect(() => {
+    if (!agents || agents.length === 0) return
+    if (!selectedAgent) return
+    const stillPresent = agents.some(a => a.slug === selectedAgent.slug)
+    if (stillPresent) return
+    setSelectedAgent(null)
+    setConversationTarget(null)
+  }, [agents, selectedAgent])
+
   // R5.1 / R7.20: no more "home" view. First paint = chat with the system
   // EA (Elon for Patrik). Falls back to the world's EA flag, then to the
   // first agent. Skips auto-select if the user already has a conversation
