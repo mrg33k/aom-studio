@@ -1,16 +1,18 @@
-// RightMenu.jsx — CV4 right-rail redesign (corner:right-menu R2 + R-S1 typography pass)
+// RightMenu.jsx — CV4 right-rail (corner:right-menu R3)
 //
-// Three vertical sections:
-//   1. MISSIONS   — all missions sorted by last-touched (message activity)
-//   2. ACTIVE TASKS — running + queued tasks scoped to the current project room
-//   3. COMPLETED  — done tasks, per-room, capped at 5 visible + show-more
+// Layout (top → bottom):
+//   PANEL HEADER  "Missions" (Instrument Serif)
+//   PROJECT PILLS [All] [Corner] [Ambition] ... [+]   filters the Missions list
+//   SUMMARY       one-line stat of what's in flight
+//   ACTIVE TASKS  (only when something is running/queued)
+//   MISSIONS      list sorted by last-touched, filtered by selected pill
+//   FILES         FilesPanel (current project's canon)
+//   COMPLETED     done tasks, capped at 5 + show-more
 //
 // Replaces TasksPanelCv4 in the right drawer (CornerV4.jsx, tasksDrawerOpen aside).
 // Per VISION: missions never "complete", so there is NO "Completed Missions" section.
-// Completed section holds completed *tasks*, not missions.
 //
 // Mission: corner:right-menu
-// Round: R-S1 — Steffen typography redesign (two-line mission rows, left-stripe status, no pill chrome)
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -67,6 +69,80 @@ function StatusDot({ status }) {
   )
 }
 
+// ── Panel header (top-of-rail title) ────────────────────────────────────────
+
+function PanelHeader({ children }) {
+  return (
+    <div style={{
+      padding: '16px 12px 4px',
+      fontFamily: "'Instrument Serif', Georgia, serif",
+      fontSize: 24,
+      fontWeight: 400,
+      lineHeight: 1.1,
+      color: C.text,
+      letterSpacing: '-0.01em',
+    }}>{children}</div>
+  )
+}
+
+// ── Project pills (filter row directly below header) ────────────────────────
+
+function ProjectPills({ projects, active, onChange }) {
+  const baseStyle = {
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: 10,
+    fontWeight: 500,
+    letterSpacing: '0.04em',
+    padding: '4px 10px',
+    borderRadius: 999,
+    cursor: 'pointer',
+    transition: 'background 120ms ease, color 120ms ease, border-color 120ms ease',
+    userSelect: 'none',
+    whiteSpace: 'nowrap',
+    border: '1px solid transparent',
+    textTransform: 'lowercase',
+  }
+  const pill = (key, label, isAdd = false) => {
+    const isActive = active === key
+    const style = { ...baseStyle }
+    if (isAdd) {
+      style.color = C.muted
+      style.border = '1px dashed ' + C.border2
+      style.background = 'transparent'
+      style.cursor = 'default'
+    } else if (isActive) {
+      style.color = C.accent
+      style.background = 'rgba(16,185,129,0.10)'
+      style.borderColor = 'rgba(16,185,129,0.35)'
+    } else {
+      style.color = C.text2
+      style.background = C.chipBg
+      style.borderColor = C.border2
+    }
+    return (
+      <span
+        key={key}
+        onClick={isAdd ? undefined : () => onChange(key)}
+        onMouseEnter={e => { if (!isActive && !isAdd) e.currentTarget.style.color = C.text }}
+        onMouseLeave={e => { if (!isActive && !isAdd) e.currentTarget.style.color = C.text2 }}
+        style={style}
+      >{label}</span>
+    )
+  }
+  return (
+    <div style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 4,
+      padding: '4px 12px 14px',
+    }}>
+      {pill('all', 'all')}
+      {projects.map(slug => pill(slug, slug))}
+      {pill('__add__', '+', true)}
+    </div>
+  )
+}
+
 // ── Section header ──────────────────────────────────────────────────────────
 
 function SectionLabel({ children }) {
@@ -80,6 +156,49 @@ function SectionLabel({ children }) {
       padding: '20px 12px 8px',
       fontFamily: "'Inter', sans-serif",
     }}>{children}</div>
+  )
+}
+
+// ── Summary block (one-line stat of what's in flight) ───────────────────────
+
+function SummaryBlock({ missionCount, runningCount, queuedCount, doneCount, scopeLabel }) {
+  const dot = (color) => (
+    <span style={{
+      width: 6, height: 6, borderRadius: '50%',
+      background: color, display: 'inline-block', flexShrink: 0,
+      marginRight: 5,
+    }} />
+  )
+  return (
+    <div style={{
+      padding: '2px 12px 6px',
+      fontSize: 12,
+      lineHeight: 1.5,
+      color: C.text2,
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      <span style={{ color: C.text }}>{missionCount}</span> mission{missionCount === 1 ? '' : 's'} in{' '}
+      <span style={{ color: C.text }}>{scopeLabel}</span>
+      <div style={{
+        marginTop: 4,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        fontSize: 11,
+        fontFamily: "'JetBrains Mono', monospace",
+        color: C.muted,
+      }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', color: runningCount > 0 ? C.accent : C.muted }}>
+          {dot(runningCount > 0 ? C.accent : C.muted)}{runningCount} running
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', color: queuedCount > 0 ? C.yellow : C.muted }}>
+          {dot(queuedCount > 0 ? C.yellow : C.muted)}{queuedCount} queued
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+          {dot(C.muted)}{doneCount} done
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -366,12 +485,67 @@ export default function RightMenu() {
   // Completed tasks capped at 5 visible + show-more
   const [showAllCompleted, setShowAllCompleted] = useState(false)
   const COMPLETED_CAP = 5
-  const completedToShow = showAllCompleted ? done.slice(0, 20) : done.slice(0, COMPLETED_CAP)
-  const hiddenCompletedCount = Math.max(0, done.length - COMPLETED_CAP)
 
   // Determine current mission for highlighting
   const currentMission = conversationTarget?.type === 'mission' ? conversationTarget.slug : null
   const currentProject = conversationTarget?.type === 'project' ? conversationTarget.slug : null
+
+  // Project pills — derived from missions (unique projectSlug, in order of appearance)
+  const [activePill, setActivePill] = useState('all')
+  const projectsList = useMemo(() => {
+    const seen = new Set()
+    const out = []
+    for (const m of missionsFlat) {
+      if (m.projectSlug && !seen.has(m.projectSlug)) {
+        seen.add(m.projectSlug)
+        out.push(m.projectSlug)
+      }
+    }
+    return out
+  }, [missionsFlat])
+
+  // If the user navigates into a project room, follow it on the pill — unless
+  // they explicitly clicked a different pill. We do this by snapping to the
+  // current project on mount / when conversation target changes.
+  useEffect(() => {
+    if (currentProject && projectsList.includes(currentProject)) {
+      setActivePill(currentProject)
+    }
+  }, [currentProject, projectsList])
+
+  // Filter missions by active pill
+  const filteredMissions = useMemo(() => {
+    if (activePill === 'all') return missionsFlat
+    return missionsFlat.filter(m => m.projectSlug === activePill)
+  }, [missionsFlat, activePill])
+
+  // Filter tasks by active pill too — so "Active Tasks" + "Completed" stay in
+  // sync with the pill scope. When 'all', show everything; when a project, filter.
+  const filteredActiveTasks = useMemo(() => {
+    if (activePill === 'all') return activeTasks
+    return activeTasks.filter(t => (
+      t.project === activePill ||
+      t.metadata?.project === activePill ||
+      t.metadata?.repo === activePill
+    ))
+  }, [activeTasks, activePill])
+
+  const filteredDone = useMemo(() => {
+    if (activePill === 'all') return done
+    return done.filter(t => (
+      t.project === activePill ||
+      t.metadata?.project === activePill ||
+      t.metadata?.repo === activePill
+    ))
+  }, [done, activePill])
+
+  const completedToShow = showAllCompleted ? filteredDone.slice(0, 20) : filteredDone.slice(0, COMPLETED_CAP)
+  const hiddenCompletedCount = Math.max(0, filteredDone.length - COMPLETED_CAP)
+
+  // Summary stats — scoped to the active pill
+  const runningCount = filteredActiveTasks.filter(t => ['running', 'building', 'active'].includes(t.status)).length
+  const queuedCount = filteredActiveTasks.filter(t => ['queued', 'planning', 'classifying'].includes(t.status)).length
+  const scopeLabel = activePill === 'all' ? 'all projects' : activePill
 
   return (
     <div style={{
@@ -389,7 +563,40 @@ export default function RightMenu() {
         }
       `}</style>
 
-      {/* ── 1. MISSIONS ───────────────────────────────────────── */}
+      {/* ── PANEL HEADER ──────────────────────────────────────── */}
+      <PanelHeader>Missions</PanelHeader>
+
+      {/* ── PROJECT PILLS ─────────────────────────────────────── */}
+      <ProjectPills
+        projects={projectsList}
+        active={activePill}
+        onChange={setActivePill}
+      />
+
+      {/* ── 1. SUMMARY ────────────────────────────────────────── */}
+      <SectionLabel>Summary</SectionLabel>
+      <SummaryBlock
+        missionCount={filteredMissions.length}
+        runningCount={runningCount}
+        queuedCount={queuedCount}
+        doneCount={filteredDone.length}
+        scopeLabel={scopeLabel}
+      />
+
+      {/* ── 2. ACTIVE TASKS (conditional) ─────────────────────── */}
+      {filteredActiveTasks.length > 0 && (
+        <>
+          <Divider />
+          <SectionLabel>Active Tasks</SectionLabel>
+          {filteredActiveTasks.map(task => (
+            <TaskRow key={task.id} task={task} isDone={false} />
+          ))}
+        </>
+      )}
+
+      <Divider />
+
+      {/* ── 3. MISSIONS (filtered by active pill) ─────────────── */}
       <SectionLabel>Missions</SectionLabel>
 
       {missionsLoading && (
@@ -398,11 +605,11 @@ export default function RightMenu() {
         </div>
       )}
 
-      {!missionsLoading && missionsFlat.length === 0 && (
-        <EmptyState text="No missions yet" />
+      {!missionsLoading && filteredMissions.length === 0 && (
+        <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
       )}
 
-      {missionsFlat.map((m, i) => (
+      {filteredMissions.map((m, i) => (
         <MissionRow
           key={m.slug + '-' + i}
           mission={m}
@@ -411,30 +618,23 @@ export default function RightMenu() {
           ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
           isCurrent={
             (currentMission && m.slug === currentMission) ||
-            (currentProject && m.projectSlug === currentProject)
+            (currentProject && m.projectSlug === currentProject && !currentMission)
           }
         />
       ))}
 
       <Divider />
 
-      {/* ── 2. ACTIVE TASKS ───────────────────────────────────── */}
-      <SectionLabel>Active Tasks</SectionLabel>
-
-      {activeTasks.length === 0 && (
-        <EmptyState text="Nothing running" />
-      )}
-
-      {activeTasks.map(task => (
-        <TaskRow key={task.id} task={task} isDone={false} />
-      ))}
+      {/* ── 4. FILES ──────────────────────────────────────────── */}
+      <SectionLabel>Files</SectionLabel>
+      <FilesPanel projectSlug={activePill === 'all' ? currentProject : activePill} />
 
       <Divider />
 
-      {/* ── 3. COMPLETED ──────────────────────────────────────── */}
+      {/* ── 5. COMPLETED ──────────────────────────────────────── */}
       <SectionLabel>Completed</SectionLabel>
 
-      {done.length === 0 && (
+      {filteredDone.length === 0 && (
         <EmptyState text="No completed tasks yet" />
       )}
 
@@ -464,16 +664,6 @@ export default function RightMenu() {
           + {hiddenCompletedCount} more completed
         </button>
       )}
-
-      <Divider />
-
-      {/* ── 4. FILES (R79-f3, mission: corner:files-in-app) ───────
-          Last section per VISION rail order (Missions • Search • Pills •
-          Summary • Pinned • Working • Completed • Files). Renders the
-          current project's canon / tape / research drops / missions tree
-          and opens the ProjectFileReader (R79-f2) as a fullscreen modal
-          when a row is tapped. Stub when no project is selected. */}
-      <FilesPanel projectSlug={currentProject} />
 
       {/* Bottom breathing room */}
       <div style={{ height: 24, flexShrink: 0 }} />
