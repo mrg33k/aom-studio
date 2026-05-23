@@ -311,14 +311,18 @@ export default function useChatMessages({
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
     setLoadingMsgs(true)
     setMessages([])
-    // M10: project chat messages can live under EITHER the world's client_id
-    // (legacy/owner-world writes) OR the canonical `shared:<slug>` channel
-    // (crossposts, cross-tenant collaboration). Query both so a project room
-    // surfaces its full history regardless of which routing convention the
-    // sender used. Project + agent filter still scopes to this room.
-    const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
+    // M10 + R2 fix (2026-05-23): project chat messages can live under EITHER
+    // the world's client_id (owner's historical writes + agent writes from
+    // tmux/bridge) OR the canonical `shared:<slug>` channel (cross-tenant
+    // collaboration writes). Always query BOTH regardless of isShared.
+    //
+    // Why not use isShared as a switch: useProjects.js sets isShared=true on
+    // OWNED projects that have collaborators (project_access rows). The owner's
+    // historical messages still live at client_id=worldId though — narrowing
+    // the read to only shared:<slug> wipes them. Reading both surfaces the
+    // full room history regardless of which channel a sender used.
     const sharedCid = `shared:${selectedProject.slug}`
-    const clientIds = projCid === sharedCid ? [sharedCid] : [projCid, sharedCid]
+    const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
     supabase
       .from('messages')
       .select('*')
@@ -335,7 +339,11 @@ export default function useChatMessages({
   // ── Realtime + self-heal: project chat ───────────────────────────────────
   useEffect(() => {
     if (selectedAgent || !supabase || !worldId || !selectedProject) return
-    const projCid = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
+    // R2 fix (2026-05-23): always include the world channel so owner's
+    // historical messages surface even when the project is shared with
+    // collaborators (isShared=true). See initial-load comment above for
+    // the full reasoning.
+    const sharedCid = `shared:${selectedProject.slug}`
     let active = true
     let channel = null
     let retryTimer = null
@@ -344,10 +352,7 @@ export default function useChatMessages({
     const refetchHistory = async () => {
       if (!active) return
       try {
-        // M10: same OR logic as initial load — match both world-keyed and
-        // shared:<slug> client_ids so cross-tenant messages aren't dropped.
-        const sharedCid = `shared:${selectedProject.slug}`
-        const clientIds = projCid === sharedCid ? [sharedCid] : [projCid, sharedCid]
+        const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
         const { data, error } = await supabase
           .from('messages')
           .select('*')
@@ -364,13 +369,12 @@ export default function useChatMessages({
     const handleInsert = (payload) => {
       const msg = payload.new
       console.debug('[useChatMessages] project-thread INSERT', { id: msg?.id, agent: msg?.agent, role: msg?.role, client_id: msg?.client_id, project: msg?.project })
-      // M10: accept both the world-keyed projCid AND the canonical
-      // shared:<slug> channel. The project + agent filter below still scopes
-      // to this room, so cross-tenant bleed remains blocked.
-      const sharedCid = `shared:${selectedProject.slug}`
-      if (msg.client_id !== projCid && msg.client_id !== sharedCid) {
-        console.debug('[useChatMessages] project-thread DROP: client_id mismatch', { expected: [projCid, sharedCid], got: msg.client_id })
-        console.warn('[R53] dropped cross-tenant project message', { expected: [projCid, sharedCid], got: msg.client_id, id: msg.id })
+      // M10 + R2 fix (2026-05-23): accept both the world channel and the
+      // canonical shared:<slug> channel. The project + agent filter below
+      // still scopes to this room, so cross-tenant bleed remains blocked.
+      if (msg.client_id !== worldId && msg.client_id !== sharedCid) {
+        console.debug('[useChatMessages] project-thread DROP: client_id mismatch', { expected: [worldId, sharedCid], got: msg.client_id })
+        console.warn('[R53] dropped cross-tenant project message', { expected: [worldId, sharedCid], got: msg.client_id, id: msg.id })
         return
       }
       const isForThisProject =
@@ -649,10 +653,14 @@ export default function useChatMessages({
             .order('timestamp', { ascending: false }).limit(200)
           if (!error && Array.isArray(data)) setMessages(prev => mergeServerRows(prev, data.reverse()))
         } else if (projSlug) {
-          const projCid = projIsShared ? `shared:${projSlug}` : worldId
+          // R2 fix (2026-05-23): same dual-channel read as initial load,
+          // so the safety-net refetch doesn't wipe owner messages when
+          // isShared=true on a project they own.
+          const sharedCid = `shared:${projSlug}`
+          const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
           const { data, error } = await supabase
             .from('messages').select('*')
-            .eq('client_id', projCid)
+            .in('client_id', clientIds)
             .or(`project.eq.${projSlug},agent.eq.project:${projSlug}`)
             .order('timestamp', { ascending: false }).limit(200)
           if (!error && Array.isArray(data)) setMessages(prev => mergeServerRows(prev, data.reverse()))
