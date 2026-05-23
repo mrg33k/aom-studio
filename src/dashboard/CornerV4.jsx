@@ -282,22 +282,22 @@ export default function CornerV4() {
   // and filters personal/non-personal tasks by the viewer's slug.
   const { agents, inboxItems, projectRooms, personalTodos } = useDataPipe(null, worldId, currentUserSlug)
 
-  // R5.1 / R7.20: no more "home" view. First paint = chat with the system
-  // EA (Elon for Patrik). Falls back to the world's EA flag, then to the
-  // first agent. Skips auto-select if the user already has a conversation
-  // in flight (e.g. landed on /cv4/project/:id).
+  // R5.1 / R7.20: no more "home" view. First paint = chat with the world's EA.
+  // Reads is_ea + is_terminal from agent_status — works for every tenant without
+  // hard-coding a slug. (Previously hard-coded 'elon', which broke non-AOM worlds
+  // like arsenal where the EA slug is 'ea'.)
+  // Skips auto-select if the user already has a conversation in flight
+  // (e.g. landed on /cv4/project/:id).
   useEffect(() => {
     if (!agents || agents.length === 0) return
     if (selectedAgent || conversationTarget) return
     // mission-rooms: if the URL is on a project (or mission) page, the
     // URL-restore effect below owns the conversationTarget. Don't race
-    // against it by defaulting to Elon's 1:1 — that wins the same-render
-    // setSelectedAgent battle and the user lands on Elon instead of the
-    // project room they navigated to.
+    // against it — that wins the same-render setSelectedAgent battle and
+    // the user lands on the wrong room.
     if (routeProjectId) return
     const target =
-      agents.find(a => a.slug === 'elon')
-      || agents.find(a => a.is_ea && a.is_terminal)
+      agents.find(a => a.is_ea && a.is_terminal)
       || agents.find(a => a.is_ea)
       || agents[0]
     if (!target) return
