@@ -48,7 +48,7 @@ function formatTranscript(transcript) {
   return lines.join('\n')
 }
 
-async function writeMessage({ agent, text, client_id, user_id, user_name }) {
+async function writeMessage({ agent, text, client_id, user_id, user_name, project, mission_slug }) {
   const payload = {
     id: crypto.randomUUID(),
     agent,
@@ -56,6 +56,8 @@ async function writeMessage({ agent, text, client_id, user_id, user_name }) {
     text,
     source: 'voice-handoff',
     client_id: client_id || 'aom',
+    ...(project ? { project } : {}),
+    ...(mission_slug ? { metadata: { mission_slug } } : {}),
     ...(user_id ? { user_id } : {}),
     ...(user_name ? { user_name } : {}),
   }
@@ -86,9 +88,19 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
-  const { agent, transcript, client_id, user_id, user_name, duration_secs } = req.body || {}
+  const { agent, transcript, client_id, user_id, user_name, duration_secs, project, mission_slug } = req.body || {}
   if (!agent || typeof agent !== 'string') {
     return res.status(400).json({ error: 'agent required' })
+  }
+  // 2026-05-23 defensive guard: reject room-key-shaped agent values. A real
+  // agent slug is a single token like 'rex', 'elon', 'gary'. Values containing
+  // ':' or '/' are room keys (e.g. 'project:corner') that the frontend should
+  // have decomposed into agent + project. Letting them through writes a
+  // malformed routing row the bridge can't decode.
+  if (/[:\/]/.test(agent)) {
+    return res.status(400).json({
+      error: `malformed agent slug ${JSON.stringify(agent)} — pass agent + project separately`,
+    })
   }
   if (!Array.isArray(transcript) || transcript.length === 0) {
     // Empty transcript = user muted the whole call or session never got
@@ -108,7 +120,7 @@ export default async function handler(req, res) {
   const body = `${preamble}\n\n## Full transcript\n${transcriptText}`
 
   try {
-    const message = await writeMessage({ agent, text: body, client_id, user_id, user_name })
+    const message = await writeMessage({ agent, text: body, client_id, user_id, user_name, project, mission_slug })
     return res.status(200).json({ ok: true, message_id: message.id, turn_count })
   } catch (err) {
     return res.status(502).json({ error: `failed to write message: ${err.message}` })

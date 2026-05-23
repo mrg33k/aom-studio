@@ -126,7 +126,7 @@ const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange }, ref) {
+const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82F6', clientId = 'aom', projectSlug = null, missionSlug = null, onTranscript, onStatusChange, onVolumeChange, autoStart = false, initialVoice = 'kore', onVoiceChange }, ref) {
   const [status, setStatus] = useState('idle')
   const [transcript, setTranscript] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -421,6 +421,11 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
               client_id: clientId,
               duration_secs: sessionSecs,
               transcript: transcriptBody,
+              // 2026-05-23 fix: project rooms supply these so voice-handoff
+              // writes the row in the correct (project, mission) scope
+              // instead of falling back to a 1:1 with the agent.
+              ...(projectSlug ? { project: projectSlug } : {}),
+              ...(missionSlug ? { mission_slug: missionSlug } : {}),
             }),
           })
           if (!resp.ok) {

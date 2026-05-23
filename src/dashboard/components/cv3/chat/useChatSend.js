@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useCornerData, useCornerNav } from '../../../CornerContext.jsx'
 import { authFetch } from '../../../lib/authFetch.js'
 import { bumpContextMeter } from '../session/ContextFullnessMeter.jsx'
+import { getProjectEA } from '../../../data/project-ea.js'
 
 // Wraps an email into a Mail Room context block prepended to the user's
 // message. The EA reads this and understands: "this is what we're replying
@@ -419,23 +420,10 @@ export default function useChatSend({
     // Fallback to 'elon' only when the agents payload hasn't loaded —
     // prevents a blank agent slug in the optimistic POST during cold
     // boot. Once agents are in, the role-based lookup wins.
-    // Pick the EA that has historically owned this project. R14e-3 fell back
-    // to "first is_ea+is_terminal globally" which resolves to 'elon' for AOM,
-    // but the mission-rooms R3 flow (May 21) started routing all mission room
-    // sends through this path. That meant Elon began answering in mission rooms
-    // where Rex's entire conversation history lives → cross-agent context bleed
-    // showing up as "out of context" replies. Corner's mission rooms have been
-    // Rex's since May 19; honor that continuity. General per-project EA mapping
-    // is a follow-up (see corner/missions/chat-messages/research/
-    // 2026-05-23-mission-slug-leak-cross-room-context.md R2).
-    const projectEAOverride =
-      selectedProject?.slug === 'corner' && agents?.some(a => a.slug === 'rex')
-        ? 'rex'
-        : null
-    const agentKey = projectEAOverride
-      || agents?.find(a => a.is_ea && a.is_terminal)?.slug
-      || agents?.find(a => a.is_ea)?.slug
-      || 'elon'
+    // Resolve the project's EA through the shared helper so every send path
+    // (text chat, voice handoff, etc.) agrees on the agent slug for a given
+    // (project, mission) tuple. See src/dashboard/data/project-ea.js.
+    const agentKey = getProjectEA(selectedProject, agents) || 'elon'
     const projectSlug = selectedProject.slug
     const attSnapshot = pendingAttachmentsRef.current
     const chipsKey = chips.map(c => c.id).join(',')
