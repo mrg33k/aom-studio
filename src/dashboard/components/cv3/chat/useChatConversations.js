@@ -203,11 +203,16 @@ export default function useChatConversations({
     if (!projList.length) return
     let cancelled = false
     Promise.all(projList.map(async p => {
+      // M10: query both the world-keyed client_id and the canonical
+      // shared:<slug> channel so the preview surfaces the latest message
+      // regardless of which routing convention the sender used.
       const cid = p.isShared ? `shared:${p.slug}` : worldId
+      const sharedCid = `shared:${p.slug}`
+      const clientIds = cid === sharedCid ? [sharedCid] : [cid, sharedCid]
       const { data } = await supabase
         .from('messages')
         .select('agent, text, timestamp, project')
-        .eq('client_id', cid)
+        .in('client_id', clientIds)
         .or(`project.eq.${p.slug},agent.eq.project:${p.slug}`)
         .order('timestamp', { ascending: false })
         .limit(1)
