@@ -492,6 +492,33 @@ export default function CornerV4() {
     }
   }, [worldId, handleSelectProject])
 
+  // R3 corner:mission-rooms — clicking a mission in the drawer OR in the
+  // tasks-view file manager routes into a focused chat surface scoped to
+  // that mission. Same chat template as a project/agent room; the room
+  // is keyed by project+mission so the bridge loads mission CONTEXT/VISION/
+  // BUILD as starting context (bridge.py R1) and `mission_slug` rides on
+  // every outgoing message's metadata so the SDK reply is mission-aware.
+  const handleSelectMission = useCallback((mission, project) => {
+    if (!mission || !project) return
+    setSelectedAgent(null)
+    setConversationTarget({
+      name: mission.name || mission.slug,
+      slug: project.slug,
+      type: 'project',
+      missionSlug: mission.slug,
+      missionName: mission.name || mission.slug,
+      missionPath: mission.path || `corner:${mission.slug}`,
+    })
+    setAttachedMission(null)
+    setTab('chat')
+    setUnreadChat(0)
+    // corner:notifications R2 — opening the mission room clears that mission's
+    // notification dot (roomKey = full mission_slug "project:mission").
+    setNotifReadAt(prev => ({ ...prev, [`${project.slug}:${mission.slug}`]: new Date().toISOString() }))
+    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+    navigate(`${basePath}/project/${project.slug}?mission=${encodeURIComponent(mission.slug)}`)
+  }, [navigate])
+
   // R78-p9b corner:new-projects — self-serve mission creation. The "New mission"
   // row in an expanded project triggers a name popup; on submit we scaffold the
   // mission and drop the user into its room, where the kickoff greeting waits.
@@ -524,32 +551,6 @@ export default function CornerV4() {
     }
   }, [worldId, handleSelectMission])
 
-  // R3 corner:mission-rooms — clicking a mission in the drawer OR in the
-  // tasks-view file manager routes into a focused chat surface scoped to
-  // that mission. Same chat template as a project/agent room; the room
-  // is keyed by project+mission so the bridge loads mission CONTEXT/VISION/
-  // BUILD as starting context (bridge.py R1) and `mission_slug` rides on
-  // every outgoing message's metadata so the SDK reply is mission-aware.
-  const handleSelectMission = useCallback((mission, project) => {
-    if (!mission || !project) return
-    setSelectedAgent(null)
-    setConversationTarget({
-      name: mission.name || mission.slug,
-      slug: project.slug,
-      type: 'project',
-      missionSlug: mission.slug,
-      missionName: mission.name || mission.slug,
-      missionPath: mission.path || `corner:${mission.slug}`,
-    })
-    setAttachedMission(null)
-    setTab('chat')
-    setUnreadChat(0)
-    // corner:notifications R2 — opening the mission room clears that mission's
-    // notification dot (roomKey = full mission_slug "project:mission").
-    setNotifReadAt(prev => ({ ...prev, [`${project.slug}:${mission.slug}`]: new Date().toISOString() }))
-    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-    navigate(`${basePath}/project/${project.slug}?mission=${encodeURIComponent(mission.slug)}`)
-  }, [navigate])
 
   // corner:notifications R1 — a notification opens the ROOM its message lives
   // in, not the agent that sent it. Routes to the mission room when the item
