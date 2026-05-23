@@ -309,7 +309,11 @@ export default function ProjectSettingsModal() {
                             fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
                               .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
                           } else {
+                            if (data?.error && /no corner account/i.test(data.error)) {
+                            setInviteMsg({ type: 'err', kind: 'not_in_corner', text: 'That email isn\'t in Corner yet. Self-signup-from-invite is on the roadmap (corner:shared-rooms M12 deep) — for now, ask them to sign up first, then come back here to invite them.' })
+                          } else {
                             setInviteMsg({ type: 'err', text: data.error || 'Server returned no error message — check the Network tab for details.' })
+                          }
                           }
                         })
                         .catch((e) => setInviteMsg({ type: 'err', text: `Invite failed: ${e?.message || 'network error'}` }))
@@ -349,7 +353,11 @@ export default function ProjectSettingsModal() {
                           fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
                             .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
                         } else {
-                          setInviteMsg({ type: 'err', text: data.error || 'Server returned no error message — check the Network tab for details.' })
+                          if (data?.error && /no corner account/i.test(data.error)) {
+                            setInviteMsg({ type: 'err', kind: 'not_in_corner', text: 'That email isn\'t in Corner yet. Self-signup-from-invite is on the roadmap (corner:shared-rooms M12 deep) — for now, ask them to sign up first, then come back here to invite them.' })
+                          } else {
+                            setInviteMsg({ type: 'err', text: data.error || 'Server returned no error message — check the Network tab for details.' })
+                          }
                         }
                       })
                       .catch((e) => setInviteMsg({ type: 'err', text: `Invite failed: ${e?.message || 'network error'}` }))
