@@ -8,6 +8,8 @@ const STATUS_LABELS = {
   connecting: 'Connecting…',
   listening: 'Listening',
   speaking: 'Speaking',
+  creating: 'Creating…',
+  'wrapping-up': 'Wrapping up…',
   error: 'Error',
 }
 

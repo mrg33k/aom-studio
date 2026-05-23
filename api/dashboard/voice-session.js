@@ -2,6 +2,8 @@
 // Returns everything the browser needs to connect directly to Gemini Live.
 // No proxy, no edge function. Browser -> Google WebSocket.
 
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,7 +49,7 @@ SYSTEM MAP (what exists, where things live):
 - iMessage: send-imessage.sh uses AppleScript + Messages.app. Patrik gets notified on task completion.
 - Voice: this session. Browser > Gemini 3.1 Flash Live WebSocket > audio playback.
 - Scripts: 50+ in AOM-EA/scripts (task lifecycle, relay, decomposition, verification, notifications)
-- Dashboard: CornerV3.jsx is the ONLY active view. Two tabs: Home (conversations) and Tasks (pipeline). Dark theme. All work happens in CornerV3. BoardView and all other old views are dead code in _legacy/.
+- Dashboard: CV4 (CornerV4.jsx) is the active design surface at aheadofmarket.com/dashboard. Two panels: conversations on left, mission/project context on right. CV3 is live prod (emergency fixes only). BoardView, GameDashboard, GameHUD are dead code -- never touch them.
 
 WHEN PATRIK ASKS FOR SOMETHING TECHNICAL:
 You are a voice thinking partner, not a code explorer. Listen to what he wants, restate it back briefly so he knows you got it, and keep the conversation moving. DO NOT try to read or search the codebase during a call. DO NOT try to plan the approach. Tasks are NOT created during the call -- after you hang up, a summary of the conversation is turned into task rows automatically. Your job on the live call is to hear his intent clearly and help him sharpen it.`;
@@ -183,6 +185,45 @@ async function getAgentStatuses(clientId) {
   } catch { return []; }
 }
 
+async function getActiveProjects(clientId) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.true&select=slug,name&order=name.asc`,
+      { headers: supaHeaders() }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : [];
+  } catch { return []; }
+}
+
+// Compact workspace snapshot: active missions + projects from registry
+function buildWorkspaceSnapshot(activeProjects) {
+  const now = new Date().toISOString().slice(0, 10);
+  const activeMissions = (missionsRegistry?.missions || [])
+    .filter(m => !m.is_done && m.status !== 'archived')
+    .map(m => `  • ${m.name} [${m.project_slug}${m.workstream ? '/' + m.workstream : ''}]`)
+    .slice(0, 20)
+  const projectLines = activeProjects.map(p => `  • ${p.name} (${p.slug})`).slice(0, 15)
+
+  return [
+    `WORKSPACE SNAPSHOT (${now}):`,
+    '',
+    'Active missions:',
+    activeMissions.length > 0 ? activeMissions.join('\n') : '  (none)',
+    '',
+    'Active projects:',
+    projectLines.length > 0 ? projectLines.join('\n') : '  (none)',
+    '',
+    'System principles:',
+    '  • Every task attaches to a project + mission (super-agent-mission-first)',
+    '  • Agents do work in the room by default (/007 mode); dispatch is opt-in for parallel work',
+    '  • CV4 is the active Corner design surface; CV3 stays sacred for live-prod emergency fixes',
+    '  • Voice transcripts persist as source=voice rows; call end fires voice-handoff (no ceremony)',
+  ].join('\n')
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -197,13 +238,14 @@ export default async function handler(req, res) {
   const clientId = (client_id && String(client_id).trim()) || 'aom';
 
   // Pull live context in parallel
-  const [agentRow, recentMessages, activeTasks, agentStatuses, tape, recentDone] = await Promise.all([
+  const [agentRow, recentMessages, activeTasks, agentStatuses, tape, recentDone, activeProjects] = await Promise.all([
     getAgentIdentity(agentSlug),
     getRecentMessages(agentSlug, clientId),
     getTasks(clientId),
     getAgentStatuses(clientId),
     getAgentTape(agentSlug, clientId),
     getRecentCompleted(clientId),
+    getActiveProjects(clientId),
   ]);
 
   // Build system instruction with agent identity + live context
@@ -216,6 +258,9 @@ Voice: ${agentRow.voice_style || 'Natural, human, direct.'}
 
 ${BASE_INSTRUCTION}`;
   }
+
+  // Inject workspace snapshot (missions + projects + system principles)
+  systemInstruction += `\n\n${buildWorkspaceSnapshot(activeProjects)}`;
 
   // Inject tape (agent's long-term memory)
   if (tape) {
@@ -310,6 +355,32 @@ ${BASE_INSTRUCTION}`;
               required: ['section', 'content'],
             },
           }] : []),
+          {
+            name: 'create_project',
+            description: 'Create a new project in the workspace. Use when Patrik describes a new client, initiative, or body of work that deserves its own project room. The project gets scaffolded immediately and a room is created. Say "Creating [name] right now" then call this.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                name: { type: 'STRING', description: 'Human-readable project name (e.g. "Phoenix Bakery", "ISA Energy")' },
+                description: { type: 'STRING', description: 'One sentence describing what this project is about' },
+                team: { type: 'STRING', description: 'Optional comma-separated agent slugs who should work on this (e.g. "alex,cleo,bobby")' },
+              },
+              required: ['name'],
+            },
+          },
+          {
+            name: 'create_mission',
+            description: 'Create a new mission under an existing project. Use when Patrik identifies a specific initiative, deliverable, or work scope within a project. A mission gets scaffolded and a kickoff message is posted. Say "Creating that mission right now" then call this.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                name: { type: 'STRING', description: 'Human-readable mission name (e.g. "Hero Section Redesign", "Google Ads Launch")' },
+                project: { type: 'STRING', description: 'The project slug this mission belongs under (use the slug, e.g. "phoenix-bakery", "ambition-mechanical")' },
+                description: { type: 'STRING', description: 'One sentence describing what this mission is meant to accomplish' },
+              },
+              required: ['name', 'project'],
+            },
+          },
         ],
       }],
     },

@@ -802,9 +802,64 @@ function MessageList({ roomType = 'agent' }) {
             )
           }
 
-          // Voice transcript (agent rooms only).
-          if (!isProject && msg.source === 'voice') {
+          // Voice entity creation card (project and agent rooms).
+          if (msg.source === 'voice_creation') {
+            const meta = msg.metadata || {}
+            const isProject_ = meta.entity_type === 'project'
+            const entityLabel = isProject_ ? 'Project' : 'Mission'
+            const entityName = meta.entity_name || msg.text
+            const parentLine = !isProject_ && meta.parent_slug ? `under ${meta.parent_slug}` : ''
+            const descLine = meta.description ? meta.description : ''
+            return (
+              <div key={msg.id} style={{
+                display: 'flex', justifyContent: 'flex-start',
+                marginBottom: 8, ...floatStyle,
+              }}>
+                <div style={{
+                  maxWidth: '82%', padding: '10px 14px', borderRadius: 10,
+                  background: 'rgba(52,211,153,0.08)',
+                  border: '1px solid rgba(52,211,153,0.3)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 14 }}>{isProject_ ? '📁' : '🎯'}</span>
+                    <span style={{
+                      fontSize: 8, fontWeight: 800, color: '#34D399',
+                      textTransform: 'uppercase', letterSpacing: '0.12em',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      {entityLabel} created · voice
+                    </span>
+                  </div>
+                  <div style={{
+                    fontSize: 14, fontWeight: 700, color: '#E2E8F0',
+                    marginBottom: descLine || parentLine ? 3 : 0,
+                  }}>
+                    {entityName}
+                  </div>
+                  {(parentLine || descLine) && (
+                    <div style={{ fontSize: 12, color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>
+                      {parentLine && <span>{parentLine}</span>}
+                      {parentLine && descLine && <span> · </span>}
+                      {descLine && <span>{descLine}</span>}
+                    </div>
+                  )}
+                  <div style={{
+                    fontSize: 9, color: 'rgba(52,211,153,0.45)',
+                    marginTop: 5, fontFamily: "'JetBrains Mono', monospace",
+                  }}>
+                    {formatChatTime(msg.timestamp)}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          // Voice transcript (agent and project rooms).
+          if (msg.source === 'voice') {
             const isVoiceUser = msg.role === 'user'
+            const voiceBadge = isProject
+              ? 'voice session'
+              : `not sent to ${selectedAgent?.name || 'agent'}`
             return (
               <div key={msg.id} style={{
                 display: 'flex',
@@ -832,7 +887,7 @@ function MessageList({ roomType = 'agent' }) {
                       padding: '1px 5px', borderRadius: 4,
                       background: 'rgba(129,140,248,0.15)',
                     }}>
-                      not sent to {selectedAgent.name}
+                      {voiceBadge}
                     </span>
                   </div>
                   <div style={{

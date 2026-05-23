@@ -2,7 +2,6 @@ import VoiceChat from '../../VoiceChat.jsx'
 import {
   useChatCore,
   useChatMessagesCtx,
-  useChatSendCtx,
   useChatVoiceCtx,
   useChatSettingsCtx,
 } from '../chat/ChatPanelContext.jsx'
@@ -10,13 +9,12 @@ import { authFetch } from '../../../lib/authFetch.js'
 
 // Hidden VoiceChat host for the project-chat room. When voice is active, this
 // component renders the real WebRTC session, streams transcripts into the
-// messages array, and persists each voice turn to Supabase. On session end it
-// triggers a "[Voice conversation just ended]" prompt into the composer so the
-// operator can summarize + queue tasks.
+// messages array, and persists each voice turn to Supabase. On session end,
+// VoiceChat already calls voice-handoff.js (which writes a consolidated
+// transcript row with source='voice-handoff') -- no additional prompt needed.
 export default function ProjectVoiceChatHost() {
   const { selectedProject, worldId, userIdentity } = useChatCore()
-  const { setMessages, messagesRef } = useChatMessagesCtx()
-  const { sendProjectText } = useChatSendCtx()
+  const { setMessages } = useChatMessagesCtx()
   const {
     voiceChatRef,
     setVoiceTranscriptText, setVoiceStatus,
@@ -73,13 +71,8 @@ export default function ProjectVoiceChatHost() {
             setIsVoiceActive(false)
             setVoiceMuted(false)
             setVoiceTranscriptText('')
-            // Voice session ended -- ask operator to summarize and create follow-ups
-            const voiceMsgs = messagesRef.current?.filter(m => m.source === 'voice') || []
-            if (voiceMsgs.length >= 4) {
-              setTimeout(() => {
-                sendProjectText('[Voice conversation just ended] Review our voice conversation above. Post a brief summary of what we discussed and any decisions made. If there are action items or tasks that should be created, create them now. Do not ask for permission -- just summarize and queue any tasks that came up.')
-              }, 1500)
-            }
+            // VoiceChat.jsx already calls voice-handoff.js at stopSession() which
+            // writes a consolidated voice-handoff message row -- no ceremony needed here.
           }
         }}
         onVolumeChange={setVoiceVolume}

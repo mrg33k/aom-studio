@@ -772,6 +772,39 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentColor = '#3B82
                 } catch (err) {
                   result = { error: err.message }
                 }
+              } else if (call.name === 'create_project' || call.name === 'create_mission') {
+                const prevStatus = status
+                updateStatus('creating')
+                try {
+                  const resp = await fetch('/api/dashboard/voice-create-entity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      entity_type: call.name === 'create_project' ? 'project' : 'mission',
+                      name: args.name,
+                      description: args.description || '',
+                      ...(call.name === 'create_project' ? { team: args.team } : { project: args.project }),
+                      client_id: clientId,
+                      agent_slug: agentSlug,
+                    }),
+                  })
+                  const data = await resp.json()
+                  if (data.ok) {
+                    const label = call.name === 'create_project'
+                      ? `Project created: ${data.name}`
+                      : `Mission created: ${data.name} (under ${data.parent_slug})`
+                    addSystemMessage(label)
+                    result = { ok: true, name: data.name, slug: data.slug || data.mission_slug, message: label }
+                  } else {
+                    result = { ok: false, error: data.error || 'Creation failed' }
+                    addSystemMessage(`Creation failed: ${result.error}`)
+                  }
+                } catch (err) {
+                  result = { ok: false, error: err.message }
+                  addSystemMessage(`Creation error: ${err.message}`)
+                } finally {
+                  updateStatus(prevStatus === 'creating' ? 'listening' : prevStatus)
+                }
               } else {
                 result = { error: `Unknown function: ${call.name}` }
               }
