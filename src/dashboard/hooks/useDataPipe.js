@@ -711,7 +711,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   // Post-rewire (Apr 14): AOM terminal rooms. Rex added Apr 15 (chat was not wired).
   // The picker reads this array, so the guaranteed set here prevents a stale Supabase
   // row from leaking a ghost room back into the UI.
-  const AOM_TERMINAL_SLUGS = ['rex', 'elon', 'gary']
+  // Order matters: the first is_ea+is_terminal agent in this list becomes
+  // the default landing room for AOM users (see CornerV4 landing effect).
+  const AOM_TERMINAL_SLUGS = ['elon', 'rex', 'gary']
   const clientId = getClientId()
 
   let agents

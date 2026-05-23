@@ -282,12 +282,31 @@ export default function CornerV4() {
   // and filters personal/non-personal tasks by the viewer's slug.
   const { agents, inboxItems, projectRooms, personalTodos } = useDataPipe(null, worldId, currentUserSlug)
 
+  // corner:shared-rooms M8 — world-transition reset.
+  // The auto-select effect below pins selectedAgent on first paint. On a slow
+  // auth resolve (or an admin world-override flip) the agents list changes
+  // out from under us — e.g. Ben logs in: first render uses the default 'aom'
+  // clientId because auth hasn't resolved, picks a default AOM EA, then
+  // arsenal resolves and agents becomes [ea] but selectedAgent is still pinned
+  // to the AOM one. Without this reset, the early-return below blocks
+  // re-selection and Ben stays in a room for an agent that doesn't exist in
+  // his world. Reset only fires when the current selection is genuinely
+  // orphaned from the new world's agent list — mid-conversation users whose
+  // agent IS in the new list don't get clobbered.
+  useEffect(() => {
+    if (!agents || agents.length === 0) return
+    if (!selectedAgent) return
+    const stillPresent = agents.some(a => a.slug === selectedAgent.slug)
+    if (stillPresent) return
+    setSelectedAgent(null)
+    setConversationTarget(null)
+  }, [agents, selectedAgent])
+
   // R5.1 / R7.20: no more "home" view. First paint = chat with the world's EA.
   // Reads is_ea + is_terminal from agent_status — works for every tenant without
   // hard-coding a slug. (Previously hard-coded 'elon', which broke non-AOM worlds
-  // like arsenal where the EA slug is 'ea'.)
-  // Skips auto-select if the user already has a conversation in flight
-  // (e.g. landed on /cv4/project/:id).
+  // like arsenal where the EA slug is 'ea'.) Skips auto-select if the user
+  // already has a conversation in flight (e.g. landed on /cv4/project/:id).
   useEffect(() => {
     if (!agents || agents.length === 0) return
     if (selectedAgent || conversationTarget) return
@@ -618,8 +637,7 @@ export default function CornerV4() {
       // Mobile: center column is tab-controlled; 'tasks' tab shows mail list.
       setTab(isDesktop ? 'chat' : 'tasks')
       setTasksDrawerOpen(true)
-      const ea = (agents || []).find(a => a.slug === 'elon')
-        || (agents || []).find(a => a.is_ea && a.is_terminal)
+      const ea = (agents || []).find(a => a.is_ea && a.is_terminal)
         || (agents || []).find(a => a.is_ea)
       if (ea && ea.slug !== selectedAgent?.slug) {
         setSelectedAgent(ea)
@@ -686,7 +704,7 @@ export default function CornerV4() {
   const handleInputBarFocus = useCallback(() => {
     // If not already on chat view, open chat with last selected agent or rex
     if (tab !== 'chat') {
-      const target = selectedAgent || agents?.find(a => a.slug === 'elon') || agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
+      const target = selectedAgent || agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
       if (target) {
         setSelectedAgent(target)
         setConversationTarget({ name: target.name, type: 'agent' })
@@ -701,7 +719,7 @@ export default function CornerV4() {
     if (!text || inputBarSending) return
 
     // Ensure we have an agent to send to
-    const target = selectedAgent || agents?.find(a => a.slug === 'elon') || agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
+    const target = selectedAgent || agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
     if (!target) return
 
     // Switch to chat tab if not already there
