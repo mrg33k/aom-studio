@@ -236,12 +236,20 @@ export default function CornerV4() {
     const params = new URLSearchParams(routeLocation.search || '')
     const missionSlug = params.get('mission')
     if (!missionSlug) {
-      // mission-rooms: search param dropped → return to the project's
-      // general chat (clear the mission scope but keep the project).
+      // mission-rooms: search param dropped OR direct-URL navigation to a
+      // project room with no mission scope. Either way the conversationTarget
+      // must reflect this project so ChatPanel renders the project chat
+      // surface (not the empty Home fallback). Three cases:
+      //   1) prev is null (direct URL load, e.g. /dashboard/project/space-rising)
+      //      → set it to a plain project target so the room actually opens
+      //      and its messages load (without this the chat tab falls through
+      //      to "Home / Start a conversation" and history never appears).
+      //   2) prev has missionSlug (room change clearing mission scope) → drop mission
+      //   3) prev is already this project with no mission → no-op
+      setSelectedAgent(null)
       setConversationTarget(prev => {
-        if (!prev || !prev.missionSlug) return prev
-        if (prev.slug !== routeProjectId) return prev
-        return { name: prev.name || prev.slug, slug: prev.slug, type: 'project' }
+        if (prev && prev.slug === routeProjectId && !prev.missionSlug) return prev
+        return { name: prev?.name || routeProjectId, slug: routeProjectId, type: 'project' }
       })
       return
     }
