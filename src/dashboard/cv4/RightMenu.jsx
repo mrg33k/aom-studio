@@ -159,45 +159,46 @@ function SectionLabel({ children }) {
   )
 }
 
-// ── Summary block (one-line stat of what's in flight) ───────────────────────
+// ── Summary block (plain-English briefing, not stat counters) ───────────────
 
-function SummaryBlock({ missionCount, runningCount, queuedCount, doneCount, scopeLabel }) {
-  const dot = (color) => (
-    <span style={{
-      width: 6, height: 6, borderRadius: '50%',
-      background: color, display: 'inline-block', flexShrink: 0,
-      marginRight: 5,
-    }} />
-  )
+function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, lastActiveName, lastActiveAge }) {
+  const activeCount = runningCount + queuedCount
+
+  // Build the primary sentence in plain English
+  let primary
+  if (activeCount > 0) {
+    const taskWord = activeCount === 1 ? 'task' : 'tasks'
+    if (runningCount > 0 && queuedCount > 0) {
+      primary = `${runningCount} running, ${queuedCount} queued in ${scopeLabel}.`
+    } else if (runningCount > 0) {
+      primary = `${runningCount} ${taskWord} running in ${scopeLabel}.`
+    } else {
+      primary = `${queuedCount} ${taskWord} queued in ${scopeLabel}.`
+    }
+  } else {
+    const mWord = missionCount === 1 ? 'mission' : 'missions'
+    primary = `${missionCount} ${mWord} in ${scopeLabel}. Quiet right now.`
+  }
+
   return (
     <div style={{
-      padding: '2px 12px 6px',
-      fontSize: 12,
-      lineHeight: 1.5,
-      color: C.text2,
+      padding: '2px 12px 8px',
       fontFamily: "'Inter', sans-serif",
     }}>
-      <span style={{ color: C.text }}>{missionCount}</span> mission{missionCount === 1 ? '' : 's'} in{' '}
-      <span style={{ color: C.text }}>{scopeLabel}</span>
-      <div style={{
-        marginTop: 4,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        fontSize: 11,
-        fontFamily: "'JetBrains Mono', monospace",
-        color: C.muted,
-      }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', color: runningCount > 0 ? C.accent : C.muted }}>
-          {dot(runningCount > 0 ? C.accent : C.muted)}{runningCount} running
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', color: queuedCount > 0 ? C.yellow : C.muted }}>
-          {dot(queuedCount > 0 ? C.yellow : C.muted)}{queuedCount} queued
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-          {dot(C.muted)}{doneCount} done
-        </span>
-      </div>
+      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{primary}</div>
+      {lastActiveName && (
+        <div style={{ fontSize: 11, color: C.muted, marginTop: 4, lineHeight: 1.4 }}>
+          {'Last active: '}
+          <span style={{ color: C.text2 }}>{lastActiveName}</span>
+          {lastActiveAge && (
+            <span style={{
+              color: C.muted,
+              fontFamily: "'JetBrains Mono', monospace",
+              marginLeft: 5,
+            }}>{lastActiveAge}</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -448,22 +449,20 @@ export default function RightMenu() {
               name: m.name || m.slug || m.path,
               projectSlug: p.slug || p.name,
               dotStatus,
-              lastTouched: m.last_touched || null,
-              // put running ones first, then queued, then idle — last-touched within each group
+              // last_message_at = most recent message in this mission (from messages table join)
+              // last_updated = when the CONTEXT.md was last touched on disk
+              lastTouched: m.last_message_at || m.last_updated || null,
             })
           }
         }
 
-        // Sort: running first, then queued, then idle; within groups by last_touched desc
+        // Sort: most recently active mission first (last message or last update).
+        // Missions with no timestamp fall to the bottom, alphabetical among themselves.
         flat.sort((a, b) => {
-          const order = { running: 0, queued: 1, idle: 2 }
-          const ao = order[a.dotStatus] ?? 2
-          const bo = order[b.dotStatus] ?? 2
-          if (ao !== bo) return ao - bo
           if (a.lastTouched && b.lastTouched) return new Date(b.lastTouched) - new Date(a.lastTouched)
           if (a.lastTouched) return -1
           if (b.lastTouched) return 1
-          return 0
+          return (a.slug || '').localeCompare(b.slug || '')
         })
 
         if (!cancelled) {
@@ -547,6 +546,15 @@ export default function RightMenu() {
   const queuedCount = filteredActiveTasks.filter(t => ['queued', 'planning', 'classifying'].includes(t.status)).length
   const scopeLabel = activePill === 'all' ? 'all projects' : activePill
 
+  // "Last active" — the most recently touched mission in the filtered list
+  const lastActiveM = filteredMissions.find(m => m.lastTouched) || null
+  const lastActiveAge = lastActiveM?.lastTouched ? relativeAge(lastActiveM.lastTouched) : null
+  const lastActiveName = lastActiveM
+    ? (activePill === 'all'
+        ? `${lastActiveM.projectSlug}:${lastActiveM.slug}`
+        : lastActiveM.slug)
+    : null
+
   return (
     <div style={{
       display: 'flex',
@@ -579,8 +587,9 @@ export default function RightMenu() {
         missionCount={filteredMissions.length}
         runningCount={runningCount}
         queuedCount={queuedCount}
-        doneCount={filteredDone.length}
         scopeLabel={scopeLabel}
+        lastActiveName={lastActiveName}
+        lastActiveAge={lastActiveAge}
       />
 
       {/* ── 2. ACTIVE TASKS (conditional) ─────────────────────── */}
