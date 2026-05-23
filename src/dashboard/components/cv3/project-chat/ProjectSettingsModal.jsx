@@ -309,10 +309,10 @@ export default function ProjectSettingsModal() {
                             fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
                               .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
                           } else {
-                            setInviteMsg({ type: 'err', text: data.error })
+                            setInviteMsg({ type: 'err', text: data.error || 'Server returned no error message — check the Network tab for details.' })
                           }
                         })
-                        .catch(() => setInviteMsg({ type: 'err', text: 'Failed to invite' }))
+                        .catch((e) => setInviteMsg({ type: 'err', text: `Invite failed: ${e?.message || 'network error'}` }))
                         .finally(() => setInviteLoading(false))
                     }
                   }}
@@ -349,10 +349,10 @@ export default function ProjectSettingsModal() {
                           fetch(`/api/dashboard/project-invite?project_id=${selectedProject.id}`)
                             .then(r => r.json()).then(d => { if (d.collaborators) setCollaborators(d.collaborators) })
                         } else {
-                          setInviteMsg({ type: 'err', text: data.error })
+                          setInviteMsg({ type: 'err', text: data.error || 'Server returned no error message — check the Network tab for details.' })
                         }
                       })
-                      .catch(() => setInviteMsg({ type: 'err', text: 'Failed to invite' }))
+                      .catch((e) => setInviteMsg({ type: 'err', text: `Invite failed: ${e?.message || 'network error'}` }))
                       .finally(() => setInviteLoading(false))
                   }}
                   style={{
