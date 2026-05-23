@@ -35,10 +35,27 @@ function mergeServerRows(prev, serverRows) {
       if (!matched) preservedTempIds.add(m.id)
     }
   }
+  // M3 fix: also preserve prev messages with real (non-temp) IDs that aren't in
+  // the current server snapshot. This covers the race where:
+  //   1. User sends → temp-user-xxx added to state
+  //   2. Bridge POST returns → temp ID swapped to real UUID
+  //   3. refetchHistory() fires (reconnect / focus) with a stale snapshot that
+  //      doesn't yet include the newly written row
+  //   4. mergeServerRows drops the real-UUID message → flash-then-empty-space bug
+  // By preserving these rows, the message stays visible until Realtime INSERT
+  // delivers the confirmed row and the dedup pass at the bottom absorbs it cleanly.
+  const serverIdSet = new Set(serverRows.map(r => r.id))
+  const preservedRealIds = new Set()
+  const OPTIMISTIC_PREFIXES = ['temp-', 'bridge-stream-', 'voice-']
+  for (const m of prev) {
+    if (typeof m.id !== 'string') continue
+    if (OPTIMISTIC_PREFIXES.some(p => m.id.startsWith(p))) continue // handled by preservedTempIds
+    if (!serverIdSet.has(m.id)) preservedRealIds.add(m.id)
+  }
   // Rebuild, sorted by timestamp ascending.
   const out = []
   for (const m of prev) {
-    if (preservedTempIds.has(m.id)) out.push(m)
+    if (preservedTempIds.has(m.id) || preservedRealIds.has(m.id)) out.push(m)
   }
   for (const row of serverRows) out.push(row)
   out.sort((a, b) => {
