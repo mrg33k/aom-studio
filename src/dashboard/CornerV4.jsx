@@ -414,6 +414,49 @@ export default function CornerV4() {
   // Keep tabRef in sync so realtime callback always sees current tab without resubscribing
   useEffect(() => { tabRef.current = tab }, [tab])
 
+  // ── New-user onboarding auto-start ────────────────────────────────────────
+  // When a brand new user loads their empty workspace, the EA waits silently
+  // because it only replies — it never initiates. This effect fires a hidden
+  // kickoff trigger after auth + agents resolve so the EA starts the
+  // conversation without the user having to type first.
+  // Guard: only fires once per world (sessionStorage key), only for non-AOM
+  // worlds where the user has no messages yet.
+  useEffect(() => {
+    if (!authReady || !worldId || !currentUser) return
+    if (worldId === 'aom') return  // Patrik's world — never auto-start
+    const flagKey = `onboard-started-${worldId}`
+    if (sessionStorage.getItem(flagKey)) return
+    const defaultAgent = agents?.[0]
+    if (!defaultAgent) return
+    // Delay to let the message list load before we check if it's empty
+    const timer = setTimeout(async () => {
+      try {
+        const r = await authFetch(
+          `/api/dashboard/supabase-messages?client=${encodeURIComponent(worldId)}&limit=1`
+        )
+        if (!r.ok) return
+        const data = await r.json()
+        const msgs = Array.isArray(data?.messages) ? data.messages : Array.isArray(data) ? data : []
+        if (msgs.length > 0) return  // already has messages — not new
+        // No messages — fire the onboarding kickoff
+        sessionStorage.setItem(flagKey, '1')
+        await authFetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: defaultAgent.slug,
+            text: 'Hey',
+            role: 'user',
+            source: 'corner-onboarding-auto',
+            client_id: worldId,
+            ...parentUserIdentity,
+          }),
+        })
+      } catch (_e) { /* silent — new user greeting is best-effort */ }
+    }, 1800)
+    return () => clearTimeout(timer)
+  }, [authReady, worldId, currentUser, agents, parentUserIdentity])
+
   // ── Chat unread count (realtime) ──────────────────────────────────────────
 
   useEffect(() => {
