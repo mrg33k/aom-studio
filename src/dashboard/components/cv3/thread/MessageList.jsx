@@ -6,7 +6,6 @@ import ChatMessageRenderer from '../../ChatMessageRenderer.jsx'
 import { TypingIndicatorV2 } from '../../TypingIndicatorV2.jsx'
 import StepThread from '../shared/StepThread.jsx'
 import useSyntheticChain from '../shared/useSyntheticChain.js'
-import DocUpdatesStripe from '../shared/DocUpdateCard.jsx'
 import { renderTaskCardForMessage } from '../TaskStatusCard.jsx'
 import { NeedsVerificationBadge, MessageContextMenu, MobileActionSheet } from '../ContextMenu.jsx'
 import MessageChecks from './MessageChecks.jsx'
@@ -595,11 +594,6 @@ function MessageList({ roomType = 'agent' }) {
         flexDirection: 'column', gap: 6,
       }}
     >
-      {/* Project: surface recent VISION/BUILD/CONTEXT/RESEARCH edits. */}
-      {isProject && selectedProject?.slug && (
-        <DocUpdatesStripe project={selectedProject.slug} />
-      )}
-
       {loadingMsgs && (
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
           <span style={{ fontSize: 12, color: C.muted }}>Loading…</span>

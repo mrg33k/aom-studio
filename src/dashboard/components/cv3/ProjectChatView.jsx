@@ -15,7 +15,7 @@ import {
 } from './chat/ChatPanelContext.jsx'
 
 import ProjectChatHeader from './project-chat/ProjectChatHeader.jsx'
-import MissionStateCard from './project-chat/MissionStateCard.jsx'
+import EmptyRoomBubble from './project-chat/EmptyRoomBubble.jsx'
 import RecipesBookOverlay from './session/RecipesBookOverlay.jsx'
 import CanonFilesPanel from './project-chat/CornerFilesPanel.jsx'
 import ProjectFilesPanel from './project-chat/ProjectFilesPanel.jsx'
@@ -52,15 +52,6 @@ export default function ProjectChatView() {
 
       <ProjectChatHeader />
 
-      {selectedProject?.missionSlug && (
-        <MissionStateCard
-          projectSlug={selectedProject?.slug}
-          missionSlug={selectedProject.missionSlug}
-          missionName={selectedProject.missionName}
-          onAskStarter={(text) => { try { sendProjectText?.(text) } catch (_) {} }}
-        />
-      )}
-
       {/* R41: recipes book in GRAND view -- project chat surface doesn't
           scope to a single agent. Every recipe, organized by category, with
           in-place search. */}
@@ -86,6 +77,8 @@ export default function ProjectChatView() {
       )}
 
       <MessageList roomType="project" />
+
+      <EmptyRoomBubble />
 
       {isVoiceActive && <ProjectVoiceChatHost />}
 
