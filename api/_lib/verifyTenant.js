@@ -3,11 +3,16 @@
 // would otherwise leak across tenants because they query Supabase with the
 // service-role key (bypassing RLS).
 //
-// Two-path authorization (mirrors RLS migration 029):
+// Three-path authorization (mirrors RLS migration 029 + 035):
 //   1. Primary path: caller's user_metadata.world matches requestedTenant.
 //   2. Admin path:   public.is_world_admin_for_tenant(tenant, user_id) is true
 //                    (Patrik is admin in every world; future tenant admins
 //                    work the same way).
+//   3. Shared path:  requestedTenant is "shared:<slug>" and caller's world has
+//                    a project_access row for the underlying project (added
+//                    2026-05-24 to fix shared-room chat 403s — the world
+//                    admin RPC can't match "shared:*" because no world has
+//                    that slug; project_access is the real grant table).
 //
 // Underscore-prefixed dir keeps this file out of Vercel's serverless routing.
 
@@ -59,6 +64,45 @@ async function getUserFromJwt(jwt) {
   return user;
 }
 
+// For tenants of the form "shared:<project-slug>", check whether the caller's
+// world has been granted access via the project_access table. Returns false on
+// any error (missing project, no row, network failure) — caller falls through
+// to the existing 403.
+async function hasSharedProjectAccess(sharedTenant, callerWorld) {
+  if (!callerWorld) return false;
+  const projectSlug = sharedTenant.slice('shared:'.length);
+  if (!projectSlug) return false;
+  // Look up the project id by slug.
+  const pr = await fetch(
+    `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(projectSlug)}&select=id,client_id&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    }
+  );
+  if (!pr.ok) return false;
+  const projects = await pr.json();
+  if (!Array.isArray(projects) || projects.length === 0) return false;
+  const { id: projectId, client_id: ownerWorld } = projects[0];
+  // The owning world always has access to its own shared channel.
+  if (ownerWorld && String(ownerWorld).toLowerCase() === callerWorld) return true;
+  // Otherwise look for a project_access grant for the caller's world.
+  const ar = await fetch(
+    `${SUPABASE_URL}/rest/v1/project_access?project_id=eq.${projectId}&client_id=eq.${encodeURIComponent(callerWorld)}&select=id&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    }
+  );
+  if (!ar.ok) return false;
+  const rows = await ar.json();
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function isWorldAdminForTenant(tenant, userId) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/is_world_admin_for_tenant`, {
     method: 'POST',
@@ -99,6 +143,9 @@ export async function verifyTenant(requestedTenant, req) {
   }
   if (await isWorldAdminForTenant(tenant, user.id)) {
     return { ok: true, tenant, userId: user.id, isAdmin: true };
+  }
+  if (tenant.startsWith('shared:') && await hasSharedProjectAccess(tenant, callerWorld)) {
+    return { ok: true, tenant, userId: user.id, isAdmin: false };
   }
   throw new TenantAuthError(
     `forbidden: caller world "${callerWorld || '(none)'}" cannot access "${tenant}"`,
