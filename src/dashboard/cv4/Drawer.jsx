@@ -34,6 +34,9 @@ export default function CV4Drawer({
   onSelectMission,
   onSelectTask,
   onLogout,
+  // R78-p9c: counter prop — increment from outside (CornerV4) after a new
+  // project or mission is created to force an immediate missions-tree refetch.
+  refreshKey = 0,
 }) {
   useEffect(() => {
     if (docked || !open) return
@@ -118,6 +121,14 @@ export default function CV4Drawer({
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [loadTree])
+
+  // R78-p9c: CornerV4 increments refreshKey after creating a project or mission.
+  // Trigger an immediate tree reload so the new entry appears without waiting
+  // for a focus/visibility event. Skip the initial 0 value (mount).
+  useEffect(() => {
+    if (!refreshKey) return
+    loadTree()
+  }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Index: project slug -> { missionSlug -> tasks[], unfiled: tasks[] }.
   // R4 — also expose a per-mission meta map (last_message_at etc) so the

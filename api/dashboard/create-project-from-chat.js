@@ -127,17 +127,18 @@ async function scaffoldProject(projectId, slug, clientId) {
 // ordering ambiguity. Existing projects have BOTH a `projects` row AND an
 // `agent_status` row; this brings user-created projects to parity.
 async function upsertAgentStatusProject(slug, name, clientId, color) {
+  // NOTE: agent_status does NOT have is_active — columns are:
+  // slug, name, role, status, type, color, hidden, client_id, updated_at, ...
   const payload = {
     slug,
     name: name || slug,
     type: 'project',
     client_id: clientId,
     color: color || '#6B8AB0',
-    is_active: true,
   }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/agent_status`, {
     method: 'POST',
-    headers: { ...dbHeaders, Prefer: 'resolution=merge-duplicates,return=representation' },
+    headers: { ...dbHeaders, Prefer: 'resolution=ignore-duplicates,return=representation' },
     body: JSON.stringify(payload),
   })
   if (!res.ok) {

@@ -149,6 +149,31 @@ async function upsertScaffoldStub(agentKey, filename, content, tenantId) {
   }
 }
 
+// R78-p9c: UPSERT an agent_status row with type='mission' so the mission
+// appears in missions-tree's dynamic query (alongside the static registry).
+// Without this, new drawer-created missions are invisible to the Drawer until
+// the next build-missions-registry.cjs + deploy cycle.
+async function upsertAgentStatusMission(agentKey, displayName, clientId) {
+  const payload = {
+    slug: agentKey,           // full path, e.g. "corner:imagegen-composer"
+    name: displayName,
+    type: 'mission',
+    client_id: clientId,
+    color: '#6B8AB0',
+  }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/agent_status`, {
+    method: 'POST',
+    headers: { ...dbHeaders, Prefer: 'resolution=ignore-duplicates,return=representation' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    console.warn(`create-mission-from-drawer: agent_status upsert failed for ${agentKey}: ${err}`)
+    return false
+  }
+  return true
+}
+
 async function postKickoffMessage(clientId, parentSlug, missionSlug, displayName) {
   // The greeting lands with metadata.mission_slug = bare slug so the
   // ChatPanel's missionSlugsMatch filter picks it up when the user enters
@@ -212,7 +237,11 @@ export default async function handler(req, res) {
       await upsertScaffoldStub(agentKey, filename, content, client_id)
     }
 
-    // 2. Post kickoff greeting into the mission room
+    // 2. UPSERT into agent_status so missions-tree can surface this mission
+    //    dynamically without waiting for the next registry rebuild + deploy.
+    await upsertAgentStatusMission(agentKey, displayName, client_id)
+
+    // 3. Post kickoff greeting into the mission room
     const kickoffOk = await postKickoffMessage(client_id, parent_slug, mission_slug, displayName)
 
     return res.status(200).json({

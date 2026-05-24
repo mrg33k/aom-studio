@@ -159,6 +159,9 @@ export default function CornerV4() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+  // R78-p9c: increment to force both Drawer instances to refetch missions-tree
+  // immediately after a new project or mission is created via the self-serve door.
+  const [drawerRefreshKey, setDrawerRefreshKey] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
   // R7.1: Tasks panel lives in a right-side docked drawer on desktop. Open
   // by default; toggle button sits in the second-row nav's right slot.
@@ -509,9 +512,9 @@ export default function CornerV4() {
       if (r.ok && j && j.ok) {
         setNewRoomModal(null)
         handleSelectProject({ slug: j.slug || slug, name: j.name || name })
-        // R78-p9c: force an immediate refetch so the new project appears in the
-        // drawer without waiting for the 60s poll or a Realtime message INSERT.
+        // R78-p9c: force immediate refetch of data pipe + missions-tree.
         refetchData && refetchData()
+        setDrawerRefreshKey(k => k + 1)
       } else {
         setCreateRoomError((j && j.error) || 'Could not create the project. Try again.')
       }
@@ -571,8 +574,9 @@ export default function CornerV4() {
           { slug: j.mission_slug || slug, name: j.name || name },
           { slug: parentSlug, name: parentName || parentSlug }
         )
-        // R78-p9c: refresh so the new mission appears in the drawer immediately.
+        // R78-p9c: refresh data pipe + missions-tree so the new mission appears immediately.
         refetchData && refetchData()
+        setDrawerRefreshKey(k => k + 1)
       } else {
         setCreateRoomError((j && j.error) || 'Could not create the mission. Try again.')
       }
@@ -1871,6 +1875,7 @@ export default function CornerV4() {
             onNewProject={() => setNewRoomModal({ kind: 'project' })}
             onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
             onSelectMission={(mission, project) => handleSelectMission(mission, project)}
+            refreshKey={drawerRefreshKey}
             onSelectTask={(task, mission, project) => {
               // R5 corner:task-rooms — open the task room by routing to the
               // tasks tool with the task id in the URL hash. TasksPanelCv4
@@ -2062,6 +2067,7 @@ export default function CornerV4() {
           onNewProject={() => setNewRoomModal({ kind: 'project' })}
           onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
           onSelectMission={(mission, project) => handleSelectMission(mission, project)}
+          refreshKey={drawerRefreshKey}
           onSelectTask={(task, mission, project) => {
             if (project) handleSelectProject(project)
             if (mission) {

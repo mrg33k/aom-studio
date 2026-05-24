@@ -107,6 +107,28 @@ export default async function handler(req, res) {
     }
   } catch { /* dot just won't light; missions still render */ }
 
+  // R78-p9c: fetch dynamically-created missions from agent_status (type='mission').
+  // These are missions created via the drawer that aren't yet in the on-disk
+  // registry (build-missions-registry.cjs runs at build time, not on demand).
+  // Slug format: "<projectSlug>:<missionSlug>", e.g. "corner:imagegen-composer".
+  const dynamicMissions = []
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/agent_status?type=eq.mission&client_id=eq.${encodeURIComponent(clientId)}&select=slug,name,color`,
+      { headers: supabaseHeaders() },
+    )
+    if (r.ok) {
+      const rows = await r.json()
+      for (const row of (rows || [])) {
+        if (!row?.slug || !row.slug.includes(':')) continue
+        const colonIdx = row.slug.indexOf(':')
+        const projectSlug = row.slug.slice(0, colonIdx)
+        const missionSlug = row.slug.slice(colonIdx + 1)
+        dynamicMissions.push({ projectSlug, missionSlug, name: row.name || missionSlug, fullSlug: row.slug })
+      }
+    }
+  } catch { /* swallow — registry missions still render */ }
+
   // mission-rooms reframe: the mission is the unit of work, not the task.
   // Seed every project + mission from the on-disk registry (built at
   // build time by scripts/build-missions-registry.cjs from corner/missions
@@ -135,6 +157,21 @@ export default async function handler(req, res) {
       path: m.path || null,
       tasks: [],
     })
+  }
+
+  // Add dynamic missions (drawer-created) if not already in the registry.
+  for (const dm of dynamicMissions) {
+    const proj = getProject(dm.projectSlug)
+    if (!proj.missions.has(dm.missionSlug) && !proj.missions.has(dm.fullSlug)) {
+      proj.missions.set(dm.missionSlug, {
+        slug: dm.missionSlug,
+        name: dm.name,
+        status: 'in-progress',
+        is_done: false,
+        last_message_at: missionLastSeenAt.get(dm.missionSlug) || missionLastSeenAt.get(dm.fullSlug) || null,
+        tasks: [],
+      })
+    }
   }
 
   for (const t of tasks) {
