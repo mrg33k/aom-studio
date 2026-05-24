@@ -109,7 +109,7 @@ export default async function handler(req, res) {
           id: crypto.randomUUID(),
           project_id,
           client_id: targetWorld,
-          role: 'collaborator',
+          role: 'member',
         }),
       }
     )
