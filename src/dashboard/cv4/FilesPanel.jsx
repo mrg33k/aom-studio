@@ -180,18 +180,39 @@ function FileViewer({ file, onClose }) {
   const [textContent, setTextContent] = useState(null)
   const [loadingText, setLoadingText] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const kind = fileKind(file.name)
+  // R10-11: treat any .md / .txt / no-extension file as text. Old `fileKind`
+  // returns 'file' for "VISION" (no extension) which silently skipped the
+  // viewer load and rendered blank. Use a wider text detection here.
+  const rawKind = fileKind(file.name)
+  const looksLikeText = rawKind === 'text' || rawKind === 'file' || /\.(md|txt|json|yaml|yml|csv|log)$/i.test(file.name)
+  const kind = looksLikeText ? 'text' : rawKind
   const url = file.url
 
   useEffect(() => {
     if (kind !== 'text') return
+    // R10-11: inline content (passed by FilesPanel for canon rows) skips any
+    // network round-trip — list response already includes the body.
+    if (file.inlineContent != null) {
+      setTextContent(file.inlineContent)
+      setLoadingText(false)
+      return
+    }
+    // For storage-served text files: GET the URL as raw text.
     setLoadingText(true)
-    // /api/local/file returns {path, content, lastModified} — extract .content
-    fetch(url)
-      .then(r => r.json())
-      .then(j => { setTextContent(j.content || ''); setLoadingText(false) })
+    fetch(url, { credentials: 'include' })
+      .then(r => r.ok ? r.text() : 'Could not load file.')
+      .then(t => {
+        // Some endpoints wrap content in JSON; try parsing first.
+        try {
+          const j = JSON.parse(t)
+          setTextContent(j?.content ?? j?.text ?? t)
+        } catch {
+          setTextContent(t)
+        }
+        setLoadingText(false)
+      })
       .catch(() => { setTextContent('Could not load file.'); setLoadingText(false) })
-  }, [url, kind])
+  }, [url, kind, file.inlineContent])
 
   // Shared content renderer — used both inline and in the expanded overlay
   function ContentBody({ maxH }) {
@@ -570,23 +591,26 @@ export default function FilesPanel({ projectSlug }) {
       .catch(() => [])
 
     // text_files / scaffold MDs (mission canon: VISION/CONTEXT/BUILD/RESEARCH).
-    // These live under the project slug as their client_id.
+    // These live under the project slug as their client_id. R10-11: use the
+    // real filename path (e.g. "research/README.md") instead of wrapping under
+    // a virtual "canon/" folder — the filename IS the structure. Also stash the
+    // inline content so FileViewer can render it without a broken re-fetch.
     const textP = authFetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(world)}`)
       .then(r => r.ok ? r.json() : null)
       .then(body => (body?.files || body || []).map(f => {
         const proj = f.client_id || f.project || f.project_slug || null
-        const name = f.name || f.filename || 'untitled.md'
-        // Bucket text files into a virtual "canon/{project}/" path so they
-        // group naturally in the tree under each project.
+        const filename = f.filename || f.name || 'untitled.md'
         const relativePath = projectSlug
-          ? `canon/${name}`
-          : `${proj || 'unknown'}/canon/${name}`
+          ? filename                          // already relative to project root
+          : `${proj || 'unknown'}/${filename}`
+        const leafName = filename.split('/').pop()
         return {
-          name,
+          name: leafName,
           relativePath,
-          url: f.url || (f.id ? `/api/dashboard/files?type=text&id=${encodeURIComponent(f.id)}` : null),
+          url: `text://${proj || 'unknown'}/${filename}`,  // synthetic; FileViewer reads inline content
+          inlineContent: f.content || '',
           age: relativeAge(f.updated_at || f.created_at),
-          kind: fileKind(name),
+          kind: fileKind(leafName),
           size: null,
           textProject: proj,
           _ts: (f.updated_at || f.created_at) ? new Date(f.updated_at || f.created_at).getTime() : 0,
