@@ -109,20 +109,240 @@ function StatusDot({ status }) {
 
 // ── Panel header (top-of-rail title) ────────────────────────────────────────
 // R6: dropped subtitle ("MISSIONS · TASKS · FILES") — accordion tabs below name them.
+// R8: drop Instrument Serif (Patrik vetoed it on CV4 surfaces). Use Hanken
+// Grotesk 600 to match the "Mail" / project list typography on the left rail.
 
-function PanelHeader({ children }) {
+function PanelHeader({ children, action }) {
   return (
     <div style={{
-      padding: '16px 14px 12px',
+      padding: '14px 14px 10px',
       borderBottom: '1px solid rgba(255,255,255,0.045)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
     }}>
       <div style={{
-        fontFamily: MENU.displayFont,
-        fontSize: 26,
-        fontWeight: 400,
-        lineHeight: 1,
+        fontFamily: MENU.bodyFont,
+        fontSize: 18,
+        fontWeight: 600,
+        letterSpacing: '-0.005em',
+        lineHeight: 1.1,
         color: C.text,
       }}>{children}</div>
+      {action}
+    </div>
+  )
+}
+
+// "+ New" inline affordance — appears next to the panel header. Inline name
+// input → POST /api/dashboard/create-project-from-chat → optimistic add +
+// select. R8-3.
+
+function NewProjectAffordance({ onCreate, worldId }) {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.focus() }, [editing])
+
+  const slugify = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
+
+  async function submit() {
+    const n = name.trim()
+    if (!n || busy || !worldId) return
+    const slug = slugify(n) || `room-${Date.now().toString(36)}`
+    setBusy(true)
+    try {
+      const r = await authFetch('/api/dashboard/create-project-from-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ slug, name: n, client_id: worldId }),
+      })
+      const j = await r.json().catch(() => null)
+      if (r.ok && j?.ok) {
+        onCreate?.(j.slug || slug, j.name || n)
+        setName('')
+        setEditing(false)
+      }
+    } catch { /* swallow — surface in console for debug */ }
+    setBusy(false)
+  }
+
+  if (!editing) {
+    return (
+      <span
+        onClick={() => setEditing(true)}
+        style={{
+          fontSize: 10,
+          fontFamily: MENU.monoFont,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: C.muted,
+          cursor: 'pointer',
+          padding: '3px 8px',
+          border: '1px solid ' + C.border,
+          borderRadius: 4,
+          transition: 'color 120ms ease, border-color 120ms ease',
+          flexShrink: 0,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.muted }}
+        onMouseLeave={e => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border }}
+      >+ New</span>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+      <input
+        ref={inputRef}
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') submit()
+          if (e.key === 'Escape') { setEditing(false); setName('') }
+        }}
+        placeholder="project name"
+        style={{
+          width: 130,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid ' + C.border,
+          borderRadius: 3,
+          color: C.text,
+          fontSize: 11,
+          padding: '4px 6px',
+          outline: 'none',
+          fontFamily: MENU.bodyFont,
+        }}
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !name.trim()}
+        style={{
+          background: name.trim() ? MENU.amber : 'transparent',
+          color: name.trim() ? '#000' : C.muted,
+          border: name.trim() ? 'none' : '1px solid ' + C.border,
+          borderRadius: 3,
+          padding: '4px 7px',
+          fontSize: 10,
+          fontWeight: 600,
+          cursor: name.trim() ? 'pointer' : 'default',
+          fontFamily: MENU.monoFont,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >{busy ? '…' : 'add'}</button>
+    </div>
+  )
+}
+
+// "+ new mission" inline affordance — sits alongside "+ new folder" at the
+// bottom of an open project group. POST /api/dashboard/create-mission-from-drawer.
+// R8-4.
+
+function NewMissionAffordance({ projectSlug, worldId, onCreated }) {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.focus() }, [editing])
+
+  const slugify = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
+
+  async function submit() {
+    const n = name.trim()
+    if (!n || busy || !worldId || !projectSlug) return
+    const slug = slugify(n) || `mission-${Date.now().toString(36)}`
+    setBusy(true)
+    try {
+      const r = await authFetch('/api/dashboard/create-mission-from-drawer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ parent_slug: projectSlug, mission_slug: slug, name: n, client_id: worldId }),
+      })
+      const j = await r.json().catch(() => null)
+      if (r.ok && j?.ok) {
+        onCreated?.(projectSlug, j.mission_slug || slug, j.name || n)
+        setName('')
+        setEditing(false)
+      }
+    } catch { /* swallow */ }
+    setBusy(false)
+  }
+
+  if (!editing) {
+    return (
+      <div
+        onClick={(e) => { e.stopPropagation(); setEditing(true) }}
+        style={{
+          padding: '5px 14px 5px 26px',
+          fontSize: 10,
+          fontFamily: MENU.monoFont,
+          color: C.muted,
+          cursor: 'pointer',
+          transition: 'color 120ms ease',
+          letterSpacing: '0.04em',
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = C.text2}
+        onMouseLeave={e => e.currentTarget.style.color = C.muted}
+      >+ new mission</div>
+    )
+  }
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        display: 'flex',
+        gap: 4,
+        alignItems: 'center',
+        padding: '5px 12px 5px 26px',
+      }}
+    >
+      <input
+        ref={inputRef}
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') submit()
+          if (e.key === 'Escape') { setEditing(false); setName('') }
+        }}
+        placeholder="mission name"
+        style={{
+          flex: 1,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid ' + C.border,
+          borderRadius: 3,
+          color: C.text,
+          fontSize: 11,
+          padding: '4px 6px',
+          outline: 'none',
+          fontFamily: MENU.bodyFont,
+          minWidth: 0,
+        }}
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !name.trim()}
+        style={{
+          background: name.trim() ? MENU.amber : 'transparent',
+          color: name.trim() ? '#000' : C.muted,
+          border: name.trim() ? 'none' : '1px solid ' + C.border,
+          borderRadius: 3,
+          padding: '4px 8px',
+          fontSize: 10,
+          fontWeight: 600,
+          cursor: name.trim() ? 'pointer' : 'default',
+          fontFamily: MENU.monoFont,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >{busy ? '…' : 'add'}</button>
     </div>
   )
 }
@@ -196,14 +416,16 @@ function ProjectPills({ projects, active, onChange }) {
   )
 }
 
-// ── Recent projects strip (R7-E) ────────────────────────────────────────────
+// ── Recent missions strip (R8-2; was projects in R7-E) ──────────────────────
 // Sits between PROJECT PILLS and ACCORDION TABS. Shows the last 10 distinct
-// projects the user has entered. Click a chip → switch pill scope to that
-// project. State persisted in localStorage per world. Hidden when empty.
+// missions the user has visited, latest first. Click a chip → navigate to
+// that mission room. State persisted in localStorage per world. Hidden when
+// empty. Each entry: { qualified: "project:mission", display: "mission",
+// project: "project", name: "mission" }.
 
-const RECENT_KEY = (worldId) => `rm-recent-projects:${worldId || 'aom'}`
+const RECENT_KEY = (worldId) => `rm-recent-missions:${worldId || 'aom'}`
 
-function RecentProjectsStrip({ recents, onSelect }) {
+function RecentMissionsStrip({ recents, onSelect }) {
   if (!recents || recents.length === 0) return null
   return (
     <div style={{
@@ -231,10 +453,11 @@ function RecentProjectsStrip({ recents, onSelect }) {
         WebkitMaskImage: 'linear-gradient(to right, black 86%, transparent 100%)',
         maskImage: 'linear-gradient(to right, black 86%, transparent 100%)',
       }}>
-        {recents.map(slug => (
+        {recents.map(entry => (
           <span
-            key={slug}
-            onClick={() => onSelect(slug)}
+            key={entry.qualified}
+            onClick={() => onSelect(entry)}
+            title={entry.qualified}
             onMouseEnter={e => e.currentTarget.style.color = C.text}
             onMouseLeave={e => e.currentTarget.style.color = C.text2}
             style={{
@@ -252,7 +475,7 @@ function RecentProjectsStrip({ recents, onSelect }) {
               transition: 'color 120ms ease',
               textTransform: 'lowercase',
             }}
-          >{slug}</span>
+          >{entry.display}</span>
         ))}
       </div>
     </div>
@@ -1143,7 +1366,7 @@ export default function RightMenu() {
   const currentProject = conversationTarget?.type === 'project' ? conversationTarget.slug : null
   const inAgentRoom = !!selectedAgent || conversationTarget?.type === 'agent'
 
-  // Project pills derived from missions
+  // Project pills derived from missions + pending (new-in-session) projects.
   const [activePill, setActivePill] = useState('all')
   const projectsList = useMemo(() => {
     const seen = new Set()
@@ -1154,8 +1377,23 @@ export default function RightMenu() {
         out.push(m.projectSlug)
       }
     }
+    for (const slug of pendingProjects) {
+      if (slug && !seen.has(slug)) {
+        seen.add(slug)
+        out.push(slug)
+      }
+    }
     return out
-  }, [missionsFlat])
+  }, [missionsFlat, pendingProjects])
+
+  // Effective missions = server missions + pending (new-in-session) missions
+  // that haven't yet shown up in a missions-tree refetch.
+  const effectiveMissions = useMemo(() => {
+    if (pendingMissions.length === 0) return missionsFlat
+    const seen = new Set(missionsFlat.map(m => `${m.projectSlug}:${m.slug}`))
+    const adds = pendingMissions.filter(pm => !seen.has(`${pm.projectSlug}:${pm.slug}`))
+    return adds.length === 0 ? missionsFlat : [...adds, ...missionsFlat]
+  }, [missionsFlat, pendingMissions])
 
   // R7-D: agent / EA / super-agent room → snap pill back to 'all'.
   // Otherwise: if in a project room, follow that project's pill.
@@ -1167,27 +1405,75 @@ export default function RightMenu() {
     }
   }, [inAgentRoom, currentProject, projectsList])
 
-  // R7-E: recent projects strip — last 10 distinct projects entered, per-world
-  const [recentProjects, setRecentProjects] = useState(() => {
+  // R8-2: recent missions strip — last 10 distinct missions visited, per-world.
+  // conversationTarget for a mission room looks like:
+  //   { type: 'project', slug: 'sourcing', missionSlug: 'user-flow-audit', missionName: '...' }
+  // (see CornerV4.handleSelectMission — it stores mission under type='project'
+  //  with missionSlug riding on the same payload.)
+  const [recentMissions, setRecentMissions] = useState(() => {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY(worldId)) || '[]') }
     catch { return [] }
   })
 
   useEffect(() => {
-    if (!currentProject) return
-    setRecentProjects(prev => {
-      const filtered = prev.filter(s => s !== currentProject)
-      const next = [currentProject, ...filtered].slice(0, 10)
+    const t = conversationTarget
+    if (!t || !t.missionSlug) return
+    const projectSlug = t.slug
+    const missionSlug = t.missionSlug
+    const bare = missionSlug.includes(':') ? missionSlug.split(':').slice(1).join(':') : missionSlug
+    const qualified = `${projectSlug}:${bare}`
+    const entry = {
+      qualified,
+      display: bare,
+      project: projectSlug,
+      name: t.missionName || bare,
+    }
+    setRecentMissions(prev => {
+      const filtered = prev.filter(e => e.qualified !== qualified)
+      const next = [entry, ...filtered].slice(0, 10)
       try { localStorage.setItem(RECENT_KEY(worldId), JSON.stringify(next)) } catch {}
       return next
     })
-  }, [currentProject, worldId])
+  }, [conversationTarget, worldId])
 
-  // Filter missions / tasks by active pill
+  // Optimistic project list — new projects created in-session land here so
+  // the pill appears before missions-tree picks them up.
+  const [pendingProjects, setPendingProjects] = useState([])
+  // Optimistic missions — new missions created in-session land here so they
+  // appear in their project group before missions-tree re-fetches.
+  const [pendingMissions, setPendingMissions] = useState([])
+
+  const handleCreateProjectInline = useCallback((slug, name) => {
+    setPendingProjects(prev => prev.some(p => p === slug) ? prev : [...prev, slug])
+    setActivePill(slug)
+  }, [])
+
+  const handleCreateMissionInline = useCallback((projectSlug, missionSlug, missionName) => {
+    setPendingMissions(prev => {
+      const key = `${projectSlug}:${missionSlug}`
+      if (prev.some(m => `${m.projectSlug}:${m.slug}` === key)) return prev
+      return [...prev, {
+        slug: missionSlug,
+        name: missionName || missionSlug,
+        projectSlug,
+        dotStatus: 'idle',
+        lastTouched: new Date().toISOString(),
+      }]
+    })
+    // Navigate to the new mission room
+    if (handleSelectMission) {
+      handleSelectMission(
+        { slug: missionSlug, bare_slug: missionSlug, name: missionName || missionSlug, project_slug: projectSlug },
+        { slug: projectSlug, name: projectSlug },
+      )
+    }
+  }, [handleSelectMission])
+
+  // Filter missions / tasks by active pill (effectiveMissions = real + pending)
   const filteredMissions = useMemo(() => {
-    if (activePill === 'all') return missionsFlat
-    return missionsFlat.filter(m => m.projectSlug === activePill)
-  }, [missionsFlat, activePill])
+    if (activePill === 'all') return effectiveMissions
+    return effectiveMissions.filter(m => m.projectSlug === activePill)
+  }, [effectiveMissions, activePill])
 
   const filteredActiveTasks = useMemo(() => {
     if (activePill === 'all') return activeTasks
@@ -1389,7 +1675,12 @@ export default function RightMenu() {
             onCreateFolder={handleCreateFolder}
           />
         ))}
-        {/* + new folder */}
+        {/* + new mission · + new folder */}
+        <NewMissionAffordance
+          projectSlug={group.projectSlug}
+          worldId={worldId}
+          onCreated={handleCreateMissionInline}
+        />
         <NewFolderAffordance
           projectSlug={group.projectSlug}
           onCreateFolder={handleCreateFolder}
@@ -1415,7 +1706,9 @@ export default function RightMenu() {
         }
       `}</style>
 
-      <PanelHeader>Missions</PanelHeader>
+      <PanelHeader action={<NewProjectAffordance onCreate={handleCreateProjectInline} worldId={worldId} />}>
+        Projects
+      </PanelHeader>
 
       <ProjectPills
         projects={projectsList}
@@ -1423,9 +1716,15 @@ export default function RightMenu() {
         onChange={setActivePill}
       />
 
-      <RecentProjectsStrip
-        recents={recentProjects}
-        onSelect={(slug) => setActivePill(slug)}
+      <RecentMissionsStrip
+        recents={recentMissions}
+        onSelect={(entry) => {
+          if (!handleSelectMission) return
+          handleSelectMission(
+            { slug: entry.display, bare_slug: entry.display, name: entry.name, project_slug: entry.project },
+            { slug: entry.project, name: entry.project },
+          )
+        }}
       />
 
       <AccordionTabs active={activeTab} onChange={setActiveTab} />
@@ -1551,6 +1850,11 @@ export default function RightMenu() {
                       onCreateFolder={handleCreateFolder}
                     />
                   ))}
+                  <NewMissionAffordance
+                    projectSlug={activePill}
+                    worldId={worldId}
+                    onCreated={handleCreateMissionInline}
+                  />
                   <NewFolderAffordance
                     projectSlug={activePill}
                     onCreateFolder={handleCreateFolder}
