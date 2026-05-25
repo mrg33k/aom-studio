@@ -94,6 +94,19 @@
     })
   }
 
+  function pollSteps(parentMessageId) {
+    return fetch(
+      BRIDGE_BASE +
+        '/api/embed/steps?embed_id=' +
+        encodeURIComponent(embedId) +
+        '&parent_message_id=' +
+        encodeURIComponent(parentMessageId)
+    ).then(function (r) {
+      if (!r.ok) throw new Error('steps ' + r.status)
+      return r.json()
+    })
+  }
+
   // Long-poll the bridge for assistant replies. No timeout: agents can take
   // 30s, 3 minutes, or longer (especially when they do real research). The
   // visitor's tab is the natural lifetime — close the tab, polling stops.
@@ -217,6 +230,85 @@
       }
     }
 
+    // Live step thread: shows the agent's real progress (real tool-use steps
+    // emitted by the bridge-daemon, same source the dashboard live chain
+    // reads). Returns { update(stepsArr), settle(), remove() }.
+    function makeStepThread() {
+      var wrap = document.createElement('div')
+      wrap.className = 'ce-steps'
+      logEl.appendChild(wrap)
+      logEl.scrollTop = logEl.scrollHeight
+      var seen = new Map() // index -> { row, text, status }
+      return {
+        update: function (steps) {
+          if (!steps || !steps.length) return
+          // Sort by index ascending so order stays stable
+          steps.sort(function (a, b) { return a.index - b.index })
+          // First pass: dim every prior step EXCEPT the most-recent in_progress
+          var latestActiveIdx = -1
+          for (var i = steps.length - 1; i >= 0; i--) {
+            if (steps[i].status === 'in_progress') {
+              latestActiveIdx = steps[i].index
+              break
+            }
+          }
+          steps.forEach(function (s) {
+            var prev = seen.get(s.index)
+            var renderStatus = s.status
+            if (renderStatus === 'in_progress' && s.index !== latestActiveIdx) {
+              renderStatus = 'done' // older "in_progress" → render as done so only one breathes
+            }
+            if (!prev) {
+              var row = document.createElement('div')
+              row.className = 'ce-step ce-step-' + renderStatus
+              row.innerHTML = '<span class="ce-step-dot"></span><span class="ce-step-text"></span>'
+              row.querySelector('.ce-step-text').textContent = s.text
+              wrap.appendChild(row)
+              seen.set(s.index, { row: row, text: s.text, status: renderStatus })
+            } else {
+              if (prev.text !== s.text) {
+                prev.row.querySelector('.ce-step-text').textContent = s.text
+                prev.text = s.text
+              }
+              if (prev.status !== renderStatus) {
+                prev.row.className = 'ce-step ce-step-' + renderStatus
+                prev.status = renderStatus
+              }
+            }
+          })
+          logEl.scrollTop = logEl.scrollHeight
+        },
+        settle: function () {
+          // Flip everything to done — agent is finished.
+          wrap.classList.add('ce-steps-settled')
+          seen.forEach(function (e) {
+            e.row.className = 'ce-step ce-step-done'
+          })
+        },
+        remove: function () {
+          if (wrap.parentNode) wrap.parentNode.removeChild(wrap)
+        },
+      }
+    }
+
+    // Long-poll the steps endpoint until the assistant reply lands. cancel() stops.
+    function watchSteps(parentMessageId, thread, intervalMs) {
+      intervalMs = intervalMs || 1500
+      var cancelled = false
+      function tick() {
+        if (cancelled) return
+        pollSteps(parentMessageId)
+          .then(function (resp) {
+            if (cancelled) return
+            thread.update((resp && resp.steps) || [])
+            setTimeout(tick, intervalMs)
+          })
+          .catch(function () { setTimeout(tick, intervalMs) })
+      }
+      setTimeout(tick, 400)
+      return { cancel: function () { cancelled = true } }
+    }
+
     addMsg('agent', opening)
 
     textarea.addEventListener('input', function () {
@@ -230,40 +322,56 @@
       }
     })
 
-    var activePoller = null
+    var activeReplyPoller = null
+    var activeStepWatcher = null
+    var activeStepThread = null
+
+    function tearDownActiveTurn() {
+      if (activeReplyPoller) { activeReplyPoller.cancel(); activeReplyPoller = null }
+      if (activeStepWatcher) { activeStepWatcher.cancel(); activeStepWatcher = null }
+    }
 
     form.addEventListener('submit', function (e) {
       e.preventDefault()
       var content = textarea.value.trim()
       if (!content) return
-      // Cancel any previous in-flight poller so a new send replaces it cleanly.
-      if (activePoller) { activePoller.cancel(); activePoller = null }
+      // New send replaces the previous turn's pollers + thread cleanly.
+      tearDownActiveTurn()
       addMsg('visitor', content)
       textarea.value = ''
       textarea.style.height = 'auto'
-      sendBtn.disabled = false  // re-enable immediately so visitor can keep typing
-      setTyping(true)
+      sendBtn.disabled = false
+
+      // Spin up the step thread immediately so the visitor sees activity
+      // even before the bridge-daemon has emitted its first step.
+      activeStepThread = makeStepThread()
+      activeStepThread.update([{ index: 0, text: 'Sent to the EA', status: 'done' }])
+      activeStepThread.update([{ index: 1, text: 'Thinking', status: 'in_progress' }])
 
       postChat(content)
         .then(function (resp) {
-          activePoller = waitForReply(
+          // Start real step polling against the bridge-daemon's events.
+          activeStepWatcher = watchSteps(resp.message_id, activeStepThread, 1500)
+          activeReplyPoller = waitForReply(
             resp.since_ts,
             function (err, msgs) {
-              // No more timeouts: this callback only fires when real msgs land.
-              setTyping(false)
               if (err && (!msgs || !msgs.length)) {
+                if (activeStepWatcher) activeStepWatcher.cancel()
+                if (activeStepThread) activeStepThread.settle()
                 addMsg('agent', 'Hit a wall. Try once more?')
                 return
               }
-              msgs.forEach(function (m) {
-                addMsg('agent', m.text)
-              })
+              // Reply landed: stop step polling, settle the thread, render.
+              if (activeStepWatcher) activeStepWatcher.cancel()
+              if (activeStepThread) activeStepThread.settle()
+              msgs.forEach(function (m) { addMsg('agent', m.text) })
             },
             { intervalMs: 2000 }
           )
         })
         .catch(function (err) {
-          setTyping(false)
+          if (activeStepWatcher) activeStepWatcher.cancel()
+          if (activeStepThread) activeStepThread.settle()
           addMsg('agent', 'Connection error. Try again in a moment.')
           console.warn('[corner-embed]', err)
         })
@@ -301,6 +409,17 @@
     '.ce-typing span:nth-child(2){animation-delay:.18s;}',
     '.ce-typing span:nth-child(3){animation-delay:.36s;}',
     '@keyframes ce-blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}',
+    /* live step thread */
+    '.ce-steps{align-self:flex-start;display:flex;flex-direction:column;gap:6px;padding:6px 4px 6px 14px;font-size:12px;line-height:1.35;max-width:90%;}',
+    '.ce-step{display:flex;align-items:center;gap:9px;color:#7c8693;transition:color .25s ease,opacity .25s ease;}',
+    '.ce-step-dot{width:6px;height:6px;border-radius:50%;background:#3f4854;flex-shrink:0;transition:background .25s ease,box-shadow .25s ease;}',
+    '.ce-step-text{font-family:"Hanken Grotesk",sans-serif;font-weight:400;letter-spacing:0.005em;}',
+    '.ce-step-done{color:#5a6571;opacity:.72;}',
+    '.ce-step-done .ce-step-dot{background:#4a5360;}',
+    '.ce-step-in_progress{color:#e8edf3;}',
+    '.ce-step-in_progress .ce-step-dot{background:__ACCENT__;box-shadow:0 0 10px __ACCENT__;animation:ce-breathe 1.5s ease-in-out infinite;}',
+    '@keyframes ce-breathe{0%,100%{opacity:.55;transform:scale(0.92);}50%{opacity:1;transform:scale(1.12);}}',
+    '.ce-steps-settled .ce-step{opacity:.5;}',
     '.ce-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,0.06);background:#0d1219;}',
     '.ce-input textarea{flex:1;resize:none;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#e8edf3;border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;max-height:120px;line-height:1.4;}',
     '.ce-input textarea::placeholder{color:#6b7785;}',
