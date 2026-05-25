@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Summer School — Ethan</title>
   <meta name="theme-color" content="#F5EFE5" />
-  <link rel="stylesheet" href="/summerschool/styles.css" />
+  <link rel="stylesheet" href="/summerschool/styles.css?v=20260525c" />
 </head>
 <body>
   <div class="app">
@@ -13,10 +13,11 @@
   </div>
 
   <!-- order matters: state → curriculum → modules → dictionary → app -->
-  <script src="/summerschool/state.js"></script>
-  <script src="/summerschool/curriculum.js"></script>
-  <script src="/summerschool/modules.js"></script>
-  <script src="/summerschool/dictionary.js"></script>
-  <script src="/summerschool/app.js"></script>
+  <!-- ?v=... is a cache-buster — bump it on every meaningful deploy -->
+  <script src="/summerschool/state.js?v=20260525c"></script>
+  <script src="/summerschool/curriculum.js?v=20260525c"></script>
+  <script src="/summerschool/modules.js?v=20260525c"></script>
+  <script src="/summerschool/dictionary.js?v=20260525c"></script>
+  <script src="/summerschool/app.js?v=20260525c"></script>
 </body>
 </html>
