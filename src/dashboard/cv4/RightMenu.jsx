@@ -1,13 +1,16 @@
-// RightMenu.jsx — CV4 right-rail (corner:right-menu R3)
+// RightMenu.jsx — CV4 right-rail (corner:right-menu R4)
 //
 // Layout (top → bottom):
 //   PANEL HEADER  "Missions" (Instrument Serif)
-//   PROJECT PILLS [All] [Corner] [Ambition] ... [+]   filters the Missions list
-//   SUMMARY       one-line stat of what's in flight
-//   ACTIVE TASKS  (only when something is running/queued)
-//   MISSIONS      list sorted by last-touched, filtered by selected pill
-//   FILES         FilesPanel (current project's canon)
-//   COMPLETED     done tasks, capped at 5 + show-more
+//   PROJECT PILLS [All] [Corner] [Ambition] ... [+]   filters all accordion sections
+//   ACCORDION TABS  [ Missions ] [ Tasks ] [ Files ]  — one section open at a time
+//
+//   MISSIONS tab (default):
+//     SUMMARY + missions list sorted by last_message_at DESC
+//   TASKS tab:
+//     Active Tasks + Completed Tasks
+//   FILES tab:
+//     FilesPanel (current project's canon)
 //
 // Replaces TasksPanelCv4 in the right drawer (CornerV4.jsx, tasksDrawerOpen aside).
 // Per VISION: missions never "complete", so there is NO "Completed Missions" section.
@@ -400,6 +403,48 @@ function Divider() {
   )
 }
 
+// ── Accordion tabs ────────────────────────────────────────────────────────────
+
+function AccordionTabs({ active, onChange }) {
+  const tabs = [
+    { key: 'missions', label: 'Missions' },
+    { key: 'tasks',    label: 'Tasks'    },
+    { key: 'files',    label: 'Files'    },
+  ]
+  return (
+    <div style={{
+      display: 'flex',
+      borderBottom: '1px solid ' + C.border,
+      margin: '0 0 4px 0',
+    }}>
+      {tabs.map(t => (
+        <button
+          key={t.key}
+          onClick={() => onChange(t.key)}
+          style={{
+            flex: 1,
+            padding: '9px 8px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: active === t.key ? '2px solid ' + C.accent : '2px solid transparent',
+            cursor: 'pointer',
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: active === t.key ? C.accent : C.muted,
+            transition: 'color 120ms ease, border-color 120ms ease',
+            fontFamily: "'Inter', sans-serif",
+            marginBottom: -1,
+          }}
+          onMouseEnter={e => { if (active !== t.key) e.currentTarget.style.color = C.text2 }}
+          onMouseLeave={e => { if (active !== t.key) e.currentTarget.style.color = C.muted }}
+        >{t.label}</button>
+      ))}
+    </div>
+  )
+}
+
 // ── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState({ text }) {
@@ -475,6 +520,9 @@ export default function RightMenu() {
     })()
     return () => { cancelled = true }
   }, [worldId])
+
+  // Accordion tab state
+  const [activeTab, setActiveTab] = useState('missions')
 
   // Active tasks = running + queued
   const activeTasks = useMemo(() => {
@@ -581,97 +629,106 @@ export default function RightMenu() {
         onChange={setActivePill}
       />
 
-      {/* ── 1. SUMMARY ────────────────────────────────────────── */}
-      <SectionLabel>Summary</SectionLabel>
-      <SummaryBlock
-        missionCount={filteredMissions.length}
-        runningCount={runningCount}
-        queuedCount={queuedCount}
-        scopeLabel={scopeLabel}
-        lastActiveName={lastActiveName}
-        lastActiveAge={lastActiveAge}
-      />
+      {/* ── ACCORDION TABS ────────────────────────────────────── */}
+      <AccordionTabs active={activeTab} onChange={setActiveTab} />
 
-      {/* ── 2. ACTIVE TASKS (conditional) ─────────────────────── */}
-      {filteredActiveTasks.length > 0 && (
+      {/* ═══════════════ TAB: MISSIONS ═══════════════════════════ */}
+      {activeTab === 'missions' && (
         <>
+          {/* Summary */}
+          <SummaryBlock
+            missionCount={filteredMissions.length}
+            runningCount={runningCount}
+            queuedCount={queuedCount}
+            scopeLabel={scopeLabel}
+            lastActiveName={lastActiveName}
+            lastActiveAge={lastActiveAge}
+          />
+
           <Divider />
-          <SectionLabel>Active Tasks</SectionLabel>
-          {filteredActiveTasks.map(task => (
-            <TaskRow key={task.id} task={task} isDone={false} />
+
+          {/* Missions list — sorted by recency (last_message_at DESC) */}
+          {missionsLoading && (
+            <div style={{ padding: '8px 12px', fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif" }}>
+              Loading…
+            </div>
+          )}
+
+          {!missionsLoading && filteredMissions.length === 0 && (
+            <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
+          )}
+
+          {filteredMissions.map((m, i) => (
+            <MissionRow
+              key={m.slug + '-' + i}
+              mission={m}
+              projectSlug={m.projectSlug}
+              dotStatus={m.dotStatus}
+              ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+              isCurrent={
+                (currentMission && m.slug === currentMission) ||
+                (currentProject && m.projectSlug === currentProject && !currentMission)
+              }
+            />
           ))}
         </>
       )}
 
-      <Divider />
+      {/* ═══════════════ TAB: TASKS ══════════════════════════════ */}
+      {activeTab === 'tasks' && (
+        <>
+          {/* Active tasks */}
+          {filteredActiveTasks.length > 0 ? (
+            <>
+              <SectionLabel>Active</SectionLabel>
+              {filteredActiveTasks.map(task => (
+                <TaskRow key={task.id} task={task} isDone={false} />
+              ))}
+              <Divider />
+            </>
+          ) : (
+            <EmptyState text="No active tasks" />
+          )}
 
-      {/* ── 3. MISSIONS (filtered by active pill) ─────────────── */}
-      <SectionLabel>Missions</SectionLabel>
+          {/* Completed tasks */}
+          <SectionLabel>Completed</SectionLabel>
 
-      {missionsLoading && (
-        <div style={{ padding: '4px 12px', fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif" }}>
-          Loading…
-        </div>
+          {filteredDone.length === 0 && (
+            <EmptyState text="No completed tasks yet" />
+          )}
+
+          {completedToShow.map(task => (
+            <TaskRow key={task.id} task={task} isDone={true} />
+          ))}
+
+          {!showAllCompleted && hiddenCompletedCount > 0 && (
+            <button
+              onClick={() => setShowAllCompleted(true)}
+              style={{
+                width: '100%',
+                padding: '6px 12px',
+                background: 'transparent',
+                border: 'none',
+                color: C.muted,
+                fontSize: 11,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'color 120ms ease',
+                fontFamily: "'Inter', sans-serif",
+                marginTop: 2,
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = C.text2}
+              onMouseLeave={e => e.currentTarget.style.color = C.muted}
+            >
+              + {hiddenCompletedCount} more completed
+            </button>
+          )}
+        </>
       )}
 
-      {!missionsLoading && filteredMissions.length === 0 && (
-        <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
-      )}
-
-      {filteredMissions.map((m, i) => (
-        <MissionRow
-          key={m.slug + '-' + i}
-          mission={m}
-          projectSlug={m.projectSlug}
-          dotStatus={m.dotStatus}
-          ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-          isCurrent={
-            (currentMission && m.slug === currentMission) ||
-            (currentProject && m.projectSlug === currentProject && !currentMission)
-          }
-        />
-      ))}
-
-      <Divider />
-
-      {/* ── 4. FILES ──────────────────────────────────────────── */}
-      <SectionLabel>Files</SectionLabel>
-      <FilesPanel projectSlug={activePill === 'all' ? currentProject : activePill} />
-
-      <Divider />
-
-      {/* ── 5. COMPLETED ──────────────────────────────────────── */}
-      <SectionLabel>Completed</SectionLabel>
-
-      {filteredDone.length === 0 && (
-        <EmptyState text="No completed tasks yet" />
-      )}
-
-      {completedToShow.map(task => (
-        <TaskRow key={task.id} task={task} isDone={true} />
-      ))}
-
-      {!showAllCompleted && hiddenCompletedCount > 0 && (
-        <button
-          onClick={() => setShowAllCompleted(true)}
-          style={{
-            width: '100%',
-            padding: '6px 12px',
-            background: 'transparent',
-            border: 'none',
-            color: C.muted,
-            fontSize: 11,
-            cursor: 'pointer',
-            textAlign: 'left',
-            transition: 'color 120ms ease',
-            fontFamily: "'Inter', sans-serif",
-            marginTop: 2,
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = C.text2}
-          onMouseLeave={e => e.currentTarget.style.color = C.muted}
-        >
-          + {hiddenCompletedCount} more completed
-        </button>
+      {/* ═══════════════ TAB: FILES ══════════════════════════════ */}
+      {activeTab === 'files' && (
+        <FilesPanel projectSlug={activePill === 'all' ? currentProject : activePill} />
       )}
 
       {/* Bottom breathing room */}
