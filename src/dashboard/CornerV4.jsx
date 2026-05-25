@@ -432,8 +432,13 @@ export default function CornerV4() {
     // Delay to let the message list load before we check if it's empty
     const timer = setTimeout(async () => {
       try {
+        // all=true: the GET requires either an agent slug or all=true. We want
+        // "any message in this world" — sending all=true checks across agents
+        // so the greeting fires once per world, not once per agent. Without
+        // this, the endpoint returns 400 ('agent required') and the welcome
+        // never posts for new tenants like Ben's Arsenal workspace.
         const r = await authFetch(
-          `/api/dashboard/supabase-messages?client=${encodeURIComponent(worldId)}&limit=1`
+          `/api/dashboard/supabase-messages?client=${encodeURIComponent(worldId)}&all=true&limit=1`
         )
         if (!r.ok) return
         const data = await r.json()
