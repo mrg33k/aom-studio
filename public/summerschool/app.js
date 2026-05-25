@@ -6,6 +6,18 @@
 (function () {
   'use strict';
 
+  // ?reset=1 → wipe all state and reload clean.
+  // Parent hits the URL once on the kid's device to start fresh.
+  if (new URLSearchParams(window.location.search).has('reset')) {
+    try {
+      localStorage.removeItem('ss-state-v1');
+      localStorage.removeItem('ss-dict-cache-v1');
+    } catch (e) {}
+    // strip the query and reload so the kid sees the clean URL
+    window.location.replace(window.location.pathname);
+    return;
+  }
+
   const host = document.getElementById('app-host');
   if (!host) { console.warn('no #app-host'); return; }
 
