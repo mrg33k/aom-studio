@@ -1562,9 +1562,17 @@ window.SSMod = (function () {
       const stage = host.querySelector('#vid-stage');
       const summary = host.querySelector('#vid-summary');
       const hint = host.querySelector('#vid-hint');
+      const skipBtn = host.querySelector('#vid-skip');
       if (stage) stage.style.display = 'none';
       if (summary) summary.style.display = 'block';
-      if (hint) hint.innerHTML = "Video can't load — read the lesson instead, then take the quiz.";
+      if (hint) hint.innerHTML = "Video can't load — read the lesson above, then tap Continue.";
+      // upgrade skip button to primary amber CTA so the path forward is obvious
+      if (skipBtn) {
+        skipBtn.className = 'btn-amber';
+        skipBtn.textContent = 'Continue → take the quiz';
+        skipBtn.style.fontSize = '16px';
+        skipBtn.style.padding = '14px 28px';
+      }
     };
     if (!window.YT) {
       const tag = document.createElement('script');
@@ -1655,9 +1663,16 @@ window.SSMod = (function () {
         const stg = host.querySelector('#ml-vid-stage');
         const summary = host.querySelector('#ml-summary');
         const hint = host.querySelector('#ml-hint');
+        const skipBtn = host.querySelector('#ml-skip');
         if (stg) stg.style.display = 'none';
         if (summary) summary.style.display = 'block';
-        if (hint) hint.innerHTML = "Video can't load — read the lesson instead, then take the quiz.";
+        if (hint) hint.innerHTML = "Video can't load — read the lesson above, then tap Continue.";
+        if (skipBtn) {
+          skipBtn.className = 'btn-amber';
+          skipBtn.textContent = 'Continue → take the quiz';
+          skipBtn.style.fontSize = '16px';
+          skipBtn.style.padding = '14px 28px';
+        }
       };
 
       if (!window.YT) {
