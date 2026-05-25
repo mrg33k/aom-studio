@@ -341,39 +341,14 @@
     </div>
   </div>
 
-  <!-- Right sidebar: activity -->
-  <div class="right-rail">
-    <h3 class="sidebar-label">Activity</h3>
-
-    <div class="activity-item task">
-      <div class="activity-title">Task created: CV4 home.html</div>
-      <div class="activity-time">2 hours ago</div>
-    </div>
-
-    <div class="activity-item message">
-      <div class="activity-title">Elon sent message</div>
-      <div class="activity-time">1 hour ago</div>
-    </div>
-
-    <div class="activity-item task">
-      <div class="activity-title">Task marked done: Design gates audit</div>
-      <div class="activity-time">45 minutes ago</div>
-    </div>
-
-    <div class="activity-item message">
-      <div class="activity-title">Studio replied on project chat</div>
-      <div class="activity-time">30 minutes ago</div>
-    </div>
-
-    <div class="activity-item system">
-      <div class="activity-title">Code deployed to staging</div>
-      <div class="activity-time">20 minutes ago</div>
-    </div>
-
-    <div class="activity-item task">
-      <div class="activity-title">Cleo assigned to verification</div>
-      <div class="activity-time">10 minutes ago</div>
-    </div>
+  <!-- Right sidebar: right-menu (Missions / Active Tasks / Completed) -->
+  <!-- R-RM-1: component inlined. R2 will switch to data-include="components/right-menu.html" -->
+  <div class="right-rail" id="right-menu-rail">
+    <!-- right-menu component — begin inline -->
+    <div data-include="components/right-menu.html"></div>
+    <!-- right-menu component — end inline -->
   </div>
+
+  <script src="include.js"></script>
 </body>
 </html>

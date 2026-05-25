@@ -12,13 +12,65 @@
   <link rel="stylesheet" href="styles/mobile.css">
 
   <style>
-    /* Chat-specific layout */
-    body {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
+    /* ─── 3-column desktop layout ────────────────────────────── */
+    @media (min-width: 1440px) {
+      body {
+        display: grid;
+        grid-template-columns: var(--cw-desktop-left) 1fr var(--cw-desktop-right);
+        grid-template-rows: 1fr;
+        height: 100vh;
+        overflow: hidden;
+        gap: 0;
+      }
+
+      .left-rail {
+        grid-column: 1;
+        background-color: var(--c-s1);
+        border-right: 1px solid var(--c-border);
+        padding: var(--sp-lg) var(--sp-md);
+        overflow-y: auto;
+      }
+
+      .chat-column {
+        grid-column: 2;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--c-s1);
+        overflow: hidden;
+      }
+
+      .right-rail {
+        grid-column: 3;
+        background-color: var(--c-s1-faint);
+        border-left: 1px solid var(--c-border);
+        padding: var(--sp-lg) var(--sp-md);
+        overflow-y: auto;
+      }
     }
+
+    /* Mobile: single column, no rails */
+    @media (max-width: 1439px) {
+      body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .left-rail,
+      .right-rail {
+        display: none;
+      }
+
+      .chat-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    }
+
+    /* ─── Chat column styles ─────────────────────────────────── */
 
     .chat-header {
       padding: var(--sp-lg) var(--sp-xl);
@@ -70,50 +122,137 @@
       overflow: hidden;
     }
 
-    /* Message list container */
     #message-list-container {
       flex: 1;
       overflow: hidden;
     }
 
-    /* Input bar container */
     #input-bar-container {
       flex-shrink: 0;
     }
+
+    /* ─── Left rail stub ─────────────────────────────────────── */
+
+    .sidebar-label {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-md);
+      padding: 0 var(--sp-sm);
     }
 
-    @media (max-width: 1439px) {
-      .chat-actions {
-        display: none;
-      }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-sm);
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      transition: background-color 120ms ease, color 120ms ease;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover {
+      background-color: var(--c-dim);
+      color: var(--c-text);
+    }
+
+    .nav-item.active {
+      background-color: var(--c-dim);
+      color: var(--c-accent);
+    }
+
+    .nav-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--c-accent);
+      flex-shrink: 0;
+    }
+
+    .nav-dot.idle {
+      background-color: var(--c-muted);
     }
   </style>
 </head>
 <body>
-  <div class="chat-header">
-    <div>
-      <h1 class="chat-title">Elon</h1>
-      <p class="chat-subtitle">Systems architect & operations</p>
+
+  <!-- ── Left rail: nav (agent list) ──────────────────────────── -->
+  <aside class="left-rail">
+    <h3 class="sidebar-label">Agents</h3>
+
+    <a href="chat-1on1.html?agent=elon" class="nav-item active">
+      <span class="nav-dot"></span>
+      Elon
+    </a>
+    <a href="chat-1on1.html?agent=studio" class="nav-item">
+      <span class="nav-dot"></span>
+      Studio
+    </a>
+    <a href="chat-1on1.html?agent=steffen" class="nav-item">
+      <span class="nav-dot idle"></span>
+      Steffen
+    </a>
+    <a href="chat-1on1.html?agent=cleo" class="nav-item">
+      <span class="nav-dot idle"></span>
+      Cleo
+    </a>
+    <a href="chat-1on1.html?agent=bobby" class="nav-item">
+      <span class="nav-dot"></span>
+      Bobby
+    </a>
+
+    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Projects</h3>
+
+    <a href="project-chat.html?id=corner" class="nav-item">
+      <span class="nav-dot"></span>
+      Corner
+    </a>
+    <a href="project-chat.html?id=ambition" class="nav-item">
+      <span class="nav-dot"></span>
+      Ambition
+    </a>
+  </aside>
+
+  <!-- ── Chat column ──────────────────────────────────────────── -->
+  <div class="chat-column">
+    <div class="chat-header">
+      <div>
+        <h1 class="chat-title">Elon</h1>
+        <p class="chat-subtitle">Systems architect & operations</p>
+      </div>
+      <div class="chat-actions">
+        <button>←</button>
+        <button>⋮</button>
+      </div>
     </div>
-    <div class="chat-actions">
-      <button>←</button>
-      <button>⋮</button>
+
+    <div class="chat-body">
+      <!-- Message list will load here -->
+      <div id="message-list-container"></div>
+
+      <!-- Input bar will load here -->
+      <div id="input-bar-container"></div>
     </div>
   </div>
 
-  <div class="chat-body">
-    <!-- Message list will load here -->
-    <div id="message-list-container"></div>
-
-    <!-- Input bar will load here -->
-    <div id="input-bar-container"></div>
-  </div>
+  <!-- ── Right rail: right-menu (no project scope = global) ────── -->
+  <!-- 1:1 chat shows global missions + tasks (not project-scoped) -->
+  <aside class="right-rail">
+    <div data-include="components/right-menu.html"></div>
+  </aside>
 
   <!-- Modals and overlays will load here -->
   <div id="modals-container"></div>
 
+  <script src="include.js"></script>
   <script>
-    // Async component loader
+    // Async component loader for message-list, input-bar, modals
     async function loadComponent(filePath, containerId) {
       try {
         const response = await fetch(filePath);
@@ -122,7 +261,6 @@
         const container = document.getElementById(containerId);
         if (container) {
           container.innerHTML = html;
-          // Execute any scripts within the loaded HTML
           const scripts = container.querySelectorAll('script');
           scripts.forEach(oldScript => {
             const newScript = document.createElement('script');
@@ -135,7 +273,6 @@
       }
     }
 
-    // Load all components on DOM ready
     document.addEventListener('DOMContentLoaded', () => {
       Promise.all([
         loadComponent('components/message-list.html', 'message-list-container'),

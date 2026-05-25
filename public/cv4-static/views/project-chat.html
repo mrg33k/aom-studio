@@ -569,159 +569,540 @@
     .pinned-item-name {
       flex: 1;
     }
+
+    /* ── Left rail tree (R1 corner:left-menu) ──────────────────── */
+    .nav-back-link {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      color: var(--c-text2);
+      text-decoration: none;
+      font-size: var(--fs-sm);
+      padding: var(--sp-sm);
+      border-radius: 5px;
+      margin-bottom: var(--sp-md);
+      transition: background-color 0.15s ease;
+    }
+    .nav-back-link:hover { background-color: var(--c-dim-faint); color: var(--c-text); }
+
+    .tree-new-root-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      width: 100%;
+      padding: var(--sp-sm) var(--sp-md);
+      background-color: transparent;
+      border: 1px dashed var(--c-border);
+      border-radius: 5px;
+      color: var(--c-muted);
+      font-size: var(--fs-sm);
+      cursor: pointer;
+      margin-bottom: var(--sp-lg);
+      transition: all 0.15s ease;
+      min-height: unset;
+    }
+    .tree-new-root-btn:hover {
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+      background-color: rgba(16,185,129,0.05);
+    }
+
+    .project-tree {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .tree-loading { font-size: var(--fs-xs); color: var(--c-muted); padding: var(--sp-md); }
+
+    /* Row base */
+    .tree-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px var(--sp-sm);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      color: var(--c-text2);
+      text-decoration: none;
+      position: relative;
+      user-select: none;
+    }
+    .tree-row:hover { background-color: var(--c-dim-faint); color: var(--c-text); }
+    .tree-row:hover .tree-action-btn { opacity: 1; }
+    .tree-row.active { background-color: var(--c-accent-glow); color: var(--c-text); }
+
+    /* Level indentation */
+    .tree-l1 { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--c-text); }
+    .tree-l2 { font-size: var(--fs-sm); padding-left: 20px; }
+    .tree-l3 { font-size: var(--fs-xs); padding-left: 36px; }
+
+    /* Disclosure triangle */
+    .tree-disc {
+      font-size: 9px;
+      width: 12px;
+      flex-shrink: 0;
+      color: var(--c-muted);
+      transition: transform 0.15s ease;
+      line-height: 1;
+    }
+    .tree-disc.open { transform: rotate(90deg); }
+
+    /* Status dot */
+    .tree-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background-color: var(--c-muted);
+    }
+    .tree-dot.s-active { background-color: var(--c-accent); }
+    .tree-dot.s-done { background-color: transparent; border: 1px solid var(--c-muted); }
+
+    .tree-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .tree-count {
+      font-size: 10px;
+      color: var(--c-muted);
+      background-color: rgba(26,36,56,0.4);
+      border: 1px solid var(--c-border-faint, rgba(255,255,255,0.06));
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: var(--ff-mono);
+      flex-shrink: 0;
+    }
+
+    /* + action button (visible on hover) */
+    .tree-action-btn {
+      opacity: 0;
+      background: transparent;
+      border: none;
+      color: var(--c-muted);
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: var(--fs-base);
+      line-height: 1;
+      flex-shrink: 0;
+      min-height: unset;
+      min-width: unset;
+      height: auto;
+      transition: opacity 0.1s ease, color 0.1s ease;
+    }
+    .tree-action-btn:hover { color: var(--c-accent); opacity: 1 !important; }
+
+    /* Inline rename input */
+    .tree-name-input {
+      flex: 1;
+      background: var(--c-dim);
+      border: 1px solid var(--c-accent);
+      border-radius: 3px;
+      color: var(--c-text);
+      font-size: var(--fs-sm);
+      padding: 1px 4px;
+      outline: none;
+      font-family: var(--ff-sans);
+    }
+
+    /* Inline new-item row */
+    .tree-new-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px var(--sp-sm);
+    }
+    .tree-new-input {
+      flex: 1;
+      background: var(--c-dim);
+      border: 1px solid var(--c-accent);
+      border-radius: 3px;
+      color: var(--c-text);
+      font-size: var(--fs-xs);
+      padding: 3px 6px;
+      outline: none;
+      font-family: var(--ff-sans);
+    }
+    .tree-new-cancel {
+      background: transparent;
+      border: none;
+      color: var(--c-muted);
+      cursor: pointer;
+      font-size: var(--fs-sm);
+      padding: 0 4px;
+      min-height: unset;
+      line-height: 1;
+    }
+
+    /* Project container (L1) */
+    .tree-project { margin-bottom: 2px; }
+    .tree-project-children { display: none; flex-direction: column; }
+    .tree-project.open > .tree-project-children { display: flex; }
+
+    /* Mission container (L2 with children) */
+    .tree-mission-children { display: none; flex-direction: column; }
+    .tree-mission.open > .tree-mission-children { display: flex; }
   </style>
 </head>
 <body>
   <!-- Desktop: 3-column rail layout -->
   <div class="rail-left" id="rail-left">
-    <a href="./home.html" style="text-decoration: none; color: inherit; margin-bottom: var(--sp-lg); display: flex; align-items: center; gap: var(--sp-md);">
-      <span style="font-size: var(--fs-lg);">←</span>
-      <span>Back to Home</span>
+
+    <!-- Back to home -->
+    <a href="./home.html" class="nav-back-link">
+      <span>←</span>
+      <span>Home</span>
     </a>
 
-    <h3 class="sidebar-label">Projects</h3>
-    <div class="pinned-list" id="projects-list">
-      <a href="./project-chat.html?project=ambition-mechanical" class="pinned-item active">
-        <span class="pinned-item-name">Ambition</span>
-      </a>
-      <a href="./project-chat.html?project=corner" class="pinned-item">
-        <span class="pinned-item-name">Corner</span>
-      </a>
-      <a href="./project-chat.html?project=isa-energy" class="pinned-item">
-        <span class="pinned-item-name">ISA Energy</span>
-      </a>
-      <a href="./project-chat.html?project=space-rising" class="pinned-item">
-        <span class="pinned-item-name">Space Rising</span>
-      </a>
+    <!-- New project CTA -->
+    <button class="tree-new-root-btn" onclick="treeCreateProject()">
+      <span>+</span>
+      <span>New project</span>
+    </button>
+
+    <!-- 3-level project tree: Project (L1) > Mission (L2) > Sub-mission (L3).
+         User controls: expand/collapse, rename (dbl-click), add (+).
+         Real-time: Supabase Realtime subscription on messages table.
+         Save-in-place: create and rename update local state immediately. -->
+    <div class="project-tree" id="project-tree" role="tree" aria-label="Projects and missions">
+      <div class="tree-loading">Loading…</div>
     </div>
 
-    <!-- R-MP-4: nested workstream + mission tree, live from /api/dashboard/missions-tree.
-         Status dots: emerald (active) / hollow (done) / gray (pending). Never red. -->
-    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Missions</h3>
-    <div id="mission-tree" class="mission-tree" data-loading="true">
-      <div class="mission-tree-loading" style="font-size: var(--fs-xs); color: var(--c-text2);">Loading missions…</div>
-    </div>
-    <style>
-      [data-cv4] .mission-tree { display: flex; flex-direction: column; gap: var(--sp-xs); font-size: var(--fs-sm); }
-      [data-cv4] .mt-workstream { margin-bottom: var(--sp-sm); }
-      [data-cv4] .mt-workstream-label {
-        text-transform: uppercase; font-size: var(--fs-xs);
-        font-weight: var(--fw-semibold); color: var(--c-text2);
-        letter-spacing: 0.05em; margin: var(--sp-md) 0 var(--sp-xs);
-      }
-      [data-cv4] .mt-mission {
-        display: flex; align-items: center; gap: var(--sp-sm);
-        padding: var(--sp-xs) var(--sp-md); border-radius: 6px;
-        color: var(--c-text); text-decoration: none;
-        transition: background-color 120ms ease;
-      }
-      [data-cv4] .mt-mission:hover { background-color: var(--c-dim); }
-      [data-cv4] .mt-mission.active { background-color: rgba(16,185,129,0.12); }
-      [data-cv4] .mt-mission-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-      [data-cv4] .mt-mission-dot.s-active { background-color: var(--c-accent, #10b981); }
-      [data-cv4] .mt-mission-dot.s-done { background-color: transparent; border: 1px solid var(--c-text2); }
-      [data-cv4] .mt-mission-dot.s-pending { background-color: var(--c-muted, #6b7280); }
-      [data-cv4] .mt-mission-name { flex: 1; }
-    </style>
-
-    <h3 class="sidebar-label" style="margin-top: var(--sp-2xl);">Quick Actions</h3>
-    <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
-      <button class="btn-secondary" onclick="startVoiceCall()">Start Voice Call</button>
-      <button class="btn-secondary" onclick="openFileViewer()">View Project Files</button>
-      <button class="btn-secondary" onclick="createTask()">Create Mission</button>
-    </div>
   </div>
 
   <script>
-    // R-MP-4 + R-DC-6: load mission tree, subscribe to messages-inserts so
-    // mission activity dots light up live without polling. True missions-table
-    // Realtime depends on R-MP-3 schema migration (DDL — outside this round).
-    let __missionTreeReloadDebounce = null;
-    function __scheduleTreeReload() {
-      clearTimeout(__missionTreeReloadDebounce);
-      __missionTreeReloadDebounce = setTimeout(loadMissionTree, 1500);
+    // ── Project tree (R1 corner:left-menu) ───────────────────────
+    // 3 levels: Project (L1) > Mission (L2) > Sub-mission (L3).
+    // Local state drives the render; Supabase Realtime updates status dots live.
+    // Create + rename are optimistic (API stubs — real calls wired in R2).
+
+    const __TREE_SEED = {
+      projects: [
+        {
+          slug: 'ambition-mechanical', name: 'Ambition Mechanical', open: true,
+          missions: [
+            { slug: 'website', name: 'website', open: false, children: [
+              { slug: 'hero', name: 'hero', status: 'active' },
+              { slug: 'top-bar', name: 'top-bar', status: 'pending' },
+              { slug: 'what-we-do', name: 'what-we-do', status: 'pending' },
+              { slug: 'testimonials', name: 'testimonials', status: 'pending' },
+              { slug: 'how-to-hire', name: 'how-to-hire', status: 'pending' },
+              { slug: 'about-page', name: 'about-page', status: 'pending' },
+              { slug: 'projects-page', name: 'projects-page', status: 'pending' },
+              { slug: 'contact-page', name: 'contact-page', status: 'pending' },
+              { slug: 'footer', name: 'footer', status: 'done' },
+              { slug: 'privacy-banner', name: 'privacy-banner', status: 'done' },
+              { slug: 'services-grid', name: 'services-grid', status: 'pending' },
+              { slug: 'careers-page', name: 'careers-page', status: 'pending' },
+              { slug: '404-page', name: '404-page', status: 'pending' },
+            ]},
+            { slug: 'google-ads', name: 'google-ads', open: false, children: [
+              { slug: 'lp-restaurant-hvac', name: 'lp-restaurant-hvac', status: 'active' },
+              { slug: 'lp-emergency-hvac', name: 'lp-emergency-hvac', status: 'pending' },
+              { slug: 'lp-walk-in-cooler', name: 'lp-walk-in-cooler', status: 'pending' },
+              { slug: 'lp-rtu-service', name: 'lp-rtu-service', status: 'pending' },
+              { slug: 'campaign-structure', name: 'campaign-structure', status: 'pending' },
+            ]},
+            { slug: 'brand', name: 'brand', open: false, children: [
+              { slug: 'brand-page', name: 'brand-page', status: 'active' },
+              { slug: 'color-system', name: 'color-system', status: 'pending' },
+            ]},
+            { slug: 'photography', name: 'photography', open: false, children: [
+              { slug: 'jobsite-photography', name: 'jobsite-photography', status: 'pending' },
+              { slug: 'team-portraits', name: 'team-portraits', status: 'pending' },
+            ]},
+            { slug: 'social', name: 'social', open: false, children: [
+              { slug: 'social-edits', name: 'social-edits', status: 'pending' },
+            ]},
+            { slug: 'project-case-studies', name: 'project-case-studies', open: false, children: [
+              { slug: 'projects-gallery', name: 'projects-gallery', status: 'pending' },
+              { slug: 'per-project-video', name: 'per-project-video', status: 'pending' },
+            ]},
+          ]
+        },
+        {
+          slug: 'corner', name: 'Corner', open: false,
+          missions: [
+            { slug: 'corner-ui-cv4', name: 'corner-ui-cv4', status: 'active', children: [] },
+            { slug: 'left-menu', name: 'left-menu', status: 'active', children: [] },
+            { slug: 'mission-panel', name: 'mission-panel', status: 'active', children: [] },
+            { slug: 'mail-room', name: 'mail-room', status: 'done', children: [] },
+          ]
+        },
+        { slug: 'isa-energy', name: 'ISA Energy', open: false, missions: [] },
+        { slug: 'space-rising', name: 'Space Rising', open: false, missions: [] },
+      ]
+    };
+
+    let __treeState = JSON.parse(JSON.stringify(__TREE_SEED));
+    const __params = new URLSearchParams(window.location.search);
+    let __activeProject = __params.get('project') || 'ambition-mechanical';
+    let __activeMission = __params.get('mission') || null;
+
+    // ── Render ───────────────────────────────────────────────────
+
+    function renderTree() {
+      const el = document.getElementById('project-tree');
+      if (!el) return;
+      el.innerHTML = __treeState.projects.map(renderProject).join('');
     }
 
-    async function loadMissionTree() {
-      // Re-entrant — used by both initial load and Realtime-triggered reload.
+    function renderProject(proj) {
+      const isActive = proj.slug === __activeProject;
+      const rowCls = 'tree-row tree-l1' + (isActive ? ' active' : '');
+      const discCls = 'tree-disc' + (proj.open ? ' open' : '');
+      const children = proj.open
+        ? (proj.missions || []).map(m => renderMission(m, proj.slug)).join('')
+          + (proj._adding ? renderNewRow('mission', proj.slug, '') : '')
+        : '';
+      return `
+        <div class="tree-project${proj.open ? ' open' : ''}" data-proj="${e(proj.slug)}">
+          <div class="${rowCls}"
+               onclick="treeToggleProject('${e(proj.slug)}')"
+               ondblclick="treeRenameStart(event,'proj','${e(proj.slug)}','','')">
+            <span class="${discCls}">▶</span>
+            <span class="tree-name">${e(proj.name)}</span>
+            <button class="tree-action-btn" title="Add mission"
+                    onclick="event.stopPropagation();treeAddChild('proj','${e(proj.slug)}','')">+</button>
+          </div>
+          <div class="tree-project-children">${children}</div>
+        </div>`;
+    }
+
+    function renderMission(m, projSlug) {
+      const hasKids = m.children && m.children.length > 0;
+      const isActive = !hasKids && m.slug === __activeMission;
+      const rowCls = 'tree-row tree-l2' + (isActive ? ' active' : '');
+
+      if (hasKids) {
+        const discCls = 'tree-disc' + (m.open ? ' open' : '');
+        const kids = m.open
+          ? m.children.map(s => renderSub(s, projSlug, m.slug)).join('')
+            + (m._adding ? renderNewRow('sub', projSlug, m.slug) : '')
+          : '';
+        return `
+          <div class="tree-mission${m.open ? ' open' : ''}" data-mission="${e(m.slug)}">
+            <div class="${rowCls}"
+                 onclick="treeToggleMission('${e(projSlug)}','${e(m.slug)}')"
+                 ondblclick="treeRenameStart(event,'mission','${e(projSlug)}','${e(m.slug)}','')">
+              <span class="${discCls}">▶</span>
+              <span class="tree-name">${e(m.name)}</span>
+              <span class="tree-count">${m.children.length}</span>
+              <button class="tree-action-btn" title="Add sub-mission"
+                      onclick="event.stopPropagation();treeAddChild('mission','${e(projSlug)}','${e(m.slug)}')">+</button>
+            </div>
+            <div class="tree-mission-children">${kids}</div>
+          </div>`;
+      }
+
+      // Leaf mission (no children)
+      const dotCls = 'tree-dot' + (m.status === 'active' ? ' s-active' : m.status === 'done' ? ' s-done' : '');
+      const href = `?project=${e(projSlug)}&mission=${e(m.slug)}`;
+      return `
+        <a class="${rowCls}" href="${href}"
+           ondblclick="event.preventDefault();treeRenameStart(event,'mission','${e(projSlug)}','${e(m.slug)}','')">
+          <span class="${dotCls}"></span>
+          <span class="tree-name">${e(m.name)}</span>
+        </a>`;
+    }
+
+    function renderSub(sub, projSlug, mSlug) {
+      const isActive = sub.slug === __activeMission;
+      const rowCls = 'tree-row tree-l3' + (isActive ? ' active' : '');
+      const dotCls = 'tree-dot' + (sub.status === 'active' ? ' s-active' : sub.status === 'done' ? ' s-done' : '');
+      const href = `?project=${e(projSlug)}&mission=${e(sub.slug)}`;
+      return `
+        <a class="${rowCls}" href="${href}"
+           ondblclick="event.preventDefault();treeRenameStart(event,'sub','${e(projSlug)}','${e(mSlug)}','${e(sub.slug)}')">
+          <span class="${dotCls}"></span>
+          <span class="tree-name">${e(sub.name)}</span>
+        </a>`;
+    }
+
+    function renderNewRow(type, projSlug, mSlug) {
+      const indent = type === 'sub' ? 'tree-l3' : 'tree-l2';
+      const ph = type === 'sub' ? 'Sub-mission name…' : 'Mission name…';
+      return `
+        <div class="tree-new-row ${indent}">
+          <input class="tree-new-input" type="text" placeholder="${ph}" autofocus
+                 onkeydown="treeNewKey(event,'${type}','${e(projSlug)}','${e(mSlug)}')"
+                 onblur="treeNewBlur(event,'${type}','${e(projSlug)}','${e(mSlug)}')" />
+          <button class="tree-new-cancel"
+                  onmousedown="event.preventDefault();treeCancelNew('${e(projSlug)}','${e(mSlug)}')">✕</button>
+        </div>`;
+    }
+
+    // ── Interactions ─────────────────────────────────────────────
+
+    function treeToggleProject(slug) {
+      const p = __treeState.projects.find(x => x.slug === slug);
+      if (p) { p.open = !p.open; renderTree(); }
+    }
+
+    function treeToggleMission(projSlug, mSlug) {
+      const p = __treeState.projects.find(x => x.slug === projSlug);
+      if (!p) return;
+      const m = (p.missions || []).find(x => x.slug === mSlug);
+      if (m) { m.open = !m.open; renderTree(); }
+    }
+
+    function treeAddChild(level, projSlug, mSlug) {
+      const p = __treeState.projects.find(x => x.slug === projSlug);
+      if (!p) return;
+      if (level === 'proj') {
+        p.open = true;
+        p._adding = true;
+      } else {
+        const m = (p.missions || []).find(x => x.slug === mSlug);
+        if (!m) return;
+        m.open = true;
+        m._adding = true;
+      }
+      renderTree();
+      setTimeout(() => { const inp = document.querySelector('.tree-new-input'); if (inp) inp.focus(); }, 20);
+    }
+
+    function treeCreateProject() {
+      const name = prompt('Project name:');
+      if (!name || !name.trim()) return;
+      const slug = name.trim().toLowerCase().replace(/\s+/g, '-');
+      __treeState.projects.push({ slug, name: name.trim(), open: false, missions: [] });
+      renderTree();
+      console.log('[tree] create project:', slug); // R2: POST /api/dashboard/projects
+    }
+
+    function treeNewKey(e, type, projSlug, mSlug) {
+      if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) treeSaveNew(type, projSlug, mSlug, v); }
+      if (e.key === 'Escape') treeCancelNew(projSlug, mSlug);
+    }
+
+    function treeNewBlur(e, type, projSlug, mSlug) {
+      const v = e.target.value.trim();
+      if (v) treeSaveNew(type, projSlug, mSlug, v);
+      else treeCancelNew(projSlug, mSlug);
+    }
+
+    function treeSaveNew(type, projSlug, mSlug, name) {
+      const slug = name.toLowerCase().replace(/\s+/g, '-');
+      const p = __treeState.projects.find(x => x.slug === projSlug);
+      if (!p) return;
+      if (type === 'mission') {
+        p._adding = false;
+        p.missions.push({ slug, name, open: false, children: [] });
+        console.log('[tree] create mission:', projSlug, slug); // R2: POST /api/dashboard/missions
+      } else {
+        const m = (p.missions || []).find(x => x.slug === mSlug);
+        if (!m) return;
+        m._adding = false;
+        if (!m.children) m.children = [];
+        m.children.push({ slug, name, status: 'pending' });
+        console.log('[tree] create sub-mission:', projSlug, mSlug, slug); // R2: POST /api/dashboard/missions
+      }
+      renderTree();
+    }
+
+    function treeCancelNew(projSlug, mSlug) {
+      const p = __treeState.projects.find(x => x.slug === projSlug);
+      if (!p) return;
+      if (mSlug) { const m = (p.missions || []).find(x => x.slug === mSlug); if (m) m._adding = false; }
+      else p._adding = false;
+      renderTree();
+    }
+
+    function treeRenameStart(ev, type, projSlug, mSlug, subSlug) {
+      ev.stopPropagation();
+      const span = ev.currentTarget.querySelector('.tree-name');
+      if (!span) return;
+      const original = span.textContent;
+      const inp = document.createElement('input');
+      inp.className = 'tree-name-input';
+      inp.value = original;
+      span.replaceWith(inp);
+      inp.focus(); inp.select();
+      const save = () => {
+        const v = inp.value.trim() || original;
+        treeSaveRename(type, projSlug, mSlug, subSlug, v);
+      };
+      inp.addEventListener('keydown', ev2 => {
+        if (ev2.key === 'Enter') save();
+        if (ev2.key === 'Escape') renderTree();
+      });
+      inp.addEventListener('blur', save);
+    }
+
+    function treeSaveRename(type, projSlug, mSlug, subSlug, name) {
+      const p = __treeState.projects.find(x => x.slug === projSlug);
+      if (!p) { renderTree(); return; }
+      if (type === 'proj') { p.name = name; }
+      else if (type === 'mission') {
+        const m = (p.missions || []).find(x => x.slug === mSlug);
+        if (m) m.name = name;
+      } else {
+        const m = (p.missions || []).find(x => x.slug === mSlug);
+        if (m && m.children) { const s = m.children.find(x => x.slug === subSlug); if (s) s.name = name; }
+      }
+      console.log('[tree] rename:', type, name); // R2: PATCH /api/dashboard/...
+      renderTree();
+    }
+
+    // ── Real-time status refresh ──────────────────────────────────
+    // When a mission-tagged message arrives, reload status from API
+    // and merge dots into local state without clobbering open/close.
+
+    let __treeReloadTimer = null;
+    function __scheduleTreeReload() {
+      clearTimeout(__treeReloadTimer);
+      __treeReloadTimer = setTimeout(loadLiveStatus, 1500);
+    }
+
+    async function loadLiveStatus() {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const activeProject = params.get('project') || 'ambition-mechanical';
-        const world = params.get('world') || 'aom';
+        const world = __params.get('world') || 'aom';
         const resp = await fetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(world), {
           headers: { Authorization: 'Bearer ' + (window.AOM_JWT || '') },
         });
-        if (!resp.ok) throw new Error('http ' + resp.status);
+        if (!resp.ok) return;
         const data = await resp.json();
-        const project = (data.projects || []).find(function (p) { return p.slug === activeProject; });
-        const el = document.getElementById('mission-tree');
-        if (!el) return;
-        if (!project || !project.workstreams || !project.workstreams.length) {
-          el.innerHTML = '<div style="font-size: var(--fs-xs); color: var(--c-text2);">No missions yet.</div>';
-          el.dataset.loading = 'false';
-          return;
-        }
-        const activeMission = params.get('mission');
-        const parts = [];
-        for (var i = 0; i < project.workstreams.length; i++) {
-          var ws = project.workstreams[i];
-          if (!ws.missions || !ws.missions.length) continue;
-          parts.push('<div class="mt-workstream"><div class="mt-workstream-label">' + escapeHtml(ws.name) + '</div>');
-          for (var j = 0; j < ws.missions.length; j++) {
-            var m = ws.missions[j];
-            var statusClass = m.is_done ? 's-done' : (m.last_message_at ? 's-active' : 's-pending');
-            var isActive = m.slug === activeMission ? ' active' : '';
-            var href = './project-chat.html?project=' + encodeURIComponent(activeProject)
-              + '&world=' + encodeURIComponent(world)
-              + '&mission=' + encodeURIComponent(m.slug);
-            parts.push(
-              '<a class="mt-mission' + isActive + '" href="' + href + '" data-mission="' + escapeHtml(m.slug) + '">'
-              + '<span class="mt-mission-dot ' + statusClass + '" aria-hidden="true"></span>'
-              + '<span class="mt-mission-name">' + escapeHtml(m.name) + '</span>'
-              + '</a>'
-            );
+        // Merge status dots from API into local state
+        for (const apiProj of (data.projects || [])) {
+          const lp = __treeState.projects.find(x => x.slug === apiProj.slug);
+          if (!lp) continue;
+          for (const ws of (apiProj.workstreams || [])) {
+            for (const apiM of (ws.missions || [])) {
+              const lm = (lp.missions || []).find(x => x.slug === apiM.slug);
+              if (lm) lm.status = apiM.is_done ? 'done' : (apiM.last_message_at ? 'active' : 'pending');
+            }
           }
-          parts.push('</div>');
         }
-        el.innerHTML = parts.join('');
-        el.dataset.loading = 'false';
+        renderTree();
       } catch (err) {
-        var el = document.getElementById('mission-tree');
-        if (el && el.dataset.loading === 'true') {
-          el.innerHTML = '<div style="font-size: var(--fs-xs); color: var(--c-text2);">Could not load missions.</div>';
-          el.dataset.loading = 'false';
-        }
-        console.warn('[mission-tree] load failed', err);
+        console.warn('[tree] live status refresh failed', err);
       }
     }
 
-    // Initial load
-    loadMissionTree();
-
-    // R-DC-6: live-update dots when new mission-tagged messages arrive.
-    // Uses the existing supabase client if exposed globally; otherwise
-    // skips silently and relies on the next page load.
-    (function wireRealtime() {
+    (function wireRealtimeTree() {
       try {
-        var sb = window.supabase || (window.AOM_SUPABASE && window.AOM_SUPABASE.client);
+        const sb = window.supabase || (window.AOM_SUPABASE && window.AOM_SUPABASE.client);
         if (!sb || !sb.channel) return;
-        var channelId = 'mission-tree-' + Math.random().toString(36).slice(2, 8);
-        sb.channel(channelId)
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function (payload) {
-            var slug = payload && payload.new && payload.new.metadata && payload.new.metadata.mission_slug;
+        sb.channel('proj-tree-' + Math.random().toString(36).slice(2, 8))
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, payload => {
+            const slug = payload?.new?.metadata?.mission_slug;
             if (slug) __scheduleTreeReload();
           })
           .subscribe();
       } catch (err) {
-        console.warn('[mission-tree] realtime subscribe failed', err);
+        console.warn('[tree] realtime subscribe failed', err);
       }
     })();
 
-    function escapeHtml(s) {
+    function e(s) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
+
+    // Initial render
+    renderTree();
   </script>
 
   <!-- Center: project chat thread -->
