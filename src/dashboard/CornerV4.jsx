@@ -415,10 +415,9 @@ export default function CornerV4() {
   useEffect(() => { tabRef.current = tab }, [tab])
 
   // ── New-user onboarding auto-start ────────────────────────────────────────
-  // When a brand new user loads their empty workspace, the EA waits silently
-  // because it only replies — it never initiates. This effect fires a hidden
-  // kickoff trigger after auth + agents resolve so the EA starts the
-  // conversation without the user having to type first.
+  // When a brand new user loads their empty workspace the EA sends the first
+  // message — a warm welcome + lead-in question. The user should never see a
+  // blank chat and wonder if something is broken.
   // Guard: only fires once per world (sessionStorage key), only for non-AOM
   // worlds where the user has no messages yet.
   useEffect(() => {
@@ -438,18 +437,17 @@ export default function CornerV4() {
         const data = await r.json()
         const msgs = Array.isArray(data?.messages) ? data.messages : Array.isArray(data) ? data : []
         if (msgs.length > 0) return  // already has messages — not new
-        // No messages — fire the onboarding kickoff
+        // No messages — EA sends the welcome first as assistant
         sessionStorage.setItem(flagKey, '1')
         await authFetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agent: defaultAgent.slug,
-            text: 'Hey',
-            role: 'user',
+            text: "Hey, welcome! I'm your EA — I help you stay organized and get things done. What kind of work do you do? Give me a quick rundown and I'll get your workspace set up.",
+            role: 'assistant',
             source: 'corner-onboarding-auto',
             client_id: worldId,
-            ...parentUserIdentity,
           }),
         })
       } catch (_e) { /* silent — new user greeting is best-effort */ }
