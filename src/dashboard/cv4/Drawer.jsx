@@ -22,6 +22,13 @@ const MENU = {
   amber: 'var(--c-yellow)',
 }
 
+// Patrik's Supabase Auth uid (the super-admin). Used to gate the
+// "Reset to AOM" backdoor link in the Account section — that link wipes
+// the world override + force-reloads, which is an emergency debug tool
+// for the super-admin (tenant world-switcher state) and not something
+// other AOM team members or tenant users need or should see.
+const SUPER_ADMIN_UID = '833f6828-1dae-409c-a24b-1438f46544d0'
+
 export default function CV4Drawer({
   open,
   onClose,
@@ -30,6 +37,7 @@ export default function CV4Drawer({
   projectRooms = [],
   notifItems = [],
   worldId,
+  currentUserId = null,
   selectedAgentSlug,
   selectedProjectSlug,
   activeTool = null,
@@ -47,6 +55,7 @@ export default function CV4Drawer({
   // project or mission is created to force an immediate missions-tree refetch.
   refreshKey = 0,
 }) {
+  const isSuperAdmin = currentUserId === SUPER_ADMIN_UID
   useEffect(() => {
     if (docked || !open) return
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
@@ -220,6 +229,7 @@ export default function CV4Drawer({
       onSelectMission={onSelectMission}
       onLogout={onLogout}
       onClose={docked ? () => {} : onClose}
+      isSuperAdmin={isSuperAdmin}
     />
   )
 
@@ -391,6 +401,7 @@ function DrawerBody({
   onSelectMission,
   onLogout,
   onClose,
+  isSuperAdmin = false,
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 8px 12px', minWidth: 0 }}>
@@ -527,20 +538,28 @@ function DrawerBody({
       </NestedUnderMail>
 
       <TreeSection title="Account">
-        <PlainRow
-          icon={<ResetIcon />}
-          label="Reset to AOM"
-          onClick={() => {
-            try {
-              sessionStorage.removeItem('corner-world-override')
-              localStorage.removeItem('corner-world-override-persist')
-            } catch { /* ignore */ }
-            // Force a clean reload so every hook re-subscribes to the
-            // auth-derived world (no more sticky overrides).
-            // R7.21: stay on the entry-point base path (/dashboard or /cv4).
-            window.location.replace(window.location.pathname.startsWith('/cv4') ? '/cv4' : '/dashboard')
-          }}
-        />
+        {/* "Reset to AOM" is a super-admin backdoor — wipes world override +
+            force-reloads. Useful when the super-admin is debugging tenant
+            world-switcher state; harmful (and confusing) for any other user,
+            since it would force-reset *their* world to AOM (which they
+            usually don't even have access to). Gate strictly on the
+            super-admin uid. */}
+        {isSuperAdmin && (
+          <PlainRow
+            icon={<ResetIcon />}
+            label="Reset to AOM"
+            onClick={() => {
+              try {
+                sessionStorage.removeItem('corner-world-override')
+                localStorage.removeItem('corner-world-override-persist')
+              } catch { /* ignore */ }
+              // Force a clean reload so every hook re-subscribes to the
+              // auth-derived world (no more sticky overrides).
+              // R7.21: stay on the entry-point base path (/dashboard or /cv4).
+              window.location.replace(window.location.pathname.startsWith('/cv4') ? '/cv4' : '/dashboard')
+            }}
+          />
+        )}
         <PlainRow icon={<SignOutIcon />} label="Sign out" onClick={() => { onLogout?.(); onClose() }} />
       </TreeSection>
     </div>
