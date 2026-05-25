@@ -1202,6 +1202,8 @@ window.SSMod = (function () {
 
     const PTS = { a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:8,k:5,l:1,m:3,n:1,o:1,p:3,q:10,r:1,s:1,t:1,u:1,v:4,w:4,x:8,y:4,z:10 };
 
+    const PREVIEW_MS = 3500;  // how long he sees the word before tiles appear
+
     const render = () => {
       const target = wordList[wordIdx].word;
       const clue = wordList[wordIdx].clue;
@@ -1219,6 +1221,28 @@ window.SSMod = (function () {
         const j = Math.floor(Math.random() * (i + 1));
         [letterPool[i], letterPool[j]] = [letterPool[j], letterPool[i]];
       }
+
+      // PREVIEW PHASE — flash the word so he's SPELLING, not guessing
+      // Patrik observed Ethan guessing words from clues alone. Showing the
+      // word first turns this into spelling practice (the actual goal).
+      host.innerHTML = `
+        ${topRail(50 + (wordIdx / wordList.length) * 30, `${wordIdx + 1} / ${wordList.length}`)}
+        ${moduleHead('Word Tiles · vocab from today\'s reading', 'Lock it in')}
+        <div class="tiles-stage">
+          <div class="tiles-prompt" data-dict>
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-2);">Word ${wordIdx + 1} of ${wordList.length} — memorize it</div>
+            <div style="font-family: var(--font-serif); font-size: 48px; font-weight: 500; line-height: 1; letter-spacing: 0.04em; text-align: center; color: var(--ink); margin: var(--space-5) 0;">${target}</div>
+            <div style="font-family: var(--font-serif); font-size: 16px; line-height: 1.4; color: var(--ink-soft); text-align: center; font-style: italic;">${clue}</div>
+            <div style="text-align: center; font-size: 12px; color: var(--ink-quiet); margin-top: var(--space-3);">Tiles in a moment...</div>
+          </div>
+        </div>
+      `;
+
+      // After preview, transition to the tile-building phase
+      setTimeout(() => renderTiles(target, clue, letterPool), PREVIEW_MS);
+    };
+
+    const renderTiles = (target, clue, letterPool) => {
 
       host.innerHTML = `
         ${topRail(50 + (wordIdx / wordList.length) * 30, `${wordIdx + 1} / ${wordList.length}`)}
