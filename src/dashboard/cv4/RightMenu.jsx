@@ -425,15 +425,32 @@ function ProjectPills({ projects, active, onChange }) {
 
 const RECENT_KEY = (worldId) => `rm-recent-missions:${worldId || 'aom'}`
 
+// R10-5: group recents by project. Each project is its own row.
+// Project label on the left (mono uppercase), recent room chips on the right.
 function RecentMissionsStrip({ recents, onSelect }) {
   if (!recents || recents.length === 0) return null
+
+  // Group preserving recency order: first occurrence of a project wins its
+  // slot in the group order; entries inside a group keep their own order.
+  const groups = []
+  const groupIdx = new Map()
+  for (const entry of recents) {
+    if (!entry.project) continue
+    if (!groupIdx.has(entry.project)) {
+      groupIdx.set(entry.project, groups.length)
+      groups.push({ project: entry.project, entries: [] })
+    }
+    groups[groupIdx.get(entry.project)].entries.push(entry)
+  }
+  if (groups.length === 0) return null
+
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
       padding: '8px 14px 10px',
       borderBottom: '1px solid rgba(255,255,255,0.035)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6,
     }}>
       <span style={{
         fontSize: 9,
@@ -442,42 +459,74 @@ function RecentMissionsStrip({ recents, onSelect }) {
         textTransform: 'uppercase',
         color: C.muted,
         fontFamily: MENU.monoFont,
-        flexShrink: 0,
       }}>RECENT</span>
-      <div style={{
-        display: 'flex',
-        overflowX: 'auto',
-        gap: 5,
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-        WebkitMaskImage: 'linear-gradient(to right, black 86%, transparent 100%)',
-        maskImage: 'linear-gradient(to right, black 86%, transparent 100%)',
-      }}>
-        {recents.map(entry => (
+
+      {groups.map(g => (
+        <div key={g.project} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          minWidth: 0,
+        }}>
           <span
-            key={entry.qualified}
-            onClick={() => onSelect(entry)}
-            title={entry.qualified}
+            onClick={() => onSelect({ kind: 'project', project: g.project, name: g.project })}
+            title={`Open ${g.project}`}
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.10em',
+              textTransform: 'uppercase',
+              color: C.text2,
+              fontFamily: MENU.monoFont,
+              flexShrink: 0,
+              cursor: 'pointer',
+              maxWidth: 90,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              transition: 'color 120ms ease',
+            }}
             onMouseEnter={e => e.currentTarget.style.color = C.text}
             onMouseLeave={e => e.currentTarget.style.color = C.text2}
-            style={{
-              fontFamily: MENU.monoFont,
-              fontSize: 10,
-              fontWeight: 400,
-              color: C.text2,
-              cursor: 'pointer',
-              padding: '3px 7px',
-              borderRadius: 3,
-              background: 'rgba(255,255,255,0.025)',
-              border: '1px solid rgba(255,255,255,0.04)',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              transition: 'color 120ms ease',
-              textTransform: 'lowercase',
-            }}
-          >{entry.display}</span>
-        ))}
-      </div>
+          >{g.project}</span>
+          <div style={{
+            display: 'flex',
+            overflowX: 'auto',
+            gap: 5,
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitMaskImage: 'linear-gradient(to right, black 88%, transparent 100%)',
+            maskImage: 'linear-gradient(to right, black 88%, transparent 100%)',
+            flex: 1,
+            minWidth: 0,
+          }}>
+            {g.entries.map(entry => (
+              <span
+                key={entry.qualified}
+                onClick={() => onSelect(entry)}
+                title={entry.qualified}
+                onMouseEnter={e => e.currentTarget.style.color = C.text}
+                onMouseLeave={e => e.currentTarget.style.color = C.text2}
+                style={{
+                  fontFamily: MENU.monoFont,
+                  fontSize: 10,
+                  fontWeight: 400,
+                  color: C.text2,
+                  cursor: 'pointer',
+                  padding: '2px 7px',
+                  borderRadius: 3,
+                  background: 'rgba(255,255,255,0.025)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  transition: 'color 120ms ease',
+                  textTransform: 'lowercase',
+                }}
+              >{entry.display}</span>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -1431,29 +1480,19 @@ export default function RightMenu() {
     // Build a normalized entry from the active room. Skip if nothing to track.
     let entry = null
 
+    // R10-5: missions + project rooms only (no agents per Patrik 2026-05-25).
     if (t?.missionSlug) {
-      // Mission room — display as "project/mission" so context is obvious
       const projectSlug = t.slug
       const missionSlug = t.missionSlug
       const bare = missionSlug.includes(':') ? missionSlug.split(':').slice(1).join(':') : missionSlug
       entry = {
         kind: 'mission',
         qualified: `${projectSlug}:${bare}`,
-        display: `${projectSlug}/${bare}`,
+        display: bare,
         project: projectSlug,
         name: t.missionName || bare,
       }
-    } else if (selectedAgent?.slug) {
-      // Agent room (EA / super-agent)
-      entry = {
-        kind: 'agent',
-        qualified: `agent:${selectedAgent.slug}`,
-        display: selectedAgent.name || selectedAgent.slug,
-        project: null,
-        name: selectedAgent.name || selectedAgent.slug,
-      }
     } else if (t?.slug && (t.type === 'project' || !t.type)) {
-      // Project room (no mission scope)
       entry = {
         kind: 'project',
         qualified: `project:${t.slug}`,
@@ -1650,7 +1689,18 @@ export default function RightMenu() {
     }
     return (
       <>
-        {/* Folders first, in folder-creation order */}
+        {/* R10-6: + new mission · + new folder at TOP so they're the first
+            thing visible when a project group expands. */}
+        <NewMissionAffordance
+          projectSlug={group.projectSlug}
+          worldId={worldId}
+          onCreated={handleCreateMissionInline}
+        />
+        <NewFolderAffordance
+          projectSlug={group.projectSlug}
+          onCreateFolder={handleCreateFolder}
+        />
+        {/* Folders, in folder-creation order */}
         {projectFolders.map(folder => {
           const bucket = folderBuckets.get(folder.slug) || []
           const fKey = `${folder.project_slug}:${folder.slug}`
@@ -1707,16 +1757,6 @@ export default function RightMenu() {
             onCreateFolder={handleCreateFolder}
           />
         ))}
-        {/* + new mission · + new folder */}
-        <NewMissionAffordance
-          projectSlug={group.projectSlug}
-          worldId={worldId}
-          onCreated={handleCreateMissionInline}
-        />
-        <NewFolderAffordance
-          projectSlug={group.projectSlug}
-          onCreateFolder={handleCreateFolder}
-        />
       </>
     )
   }
@@ -1751,21 +1791,19 @@ export default function RightMenu() {
       <RecentMissionsStrip
         recents={recentMissions}
         onSelect={(entry) => {
-          // Backward compat: entries without `kind` are pre-R10 mission entries
-          // (they have project + display = bare mission slug).
+          // Backward compat: pre-R10 entries lack `kind` (always mission).
           const kind = entry.kind || 'mission'
-          entry = { ...entry, kind }
-          if (entry.kind === 'mission' && handleSelectMission) {
+          if (kind === 'mission' && handleSelectMission) {
+            // Strip project prefix if it sneaked into display (post-R10b had it).
+            const bare = (entry.display || '').includes('/')
+              ? entry.display.split('/').slice(1).join('/')
+              : entry.display
             handleSelectMission(
-              { slug: entry.display, bare_slug: entry.display, name: entry.name, project_slug: entry.project },
+              { slug: bare, bare_slug: bare, name: entry.name, project_slug: entry.project },
               { slug: entry.project, name: entry.project },
             )
-          } else if (entry.kind === 'project' && handleSelectProject) {
+          } else if (kind === 'project' && handleSelectProject) {
             handleSelectProject({ slug: entry.project, name: entry.name || entry.project })
-          } else if (entry.kind === 'agent' && nav.handleSelectAgent) {
-            // selectedAgent payload shape: at minimum {slug, name}
-            const agentSlug = entry.qualified.replace(/^agent:/, '')
-            nav.handleSelectAgent({ slug: agentSlug, name: entry.name })
           }
         }}
       />
@@ -1838,6 +1876,16 @@ export default function RightMenu() {
               }
               return (
                 <>
+                  {/* R10-6: + new mission / + new folder at top */}
+                  <NewMissionAffordance
+                    projectSlug={activePill}
+                    worldId={worldId}
+                    onCreated={handleCreateMissionInline}
+                  />
+                  <NewFolderAffordance
+                    projectSlug={activePill}
+                    onCreateFolder={handleCreateFolder}
+                  />
                   {projectFolders.map(folder => {
                     const bucket = folderBuckets.get(folder.slug) || []
                     const fKey = `${folder.project_slug}:${folder.slug}`
@@ -1893,15 +1941,6 @@ export default function RightMenu() {
                       onCreateFolder={handleCreateFolder}
                     />
                   ))}
-                  <NewMissionAffordance
-                    projectSlug={activePill}
-                    worldId={worldId}
-                    onCreated={handleCreateMissionInline}
-                  />
-                  <NewFolderAffordance
-                    projectSlug={activePill}
-                    onCreateFolder={handleCreateFolder}
-                  />
                 </>
               )
             })()

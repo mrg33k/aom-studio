@@ -436,15 +436,19 @@ function FolderRow({ label, fileCount, isOpen, onClick }) {
 
 // ── Main component ──────────────────────────────────────────────────────────
 
+// R10-7 rewrite: flat list of files, filter by category, no folder tree.
+// Source = Supabase Storage uploads + text_files (both prod-safe). Drops the
+// disk-based project-files API that only worked in local dev. Patrik
+// 2026-05-25: "files still dont load in at all… should show the full project
+// or users files; filters should load these files but seperated by filter no
+// folders in those."
+
 export default function FilesPanel({ projectSlug }) {
   const { worldId } = useCornerAuth()
-  const [docFiles, setDocFiles] = useState([])    // { name, url, age, kind, section }
-  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [activeFile, setActiveFile] = useState(null)
   const [activeCat, setActiveCat] = useState('all')
-  const [openFolders, setOpenFolders] = useState(new Set(['root']))  // open by default
-  const [missions, setMissions] = useState([])  // [{slug, files:[]}]
 
   const world = worldId || 'aom'
 
@@ -452,249 +456,99 @@ export default function FilesPanel({ projectSlug }) {
     setActiveFile(prev => (prev?.name === file.name && prev?.url === file.url) ? null : file)
   }, [])
 
-  // Close open viewer when switching category filters (clean load)
   const handleCatChange = useCallback((cat) => {
     setActiveCat(cat)
     setActiveFile(null)
   }, [])
 
-  const toggleFolder = useCallback((slug) => {
-    setOpenFolders(prev => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
-  }, [])
-
   useEffect(() => {
-    if (!projectSlug) return
     let cancelled = false
     setLoading(true)
-    setDocFiles([])
-    setUploadedFiles([])
-    setMissions([])
+    setFiles([])
+    setActiveFile(null)
 
-    // Fetch 1: disk-based canon + research docs
-    const docsPromise = authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(projectSlug)}`)
+    // Project-scoped if a project is selected, else all user files for the world.
+    const prefix = projectSlug
+      ? `${world}/${projectSlug}/`
+      : `${world}/`
+
+    // Fetch in parallel: Supabase Storage uploads + text_files rows.
+    const uploadsP = authFetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(prefix)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(body => {
-        if (cancelled || !body) return
-        // Root-level files
-        const rootFiles = (body.files || []).map(f => ({
-          name: f.name,
-          url: `/api/local/file?path=${encodeURIComponent(f.path)}`,
-          age: relativeAge(f.last_modified),
-          kind: fileKind(f.name),
-          section: 'root',
-        }))
-        if (!cancelled) setDocFiles(rootFiles)
+      .then(body => (body?.files || []).map(f => ({
+        name: f.name,
+        url: f.url,
+        age: relativeAge(f.date),
+        kind: fileKind(f.name),
+        size: f.size,
+      })))
+      .catch(() => [])
 
-        // Mission folders — open all by default so "All" shows full tree
-        const missionGroups = (body.missions || []).map(m => ({
-          slug: m.slug,
-          files: (m.files || []).map(f => ({
-            name: f.name,
-            url: `/api/local/file?path=${encodeURIComponent(f.path)}`,
-            age: relativeAge(f.last_modified),
-            kind: fileKind(f.name),
-            section: m.slug,
-          })),
-        }))
-        if (!cancelled) {
-          setMissions(missionGroups)
-          // Open root + every mission folder so the full tree is visible on load
-          setOpenFolders(new Set(['root', ...missionGroups.map(m => m.slug)]))
-        }
-      })
-      .catch(() => {})
-
-    // Fetch 2: Supabase Storage uploads
-    const uploadsPromise = authFetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(world + '/' + projectSlug + '/')}`)
+    const textP = authFetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(world)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(body => {
-        if (cancelled || !body) return
-        const files = (body.files || []).map(f => ({
-          name: f.name,
-          url: f.url,
-          age: relativeAge(f.date),
-          kind: fileKind(f.name),
-          section: 'uploaded',
-        }))
-        if (!cancelled) setUploadedFiles(files)
-      })
-      .catch(() => {})
+      .then(body => (body?.files || body || []).map(f => ({
+        name: f.name || f.filename || 'untitled.md',
+        url: f.url || (f.id ? `/api/dashboard/files?type=text&id=${encodeURIComponent(f.id)}` : null),
+        age: relativeAge(f.updated_at || f.created_at || f.last_modified),
+        kind: fileKind(f.name || f.filename || ''),
+        size: null,
+        textProject: f.project || f.project_slug || null,
+      })))
+      .catch(() => [])
 
-    Promise.all([docsPromise, uploadsPromise]).finally(() => {
-      if (!cancelled) setLoading(false)
+    Promise.all([uploadsP, textP]).then(([uploads, texts]) => {
+      if (cancelled) return
+      // If project-scoped, filter text files to that project too.
+      const scopedTexts = projectSlug
+        ? texts.filter(t => !t.textProject || t.textProject === projectSlug)
+        : texts
+      // Dedupe by url + name (in case overlap).
+      const seen = new Set()
+      const merged = [...uploads, ...scopedTexts].filter(f => {
+        if (!f.url) return false
+        const k = f.url
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+      // Sort newest first.
+      merged.sort((a, b) => (b._ts || 0) - (a._ts || 0))
+      setFiles(merged)
+      setLoading(false)
     })
 
     return () => { cancelled = true }
   }, [projectSlug, world])
 
-  if (!projectSlug) {
-    return (
-      <div>
-        <CategoryFilters active={activeCat} onChange={handleCatChange} />
-        <EmptyState text="Select a project to browse its files." />
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div>
-        <CategoryFilters active={activeCat} onChange={handleCatChange} />
-        <EmptyState text="Loading…" />
-      </div>
-    )
-  }
-
-  // All uploads: split media vs docs
-  const mediaUploads = uploadedFiles.filter(f => ['video', 'audio', 'image'].includes(f.kind))
-  const docUploads   = uploadedFiles.filter(f => !['video', 'audio', 'image'].includes(f.kind))
-
-  // Merge doc uploads into root files
-  const rootFiles = [...docFiles, ...docUploads]
-
-  // Flatten all files for counting
-  const allFiles = [
-    ...rootFiles,
-    ...mediaUploads,
-    ...missions.flatMap(m => m.files),
-  ]
-
-  // Filter by active category
-  function matchesCat(file) {
-    if (activeCat === 'all') return true
-    return fileCategory(file.kind) === activeCat
-  }
-
-  const filteredRoot     = rootFiles.filter(matchesCat)
-  const filteredMedia    = mediaUploads.filter(matchesCat)
-  const filteredMissions = missions.map(m => ({
-    ...m,
-    files: m.files.filter(matchesCat),
-  })).filter(m => m.files.length > 0)
-
-  const hasAnything = allFiles.length > 0
-  const hasFiltered = filteredRoot.length > 0 || filteredMedia.length > 0 || filteredMissions.length > 0
+  // Filter by active category — no folders, just one flat list per filter.
+  const visibleFiles = files.filter(f => activeCat === 'all' || fileCategory(f.kind) === activeCat)
+  const totalFiles = files.length
 
   return (
     <div>
-
-      {/* ── CATEGORY FILTERS ──────────────────────────────────── */}
       <CategoryFilters active={activeCat} onChange={handleCatChange} />
 
-      {!hasAnything && (
-        <EmptyState text="No files in this project yet." />
+      {loading && <EmptyState text="Loading…" />}
+
+      {!loading && totalFiles === 0 && (
+        <EmptyState text={projectSlug
+          ? `No files in ${projectSlug} yet. Upload from chat to see them here.`
+          : 'No files yet. Upload from chat to see them here.'} />
       )}
 
-      {hasAnything && !hasFiltered && (
-        <EmptyState text={`No ${activeCat} files in this project.`} />
+      {!loading && totalFiles > 0 && visibleFiles.length === 0 && (
+        <EmptyState text={`No ${activeCat} files${projectSlug ? ` in ${projectSlug}` : ''}.`} />
       )}
 
-      {hasFiltered && (
-        <>
-          {/* ── MEDIA (uploads: video/audio/image) ─────────────── */}
-          {filteredMedia.length > 0 && (activeCat === 'all' || activeCat === 'media') && (
-            <>
-              <div style={{
-                textTransform: 'uppercase', fontSize: 9, fontWeight: 700,
-                color: C.muted, letterSpacing: '0.12em',
-                padding: '10px 12px 5px',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>Media</div>
-              <div style={{
-                display: 'flex',
-                gap: 5,
-                padding: '0 12px 10px',
-                overflowX: 'auto',
-                flexWrap: 'nowrap',
-              }}>
-                {filteredMedia.map(f => (
-                  <div
-                    key={f.url}
-                    onClick={() => handleFileClick(f)}
-                    style={{
-                      width: 68,
-                      height: 52,
-                      borderRadius: 5,
-                      border: '1px solid ' + (activeFile?.url === f.url ? C.accent : C.border),
-                      background: activeFile?.url === f.url ? 'rgba(16,185,129,0.08)' : 'rgba(15,23,42,0.4)',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'border-color 120ms',
-                    }}
-                  >
-                    {f.kind === 'image' ? (
-                      <img src={f.url} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <>
-                        <span style={{ fontSize: 16, color: kindColor(f.kind) }}>{kindIcon(f.kind)}</span>
-                        <span style={{ fontSize: 8, color: C.muted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", padding: '0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 64, textAlign: 'center' }}>
-                          {f.name.replace(/\.[^.]+$/, '').slice(0, 11)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {activeFile && ['video', 'audio', 'image'].includes(fileKind(activeFile.name)) && mediaUploads.some(f => f.url === activeFile.url) && (
-                <FileViewer file={activeFile} onClose={() => setActiveFile(null)} />
-              )}
-              <Divider />
-            </>
-          )}
-
-          {/* ── ROOT FILES ─────────────────────────────────────── */}
-          {filteredRoot.length > 0 && (
-            <>
-              <FolderRow
-                label={projectSlug}
-                fileCount={filteredRoot.length}
-                isOpen={openFolders.has('root')}
-                onClick={() => toggleFolder('root')}
-              />
-              {openFolders.has('root') && filteredRoot.map(f => (
-                <FileRow
-                  key={f.url}
-                  file={f}
-                  isActive={activeFile?.url === f.url}
-                  onClick={() => handleFileClick(f)}
-                  indent={1}
-                />
-              ))}
-            </>
-          )}
-
-          {/* ── MISSION FOLDERS ────────────────────────────────── */}
-          {filteredMissions.map(m => (
-            <div key={m.slug}>
-              <FolderRow
-                label={m.slug}
-                fileCount={m.files.length}
-                isOpen={openFolders.has(m.slug)}
-                onClick={() => toggleFolder(m.slug)}
-              />
-              {openFolders.has(m.slug) && m.files.map(f => (
-                <FileRow
-                  key={f.url}
-                  file={f}
-                  isActive={activeFile?.url === f.url}
-                  onClick={() => handleFileClick(f)}
-                  indent={1}
-                />
-              ))}
-            </div>
-          ))}
-        </>
-      )}
+      {!loading && visibleFiles.map(f => (
+        <FileRow
+          key={f.url}
+          file={f}
+          isActive={activeFile?.url === f.url}
+          onClick={() => handleFileClick(f)}
+          indent={0}
+        />
+      ))}
 
       <div style={{ height: 16 }} />
     </div>
