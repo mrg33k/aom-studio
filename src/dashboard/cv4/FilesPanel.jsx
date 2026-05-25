@@ -624,12 +624,17 @@ export default function FilesPanel({ projectSlug }) {
       const scopedTexts = projectSlug
         ? texts.filter(t => !t.textProject || t.textProject === projectSlug)
         : texts
-      // Dedupe by url.
+      // Dedupe by relativePath — Storage uploads (freshly mirrored) shadow
+      // the events-table scaffold rows that carry the same canonical filename.
+      // Uploads come first so they win when seen.
       const seen = new Set()
       const merged = [...uploads, ...scopedTexts].filter(f => {
         if (!f.url) return false
-        if (seen.has(f.url)) return false
-        seen.add(f.url)
+        const key = f.relativePath || f.name || f.url
+        // Normalize: events scaffold might be 'CONTEXT', upload is 'CONTEXT.md'.
+        const norm = key.toLowerCase().replace(/\.(md|txt|json|yaml|yml)$/, '')
+        if (seen.has(norm)) return false
+        seen.add(norm)
         return true
       })
       setFiles(merged)
