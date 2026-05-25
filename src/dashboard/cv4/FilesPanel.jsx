@@ -10,7 +10,7 @@
 //   1. /api/dashboard/project-files?slug={slug}  — disk-based canon + research (local only)
 //   2. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 import { useCornerAuth } from '../CornerContext.jsx'
@@ -436,12 +436,86 @@ function FolderRow({ label, fileCount, isOpen, onClick }) {
 
 // ── Main component ──────────────────────────────────────────────────────────
 
-// R10-7 rewrite: flat list of files, filter by category, no folder tree.
-// Source = Supabase Storage uploads + text_files (both prod-safe). Drops the
-// disk-based project-files API that only worked in local dev. Patrik
-// 2026-05-25: "files still dont load in at all… should show the full project
-// or users files; filters should load these files but seperated by filter no
-// folders in those."
+// R10-9 rewrite: real folder tree from Supabase Storage paths + text_files.
+// Recursive list returns every file with a relativePath; we build a nested
+// tree client-side. Folders collapse / expand. Category filter dims the
+// tree to matching kinds only (keeps folder skeleton so structure stays
+// legible). Patrik 2026-05-25: "we want to see the real structure subfolders
+// and all."
+
+// ── Tree builder ──────────────────────────────────────────────────────────
+// Input: [{ name, relativePath, url, ...}, ...]
+// Output: nested folder tree:
+//   { children: Map<folderName, node>, files: [] }
+function buildTree(items) {
+  const root = { children: new Map(), files: [] }
+  for (const item of items) {
+    const parts = (item.relativePath || item.name || '').split('/').filter(Boolean)
+    if (parts.length === 0) continue
+    let node = root
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i]
+      if (!node.children.has(part)) node.children.set(part, { children: new Map(), files: [] })
+      node = node.children.get(part)
+    }
+    node.files.push({ ...item, displayName: parts[parts.length - 1] })
+  }
+  return root
+}
+
+// Total file count (recursive) — for empty-state + folder header counts.
+function countFiles(node, filterFn) {
+  let count = filterFn ? node.files.filter(filterFn).length : node.files.length
+  for (const child of node.children.values()) count += countFiles(child, filterFn)
+  return count
+}
+
+// ── Folder/file tree renderer ─────────────────────────────────────────────
+function TreeNode({ name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey }) {
+  const isOpen = openFolders.has(pathKey)
+  const fileCount = countFiles(node, filterFn)
+
+  // Don't render empty folders (after filter)
+  if (filterFn && fileCount === 0) return null
+
+  return (
+    <>
+      <FolderRow
+        label={name}
+        fileCount={fileCount}
+        isOpen={isOpen}
+        onClick={() => toggleFolder(pathKey)}
+      />
+      {isOpen && (
+        <>
+          {[...node.children.entries()].map(([childName, childNode]) => (
+            <TreeNode
+              key={pathKey + '/' + childName}
+              name={childName}
+              node={childNode}
+              depth={depth + 1}
+              openFolders={openFolders}
+              toggleFolder={toggleFolder}
+              activeFile={activeFile}
+              onFileClick={onFileClick}
+              filterFn={filterFn}
+              pathKey={pathKey + '/' + childName}
+            />
+          ))}
+          {node.files.filter(filterFn || (() => true)).map(f => (
+            <FileRow
+              key={f.url}
+              file={{ ...f, name: f.displayName || f.name }}
+              isActive={activeFile?.url === f.url}
+              onClick={() => onFileClick(f)}
+              indent={depth + 1}
+            />
+          ))}
+        </>
+      )}
+    </>
+  )
+}
 
 export default function FilesPanel({ projectSlug }) {
   const { worldId } = useCornerAuth()
@@ -449,6 +523,8 @@ export default function FilesPanel({ projectSlug }) {
   const [loading, setLoading] = useState(false)
   const [activeFile, setActiveFile] = useState(null)
   const [activeCat, setActiveCat] = useState('all')
+  // Folder open-state keyed by tree path ("" = root, "foo/bar" = nested)
+  const [openFolders, setOpenFolders] = useState(new Set(['']))
 
   const world = worldId || 'aom'
 
@@ -461,58 +537,77 @@ export default function FilesPanel({ projectSlug }) {
     setActiveFile(null)
   }, [])
 
+  const toggleFolder = useCallback((key) => {
+    setOpenFolders(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setFiles([])
     setActiveFile(null)
 
-    // Project-scoped if a project is selected, else all user files for the world.
-    const prefix = projectSlug
-      ? `${world}/${projectSlug}/`
-      : `${world}/`
+    // Project-scoped if a project is selected, else all world files.
+    const prefix = projectSlug ? `${world}/${projectSlug}/` : `${world}/`
 
-    // Fetch in parallel: Supabase Storage uploads + text_files rows.
-    const uploadsP = authFetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(prefix)}`)
+    // Recursive Supabase Storage walk (every file under prefix with full path).
+    const uploadsP = authFetch(`/api/dashboard/files?type=images&recursive=1&prefix=${encodeURIComponent(prefix)}`)
       .then(r => r.ok ? r.json() : null)
       .then(body => (body?.files || []).map(f => ({
         name: f.name,
+        relativePath: f.relativePath || f.name,
         url: f.url,
         age: relativeAge(f.date),
         kind: fileKind(f.name),
         size: f.size,
+        _ts: f.date ? new Date(f.date).getTime() : 0,
       })))
       .catch(() => [])
 
+    // text_files / scaffold MDs (mission canon: VISION/CONTEXT/BUILD/RESEARCH).
+    // These live under the project slug as their client_id.
     const textP = authFetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(world)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(body => (body?.files || body || []).map(f => ({
-        name: f.name || f.filename || 'untitled.md',
-        url: f.url || (f.id ? `/api/dashboard/files?type=text&id=${encodeURIComponent(f.id)}` : null),
-        age: relativeAge(f.updated_at || f.created_at || f.last_modified),
-        kind: fileKind(f.name || f.filename || ''),
-        size: null,
-        textProject: f.project || f.project_slug || null,
-      })))
+      .then(body => (body?.files || body || []).map(f => {
+        const proj = f.client_id || f.project || f.project_slug || null
+        const name = f.name || f.filename || 'untitled.md'
+        // Bucket text files into a virtual "canon/{project}/" path so they
+        // group naturally in the tree under each project.
+        const relativePath = projectSlug
+          ? `canon/${name}`
+          : `${proj || 'unknown'}/canon/${name}`
+        return {
+          name,
+          relativePath,
+          url: f.url || (f.id ? `/api/dashboard/files?type=text&id=${encodeURIComponent(f.id)}` : null),
+          age: relativeAge(f.updated_at || f.created_at),
+          kind: fileKind(name),
+          size: null,
+          textProject: proj,
+          _ts: (f.updated_at || f.created_at) ? new Date(f.updated_at || f.created_at).getTime() : 0,
+        }
+      }))
       .catch(() => [])
 
     Promise.all([uploadsP, textP]).then(([uploads, texts]) => {
       if (cancelled) return
-      // If project-scoped, filter text files to that project too.
+      // Project-scope text files (skip ones tagged for other projects).
       const scopedTexts = projectSlug
         ? texts.filter(t => !t.textProject || t.textProject === projectSlug)
         : texts
-      // Dedupe by url + name (in case overlap).
+      // Dedupe by url.
       const seen = new Set()
       const merged = [...uploads, ...scopedTexts].filter(f => {
         if (!f.url) return false
-        const k = f.url
-        if (seen.has(k)) return false
-        seen.add(k)
+        if (seen.has(f.url)) return false
+        seen.add(f.url)
         return true
       })
-      // Sort newest first.
-      merged.sort((a, b) => (b._ts || 0) - (a._ts || 0))
       setFiles(merged)
       setLoading(false)
     })
@@ -520,9 +615,12 @@ export default function FilesPanel({ projectSlug }) {
     return () => { cancelled = true }
   }, [projectSlug, world])
 
-  // Filter by active category — no folders, just one flat list per filter.
-  const visibleFiles = files.filter(f => activeCat === 'all' || fileCategory(f.kind) === activeCat)
-  const totalFiles = files.length
+  const tree = useMemo(() => buildTree(files), [files])
+  const filterFn = activeCat === 'all'
+    ? null
+    : (f) => fileCategory(f.kind) === activeCat
+
+  const visibleCount = filterFn ? countFiles(tree, filterFn) : files.length
 
   return (
     <div>
@@ -530,25 +628,46 @@ export default function FilesPanel({ projectSlug }) {
 
       {loading && <EmptyState text="Loading…" />}
 
-      {!loading && totalFiles === 0 && (
+      {!loading && files.length === 0 && (
         <EmptyState text={projectSlug
           ? `No files in ${projectSlug} yet. Upload from chat to see them here.`
           : 'No files yet. Upload from chat to see them here.'} />
       )}
 
-      {!loading && totalFiles > 0 && visibleFiles.length === 0 && (
+      {!loading && files.length > 0 && visibleCount === 0 && (
         <EmptyState text={`No ${activeCat} files${projectSlug ? ` in ${projectSlug}` : ''}.`} />
       )}
 
-      {!loading && visibleFiles.map(f => (
+      {/* Top-level files (no folder) */}
+      {!loading && tree.files.filter(filterFn || (() => true)).map(f => (
         <FileRow
           key={f.url}
-          file={f}
+          file={{ ...f, name: f.displayName || f.name }}
           isActive={activeFile?.url === f.url}
           onClick={() => handleFileClick(f)}
           indent={0}
         />
       ))}
+
+      {/* Folder tree */}
+      {!loading && [...tree.children.entries()].map(([name, child]) => (
+        <TreeNode
+          key={name}
+          name={name}
+          node={child}
+          depth={0}
+          openFolders={openFolders}
+          toggleFolder={toggleFolder}
+          activeFile={activeFile}
+          onFileClick={handleFileClick}
+          filterFn={filterFn}
+          pathKey={name}
+        />
+      ))}
+
+      {activeFile && (
+        <FileViewer file={activeFile} onClose={() => setActiveFile(null)} />
+      )}
 
       <div style={{ height: 16 }} />
     </div>

@@ -236,31 +236,67 @@ export default async function handler(req, res) {
 
     if (type === 'images') {
       const listPrefix = prefix || ''
-      const url = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET}`
-      const sbRes = await fetch(url, {
-        method: 'POST',
-        headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prefix: listPrefix,
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' },
-        }),
-      })
-      if (!sbRes.ok) {
-        const err = await sbRes.text()
-        return res.status(sbRes.status).json({ error: err })
+      const recursive = req.query.recursive === '1' || req.query.recursive === 'true'
+
+      // ── Supabase Storage list ──
+      // Default: single-level listing (folders + immediate files).
+      // recursive=1: depth-first walk so we return every file under the prefix
+      // with full path. Folders surface as items with id=null + no metadata.
+      async function listOne(p) {
+        const url = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET}`
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { ...storageHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prefix: p,
+            limit: 500,
+            offset: 0,
+            sortBy: { column: 'name', order: 'asc' },
+          }),
+        })
+        if (!r.ok) return []
+        const items = await r.json()
+        return Array.isArray(items) ? items : []
       }
-      const items = await sbRes.json()
-      const mapped = (Array.isArray(items) ? items : [])
-        .filter(item => item.name && item.name !== '' && !item.name.endsWith('/'))
-        .map(item => ({
-          id: item.id || item.name,
-          name: item.name,
-          date: item.created_at,
-          url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${listPrefix}${item.name}`,
-        }))
-      return res.status(200).json({ files: mapped })
+
+      function isFolderItem(item) {
+        // Supabase returns folders as { id: null, name: 'foo', metadata: null }
+        return item && (item.id === null || item.id === undefined) && !item.metadata
+      }
+
+      const allFiles = []
+      async function walk(prefixPath, depth) {
+        const items = await listOne(prefixPath)
+        const folderPromises = []
+        for (const item of items) {
+          if (!item.name || item.name === '') continue
+          if (isFolderItem(item)) {
+            if (recursive && depth > 0) {
+              folderPromises.push(walk(`${prefixPath}${item.name}/`, depth - 1))
+            }
+            continue
+          }
+          // Leaf file. Capture full path so the client can build a tree.
+          const fullPath = `${prefixPath}${item.name}`
+          allFiles.push({
+            id: item.id || fullPath,
+            name: item.name,
+            path: fullPath,
+            relativePath: fullPath.startsWith(listPrefix) ? fullPath.slice(listPrefix.length) : fullPath,
+            date: item.created_at,
+            size: item?.metadata?.size || null,
+            url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fullPath}`,
+          })
+        }
+        if (folderPromises.length) await Promise.all(folderPromises)
+      }
+
+      // depth=4 is plenty for project/mission/round trees and bounds the
+      // worst-case fan-out (15 dirs × 15 × 15 × 15 = 50k calls is impossible
+      // because we stop walking once a leaf has no further folders).
+      await walk(listPrefix, recursive ? 4 : 0)
+
+      return res.status(200).json({ files: allFiles })
     }
 
     if (type === 'text') {
