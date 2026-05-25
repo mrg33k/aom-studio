@@ -210,7 +210,8 @@ function ConnectHero({ state }) {
         </div>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1 }}>
           <span style={{
-            fontFamily: MENU.displayFont, fontSize: 17, lineHeight: 1.1,
+            fontFamily: MENU.bodyFont, fontSize: 16, fontWeight: 600,
+            letterSpacing: '-0.005em', lineHeight: 1.1,
             color: C.text,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{busy ? 'Connecting…' : 'Mail'}</span>
@@ -243,7 +244,8 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
         padding: '6px 4px 6px',
       }}>
         <span style={{
-          fontFamily: MENU.displayFont, fontSize: 18, lineHeight: 1,
+          fontFamily: MENU.bodyFont, fontSize: 16, fontWeight: 600,
+          letterSpacing: '-0.005em', lineHeight: 1.1,
           color: C.text,
         }}>Mail</span>
         {headerEmail && (
