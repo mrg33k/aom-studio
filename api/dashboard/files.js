@@ -299,6 +299,90 @@ export default async function handler(req, res) {
       return res.status(200).json({ files: allFiles })
     }
 
+    // type=uploads (R79-f14, 2026-05-25): pull every chat-uploaded file for
+    // the world (+ optional project) by scanning the `messages` table. Chat
+    // uploads land on the RAG server tunnel and never enter Supabase Storage,
+    // so this is the only way the FilesPanel sees them. Returns rows shaped
+    // like the type=images response so the panel merges them uniformly.
+    if (type === 'uploads') {
+      const clientId = (client || 'aom').toString().trim().toLowerCase()
+      const project = req.query.project ? String(req.query.project).trim().toLowerCase() : null
+      const limit = Math.min(parseInt(req.query.limit || '500', 10) || 500, 1000)
+
+      // Pull recent messages with any attachment shape under this tenant.
+      // Three shapes exist (see useChatAttachments + relay-respond.py):
+      //   1. Top-level columns: attachment_url + file_mime_type + file_size
+      //   2. metadata.attachment = { url, mime, size, name }
+      //   3. metadata.attachments = [ { url, mime, size, name }, … ]
+      // PostgREST can't OR across a column + a JSON path in one filter, so
+      // we run two narrow queries and merge: (a) attachment_url not null,
+      // (b) metadata->>attachment_url present-via-metadata path.
+      // Simplest correct path: pull recent messages for this scope and
+      // filter client-side. Limit caps memory; 500 covers typical use.
+      const sel = 'id,client_id,project,attachment_url,file_mime_type,file_size,metadata,user_name,created_at,text'
+      const filters = [
+        `client_id=eq.${encodeURIComponent(clientId)}`,
+        `select=${sel}`,
+        'order=created_at.desc',
+        `limit=${limit}`,
+      ]
+      if (project) filters.push(`project=eq.${encodeURIComponent(project)}`)
+      const url = `${SUPABASE_URL}/rest/v1/messages?${filters.join('&')}`
+
+      let rows = []
+      try {
+        const r = await fetch(url, { headers: dbHeaders() })
+        if (r.ok) rows = await r.json()
+      } catch { /* best-effort */ }
+
+      const out = []
+      const seenUrls = new Set()
+      function pushAtt({ url: attUrl, mime, size, name, ts, who }) {
+        if (!attUrl || seenUrls.has(attUrl)) return
+        seenUrls.add(attUrl)
+        // Strip leading slash + decode for a stable display name.
+        let displayName = name
+        if (!displayName) {
+          try { displayName = decodeURIComponent(attUrl.split('/').pop().split('?')[0]) }
+          catch { displayName = attUrl.split('/').pop() }
+        }
+        out.push({
+          id: attUrl,
+          name: displayName,
+          path: displayName,
+          relativePath: displayName,
+          date: ts,
+          size: size ?? null,
+          mime: mime || null,
+          uploader: who || null,
+          url: attUrl,
+        })
+      }
+
+      for (const row of (Array.isArray(rows) ? rows : [])) {
+        const ts = row.created_at
+        const who = row.user_name || null
+        // Shape 1: top-level columns
+        if (row.attachment_url) {
+          pushAtt({ url: row.attachment_url, mime: row.file_mime_type, size: row.file_size, ts, who })
+        }
+        // Shape 2: metadata.attachment
+        const ma = row.metadata && row.metadata.attachment
+        if (ma && ma.url) {
+          pushAtt({ url: ma.url, mime: ma.mime, size: ma.size, name: ma.name, ts, who })
+        }
+        // Shape 3: metadata.attachments[]
+        const mas = row.metadata && row.metadata.attachments
+        if (Array.isArray(mas)) {
+          for (const a of mas) {
+            if (a && a.url) pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who })
+          }
+        }
+      }
+
+      return res.status(200).json({ files: out })
+    }
+
     if (type === 'text') {
       const clientId = client || 'aom'
       // Legacy text_files read (best-effort; the table was never migrated in
