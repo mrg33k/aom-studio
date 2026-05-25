@@ -1,23 +1,31 @@
-// RightMenu.jsx — CV4 right-rail (corner:right-menu R4)
+// RightMenu.jsx — CV4 right-rail (corner:right-menu R7)
 //
 // Layout (top → bottom):
 //   PANEL HEADER  "Missions" (Instrument Serif)
-//   PROJECT PILLS [All] [Corner] [Ambition] ... [+]   filters all accordion sections
+//   PROJECT PILLS [all] [corner] [ambition] ... [+]  — filter scope, fade-mask
+//   RECENT STRIP  recent · project1 · project2 · ...  — last 10 entered (R7-E)
 //   ACCORDION TABS  [ Missions ] [ Tasks ] [ Files ]  — one section open at a time
 //
 //   MISSIONS tab (default):
-//     SUMMARY + missions list sorted by last_message_at DESC
+//     SUMMARY (only when work is active) + missions list
+//     "all" view: project group headers, with optional sub-folders + ungrouped
+//     specific view: flat list
 //   TASKS tab:
 //     Active Tasks + Completed Tasks
 //   FILES tab:
 //     FilesPanel (current project's canon)
 //
-// Replaces TasksPanelCv4 in the right drawer (CornerV4.jsx, tasksDrawerOpen aside).
-// Per VISION: missions never "complete", so there is NO "Completed Missions" section.
+// R7 additions vs R6:
+//   A. Project group header is clickable (already was); hover affordance louder
+//   B/C. Per-project sub-folders via /api/dashboard/mission-folders + move-to button
+//   D. Agent / EA / super-agent room → snap pill back to 'all'
+//   E. Recent-projects horizontal strip above the three tabs
+//   H. Mission row → onClick navigates to its mission chat
+//   I. Task row → onClick navigates to the room it was created in
 //
 // Mission: corner:right-menu
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { useCornerAuth, useCornerNav } from '../CornerContext.jsx'
 import { useTasks } from '../hooks/useTasks.js'
@@ -55,6 +63,26 @@ function agentBadgeText(task) {
   return agentInitials(slug)
 }
 
+// Pull the project slug out of whatever shape a task carries it in.
+function taskProjectSlug(task) {
+  return (
+    task?.project ||
+    task?.metadata?.project ||
+    task?.metadata?.repo ||
+    null
+  )
+}
+
+// Pull the mission slug (without project prefix) from a task's metadata.
+function taskMissionSlug(task) {
+  const raw =
+    task?.metadata?.mission_slug ||
+    task?.mission_slug ||
+    null
+  if (!raw) return null
+  return raw.includes(':') ? raw.split(':').slice(1).join(':') : raw
+}
+
 // ── Status dot ──────────────────────────────────────────────────────────────
 
 function StatusDot({ status }) {
@@ -80,8 +108,7 @@ function StatusDot({ status }) {
 }
 
 // ── Panel header (top-of-rail title) ────────────────────────────────────────
-// Fix 2: dropped "MISSIONS · TASKS · FILES" subtitle — accordion tabs below
-// already label all three sections; subtitle was pure noise.
+// R6: dropped subtitle ("MISSIONS · TASKS · FILES") — accordion tabs below name them.
 
 function PanelHeader({ children }) {
   return (
@@ -100,10 +127,8 @@ function PanelHeader({ children }) {
   )
 }
 
-// ── Project pills (filter row directly below header) ────────────────────────
-// Fix 1: more vertical breathing room (14px top/bottom vs 10px), larger chip
-// padding (7px/12px vs 5px/9px), gap 6 vs 4. Right-edge fade gradient signals
-// that more pills exist off-screen without needing a visible scrollbar.
+// ── Project pills ───────────────────────────────────────────────────────────
+// R6: pad 14/16px, chip 7/12, gap 6, right-edge fade-mask gradient.
 
 function ProjectPills({ projects, active, onChange }) {
   const baseStyle = {
@@ -160,13 +185,75 @@ function ProjectPills({ projects, active, onChange }) {
         padding: '14px 14px 16px',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
-        // Fade right edge so overflow chips look intentional, not broken
         WebkitMaskImage: 'linear-gradient(to right, black 82%, transparent 100%)',
         maskImage: 'linear-gradient(to right, black 82%, transparent 100%)',
       }}>
         {pill('all', 'all')}
         {projects.map(slug => pill(slug, slug))}
         {pill('__add__', '+', true)}
+      </div>
+    </div>
+  )
+}
+
+// ── Recent projects strip (R7-E) ────────────────────────────────────────────
+// Sits between PROJECT PILLS and ACCORDION TABS. Shows the last 10 distinct
+// projects the user has entered. Click a chip → switch pill scope to that
+// project. State persisted in localStorage per world. Hidden when empty.
+
+const RECENT_KEY = (worldId) => `rm-recent-projects:${worldId || 'aom'}`
+
+function RecentProjectsStrip({ recents, onSelect }) {
+  if (!recents || recents.length === 0) return null
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '8px 14px 10px',
+      borderBottom: '1px solid rgba(255,255,255,0.035)',
+    }}>
+      <span style={{
+        fontSize: 9,
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        color: C.muted,
+        fontFamily: MENU.monoFont,
+        flexShrink: 0,
+      }}>RECENT</span>
+      <div style={{
+        display: 'flex',
+        overflowX: 'auto',
+        gap: 5,
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitMaskImage: 'linear-gradient(to right, black 86%, transparent 100%)',
+        maskImage: 'linear-gradient(to right, black 86%, transparent 100%)',
+      }}>
+        {recents.map(slug => (
+          <span
+            key={slug}
+            onClick={() => onSelect(slug)}
+            onMouseEnter={e => e.currentTarget.style.color = C.text}
+            onMouseLeave={e => e.currentTarget.style.color = C.text2}
+            style={{
+              fontFamily: MENU.monoFont,
+              fontSize: 10,
+              fontWeight: 400,
+              color: C.text2,
+              cursor: 'pointer',
+              padding: '3px 7px',
+              borderRadius: 3,
+              background: 'rgba(255,255,255,0.025)',
+              border: '1px solid rgba(255,255,255,0.04)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              transition: 'color 120ms ease',
+              textTransform: 'lowercase',
+            }}
+          >{slug}</span>
+        ))}
       </div>
     </div>
   )
@@ -188,12 +275,11 @@ function SectionLabel({ children }) {
   )
 }
 
-// ── Summary block (plain-English briefing, not stat counters) ───────────────
+// ── Summary block ────────────────────────────────────────────────────────────
 
 function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, lastActiveName, lastActiveAge }) {
   const activeCount = runningCount + queuedCount
 
-  // Build the primary sentence in plain English
   let primary
   if (activeCount > 0) {
     const taskWord = activeCount === 1 ? 'task' : 'tasks'
@@ -234,11 +320,208 @@ function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, las
   )
 }
 
-// ── Mission row ─────────────────────────────────────────────────────────────
+// ── Move-to-folder button + picker (R7-C) ───────────────────────────────────
+// Small icon next to each mission row. Click opens a floating picker listing
+// folders for that project + an "ungroup" option + an inline new-folder input.
 
-// hideProject: when true, omit the project-slug line (used inside grouped accordion
-// where the project header already names it — saves vertical space per row)
-function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent, hideProject }) {
+function MoveToFolderButton({ projectSlug, missionSlug, currentFolderSlug, folders, onMove, onCreateFolder }) {
+  const [open, setOpen] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const ref = useRef(null)
+
+  // Close when clicking outside
+  useEffect(() => {
+    if (!open) return
+    const handle = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [open])
+
+  const projectFolders = folders.filter(f => f.project_slug === projectSlug)
+
+  async function handleCreate() {
+    const name = newName.trim()
+    if (!name || creating) return
+    setCreating(true)
+    const folder = await onCreateFolder(projectSlug, name)
+    setCreating(false)
+    if (folder) {
+      setNewName('')
+      onMove(missionSlug, folder.slug)
+      setOpen(false)
+    }
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}
+         onClick={(e) => e.stopPropagation()}>
+      <span
+        onClick={() => setOpen(o => !o)}
+        title="Move to folder"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 18, height: 18,
+          fontSize: 11,
+          color: C.muted,
+          cursor: 'pointer',
+          borderRadius: 3,
+          opacity: 0.5,
+          transition: 'opacity 120ms ease, background 120ms ease, color 120ms ease',
+          fontFamily: MENU.monoFont,
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.opacity = '1'
+          e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+          e.currentTarget.style.color = C.text2
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.opacity = '0.5'
+          e.currentTarget.style.background = 'transparent'
+          e.currentTarget.style.color = C.muted
+        }}
+      >⋯</span>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 22,
+          right: 0,
+          minWidth: 180,
+          background: 'rgba(15,23,42,0.98)',
+          border: '1px solid ' + C.border,
+          borderRadius: 4,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          zIndex: 100,
+          padding: '4px 0',
+          fontFamily: MENU.bodyFont,
+        }}>
+          <div style={{
+            padding: '6px 10px 4px',
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: C.muted,
+            fontFamily: MENU.monoFont,
+          }}>Move to</div>
+
+          {/* Ungroup option (only when currently in a folder) */}
+          {currentFolderSlug && (
+            <div
+              onClick={() => { onMove(missionSlug, null); setOpen(false) }}
+              style={{
+                padding: '6px 10px',
+                fontSize: 12,
+                color: C.text2,
+                cursor: 'pointer',
+                fontStyle: 'italic',
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >— ungroup</div>
+          )}
+
+          {projectFolders.length === 0 && !currentFolderSlug && (
+            <div style={{ padding: '6px 10px', fontSize: 11, color: C.muted, fontStyle: 'italic' }}>
+              No folders yet
+            </div>
+          )}
+
+          {projectFolders.map(f => {
+            const isCurrent = f.slug === currentFolderSlug
+            return (
+              <div
+                key={f.slug}
+                onClick={() => { if (!isCurrent) { onMove(missionSlug, f.slug); setOpen(false) } }}
+                style={{
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  color: isCurrent ? MENU.amber : C.text,
+                  cursor: isCurrent ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'background 120ms ease',
+                }}
+                onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span style={{ color: isCurrent ? MENU.amber : C.muted }}>▸</span>
+                <span style={{ flex: 1 }}>{f.name}</span>
+                {isCurrent && <span style={{ fontSize: 10, color: MENU.amber }}>✓</span>}
+              </div>
+            )
+          })}
+
+          {/* Inline new-folder input */}
+          <div style={{
+            borderTop: '1px solid ' + C.border,
+            marginTop: 4,
+            padding: '6px 8px',
+            display: 'flex',
+            gap: 4,
+            alignItems: 'center',
+          }}>
+            <input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
+              placeholder="+ new folder"
+              autoFocus
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid ' + C.border,
+                borderRadius: 3,
+                color: C.text,
+                fontSize: 11,
+                padding: '4px 6px',
+                outline: 'none',
+                fontFamily: MENU.bodyFont,
+              }}
+            />
+            {newName.trim() && (
+              <button
+                onClick={handleCreate}
+                disabled={creating}
+                style={{
+                  background: MENU.amber,
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 3,
+                  padding: '4px 8px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: creating ? 'wait' : 'pointer',
+                  fontFamily: MENU.monoFont,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}
+              >{creating ? '…' : 'add'}</button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Mission row ─────────────────────────────────────────────────────────────
+// R7-H: onClick navigates to the mission room.
+// R7-C: optional move-to button (shown when showMove=true).
+// hideProject: omit the project-slug line when row sits under a project header.
+
+function MissionRow({
+  mission, projectSlug, dotStatus, ageLabel, isCurrent, hideProject,
+  onClick, showMove, currentFolderSlug, folders, onMove, onCreateFolder,
+}) {
   const stripeColor = isCurrent
     ? MENU.amber
     : dotStatus === 'queued'
@@ -246,23 +529,24 @@ function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent, hide
     : 'transparent'
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 6,
-      padding: '8px 14px',
-      cursor: 'pointer',
-      transition: 'background 120ms ease',
-      minHeight: 38,
-      borderLeft: '2px solid ' + stripeColor,
-      borderBottom: '1px solid rgba(255,255,255,0.025)',
-      background: isCurrent ? 'rgba(234,179,8,0.055)' : 'transparent',
-    }}
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 6,
+        padding: '8px 14px',
+        cursor: 'pointer',
+        transition: 'background 120ms ease',
+        minHeight: 38,
+        borderLeft: '2px solid ' + stripeColor,
+        borderBottom: '1px solid rgba(255,255,255,0.025)',
+        background: isCurrent ? 'rgba(234,179,8,0.055)' : 'transparent',
+      }}
       onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = C.s1 }}
       onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent' }}
     >
       <StatusDot status={dotStatus} />
-      {/* Two-line layout: name on top, project + age below */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
           fontSize: 13,
@@ -298,13 +582,24 @@ function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent, hide
           )}
         </div>
       </div>
+      {showMove && (
+        <MoveToFolderButton
+          projectSlug={projectSlug}
+          missionSlug={mission.slug}
+          currentFolderSlug={currentFolderSlug}
+          folders={folders}
+          onMove={onMove}
+          onCreateFolder={onCreateFolder}
+        />
+      )}
     </div>
   )
 }
 
 // ── Task row ────────────────────────────────────────────────────────────────
+// R7-I: onClick navigates to the room the task was created in.
 
-function TaskRow({ task, isDone }) {
+function TaskRow({ task, isDone, onClick }) {
   const badge = agentBadgeText(task)
   const age = relativeAge(isDone ? (task.completed_at || task.updated_at) : task.created_at)
   const title = task.title || task.text || '(untitled)'
@@ -319,21 +614,22 @@ function TaskRow({ task, isDone }) {
     : 'transparent'
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 8,
-      padding: '8px 14px',
-      cursor: 'pointer',
-      minHeight: 38,
-      transition: 'background 120ms ease',
-      borderLeft: '2px solid ' + (isDone ? 'transparent' : stripeColor),
-      borderBottom: '1px solid rgba(255,255,255,0.025)',
-    }}
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 8,
+        padding: '8px 14px',
+        cursor: 'pointer',
+        minHeight: 38,
+        transition: 'background 120ms ease',
+        borderLeft: '2px solid ' + (isDone ? 'transparent' : stripeColor),
+        borderBottom: '1px solid rgba(255,255,255,0.025)',
+      }}
       onMouseEnter={e => e.currentTarget.style.background = C.s1}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      {/* Agent badge */}
       <div style={{
         width: 20, height: 20,
         borderRadius: 4,
@@ -352,7 +648,6 @@ function TaskRow({ task, isDone }) {
         opacity: isDone ? 0.45 : 1,
       }}>{badge}</div>
 
-      {/* Task body */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 12,
@@ -367,9 +662,7 @@ function TaskRow({ task, isDone }) {
           textDecoration: isDone ? 'line-through' : 'none',
         }}>{title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-          {!isDone && (
-            <StatusIndicator status={status} />
-          )}
+          {!isDone && <StatusIndicator status={status} />}
           <span style={{
             fontSize: 10,
             color: C.muted,
@@ -381,7 +674,7 @@ function TaskRow({ task, isDone }) {
   )
 }
 
-// ── Status indicator (dot + mono text, no pill chrome) ──────────────────────
+// ── Status indicator ────────────────────────────────────────────────────────
 
 function StatusIndicator({ status }) {
   const isRunning = status === 'running' || status === 'building'
@@ -390,34 +683,20 @@ function StatusIndicator({ status }) {
   const isFailed = status === 'failed'
 
   let color, label
-  if (isRunning) {
-    color = MENU.amber; label = 'running'
-  } else if (isQueued) {
-    color = C.yellow; label = 'queued'
-  } else if (isWaiting) {
-    color = C.blue; label = 'waiting'
-  } else if (isFailed) {
-    color = C.red; label = 'failed'
-  } else {
-    return null
-  }
+  if (isRunning)      { color = MENU.amber; label = 'running' }
+  else if (isQueued)  { color = C.yellow;   label = 'queued'  }
+  else if (isWaiting) { color = C.blue;     label = 'waiting' }
+  else if (isFailed)  { color = C.red;      label = 'failed'  }
+  else return null
 
   return (
     <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 4,
-      fontSize: 10,
-      fontFamily: MENU.monoFont,
-      color,
-      flexShrink: 0,
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      fontSize: 10, fontFamily: MENU.monoFont, color, flexShrink: 0,
     }}>
       <span style={{
-        width: 5, height: 5,
-        borderRadius: '50%',
-        background: color,
-        display: 'inline-block',
-        flexShrink: 0,
+        width: 5, height: 5, borderRadius: '50%',
+        background: color, display: 'inline-block', flexShrink: 0,
       }} />
       {label}
     </span>
@@ -428,16 +707,11 @@ function StatusIndicator({ status }) {
 
 function Divider() {
   return (
-    <div style={{
-      height: 1,
-      background: C.border,
-      margin: 0,
-      opacity: 0.55,
-    }} />
+    <div style={{ height: 1, background: C.border, margin: 0, opacity: 0.55 }} />
   )
 }
 
-// ── Accordion tabs ────────────────────────────────────────────────────────────
+// ── Accordion tabs ──────────────────────────────────────────────────────────
 
 function AccordionTabs({ active, onChange }) {
   const tabs = [
@@ -496,32 +770,39 @@ function EmptyState({ text }) {
   )
 }
 
-// ── Project group header (accordion by project, "all" view) ──────────────────
-// Fix 3: collapsible section per project. Running/queued groups default open;
-// idle groups default collapsed. Caret rotates on collapse.
+// ── Project group header (R6 + R7-A affordance bump) ────────────────────────
+// Whole bar is the click target (was already wired in R6); R7 bumps the hover
+// state so the affordance reads more clearly.
 
 function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle }) {
   const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : 'idle'
   return (
     <div
       onClick={onToggle}
+      title={isCollapsed ? `Expand ${projectSlug}` : `Collapse ${projectSlug}`}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        padding: '7px 14px 7px 12px',
+        padding: '8px 14px 8px 12px',
         cursor: 'pointer',
         background: 'rgba(255,255,255,0.022)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
         borderTop: '1px solid rgba(255,255,255,0.04)',
-        transition: 'background 120ms ease',
+        transition: 'background 120ms ease, color 120ms ease',
         userSelect: 'none',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.022)'}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'rgba(234,179,8,0.05)'
+        e.currentTarget.querySelectorAll('[data-pg-slug]').forEach(n => n.style.color = C.text)
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.022)'
+        e.currentTarget.querySelectorAll('[data-pg-slug]').forEach(n => n.style.color = C.text2)
+      }}
     >
       <StatusDot status={dotStatus} />
-      <span style={{
+      <span data-pg-slug style={{
         flex: 1,
         fontSize: 10,
         fontWeight: 700,
@@ -532,6 +813,7 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
+        transition: 'color 120ms ease',
       }}>{projectSlug}</span>
       <span style={{
         fontSize: 9,
@@ -554,14 +836,166 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
   )
 }
 
+// ── Folder row (R7-C) ───────────────────────────────────────────────────────
+// Indented under its parent project group; click toggles its own collapse.
+
+function FolderRow({ folder, count, isCollapsed, onToggle }) {
+  return (
+    <div
+      onClick={onToggle}
+      title={isCollapsed ? `Expand ${folder.name}` : `Collapse ${folder.name}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '6px 14px 6px 26px',
+        cursor: 'pointer',
+        background: 'transparent',
+        borderBottom: '1px solid rgba(255,255,255,0.02)',
+        transition: 'background 120ms ease, color 120ms ease',
+        userSelect: 'none',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <span style={{
+        fontSize: 10,
+        color: C.muted,
+        fontFamily: MENU.monoFont,
+        flexShrink: 0,
+        display: 'inline-block',
+        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+        transition: 'transform 180ms ease',
+        lineHeight: 1,
+      }}>▾</span>
+      <span style={{ color: C.muted, fontSize: 11, lineHeight: 1, flexShrink: 0 }}>▸</span>
+      <span style={{
+        flex: 1,
+        fontSize: 11,
+        fontWeight: 500,
+        color: C.text2,
+        fontFamily: MENU.bodyFont,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+      }}>{folder.name}</span>
+      <span style={{
+        fontSize: 9,
+        color: C.muted,
+        fontFamily: MENU.monoFont,
+        flexShrink: 0,
+      }}>{count}</span>
+    </div>
+  )
+}
+
+// "+ folder" inline affordance — sits at bottom of an open project group.
+
+function NewFolderAffordance({ projectSlug, onCreateFolder }) {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.focus() }, [editing])
+
+  async function submit() {
+    const n = name.trim()
+    if (!n || busy) return
+    setBusy(true)
+    await onCreateFolder(projectSlug, n)
+    setBusy(false)
+    setName('')
+    setEditing(false)
+  }
+
+  if (!editing) {
+    return (
+      <div
+        onClick={(e) => { e.stopPropagation(); setEditing(true) }}
+        style={{
+          padding: '5px 14px 8px 26px',
+          fontSize: 10,
+          fontFamily: MENU.monoFont,
+          color: C.muted,
+          cursor: 'pointer',
+          transition: 'color 120ms ease',
+          letterSpacing: '0.04em',
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = C.text2}
+        onMouseLeave={e => e.currentTarget.style.color = C.muted}
+      >+ new folder</div>
+    )
+  }
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        display: 'flex',
+        gap: 4,
+        alignItems: 'center',
+        padding: '5px 12px 8px 26px',
+      }}
+    >
+      <input
+        ref={inputRef}
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') submit()
+          if (e.key === 'Escape') { setEditing(false); setName('') }
+        }}
+        placeholder="folder name"
+        style={{
+          flex: 1,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid ' + C.border,
+          borderRadius: 3,
+          color: C.text,
+          fontSize: 11,
+          padding: '4px 6px',
+          outline: 'none',
+          fontFamily: MENU.bodyFont,
+          minWidth: 0,
+        }}
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !name.trim()}
+        style={{
+          background: name.trim() ? MENU.amber : 'transparent',
+          color: name.trim() ? '#000' : C.muted,
+          border: name.trim() ? 'none' : '1px solid ' + C.border,
+          borderRadius: 3,
+          padding: '4px 8px',
+          fontSize: 10,
+          fontWeight: 600,
+          cursor: name.trim() ? 'pointer' : 'default',
+          fontFamily: MENU.monoFont,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >{busy ? '…' : 'add'}</button>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function RightMenu() {
   const { worldId } = useCornerAuth()
-  const { conversationTarget } = useCornerNav()
-  const { rightNow, queued, done, loading: tasksLoading } = useTasks(worldId)
+  const nav = useCornerNav()
+  const {
+    conversationTarget,
+    selectedAgent,
+    handleSelectMission,
+    handleSelectProject,
+    handleSelectTask,
+  } = nav
+  const { rightNow, queued, done } = useTasks(worldId)
 
-  // Missions flat list from missions-tree API
+  // ── Missions ────────────────────────────────────────────────────────────────
   const [missionsFlat, setMissionsFlat] = useState([])
   const [missionsLoading, setMissionsLoading] = useState(true)
 
@@ -571,10 +1005,8 @@ export default function RightMenu() {
     setMissionsLoading(true)
     ;(async () => {
       try {
-        // Fetch missions tree + recent messages in parallel
         const [treeRes, msgsRes] = await Promise.all([
           authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' }),
-          // Recent messages (last 30 days) to derive per-project activity timestamps
           authFetch(`/api/dashboard/messages-recent?client=${encodeURIComponent(worldId)}&limit=200`, { credentials: 'include' })
             .catch(() => null),
         ])
@@ -583,7 +1015,6 @@ export default function RightMenu() {
         const j = await treeRes.json().catch(() => null)
         if (cancelled || !j || !Array.isArray(j.projects)) return
 
-        // Build a project → last message timestamp map from recent messages
         const projectLastMsg = new Map()
         if (msgsRes?.ok) {
           const msgs = await msgsRes.json().catch(() => null)
@@ -591,21 +1022,18 @@ export default function RightMenu() {
             const ts = msg?.created_at || msg?.timestamp
             const clientId = msg?.client_id || ''
             if (!ts || !clientId) continue
-            // client_id can be: "corner" (project room), "corner:right-menu" (mission room)
             const projectSlug = clientId.includes(':') ? clientId.split(':')[0] : clientId
             const missionSlug = clientId.includes(':') ? clientId.split(':').slice(1).join(':') : null
             const key = missionSlug ? `${projectSlug}:${missionSlug}` : projectSlug
             if (!projectLastMsg.has(key) || new Date(ts) > new Date(projectLastMsg.get(key))) {
               projectLastMsg.set(key, ts)
             }
-            // Also set project-level key
             if (!projectLastMsg.has(projectSlug) || new Date(ts) > new Date(projectLastMsg.get(projectSlug))) {
               projectLastMsg.set(projectSlug, ts)
             }
           }
         }
 
-        // Flatten: one row per mission
         const flat = []
         for (const p of j.projects) {
           for (const m of (p.missions || [])) {
@@ -613,29 +1041,21 @@ export default function RightMenu() {
             const hasRunning = tasks.some(t => ['running', 'building', 'active'].includes(t.status))
             const hasQueued = tasks.some(t => ['queued', 'planning', 'classifying'].includes(t.status))
             const dotStatus = hasRunning ? 'running' : hasQueued ? 'queued' : 'idle'
-
             const projectSlug = p.slug || p.name
             const missionKey = `${projectSlug}:${m.slug}`
-
-            // Recency: mission-level message first, then project-level, then registry timestamps
             const lastTouched =
               m.last_message_at ||
               projectLastMsg.get(missionKey) ||
               projectLastMsg.get(projectSlug) ||
               m.last_updated ||
               null
-
             flat.push({
               slug: m.slug || m.path,
               name: m.name || m.slug || m.path,
-              projectSlug,
-              dotStatus,
-              lastTouched,
+              projectSlug, dotStatus, lastTouched,
             })
           }
         }
-
-        // Sort: most recently active mission first
         flat.sort((a, b) => {
           if (a.lastTouched && b.lastTouched) return new Date(b.lastTouched) - new Date(a.lastTouched)
           if (a.lastTouched) return -1
@@ -654,23 +1074,76 @@ export default function RightMenu() {
     return () => { cancelled = true }
   }, [worldId])
 
-  // Accordion tab state
+  // ── Folders + assignments (R7-B/C) ──────────────────────────────────────────
+  const [folders, setFolders] = useState([])
+  const [assignments, setAssignments] = useState({}) // { "<project>:<mission>": folderSlug }
+
+  const refreshFolders = useCallback(async () => {
+    if (!worldId) return
+    try {
+      const r = await authFetch(`/api/dashboard/mission-folders?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
+      if (!r.ok) return
+      const j = await r.json()
+      setFolders(Array.isArray(j?.folders) ? j.folders : [])
+      const map = {}
+      for (const a of (Array.isArray(j?.assignments) ? j.assignments : [])) {
+        if (a?.project_slug && a?.mission_slug) {
+          map[`${a.project_slug}:${a.mission_slug}`] = a.folder_slug || null
+        }
+      }
+      setAssignments(map)
+    } catch { /* silent */ }
+  }, [worldId])
+
+  useEffect(() => { refreshFolders() }, [refreshFolders])
+
+  const handleCreateFolder = useCallback(async (projectSlug, name) => {
+    try {
+      const r = await authFetch(`/api/dashboard/mission-folders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ project_slug: projectSlug, name }),
+      })
+      if (!r.ok) return null
+      const j = await r.json()
+      const folder = j?.folder
+      if (folder) {
+        setFolders(prev => [...prev, folder])
+        return folder
+      }
+      return null
+    } catch { return null }
+  }, [])
+
+  const handleMoveMission = useCallback(async (projectSlug, missionSlug, folderSlug) => {
+    // Optimistic update
+    setAssignments(prev => ({ ...prev, [`${projectSlug}:${missionSlug}`]: folderSlug || null }))
+    try {
+      await authFetch(`/api/dashboard/mission-folders`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ project_slug: projectSlug, mission_slug: missionSlug, folder_slug: folderSlug || null }),
+      })
+    } catch {
+      // Re-fetch to recover
+      refreshFolders()
+    }
+  }, [refreshFolders])
+
+  // ── Tab + sort state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('missions')
-
-  // Active tasks = running + queued
-  const activeTasks = useMemo(() => {
-    return [...rightNow, ...queued]
-  }, [rightNow, queued])
-
-  // Completed tasks capped at 5 visible + show-more
+  const activeTasks = useMemo(() => [...rightNow, ...queued], [rightNow, queued])
   const [showAllCompleted, setShowAllCompleted] = useState(false)
   const COMPLETED_CAP = 5
 
-  // Determine current mission for highlighting
+  // Current mission / project from conversation target
   const currentMission = conversationTarget?.type === 'mission' ? conversationTarget.slug : null
   const currentProject = conversationTarget?.type === 'project' ? conversationTarget.slug : null
+  const inAgentRoom = !!selectedAgent || conversationTarget?.type === 'agent'
 
-  // Project pills — derived from missions (unique projectSlug, in order of appearance)
+  // Project pills derived from missions
   const [activePill, setActivePill] = useState('all')
   const projectsList = useMemo(() => {
     const seen = new Set()
@@ -684,52 +1157,56 @@ export default function RightMenu() {
     return out
   }, [missionsFlat])
 
-  // If the user navigates into a project room, follow it on the pill — unless
-  // they explicitly clicked a different pill. We do this by snapping to the
-  // current project on mount / when conversation target changes.
+  // R7-D: agent / EA / super-agent room → snap pill back to 'all'.
+  // Otherwise: if in a project room, follow that project's pill.
   useEffect(() => {
-    if (currentProject && projectsList.includes(currentProject)) {
+    if (inAgentRoom) {
+      setActivePill('all')
+    } else if (currentProject && projectsList.includes(currentProject)) {
       setActivePill(currentProject)
     }
-  }, [currentProject, projectsList])
+  }, [inAgentRoom, currentProject, projectsList])
 
-  // Filter missions by active pill
+  // R7-E: recent projects strip — last 10 distinct projects entered, per-world
+  const [recentProjects, setRecentProjects] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY(worldId)) || '[]') }
+    catch { return [] }
+  })
+
+  useEffect(() => {
+    if (!currentProject) return
+    setRecentProjects(prev => {
+      const filtered = prev.filter(s => s !== currentProject)
+      const next = [currentProject, ...filtered].slice(0, 10)
+      try { localStorage.setItem(RECENT_KEY(worldId), JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [currentProject, worldId])
+
+  // Filter missions / tasks by active pill
   const filteredMissions = useMemo(() => {
     if (activePill === 'all') return missionsFlat
     return missionsFlat.filter(m => m.projectSlug === activePill)
   }, [missionsFlat, activePill])
 
-  // Filter tasks by active pill too — so "Active Tasks" + "Completed" stay in
-  // sync with the pill scope. When 'all', show everything; when a project, filter.
   const filteredActiveTasks = useMemo(() => {
     if (activePill === 'all') return activeTasks
-    return activeTasks.filter(t => (
-      t.project === activePill ||
-      t.metadata?.project === activePill ||
-      t.metadata?.repo === activePill
-    ))
+    return activeTasks.filter(t => taskProjectSlug(t) === activePill)
   }, [activeTasks, activePill])
 
   const filteredDone = useMemo(() => {
     if (activePill === 'all') return done
-    return done.filter(t => (
-      t.project === activePill ||
-      t.metadata?.project === activePill ||
-      t.metadata?.repo === activePill
-    ))
+    return done.filter(t => taskProjectSlug(t) === activePill)
   }, [done, activePill])
 
   const completedToShow = showAllCompleted ? filteredDone.slice(0, 20) : filteredDone.slice(0, COMPLETED_CAP)
   const hiddenCompletedCount = Math.max(0, filteredDone.length - COMPLETED_CAP)
 
-  // ── Accordion collapsed state (persisted in localStorage) ─────────────────
-  // Key: projectSlug → boolean (true = collapsed). Default: idle groups start
-  // collapsed, running/queued groups start open.
+  // Collapsed-state map for project groups (localStorage persisted)
   const [collapsedProjects, setCollapsedProjects] = useState(() => {
     try { return JSON.parse(localStorage.getItem('rm-collapsed-projects') || '{}') }
     catch { return {} }
   })
-
   const toggleProjectCollapse = useCallback((slug) => {
     setCollapsedProjects(prev => {
       const next = { ...prev, [slug]: !prev[slug] }
@@ -738,7 +1215,22 @@ export default function RightMenu() {
     })
   }, [])
 
-  // ── Grouped missions (used when activePill === 'all') ──────────────────────
+  // Collapsed-state map for folders (localStorage persisted)
+  const [collapsedFolders, setCollapsedFolders] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rm-collapsed-folders') || '{}') }
+    catch { return {} }
+  })
+  const toggleFolderCollapse = useCallback((projectSlug, folderSlug) => {
+    const key = `${projectSlug}:${folderSlug}`
+    setCollapsedFolders(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem('rm-collapsed-folders', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
+  // Grouped missions (used when activePill === 'all'):
+  // each group carries the project's folders + ungrouped pile.
   const groupedMissions = useMemo(() => {
     if (activePill !== 'all') return null
     const map = new Map()
@@ -756,13 +1248,10 @@ export default function RightMenu() {
       }
     }
     return [...map.values()].sort((a, b) => {
-      // Running first
       if (a.hasRunning && !b.hasRunning) return -1
       if (!a.hasRunning && b.hasRunning) return 1
-      // Queued second
       if (a.hasQueued && !b.hasQueued) return -1
       if (!a.hasQueued && b.hasQueued) return 1
-      // Most recently touched
       if (a.lastTouched && b.lastTouched) return new Date(b.lastTouched) - new Date(a.lastTouched)
       if (a.lastTouched) return -1
       if (b.lastTouched) return 1
@@ -770,19 +1259,138 @@ export default function RightMenu() {
     })
   }, [activePill, filteredMissions])
 
-  // Summary stats — scoped to the active pill
+  // Summary stats — scoped to active pill
   const runningCount = filteredActiveTasks.filter(t => ['running', 'building', 'active'].includes(t.status)).length
   const queuedCount = filteredActiveTasks.filter(t => ['queued', 'planning', 'classifying'].includes(t.status)).length
   const scopeLabel = activePill === 'all' ? 'all projects' : activePill
 
-  // "Last active" — the most recently touched mission in the filtered list
   const lastActiveM = filteredMissions.find(m => m.lastTouched) || null
   const lastActiveAge = lastActiveM?.lastTouched ? relativeAge(lastActiveM.lastTouched) : null
   const lastActiveName = lastActiveM
-    ? (activePill === 'all'
-        ? `${lastActiveM.projectSlug}:${lastActiveM.slug}`
-        : lastActiveM.slug)
+    ? (activePill === 'all' ? `${lastActiveM.projectSlug}:${lastActiveM.slug}` : lastActiveM.slug)
     : null
+
+  // ── Mission row click handler (R7-H) ────────────────────────────────────────
+  const onMissionClick = useCallback((mission) => {
+    if (!handleSelectMission) return
+    const project = { slug: mission.projectSlug, name: mission.projectSlug }
+    const missionObj = {
+      slug: `${mission.projectSlug}:${mission.slug}`,
+      bare_slug: mission.slug,
+      name: mission.name || mission.slug,
+      project_slug: mission.projectSlug,
+    }
+    handleSelectMission(missionObj, project)
+  }, [handleSelectMission])
+
+  // ── Task row click handler (R7-I) ───────────────────────────────────────────
+  // Prefer mission room; fall back to project room if no mission_slug.
+  const onTaskClick = useCallback((task) => {
+    const projectSlug = taskProjectSlug(task)
+    const missionSlug = taskMissionSlug(task)
+    if (handleSelectTask) {
+      try { handleSelectTask(task); return }
+      catch { /* fall through */ }
+    }
+    if (missionSlug && projectSlug && handleSelectMission) {
+      handleSelectMission(
+        {
+          slug: `${projectSlug}:${missionSlug}`,
+          bare_slug: missionSlug,
+          name: task.title || missionSlug,
+          project_slug: projectSlug,
+        },
+        { slug: projectSlug, name: projectSlug },
+      )
+      return
+    }
+    if (projectSlug && handleSelectProject) {
+      handleSelectProject({ slug: projectSlug, name: projectSlug })
+    }
+  }, [handleSelectTask, handleSelectMission, handleSelectProject])
+
+  // ── Render a project group with folder interleaving ────────────────────────
+  function renderGroupBody(group) {
+    const projectFolders = folders.filter(f => f.project_slug === group.projectSlug)
+    // Split missions: folder-bound vs ungrouped
+    const folderBuckets = new Map() // folder_slug → mission[]
+    const ungrouped = []
+    for (const m of group.missions) {
+      const folderSlug = assignments[`${m.projectSlug}:${m.slug}`] || null
+      if (folderSlug) {
+        if (!folderBuckets.has(folderSlug)) folderBuckets.set(folderSlug, [])
+        folderBuckets.get(folderSlug).push(m)
+      } else {
+        ungrouped.push(m)
+      }
+    }
+    return (
+      <>
+        {/* Folders first, in folder-creation order */}
+        {projectFolders.map(folder => {
+          const bucket = folderBuckets.get(folder.slug) || []
+          const fKey = `${folder.project_slug}:${folder.slug}`
+          const isFolderCollapsed = !!collapsedFolders[fKey]
+          return (
+            <div key={folder.slug}>
+              <FolderRow
+                folder={folder}
+                count={bucket.length}
+                isCollapsed={isFolderCollapsed}
+                onToggle={() => toggleFolderCollapse(group.projectSlug, folder.slug)}
+              />
+              {!isFolderCollapsed && bucket.map((m, i) => (
+                <MissionRow
+                  key={`${folder.slug}-${m.slug}-${i}`}
+                  mission={m}
+                  projectSlug={m.projectSlug}
+                  dotStatus={m.dotStatus}
+                  ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+                  isCurrent={
+                    (currentMission && m.slug === currentMission) ||
+                    (currentProject && m.projectSlug === currentProject && !currentMission)
+                  }
+                  hideProject={true}
+                  onClick={() => onMissionClick(m)}
+                  showMove={true}
+                  currentFolderSlug={folder.slug}
+                  folders={folders}
+                  onMove={(missionSlug, folderSlug) => handleMoveMission(group.projectSlug, missionSlug, folderSlug)}
+                  onCreateFolder={handleCreateFolder}
+                />
+              ))}
+            </div>
+          )
+        })}
+        {/* Ungrouped missions */}
+        {ungrouped.map((m, i) => (
+          <MissionRow
+            key={`ungrouped-${m.slug}-${i}`}
+            mission={m}
+            projectSlug={m.projectSlug}
+            dotStatus={m.dotStatus}
+            ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+            isCurrent={
+              (currentMission && m.slug === currentMission) ||
+              (currentProject && m.projectSlug === currentProject && !currentMission)
+            }
+            hideProject={true}
+            onClick={() => onMissionClick(m)}
+            showMove={true}
+            currentFolderSlug={null}
+            folders={folders}
+            onMove={(missionSlug, folderSlug) => handleMoveMission(group.projectSlug, missionSlug, folderSlug)}
+            onCreateFolder={handleCreateFolder}
+          />
+        ))}
+        {/* + new folder */}
+        <NewFolderAffordance
+          projectSlug={group.projectSlug}
+          onCreateFolder={handleCreateFolder}
+        />
+      </>
+    )
+  }
 
   return (
     <div style={{
@@ -801,23 +1409,24 @@ export default function RightMenu() {
         }
       `}</style>
 
-      {/* ── PANEL HEADER ──────────────────────────────────────── */}
       <PanelHeader>Missions</PanelHeader>
 
-      {/* ── PROJECT PILLS ─────────────────────────────────────── */}
       <ProjectPills
         projects={projectsList}
         active={activePill}
         onChange={setActivePill}
       />
 
-      {/* ── ACCORDION TABS ────────────────────────────────────── */}
+      <RecentProjectsStrip
+        recents={recentProjects}
+        onSelect={(slug) => setActivePill(slug)}
+      />
+
       <AccordionTabs active={activeTab} onChange={setActiveTab} />
 
       {/* ═══════════════ TAB: MISSIONS ═══════════════════════════ */}
       {activeTab === 'missions' && (
         <>
-          {/* Summary — only when there's active work (hides "Quiet right now" noise) */}
           {(runningCount + queuedCount) > 0 && (
             <>
               <SummaryBlock
@@ -832,7 +1441,6 @@ export default function RightMenu() {
             </>
           )}
 
-          {/* Missions list — sorted by recency (last_message_at DESC) */}
           {missionsLoading && (
             <div style={{ padding: '10px 14px', fontSize: 11, color: C.muted, fontFamily: MENU.bodyFont }}>
               Loading…
@@ -843,9 +1451,8 @@ export default function RightMenu() {
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
-          {/* ALL view: accordion grouped by project */}
+          {/* ALL view: project group accordions, folders interleaved */}
           {activePill === 'all' && groupedMissions && groupedMissions.map(group => {
-            // Default: active groups open, idle groups collapsed
             const idleDefault = !group.hasRunning && !group.hasQueued
             const isCollapsed = collapsedProjects.hasOwnProperty(group.projectSlug)
               ? collapsedProjects[group.projectSlug]
@@ -860,51 +1467,103 @@ export default function RightMenu() {
                   isCollapsed={isCollapsed}
                   onToggle={() => toggleProjectCollapse(group.projectSlug)}
                 />
-                {!isCollapsed && group.missions.map((m, i) => (
-                  <MissionRow
-                    key={m.slug + '-' + i}
-                    mission={m}
-                    projectSlug={m.projectSlug}
-                    dotStatus={m.dotStatus}
-                    ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-                    isCurrent={
-                      (currentMission && m.slug === currentMission) ||
-                      (currentProject && m.projectSlug === currentProject && !currentMission)
-                    }
-                    hideProject={true}
-                  />
-                ))}
+                {!isCollapsed && renderGroupBody(group)}
               </div>
             )
           })}
 
-          {/* Specific pill view: flat list (no grouping) */}
-          {activePill !== 'all' && filteredMissions.map((m, i) => (
-            <MissionRow
-              key={m.slug + '-' + i}
-              mission={m}
-              projectSlug={m.projectSlug}
-              dotStatus={m.dotStatus}
-              ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-              isCurrent={
-                (currentMission && m.slug === currentMission) ||
-                (currentProject && m.projectSlug === currentProject && !currentMission)
+          {/* Specific pill view: flat list (no grouping). Folders still shown
+              if any exist for this project. */}
+          {activePill !== 'all' && (
+            (() => {
+              const projectFolders = folders.filter(f => f.project_slug === activePill)
+              const folderBuckets = new Map()
+              const ungrouped = []
+              for (const m of filteredMissions) {
+                const folderSlug = assignments[`${m.projectSlug}:${m.slug}`] || null
+                if (folderSlug) {
+                  if (!folderBuckets.has(folderSlug)) folderBuckets.set(folderSlug, [])
+                  folderBuckets.get(folderSlug).push(m)
+                } else {
+                  ungrouped.push(m)
+                }
               }
-              hideProject={false}
-            />
-          ))}
+              return (
+                <>
+                  {projectFolders.map(folder => {
+                    const bucket = folderBuckets.get(folder.slug) || []
+                    const fKey = `${folder.project_slug}:${folder.slug}`
+                    const isFolderCollapsed = !!collapsedFolders[fKey]
+                    return (
+                      <div key={folder.slug}>
+                        <FolderRow
+                          folder={folder}
+                          count={bucket.length}
+                          isCollapsed={isFolderCollapsed}
+                          onToggle={() => toggleFolderCollapse(activePill, folder.slug)}
+                        />
+                        {!isFolderCollapsed && bucket.map((m, i) => (
+                          <MissionRow
+                            key={`${folder.slug}-${m.slug}-${i}`}
+                            mission={m}
+                            projectSlug={m.projectSlug}
+                            dotStatus={m.dotStatus}
+                            ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+                            isCurrent={
+                              (currentMission && m.slug === currentMission) ||
+                              (currentProject && m.projectSlug === currentProject && !currentMission)
+                            }
+                            hideProject={false}
+                            onClick={() => onMissionClick(m)}
+                            showMove={true}
+                            currentFolderSlug={folder.slug}
+                            folders={folders}
+                            onMove={(missionSlug, folderSlug) => handleMoveMission(activePill, missionSlug, folderSlug)}
+                            onCreateFolder={handleCreateFolder}
+                          />
+                        ))}
+                      </div>
+                    )
+                  })}
+                  {ungrouped.map((m, i) => (
+                    <MissionRow
+                      key={`ungrouped-${m.slug}-${i}`}
+                      mission={m}
+                      projectSlug={m.projectSlug}
+                      dotStatus={m.dotStatus}
+                      ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+                      isCurrent={
+                        (currentMission && m.slug === currentMission) ||
+                        (currentProject && m.projectSlug === currentProject && !currentMission)
+                      }
+                      hideProject={false}
+                      onClick={() => onMissionClick(m)}
+                      showMove={true}
+                      currentFolderSlug={null}
+                      folders={folders}
+                      onMove={(missionSlug, folderSlug) => handleMoveMission(activePill, missionSlug, folderSlug)}
+                      onCreateFolder={handleCreateFolder}
+                    />
+                  ))}
+                  <NewFolderAffordance
+                    projectSlug={activePill}
+                    onCreateFolder={handleCreateFolder}
+                  />
+                </>
+              )
+            })()
+          )}
         </>
       )}
 
       {/* ═══════════════ TAB: TASKS ══════════════════════════════ */}
       {activeTab === 'tasks' && (
         <>
-          {/* Active tasks */}
           {filteredActiveTasks.length > 0 ? (
             <>
               <SectionLabel>Active</SectionLabel>
               {filteredActiveTasks.map(task => (
-                <TaskRow key={task.id} task={task} isDone={false} />
+                <TaskRow key={task.id} task={task} isDone={false} onClick={() => onTaskClick(task)} />
               ))}
               <Divider />
             </>
@@ -912,17 +1571,13 @@ export default function RightMenu() {
             <EmptyState text="No active tasks" />
           )}
 
-          {/* Completed tasks */}
           <SectionLabel>Completed</SectionLabel>
-
           {filteredDone.length === 0 && (
             <EmptyState text="No completed tasks yet" />
           )}
-
           {completedToShow.map(task => (
-            <TaskRow key={task.id} task={task} isDone={true} />
+            <TaskRow key={task.id} task={task} isDone={true} onClick={() => onTaskClick(task)} />
           ))}
-
           {!showAllCompleted && hiddenCompletedCount > 0 && (
             <button
               onClick={() => setShowAllCompleted(true)}
@@ -953,7 +1608,6 @@ export default function RightMenu() {
         <FilesPanel projectSlug={activePill === 'all' ? (currentProject || projectsList[0] || null) : activePill} />
       )}
 
-      {/* Bottom breathing room */}
       <div style={{ height: 24, flexShrink: 0 }} />
     </div>
   )
