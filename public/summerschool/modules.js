@@ -779,9 +779,35 @@ window.SSMod = (function () {
   // ============================================================
   function splash(host, block) {
     const stars = window.SS ? window.SS.goldStars : 0;
-    const streak = window.SS ? window.SS.tickStreak() : 1;
     const lastWrite = window.SS ? window.SS.latestWriting() : null;
     const dadApproved = lastWrite && lastWrite.dadApproved;
+
+    // Day-complete check — only celebrate if EVERY block is done (he can
+    // skip ahead but the day isn't done until he loops back to fill in the
+    // gaps). Splash itself doesn't count toward the all-done check.
+    const allBlocks = day().blocks;
+    const undone = allBlocks.filter(b => b.id !== block.id && window.SS && !window.SS.isBlockDone(b.id));
+    if (undone.length > 0) {
+      host.innerHTML = `
+        <div class="day-splash">
+          <div class="label">Almost there</div>
+          <h1>${undone.length} block${undone.length === 1 ? '' : 's'} left.</h1>
+          <p style="font-family: var(--font-serif); font-size: 18px; line-height: 1.5; color: var(--ink-soft); max-width: 480px; margin: var(--space-5) auto;">
+            You jumped past these earlier. Knock them out to finish the day and tick your streak.
+          </p>
+          <div style="max-width: 480px; margin: var(--space-5) auto; text-align: left;">
+            ${undone.slice(0, 5).map(b => `<div style="padding: var(--space-3) var(--space-4); background: var(--cream-card); border-radius: var(--r-sm); margin-bottom: var(--space-2); font-family: var(--font-serif); font-size: 16px;">${b.title}</div>`).join('')}
+            ${undone.length > 5 ? `<div style="text-align: center; color: var(--ink-quiet); font-size: 13px; margin-top: var(--space-2);">+ ${undone.length - 5} more</div>` : ''}
+          </div>
+          <div class="center-actions" style="justify-content: center;">
+            <button class="btn-primary" data-go="hub">Back to today</button>
+          </div>
+        </div>
+      `;
+      return;  // don't tick streak, don't mark complete
+    }
+
+    const streak = window.SS ? window.SS.tickStreak() : 1;
 
     // Milestone notes — show at 1 (first day done), 7, 14, 30, 60 day streaks
     const milestoneNote = (() => {
@@ -1179,25 +1205,13 @@ window.SSMod = (function () {
     const render = () => {
       const target = wordList[wordIdx].word;
       const clue = wordList[wordIdx].clue;
-      // build pool: target letters + 3 distractors
-      const pool = target.toUpperCase().split('');
-      const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-      while (pool.length < target.length + 3) {
-        const r = all[Math.floor(Math.random() * 26)];
-        if (!pool.includes(r)) pool.push(r);
-      }
-      // shuffle
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
       placed = [];
 
       // build the letter pool: target letters + 3 distractors
       const letterPool = target.toUpperCase().split('');
-      const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       while (letterPool.length < target.length + 3) {
-        const r = all[Math.floor(Math.random() * 26)];
+        const r = alphabet[Math.floor(Math.random() * 26)];
         if (!letterPool.includes(r)) letterPool.push(r);
       }
       // shuffle

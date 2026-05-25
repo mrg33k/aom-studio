@@ -18,6 +18,29 @@
     return;
   }
 
+  // ?dad=1 → Dad-mode admin view: show all fix-feedback Ethan has sent
+  if (new URLSearchParams(window.location.search).has('dad')) {
+    const feedback = JSON.parse(localStorage.getItem('ss-dad-feedback') || '[]');
+    document.body.innerHTML = `
+      <div style="max-width: 720px; margin: 40px auto; padding: 24px; font-family: 'Geist', system-ui, sans-serif; background: #FBF7EE; border-radius: 14px;">
+        <h1 style="font-family: 'Fraunces', serif; font-weight: 500; font-size: 36px; margin-bottom: 8px;">Dad mode</h1>
+        <div style="color: #5A554C; margin-bottom: 24px;">${feedback.length} fix${feedback.length === 1 ? '' : 'es'} from Ethan.</div>
+        ${feedback.length === 0 ? '<div style="color: #9A9388; font-style: italic;">Nothing yet.</div>' : ''}
+        ${feedback.slice().reverse().map(f => `
+          <div style="background: #F5EFE5; border-left: 3px solid #E8A03A; border-radius: 0 14px 14px 0; padding: 16px 20px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #9A9388; margin-bottom: 8px;">${new Date(f.at).toLocaleString()}${f.block ? ' · on block ' + f.block : ''}</div>
+            <div style="font-family: 'Fraunces', serif; font-size: 17px; line-height: 1.5; color: #1A1814; white-space: pre-wrap;">${(f.text || '').replace(/</g, '&lt;')}</div>
+          </div>
+        `).join('')}
+        <div style="margin-top: 24px; display: flex; gap: 12px;">
+          <button onclick="if(confirm('Clear all feedback?')){localStorage.removeItem('ss-dad-feedback');location.reload();}" style="background: transparent; border: 1.5px solid rgba(26,24,20,0.18); padding: 10px 20px; border-radius: 999px; font-family: inherit; font-weight: 600; cursor: pointer;">Clear all</button>
+          <a href="/summerschool/" style="background: #1A1814; color: #F5EFE5; padding: 10px 20px; border-radius: 999px; text-decoration: none; font-weight: 600;">Back to summer school</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   const host = document.getElementById('app-host');
   if (!host) { console.warn('no #app-host'); return; }
 
@@ -57,7 +80,73 @@
   }
   fab.addEventListener('click', () => toggleRail());
   backdrop.addEventListener('click', () => toggleRail(false));
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleRail(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { toggleRail(false); toggleDadChat(false); } });
+
+  // ---- Tell-Dad FAB — bottom-left, opens a fix-feedback chat ----
+  // Only allowed to chat about FIXES per Patrik's spec. Saves to localStorage;
+  // Dad sees the list at /summerschool/?dad=1
+  let dadFab = document.createElement('button');
+  dadFab.id = 'ss-dad-fab';
+  dadFab.className = 'ss-dad-fab';
+  dadFab.setAttribute('aria-label', 'Send Dad a fix idea');
+  dadFab.innerHTML = `<span class="dad-icon">💬</span><span class="dad-lbl">Tell Dad</span>`;
+  document.body.appendChild(dadFab);
+
+  let dadPanel = document.createElement('div');
+  dadPanel.id = 'ss-dad-panel';
+  dadPanel.className = 'ss-dad-panel';
+  document.body.appendChild(dadPanel);
+
+  function toggleDadChat(open) {
+    const next = open === undefined ? !dadPanel.classList.contains('open') : open;
+    if (next) renderDadPanel();
+    dadPanel.classList.toggle('open', next);
+    backdrop.classList.toggle('open', next || rail.classList.contains('open'));
+  }
+
+  function renderDadPanel() {
+    const existing = JSON.parse(localStorage.getItem('ss-dad-feedback') || '[]');
+    const blockTitle = currentBlockIdx >= 0 ? day().blocks[currentBlockIdx].title : 'on the hub';
+    dadPanel.innerHTML = `
+      <button class="ss-dad-close" aria-label="Close">×</button>
+      <div class="ss-dad-head">
+        <div class="ss-dad-eyebrow">Tell Dad</div>
+        <div class="ss-dad-title">What's not working?</div>
+        <div class="ss-dad-sub">Only for fixes — broken stuff, confusing stuff, ideas. Dad checks these.</div>
+      </div>
+      ${existing.length > 0 ? `<div class="ss-dad-recent">${existing.length} thing${existing.length === 1 ? '' : 's'} you've sent so far</div>` : ''}
+      <textarea id="ss-dad-text" class="ss-dad-text" placeholder="What happened? What did you want it to do instead?"></textarea>
+      <div class="ss-dad-context">Sending from: <strong>${blockTitle}</strong></div>
+      <div class="ss-dad-actions">
+        <button class="btn-secondary" id="ss-dad-cancel">Cancel</button>
+        <button class="btn-amber" id="ss-dad-send">Send to Dad</button>
+      </div>
+      <div id="ss-dad-confirm" class="ss-dad-confirm"></div>
+    `;
+    dadPanel.querySelector('.ss-dad-close').onclick = () => toggleDadChat(false);
+    dadPanel.querySelector('#ss-dad-cancel').onclick = () => toggleDadChat(false);
+    dadPanel.querySelector('#ss-dad-send').onclick = () => {
+      const txt = dadPanel.querySelector('#ss-dad-text').value.trim();
+      if (!txt) return;
+      const entry = {
+        at: new Date().toISOString(),
+        text: txt,
+        block: currentBlockIdx >= 0 ? day().blocks[currentBlockIdx].title : 'hub',
+        url: location.href
+      };
+      const list = JSON.parse(localStorage.getItem('ss-dad-feedback') || '[]');
+      list.push(entry);
+      localStorage.setItem('ss-dad-feedback', JSON.stringify(list));
+      const confirm = dadPanel.querySelector('#ss-dad-confirm');
+      confirm.textContent = 'Sent. Dad will see this.';
+      confirm.classList.add('show');
+      dadPanel.querySelector('#ss-dad-text').value = '';
+      setTimeout(() => toggleDadChat(false), 1400);
+    };
+    setTimeout(() => dadPanel.querySelector('#ss-dad-text')?.focus(), 50);
+  }
+
+  dadFab.addEventListener('click', () => { toggleRail(false); toggleDadChat(); });
 
   function renderRail() {
     const d = day();

@@ -2160,6 +2160,162 @@ input, textarea {
 
 .ss-rail-close:hover { background: var(--cream-deep); color: var(--ink); }
 
+/* ============================================================
+   TELL-DAD FAB (bottom-left) — fix-feedback channel for Ethan
+   Patrik wants Ethan to flag broken stuff in real time.
+   ============================================================ */
+
+.ss-dad-fab {
+  position: fixed;
+  bottom: var(--space-5);
+  left: var(--space-5);
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--amber);
+  color: var(--ink);
+  border: none;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 6px 18px rgba(232,160,58,0.32);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
+}
+
+.ss-dad-fab:hover { transform: scale(1.04); box-shadow: 0 8px 24px rgba(232,160,58,0.42); }
+.ss-dad-fab:active { transform: scale(0.97); }
+
+.ss-dad-fab .dad-icon { font-size: 16px; }
+.ss-dad-fab .dad-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.ss-dad-panel {
+  display: none;
+  position: fixed;
+  bottom: 72px;
+  left: var(--space-5);
+  width: 340px;
+  max-width: calc(100vw - 48px);
+  background: var(--cream-card);
+  border-radius: var(--r-md);
+  padding: var(--space-5);
+  box-shadow: 0 16px 48px rgba(26,24,20,0.20), 0 4px 12px rgba(26,24,20,0.10);
+  font-family: var(--font-body);
+  z-index: 100;
+  animation: fab-slide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ss-dad-panel.open { display: block; }
+
+.ss-dad-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--ink-quiet);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ss-dad-close:hover { background: var(--cream-deep); color: var(--ink); }
+
+.ss-dad-head { margin-bottom: var(--space-4); padding-right: var(--space-7); }
+
+.ss-dad-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: var(--space-2);
+}
+
+.ss-dad-title {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: var(--space-2);
+}
+
+.ss-dad-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.ss-dad-recent {
+  background: var(--cream-deep);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-3);
+}
+
+.ss-dad-text {
+  width: 100%;
+  min-height: 100px;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ss-dad-text:focus { border-color: var(--amber); }
+.ss-dad-text::placeholder { color: var(--ink-quiet); font-style: italic; }
+
+.ss-dad-context {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--ink-quiet);
+}
+
+.ss-dad-context strong { color: var(--ink); font-weight: 600; }
+
+.ss-dad-actions {
+  margin-top: var(--space-4);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.ss-dad-confirm {
+  display: none;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: #E8F4EA;
+  color: #2D6B3C;
+  border-radius: var(--r-sm);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  text-align: center;
+}
+
+.ss-dad-confirm.show { display: block; animation: fab-fade 0.2s ease-out; }
+
 .ss-rail .rail-progress {
   margin-bottom: var(--space-4);
 }
