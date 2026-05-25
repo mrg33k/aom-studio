@@ -172,11 +172,24 @@ export default async function handler(req, res) {
     return res.status(200).json({ emails: [], historyId: list.historyId || null, mode: 'live' })
   }
 
-  // metadata format: skips the bodies. Cheap enough to fan out concurrently.
-  const wanted = ['From', 'Subject', 'Date', 'List-Unsubscribe', 'Auto-Submitted', 'Precedence']
-  const metaQS = `format=metadata&${wanted.map(h => `metadataHeaders=${encodeURIComponent(h)}`).join('&')}`
+  // R17 (2026-05-25) — switched from format=metadata to format=full +
+  // a fields filter. metadata DOES NOT include payload.parts (per Gmail
+  // docs: "Returns only email message ID, labels, and email headers"),
+  // which broke hasAttachments detection. Using format=full with a
+  // fields filter keeps the response slim by omitting body.data and
+  // only returning the part shape we need to walk for filename +
+  // attachmentId. 3-level part nesting covers the common
+  // multipart/mixed[multipart/related[image|file]] cases.
+  const fieldsFilter = encodeURIComponent(
+    'id,threadId,historyId,internalDate,labelIds,snippet,'
+    + 'payload(mimeType,filename,headers(name,value),'
+    + 'parts(mimeType,filename,body(attachmentId,size),'
+    + 'parts(mimeType,filename,body(attachmentId,size),'
+    + 'parts(mimeType,filename,body(attachmentId,size)))))',
+  )
+  const fetchQS = `format=full&fields=${fieldsFilter}`
   const messages = await Promise.all(ids.map(async id => {
-    const r = await gmailFetch(creds.accessToken, `/messages/${id}?${metaQS}`)
+    const r = await gmailFetch(creds.accessToken, `/messages/${id}?${fetchQS}`)
     if (!r.ok) return null
     return r.json()
   }))
