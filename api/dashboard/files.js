@@ -309,31 +309,47 @@ export default async function handler(req, res) {
       const project = req.query.project ? String(req.query.project).trim().toLowerCase() : null
       const limit = Math.min(parseInt(req.query.limit || '500', 10) || 500, 1000)
 
-      // Pull recent messages with any attachment shape under this tenant.
+      // Pull every message with any attachment shape under this tenant.
       // Three shapes exist (see useChatAttachments + relay-respond.py):
       //   1. Top-level columns: attachment_url + file_mime_type + file_size
       //   2. metadata.attachment = { url, mime, size, name }
       //   3. metadata.attachments = [ { url, mime, size, name }, … ]
-      // PostgREST can't OR across a column + a JSON path in one filter, so
-      // we run two narrow queries and merge: (a) attachment_url not null,
-      // (b) metadata->>attachment_url present-via-metadata path.
-      // Simplest correct path: pull recent messages for this scope and
-      // filter client-side. Limit caps memory; 500 covers typical use.
+      // PostgREST can't OR across a column + a JSON path inside a single
+      // query, so we run two scoped queries and merge:
+      //   (a) attachment_url IS NOT NULL  → catches shape 1 + shape 2-when-
+      //        the writer also stamped the legacy top-level column.
+      //   (b) metadata IS NOT NULL        → catches shape 2 + 3 outright,
+      //        and we filter for attachment/attachments keys client-side
+      //        because PostgREST JSON `not.is.null` doesn't fan out by key.
       const sel = 'id,client_id,project,attachment_url,file_mime_type,file_size,metadata,user_name,created_at,text'
-      const filters = [
+      const baseFilters = [
         `client_id=eq.${encodeURIComponent(clientId)}`,
         `select=${sel}`,
         'order=created_at.desc',
         `limit=${limit}`,
       ]
-      if (project) filters.push(`project=eq.${encodeURIComponent(project)}`)
-      const url = `${SUPABASE_URL}/rest/v1/messages?${filters.join('&')}`
+      if (project) baseFilters.push(`project=eq.${encodeURIComponent(project)}`)
 
-      let rows = []
+      const urlA = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&attachment_url=not.is.null`
+      const urlB = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata=not.is.null`
+
+      let rowsA = [], rowsB = []
       try {
-        const r = await fetch(url, { headers: dbHeaders() })
-        if (r.ok) rows = await r.json()
+        const [rA, rB] = await Promise.all([
+          fetch(urlA, { headers: dbHeaders() }),
+          fetch(urlB, { headers: dbHeaders() }),
+        ])
+        if (rA.ok) rowsA = await rA.json()
+        if (rB.ok) rowsB = await rB.json()
       } catch { /* best-effort */ }
+
+      // Merge + dedupe by message id so a row that hits both queries doesn't
+      // double-process.
+      const byId = new Map()
+      for (const row of [...rowsA, ...rowsB]) {
+        if (row && row.id) byId.set(row.id, row)
+      }
+      const rows = [...byId.values()]
 
       const out = []
       const seenUrls = new Set()
