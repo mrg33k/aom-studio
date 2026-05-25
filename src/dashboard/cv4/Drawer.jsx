@@ -403,8 +403,16 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* R11 (2026-05-25) — Agents sit above Mail so the people you talk to
-          read first; Mail Room follows; Projects file under Mail. */}
+      {/* R10-1 (2026-05-25) — Mail leads, Agents follow (per Patrik). */}
+      {/* Mail Room lives in the left rail.
+          Disconnected: amber Connect Gmail hero (kicks OAuth start).
+          Connected: 5-bucket tab strip + inline email list. Clicking an
+          email pins it as a chat chip on the EA via onSelectMail. */}
+      <LeftMailPanel
+        selectedMailId={selectedMailId}
+        onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
+      />
+
       <TreeSection title="Agents">
         {agents.length === 0 ? (
           <Empty label="No agents" />
@@ -419,15 +427,6 @@ function DrawerBody({
           ))
         )}
       </TreeSection>
-
-      {/* R10 (2026-05-25) — Mail Room lives in the left rail.
-          Disconnected: amber Connect Gmail hero (kicks OAuth start).
-          Connected: 5-bucket tab strip + inline email list. Clicking an
-          email pins it as a chat chip on the EA via onSelectMail. */}
-      <LeftMailPanel
-        selectedMailId={selectedMailId}
-        onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
-      />
 
       <NestedUnderMail>
       <TreeSection
@@ -548,20 +547,22 @@ function DrawerBody({
   )
 }
 
+// R10-2: section labels match the right-menu SectionLabel cadence
+// (mono 10px, 0.12em letter-spacing, muted not dim, more breathing above).
 function TreeSection({ title, action = null, children }) {
   return (
     <section style={{
-      margin: '0 0 10px',
-      padding: '8px 0 6px',
+      margin: '0 0 8px',
+      padding: '10px 0 4px',
       borderTop: '1px solid rgba(255,255,255,0.045)',
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 6px 6px',
+        padding: '6px 8px 7px',
       }}>
         <span style={{
-          fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: C.dim,
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+          textTransform: 'uppercase', color: C.muted,
           fontFamily: MENU.monoFont,
         }}>{title}</span>
         {action}
