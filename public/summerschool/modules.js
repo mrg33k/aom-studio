@@ -805,6 +805,36 @@ window.SSMod = (function () {
   // SHOW DAD / MOM
   // ============================================================
   function showdad(host, block) {
+    // Two flavors of this block: mid-day check-in vs end-of-day show off.
+    // Same render fn but the copy + intent are different.
+    const isMidDay = block.id === 'mid-showdad';
+
+    if (isMidDay) {
+      host.innerHTML = `
+        ${topRail(50, 'halfway')}
+        ${moduleHead('Halfway', 'Stand up. Breathe. You\'re crushing it.')}
+        <div class="writing-stage module-narrow">
+          <div class="approve-card">
+            <div class="big">Mid-day reset.</div>
+            <div class="small" style="line-height: 1.55;">
+              You've done a lot already. Stand up, get water, stretch for 60 seconds.
+              When you sit back down, tap below and keep going. (Optional: show Mom or Dad
+              something cool you've done so far if they're around.)
+            </div>
+            <div class="approve-row">
+              <button class="btn-amber" id="show-back">I'm back — keep going</button>
+            </div>
+          </div>
+        </div>
+      `;
+      host.querySelector('#show-back').onclick = () => {
+        if (window.SS) window.SS.awardStar('Pushed through the mid-day wall');
+        complete(block.id);
+      };
+      return;
+    }
+
+    // End-of-day Show Off
     host.innerHTML = `
       ${topRail(96, 'show off')}
       ${moduleHead('Show off', 'Walk Mom or Dad through it')}
@@ -816,6 +846,9 @@ window.SSMod = (function () {
             <button class="btn-amber" id="show-dad-final">Dad approved</button>
             <button class="btn-amber" id="show-mom-final">Mom approved</button>
           </div>
+          <div style="margin-top: var(--space-3); text-align: center;">
+            <button class="btn-secondary" id="show-self-final" style="font-size: 13px; padding: 8px 18px;">Skip — I'll show them later</button>
+          </div>
         </div>
       </div>
     `;
@@ -825,6 +858,7 @@ window.SSMod = (function () {
         complete(block.id);
       };
     });
+    host.querySelector('#show-self-final').onclick = () => complete(block.id);
   }
 
   // ============================================================
