@@ -1318,6 +1318,27 @@ export default function RightMenu() {
 
         const flat = []
         for (const p of j.projects) {
+          // R-MP-2 — build a raw_slug → name lookup so nested missions can
+          // prefix their parent chain into the display name (Parent › Child
+          // › Grand). The flat right-rail list stays flat structurally but
+          // reads as nested.
+          const nameByRawSlug = new Map()
+          for (const m of (p.missions || [])) {
+            if (m.raw_slug) nameByRawSlug.set(m.raw_slug, m.name || m.raw_slug)
+          }
+          const parentByRawSlug = new Map()
+          for (const m of (p.missions || [])) {
+            if (m.raw_slug) parentByRawSlug.set(m.raw_slug, m.parent_raw_slug || null)
+          }
+          function ancestorNames(rawSlug) {
+            const chain = []
+            let cur = parentByRawSlug.get(rawSlug) || null
+            while (cur) {
+              chain.unshift(nameByRawSlug.get(cur) || cur)
+              cur = parentByRawSlug.get(cur) || null
+            }
+            return chain
+          }
           for (const m of (p.missions || [])) {
             const tasks = m.tasks || []
             const hasRunning = tasks.some(t => ['running', 'building', 'active'].includes(t.status))
@@ -1331,9 +1352,16 @@ export default function RightMenu() {
               projectLastMsg.get(projectSlug) ||
               m.last_updated ||
               null
+            const ownName = m.name || m.slug || m.path
+            const ancestors = m.raw_slug ? ancestorNames(m.raw_slug) : []
+            const displayName = ancestors.length > 0
+              ? [...ancestors, ownName].join(' \u203A ')
+              : ownName
             flat.push({
               slug: m.slug || m.path,
-              name: m.name || m.slug || m.path,
+              name: displayName,
+              depth: typeof m.depth === 'number' ? m.depth : 0,
+              parent_raw_slug: m.parent_raw_slug || null,
               projectSlug, dotStatus, lastTouched,
             })
           }
