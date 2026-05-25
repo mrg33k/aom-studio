@@ -723,15 +723,20 @@ export default function CornerV4() {
     if (tool !== 'mail') setSelectedMail(null)
   }, [])
 
-  // Called by MailListPanel when the user clicks an email — pins it as a
-  // chat chip so the EA's next reply receives the email as context.
+  // Called by LeftMailPanel / MailListPanel when the user clicks an email.
+  // R15 (2026-05-25): also flip activeTool='mail' so the existing wiring
+  // fires — MailChip renders above the composer, and useChatSend reads
+  // selectedMail via activeTool==='mail' to prepend the email body +
+  // attachments as Mail Room context on the next send to the EA.
   const handleSelectMail = useCallback((email) => {
     console.log('[MailRoom] handleSelectMail fired', email?.id, email?.subject)
     setSelectedMail(email)
+    setActiveTool('mail')
   }, [])
 
   const handleBackFromMailRoom = useCallback(() => {
     setSelectedMail(null)
+    setActiveTool(null)
   }, [])
 
   // Called by ChatPanel back button — clear conversation. R6: when the

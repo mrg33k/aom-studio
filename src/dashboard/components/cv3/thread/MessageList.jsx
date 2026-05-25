@@ -585,6 +585,7 @@ function MessageList({ roomType = 'agent' }) {
     <>
     <div
       ref={scrollListRef}
+      data-cv3-message-list
       data-testid={isProject ? 'project-message-list' : undefined}
       data-float-mode={floatMode ? 'true' : undefined}
       style={{
