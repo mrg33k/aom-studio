@@ -146,7 +146,7 @@ window.SSMod = (function () {
           <div id="r-gate" style="margin-top: var(--space-4); font-family: var(--font-serif); font-size: 14px; color: var(--ink-quiet);"></div>
         </aside>
       </div>
-      <div class="center-actions">
+      <div class="center-actions sticky-cta">
         <button class="btn-primary" id="r-done" disabled style="opacity:0.5;">Answer the questions first</button>
       </div>
     `;
@@ -436,7 +436,7 @@ window.SSMod = (function () {
           <div id="a-gate" style="margin-top: var(--space-3); font-family: var(--font-serif); font-size: 14px; color: var(--ink-quiet);"></div>
         </div>
 
-        <div class="center-actions" style="padding:0;">
+        <div class="center-actions sticky-cta" style="padding:0;">
           <button class="btn-primary" id="a-done" disabled style="opacity:0.5;">Answer all three first</button>
         </div>
       </div>
@@ -646,7 +646,7 @@ window.SSMod = (function () {
           <div id="i-gate" style="margin-top: var(--space-3); font-family: var(--font-serif); font-size: 14px; color: var(--ink-quiet);"></div>
         </aside>
       </div>
-      <div class="center-actions">
+      <div class="center-actions sticky-cta">
         <button class="btn-primary" id="i-done" disabled style="opacity:0.5;">Answer the quick check first</button>
       </div>
     `;
@@ -1474,7 +1474,7 @@ window.SSMod = (function () {
             <div id="sr-gate" style="margin-top: var(--space-3); font-family: var(--font-serif); font-size: 14px; color: var(--ink-quiet);"></div>
           </aside>
         </div>
-        <div class="center-actions">
+        <div class="center-actions sticky-cta">
           <button class="btn-primary" id="sr-done" disabled style="opacity:0.5;">Answer the questions first</button>
         </div>
       `;
@@ -1574,7 +1574,7 @@ window.SSMod = (function () {
             `).join('')}
           </div>
           <div id="vid-gate" style="margin-top: var(--space-3); font-family: var(--font-serif); font-size: 14px; color: var(--ink-quiet);"></div>
-          <div class="center-actions" style="padding: var(--space-5) 0 0;">
+          <div class="center-actions sticky-cta" style="padding: var(--space-5) 0 0;">
             <button class="btn-primary" id="vid-done" disabled style="opacity:0.5;">Answer the questions first</button>
           </div>
         </div>
