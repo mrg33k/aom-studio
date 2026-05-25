@@ -1809,8 +1809,23 @@ export default function RightMenu() {
         onChange={setActivePill}
       />
 
+      {/* R10-14: filter recents against the live projectsList so entries
+          pointing at deleted projects auto-disappear. Patrik 2026-05-25:
+          'im seeing remnants of the test chats in the recents' — Recents
+          is per-browser localStorage; DB deletion can't reach it, so we
+          must filter at render time. Also opportunistically prune the
+          stored list so the orphans don't keep accumulating. */}
       <RecentMissionsStrip
-        recents={recentMissions}
+        recents={(() => {
+          const live = new Set(projectsList)
+          const filtered = recentMissions.filter(e => e?.project && live.has(e.project))
+          if (filtered.length !== recentMissions.length && projectsList.length > 0) {
+            // Opportunistic prune: only when projectsList has loaded (don't
+            // wipe everything on the loading frame).
+            try { localStorage.setItem(RECENT_KEY(worldId), JSON.stringify(filtered)) } catch {}
+          }
+          return filtered
+        })()}
         onSelect={(entry) => {
           // Backward compat: pre-R10 entries lack `kind` (always mission).
           const kind = entry.kind || 'mission'
