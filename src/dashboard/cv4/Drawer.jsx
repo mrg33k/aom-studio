@@ -250,7 +250,7 @@ export default function CV4Drawer({
               fontSize: 9, fontWeight: 700, color: C.dim,
               letterSpacing: '0.12em', textTransform: 'uppercase',
               fontFamily: MENU.monoFont,
-            }}>Projects · missions · agents</span>
+            }}>Mail · Projects · Agents</span>
           </div>
           <button
             data-cv4-refresh-btn
@@ -310,6 +310,7 @@ export default function CV4Drawer({
           paddingTop: 'env(safe-area-inset-top, 0px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           fontFamily: MENU.bodyFont,
+          overflow: 'hidden',
         }}
       >
         <div style={{
@@ -328,7 +329,7 @@ export default function CV4Drawer({
               fontSize: 9, fontWeight: 700, color: C.dim,
               letterSpacing: '0.12em', textTransform: 'uppercase',
               fontFamily: MENU.monoFont,
-            }}>Projects · missions · agents</span>
+            }}>Mail · Projects · Agents</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
@@ -391,7 +392,7 @@ function DrawerBody({
   onClose,
 }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 12px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 8px 12px', minWidth: 0 }}>
       <DrawerSearchRow
         projectRooms={projectRooms}
         agents={agents}
@@ -401,15 +402,14 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      <TreeSection title="Tools">
-        <ToolRow
-          icon={<MailIcon />}
-          label="Mail"
-          active={activeTool === 'mail'}
-          onClick={() => { onSelectTool?.('mail'); onClose() }}
-        />
-      </TreeSection>
+      {/* R9 (2026-05-25) — Mail as the lead tool. Projects + Agents nest under it
+          visually so the user sees their work as filed under their inbox. */}
+      <MailHero
+        active={activeTool === 'mail'}
+        onClick={() => { onSelectTool?.('mail'); onClose() }}
+      />
 
+      <NestedUnderMail>
       <TreeSection
         title="Projects"
         action={onNewProject ? (
@@ -519,6 +519,7 @@ function DrawerBody({
           ))
         )}
       </TreeSection>
+      </NestedUnderMail>
 
       <TreeSection title="Account">
         <PlainRow
@@ -858,6 +859,94 @@ function DocIcon() {
   )
 }
 
+// R9 (2026-05-25) — Mail hero. Bigger, amber-accented top button to encourage
+// users to wire up Gmail. Mirrors the visual weight ChatGPT gives "New chat".
+function MailHero({ active, onClick }) {
+  return (
+    <button
+      type="button"
+      data-cv4-mail-hero
+      data-active={active ? 'true' : 'false'}
+      onClick={onClick}
+      style={{
+        width: '100%',
+        display: 'flex', alignItems: 'center', gap: 11,
+        padding: '11px 12px',
+        background: active ? 'rgba(234,179,8,0.12)' : 'rgba(234,179,8,0.04)',
+        border: `1px solid ${active ? 'rgba(234,179,8,0.45)' : 'rgba(234,179,8,0.20)'}`,
+        borderRadius: 8,
+        margin: '6px 2px 10px',
+        cursor: 'pointer',
+        textAlign: 'left',
+        minWidth: 0,
+        boxShadow: active ? '0 0 0 3px rgba(234,179,8,0.06)' : 'none',
+        transition: 'background 0.12s, border-color 0.12s',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'rgba(234,179,8,0.08)'
+          e.currentTarget.style.borderColor = 'rgba(234,179,8,0.35)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'rgba(234,179,8,0.04)'
+          e.currentTarget.style.borderColor = 'rgba(234,179,8,0.20)'
+        }
+      }}
+    >
+      <div style={{
+        width: 30, height: 30, borderRadius: 6,
+        background: 'rgba(234,179,8,0.18)',
+        border: '1px solid rgba(234,179,8,0.32)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: MENU.amber,
+        flexShrink: 0,
+      }}>
+        <MailIcon />
+      </div>
+      <span style={{
+        display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1,
+      }}>
+        <span style={{
+          fontFamily: MENU.displayFont, fontSize: 17, lineHeight: 1.1,
+          color: C.text,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>Mail</span>
+        <span style={{
+          fontSize: 9, fontWeight: 700, color: C.dim,
+          letterSpacing: '0.10em', textTransform: 'uppercase',
+          fontFamily: MENU.monoFont,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>Inbox · Connect Gmail</span>
+      </span>
+    </button>
+  )
+}
+
+// R9 — Visual nest. Projects + Agents are filed under Mail. A subtle left rule
+// + indent communicates the hierarchy without shouting.
+function NestedUnderMail({ children }) {
+  return (
+    <div style={{
+      paddingLeft: 8,
+      marginLeft: 4,
+      marginBottom: 4,
+      borderLeft: '1px solid rgba(234,179,8,0.14)',
+      minWidth: 0,
+    }}>
+      <div style={{
+        fontSize: 8, fontWeight: 700, color: C.dim,
+        letterSpacing: '0.16em', textTransform: 'uppercase',
+        padding: '4px 6px 2px',
+        fontFamily: MENU.monoFont,
+        opacity: 0.7,
+      }}>Filed under Mail</div>
+      {children}
+    </div>
+  )
+}
+
 function ToolRow({ icon, label, active, onClick }) {
   return (
     <div
@@ -1015,6 +1104,10 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
     <div data-cv4-drawer-search-row data-open style={{
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       padding: '8px 10px 10px',
+      minWidth: 0,
+      width: '100%',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
@@ -1046,7 +1139,7 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
       </div>
 
       {showSearch && (
-        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
           {projectHits.length > 0 && (
             <SearchGroup title="Projects">
               {projectHits.slice(0, 6).map(p => (
@@ -1107,14 +1200,16 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
 
 function SearchGroup({ title, children }) {
   return (
-    <div style={{ marginTop: 6 }}>
+    <div style={{ marginTop: 6, minWidth: 0, width: '100%' }}>
       <div style={{
         fontSize: 9, fontWeight: 700, color: C.dim,
         letterSpacing: '0.10em', textTransform: 'uppercase',
         padding: '4px 4px 2px',
         fontFamily: MENU.monoFont,
       }}>{title}</div>
-      {children}
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -1129,17 +1224,24 @@ function SearchHitRow({ children, meta, onClick }) {
         color: C.text, fontSize: 13,
         fontFamily: MENU.bodyFont,
         display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 2,
+        width: '100%', minWidth: 0, maxWidth: '100%',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
     >
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{children}</span>
+      <span style={{
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        display: 'block', minWidth: 0, maxWidth: '100%',
+      }}>{children}</span>
       {meta ? (
         <span style={{
           fontSize: 9, color: C.dim,
           fontFamily: MENU.monoFont,
           letterSpacing: '0.08em', textTransform: 'uppercase',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          display: 'block', minWidth: 0, maxWidth: '100%',
         }}>{meta}</span>
       ) : null}
     </button>
