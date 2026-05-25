@@ -52,8 +52,8 @@
       "routing": {
         "agent": "elon",
         "client_id": "aom",
-        "project": null,
-        "mission_slug": null
+        "project": "corner",
+        "mission_slug": "corner:support"
       }
     }
   }
