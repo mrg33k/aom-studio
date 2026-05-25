@@ -1154,14 +1154,31 @@ window.SSMod = (function () {
   // TILES — reuse from v1 prototype, parameterized
   // ============================================================
   function tiles(host, block) {
-    const words = block.words || ['robux'];
+    // Resolve the list of {word, clue} pairs this block should use.
+    // Three modes:
+    //  - block.count: 10 → randomly pull N from day().tileVocab
+    //  - block.words: ['studio', 'robux'] → look up in tileVocab (legacy strings)
+    //  - block.words: [{word, clue}, ...] → use as-is
+    const pool = (day().tileVocab) || [];
+    const lookupClue = (w) => (pool.find(t => t.word === w) || { clue: 'From today\'s reading' }).clue;
+    let wordList;
+    if (block.count) {
+      const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+      wordList = shuffled.slice(0, Math.min(block.count, pool.length));
+    } else if (Array.isArray(block.words)) {
+      wordList = block.words.map(w => typeof w === 'string' ? { word: w, clue: lookupClue(w) } : w);
+    } else {
+      wordList = [{ word: 'robux', clue: lookupClue('robux') }];
+    }
     let wordIdx = 0;
     let placed = [];
+    let blockRight = 0;
 
     const PTS = { a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:8,k:5,l:1,m:3,n:1,o:1,p:3,q:10,r:1,s:1,t:1,u:1,v:4,w:4,x:8,y:4,z:10 };
 
     const render = () => {
-      const target = words[wordIdx];
+      const target = wordList[wordIdx].word;
+      const clue = wordList[wordIdx].clue;
       // build pool: target letters + 3 distractors
       const pool = target.toUpperCase().split('');
       const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -1176,14 +1193,31 @@ window.SSMod = (function () {
       }
       placed = [];
 
+      // build the letter pool: target letters + 3 distractors
+      const letterPool = target.toUpperCase().split('');
+      const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      while (letterPool.length < target.length + 3) {
+        const r = all[Math.floor(Math.random() * 26)];
+        if (!letterPool.includes(r)) letterPool.push(r);
+      }
+      // shuffle
+      for (let i = letterPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [letterPool[i], letterPool[j]] = [letterPool[j], letterPool[i]];
+      }
+
       host.innerHTML = `
-        ${topRail(50 + (wordIdx / words.length) * 30, `${wordIdx + 1} / ${words.length}`)}
+        ${topRail(50 + (wordIdx / wordList.length) * 30, `${wordIdx + 1} / ${wordList.length}`)}
         ${moduleHead('Word Tiles · vocab from today\'s reading', 'Build the word')}
         <div class="tiles-stage">
-          <div class="tiles-prompt" data-dict>From today's reading. <strong>${target.length} letters.</strong></div>
+          <div class="tiles-prompt" data-dict>
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-2);">Clue</div>
+            <div style="font-family: var(--font-serif); font-size: 19px; line-height: 1.4; color: var(--ink); margin-bottom: var(--space-3);">${clue}</div>
+            <div style="font-size: 13px; color: var(--ink-quiet);"><strong>${target.length} letters.</strong> Tap tiles to build the word.</div>
+          </div>
           <div class="tiles-tray" id="tt-tray"></div>
           <div class="tiles-pool" id="tt-pool">
-            ${pool.map((l, i) => `<button class="tile" data-i="${i}" data-l="${l}">${l}<span class="pts">${PTS[l.toLowerCase()] || ''}</span></button>`).join('')}
+            ${letterPool.map((l, i) => `<button class="tile" data-i="${i}" data-l="${l}">${l}<span class="pts">${PTS[l.toLowerCase()] || ''}</span></button>`).join('')}
           </div>
           <div class="tiles-actions">
             <button class="btn-secondary" id="tt-clear">Clear</button>
@@ -1210,10 +1244,11 @@ window.SSMod = (function () {
       host.querySelector('#tt-submit').onclick = () => {
         const made = Array.from(tray.querySelectorAll('.tile')).map(t => t.dataset.l).join('').toLowerCase();
         if (made === target.toLowerCase()) {
+          blockRight++;
           if (window.SS) window.SS.awardStar('Tiles ' + target);
           wordIdx++;
-          if (wordIdx >= words.length) {
-            complete(block.id, { words });
+          if (wordIdx >= wordList.length) {
+            complete(block.id, { right: blockRight, total: wordList.length, words: wordList.map(w => w.word) });
           } else {
             render();
           }

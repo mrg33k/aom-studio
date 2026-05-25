@@ -209,10 +209,15 @@
 
     // split into Today's Class (topic) and Daily Drills (drill) but keep order
     const nextIdx = blocks.findIndex(x => !(SS && SS.isBlockDone(x.id)));
+    // Soft lock: he can tap the next 3 unfinished blocks ahead. Lets him
+    // skip past a bug / boring module while we fix. Blocks 4+ ahead stay
+    // locked so he doesn't blow through the day randomly.
+    const SKIP_WINDOW = 3;
     const renderBlockCard = (b, idx) => {
       const done = SS && SS.isBlockDone(b.id);
       const isNext = idx === nextIdx;
-      const locked = !done && !isNext;  // future blocks are visible but locked
+      const inSkipWindow = nextIdx >= 0 && idx > nextIdx && idx <= nextIdx + SKIP_WINDOW;
+      const locked = !done && !isNext && !inSkipWindow;
       const kindLabel = b.kind === 'topic' ? 'Today\'s Class' : 'Daily Drill';
       const kindCls = b.kind === 'topic' ? 'topic' : '';
       const cls = ['block-card', done && 'done', isNext && 'next', locked && 'locked'].filter(Boolean).join(' ');
