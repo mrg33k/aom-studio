@@ -315,8 +315,11 @@ function AttachmentCard({ messageId, connectionId, attachment, onOpen }) {
   const { filename, mimeType, size } = attachment
   const isImage = mimeType?.startsWith('image/')
   const inlineUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'inline' })
-  const downloadUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'attachment' })
   const label = mimeLabel(filename, mimeType)
+  // R17d — Supabase keeps the session in localStorage, so <img src> requests
+  // never carry the Authorization bearer; the endpoint 401s and the preview
+  // looks broken. authFetch the bytes ourselves and use a blob URL instead.
+  const imgBlob = useAttachmentBlob(isImage ? inlineUrl : null, mimeType)
 
   return (
     <div
@@ -349,11 +352,10 @@ function AttachmentCard({ messageId, connectionId, attachment, onOpen }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden', position: 'relative',
       }}>
-        {isImage ? (
+        {isImage && imgBlob.url ? (
           <img
-            src={inlineUrl} alt={filename || ''}
+            src={imgBlob.url} alt={filename || ''}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            loading="lazy"
           />
         ) : (
           <FileGlyph label={label} />
@@ -369,15 +371,73 @@ function AttachmentCard({ messageId, connectionId, attachment, onOpen }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span>{label} · {formatSize(size)}</span>
-        <a
-          href={downloadUrl}
-          onClick={(e) => e.stopPropagation()}
-          download={filename || 'attachment'}
-          style={{ color: '#eab308', textDecoration: 'none' }}
-        >↓ Save</a>
+        <span
+          role="button"
+          onClick={(e) => { e.stopPropagation(); downloadAttachment({ messageId, connectionId, attachment }) }}
+          style={{ color: '#eab308', cursor: 'pointer' }}
+        >↓ Save</span>
       </div>
     </div>
   )
+}
+
+// R17d — Fetch the attachment bytes via authFetch (Bearer header included)
+// and expose a same-origin blob URL the browser can load directly. Revokes
+// the URL on unmount so we don't leak object URLs. Pass null `url` to skip
+// (e.g. only fetch image previews; everything else loads on modal open).
+function useAttachmentBlob(url, mimeType) {
+  const [state, setState] = useState({ url: null, loading: false, error: null })
+  useEffect(() => {
+    if (!url) { setState({ url: null, loading: false, error: null }); return }
+    let cancelled = false
+    let createdUrl = null
+    setState({ url: null, loading: true, error: null })
+    ;(async () => {
+      try {
+        const r = await authFetch(url)
+        if (!r.ok) {
+          if (!cancelled) setState({ url: null, loading: false, error: `HTTP ${r.status}` })
+          return
+        }
+        const blob = await r.blob()
+        const typed = mimeType ? new Blob([blob], { type: mimeType }) : blob
+        createdUrl = URL.createObjectURL(typed)
+        if (!cancelled) setState({ url: createdUrl, loading: false, error: null })
+      } catch (e) {
+        if (!cancelled) setState({ url: null, loading: false, error: e.message || 'failed' })
+      }
+    })()
+    return () => {
+      cancelled = true
+      if (createdUrl) URL.revokeObjectURL(createdUrl)
+    }
+  }, [url, mimeType])
+  return state
+}
+
+// R17d — Download flow that works despite localStorage-only auth. Fetch
+// via authFetch (bearer in header), create a temporary anchor pointing at
+// a blob URL with `download` set, click it, revoke the URL. The Bearer
+// header satisfies the endpoint; the download attribute makes the browser
+// save the bytes with the right filename.
+async function downloadAttachment({ messageId, connectionId, attachment }) {
+  const inlineUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'attachment' })
+  try {
+    const r = await authFetch(inlineUrl)
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const blob = await r.blob()
+    const typed = attachment.mimeType ? new Blob([blob], { type: attachment.mimeType }) : blob
+    const url = URL.createObjectURL(typed)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = attachment.filename || 'attachment'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch (e) {
+    console.error('[MailRoom] download failed', e)
+  }
 }
 
 function FileGlyph({ label }) {
@@ -398,7 +458,6 @@ function FileGlyph({ label }) {
 function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }) {
   const { filename, mimeType, size } = attachment
   const inlineUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'inline' })
-  const downloadUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'attachment' })
   const label = mimeLabel(filename, mimeType)
   const previewKind = (() => {
     if (mimeType?.startsWith('image/')) return 'image'
@@ -408,6 +467,10 @@ function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }
     if (mimeType?.startsWith('video/')) return 'video'
     return 'binary'
   })()
+  // R17d — blob URL so the iframe / img / audio / video can carry no auth
+  // header and still load the bytes. Only fetch when the type is
+  // previewable; binary fallback doesn't need bytes.
+  const blob = useAttachmentBlob(previewKind === 'binary' ? null : inlineUrl, mimeType)
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
@@ -468,20 +531,21 @@ function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }
               fontFamily: "'JetBrains Mono', monospace",
             }}>{formatSize(size)} · {mimeType || 'application/octet-stream'}</div>
           </div>
-          <a
-            href={downloadUrl}
-            download={filename || 'attachment'}
+          <button
+            type="button"
+            onClick={() => downloadAttachment({ messageId, connectionId, attachment })}
+            title="Download (saves to your machine)"
             style={{
               padding: '6px 12px', borderRadius: 6,
               background: 'rgba(234,179,8,0.18)',
               border: '1px solid rgba(234,179,8,0.42)',
-              color: '#eab308', textDecoration: 'none',
+              color: '#eab308', cursor: 'pointer',
               fontSize: 11, fontWeight: 700,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               fontFamily: "'JetBrains Mono', monospace",
               flexShrink: 0,
             }}
-          >↓ Download</a>
+          >↓ Download</button>
           <button
             type="button"
             onClick={onClose}
@@ -506,34 +570,45 @@ function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }
           background: 'rgba(0,0,0,0.45)',
           minHeight: 0,
         }}>
-          {previewKind === 'image' && (
+          {previewKind !== 'binary' && blob.loading && (
+            <div style={{ color: C.muted, fontSize: 13 }}>Loading preview…</div>
+          )}
+          {previewKind !== 'binary' && blob.error && (
+            <div style={{ color: '#f87171', fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>
+              Couldn’t load: {blob.error}
+            </div>
+          )}
+          {previewKind === 'image' && blob.url && (
             <img
-              src={inlineUrl} alt={filename || ''}
+              src={blob.url} alt={filename || ''}
               style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
             />
           )}
-          {previewKind === 'pdf' && (
+          {previewKind === 'pdf' && blob.url && (
             <iframe
               title={filename || 'PDF preview'}
-              src={inlineUrl}
+              src={blob.url}
               style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
             />
           )}
-          {previewKind === 'text' && (
+          {previewKind === 'text' && blob.url && (
             <iframe
               title={filename || 'Text preview'}
-              src={inlineUrl}
+              src={blob.url}
               style={{ width: '100%', height: '100%', border: 'none', background: '#0d0e10' }}
             />
           )}
-          {previewKind === 'audio' && (
-            <audio controls src={inlineUrl} style={{ width: '80%' }} />
+          {previewKind === 'audio' && blob.url && (
+            <audio controls src={blob.url} style={{ width: '80%' }} />
           )}
-          {previewKind === 'video' && (
-            <video controls src={inlineUrl} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+          {previewKind === 'video' && blob.url && (
+            <video controls src={blob.url} style={{ maxWidth: '100%', maxHeight: '100%' }} />
           )}
           {previewKind === 'binary' && (
-            <BinaryFallback label={label} filename={filename} size={size} mimeType={mimeType} downloadUrl={downloadUrl} />
+            <BinaryFallback
+              label={label} filename={filename} size={size} mimeType={mimeType}
+              onDownload={() => downloadAttachment({ messageId, connectionId, attachment })}
+            />
           )}
         </div>
       </div>
@@ -541,7 +616,7 @@ function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }
   )
 }
 
-function BinaryFallback({ label, filename, size, mimeType, downloadUrl }) {
+function BinaryFallback({ label, filename, size, mimeType, onDownload }) {
   return (
     <div style={{
       padding: '40px 32px', textAlign: 'center', color: C.text2,
@@ -568,19 +643,19 @@ function BinaryFallback({ label, filename, size, mimeType, downloadUrl }) {
       <p style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 22 }}>
         This file type can’t be previewed in the browser. Download it to open in the right app.
       </p>
-      <a
-        href={downloadUrl}
-        download={filename || 'attachment'}
+      <button
+        type="button"
+        onClick={onDownload}
         style={{
           display: 'inline-block', padding: '10px 18px', borderRadius: 8,
           background: 'rgba(234,179,8,0.20)',
           border: '1px solid rgba(234,179,8,0.45)',
-          color: '#eab308', textDecoration: 'none',
+          color: '#eab308', cursor: 'pointer',
           fontSize: 12, fontWeight: 700,
           letterSpacing: '0.08em', textTransform: 'uppercase',
           fontFamily: "'JetBrains Mono', monospace",
         }}
-      >↓ Download {filename ? filename.split('.').pop().toUpperCase() : 'File'}</a>
+      >↓ Download {filename ? filename.split('.').pop().toUpperCase() : 'File'}</button>
     </div>
   )
 }
