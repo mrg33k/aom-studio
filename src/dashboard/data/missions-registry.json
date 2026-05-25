@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T07:03:12.791Z",
+  "generated_at": "2026-05-25T08:28:17.404Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -123,6 +123,17 @@
       "path": "corner/missions/dispatch-reliability"
     },
     {
+      "slug": "corner:embeddable-agents",
+      "raw_slug": "embeddable-agents",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Embeddable Agents",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/embeddable-agents"
+    },
+    {
       "slug": "corner:files-in-app",
       "raw_slug": "files-in-app",
       "project_slug": "corner",
@@ -187,6 +198,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/left-menu-tools"
+    },
+    {
+      "slug": "corner:live-conversation",
+      "raw_slug": "live-conversation",
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Live Conversation",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/live-conversation"
     },
     {
       "slug": "corner:login",
@@ -1039,8 +1061,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 41,
-      "in_flight": 41,
+      "total": 43,
+      "in_flight": 43,
       "done": 0
     },
     {

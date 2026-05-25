@@ -17,7 +17,7 @@
 //
 // Mission: corner:right-menu
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { useCornerAuth, useCornerNav } from '../CornerContext.jsx'
 import { useTasks } from '../hooks/useTasks.js'
@@ -80,11 +80,13 @@ function StatusDot({ status }) {
 }
 
 // ── Panel header (top-of-rail title) ────────────────────────────────────────
+// Fix 2: dropped "MISSIONS · TASKS · FILES" subtitle — accordion tabs below
+// already label all three sections; subtitle was pure noise.
 
 function PanelHeader({ children }) {
   return (
     <div style={{
-      padding: '16px 14px 10px',
+      padding: '16px 14px 12px',
       borderBottom: '1px solid rgba(255,255,255,0.045)',
     }}>
       <div style={{
@@ -94,20 +96,14 @@ function PanelHeader({ children }) {
         lineHeight: 1,
         color: C.text,
       }}>{children}</div>
-      <div style={{
-        marginTop: 3,
-        fontFamily: MENU.monoFont,
-        fontSize: 9,
-        fontWeight: 700,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        color: C.dim,
-      }}>Missions · tasks · files</div>
     </div>
   )
 }
 
 // ── Project pills (filter row directly below header) ────────────────────────
+// Fix 1: more vertical breathing room (14px top/bottom vs 10px), larger chip
+// padding (7px/12px vs 5px/9px), gap 6 vs 4. Right-edge fade gradient signals
+// that more pills exist off-screen without needing a visible scrollbar.
 
 function ProjectPills({ projects, active, onChange }) {
   const baseStyle = {
@@ -115,7 +111,7 @@ function ProjectPills({ projects, active, onChange }) {
     fontSize: 10,
     fontWeight: 500,
     letterSpacing: '0.04em',
-    padding: '5px 9px',
+    padding: '7px 12px',
     borderRadius: 3,
     cursor: 'pointer',
     transition: 'background 120ms ease, color 120ms ease, border-color 120ms ease',
@@ -123,6 +119,7 @@ function ProjectPills({ projects, active, onChange }) {
     whiteSpace: 'nowrap',
     border: '1px solid transparent',
     textTransform: 'lowercase',
+    flexShrink: 0,
   }
   const pill = (key, label, isAdd = false) => {
     const isActive = active === key
@@ -153,15 +150,24 @@ function ProjectPills({ projects, active, onChange }) {
   }
   return (
     <div style={{
-      display: 'flex',
-      overflowX: 'auto',
-      gap: 4,
-      padding: '10px 14px 12px',
-      scrollbarWidth: 'none',
+      position: 'relative',
+      borderBottom: '1px solid rgba(255,255,255,0.045)',
     }}>
-      {pill('all', 'all')}
-      {projects.map(slug => pill(slug, slug))}
-      {pill('__add__', '+', true)}
+      <div style={{
+        display: 'flex',
+        overflowX: 'auto',
+        gap: 6,
+        padding: '14px 14px 16px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        // Fade right edge so overflow chips look intentional, not broken
+        WebkitMaskImage: 'linear-gradient(to right, black 82%, transparent 100%)',
+        maskImage: 'linear-gradient(to right, black 82%, transparent 100%)',
+      }}>
+        {pill('all', 'all')}
+        {projects.map(slug => pill(slug, slug))}
+        {pill('__add__', '+', true)}
+      </div>
     </div>
   )
 }
@@ -230,7 +236,9 @@ function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, las
 
 // ── Mission row ─────────────────────────────────────────────────────────────
 
-function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
+// hideProject: when true, omit the project-slug line (used inside grouped accordion
+// where the project header already names it — saves vertical space per row)
+function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent, hideProject }) {
   const stripeColor = isCurrent
     ? MENU.amber
     : dotStatus === 'queued'
@@ -267,16 +275,18 @@ function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
           fontFamily: MENU.bodyFont,
         }}>{mission.slug || mission.name || 'unnamed'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 400,
-            lineHeight: 1.2,
-            color: C.muted,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            fontFamily: MENU.bodyFont,
-          }}>{projectSlug}</span>
+          {!hideProject && (
+            <span style={{
+              fontSize: 11,
+              fontWeight: 400,
+              lineHeight: 1.2,
+              color: C.muted,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontFamily: MENU.bodyFont,
+            }}>{projectSlug}</span>
+          )}
           {ageLabel && (
             <span style={{
               fontSize: 10,
@@ -486,6 +496,64 @@ function EmptyState({ text }) {
   )
 }
 
+// ── Project group header (accordion by project, "all" view) ──────────────────
+// Fix 3: collapsible section per project. Running/queued groups default open;
+// idle groups default collapsed. Caret rotates on collapse.
+
+function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle }) {
+  const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : 'idle'
+  return (
+    <div
+      onClick={onToggle}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '7px 14px 7px 12px',
+        cursor: 'pointer',
+        background: 'rgba(255,255,255,0.022)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+        transition: 'background 120ms ease',
+        userSelect: 'none',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.022)'}
+    >
+      <StatusDot status={dotStatus} />
+      <span style={{
+        flex: 1,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color: C.text2,
+        fontFamily: MENU.monoFont,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+      }}>{projectSlug}</span>
+      <span style={{
+        fontSize: 9,
+        color: C.muted,
+        fontFamily: MENU.monoFont,
+        flexShrink: 0,
+        marginRight: 3,
+      }}>{count}</span>
+      <span style={{
+        fontSize: 11,
+        color: C.muted,
+        fontFamily: MENU.monoFont,
+        flexShrink: 0,
+        display: 'inline-block',
+        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+        transition: 'transform 180ms ease',
+        lineHeight: 1,
+      }}>▾</span>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function RightMenu() {
@@ -654,6 +722,54 @@ export default function RightMenu() {
   const completedToShow = showAllCompleted ? filteredDone.slice(0, 20) : filteredDone.slice(0, COMPLETED_CAP)
   const hiddenCompletedCount = Math.max(0, filteredDone.length - COMPLETED_CAP)
 
+  // ── Accordion collapsed state (persisted in localStorage) ─────────────────
+  // Key: projectSlug → boolean (true = collapsed). Default: idle groups start
+  // collapsed, running/queued groups start open.
+  const [collapsedProjects, setCollapsedProjects] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rm-collapsed-projects') || '{}') }
+    catch { return {} }
+  })
+
+  const toggleProjectCollapse = useCallback((slug) => {
+    setCollapsedProjects(prev => {
+      const next = { ...prev, [slug]: !prev[slug] }
+      try { localStorage.setItem('rm-collapsed-projects', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
+  // ── Grouped missions (used when activePill === 'all') ──────────────────────
+  const groupedMissions = useMemo(() => {
+    if (activePill !== 'all') return null
+    const map = new Map()
+    for (const m of filteredMissions) {
+      const key = m.projectSlug || '__unknown__'
+      if (!map.has(key)) {
+        map.set(key, { projectSlug: key, missions: [], hasRunning: false, hasQueued: false, lastTouched: null })
+      }
+      const g = map.get(key)
+      g.missions.push(m)
+      if (m.dotStatus === 'running') g.hasRunning = true
+      if (m.dotStatus === 'queued') g.hasQueued = true
+      if (m.lastTouched && (!g.lastTouched || new Date(m.lastTouched) > new Date(g.lastTouched))) {
+        g.lastTouched = m.lastTouched
+      }
+    }
+    return [...map.values()].sort((a, b) => {
+      // Running first
+      if (a.hasRunning && !b.hasRunning) return -1
+      if (!a.hasRunning && b.hasRunning) return 1
+      // Queued second
+      if (a.hasQueued && !b.hasQueued) return -1
+      if (!a.hasQueued && b.hasQueued) return 1
+      // Most recently touched
+      if (a.lastTouched && b.lastTouched) return new Date(b.lastTouched) - new Date(a.lastTouched)
+      if (a.lastTouched) return -1
+      if (b.lastTouched) return 1
+      return a.projectSlug.localeCompare(b.projectSlug)
+    })
+  }, [activePill, filteredMissions])
+
   // Summary stats — scoped to the active pill
   const runningCount = filteredActiveTasks.filter(t => ['running', 'building', 'active'].includes(t.status)).length
   const queuedCount = filteredActiveTasks.filter(t => ['queued', 'planning', 'classifying'].includes(t.status)).length
@@ -701,17 +817,20 @@ export default function RightMenu() {
       {/* ═══════════════ TAB: MISSIONS ═══════════════════════════ */}
       {activeTab === 'missions' && (
         <>
-          {/* Summary */}
-          <SummaryBlock
-            missionCount={filteredMissions.length}
-            runningCount={runningCount}
-            queuedCount={queuedCount}
-            scopeLabel={scopeLabel}
-            lastActiveName={lastActiveName}
-            lastActiveAge={lastActiveAge}
-          />
-
-          <Divider />
+          {/* Summary — only when there's active work (hides "Quiet right now" noise) */}
+          {(runningCount + queuedCount) > 0 && (
+            <>
+              <SummaryBlock
+                missionCount={filteredMissions.length}
+                runningCount={runningCount}
+                queuedCount={queuedCount}
+                scopeLabel={scopeLabel}
+                lastActiveName={lastActiveName}
+                lastActiveAge={lastActiveAge}
+              />
+              <Divider />
+            </>
+          )}
 
           {/* Missions list — sorted by recency (last_message_at DESC) */}
           {missionsLoading && (
@@ -724,7 +843,43 @@ export default function RightMenu() {
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
-          {filteredMissions.map((m, i) => (
+          {/* ALL view: accordion grouped by project */}
+          {activePill === 'all' && groupedMissions && groupedMissions.map(group => {
+            // Default: active groups open, idle groups collapsed
+            const idleDefault = !group.hasRunning && !group.hasQueued
+            const isCollapsed = collapsedProjects.hasOwnProperty(group.projectSlug)
+              ? collapsedProjects[group.projectSlug]
+              : idleDefault
+            return (
+              <div key={group.projectSlug}>
+                <ProjectGroupHeader
+                  projectSlug={group.projectSlug}
+                  count={group.missions.length}
+                  isRunning={group.hasRunning}
+                  isQueued={group.hasQueued}
+                  isCollapsed={isCollapsed}
+                  onToggle={() => toggleProjectCollapse(group.projectSlug)}
+                />
+                {!isCollapsed && group.missions.map((m, i) => (
+                  <MissionRow
+                    key={m.slug + '-' + i}
+                    mission={m}
+                    projectSlug={m.projectSlug}
+                    dotStatus={m.dotStatus}
+                    ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+                    isCurrent={
+                      (currentMission && m.slug === currentMission) ||
+                      (currentProject && m.projectSlug === currentProject && !currentMission)
+                    }
+                    hideProject={true}
+                  />
+                ))}
+              </div>
+            )
+          })}
+
+          {/* Specific pill view: flat list (no grouping) */}
+          {activePill !== 'all' && filteredMissions.map((m, i) => (
             <MissionRow
               key={m.slug + '-' + i}
               mission={m}
@@ -735,6 +890,7 @@ export default function RightMenu() {
                 (currentMission && m.slug === currentMission) ||
                 (currentProject && m.projectSlug === currentProject && !currentMission)
               }
+              hideProject={false}
             />
           ))}
         </>
@@ -794,7 +950,7 @@ export default function RightMenu() {
 
       {/* ═══════════════ TAB: FILES ══════════════════════════════ */}
       {activeTab === 'files' && (
-        <FilesPanel projectSlug={activePill === 'all' ? currentProject : activePill} />
+        <FilesPanel projectSlug={activePill === 'all' ? (currentProject || projectsList[0] || null) : activePill} />
       )}
 
       {/* Bottom breathing room */}

@@ -179,48 +179,30 @@ function Divider() {
 function FileViewer({ file, onClose }) {
   const [textContent, setTextContent] = useState(null)
   const [loadingText, setLoadingText] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const kind = fileKind(file.name)
   const url = file.url
 
   useEffect(() => {
     if (kind !== 'text') return
     setLoadingText(true)
+    // /api/local/file returns {path, content, lastModified} — extract .content
     fetch(url)
-      .then(r => r.text())
-      .then(t => { setTextContent(t); setLoadingText(false) })
+      .then(r => r.json())
+      .then(j => { setTextContent(j.content || ''); setLoadingText(false) })
       .catch(() => { setTextContent('Could not load file.'); setLoadingText(false) })
   }, [url, kind])
 
-  return (
-    <div style={{
-      margin: '0 8px 6px',
-      borderRadius: 5,
-      background: 'rgba(15,23,42,0.6)',
-      border: '1px solid ' + C.border,
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '5px 10px',
-        borderBottom: '1px solid ' + C.border,
-      }}>
-        <span style={{ fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {file.name}
-        </span>
-        <button
-          onClick={onClose}
-          style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 13, padding: '0 0 0 8px', flexShrink: 0 }}
-        >✕</button>
-      </div>
-
-      <div style={{ maxHeight: 240, overflow: 'auto' }}>
+  // Shared content renderer — used both inline and in the expanded overlay
+  function ContentBody({ maxH }) {
+    const bodyStyle = maxH ? { maxHeight: maxH, overflow: 'auto' } : { flex: 1, overflow: 'auto' }
+    return (
+      <div style={bodyStyle}>
         {kind === 'image' && (
           <img src={url} alt={file.name} style={{ width: '100%', display: 'block' }} />
         )}
         {kind === 'video' && (
-          <video src={url} controls style={{ width: '100%', display: 'block', maxHeight: 200 }} />
+          <video src={url} controls style={{ width: '100%', display: 'block', maxHeight: expanded ? '80vh' : 200 }} />
         )}
         {kind === 'audio' && (
           <div style={{ padding: '10px' }}>
@@ -228,10 +210,10 @@ function FileViewer({ file, onClose }) {
           </div>
         )}
         {kind === 'pdf' && (
-          <iframe src={url} style={{ width: '100%', height: 220, border: 'none', display: 'block' }} title={file.name} />
+          <iframe src={url} style={{ width: '100%', height: expanded ? '80vh' : 220, border: 'none', display: 'block' }} title={file.name} />
         )}
         {kind === 'text' && (
-          <div style={{ padding: '8px 12px', fontSize: 11, color: C.text2, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+          <div style={{ padding: expanded ? '16px 20px' : '8px 12px', fontSize: expanded ? 13 : 11, color: C.text2, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
             {loadingText ? 'Loading…' : (textContent || '')}
           </div>
         )}
@@ -251,6 +233,87 @@ function FileViewer({ file, onClose }) {
           </div>
         )}
       </div>
+    )
+  }
+
+  // ── Expanded full-screen overlay ────────────────────────────────────────────
+  if (expanded) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(5,10,20,0.95)',
+        backdropFilter: 'blur(16px)',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 18px',
+          borderBottom: '1px solid ' + C.border,
+          flexShrink: 0,
+        }}>
+          <span style={{
+            fontSize: 13, color: C.text, fontFamily: "'Inter', sans-serif",
+            fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {file.name}
+          </span>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 12 }}>
+            <button
+              onClick={() => setExpanded(false)}
+              title="Collapse"
+              style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+            >⤡</button>
+            <button
+              onClick={onClose}
+              style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 14, padding: '0 0 0 4px', lineHeight: 1 }}
+            >✕</button>
+          </div>
+        </div>
+        {/* Full-height content */}
+        <ContentBody />
+      </div>
+    )
+  }
+
+  // ── Inline compact viewer ────────────────────────────────────────────────────
+  return (
+    <div style={{
+      margin: '0 8px 6px',
+      borderRadius: 5,
+      background: 'rgba(15,23,42,0.6)',
+      border: '1px solid ' + C.border,
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '5px 10px',
+        borderBottom: '1px solid ' + C.border,
+      }}>
+        <span style={{ fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {file.name}
+        </span>
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 8 }}>
+          <button
+            onClick={() => setExpanded(true)}
+            title="Expand to full view"
+            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 12, padding: '0 2px', lineHeight: 1 }}
+          >⤢</button>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 13, padding: '0 0 0 4px', lineHeight: 1 }}
+          >✕</button>
+        </div>
+      </div>
+      <ContentBody maxH={240} />
     </div>
   )
 }
@@ -389,6 +452,12 @@ export default function FilesPanel({ projectSlug }) {
     setActiveFile(prev => (prev?.name === file.name && prev?.url === file.url) ? null : file)
   }, [])
 
+  // Close open viewer when switching category filters (clean load)
+  const handleCatChange = useCallback((cat) => {
+    setActiveCat(cat)
+    setActiveFile(null)
+  }, [])
+
   const toggleFolder = useCallback((slug) => {
     setOpenFolders(prev => {
       const next = new Set(prev)
@@ -421,7 +490,7 @@ export default function FilesPanel({ projectSlug }) {
         }))
         if (!cancelled) setDocFiles(rootFiles)
 
-        // Mission folders
+        // Mission folders — open all by default so "All" shows full tree
         const missionGroups = (body.missions || []).map(m => ({
           slug: m.slug,
           files: (m.files || []).map(f => ({
@@ -432,7 +501,11 @@ export default function FilesPanel({ projectSlug }) {
             section: m.slug,
           })),
         }))
-        if (!cancelled) setMissions(missionGroups)
+        if (!cancelled) {
+          setMissions(missionGroups)
+          // Open root + every mission folder so the full tree is visible on load
+          setOpenFolders(new Set(['root', ...missionGroups.map(m => m.slug)]))
+        }
       })
       .catch(() => {})
 
@@ -462,8 +535,8 @@ export default function FilesPanel({ projectSlug }) {
   if (!projectSlug) {
     return (
       <div>
-        <CategoryFilters active={activeCat} onChange={setActiveCat} />
-        <EmptyState text="Open a project to browse its files." />
+        <CategoryFilters active={activeCat} onChange={handleCatChange} />
+        <EmptyState text="Select a project to browse its files." />
       </div>
     )
   }
@@ -471,7 +544,7 @@ export default function FilesPanel({ projectSlug }) {
   if (loading) {
     return (
       <div>
-        <CategoryFilters active={activeCat} onChange={setActiveCat} />
+        <CategoryFilters active={activeCat} onChange={handleCatChange} />
         <EmptyState text="Loading…" />
       </div>
     )
@@ -511,7 +584,7 @@ export default function FilesPanel({ projectSlug }) {
     <div>
 
       {/* ── CATEGORY FILTERS ──────────────────────────────────── */}
-      <CategoryFilters active={activeCat} onChange={setActiveCat} />
+      <CategoryFilters active={activeCat} onChange={handleCatChange} />
 
       {!hasAnything && (
         <EmptyState text="No files in this project yet." />
