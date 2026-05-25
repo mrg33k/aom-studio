@@ -76,6 +76,12 @@ export default function IntegrationsModal({ open, onClose }) {
   const [connectedMap, setConnectedMap] = useState({}) // slug -> {status, connected_at, system?, system_note?}
   const [loading, setLoading] = useState(false)
   const [serverAware, setServerAware] = useState(false)
+  // Server-returned integrations (filtered by tenant). When non-null, use this
+  // instead of the static REGISTRY so tenant-side hidden integrations don't
+  // surface. Patrik 2026-05-25: AOM-internal system integrations should not
+  // appear in any other tenant's world; server already strips them, modal
+  // just needs to respect that strip.
+  const [serverIntegrations, setServerIntegrations] = useState(null)
 
   // Load on open: try server, fall back to localStorage. Always merge localStorage
   // wins so an offline-set connection still shows up.
@@ -103,6 +109,9 @@ export default function IntegrationsModal({ open, onClose }) {
           const merged = { ...local, ...fromServer }
           setConnectedMap(merged)
           setServerAware(true)
+          // Preserve the server's per-tenant integration list (with
+          // AOM-internal entries already stripped for non-AOM tenants).
+          setServerIntegrations(data.integrations)
           // Default to Connected tab if any
           if (Object.keys(merged).length > 0) setTab('connected')
         } else if (Object.keys(local).length > 0) {
@@ -123,15 +132,20 @@ export default function IntegrationsModal({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Source of truth for the catalog: prefer the server-filtered list when we
+  // have it (so AOM-internal system integrations stay hidden for tenants);
+  // fall back to the bundled REGISTRY for anonymous / offline sessions.
+  const sourceList = serverIntegrations || REGISTRY
+
   const categories = useMemo(() => {
     const seen = new Set()
-    REGISTRY.forEach(i => seen.add(i.category))
+    sourceList.forEach(i => seen.add(i.category))
     return ['All', ...Array.from(seen)]
-  }, [])
+  }, [sourceList])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return REGISTRY.filter(i => {
+    return sourceList.filter(i => {
       const isConnected = !!connectedMap[i.slug]
       if (tab === 'connected' && !isConnected) return false
       if (tab === 'available' && isConnected) return false
@@ -139,7 +153,7 @@ export default function IntegrationsModal({ open, onClose }) {
       if (q && !i.name.toLowerCase().includes(q) && !i.category.toLowerCase().includes(q) && !i.description.toLowerCase().includes(q)) return false
       return true
     })
-  }, [tab, query, activeCategory, connectedMap])
+  }, [tab, query, activeCategory, connectedMap, sourceList])
 
   const connect = useCallback((slug, integration) => {
     // OAuth providers: fetch the start endpoint with Authorization header so the
@@ -183,7 +197,7 @@ export default function IntegrationsModal({ open, onClose }) {
   if (!open) return null
 
   const connectedCount = Object.keys(connectedMap).length
-  const availableCount = REGISTRY.length - connectedCount
+  const availableCount = Math.max(sourceList.length - connectedCount, 0)
 
   return (
     <div
