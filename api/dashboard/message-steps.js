@@ -50,6 +50,8 @@ export default async function handler(req, res) {
     `order=timestamp.desc`,
     `limit=${limit}`,
   ]
+  // Filter by client_id server-side to avoid fetching all events
+  qsParts.push(`payload->>client_id.eq.${encodeURIComponent(clientId)}`)
   if (agent) qsParts.push(`agent=eq.${encodeURIComponent(agent)}`)
 
   const url = `${SUPABASE_URL}/rest/v1/events?${qsParts.join('&')}`
