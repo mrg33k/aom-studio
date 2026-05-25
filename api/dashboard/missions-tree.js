@@ -78,6 +78,27 @@ export default async function handler(req, res) {
   // Mirror the Path A widen from useTasks.js so aom viewers see Ben tasks.
   if (clientId === 'aom') clientIds.push('ben')
 
+  // R3-isolation — build the set of project slugs this client owns so the
+  // registry loop below can skip missions from other worlds. AOM is the
+  // super-admin and sees everything (allowedProjectSlugs stays null).
+  let allowedProjectSlugs = null
+  if (clientId !== 'aom') {
+    const ownSlugs = new Set(sharedSlugs)
+    try {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&select=slug`,
+        { headers: supabaseHeaders() },
+      )
+      if (r.ok) {
+        const rows = await r.json()
+        for (const row of (rows || [])) {
+          if (row?.slug) ownSlugs.add(row.slug)
+        }
+      }
+    } catch { /* on failure: allowedProjectSlugs stays null → over-show is safer than hard error */ }
+    allowedProjectSlugs = ownSlugs
+  }
+
   // corner:mission-rooms — tasks retired 2026-05-17 (Patrik). The mission
   // registry + per-mission last_message_at is the only signal now. No more
   // task query, no more "1 in flight" labels, no more unfiled_tasks.
@@ -144,6 +165,8 @@ export default async function handler(req, res) {
   }
 
   for (const m of (missionsRegistry?.missions || [])) {
+    // Skip missions whose project belongs to a different tenant.
+    if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(m.project_slug)) continue
     const proj = getProject(m.project_slug)
     proj.missions.set(m.slug, {
       slug: m.slug,
