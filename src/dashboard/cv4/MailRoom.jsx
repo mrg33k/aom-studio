@@ -435,7 +435,7 @@ function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 980, maxHeight: '92vh',
+          width: '100%', maxWidth: 980, height: '92vh',
           display: 'flex', flexDirection: 'column',
           background: C.bg, border: '1px solid ' + C.border,
           borderRadius: 12, overflow: 'hidden',
