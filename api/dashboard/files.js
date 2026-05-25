@@ -315,7 +315,9 @@ export default async function handler(req, res) {
         }
       } catch { /* best-effort */ }
 
-      const scaffolds = await fetchScaffoldBriefs(clientId)
+      // R10-9 fix: pass null+clientId so we get every project's scaffolds in
+      // this world (was clientId alone → treated as project slug → zero hits).
+      const scaffolds = await fetchScaffoldBriefs(null, clientId)
       const seen = new Set(rows.map(r => r.filename || r.name || ''))
       const merged = [
         ...rows,
