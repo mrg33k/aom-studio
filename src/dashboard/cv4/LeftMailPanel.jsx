@@ -361,15 +361,25 @@ function BucketTabs({ active, onChange, counts }) {
 }
 
 function MailRow({ email, active, onClick }) {
+  // R14 hotfix — /api/dashboard/mail/list returns `from` as
+  // { name, email } (object), not the historical "Name <addr>" string. The
+  // earlier .match() call threw "h.match is not a function" and crashed
+  // CornerV4 the moment any populated bucket rendered, which never
+  // happened in pre-R14 screenshots because TODAY was always empty.
   const from = useMemo(() => {
-    const raw = email?.from || email?.from_name || ''
-    if (!raw) return ''
-    // "Name <addr>" → "Name". Plain "addr@x" stays.
-    const m = raw.match(/^\s*"?([^"<]+?)"?\s*<.+>\s*$/)
-    return m ? m[1].trim() : raw.trim()
+    const f = email?.from
+    if (f && typeof f === 'object') return f.name || f.email || ''
+    if (typeof f === 'string') {
+      const m = f.match(/^\s*"?([^"<]+?)"?\s*<.+>\s*$/)
+      return m ? m[1].trim() : f.trim()
+    }
+    return email?.from_name || ''
   }, [email?.from, email?.from_name])
   const subject = email?.subject || '(no subject)'
-  const preview = (email?.snippet || email?.preview || '').replace(/\s+/g, ' ').trim()
+  const previewRaw = typeof email?.snippet === 'string'
+    ? email.snippet
+    : (typeof email?.preview === 'string' ? email.preview : '')
+  const preview = previewRaw.replace(/\s+/g, ' ').trim()
   return (
     <li
       data-cv4-mail-row
