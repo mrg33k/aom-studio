@@ -41,7 +41,7 @@
       "placement": {
         "mode": "inline",
         "position": "centered",
-        "opening_prompt": "Hi \u2014 I'm Corner Support. Tell me what's going wrong with your workspace and I'll dig in.",
+        "opening_prompt": "Hi \u2014 I'm Corner Support. If something in your workspace is broken (an upload didn't go through, a page didn't load, an agent stopped replying), tell me what happened and I'll help you sort it out.",
         "theme": {
           "accent": "#E5451F",
           "bg": "#0B0F14",
