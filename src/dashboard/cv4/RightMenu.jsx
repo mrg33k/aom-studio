@@ -1271,16 +1271,22 @@ export default function RightMenu() {
     : null
 
   // ── Mission row click handler (R7-H) ────────────────────────────────────────
+  // mission.slug from missions-tree API may arrive qualified ("project:slug")
+  // or bare ("slug"). Normalize so the URL never double-prefixes.
   const onMissionClick = useCallback((mission) => {
     if (!handleSelectMission) return
-    const project = { slug: mission.projectSlug, name: mission.projectSlug }
-    const missionObj = {
-      slug: `${mission.projectSlug}:${mission.slug}`,
-      bare_slug: mission.slug,
-      name: mission.name || mission.slug,
-      project_slug: mission.projectSlug,
-    }
-    handleSelectMission(missionObj, project)
+    const rawSlug = mission.slug || ''
+    const qualified = rawSlug.includes(':') ? rawSlug : `${mission.projectSlug}:${rawSlug}`
+    const bareSlug = rawSlug.includes(':') ? rawSlug.split(':').slice(1).join(':') : rawSlug
+    handleSelectMission(
+      {
+        slug: qualified,
+        bare_slug: bareSlug,
+        name: mission.name || bareSlug,
+        project_slug: mission.projectSlug,
+      },
+      { slug: mission.projectSlug, name: mission.projectSlug },
+    )
   }, [handleSelectMission])
 
   // ── Task row click handler (R7-I) ───────────────────────────────────────────
