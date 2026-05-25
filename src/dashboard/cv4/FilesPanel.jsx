@@ -1,19 +1,13 @@
-// FilesPanel.jsx — CV4 Files tab (corner:right-menu R5)
+// FilesPanel.jsx — CV4 Files tab (corner:right-menu R6)
 //
 // Layout (top → bottom inside the Files accordion tab):
-//   MEDIA SECTION — uploaded video/audio/images for this project, sorted by type
-//   FILE BROWSER  — all files (mission docs + research + uploads), clickable in-panel
-//
-// In-panel viewer opens inline below the clicked file row:
-//   images   → <img>
-//   audio    → <audio> player
-//   video    → <video> player
-//   PDFs     → <iframe>
-//   markdown → fetched + rendered as plain text
-//   other    → download link
+//   CATEGORY FILTERS — All · Docs · Media · Sheets · PDFs
+//   BREADCRUMB       — / > missions > website
+//   FILE BROWSER     — folder tree (missions as folders, files inside)
+//     inline viewer: images/video/audio open below the clicked row
 //
 // Data sources:
-//   1. /api/dashboard/project-files?slug={slug}  — disk-based canon + research docs
+//   1. /api/dashboard/project-files?slug={slug}  — disk-based canon + research (local only)
 //   2. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
 
 import { useEffect, useState, useCallback } from 'react'
@@ -51,6 +45,13 @@ function fileKind(name) {
   return 'file'
 }
 
+function fileCategory(kind) {
+  if (['video', 'audio', 'image'].includes(kind)) return 'media'
+  if (['pdf'].includes(kind)) return 'pdfs'
+  if (['spreadsheet'].includes(kind)) return 'sheets'
+  return 'docs'  // text, doc, file, tape, canon, research-drop
+}
+
 function kindIcon(kind) {
   switch (kind) {
     case 'video':       return '▶'
@@ -60,7 +61,7 @@ function kindIcon(kind) {
     case 'text':        return '≡'
     case 'spreadsheet': return '⊞'
     case 'doc':         return '⊟'
-    default:            return '○'
+    default:            return '≡'
   }
 }
 
@@ -69,34 +70,102 @@ function kindColor(kind) {
     case 'video':  return '#f59e0b'
     case 'audio':  return '#8b5cf6'
     case 'image':  return '#10b981'
+    case 'pdf':    return '#ef4444'
+    case 'spreadsheet': return '#22c55e'
     default:       return C.muted
   }
 }
 
-// ── Section label ──────────────────────────────────────────────────────────
+// ── Category filter row ─────────────────────────────────────────────────────
 
-function SectionLabel({ children }) {
+const CATS = [
+  { key: 'all',    label: 'All'   },
+  { key: 'docs',   label: 'Docs'  },
+  { key: 'media',  label: 'Media' },
+  { key: 'sheets', label: 'Sheets'},
+  { key: 'pdfs',   label: 'PDFs'  },
+]
+
+function CategoryFilters({ active, onChange }) {
   return (
     <div style={{
-      textTransform: 'uppercase',
-      fontSize: 10,
-      fontWeight: 700,
-      color: C.muted,
-      letterSpacing: '0.12em',
-      padding: '16px 12px 6px',
-      fontFamily: "'Inter', sans-serif",
-    }}>{children}</div>
+      display: 'flex',
+      gap: 3,
+      padding: '8px 12px',
+      borderBottom: '1px solid ' + C.border,
+    }}>
+      {CATS.map(cat => (
+        <button
+          key={cat.key}
+          onClick={() => onChange(cat.key)}
+          style={{
+            flex: 1,
+            padding: '5px 0',
+            background: active === cat.key ? 'rgba(16,185,129,0.10)' : 'transparent',
+            border: '1px solid ' + (active === cat.key ? 'rgba(16,185,129,0.35)' : C.border),
+            borderRadius: 3,
+            cursor: 'pointer',
+            fontSize: 9,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            color: active === cat.key ? C.accent : C.muted,
+            fontFamily: "'JetBrains Mono', monospace",
+            transition: 'all 120ms ease',
+            whiteSpace: 'nowrap',
+          }}
+        >{cat.label}</button>
+      ))}
+    </div>
   )
 }
+
+// ── Breadcrumb ──────────────────────────────────────────────────────────────
+
+function Breadcrumb({ path, onNavigate }) {
+  if (!path || path.length === 0) return null
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 4,
+      padding: '5px 12px',
+      fontSize: 10,
+      fontFamily: "'JetBrains Mono', monospace",
+      color: C.muted,
+      flexWrap: 'wrap',
+    }}>
+      <span
+        onClick={() => onNavigate(-1)}
+        style={{ cursor: 'pointer', color: C.text2 }}
+      >📁 /</span>
+      {path.map((segment, i) => (
+        <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: C.border }}>›</span>
+          <span
+            onClick={() => onNavigate(i)}
+            style={{
+              cursor: i < path.length - 1 ? 'pointer' : 'default',
+              color: i < path.length - 1 ? C.text2 : C.text,
+            }}
+          >{segment}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// ── Empty states ────────────────────────────────────────────────────────────
 
 function EmptyState({ text }) {
   return (
     <div style={{
       fontSize: 11,
       color: C.muted,
-      padding: '4px 12px 8px',
+      padding: '8px 12px',
       fontStyle: 'italic',
       fontFamily: "'Inter', sans-serif",
+      lineHeight: 1.5,
     }}>{text}</div>
   )
 }
@@ -105,7 +174,7 @@ function Divider() {
   return <div style={{ height: 1, background: C.border, margin: '4px 0', opacity: 0.3 }} />
 }
 
-// ── In-panel viewer ────────────────────────────────────────────────────────
+// ── Inline viewer ───────────────────────────────────────────────────────────
 
 function FileViewer({ file, onClose }) {
   const [textContent, setTextContent] = useState(null)
@@ -124,18 +193,17 @@ function FileViewer({ file, onClose }) {
 
   return (
     <div style={{
-      margin: '0 8px 8px',
-      borderRadius: 6,
+      margin: '0 8px 6px',
+      borderRadius: 5,
       background: 'rgba(15,23,42,0.6)',
       border: '1px solid ' + C.border,
       overflow: 'hidden',
     }}>
-      {/* Close bar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '6px 10px',
+        padding: '5px 10px',
         borderBottom: '1px solid ' + C.border,
       }}>
         <span style={{ fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -143,44 +211,43 @@ function FileViewer({ file, onClose }) {
         </span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 14, padding: '0 0 0 8px', flexShrink: 0 }}
+          style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 13, padding: '0 0 0 8px', flexShrink: 0 }}
         >✕</button>
       </div>
 
-      {/* Content */}
-      <div style={{ maxHeight: 260, overflow: 'auto' }}>
+      <div style={{ maxHeight: 240, overflow: 'auto' }}>
         {kind === 'image' && (
           <img src={url} alt={file.name} style={{ width: '100%', display: 'block' }} />
         )}
         {kind === 'video' && (
-          <video src={url} controls style={{ width: '100%', display: 'block', maxHeight: 220 }} />
+          <video src={url} controls style={{ width: '100%', display: 'block', maxHeight: 200 }} />
         )}
         {kind === 'audio' && (
-          <div style={{ padding: '12px 10px' }}>
+          <div style={{ padding: '10px' }}>
             <audio src={url} controls style={{ width: '100%' }} />
           </div>
         )}
         {kind === 'pdf' && (
-          <iframe src={url} style={{ width: '100%', height: 240, border: 'none', display: 'block' }} title={file.name} />
+          <iframe src={url} style={{ width: '100%', height: 220, border: 'none', display: 'block' }} title={file.name} />
         )}
         {kind === 'text' && (
-          <div style={{ padding: '10px 12px', fontSize: 11, color: C.text2, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+          <div style={{ padding: '8px 12px', fontSize: 11, color: C.text2, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
             {loadingText ? 'Loading…' : (textContent || '')}
           </div>
         )}
         {(kind === 'spreadsheet' || kind === 'doc' || kind === 'file') && (
-          <div style={{ padding: '12px', textAlign: 'center' }}>
+          <div style={{ padding: '10px', textAlign: 'center' }}>
             <a href={url} target="_blank" rel="noopener noreferrer" style={{
               display: 'inline-block',
-              padding: '8px 16px',
+              padding: '7px 14px',
               background: C.accent,
               color: '#000',
               borderRadius: 4,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 600,
               textDecoration: 'none',
               fontFamily: "'Inter', sans-serif",
-            }}>Download {file.name}</a>
+            }}>Open {file.name}</a>
           </div>
         )}
       </div>
@@ -188,47 +255,9 @@ function FileViewer({ file, onClose }) {
   )
 }
 
-// ── Media chip (compact tile for images/video/audio) ──────────────────────
+// ── Single file row ─────────────────────────────────────────────────────────
 
-function MediaChip({ file, isActive, onClick }) {
-  const kind = fileKind(file.name)
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 72,
-        height: 56,
-        borderRadius: 6,
-        border: '1px solid ' + (isActive ? C.accent : C.border),
-        background: isActive ? 'rgba(16,185,129,0.08)' : 'rgba(15,23,42,0.4)',
-        cursor: 'pointer',
-        flexShrink: 0,
-        overflow: 'hidden',
-        position: 'relative',
-        transition: 'border-color 120ms',
-      }}
-    >
-      {kind === 'image' ? (
-        <img src={file.url} alt={file.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      ) : (
-        <>
-          <span style={{ fontSize: 18, color: kindColor(kind) }}>{kindIcon(kind)}</span>
-          <span style={{ fontSize: 9, color: C.muted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', padding: '0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 68 }}>
-            {file.name.replace(/\.[^.]+$/, '').slice(0, 12)}
-          </span>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ── File browser row ───────────────────────────────────────────────────────
-
-function FileRow({ file, isActive, onClick }) {
+function FileRow({ file, isActive, onClick, indent = 0 }) {
   const kind = fileKind(file.name)
   const icon = kindIcon(kind)
   const color = kindColor(kind)
@@ -243,8 +272,8 @@ function FileRow({ file, isActive, onClick }) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '6px 12px',
+          gap: 7,
+          padding: `5px 12px 5px ${12 + indent * 10}px`,
           cursor: 'pointer',
           background: isActive ? 'rgba(16,185,129,0.06)' : 'transparent',
           borderLeft: isActive ? '2px solid ' + C.accent : '2px solid transparent',
@@ -253,7 +282,21 @@ function FileRow({ file, isActive, onClick }) {
         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.s1 }}
         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
       >
-        <span style={{ fontSize: 12, color, flexShrink: 0, width: 14, textAlign: 'center' }}>{icon}</span>
+        {/* Type icon tile */}
+        <div style={{
+          width: 16,
+          height: 16,
+          borderRadius: 2,
+          background: 'rgba(51,65,85,0.25)',
+          border: '1px solid ' + C.border,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 8,
+          color,
+        }}>{icon}</div>
+
         <span style={{
           flex: 1, minWidth: 0,
           fontSize: 12,
@@ -262,9 +305,15 @@ function FileRow({ file, isActive, onClick }) {
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           fontFamily: "'Inter', sans-serif",
         }}>{displayName}</span>
+
         {file.age && (
           <span style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
             {file.age}
+          </span>
+        )}
+        {file.size && !file.age && (
+          <span style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+            {file.size}
           </span>
         )}
       </div>
@@ -275,19 +324,78 @@ function FileRow({ file, isActive, onClick }) {
   )
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
+// ── Folder header (mission slug) ────────────────────────────────────────────
+
+function FolderRow({ label, fileCount, isOpen, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '5px 12px',
+        cursor: 'pointer',
+        borderLeft: isOpen ? '2px solid rgba(16,185,129,0.35)' : '2px solid transparent',
+        background: isOpen ? 'rgba(16,185,129,0.03)' : 'transparent',
+        transition: 'background 120ms',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = isOpen ? 'rgba(16,185,129,0.05)' : 'rgba(30,41,59,0.4)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = isOpen ? 'rgba(16,185,129,0.03)' : 'transparent' }}
+    >
+      <div style={{
+        width: 16,
+        height: 16,
+        borderRadius: 2,
+        background: 'rgba(16,185,129,0.10)',
+        border: '1px solid rgba(16,185,129,0.25)',
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 8,
+        color: C.accent,
+      }}>📁</div>
+      <span style={{
+        flex: 1, minWidth: 0,
+        fontSize: 12,
+        fontWeight: 500,
+        color: C.accent,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        fontFamily: "'Inter', sans-serif",
+      }}>{label}</span>
+      <span style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
+        {isOpen ? '▾' : '▸'} {fileCount}
+      </span>
+    </div>
+  )
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
 
 export default function FilesPanel({ projectSlug }) {
   const { worldId } = useCornerAuth()
-  const [docFiles, setDocFiles] = useState([])
+  const [docFiles, setDocFiles] = useState([])    // { name, url, age, kind, section }
   const [uploadedFiles, setUploadedFiles] = useState([])
   const [loading, setLoading] = useState(false)
   const [activeFile, setActiveFile] = useState(null)
+  const [activeCat, setActiveCat] = useState('all')
+  const [openFolders, setOpenFolders] = useState(new Set(['root']))  // open by default
+  const [missions, setMissions] = useState([])  // [{slug, files:[]}]
 
   const world = worldId || 'aom'
 
   const handleFileClick = useCallback((file) => {
     setActiveFile(prev => (prev?.name === file.name && prev?.url === file.url) ? null : file)
+  }, [])
+
+  const toggleFolder = useCallback((slug) => {
+    setOpenFolders(prev => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
   }, [])
 
   useEffect(() => {
@@ -296,40 +404,39 @@ export default function FilesPanel({ projectSlug }) {
     setLoading(true)
     setDocFiles([])
     setUploadedFiles([])
+    setMissions([])
 
     // Fetch 1: disk-based canon + research docs
     const docsPromise = authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(projectSlug)}`)
       .then(r => r.ok ? r.json() : null)
       .then(body => {
         if (cancelled || !body) return
-        const all = []
-        // Project-level files
-        for (const f of (body.files || [])) {
-          all.push({
+        // Root-level files
+        const rootFiles = (body.files || []).map(f => ({
+          name: f.name,
+          url: `/api/local/file?path=${encodeURIComponent(f.path)}`,
+          age: relativeAge(f.last_modified),
+          kind: fileKind(f.name),
+          section: 'root',
+        }))
+        if (!cancelled) setDocFiles(rootFiles)
+
+        // Mission folders
+        const missionGroups = (body.missions || []).map(m => ({
+          slug: m.slug,
+          files: (m.files || []).map(f => ({
             name: f.name,
             url: `/api/local/file?path=${encodeURIComponent(f.path)}`,
             age: relativeAge(f.last_modified),
-            kind: f.kind,
-            section: 'project',
-          })
-        }
-        // Mission files
-        for (const m of (body.missions || [])) {
-          for (const f of (m.files || [])) {
-            all.push({
-              name: `${m.slug}/${f.name}`,
-              url: `/api/local/file?path=${encodeURIComponent(f.path)}`,
-              age: relativeAge(f.last_modified),
-              kind: f.kind,
-              section: m.slug,
-            })
-          }
-        }
-        if (!cancelled) setDocFiles(all)
+            kind: fileKind(f.name),
+            section: m.slug,
+          })),
+        }))
+        if (!cancelled) setMissions(missionGroups)
       })
       .catch(() => {})
 
-    // Fetch 2: Supabase Storage uploads for this project
+    // Fetch 2: Supabase Storage uploads
     const uploadsPromise = authFetch(`/api/dashboard/files?type=images&prefix=${encodeURIComponent(world + '/' + projectSlug + '/')}`)
       .then(r => r.ok ? r.json() : null)
       .then(body => {
@@ -353,67 +460,165 @@ export default function FilesPanel({ projectSlug }) {
   }, [projectSlug, world])
 
   if (!projectSlug) {
-    return <EmptyState text="Open a project to see files." />
+    return (
+      <div>
+        <CategoryFilters active={activeCat} onChange={setActiveCat} />
+        <EmptyState text="Open a project to browse its files." />
+      </div>
+    )
   }
 
   if (loading) {
-    return <EmptyState text="Loading…" />
+    return (
+      <div>
+        <CategoryFilters active={activeCat} onChange={setActiveCat} />
+        <EmptyState text="Loading…" />
+      </div>
+    )
   }
 
-  // Split uploaded files into media vs others
-  const mediaFiles = uploadedFiles.filter(f => ['video', 'audio', 'image'].includes(f.kind))
-  const uploadedDocs = uploadedFiles.filter(f => !['video', 'audio', 'image'].includes(f.kind))
+  // All uploads: split media vs docs
+  const mediaUploads = uploadedFiles.filter(f => ['video', 'audio', 'image'].includes(f.kind))
+  const docUploads   = uploadedFiles.filter(f => !['video', 'audio', 'image'].includes(f.kind))
 
-  // All browser files: docs first, then non-media uploads
-  const browserFiles = [...docFiles, ...uploadedDocs]
+  // Merge doc uploads into root files
+  const rootFiles = [...docFiles, ...docUploads]
 
-  const hasMedia = mediaFiles.length > 0
-  const hasBrowser = browserFiles.length > 0
+  // Flatten all files for counting
+  const allFiles = [
+    ...rootFiles,
+    ...mediaUploads,
+    ...missions.flatMap(m => m.files),
+  ]
 
-  if (!hasMedia && !hasBrowser) {
-    return <EmptyState text="No files yet." />
+  // Filter by active category
+  function matchesCat(file) {
+    if (activeCat === 'all') return true
+    return fileCategory(file.kind) === activeCat
   }
+
+  const filteredRoot     = rootFiles.filter(matchesCat)
+  const filteredMedia    = mediaUploads.filter(matchesCat)
+  const filteredMissions = missions.map(m => ({
+    ...m,
+    files: m.files.filter(matchesCat),
+  })).filter(m => m.files.length > 0)
+
+  const hasAnything = allFiles.length > 0
+  const hasFiltered = filteredRoot.length > 0 || filteredMedia.length > 0 || filteredMissions.length > 0
 
   return (
     <div>
-      {/* ── MEDIA SECTION ──────────────────────────── */}
-      {hasMedia && (
-        <>
-          <SectionLabel>Media</SectionLabel>
-          <div style={{
-            display: 'flex',
-            gap: 6,
-            padding: '0 12px 12px',
-            overflowX: 'auto',
-            flexWrap: 'nowrap',
-          }}>
-            {mediaFiles.map(f => (
-              <MediaChip
-                key={f.url}
-                file={f}
-                isActive={activeFile?.url === f.url}
-                onClick={() => handleFileClick(f)}
-              />
-            ))}
-          </div>
-          {activeFile && ['video', 'audio', 'image'].includes(fileKind(activeFile.name)) && (
-            <FileViewer file={activeFile} onClose={() => setActiveFile(null)} />
-          )}
-          <Divider />
-        </>
+
+      {/* ── CATEGORY FILTERS ──────────────────────────────────── */}
+      <CategoryFilters active={activeCat} onChange={setActiveCat} />
+
+      {!hasAnything && (
+        <EmptyState text="No files in this project yet." />
       )}
 
-      {/* ── FILE BROWSER ───────────────────────────── */}
-      {hasBrowser && (
+      {hasAnything && !hasFiltered && (
+        <EmptyState text={`No ${activeCat} files in this project.`} />
+      )}
+
+      {hasFiltered && (
         <>
-          <SectionLabel>Files</SectionLabel>
-          {browserFiles.map(f => (
-            <FileRow
-              key={f.url}
-              file={f}
-              isActive={activeFile?.url === f.url && !['video', 'audio', 'image'].includes(fileKind(f.name))}
-              onClick={() => handleFileClick(f)}
-            />
+          {/* ── MEDIA (uploads: video/audio/image) ─────────────── */}
+          {filteredMedia.length > 0 && (activeCat === 'all' || activeCat === 'media') && (
+            <>
+              <div style={{
+                textTransform: 'uppercase', fontSize: 9, fontWeight: 700,
+                color: C.muted, letterSpacing: '0.12em',
+                padding: '10px 12px 5px',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>Media</div>
+              <div style={{
+                display: 'flex',
+                gap: 5,
+                padding: '0 12px 10px',
+                overflowX: 'auto',
+                flexWrap: 'nowrap',
+              }}>
+                {filteredMedia.map(f => (
+                  <div
+                    key={f.url}
+                    onClick={() => handleFileClick(f)}
+                    style={{
+                      width: 68,
+                      height: 52,
+                      borderRadius: 5,
+                      border: '1px solid ' + (activeFile?.url === f.url ? C.accent : C.border),
+                      background: activeFile?.url === f.url ? 'rgba(16,185,129,0.08)' : 'rgba(15,23,42,0.4)',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'border-color 120ms',
+                    }}
+                  >
+                    {f.kind === 'image' ? (
+                      <img src={f.url} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 16, color: kindColor(f.kind) }}>{kindIcon(f.kind)}</span>
+                        <span style={{ fontSize: 8, color: C.muted, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", padding: '0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 64, textAlign: 'center' }}>
+                          {f.name.replace(/\.[^.]+$/, '').slice(0, 11)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {activeFile && ['video', 'audio', 'image'].includes(fileKind(activeFile.name)) && mediaUploads.some(f => f.url === activeFile.url) && (
+                <FileViewer file={activeFile} onClose={() => setActiveFile(null)} />
+              )}
+              <Divider />
+            </>
+          )}
+
+          {/* ── ROOT FILES ─────────────────────────────────────── */}
+          {filteredRoot.length > 0 && (
+            <>
+              <FolderRow
+                label={projectSlug}
+                fileCount={filteredRoot.length}
+                isOpen={openFolders.has('root')}
+                onClick={() => toggleFolder('root')}
+              />
+              {openFolders.has('root') && filteredRoot.map(f => (
+                <FileRow
+                  key={f.url}
+                  file={f}
+                  isActive={activeFile?.url === f.url}
+                  onClick={() => handleFileClick(f)}
+                  indent={1}
+                />
+              ))}
+            </>
+          )}
+
+          {/* ── MISSION FOLDERS ────────────────────────────────── */}
+          {filteredMissions.map(m => (
+            <div key={m.slug}>
+              <FolderRow
+                label={m.slug}
+                fileCount={m.files.length}
+                isOpen={openFolders.has(m.slug)}
+                onClick={() => toggleFolder(m.slug)}
+              />
+              {openFolders.has(m.slug) && m.files.map(f => (
+                <FileRow
+                  key={f.url}
+                  file={f}
+                  isActive={activeFile?.url === f.url}
+                  onClick={() => handleFileClick(f)}
+                  indent={1}
+                />
+              ))}
+            </div>
           ))}
         </>
       )}
