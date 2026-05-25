@@ -12,6 +12,7 @@ import { C } from '../lib/cv3Colors.js'
 import missionsData from '../data/missions.json'
 import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 import { authFetch } from '../lib/authFetch.js'
+import LeftMailPanel from './LeftMailPanel.jsx'
 
 const PANEL_WIDTH = 300
 const MENU = {
@@ -32,6 +33,8 @@ export default function CV4Drawer({
   selectedAgentSlug,
   selectedProjectSlug,
   activeTool = null,
+  selectedMailId = null,
+  onSelectMail,
   onSelectTool,
   onSelectAgent,
   onSelectProject,
@@ -207,6 +210,8 @@ export default function CV4Drawer({
       agents={agents}
       worldId={worldId}
       activeTool={activeTool}
+      selectedMailId={selectedMailId}
+      onSelectMail={onSelectMail}
       onSelectTool={onSelectTool}
       onSelectAgent={onSelectAgent}
       onSelectProject={onSelectProject}
@@ -382,6 +387,8 @@ function DrawerBody({
   agents,
   worldId,
   activeTool,
+  selectedMailId,
+  onSelectMail,
   onSelectTool,
   onSelectAgent,
   onSelectProject,
@@ -402,11 +409,13 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* R9 (2026-05-25) — Mail as the lead tool. Projects + Agents nest under it
-          visually so the user sees their work as filed under their inbox. */}
-      <MailHero
-        active={activeTool === 'mail'}
-        onClick={() => { onSelectTool?.('mail'); onClose() }}
+      {/* R10 (2026-05-25) — Mail Room lives in the left rail.
+          Disconnected: amber Connect Gmail hero (kicks OAuth start).
+          Connected: 5-bucket tab strip + inline email list. Clicking an
+          email pins it as a chat chip on the EA via onSelectMail. */}
+      <LeftMailPanel
+        selectedMailId={selectedMailId}
+        onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
       />
 
       <NestedUnderMail>
@@ -859,73 +868,8 @@ function DocIcon() {
   )
 }
 
-// R9 (2026-05-25) — Mail hero. Bigger, amber-accented top button to encourage
-// users to wire up Gmail. Mirrors the visual weight ChatGPT gives "New chat".
-function MailHero({ active, onClick }) {
-  return (
-    <button
-      type="button"
-      data-cv4-mail-hero
-      data-active={active ? 'true' : 'false'}
-      onClick={onClick}
-      style={{
-        width: '100%',
-        display: 'flex', alignItems: 'center', gap: 11,
-        padding: '11px 12px',
-        background: active ? 'rgba(234,179,8,0.12)' : 'rgba(234,179,8,0.04)',
-        border: `1px solid ${active ? 'rgba(234,179,8,0.45)' : 'rgba(234,179,8,0.20)'}`,
-        borderRadius: 8,
-        margin: '6px 2px 10px',
-        cursor: 'pointer',
-        textAlign: 'left',
-        minWidth: 0,
-        boxShadow: active ? '0 0 0 3px rgba(234,179,8,0.06)' : 'none',
-        transition: 'background 0.12s, border-color 0.12s',
-      }}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'rgba(234,179,8,0.08)'
-          e.currentTarget.style.borderColor = 'rgba(234,179,8,0.35)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'rgba(234,179,8,0.04)'
-          e.currentTarget.style.borderColor = 'rgba(234,179,8,0.20)'
-        }
-      }}
-    >
-      <div style={{
-        width: 30, height: 30, borderRadius: 6,
-        background: 'rgba(234,179,8,0.18)',
-        border: '1px solid rgba(234,179,8,0.32)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: MENU.amber,
-        flexShrink: 0,
-      }}>
-        <MailIcon />
-      </div>
-      <span style={{
-        display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1,
-      }}>
-        <span style={{
-          fontFamily: MENU.displayFont, fontSize: 17, lineHeight: 1.1,
-          color: C.text,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>Mail</span>
-        <span style={{
-          fontSize: 9, fontWeight: 700, color: C.dim,
-          letterSpacing: '0.10em', textTransform: 'uppercase',
-          fontFamily: MENU.monoFont,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>Inbox · Connect Gmail</span>
-      </span>
-    </button>
-  )
-}
-
-// R9 — Visual nest. Projects + Agents are filed under Mail. A subtle left rule
-// + indent communicates the hierarchy without shouting.
+// R9/R10 — Visual nest. Projects + Agents are filed under Mail. A subtle
+// left rule + indent communicates the hierarchy without shouting.
 function NestedUnderMail({ children }) {
   return (
     <div style={{
@@ -944,46 +888,6 @@ function NestedUnderMail({ children }) {
       }}>Filed under Mail</div>
       {children}
     </div>
-  )
-}
-
-function ToolRow({ icon, label, active, onClick }) {
-  return (
-    <div
-      data-row
-      data-active={active ? 'true' : 'false'}
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '4px 14px',
-        cursor: 'pointer',
-      }}
-    >
-      <div style={{
-        width: 20, height: 20, borderRadius: 4, flexShrink: 0,
-        background: active ? 'rgba(234,179,8,0.12)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${active ? 'rgba(234,179,8,0.35)' : 'rgba(255,255,255,0.08)'}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: active ? MENU.amber : C.muted,
-      }}>
-        {icon}
-      </div>
-      <span style={{
-        fontSize: 13, fontWeight: 500, color: active ? C.text : C.text2,
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        flex: 1,
-        fontFamily: MENU.bodyFont,
-      }}>{label}</span>
-    </div>
-  )
-}
-
-function MailIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <rect x="3" y="5" width="18" height="14" rx="2"/>
-      <polyline points="3 7 12 13 21 7"/>
-    </svg>
   )
 }
 
