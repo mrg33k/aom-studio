@@ -21,7 +21,23 @@ export const OAUTH_PROVIDERS = {
       'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/gmail.send',
     ],
-    extraAuthParams: { access_type: 'offline', prompt: 'consent' },
+    // requiredScopes — the strict subset the connection is useless without.
+    // openid/email/profile are sign-in only; without gmail.modify the API
+    // can't read mail and without gmail.send it can't reply. If Google's
+    // consent screen returned without these (e.g. user skipped "Select all"
+    // on the granular permissions page), the callback throws the connection
+    // away instead of marking it connected.
+    requiredScopes: [
+      'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/gmail.send',
+    ],
+    extraAuthParams: {
+      access_type: 'offline',
+      prompt: 'consent',
+      // include_granted_scopes lets a re-auth keep previously granted scopes
+      // while adding any missing ones — minimises consent friction on retry.
+      include_granted_scopes: 'true',
+    },
     envPrefix: 'GOOGLE',
   },
   'google-calendar': {
