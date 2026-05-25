@@ -1,0 +1,33 @@
+{
+  "$schema": "see scripts/make-embed.py and .claude/skills/embeddable-agents/SKILL.md for the full shape and the gotchas it guards.",
+  "embeds": {
+    "emb_sr_website": {
+      "embed_id": "emb_sr_website",
+      "surface_name": "Space Rising \u2014 Website Mission",
+      "active": true,
+      "host_allowlist": [
+        "https://www.aheadofmarket.com",
+        "https://aheadofmarket.com",
+        "http://localhost:3000",
+        "http://localhost:5173"
+      ],
+      "placement": {
+        "mode": "inline",
+        "position": "centered",
+        "opening_prompt": "Hi \u2014 I'm the Space Rising website EA. I know the SRW mission, the 8 pages live at /srw, and what's still open (team photos, sponsor logos, source links, event dates). What are we working on?",
+        "theme": {
+          "accent": "#E5451F",
+          "bg": "#0B0F14",
+          "label": "Space Rising \u2014 Website",
+          "font_display": "Oswald"
+        }
+      },
+      "routing": {
+        "agent": "elon",
+        "project": "space-rising",
+        "mission_slug": "space-rising:website",
+        "client_id": "aom"
+      }
+    }
+  }
+}

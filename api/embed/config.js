@@ -1,46 +1,17 @@
 // GET /api/embed/config?id=<embed_id>
 //
-// Returns the public-safe placement config for a widget. Hardcoded registry
-// for the R0 test page; future rounds move to embed_configs Supabase table.
-// Never returns the context_overlay or secrets -- the widget renders with
-// surface_name + placement only.
+// Returns the public-safe placement config for a widget. Reads the registry
+// from api/embed/_embeds.json so new embeds are a JSON-only change — no code
+// edits, no merge conflicts when multiple agents add embeds in parallel.
+//
+// Never returns the context_overlay or secrets — the widget renders with
+// surface_name + placement only. Routing (agent / project / mission_slug)
+// lives in REGISTRY but is also non-public; it's consumed server-side by
+// chat.js, messages.js, steps.js.
 
-const REGISTRY = {
-  emb_sr_website: {
-    embed_id: 'emb_sr_website',
-    surface_name: 'Space Rising — Website Mission',
-    active: true,
-    host_allowlist: [
-      'https://www.aheadofmarket.com',
-      'https://aheadofmarket.com',
-      'http://localhost:3000',
-      'http://localhost:5173',
-    ],
-    placement: {
-      mode: 'inline',
-      position: 'centered',
-      opening_prompt:
-        "Hi — I'm the Space Rising website EA. I know the SRW mission, the 8 pages live at /srw, and what's still open (team photos, sponsor logos, source links, event dates). What are we working on?",
-      theme: {
-        accent: '#E5451F',
-        bg: '#0B0F14',
-        label: 'Space Rising — Website',
-        font_display: 'Oswald',
-      },
-    },
-    routing: {
-      // Mirrors real SR website mission room writes: agent='elon' (the EA
-      // wearing the SR website hat), project='space-rising', and
-      // metadata.mission_slug='space-rising:website'. This is what the
-      // dashboard mission-room view filters on AND what the listener routes
-      // (elon-relay tmux is the target session).
-      agent: 'elon',
-      project: 'space-rising',
-      mission_slug: 'space-rising:website',
-      client_id: 'aom',
-    },
-  },
-}
+import embedsFile from './_embeds.json' with { type: 'json' }
+
+const REGISTRY = embedsFile.embeds || {}
 
 export default function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
