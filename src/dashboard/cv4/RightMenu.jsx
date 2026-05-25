@@ -1366,6 +1366,12 @@ export default function RightMenu() {
   const currentProject = conversationTarget?.type === 'project' ? conversationTarget.slug : null
   const inAgentRoom = !!selectedAgent || conversationTarget?.type === 'agent'
 
+  // Optimistic state — new-in-session projects / missions land here so they
+  // appear in the rail before missions-tree / projects-list re-fetches.
+  // MUST be declared BEFORE the useMemos that consume them (TDZ guard).
+  const [pendingProjects, setPendingProjects] = useState([])
+  const [pendingMissions, setPendingMissions] = useState([])
+
   // Project pills derived from missions + pending (new-in-session) projects.
   const [activePill, setActivePill] = useState('all')
   const projectsList = useMemo(() => {
@@ -1436,12 +1442,8 @@ export default function RightMenu() {
     })
   }, [conversationTarget, worldId])
 
-  // Optimistic project list — new projects created in-session land here so
-  // the pill appears before missions-tree picks them up.
-  const [pendingProjects, setPendingProjects] = useState([])
-  // Optimistic missions — new missions created in-session land here so they
-  // appear in their project group before missions-tree re-fetches.
-  const [pendingMissions, setPendingMissions] = useState([])
+  // (pendingProjects + pendingMissions declared earlier — moved above the
+  // projectsList / effectiveMissions useMemos to avoid TDZ on minified build.)
 
   const handleCreateProjectInline = useCallback((slug, name) => {
     setPendingProjects(prev => prev.some(p => p === slug) ? prev : [...prev, slug])
