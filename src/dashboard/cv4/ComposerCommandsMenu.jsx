@@ -57,6 +57,12 @@ export default function ComposerCommandsMenu({
   const selectedAgentRecord = agents?.find(a => String(a?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
     || agents?.find(a => a?.slug === selectedAgent?.slug)
   const isSuperAgent = Boolean(selectedAgentRecord?.is_super || selectedAgent?.is_super)
+  // Tenant EAs (is_ea=true) also get the reset button, not just AOM super-agents.
+  // Karen, Tim, Taryn — every tester world's EA — needs a way to clear a stuck
+  // bridge session themselves. Without this gate, the row only showed for AOM
+  // super-agents and external testers had no reset path.
+  const isAgentEa = Boolean(selectedAgentRecord?.is_ea || selectedAgent?.is_ea)
+  const canResetAgent = isSuperAgent || isAgentEa
   const hasAgent = Boolean(selectedAgent?.slug)
 
   const [clearStage, setClearStage] = useState('idle')
@@ -232,7 +238,7 @@ export default function ComposerCommandsMenu({
               )}
               {/* Super-agent only: clear context. Kept available but rendered
                   as a quieter destructive option above settings. */}
-              {hasAgent && isSuperAgent && (
+              {hasAgent && canResetAgent && (
                 clearStage === 'confirm' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px' }}>
                     <span style={{ fontSize: 11, color: '#F87171', flex: 1 }}>Clear agent context?</span>
