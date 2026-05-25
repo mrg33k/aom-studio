@@ -160,11 +160,9 @@ window.CURRICULUM = {
     },
 
     // Topic video — Roblox dev day
-    // Q8QZUHf9hWc = Uplift Games studio intro (the team behind Adopt Me).
-    // Verified embeddable 2026-05-25; the prior pick (KdaCdfXMSCk) errored 150.
     topicVideo: {
       title: 'How a Roblox studio actually ships a game',
-      ytId: 'Q8QZUHf9hWc',
+      ytId: 'KdaCdfXMSCk',
       // Fallback summary if the video can't embed (same content in text)
       summary: [
         "Most Roblox studios that build hit games aren't massive companies — they're tight teams of 2 to 6 people. Adopt Me, one of the platform's biggest games ever, started with two teenagers who taught themselves to code.",
