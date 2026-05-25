@@ -88,7 +88,7 @@ function scanDir(parentDir, projectSlug) {
       raw_slug: e.name,
       project_slug: projectSlug,
       workstream,
-      name: deriveDisplayName(e.name),
+      name: fm.name || deriveDisplayName(e.name),
       status,
       is_done: isDoneStatus(status),
       last_updated: lastUpdated,
