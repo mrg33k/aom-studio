@@ -244,18 +244,13 @@ export default function CV4Drawer({
           padding: '14px 16px 12px',
           borderBottom: '1px solid ' + C.border,
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{
               fontFamily: MENU.displayFont,
               fontSize: 22,
               lineHeight: 1,
               color: C.text,
             }}>Explorer</span>
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: C.dim,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              fontFamily: MENU.monoFont,
-            }}>Mail · Projects · Agents</span>
           </div>
           <button
             data-cv4-refresh-btn
@@ -323,18 +318,13 @@ export default function CV4Drawer({
           padding: '14px 16px 12px',
           borderBottom: '1px solid ' + C.border,
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{
               fontFamily: MENU.displayFont,
               fontSize: 22,
               lineHeight: 1,
               color: C.text,
             }}>Explorer</span>
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: C.dim,
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              fontFamily: MENU.monoFont,
-            }}>Mail · Projects · Agents</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
@@ -408,6 +398,23 @@ function DrawerBody({
         onSelectAgent={onSelectAgent}
         onClose={onClose}
       />
+
+      {/* R11 (2026-05-25) — Agents sit above Mail so the people you talk to
+          read first; Mail Room follows; Projects file under Mail. */}
+      <TreeSection title="Agents">
+        {agents.length === 0 ? (
+          <Empty label="No agents" />
+        ) : (
+          agents.map(a => (
+            <AgentRow
+              key={a.slug}
+              agent={a}
+              active={selectedAgentSlug === a.slug}
+              onClick={() => { onSelectAgent?.(a); onClose() }}
+            />
+          ))
+        )}
+      </TreeSection>
 
       {/* R10 (2026-05-25) — Mail Room lives in the left rail.
           Disconnected: amber Connect Gmail hero (kicks OAuth start).
@@ -514,20 +521,6 @@ function DrawerBody({
         )}
       </TreeSection>
 
-      <TreeSection title="Agents">
-        {agents.length === 0 ? (
-          <Empty label="No agents" />
-        ) : (
-          agents.map(a => (
-            <AgentRow
-              key={a.slug}
-              agent={a}
-              active={selectedAgentSlug === a.slug}
-              onClick={() => { onSelectAgent?.(a); onClose() }}
-            />
-          ))
-        )}
-      </TreeSection>
       </NestedUnderMail>
 
       <TreeSection title="Account">
