@@ -180,22 +180,39 @@ async function upsertConnection({ userId, slug, tokenBlob, providerProfile, work
     return { ok: true }
   }
 
-  // User-owned: existing on-conflict on the partial unique (user_id, slug).
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?on_conflict=user_id,integration_slug`,
-    {
-      method: 'POST',
-      headers: {
-        ...svcHeaders,
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify(body),
-    },
+  // R12 (2026-05-25) — User-owned: read-then-write pattern. The original code
+  // used `?on_conflict=user_id,integration_slug` but the account_integrations
+  // table doesn't actually have a unique constraint on (user_id,
+  // integration_slug) — Supabase events showed every user-owned upsert
+  // failing with Postgres 42P10 ("no unique or exclusion constraint
+  // matching the ON CONFLICT specification"). This mirrors the workspace
+  // branch above: look up the existing row by (user_id, slug), PATCH if
+  // present, POST if not. No schema dependency.
+  const existing = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}&select=id&limit=1`,
+    { headers: svcHeaders },
   )
+  const existingRow = existing.ok ? (await existing.json())[0] : null
+  if (existingRow) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${existingRow.id}`, {
+      method: 'PATCH',
+      headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(body),
+    })
+    if (!r.ok) {
+      const text = await r.text().catch(() => '')
+      return { ok: false, error: `supabase user-patch ${r.status}: ${text.slice(0, 200)}` }
+    }
+    return { ok: true }
+  }
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations`, {
+    method: 'POST',
+    headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify(body),
+  })
   if (!r.ok) {
     const text = await r.text().catch(() => '')
-    return { ok: false, error: `supabase upsert ${r.status}: ${text.slice(0, 200)}` }
+    return { ok: false, error: `supabase user-insert ${r.status}: ${text.slice(0, 200)}` }
   }
   return { ok: true }
 }
