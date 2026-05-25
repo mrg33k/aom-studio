@@ -17,6 +17,8 @@
     { "source": "/cv4/projects/:path*", "destination": "/index.html" },
     { "source": "/cv4-static", "destination": "/cv4-static/views/home.html" },
     { "source": "/cv4-static/views/:path*", "destination": "/cv4-static/views/:path*" },
+    { "source": "/summerschool", "destination": "/summerschool/index.html" },
+    { "source": "/summerschool/:path*", "destination": "/summerschool/:path*" },
     { "source": "/brand", "destination": "/index.html" },
     { "source": "/brand/:path*", "destination": "/index.html" },
     { "source": "/brands", "destination": "/index.html" },
