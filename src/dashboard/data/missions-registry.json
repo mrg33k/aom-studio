@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T08:31:04.588Z",
+  "generated_at": "2026-05-25T11:44:20.492Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -420,6 +420,17 @@
       "path": "corner/missions/stability-checkpoint"
     },
     {
+      "slug": "corner:support",
+      "raw_slug": "support",
+      "project_slug": "corner",
+      "workstream": "support",
+      "name": "Support",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/support"
+    },
+    {
       "slug": "corner:tenant-isolation",
       "raw_slug": "tenant-isolation",
       "project_slug": "corner",
@@ -473,6 +484,17 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/voice-chat"
+    },
+    {
+      "slug": "aheadofmarket.com:summerschool",
+      "raw_slug": "summerschool",
+      "project_slug": "aheadofmarket.com",
+      "workstream": null,
+      "name": "Summerschool",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/summerschool"
     },
     {
       "slug": "ambition-mechanical:ambition-social-clips",
@@ -1061,8 +1083,14 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 43,
-      "in_flight": 43,
+      "total": 44,
+      "in_flight": 44,
+      "done": 0
+    },
+    {
+      "slug": "aheadofmarket.com",
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
