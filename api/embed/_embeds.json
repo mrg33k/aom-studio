@@ -28,6 +28,33 @@
         "mission_slug": "space-rising:website",
         "client_id": "aom"
       }
+    },
+    "emb_corner_support": {
+      "embed_id": "emb_corner_support",
+      "surface_name": "Corner Support",
+      "active": true,
+      "host_allowlist": [
+        "https://www.aheadofmarket.com",
+        "https://aheadofmarket.com",
+        "http://localhost:3000"
+      ],
+      "placement": {
+        "mode": "inline",
+        "position": "centered",
+        "opening_prompt": "Hi \u2014 I'm Corner Support. Tell me what's going wrong with your workspace and I'll dig in.",
+        "theme": {
+          "accent": "#E5451F",
+          "bg": "#0B0F14",
+          "label": "Corner Support",
+          "font_display": "Instrument Serif"
+        }
+      },
+      "routing": {
+        "agent": "elon",
+        "client_id": "aom",
+        "project": null,
+        "mission_slug": null
+      }
     }
   }
 }
