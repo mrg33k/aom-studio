@@ -113,8 +113,17 @@ window.SSMod = (function () {
     const p = day().passage;
     const [a, b] = block.slice || [0, p.paragraphs.length];
     const chunk = p.paragraphs.slice(a, b);
-    // chunk 1: first 2 Qs. chunk 2: last 2 Qs (including synthesis question).
-    const qs = a === 0 ? p.questions.slice(0, 2) : p.questions.slice(2);
+    // Distribute Qs across chunks proportionally. With 3 chunks + 4 Qs:
+    //  chunk 0 (slice [0,1]) → Qs [0]      (1 Q)
+    //  chunk 1 (slice [1,2]) → Qs [1, 2]   (2 Qs)
+    //  chunk 2 (slice [2,3]) → Qs [3]      (1 Q — the synthesis)
+    // With 2 chunks: 0 gets Qs 0-1, last gets Qs 2-3 (synthesis).
+    const totalChunks = Math.ceil(p.paragraphs.length / Math.max(1, b - a));
+    let qs;
+    if (a === 0) qs = p.questions.slice(0, Math.max(1, Math.floor(p.questions.length / totalChunks)));
+    else if (b >= p.paragraphs.length) qs = p.questions.slice(-Math.max(1, Math.floor(p.questions.length / totalChunks)));
+    else qs = p.questions.slice(Math.floor(p.questions.length / totalChunks), -Math.floor(p.questions.length / totalChunks));
+    if (!qs.length) qs = p.questions.slice(-2);  // safety
 
     host.innerHTML = `
       ${topRail((a / p.paragraphs.length) * 100 || 30, `chunk ${a === 0 ? '1' : '2'} of 2`)}
