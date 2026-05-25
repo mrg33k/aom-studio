@@ -237,27 +237,100 @@ function ConnectHero({ state }) {
 // ── CONNECTED PANEL ─────────────────────────────────────────────────────
 function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading, selectedMailId, onSelectMail }) {
   const headerEmail = connection?.account_email
+  // R10-4: token-expired heuristic — when the connected panel shows zero
+  // counts across every bucket AND no emails in the active list, the token is
+  // likely stale. Surface a Reconnect button so Patrik can re-OAuth without
+  // hunting through settings.
+  const totalCount = Object.values(counts || {}).reduce((a, b) => a + (Number(b) || 0), 0)
+  const looksStale = totalCount === 0 && !loading && emails.length === 0
+
+  async function kickOAuth() {
+    try {
+      const r = await authFetch('/api/integrations/oauth/start?slug=gmail')
+      if (!r.ok) return
+      const body = await r.json()
+      if (body?.authUrl) window.location.href = body.authUrl
+    } catch { /* swallow */ }
+  }
+
   return (
     <div data-cv4-left-mail style={{ margin: '6px 2px 12px' }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '6px 4px 6px',
+        gap: 8,
       }}>
         <span style={{
           fontFamily: MENU.bodyFont, fontSize: 16, fontWeight: 600,
           letterSpacing: '-0.005em', lineHeight: 1.1,
           color: C.text,
+          flexShrink: 0,
         }}>Mail</span>
-        {headerEmail && (
-          <span title={headerEmail} style={{
-            fontSize: 9, fontWeight: 700, color: C.dim,
-            letterSpacing: '0.10em', textTransform: 'uppercase',
-            fontFamily: MENU.monoFont,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            maxWidth: 160,
-          }}>{headerEmail.split('@')[0]}</span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, flex: 1, justifyContent: 'flex-end' }}>
+          {headerEmail && (
+            <span title={headerEmail} style={{
+              fontSize: 10,
+              color: C.text2,
+              fontFamily: MENU.monoFont,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flex: '0 1 auto',
+              minWidth: 0,
+            }}>{headerEmail}</span>
+          )}
+          <button
+            type="button"
+            onClick={kickOAuth}
+            title="Add another email account"
+            aria-label="Add another email account"
+            style={{
+              background: 'none',
+              border: '1px solid ' + C.border,
+              borderRadius: 4,
+              color: C.muted,
+              cursor: 'pointer',
+              padding: '2px 6px',
+              fontSize: 10,
+              fontWeight: 700,
+              fontFamily: MENU.monoFont,
+              flexShrink: 0,
+              lineHeight: 1.2,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.muted }}
+            onMouseLeave={e => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border }}
+          >+</button>
+        </div>
       </div>
+
+      {looksStale && (
+        <button
+          type="button"
+          onClick={kickOAuth}
+          style={{
+            display: 'block', width: '100%',
+            margin: '2px 0 8px',
+            padding: '8px 10px',
+            background: 'rgba(234,179,8,0.06)',
+            border: '1px solid rgba(234,179,8,0.28)',
+            borderRadius: 6,
+            cursor: 'pointer',
+            textAlign: 'left',
+            fontFamily: MENU.bodyFont,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(234,179,8,0.10)'
+            e.currentTarget.style.borderColor = 'rgba(234,179,8,0.42)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(234,179,8,0.06)'
+            e.currentTarget.style.borderColor = 'rgba(234,179,8,0.28)'
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 2 }}>Looks like Mail needs to reconnect</div>
+          <div style={{ fontSize: 10, color: C.muted, fontFamily: MENU.monoFont, letterSpacing: '0.04em' }}>
+            CLICK TO RE-AUTHORIZE GMAIL
+          </div>
+        </button>
+      )}
 
       <BucketTabs active={bucket} onChange={onBucket} counts={counts} />
 

@@ -1411,11 +1411,16 @@ export default function RightMenu() {
     }
   }, [inAgentRoom, currentProject, projectsList])
 
-  // R8-2: recent missions strip — last 10 distinct missions visited, per-world.
-  // conversationTarget for a mission room looks like:
-  //   { type: 'project', slug: 'sourcing', missionSlug: 'user-flow-audit', missionName: '...' }
-  // (see CornerV4.handleSelectMission — it stores mission under type='project'
-  //  with missionSlug riding on the same payload.)
+  // R8-2 / R10-fix: recent rooms strip — last 10 distinct rooms visited, per
+  // world. Tracks ANY navigation: mission rooms, project rooms, and agent rooms.
+  // Patrik 2026-05-25: "when I change rooms it doesn't change the recent
+  // missions section" — switching project / agent rooms now updates it too.
+  //
+  // conversationTarget shape (from CornerV4):
+  //   mission room → { type: 'project', slug: project, missionSlug, missionName }
+  //   project room → { type: 'project', slug: project, name } (no missionSlug)
+  //   agent room   → set via selectedAgent (separate slice); conversationTarget
+  //                  may be null OR { type: 'agent', slug: 'elon' }.
   const [recentMissions, setRecentMissions] = useState(() => {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY(worldId)) || '[]') }
     catch { return [] }
@@ -1423,24 +1428,49 @@ export default function RightMenu() {
 
   useEffect(() => {
     const t = conversationTarget
-    if (!t || !t.missionSlug) return
-    const projectSlug = t.slug
-    const missionSlug = t.missionSlug
-    const bare = missionSlug.includes(':') ? missionSlug.split(':').slice(1).join(':') : missionSlug
-    const qualified = `${projectSlug}:${bare}`
-    const entry = {
-      qualified,
-      display: bare,
-      project: projectSlug,
-      name: t.missionName || bare,
+    // Build a normalized entry from the active room. Skip if nothing to track.
+    let entry = null
+
+    if (t?.missionSlug) {
+      // Mission room — display as "project/mission" so context is obvious
+      const projectSlug = t.slug
+      const missionSlug = t.missionSlug
+      const bare = missionSlug.includes(':') ? missionSlug.split(':').slice(1).join(':') : missionSlug
+      entry = {
+        kind: 'mission',
+        qualified: `${projectSlug}:${bare}`,
+        display: `${projectSlug}/${bare}`,
+        project: projectSlug,
+        name: t.missionName || bare,
+      }
+    } else if (selectedAgent?.slug) {
+      // Agent room (EA / super-agent)
+      entry = {
+        kind: 'agent',
+        qualified: `agent:${selectedAgent.slug}`,
+        display: selectedAgent.name || selectedAgent.slug,
+        project: null,
+        name: selectedAgent.name || selectedAgent.slug,
+      }
+    } else if (t?.slug && (t.type === 'project' || !t.type)) {
+      // Project room (no mission scope)
+      entry = {
+        kind: 'project',
+        qualified: `project:${t.slug}`,
+        display: t.slug,
+        project: t.slug,
+        name: t.name || t.slug,
+      }
     }
+
+    if (!entry) return
     setRecentMissions(prev => {
-      const filtered = prev.filter(e => e.qualified !== qualified)
+      const filtered = prev.filter(e => e.qualified !== entry.qualified)
       const next = [entry, ...filtered].slice(0, 10)
       try { localStorage.setItem(RECENT_KEY(worldId), JSON.stringify(next)) } catch {}
       return next
     })
-  }, [conversationTarget, worldId])
+  }, [conversationTarget, selectedAgent, worldId])
 
   // (pendingProjects + pendingMissions declared earlier — moved above the
   // projectsList / effectiveMissions useMemos to avoid TDZ on minified build.)
@@ -1721,11 +1751,22 @@ export default function RightMenu() {
       <RecentMissionsStrip
         recents={recentMissions}
         onSelect={(entry) => {
-          if (!handleSelectMission) return
-          handleSelectMission(
-            { slug: entry.display, bare_slug: entry.display, name: entry.name, project_slug: entry.project },
-            { slug: entry.project, name: entry.project },
-          )
+          // Backward compat: entries without `kind` are pre-R10 mission entries
+          // (they have project + display = bare mission slug).
+          const kind = entry.kind || 'mission'
+          entry = { ...entry, kind }
+          if (entry.kind === 'mission' && handleSelectMission) {
+            handleSelectMission(
+              { slug: entry.display, bare_slug: entry.display, name: entry.name, project_slug: entry.project },
+              { slug: entry.project, name: entry.project },
+            )
+          } else if (entry.kind === 'project' && handleSelectProject) {
+            handleSelectProject({ slug: entry.project, name: entry.name || entry.project })
+          } else if (entry.kind === 'agent' && nav.handleSelectAgent) {
+            // selectedAgent payload shape: at minimum {slug, name}
+            const agentSlug = entry.qualified.replace(/^agent:/, '')
+            nav.handleSelectAgent({ slug: agentSlug, name: entry.name })
+          }
         }}
       />
 
