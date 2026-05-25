@@ -44,6 +44,8 @@ export function setClientIdFromUser(user) {
 /**
  * getClientId() -- resolve the active client.
  * Safe to call on server (returns default) or client (reads auth cache, URL, localStorage).
+ * ISOLATION FIX 2026-05-24: Do NOT default to 'aom' when auth hasn't resolved yet.
+ * Return null instead. Callers must guard against null and not render data until auth completes.
  */
 export function getClientId() {
   if (typeof window === 'undefined') return DEFAULT_CLIENT_ID
@@ -81,8 +83,10 @@ export function getClientId() {
     // ignore
   }
 
-  // 4. Default: AOM (our own instance)
-  return DEFAULT_CLIENT_ID
+  // 4. ISOLATION FIX 2026-05-24: Return null (not DEFAULT_CLIENT_ID).
+  // Callers must check for null and not render/fetch until auth resolves.
+  // Prevents cross-tenant data leak during initial load (Ben/Karen/Tim seeing AOM world).
+  return null
 }
 
 /**

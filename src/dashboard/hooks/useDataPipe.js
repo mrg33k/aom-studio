@@ -616,6 +616,12 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   }, [worldId, fetchAll])
 
   useEffect(() => {
+    // ISOLATION FIX 2026-05-24: Only fetch after worldId is known.
+    // If worldId is null (auth still resolving), skip fetch to prevent
+    // cross-tenant data leak (Ben/Karen/Tim seeing AOM world).
+    if (!worldId) {
+      return
+    }
     fetchAll()
     // Poll is a fallback only. Supabase Realtime below does the heavy lifting;
     // this catches state after a dropped subscription. 60s keeps the bill sane.
@@ -666,7 +672,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)
     }
-  }, [fetchAll])
+  }, [worldId, fetchAll])
 
   // Stable isAutoChecked function -- reads from ref, never causes re-renders
   const isAutoChecked = useCallback((taskText) => {

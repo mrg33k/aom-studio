@@ -444,9 +444,10 @@ export default function CornerV3() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Wait for auth to resolve AND world to be set before rendering
-  // This prevents hooks from fetching with the wrong client_id (e.g. 'aom' default)
-  if (!authReady || (!!supabase && !currentUser && typeof window !== 'undefined')) {
+  // ISOLATION FIX 2026-05-24: Wait for auth to resolve AND world to be set before rendering.
+  // This prevents hooks from fetching with the wrong client_id (e.g. 'aom' default).
+  // Prevents Ben/Karen/Tim from seeing AOM world during initial load or slow auth.
+  if (!authReady || !worldId || (!!supabase && !currentUser && typeof window !== 'undefined')) {
     return (
       <div style={{ width: '100%', height: '100dvh', background: '#060A14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
         <style>{`@keyframes cvLoaderBar { 0% { width: 0%; } 100% { width: 100%; } } @keyframes cvSpin { to { transform: rotate(360deg); } }`}</style>
