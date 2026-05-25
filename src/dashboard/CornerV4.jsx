@@ -211,22 +211,40 @@ export default function CornerV4() {
   }
 
   // ── Google OAuth callback toast ────────────────────────────────────────────
+  // R12 (2026-05-25) — read the actual ?integrations=connected|error params
+  // the callback sets (the earlier ?google_oauth=success|denied check never
+  // matched the callback's redirect). reason=scope-insufficient gets its
+  // own message so the user knows to pick "Select all" on Google's granular
+  // permissions screen on the next attempt — the most common bug here was
+  // skipping that checkbox and landing as "connected" with no actual access.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const oauthStatus = params.get('google_oauth')
-    if (oauthStatus === 'success') {
-      setToast({ visible: true, message: 'Google Calendar + Gmail connected.' })
-      params.delete('google_oauth')
-      params.delete('world_id')
-      const newSearch = params.toString()
-      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname)
-    } else if (oauthStatus === 'denied') {
-      setToast({ visible: true, message: 'Google authorization was cancelled.' })
-      params.delete('google_oauth')
-      params.delete('error')
-      const newSearch = params.toString()
-      window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname)
+    const status = params.get('integrations')
+    if (!status) return
+    const slug = params.get('slug') || ''
+    const reason = params.get('reason') || ''
+    if (status === 'connected') {
+      const labelMap = { gmail: 'Gmail', 'google-calendar': 'Google Calendar', 'google-drive': 'Google Drive' }
+      const label = labelMap[slug] || slug || 'Integration'
+      setToast({ visible: true, message: `${label} connected.` })
+    } else if (status === 'error') {
+      if (reason.startsWith('scope-insufficient')) {
+        setToast({
+          visible: true,
+          message: 'Gmail connected with limited access. Please reconnect and tick "Select all" on the permissions screen.',
+        })
+      } else if (reason.startsWith('provider:access_denied')) {
+        setToast({ visible: true, message: 'Google authorization was cancelled.' })
+      } else {
+        setToast({ visible: true, message: `Couldn’t connect: ${reason || 'unknown error'}` })
+      }
     }
+    params.delete('integrations')
+    params.delete('slug')
+    params.delete('reason')
+    params.delete('world_id')
+    const newSearch = params.toString()
+    window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname)
   }, [])
 
   // mission-rooms: read ?mission= from the URL on mount and persist mission

@@ -6,6 +6,21 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+// R12 (2026-05-25) — required Gmail scopes for a connection to actually be
+// usable. A row missing either of these is treated as "not connected" and
+// hidden from the rail so the user gets the Connect prompt again. The same
+// list is enforced in api/integrations/oauth/callback.js — keep in sync.
+const GMAIL_REQUIRED_SCOPES = [
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/gmail.send',
+]
+
+function hasAllScopes(grantedScopes, required) {
+  if (!Array.isArray(grantedScopes)) return false
+  const set = new Set(grantedScopes)
+  return required.every(s => set.has(s))
+}
+
 function svcHeaders() {
   return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
 }
@@ -31,16 +46,23 @@ export async function listConnectionsForUser(userId) {
   if (!r.ok) return []
   const rows = await r.json()
   if (!Array.isArray(rows)) return []
-  return rows.map(row => ({
-    id: row.id,
-    user_id: row.user_id,
-    workspace_id: row.workspace_id,
-    integration_slug: row.integration_slug,
-    scope: row.workspace_id ? 'team' : 'personal',
-    account_email: row.config?.account_email || null,
-    connector_user_id: row.config?.connector_user_id || null,
-    connected_at: row.connected_at,
-  }))
+  // R12 — hide any row where the granted OAuth scopes are missing the bits
+  // that make the connection actually useful. Rows from before this round
+  // have no config.granted_scopes field at all → treated as insufficient.
+  // The user sees the Connect prompt again and a re-auth (with "Select all"
+  // ticked) writes a fresh row with the scope list populated.
+  return rows
+    .filter(row => hasAllScopes(row.config?.granted_scopes, GMAIL_REQUIRED_SCOPES))
+    .map(row => ({
+      id: row.id,
+      user_id: row.user_id,
+      workspace_id: row.workspace_id,
+      integration_slug: row.integration_slug,
+      scope: row.workspace_id ? 'team' : 'personal',
+      account_email: row.config?.account_email || null,
+      connector_user_id: row.config?.connector_user_id || null,
+      connected_at: row.connected_at,
+    }))
 }
 
 export async function assertCanUseConnection(userId, connectionId) {

@@ -44,6 +44,15 @@ export default function LeftMailPanel({ selectedMailId, onSelectMail }) {
   const [emails, setEmails] = useState([])
   const [counts, setCounts] = useState({})
   const [loadingList, setLoadingList] = useState(false)
+  // R12 — surface the OAuth callback's reason on the hero subline so the user
+  // sees WHY we're showing the Connect prompt (most common: they skipped
+  // "Select all" on Google's granular consent and we threw the row away).
+  const [oauthReason] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    const p = new URLSearchParams(window.location.search)
+    if (p.get('integrations') === 'error') return p.get('reason') || ''
+    return ''
+  })
 
   // ── load connections ────────────────────────────────────────────────────
   useEffect(() => {
@@ -110,10 +119,10 @@ export default function LeftMailPanel({ selectedMailId, onSelectMail }) {
   }, [connection?.id, activeBucket])
 
   if (mode === 'loading' || mode === 'error') {
-    return <ConnectHero state={mode} />
+    return <ConnectHero state={mode} oauthReason={oauthReason} />
   }
   if (mode === 'disconnected') {
-    return <ConnectHero state="disconnected" />
+    return <ConnectHero state="disconnected" oauthReason={oauthReason} />
   }
 
   return (
@@ -131,10 +140,10 @@ export default function LeftMailPanel({ selectedMailId, onSelectMail }) {
 }
 
 // ── DISCONNECTED HERO ───────────────────────────────────────────────────
-// Clicking starts the same OAuth round-trip the old NotConnected component
-// used: /api/integrations/oauth/start?slug=gmail → window.location to
-// body.authUrl → return to /cv4?google_oauth=success → CornerV4 toast.
-function ConnectHero({ state }) {
+// Clicking starts the OAuth round-trip: /api/integrations/oauth/start?slug=gmail
+// → window.location to body.authUrl → return to /cv4?integrations=connected
+// (or ?integrations=error&reason=...) → CornerV4 toast fires.
+function ConnectHero({ state, oauthReason }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -160,11 +169,16 @@ function ConnectHero({ state }) {
     }
   }
 
+  // R12 — the "scope-insufficient" reason gets its own subline so the user
+  // knows to tick "Select all" on Google's granular consent next time.
+  const scopeBlocked = (oauthReason || '').startsWith('scope-insufficient')
   const sub = state === 'loading'
     ? 'Checking your connection…'
     : state === 'error'
       ? 'Couldn’t reach Gmail · click to retry'
-      : 'Inbox · Connect Gmail'
+      : scopeBlocked
+        ? 'Reconnect · tick "Select all"'
+        : 'Inbox · Connect Gmail'
 
   return (
     <div style={{ margin: '6px 2px 10px' }}>

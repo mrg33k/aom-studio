@@ -90,7 +90,39 @@ async function exchangeCode(provider, creds, code, redirectUri) {
   return r.json()
 }
 
-async function upsertConnection({ userId, slug, tokenBlob, providerProfile, workspaceId, accountEmail }) {
+// Parse a space-separated OAuth scope string into a Set for membership checks.
+function parseGrantedScopes(scopeStr) {
+  if (!scopeStr || typeof scopeStr !== 'string') return new Set()
+  return new Set(scopeStr.split(/\s+/).map(s => s.trim()).filter(Boolean))
+}
+
+// R12 (2026-05-25) — Delete any existing scope-insufficient connection row
+// so a half-granted consent (user skipped "Select all" on Google's granular
+// permissions screen) doesn't linger pretending to be live. Mirrors the
+// upsertConnection lookup branches but does a DELETE instead.
+async function deleteConnectionMatching({ userId, slug, workspaceId, accountEmail }) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { ok: false, error: 'supabase env missing' }
+  const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  try {
+    if (workspaceId) {
+      const emailKey = encodeURIComponent(accountEmail || '')
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=eq.${workspaceId}&integration_slug=eq.${slug}&config->>account_email=eq.${emailKey}`,
+        { method: 'DELETE', headers: { ...svcHeaders, Prefer: 'return=minimal' } },
+      )
+      return { ok: r.ok, status: r.status }
+    }
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}`,
+      { method: 'DELETE', headers: { ...svcHeaders, Prefer: 'return=minimal' } },
+    )
+    return { ok: r.ok, status: r.status }
+  } catch (e) {
+    return { ok: false, error: (e.message || '').slice(0, 200) }
+  }
+}
+
+async function upsertConnection({ userId, slug, tokenBlob, providerProfile, workspaceId, accountEmail, grantedScopes = [] }) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { ok: false, error: 'supabase env missing' }
   const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
   const now = new Date().toISOString()
@@ -107,6 +139,9 @@ async function upsertConnection({ userId, slug, tokenBlob, providerProfile, work
       account_email: accountEmail || null,
       profile: providerProfile || null,
       connector_user_id: userId,
+      // R12 — plaintext scope list so listConnectionsForUser can filter without
+      // decrypting the blob. Required scopes were already validated upstream.
+      granted_scopes: Array.isArray(grantedScopes) ? grantedScopes : [],
     },
     connected_at: now,
     updated_at: now,
@@ -239,6 +274,39 @@ export default async function handler(req, res) {
     return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
+  // Gmail: pull profile early so we can target the exact row to delete
+  // when scopes are insufficient (the workspace upsert keys on email).
+  let gmailProfile = null
+  let accountEmail = null
+  if (slug === 'gmail' && tokens.access_token) {
+    gmailProfile = await fetchGmailProfile(tokens.access_token)
+    accountEmail = gmailProfile?.emailAddress || null
+  }
+
+  // R12 (2026-05-25) — validate granted scopes BEFORE storing. If the user
+  // skipped "Select all" on Google's granular consent page, Google returns
+  // a token whose scope list is missing the required Gmail scopes. Storing
+  // it as 'connected' makes the UI lie. Instead: delete any prior partial
+  // row for this owner/slug/email, then redirect with an explicit reason
+  // so the user can re-grant.
+  const grantedSet = parseGrantedScopes(tokens.scope)
+  const required = Array.isArray(provider.requiredScopes) ? provider.requiredScopes : []
+  const missingScopes = required.filter(s => !grantedSet.has(s))
+  if (missingScopes.length > 0) {
+    console.warn('[oauth/callback] scope-insufficient', { slug, missingScopes, granted: Array.from(grantedSet) })
+    await logEvent('oauth_scope_insufficient', {
+      slug,
+      missingScopes,
+      granted: Array.from(grantedSet),
+      accountEmail,
+    })
+    // Best-effort cleanup of any partial row so the UI doesn't keep showing
+    // "connected" for a useless connection. Failure here is non-fatal —
+    // listConnectionsForUser will also filter on granted_scopes.
+    await deleteConnectionMatching({ userId, slug, workspaceId: workspaceId || null, accountEmail })
+    return failRedirect(res, `scope-insufficient:${missingScopes.map(s => s.split('/').pop()).join(',')}`, returnTo)
+  }
+
   let encrypted
   try {
     encrypted = encryptJson({
@@ -257,15 +325,6 @@ export default async function handler(req, res) {
     return failRedirect(res, `encrypt-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
-  // Gmail: pull profile for account_email (needed for workspace collision check
-  // and for switcher display). Non-fatal if it fails — falls back to null.
-  let gmailProfile = null
-  let accountEmail = null
-  if (slug === 'gmail' && tokens.access_token) {
-    gmailProfile = await fetchGmailProfile(tokens.access_token)
-    accountEmail = gmailProfile?.emailAddress || null
-  }
-
   const upsert = await upsertConnection({
     userId,
     slug,
@@ -273,6 +332,7 @@ export default async function handler(req, res) {
     providerProfile: gmailProfile || tokens.team || tokens.workspace_name || null,
     workspaceId: workspaceId || null,
     accountEmail,
+    grantedScopes: Array.from(grantedSet),
   })
   console.log('[oauth/callback] upsert', upsert)
   await logEvent('oauth_upsert', { slug, userId, ok: !!upsert.ok, error: upsert.error ? upsert.error.slice(0, 500) : null })
