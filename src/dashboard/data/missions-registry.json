@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T22:55:48.125Z",
+  "generated_at": "2026-05-25T11:44:20.492Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -486,127 +486,6 @@
       "path": "corner/missions/voice-chat"
     },
     {
-      "slug": "aheadofmarket.com:ai",
-      "raw_slug": "ai",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "pages",
-      "name": "/ai page",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/ai"
-    },
-    {
-      "slug": "aheadofmarket.com:brands-am-hero",
-      "raw_slug": "brands-am-hero",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "brands",
-      "name": "Ambition Mechanical — Hero",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands-am-hero"
-    },
-    {
-      "slug": "aheadofmarket.com:footer",
-      "raw_slug": "footer",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Footer",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/footer"
-    },
-    {
-      "slug": "aheadofmarket.com:home-faq",
-      "raw_slug": "home-faq",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "FAQ",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-faq"
-    },
-    {
-      "slug": "aheadofmarket.com:home-hero",
-      "raw_slug": "home-hero",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "Hero",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-hero"
-    },
-    {
-      "slug": "aheadofmarket.com:home-how-to-hire",
-      "raw_slug": "home-how-to-hire",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "How to hire us",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-how-to-hire"
-    },
-    {
-      "slug": "aheadofmarket.com:home-live-ticker",
-      "raw_slug": "home-live-ticker",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "Live ticker",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-live-ticker"
-    },
-    {
-      "slug": "aheadofmarket.com:home-portfolio",
-      "raw_slug": "home-portfolio",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "Portfolio",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-portfolio"
-    },
-    {
-      "slug": "aheadofmarket.com:home-ready-to-start",
-      "raw_slug": "home-ready-to-start",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "Ready to start CTA",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-ready-to-start"
-    },
-    {
-      "slug": "aheadofmarket.com:home-social-clips",
-      "raw_slug": "home-social-clips",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "Social clips",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-social-clips"
-    },
-    {
-      "slug": "aheadofmarket.com:home-why-it-works",
-      "raw_slug": "home-why-it-works",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "home",
-      "name": "Why it works",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home-why-it-works"
-    },
-    {
       "slug": "aheadofmarket.com:summerschool",
       "raw_slug": "summerschool",
       "project_slug": "aheadofmarket.com",
@@ -616,17 +495,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/aheadofmarket.com/missions/summerschool"
-    },
-    {
-      "slug": "aheadofmarket.com:top-bar",
-      "raw_slug": "top-bar",
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Top bar",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/top-bar"
     },
     {
       "slug": "ambition-mechanical:ambition-social-clips",
@@ -772,17 +640,6 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
     },
     {
-      "slug": "corner:theme-and-density",
-      "raw_slug": "theme-and-density",
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Theme And Density",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/corner/missions/theme-and-density"
-    },
-    {
       "slug": "higher-orbits:documentary-scope",
       "raw_slug": "documentary-scope",
       "project_slug": "higher-orbits",
@@ -812,19 +669,8 @@
       "name": "Course Mapping",
       "status": "in-progress",
       "is_done": false,
-      "last_updated": "2026-05-25T11:10:00Z",
-      "path": "corner/users/aom/projects/holistic-balance/missions/course-mapping"
-    },
-    {
-      "slug": "holistic-balance:marketing",
-      "raw_slug": "marketing",
-      "project_slug": "holistic-balance",
-      "workstream": null,
-      "name": "Marketing",
-      "status": "in-progress",
-      "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/holistic-balance/missions/marketing"
+      "path": "corner/users/aom/projects/holistic-balance/missions/course-mapping"
     },
     {
       "slug": "included-health:client-summit-video",
@@ -1237,14 +1083,14 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 45,
-      "in_flight": 45,
+      "total": 44,
+      "in_flight": 44,
       "done": 0
     },
     {
       "slug": "aheadofmarket.com",
-      "total": 13,
-      "in_flight": 13,
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
@@ -1285,8 +1131,8 @@
     },
     {
       "slug": "holistic-balance",
-      "total": 2,
-      "in_flight": 2,
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
