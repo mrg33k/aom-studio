@@ -91,12 +91,16 @@ export default async function handler(req, res) {
     agent: cfg.routing.agent,
     role: 'user',
     text: String(content).trim(),
-    source: 'embed-widget',
+    // Use 'corner-dashboard' so supabase-listener.py's allowed_sources gate
+    // dispatches the row (embed-widget would be filtered out). Embed identity
+    // lives in metadata.embed_* so the dashboard can still render a badge.
+    source: 'corner-dashboard',
     client_id: cfg.routing.client_id,
     project: cfg.routing.project,
     metadata: {
       mission_slug: cfg.routing.mission_slug,
       embed_id: embed_id,
+      embed_source: 'embed-widget',
       embed_visitor_id: visitor_id || null,
       embed_origin: host_origin || origin || null,
       embed_overlay: ALWAYS_ON_OVERLAY,
