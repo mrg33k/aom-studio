@@ -179,9 +179,18 @@ window.CURRICULUM = {
     bagBeat: {
       day: 'mon',
       key: 'name',
-      title: 'Name your game',
-      prompt: 'You\'re starting your own Roblox studio. What\'s the name of your first game? Write 3-5 sentences pitching it: what\'s it called, what genre, what makes it different.',
-      help: 'Write your pitch on paper. When you\'re done, grab Mom or Dad to read it.'
+      title: 'Name + pitch your first game',
+      intro: 'You\'re a game studio now. Today you\'re going to name your first game and write a PITCH for it.',
+      whatIsPitch: 'A pitch is a short, exciting way to sell your idea. Think Shark Tank, or how a movie trailer makes you want to see the movie. Real Roblox studios pitch their games to publishers BEFORE they build them — if the pitch is bad, the game never gets made. Your job: make someone want to play your game in 5 sentences or less.',
+      template: [
+        { label: 'Game name', hint: 'Make it short, weird, easy to remember. Adopt Me. Brookhaven. Doors. Pet Simulator.' },
+        { label: 'Genre', hint: 'What kind of game is it? Obby, RPG, simulator, tycoon, racing, horror, social hangout?' },
+        { label: 'The one-liner', hint: 'One sentence that makes someone go "oh wait, what?" Example: "What if Roblox had a city where players actually live full lives?" (that\'s Brookhaven\'s pitch).' },
+        { label: 'What makes it different', hint: 'Why would someone play YOURS instead of the 100 other games like it? One specific thing.' },
+        { label: 'Who it\'s for', hint: 'Who is your perfect player? Kids who love horror? Friends who like to build? Speedrunners?' }
+      ],
+      why: 'Why bother? Because the pitch IS the game in your head, made small enough to share. Pitching trains the most important muscle a creator has — making other people see what you see.',
+      help: 'Write each part on paper. Take your time. When the whole pitch feels strong, read it OUT LOUD to yourself once. If you\'re proud of it, find Mom or Dad and pitch it to them — like you\'re really selling them on the idea. Then tap below.'
     },
 
     typingTarget: "Studios maximize in-game purchases because small sales add up to real paychecks.",

@@ -710,6 +710,11 @@ window.SSMod = (function () {
       { key: 'fri', label: 'Fri — Cover + Ship' }
     ];
 
+    // Build the structured pitch worksheet. Older bagBeats may not have the
+    // new fields (intro/whatIsPitch/template/why) — fall back to the old
+    // prompt+help shape so other days still render.
+    const hasStructure = Array.isArray(b.template) && b.template.length > 0;
+
     host.innerHTML = `
       ${topRail(88, 'arc day 1 of 5')}
       ${moduleHead('Build-A-Game', b.title)}
@@ -721,21 +726,69 @@ window.SSMod = (function () {
             </div>
           `).join('')}
         </div>
-        <div class="bag-prompt">
-          <div class="day-label">Today's beat</div>
-          <div class="text" data-dict>${b.prompt}</div>
-          <div class="help">${b.help}</div>
-        </div>
+
+        ${hasStructure ? `
+          <div class="bag-prompt" data-dict>
+            <div class="day-label">Today's beat</div>
+            <div class="text" style="font-size: 19px; line-height: 1.45;">${b.intro}</div>
+          </div>
+
+          <div class="bag-prompt" data-dict style="background: #FBF7EE; border-left: 4px solid var(--amber);">
+            <div class="day-label">What's a pitch?</div>
+            <div class="text" style="font-size: 16px; line-height: 1.55;">${b.whatIsPitch}</div>
+          </div>
+
+          <div class="bag-prompt" data-dict>
+            <div class="day-label">Why do this?</div>
+            <div class="text" style="font-size: 16px; line-height: 1.55; font-style: italic; color: var(--ink-soft);">${b.why}</div>
+          </div>
+
+          <div class="bag-prompt" style="padding-bottom: var(--space-4);">
+            <div class="day-label">Your pitch — 5 parts</div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3);">
+              ${b.template.map((part, i) => `
+                <div style="background: #FFF; border: 1px solid rgba(26,24,20,0.08); border-radius: 12px; padding: var(--space-4) var(--space-5);">
+                  <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px;">${i + 1}. ${part.label}</div>
+                  <div data-dict style="font-size: 15px; line-height: 1.5; color: var(--ink-soft);">${part.hint}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="bag-prompt" data-dict style="background: var(--cream-card);">
+            <div class="day-label">How to do this</div>
+            <div class="text" style="font-size: 16px; line-height: 1.55;">${b.help}</div>
+          </div>
+        ` : `
+          <div class="bag-prompt">
+            <div class="day-label">Today's beat</div>
+            <div class="text" data-dict>${b.prompt || ''}</div>
+            <div class="help">${b.help || ''}</div>
+          </div>
+        `}
+
         <div class="approve-card">
-          <div class="big">When it's written</div>
-          <div class="small">Tap the parent who read it.</div>
+          <div class="big">When you've pitched it to Mom or Dad</div>
+          <div class="small">Tap who heard your pitch. (No rush — take the whole block if you want.)</div>
           <div class="approve-row">
-            <button class="btn-amber" id="bag-dad">Dad approved</button>
-            <button class="btn-amber" id="bag-mom">Mom approved</button>
+            <button class="btn-amber" id="bag-dad">Pitched it to Dad</button>
+            <button class="btn-amber" id="bag-mom">Pitched it to Mom</button>
+          </div>
+          <div style="margin-top: var(--space-3); font-size: 13px; color: var(--ink-quiet); text-align: center;">
+            <button class="btn-secondary" id="bag-self" style="font-size: 13px; padding: 8px 18px;">Skip for now — I'll pitch later</button>
           </div>
         </div>
       </div>
     `;
+
+    const selfBtn = host.querySelector('#bag-self');
+    if (selfBtn) selfBtn.onclick = () => {
+      if (window.SS) {
+        window.SS.saveBagBeat('mon', 'name', '[pitch written — sharing later]');
+        window.SS.awardStar('Game name locked');
+      }
+      complete(block.id, { approver: 'self' });
+    };
 
     ['bag-dad', 'bag-mom'].forEach(id => {
       host.querySelector('#' + id).onclick = () => {
@@ -1563,10 +1616,18 @@ window.SSMod = (function () {
       const summary = host.querySelector('#vid-summary');
       const hint = host.querySelector('#vid-hint');
       const skipBtn = host.querySelector('#vid-skip');
+      // flip the screen from "VIDEO" framing to "READ THIS" framing — no
+      // empty player, no broken-video confusion. Hide stage, show summary,
+      // update eyebrow, drop the duplicated title in the summary card.
       if (stage) stage.style.display = 'none';
       if (summary) summary.style.display = 'block';
-      if (hint) hint.innerHTML = "Video can't load — read the lesson above, then tap Continue.";
-      // upgrade skip button to primary amber CTA so the path forward is obvious
+      const eyebrow = host.querySelector('.module-head .eyebrow');
+      if (eyebrow) eyebrow.textContent = "Today's lesson";
+      const dupTitle = summary && summary.querySelector('h3');
+      if (dupTitle) dupTitle.style.display = 'none';
+      const lessonEyebrow = summary && summary.querySelector('div[style*="amber"]');
+      if (lessonEyebrow) lessonEyebrow.style.display = 'none';
+      if (hint) hint.innerHTML = "Read the lesson above, then tap Continue.";
       if (skipBtn) {
         skipBtn.className = 'btn-amber';
         skipBtn.textContent = 'Continue → take the quiz';
@@ -1666,7 +1727,13 @@ window.SSMod = (function () {
         const skipBtn = host.querySelector('#ml-skip');
         if (stg) stg.style.display = 'none';
         if (summary) summary.style.display = 'block';
-        if (hint) hint.innerHTML = "Video can't load — read the lesson above, then tap Continue.";
+        const eyebrow = host.querySelector('.module-head .eyebrow');
+        if (eyebrow) eyebrow.textContent = "Today's lesson";
+        const dupTitle = summary && summary.querySelector('h3');
+        if (dupTitle) dupTitle.style.display = 'none';
+        const lessonEyebrow = summary && summary.querySelector('div[style*="amber"]');
+        if (lessonEyebrow) lessonEyebrow.style.display = 'none';
+        if (hint) hint.innerHTML = "Read the lesson above, then tap Continue.";
         if (skipBtn) {
           skipBtn.className = 'btn-amber';
           skipBtn.textContent = 'Continue → take the quiz';
