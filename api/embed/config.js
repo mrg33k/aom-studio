@@ -29,9 +29,12 @@ const REGISTRY = {
       },
     },
     routing: {
-      // The row shape /api/embed/chat writes. Mirrors the dashboard's own
-      // project-chat send for space-rising:website mission room.
-      agent: 'project:space-rising',
+      // Mirrors real SR website mission room writes: agent='elon' (the EA
+      // wearing the SR website hat), project='space-rising', and
+      // metadata.mission_slug='space-rising:website'. This is what the
+      // dashboard mission-room view filters on AND what the listener routes
+      // (elon-relay tmux is the target session).
+      agent: 'elon',
       project: 'space-rising',
       mission_slug: 'space-rising:website',
       client_id: 'aom',
