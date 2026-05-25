@@ -2038,29 +2038,127 @@ input, textarea {
    Hidden on phone, sidebar on iPad+, sticky on desktop
    ============================================================ */
 
+/* ============================================================
+   SIDE RAIL — collapsed FAB by default, taps to expand
+   Ethan asked for this — the old always-on sidebar blocked
+   activities. Now it sits out of the way until needed.
+   ============================================================ */
+
+/* The FAB button — always visible bottom-right */
+.ss-fab {
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 6px 20px rgba(26,24,20,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
+}
+
+.ss-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 28px rgba(26,24,20,0.32);
+}
+
+.ss-fab:active {
+  transform: scale(0.96);
+}
+
+.ss-fab .fab-num {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--amber);
+}
+
+.ss-fab .fab-lbl {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245,239,229,0.7);
+  margin-top: 1px;
+}
+
+/* Backdrop when panel is open — soft scrim */
+.ss-fab-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 20, 0.25);
+  z-index: 99;
+  animation: fab-fade 0.18s ease-out;
+}
+
+.ss-fab-backdrop.open { display: block; }
+
+@keyframes fab-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* The expanded panel — slides up from the bottom-right */
 .ss-rail {
   display: none;
   position: fixed;
-  top: var(--space-5);
+  bottom: 84px;  /* sits above the FAB */
   right: var(--space-5);
-  width: 240px;
-  max-height: calc(100vh - var(--space-7));
+  width: 280px;
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
   background: var(--cream-card);
   border-radius: var(--r-md);
   padding: var(--space-5);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 16px 48px rgba(26,24,20,0.20), 0 4px 12px rgba(26,24,20,0.10);
   font-family: var(--font-body);
-  z-index: 50;
+  z-index: 100;
+  animation: fab-slide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+@keyframes fab-slide {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ss-rail.open { display: block; }
 
 @media (min-width: 1024px) {
-  .ss-rail { display: block; }
+  .ss-rail { width: 320px; }
 }
 
-@media (min-width: 1440px) {
-  .ss-rail { width: 280px; right: var(--space-7); }
+.ss-rail-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--ink-quiet);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.ss-rail-close:hover { background: var(--cream-deep); color: var(--ink); }
 
 .ss-rail .rail-progress {
   margin-bottom: var(--space-4);

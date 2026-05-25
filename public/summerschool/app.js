@@ -24,7 +24,24 @@
   const SS = window.SS;
   const day = () => window.CURRICULUM.monday;
 
-  // ---- side rail (always visible on desktop) ----
+  // ---- side rail — FAB by default, taps to expand ----
+  // Ethan flagged: the always-on sidebar blocked activities. So the rail is
+  // collapsed into a bottom-right floating button. Taps open the panel.
+  let fab = document.getElementById('ss-fab');
+  if (!fab) {
+    fab = document.createElement('button');
+    fab.id = 'ss-fab';
+    fab.className = 'ss-fab';
+    fab.setAttribute('aria-label', 'Open day plan');
+    document.body.appendChild(fab);
+  }
+  let backdrop = document.getElementById('ss-fab-backdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'ss-fab-backdrop';
+    backdrop.className = 'ss-fab-backdrop';
+    document.body.appendChild(backdrop);
+  }
   let rail = document.getElementById('ss-rail');
   if (!rail) {
     rail = document.createElement('aside');
@@ -33,15 +50,34 @@
     document.body.appendChild(rail);
   }
 
-  function renderRail() {
-    // Only show the rail when INSIDE a block (hub already shows everything)
-    if (currentBlockIdx < 0) { rail.style.display = 'none'; return; }
-    rail.style.display = '';
+  function toggleRail(open) {
+    const next = open === undefined ? !rail.classList.contains('open') : open;
+    rail.classList.toggle('open', next);
+    backdrop.classList.toggle('open', next);
+  }
+  fab.addEventListener('click', () => toggleRail());
+  backdrop.addEventListener('click', () => toggleRail(false));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleRail(false); });
 
+  function renderRail() {
     const d = day();
     const blocks = d.blocks;
     const doneCount = SS ? SS.dayProgress() : 0;
     const pct = Math.round((doneCount / blocks.length) * 100);
+
+    // FAB visible whenever inside a block; hidden on hub (hub already shows everything)
+    if (currentBlockIdx < 0) {
+      fab.style.display = 'none';
+      backdrop.classList.remove('open');
+      rail.classList.remove('open');
+      return;
+    }
+    fab.style.display = 'flex';
+    // FAB shows the current block number — at-a-glance progress
+    fab.innerHTML = `
+      <span class="fab-num">${currentBlockIdx + 1}</span>
+      <span class="fab-lbl">/ ${blocks.length}</span>
+    `;
 
     const currentLabel = `Block ${currentBlockIdx + 1} of ${blocks.length}`;
     const titleNow = blocks[currentBlockIdx].title;
@@ -61,6 +97,7 @@
     }
 
     rail.innerHTML = `
+      <button class="ss-rail-close" aria-label="Close" id="rail-close">×</button>
       <div class="rail-progress">
         <div class="label">${currentLabel}</div>
         <div class="where">${titleNow}</div>
@@ -93,6 +130,9 @@
         <div class="week-arc"><strong>${d.theme}</strong> · ${d.themeDesc}</div>
       </div>
     `;
+    // wire the inline close button
+    const closeBtn = rail.querySelector('#rail-close');
+    if (closeBtn) closeBtn.onclick = () => toggleRail(false);
   }
 
   // ---- routing ----
