@@ -246,9 +246,11 @@ export default function CV4Drawer({
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{
-              fontFamily: MENU.displayFont,
-              fontSize: 22,
-              lineHeight: 1,
+              fontFamily: MENU.bodyFont,
+              fontSize: 18,
+              fontWeight: 600,
+              letterSpacing: '-0.005em',
+              lineHeight: 1.1,
               color: C.text,
             }}>Explorer</span>
           </div>
@@ -320,9 +322,11 @@ export default function CV4Drawer({
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{
-              fontFamily: MENU.displayFont,
-              fontSize: 22,
-              lineHeight: 1,
+              fontFamily: MENU.bodyFont,
+              fontSize: 18,
+              fontWeight: 600,
+              letterSpacing: '-0.005em',
+              lineHeight: 1.1,
               color: C.text,
             }}>Explorer</span>
           </div>
