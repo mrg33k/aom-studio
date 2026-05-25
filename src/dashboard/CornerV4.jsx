@@ -247,30 +247,6 @@ export default function CornerV4() {
     window.history.replaceState({}, '', newSearch ? `?${newSearch}` : window.location.pathname)
   }, [])
 
-  // Tenant access guard (2026-05-25): if the URL points at a project the
-  // current user can't access, redirect to the dashboard root before the
-  // conversationTarget gets set. Without this, a tenant user (e.g. Karen)
-  // who lands on /cv4/project/aheadofmarket via a stale URL, a bookmark,
-  // or an accidental click ends up with selectedProject=aheadofmarket, and
-  // every message she sends gets stamped client_id="shared:aheadofmarket"
-  // — which Patrik's aheadofmarket chat then legitimately reads via the
-  // [worldId, sharedCid] union. That produced the 2026-05-25 leak where
-  // Karen's file uploads appeared in AOM's project chat. Gating here keeps
-  // the URL trustworthy: only your own projects (owned + shared-to-you)
-  // can drive selectedProject.
-  // Skip the guard if projectRooms is still loading (avoids a redirect race
-  // on cold load where the URL beats the data fetch).
-  useEffect(() => {
-    if (!routeProjectId) return
-    if (!projectRooms || projectRooms.length === 0) return // data not loaded yet
-    const accessible = projectRooms.some(p => p?.slug === routeProjectId)
-    if (!accessible) {
-      const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-      console.warn('[tenant-isolation] blocked URL-route to inaccessible project; redirecting', { routeProjectId, accessibleSlugs: projectRooms.map(p => p?.slug) })
-      navigate(basePath, { replace: true })
-    }
-  }, [routeProjectId, projectRooms, navigate])
-
   // mission-rooms: read ?mission= from the URL on mount and persist mission
   // scope on the conversationTarget. Lets a direct link to
   // /cv4/project/:slug?mission=:missionSlug land the user inside the mission
@@ -279,12 +255,6 @@ export default function CornerV4() {
   // the chat panel actually re-renders into the project room).
   useEffect(() => {
     if (!routeProjectId) return
-    // Mirror the access guard above: don't set conversationTarget for a
-    // project the user can't access. Skip while projectRooms is loading.
-    if (projectRooms && projectRooms.length > 0 &&
-        !projectRooms.some(p => p?.slug === routeProjectId)) {
-      return
-    }
     const params = new URLSearchParams(routeLocation.search || '')
     const missionSlug = params.get('mission')
     if (!missionSlug) {
