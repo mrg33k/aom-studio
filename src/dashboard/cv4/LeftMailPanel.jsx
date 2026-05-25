@@ -28,13 +28,17 @@ const MENU = {
 // Mail Room buckets, dropping THREADS + PROSPECTS for space — those still
 // exist on the API and can be added later if needed.
 const BUCKETS = [
-  { slug: 'today',          label: 'Today' },
   { slug: 'awaiting-reply', label: 'Awaiting' },
+  { slug: 'today',          label: 'Today' },
   { slug: 'clients',        label: 'Clients' },
   { slug: 'sent',           label: 'Sent' },
   { slug: 'all',            label: 'All' },
 ]
-const DEFAULT_BUCKET = 'today'
+// R14 — default to AWAITING (matches original MailListPanel). TODAY is the
+// most aggressive filter (today-only sender) and is empty on most days,
+// which made the rail look broken on first open even though the connection
+// was live.
+const DEFAULT_BUCKET = 'awaiting-reply'
 const LIST_MAX_HEIGHT = '46vh'
 
 export default function LeftMailPanel({ selectedMailId, onSelectMail }) {
