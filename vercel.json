@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/embed", "destination": "/embed.html" },
     { "source": "/dashboard", "destination": "/index.html" },
     { "source": "/outreach-plan", "destination": "/outreach-plan.html" },
     { "source": "/growth-plan", "destination": "/growth-plan.html" },
