@@ -309,44 +309,44 @@ export default async function handler(req, res) {
       const project = req.query.project ? String(req.query.project).trim().toLowerCase() : null
       const limit = Math.min(parseInt(req.query.limit || '500', 10) || 500, 1000)
 
-      // Pull every message with any attachment shape under this tenant.
-      // Three shapes exist (see useChatAttachments + relay-respond.py):
-      //   1. Top-level columns: attachment_url + file_mime_type + file_size
-      //   2. metadata.attachment = { url, mime, size, name }
-      //   3. metadata.attachments = [ { url, mime, size, name }, … ]
-      // PostgREST can't OR across a column + a JSON path inside a single
-      // query, so we run two scoped queries and merge:
-      //   (a) attachment_url IS NOT NULL  → catches shape 1 + shape 2-when-
-      //        the writer also stamped the legacy top-level column.
-      //   (b) metadata IS NOT NULL        → catches shape 2 + 3 outright,
-      //        and we filter for attachment/attachments keys client-side
-      //        because PostgREST JSON `not.is.null` doesn't fan out by key.
-      const sel = 'id,client_id,project,attachment_url,file_mime_type,file_size,metadata,user_name,created_at,text'
+      // Schema reality (verified 2026-05-25): the messages table does NOT
+      // have top-level attachment_url / file_mime_type / file_size columns.
+      // The supabase-messages.js POST conditionally spreads those fields, but
+      // they are silently dropped at insert because the columns don't exist.
+      // Every upload's metadata lives in:
+      //   - metadata.attachment   = { url, mime, size, name }      (single)
+      //   - metadata.attachments  = [ { url, mime, size, name } ]  (multi)
+      // Timestamp column is `timestamp` (not created_at).
+      //
+      // Strategy: two scoped PostgREST queries using jsonb path filters
+      // (metadata->attachment=not.is.null + metadata->attachments=not.is.null),
+      // merge by message id, then extract every attachment from the metadata.
+      const sel = 'id,client_id,project,metadata,user_name,timestamp,text'
       const baseFilters = [
         `client_id=eq.${encodeURIComponent(clientId)}`,
         `select=${sel}`,
-        'order=created_at.desc',
+        'order=timestamp.desc',
         `limit=${limit}`,
       ]
       if (project) baseFilters.push(`project=eq.${encodeURIComponent(project)}`)
 
-      const urlA = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&attachment_url=not.is.null`
-      const urlB = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata=not.is.null`
+      const urlSingle = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachment=not.is.null`
+      const urlMulti = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachments=not.is.null`
 
-      let rowsA = [], rowsB = []
+      let rowsSingle = [], rowsMulti = []
       try {
-        const [rA, rB] = await Promise.all([
-          fetch(urlA, { headers: dbHeaders() }),
-          fetch(urlB, { headers: dbHeaders() }),
+        const [rS, rM] = await Promise.all([
+          fetch(urlSingle, { headers: dbHeaders() }),
+          fetch(urlMulti, { headers: dbHeaders() }),
         ])
-        if (rA.ok) rowsA = await rA.json()
-        if (rB.ok) rowsB = await rB.json()
+        if (rS.ok) rowsSingle = await rS.json()
+        if (rM.ok) rowsMulti = await rM.json()
       } catch { /* best-effort */ }
 
-      // Merge + dedupe by message id so a row that hits both queries doesn't
-      // double-process.
+      // Merge + dedupe by message id so a row that somehow carries both
+      // single and multi shapes doesn't double-process.
       const byId = new Map()
-      for (const row of [...rowsA, ...rowsB]) {
+      for (const row of [...rowsSingle, ...rowsMulti]) {
         if (row && row.id) byId.set(row.id, row)
       }
       const rows = [...byId.values()]
@@ -356,7 +356,9 @@ export default async function handler(req, res) {
       function pushAtt({ url: attUrl, mime, size, name, ts, who }) {
         if (!attUrl || seenUrls.has(attUrl)) return
         seenUrls.add(attUrl)
-        // Strip leading slash + decode for a stable display name.
+        // The RAG tunnel URL ends with the uuid-prefixed filename; strip
+        // the prefix to a stable display name when the metadata didn't
+        // carry one.
         let displayName = name
         if (!displayName) {
           try { displayName = decodeURIComponent(attUrl.split('/').pop().split('?')[0]) }
@@ -376,19 +378,17 @@ export default async function handler(req, res) {
       }
 
       for (const row of (Array.isArray(rows) ? rows : [])) {
-        const ts = row.created_at
+        const ts = row.timestamp
         const who = row.user_name || null
-        // Shape 1: top-level columns
-        if (row.attachment_url) {
-          pushAtt({ url: row.attachment_url, mime: row.file_mime_type, size: row.file_size, ts, who })
-        }
-        // Shape 2: metadata.attachment
-        const ma = row.metadata && row.metadata.attachment
+        const md = row.metadata
+        if (!md || typeof md !== 'object') continue
+        // Single-attachment shape
+        const ma = md.attachment
         if (ma && ma.url) {
           pushAtt({ url: ma.url, mime: ma.mime, size: ma.size, name: ma.name, ts, who })
         }
-        // Shape 3: metadata.attachments[]
-        const mas = row.metadata && row.metadata.attachments
+        // Multi-attachment shape
+        const mas = md.attachments
         if (Array.isArray(mas)) {
           for (const a of mas) {
             if (a && a.url) pushAtt({ url: a.url, mime: a.mime, size: a.size, name: a.name, ts, who })
