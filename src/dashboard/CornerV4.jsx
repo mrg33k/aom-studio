@@ -54,7 +54,8 @@ import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
 import RightMenu from './cv4/RightMenu.jsx'
-import MailListPanel from './cv4/MailListPanel.jsx'
+// R10 — MailListPanel moved into the left rail (cv4/LeftMailPanel.jsx),
+// imported via cv4/Drawer.jsx; no longer mounted here directly.
 import MailRoom from './cv4/MailRoom.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -123,8 +124,8 @@ export default function CornerV4() {
   // R6.2: mission clicked from the drawer is "attached" to the composer
   // and rendered as a context chip. Cleared on send by useChatSend.
   const [attachedMission, setAttachedMission] = useState(null)
-  // CV4 Tools → Mail (corner:cv4-tools-mail R1): activeTool routes the
-  // right rail to MailListPanel and recolors ContextNav as the "Mail Room".
+  // CV4 Tools → Mail (R10, 2026-05-25): Mail moved to the left rail
+  // (LeftMailPanel in CV4Drawer). activeTool still tracks 'tasks' etc.;
   // selectedMail is the email the user just clicked — pinned as a chat chip
   // until the EA sends a reply or the user clears it.
   const [activeTool, setActiveTool] = useState(null)
@@ -695,28 +696,14 @@ export default function CornerV4() {
     if (routeProjectId) navigate(basePath)
   }, [navigate, routeProjectId])
 
-  // Mail tool: jump into the EA chat (the "Mail Room") and force the right
-  // rail open with the inbox list. If we can't find an EA agent yet, the
-  // toggle still flips — ChatPanel will land on whatever's selected and the
-  // mail rail still works on its own.
+  // R10 (2026-05-25) — Mail moved to the left rail (LeftMailPanel).
+  // handleSelectTool no longer auto-opens the right rail to Mail; the tool
+  // routing stays for 'tasks' and any future tools. Mail-from-left-rail
+  // simply pins emails via handleSelectMail.
   const handleSelectTool = useCallback((tool) => {
     setActiveTool(tool)
-    setSelectedMail(null)
-    if (tool === 'mail') {
-      // Desktop: center column is always ChatPanel; right drawer shows mail list.
-      // Mobile: center column is tab-controlled; 'tasks' tab shows mail list.
-      setTab(isDesktop ? 'chat' : 'tasks')
-      setTasksDrawerOpen(true)
-      const ea = (agents || []).find(a => a.is_ea && a.is_terminal)
-        || (agents || []).find(a => a.is_ea)
-      if (ea && ea.slug !== selectedAgent?.slug) {
-        setSelectedAgent(ea)
-        setConversationTarget({ name: ea.name, type: 'agent' })
-        const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-        if (routeProjectId) navigate(basePath)
-      }
-    }
-  }, [agents, selectedAgent?.slug, navigate, routeProjectId, isDesktop])
+    if (tool !== 'mail') setSelectedMail(null)
+  }, [])
 
   // Called by MailListPanel when the user clicks an email — pins it as a
   // chat chip so the EA's next reply receives the email as context.
@@ -1923,6 +1910,8 @@ export default function CornerV4() {
             selectedAgentSlug={selectedAgent?.slug}
             selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
             activeTool={activeTool}
+            selectedMailId={selectedMail?.id}
+            onSelectMail={handleSelectMail}
             onSelectTool={handleSelectTool}
             onSelectAgent={handleSelectAgent}
             onSelectProject={handleSelectProject}
@@ -1964,14 +1953,15 @@ export default function CornerV4() {
               margin: '0 auto',
             }}
           >
+            {/* R10 — Mail list moved to the left rail. Right rail / mobile
+                'tasks' tab no longer renders MailListPanel. Clicking an email
+                in the left rail still opens MailRoom in the center column. */}
             {(!isDesktop && tab === 'tasks') ? (
-              activeTool === 'mail' && selectedMail
+              selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
-                : activeTool === 'mail'
-                  ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
-                  : <RightMenu />
+                : <RightMenu />
             ) : (
-              activeTool === 'mail' && selectedMail
+              selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
                 : <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
@@ -1980,7 +1970,6 @@ export default function CornerV4() {
         {isDesktop && tasksDrawerOpen && (
           <aside
             data-cv4-tasks-drawer
-            data-cv4-mail-mode={activeTool === 'mail' ? 'true' : 'false'}
             style={{
               // R7.2: ~20% of viewport, clamped sensibly so it stays readable.
               width: 'clamp(300px, 20vw, 460px)',
@@ -1991,9 +1980,9 @@ export default function CornerV4() {
               overflow: 'hidden',
             }}
           >
-            {activeTool === 'mail'
-              ? <MailListPanel selectedMailId={selectedMail?.id} onSelectMail={handleSelectMail} />
-              : <RightMenu />}
+            {/* R10 — Right rail is Missions/Tasks/Files only. Mail moved
+                to the left rail (LeftMailPanel inside CV4Drawer). */}
+            <RightMenu />
           </aside>
         )}
       </div>
@@ -2115,6 +2104,8 @@ export default function CornerV4() {
           selectedAgentSlug={selectedAgent?.slug}
           selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
           activeTool={activeTool}
+          selectedMailId={selectedMail?.id}
+          onSelectMail={handleSelectMail}
           onSelectTool={handleSelectTool}
           onSelectAgent={handleSelectAgent}
           onSelectProject={handleSelectProject}
