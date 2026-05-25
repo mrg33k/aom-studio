@@ -354,6 +354,31 @@ export default function CornerV4() {
     setConversationTarget({ name: target.name, type: 'agent' })
   }, [agents, selectedAgent, conversationTarget, routeProjectId])
 
+  // Tenant access guard (2026-05-25): if the URL points at a project the
+  // current user can't access, redirect to the dashboard root. Without
+  // this, a tenant user (e.g. Karen) who lands on
+  // /cv4/project/aheadofmarket via a stale URL, a bookmark, or an
+  // accidental click ends up with conversationTarget=aheadofmarket, and
+  // every message she sends gets stamped client_id="shared:aheadofmarket"
+  // — which Patrik's aheadofmarket chat then legitimately reads via the
+  // [worldId, sharedCid] union. That produced the 2026-05-25 live leak.
+  // The accessible-list is the same data feeding the left rail, so
+  // anything visible to the user remains reachable. Skips the guard
+  // while projectRooms is loading (avoids redirect race on cold load).
+  // Placed AFTER the auto-select useEffect so projectRooms (declared via
+  // useDataPipe above) is guaranteed in scope; placing it earlier trips
+  // TDZ in the minified bundle (Vercel deploy 2026-05-25T23:30 incident).
+  useEffect(() => {
+    if (!routeProjectId) return
+    if (!projectRooms || projectRooms.length === 0) return
+    const accessible = projectRooms.some(p => p?.slug === routeProjectId)
+    if (!accessible) {
+      const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+      console.warn('[tenant-isolation] blocked URL-route to inaccessible project; redirecting', { routeProjectId, accessibleSlugs: projectRooms.map(p => p?.slug) })
+      navigate(basePath, { replace: true })
+    }
+  }, [routeProjectId, projectRooms, navigate])
+
   // Telephone mode (long-form record → transcribe → post to active super-agent).
   // Lives at this level so recording survives Home/Tasks/Chat navigation.
   const telephone = useTelephone({
