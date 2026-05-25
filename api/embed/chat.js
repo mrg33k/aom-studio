@@ -86,11 +86,20 @@ export default async function handler(req, res) {
   // metadata.mission_slug to load the mission's CONTEXT/VISION/BUILD as the
   // EA's system-prompt context.  metadata.embed_overlay is the embed's extra
   // safety overlay; bridge.py concatenates it after the mission preamble.
+  //
+  // Append " — Web Portal" to the text so the dashboard mission room view
+  // shows at a glance that the message came from an embed visitor, not from
+  // someone typing in the dashboard. Visitor's own widget bubble was already
+  // rendered client-side with the clean text before this POST, so they don't
+  // see the suffix on their side.
+  const visitorText = String(content).trim()
+  const dashboardText = `${visitorText}\n\n— Web Portal`
+
   const row = {
     id: crypto.randomUUID(),
     agent: cfg.routing.agent,
     role: 'user',
-    text: String(content).trim(),
+    text: dashboardText,
     // Use 'corner-dashboard' so supabase-listener.py's allowed_sources gate
     // dispatches the row (embed-widget would be filtered out). Embed identity
     // lives in metadata.embed_* so the dashboard can still render a badge.
@@ -104,6 +113,9 @@ export default async function handler(req, res) {
       embed_visitor_id: visitor_id || null,
       embed_origin: host_origin || origin || null,
       embed_overlay: ALWAYS_ON_OVERLAY,
+      // Raw visitor text (without the portal suffix) preserved in metadata
+      // so future dashboard renderers can show it cleanly if they want.
+      visitor_text: visitorText,
     },
   }
 
