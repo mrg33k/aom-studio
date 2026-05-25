@@ -1930,6 +1930,7 @@ export default function CornerV4() {
             projectRooms={projectRooms}
             notifItems={notifItems}
             worldId={worldId}
+            currentUserId={currentUser?.id || null}
             selectedAgentSlug={selectedAgent?.slug}
             selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
             activeTool={activeTool}
@@ -2124,6 +2125,7 @@ export default function CornerV4() {
           projectRooms={projectRooms}
           notifItems={notifItems}
           worldId={worldId}
+          currentUserId={currentUser?.id || null}
           selectedAgentSlug={selectedAgent?.slug}
           selectedProjectSlug={conversationTarget?.type === 'project' ? conversationTarget?.slug : null}
           activeTool={activeTool}
