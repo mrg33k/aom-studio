@@ -360,6 +360,15 @@ function BucketTabs({ active, onChange, counts }) {
   )
 }
 
+function PaperclipMicro() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+    </svg>
+  )
+}
+
 function MailRow({ email, active, onClick }) {
   // R14 hotfix — /api/dashboard/mail/list returns `from` as
   // { name, email } (object), not the historical "Name <addr>" string. The
@@ -397,11 +406,26 @@ function MailRow({ email, active, onClick }) {
       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
     >
       <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
         fontSize: 11, fontWeight: 600,
         color: C.text,
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        minWidth: 0,
         fontFamily: MENU.bodyFont,
-      }}>{from || '—'}</div>
+      }}>
+        <span style={{
+          flex: 1, minWidth: 0,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{from || '—'}</span>
+        {email?.hasAttachments && (
+          <span
+            title="Has attachment"
+            aria-label="Has attachment"
+            style={{ color: MENU.amber, display: 'flex', alignItems: 'center', flexShrink: 0 }}
+          >
+            <PaperclipMicro />
+          </span>
+        )}
+      </div>
       <div style={{
         fontSize: 11, color: C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',

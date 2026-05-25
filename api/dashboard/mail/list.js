@@ -42,6 +42,22 @@ function headerVal(headers, name) {
   return h?.value || ''
 }
 
+// R17 (2026-05-25) — walk the payload tree (already returned by
+// format=metadata; only body.data is omitted) and return true if any
+// part has a real attachment (filename + body.attachmentId). Inline
+// images embedded via cid: also count — Patrik wants the paperclip
+// to surface any email with bytes worth opening.
+function detectAttachments(payload) {
+  if (!payload) return false
+  if (payload.filename && payload.body?.attachmentId) return true
+  if (Array.isArray(payload.parts)) {
+    for (const p of payload.parts) {
+      if (detectAttachments(p)) return true
+    }
+  }
+  return false
+}
+
 function isAutomated(msg) {
   const labels = msg.labelIds || []
   for (const l of labels) if (SKIP_CATEGORIES.has(l)) return true
@@ -182,6 +198,7 @@ export default async function handler(req, res) {
       snippet: m.snippet || '',
       date: m.internalDate ? Number(m.internalDate) : Date.parse(headerVal(headers, 'Date') || ''),
       unread: (m.labelIds || []).includes('UNREAD'),
+      hasAttachments: detectAttachments(m.payload),
     })
     if (m.historyId) {
       try {
