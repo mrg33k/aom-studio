@@ -125,23 +125,57 @@
     `;
     dadPanel.querySelector('.ss-dad-close').onclick = () => toggleDadChat(false);
     dadPanel.querySelector('#ss-dad-cancel').onclick = () => toggleDadChat(false);
-    dadPanel.querySelector('#ss-dad-send').onclick = () => {
+    dadPanel.querySelector('#ss-dad-send').onclick = async () => {
       const txt = dadPanel.querySelector('#ss-dad-text').value.trim();
       if (!txt) return;
-      const entry = {
-        at: new Date().toISOString(),
-        text: txt,
-        block: currentBlockIdx >= 0 ? day().blocks[currentBlockIdx].title : 'hub',
-        url: location.href
-      };
+      const blockTitle = currentBlockIdx >= 0 ? day().blocks[currentBlockIdx].title : 'hub';
+      const entry = { at: new Date().toISOString(), text: txt, block: blockTitle, url: location.href };
+      // Local mirror so Ethan sees his own history + survives offline
       const list = JSON.parse(localStorage.getItem('ss-dad-feedback') || '[]');
       list.push(entry);
       localStorage.setItem('ss-dad-feedback', JSON.stringify(list));
+
+      // Stamp a stable visitor_id so all his messages thread together backend-side
+      let vid = localStorage.getItem('ss-dad-visitor-id');
+      if (!vid) {
+        vid = 'ethan_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('ss-dad-visitor-id', vid);
+      }
+
       const confirm = dadPanel.querySelector('#ss-dad-confirm');
-      confirm.textContent = 'Sent. Dad will see this.';
+      const sendBtn = dadPanel.querySelector('#ss-dad-send');
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending...';
+
+      // POST to Corner embed pipeline — message lands in
+      // aheadofmarket.com:summerschool mission room, EA picks it up
+      try {
+        const r = await fetch('/api/embed/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            embed_id: 'emb_summerschool',
+            visitor_id: vid,
+            host_origin: location.origin,
+            content: `[on block: ${blockTitle}]\n\n${txt}`
+          })
+        });
+        if (r.ok) {
+          confirm.textContent = 'Sent. Dad and the agent will see this.';
+        } else {
+          const err = await r.text();
+          console.warn('embed/chat err', r.status, err);
+          confirm.textContent = 'Saved here — couldn\'t reach Dad over the network. Try again later or just yell.';
+        }
+      } catch (e) {
+        console.warn('embed/chat exception', e);
+        confirm.textContent = 'Saved here — no network. Will reach Dad next time you\'re online.';
+      }
       confirm.classList.add('show');
       dadPanel.querySelector('#ss-dad-text').value = '';
-      setTimeout(() => toggleDadChat(false), 1400);
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send to Dad';
+      setTimeout(() => toggleDadChat(false), 1600);
     };
     setTimeout(() => dadPanel.querySelector('#ss-dad-text')?.focus(), 50);
   }
