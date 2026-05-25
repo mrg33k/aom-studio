@@ -314,6 +314,9 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
 }
 
 function BucketTabs({ active, onChange, counts }) {
+  // R18 — labels no longer uppercase + zero letter-spacing + slightly bigger
+  // font so all five fit in the ~280px rail without truncation. Patrik
+  // flagged "Awaiting especially" was being ellipsized to "AWAITI…".
   return (
     <div data-cv4-mail-tabs style={{
       display: 'flex', gap: 2,
@@ -332,16 +335,17 @@ function BucketTabs({ active, onChange, counts }) {
             data-active={isActive ? 'true' : 'false'}
             style={{
               flex: 1, minWidth: 0,
-              padding: '5px 2px',
+              padding: '5px 3px',
               background: isActive ? 'rgba(234,179,8,0.18)' : 'transparent',
               border: 'none', borderRadius: 4,
               color: isActive ? C.text : C.muted,
               cursor: 'pointer',
-              fontSize: 9.5, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              fontFamily: MENU.monoFont,
+              fontSize: 11, fontWeight: 600,
+              letterSpacing: 0,
+              fontFamily: MENU.bodyFont,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
               overflow: 'hidden',
+              lineHeight: 1.15,
             }}
             title={`${b.label}${count != null ? ` · ${count}` : ''}`}
           >
@@ -350,7 +354,8 @@ function BucketTabs({ active, onChange, counts }) {
             </span>
             {count != null && count > 0 && (
               <span style={{
-                fontSize: 8, color: isActive ? C.text : C.dim, fontWeight: 600,
+                fontSize: 9, color: isActive ? C.text : C.dim, fontWeight: 600,
+                fontFamily: MENU.monoFont,
               }}>{count > 99 ? '99+' : count}</span>
             )}
           </button>
