@@ -418,15 +418,17 @@ export default function CornerV4() {
   // When a brand new user loads their empty workspace the EA sends the first
   // message — a warm welcome + lead-in question. The user should never see a
   // blank chat and wonder if something is broken.
-  // Guard: only fires once per world (sessionStorage key), only for non-AOM
-  // worlds where the user has no messages yet.
+  // Primary guard: msgs.length > 0 (DB state). sessionStorage is a lightweight
+  // dedup to avoid re-checking on every render within the same tab session.
   useEffect(() => {
     if (!authReady || !worldId || !currentUser) return
     if (worldId === 'aom') return  // Patrik's world — never auto-start
+    // Find the EA agent specifically — not just agents[0] which may be a project room
+    const eaAgent = agents?.find(a => a.is_ea && a.is_terminal)
+      || agents?.find(a => a.is_ea)
+      || agents?.[0]
+    if (!eaAgent) return
     const flagKey = `onboard-started-${worldId}`
-    if (sessionStorage.getItem(flagKey)) return
-    const defaultAgent = agents?.[0]
-    if (!defaultAgent) return
     // Delay to let the message list load before we check if it's empty
     const timer = setTimeout(async () => {
       try {
@@ -436,24 +438,29 @@ export default function CornerV4() {
         if (!r.ok) return
         const data = await r.json()
         const msgs = Array.isArray(data?.messages) ? data.messages : Array.isArray(data) ? data : []
-        if (msgs.length > 0) return  // already has messages — not new
+        if (msgs.length > 0) {
+          // Already has messages — set the dedup flag so we stop checking each render
+          sessionStorage.setItem(flagKey, '1')
+          return
+        }
         // No messages — EA sends the welcome first as assistant
+        if (sessionStorage.getItem(flagKey)) return  // already fired this session
         sessionStorage.setItem(flagKey, '1')
         await authFetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            agent: defaultAgent.slug,
+            agent: eaAgent.slug,
             text: "Hey, welcome! I'm your EA — I help you stay organized and get things done. What kind of work do you do? Give me a quick rundown and I'll get your workspace set up.",
             role: 'assistant',
             source: 'corner-onboarding-auto',
             client_id: worldId,
           }),
         })
-      } catch (_e) { /* silent — new user greeting is best-effort */ }
-    }, 1800)
+      } catch (e) { console.warn('[onboarding] welcome send failed:', e) }
+    }, 1200)
     return () => clearTimeout(timer)
-  }, [authReady, worldId, currentUser, agents, parentUserIdentity])
+  }, [authReady, worldId, currentUser, agents])
 
   // ── Chat unread count (realtime) ──────────────────────────────────────────
 
