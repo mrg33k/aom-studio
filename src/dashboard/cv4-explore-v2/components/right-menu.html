@@ -1,25 +1,25 @@
 <!--
-  right-menu.html — R3 (2026-05-23)
+  right-menu.html — R4 (2026-05-24)
   Mission: corner:right-menu
-  Round: R3 — Header + project pills + Summary + section reorder
+  Round: R4 — Accordion mode, missions sorted by recency, collapsible sections
 
   Layout (top → bottom):
     PANEL HEADER  "Missions"                      ← Instrument Serif title
-    PROJECT PILLS [all] [corner] [ambition] … [+] ← filter the missions list
+    PROJECT PILLS [all] [corner] [ambition] … [+] ← filter missions/tasks/files
     SUMMARY                                       ← N missions in scope · running/queued/done
-    ACTIVE TASKS  (only when something is running)
-    MISSIONS      ← list, filtered by pill, sorted by last-touched
-    FILES         ← placeholder rows (real wiring lives in React)
-    COMPLETED     ← done tasks, capped at 3 + show-more
 
-  Design language carried from R-S1:
-    Two-line mission rows · left-stripe-as-status · no pill chrome on statuses ·
-    type hierarchy: Instrument Serif 24 (header) → Inter 700/10 uppercase (section
-    labels) → Inter 500/13 (mission names) → Inter 400/11 (project meta) →
-    JetBrains Mono 10 (mono metadata + status text).
+    ACCORDION TABS (one section open at a time):
+      • MISSIONS TAB (default) ← sorted by last_message_at DESC (most recent first)
+      • TASKS TAB           ← all tasks (active, queued, done)
+      • FILES TAB           ← mission canon files (VISION/BUILD/CONTEXT/RESEARCH)
 
-  Pills are pure JS: click to filter the .rm-mission-row + .rm-task-row entries
-  whose data-project matches the pill. The '+' pill is visual-only (dashed ghost).
+  Design language:
+    Tab headers are clickable section toggles (clean borders, clean typography).
+    Mission rows show: status-dot · name · project · "last seen X min ago"
+    Pills filter the list within the active accordion section.
+
+  Pills: click to filter .rm-mission-row + .rm-task-row whose data-project matches.
+  The '+' pill is visual-only (dashed ghost).
 -->
 
 <style data-cv4 data-component="right-menu">
@@ -177,6 +177,49 @@
     border: none;
   }
 
+  /* ─── Accordion tabs ─────────────────────────────────────── */
+
+  [data-cv4] .rm-accordion-tabs {
+    display: flex;
+    gap: 0;
+    padding: 12px 12px 0;
+    border-bottom: 1px solid var(--c-border);
+    margin-bottom: 12px;
+  }
+
+  [data-cv4] .rm-accordion-tab {
+    flex: 1;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-muted);
+    transition: color 120ms ease, border-color 120ms ease;
+    font-family: var(--ff-mono);
+  }
+
+  [data-cv4] .rm-accordion-tab:hover {
+    color: var(--c-text2);
+  }
+
+  [data-cv4] .rm-accordion-tab.active {
+    color: var(--c-text);
+    border-bottom-color: var(--c-accent);
+  }
+
+  [data-cv4] .rm-accordion-content {
+    display: none;
+  }
+
+  [data-cv4] .rm-accordion-content.active {
+    display: block;
+  }
+
   /* ─── Status dots (missions) ────────────────────────────── */
 
   [data-cv4] .rm-dot {
@@ -260,15 +303,13 @@
     line-height: 1.2;
   }
 
-  [data-cv4] .rm-mission-age {
+  [data-cv4] .rm-mission-lastseen {
     font-size: 10px;
     color: var(--c-muted);
     font-family: var(--ff-mono);
     white-space: nowrap;
     flex-shrink: 0;
-    align-self: flex-start;
-    padding-top: 2px;
-    line-height: 1.3;
+    font-weight: 400;
   }
 
   /* Rows hidden by pill filter */
@@ -542,23 +583,97 @@
 
     <hr class="rm-divider">
 
-    <!-- ──────────────── 2. ACTIVE TASKS ──────────────── -->
-    <!-- Filtered by active pill (data-project). Section hides itself when empty. -->
-    <div class="rm-section" data-rm-active-section>
-      <span class="rm-section-label">Active Tasks</span>
+    <!-- ──────────────── 2. ACCORDION TABS ──────────────── -->
+    <div class="rm-accordion-tabs">
+      <button class="rm-accordion-tab active" data-rm-tab="missions">Missions</button>
+      <button class="rm-accordion-tab" data-rm-tab="tasks">Tasks</button>
+      <button class="rm-accordion-tab" data-rm-tab="files">Files</button>
+    </div>
 
+    <!-- ──────────────── TAB: MISSIONS (sorted by recency) ──────────────── -->
+    <div class="rm-accordion-content active" data-rm-accordion="missions">
+      <div class="rm-mission-list">
+
+        <a href="#" class="rm-mission-row current" data-project="corner" data-lastmessage="2026-05-24T14:32:00Z">
+          <span class="rm-dot active"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">right-menu</span>
+            <span class="rm-mission-project">corner</span>
+          </div>
+          <span class="rm-mission-lastseen">now</span>
+        </a>
+
+        <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-24T14:27:00Z">
+          <span class="rm-dot active"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">corner-ui-cv4</span>
+            <span class="rm-mission-project">corner</span>
+          </div>
+          <span class="rm-mission-lastseen">5m ago</span>
+        </a>
+
+        <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:45:00Z">
+          <span class="rm-dot active"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">hero-section</span>
+            <span class="rm-mission-project">ambition</span>
+          </div>
+          <span class="rm-mission-lastseen">47m ago</span>
+        </a>
+
+        <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:15:00Z">
+          <span class="rm-dot queued"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">brand-refresh</span>
+            <span class="rm-mission-project">ambition</span>
+          </div>
+          <span class="rm-mission-lastseen">1h ago</span>
+        </a>
+
+        <a href="#" class="rm-mission-row" data-project="skylar" data-lastmessage="2026-05-23T18:30:00Z">
+          <span class="rm-dot"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">campaign-launch</span>
+            <span class="rm-mission-project">skylar</span>
+          </div>
+          <span class="rm-mission-lastseen">20h ago</span>
+        </a>
+
+        <a href="#" class="rm-mission-row" data-project="brandon" data-lastmessage="2026-05-22T10:00:00Z">
+          <span class="rm-dot"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">lbx-documentary</span>
+            <span class="rm-mission-project">brandon</span>
+          </div>
+          <span class="rm-mission-lastseen">2d ago</span>
+        </a>
+
+        <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-21T09:15:00Z">
+          <span class="rm-dot"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">mission-panel</span>
+            <span class="rm-mission-project">corner</span>
+          </div>
+          <span class="rm-mission-lastseen">3d ago</span>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ──────────────── TAB: TASKS ──────────────── -->
+    <div class="rm-accordion-content" data-rm-accordion="tasks">
       <div class="rm-task-list">
 
         <div class="rm-task-row running" data-project="corner">
           <div class="rm-agent-badge">Bo</div>
           <div class="rm-task-body">
-            <div class="rm-task-title">Right menu R3 — header + pills + reorder</div>
+            <div class="rm-task-title">Right menu R4 — accordion + recency sort</div>
             <div class="rm-task-meta">
               <span class="rm-status running">
                 <span class="rm-status-dot"></span>
                 running
               </span>
-              <span class="rm-task-age">15m</span>
+              <span class="rm-task-age">12m</span>
             </div>
           </div>
         </div>
@@ -591,122 +706,12 @@
           </div>
         </div>
 
-      </div>
-    </div>
-
-    <hr class="rm-divider">
-
-    <!-- ──────────────── 3. MISSIONS ──────────────── -->
-    <div class="rm-section">
-      <span class="rm-section-label">Missions</span>
-
-      <div class="rm-mission-list">
-
-        <a href="#" class="rm-mission-row current" data-project="corner">
-          <span class="rm-dot active"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">right-menu</span>
-            <span class="rm-mission-project">corner</span>
-          </div>
-          <span class="rm-mission-age">now</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="corner">
-          <span class="rm-dot active"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">cv4-redesign</span>
-            <span class="rm-mission-project">corner</span>
-          </div>
-          <span class="rm-mission-age">5m</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="ambition">
-          <span class="rm-dot active"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">brand-page</span>
-            <span class="rm-mission-project">ambition</span>
-          </div>
-          <span class="rm-mission-age">1h</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="ambition">
-          <span class="rm-dot queued"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">hero</span>
-            <span class="rm-mission-project">ambition</span>
-          </div>
-          <span class="rm-mission-age">2h</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="skylar">
-          <span class="rm-dot"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">campaign-launch</span>
-            <span class="rm-mission-project">skylar</span>
-          </div>
-          <span class="rm-mission-age">5h</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="brandon">
-          <span class="rm-dot"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">lbx-documentary</span>
-            <span class="rm-mission-project">brandon</span>
-          </div>
-          <span class="rm-mission-age">1d</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="corner">
-          <span class="rm-dot"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">mission-panel</span>
-            <span class="rm-mission-project">corner</span>
-          </div>
-          <span class="rm-mission-age">2d</span>
-        </a>
-
-      </div>
-    </div>
-
-    <hr class="rm-divider">
-
-    <!-- ──────────────── 4. FILES ──────────────── -->
-    <div class="rm-section">
-      <span class="rm-section-label">Files</span>
-
-      <div class="rm-file-list">
-        <div class="rm-file-row">
-          <div class="rm-file-icon">md</div>
-          <span class="rm-file-name">VISION.md</span>
-          <span class="rm-file-date">May 18</span>
-        </div>
-        <div class="rm-file-row">
-          <div class="rm-file-icon">md</div>
-          <span class="rm-file-name">BUILD.md</span>
-          <span class="rm-file-date">May 18</span>
-        </div>
-        <div class="rm-file-row">
-          <div class="rm-file-icon">pdf</div>
-          <span class="rm-file-name">design-spec.pdf</span>
-          <span class="rm-file-date">May 17</span>
-        </div>
-      </div>
-    </div>
-
-    <hr class="rm-divider">
-
-    <!-- ──────────────── 5. COMPLETED ──────────────── -->
-    <div class="rm-section">
-      <span class="rm-section-label">Completed</span>
-
-      <div class="rm-task-list">
-
         <div class="rm-task-row done" data-project="corner">
           <div class="rm-agent-badge">St</div>
           <div class="rm-task-body">
-            <div class="rm-task-title">Mission tree component R-MP-1.5</div>
+            <div class="rm-task-title">Mission tree component polish</div>
             <div class="rm-task-meta">
-              <span class="rm-task-age">2h ago</span>
+              <span class="rm-task-age">5h ago</span>
             </div>
           </div>
         </div>
@@ -716,65 +721,38 @@
           <div class="rm-task-body">
             <div class="rm-task-title">CV4 project-chat view R1</div>
             <div class="rm-task-meta">
-              <span class="rm-task-age">5h ago</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="rm-task-row done" data-project="ambition">
-          <div class="rm-agent-badge">Sf</div>
-          <div class="rm-task-body">
-            <div class="rm-task-title">Design tokens audit</div>
-            <div class="rm-task-meta">
               <span class="rm-task-age">8h ago</span>
             </div>
           </div>
         </div>
 
-        <div class="rm-task-row done rm-hidden" data-project="corner">
-          <div class="rm-agent-badge">St</div>
-          <div class="rm-task-body">
-            <div class="rm-task-title">Step thread component</div>
-            <div class="rm-task-meta">
-              <span class="rm-task-age">yesterday</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="rm-task-row done rm-hidden" data-project="skylar">
-          <div class="rm-agent-badge">Bo</div>
-          <div class="rm-task-body">
-            <div class="rm-task-title">Landing page draft</div>
-            <div class="rm-task-meta">
-              <span class="rm-task-age">yesterday</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="rm-task-row done rm-hidden" data-project="brandon">
-          <div class="rm-agent-badge">Cl</div>
-          <div class="rm-task-body">
-            <div class="rm-task-title">LBX rough cut review</div>
-            <div class="rm-task-meta">
-              <span class="rm-task-age">2d ago</span>
-            </div>
-          </div>
-        </div>
-
       </div>
+    </div>
 
-      <button
-        class="rm-show-more"
-        onclick="
-          this.closest('.rm-section').querySelectorAll('.rm-hidden').forEach(function(el) {
-            el.classList.remove('rm-hidden');
-          });
-          this.style.display = 'none';
-        "
-      >
-        + 3 more completed
-      </button>
-
+    <!-- ──────────────── TAB: FILES ──────────────── -->
+    <div class="rm-accordion-content" data-rm-accordion="files">
+      <div class="rm-file-list">
+        <div class="rm-file-row">
+          <div class="rm-file-icon">md</div>
+          <span class="rm-file-name">VISION.md</span>
+          <span class="rm-file-date">May 23</span>
+        </div>
+        <div class="rm-file-row">
+          <div class="rm-file-icon">md</div>
+          <span class="rm-file-name">BUILD.md</span>
+          <span class="rm-file-date">May 24</span>
+        </div>
+        <div class="rm-file-row">
+          <div class="rm-file-icon">md</div>
+          <span class="rm-file-name">CONTEXT.md</span>
+          <span class="rm-file-date">May 23</span>
+        </div>
+        <div class="rm-file-row">
+          <div class="rm-file-icon">md</div>
+          <span class="rm-file-name">RESEARCH.md</span>
+          <span class="rm-file-date">May 22</span>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -782,22 +760,39 @@
 
 <script>
 (function () {
-  // ── Pill filtering (idempotent: safe to re-run on data-include re-injection)
+  // ── Accordion tab switching
   var rmRoots = document.querySelectorAll('.rm-root');
   rmRoots.forEach(function (root) {
     if (root.dataset.rmWired === '1') return;
     root.dataset.rmWired = '1';
 
+    var tabs = root.querySelectorAll('.rm-accordion-tab');
+    var contents = root.querySelectorAll('.rm-accordion-content');
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var tabName = tab.dataset.rmTab;
+
+        // Deactivate all tabs and contents
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        contents.forEach(function (c) { c.classList.remove('active'); });
+
+        // Activate clicked tab and matching content
+        tab.classList.add('active');
+        var content = root.querySelector('[data-rm-accordion="' + tabName + '"]');
+        if (content) content.classList.add('active');
+      });
+    });
+
+    // ── Pill filtering
     var pills = root.querySelectorAll('.rm-pill');
     var missionRows = root.querySelectorAll('.rm-mission-row');
     var taskRows = root.querySelectorAll('.rm-task-row');
-    var fileRows = root.querySelectorAll('.rm-file-row'); // not filtered for now
     var missionCountEl = root.querySelector('[data-rm-mission-count]');
     var scopeLabelEl = root.querySelector('[data-rm-scope-label]');
     var runningCountEl = root.querySelector('[data-rm-running-count]');
     var queuedCountEl = root.querySelector('[data-rm-queued-count]');
     var doneCountEl = root.querySelector('[data-rm-done-count]');
-    var activeSection = root.querySelector('[data-rm-active-section]');
 
     function recompute(pill) {
       var visibleMissions = 0;
@@ -816,7 +811,6 @@
         if (!match) return;
         if (row.classList.contains('running')) running++;
         else if (row.classList.contains('queued')) queued++;
-        else if (row.classList.contains('done') && !row.classList.contains('rm-hidden')) done++;
         else if (row.classList.contains('done')) done++;
       });
 
@@ -825,12 +819,6 @@
       if (runningCountEl) runningCountEl.textContent = running;
       if (queuedCountEl) queuedCountEl.textContent = queued;
       if (doneCountEl) doneCountEl.textContent = done;
-
-      // Hide entire Active Tasks section if nothing is running/queued in scope
-      if (activeSection) {
-        var anyActive = (running + queued) > 0;
-        activeSection.style.display = anyActive ? '' : 'none';
-      }
     }
 
     pills.forEach(function (pill) {
@@ -842,7 +830,7 @@
       });
     });
 
-    // initial computation respects the pre-marked .active pill
+    // initial computation
     var initial = root.querySelector('.rm-pill.active');
     recompute(initial ? initial.dataset.pill : 'all');
   });
