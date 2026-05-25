@@ -272,10 +272,14 @@ function Header({ fromName, fromEmail, to, subject, when, onBack }) {
 }
 
 function AttachmentStrip({ messageId, connectionId, attachments }) {
+  // R17 (2026-05-25) — preview modal state lifted to the strip so all
+  // cards share one modal and only one preview opens at a time.
+  const [preview, setPreview] = useState(null)
   return (
     <div style={{
       padding: '12px 22px 18px',
       borderTop: '1px solid ' + C.border,
+      borderBottom: '1px solid ' + C.border,
     }}>
       <div style={{
         fontSize: 10, fontWeight: 700, color: C.dim,
@@ -291,54 +295,72 @@ function AttachmentStrip({ messageId, connectionId, attachments }) {
             messageId={messageId}
             connectionId={connectionId}
             attachment={att}
+            onOpen={() => setPreview(att)}
           />
         ))}
       </div>
+      {preview && (
+        <AttachmentPreviewModal
+          messageId={messageId}
+          connectionId={connectionId}
+          attachment={preview}
+          onClose={() => setPreview(null)}
+        />
+      )}
     </div>
   )
 }
 
-function AttachmentCard({ messageId, connectionId, attachment }) {
-  const { attachmentId, filename, mimeType, size } = attachment
+function AttachmentCard({ messageId, connectionId, attachment, onOpen }) {
+  const { filename, mimeType, size } = attachment
   const isImage = mimeType?.startsWith('image/')
-  const connQs = connectionId ? `&connection_id=${encodeURIComponent(connectionId)}` : ''
-  const baseUrl = `/api/dashboard/mail/attachment?id=${encodeURIComponent(messageId)}&attachmentId=${encodeURIComponent(attachmentId)}&mimeType=${encodeURIComponent(mimeType || 'application/octet-stream')}&filename=${encodeURIComponent(filename || 'attachment')}${connQs}`
-  const inlineUrl = baseUrl + '&disposition=inline'
-  const downloadUrl = baseUrl + '&disposition=attachment'
+  const inlineUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'inline' })
+  const downloadUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'attachment' })
+  const label = mimeLabel(filename, mimeType)
 
   return (
-    <a
-      href={inlineUrl}
-      target="_blank"
-      rel="noreferrer noopener"
-      title={`${filename} · ${formatSize(size)}`}
+    <div
+      role="button"
+      tabIndex={0}
+      title={`${filename || '(unnamed)'} · ${formatSize(size)} · click to preview`}
+      onClick={onOpen}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
       style={{
         display: 'flex', flexDirection: 'column', gap: 6,
         width: 168, padding: 8, borderRadius: 8,
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.08)',
-        textDecoration: 'none', color: C.text2,
+        color: C.text2, cursor: 'pointer',
         overflow: 'hidden',
+        transition: 'background 0.12s, border-color 0.12s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+        e.currentTarget.style.borderColor = 'rgba(234,179,8,0.35)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
       }}
     >
       <div style={{
         width: '100%', height: 96,
         background: 'rgba(0,0,0,0.25)', borderRadius: 6,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden',
+        overflow: 'hidden', position: 'relative',
       }}>
         {isImage ? (
           <img
-            src={inlineUrl} alt={filename}
+            src={inlineUrl} alt={filename || ''}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             loading="lazy"
           />
         ) : (
-          <FileGlyph mimeType={mimeType} />
+          <FileGlyph label={label} />
         )}
       </div>
       <div style={{
-        fontSize: 11, fontWeight: 600,
+        fontSize: 11, fontWeight: 600, color: C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>{filename || '(unnamed)'}</div>
       <div style={{
@@ -346,7 +368,7 @@ function AttachmentCard({ messageId, connectionId, attachment }) {
         fontFamily: "'JetBrains Mono', monospace",
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <span>{formatSize(size)}</span>
+        <span>{label} · {formatSize(size)}</span>
         <a
           href={downloadUrl}
           onClick={(e) => e.stopPropagation()}
@@ -354,17 +376,11 @@ function AttachmentCard({ messageId, connectionId, attachment }) {
           style={{ color: '#eab308', textDecoration: 'none' }}
         >↓ Save</a>
       </div>
-    </a>
+    </div>
   )
 }
 
-function FileGlyph({ mimeType }) {
-  const label = mimeType?.includes('pdf') ? 'PDF'
-    : mimeType?.includes('word') || mimeType?.includes('document') ? 'DOC'
-    : mimeType?.includes('sheet') || mimeType?.includes('excel') ? 'XLS'
-    : mimeType?.includes('presentation') || mimeType?.includes('powerpoint') ? 'PPT'
-    : mimeType?.includes('zip') || mimeType?.includes('compressed') ? 'ZIP'
-    : 'FILE'
+function FileGlyph({ label }) {
   return (
     <span style={{
       fontSize: 12, fontWeight: 700, color: '#eab308',
@@ -372,6 +388,231 @@ function FileGlyph({ mimeType }) {
       letterSpacing: '0.08em',
     }}>{label}</span>
   )
+}
+
+// R17 — modal preview. Inline-rendered for previewable types (image / PDF
+// / plain text / HTML); for everything else show a centered file card
+// with the Download button. Esc closes; click backdrop closes; Download
+// uses the &disposition=attachment URL so the browser saves rather than
+// opens, regardless of the inline render state.
+function AttachmentPreviewModal({ messageId, connectionId, attachment, onClose }) {
+  const { filename, mimeType, size } = attachment
+  const inlineUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'inline' })
+  const downloadUrl = buildAttachmentUrl({ messageId, connectionId, attachment, disposition: 'attachment' })
+  const label = mimeLabel(filename, mimeType)
+  const previewKind = (() => {
+    if (mimeType?.startsWith('image/')) return 'image'
+    if (mimeType === 'application/pdf') return 'pdf'
+    if (mimeType?.startsWith('text/') || mimeType === 'application/json') return 'text'
+    if (mimeType?.startsWith('audio/')) return 'audio'
+    if (mimeType?.startsWith('video/')) return 'video'
+    return 'binary'
+  })()
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 400,
+        background: 'rgba(0,0,0,0.78)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24, animation: 'cv4MailModalFade 0.18s ease-out',
+      }}
+    >
+      <style>{`
+        @keyframes cv4MailModalFade { from { opacity: 0 } to { opacity: 1 } }
+      `}</style>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 980, maxHeight: '92vh',
+          display: 'flex', flexDirection: 'column',
+          background: C.bg, border: '1px solid ' + C.border,
+          borderRadius: 12, overflow: 'hidden',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        }}
+      >
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 16px',
+          borderBottom: '1px solid ' + C.border,
+          background: 'rgba(234,179,8,0.05)',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: '#eab308',
+            letterSpacing: '0.10em', textTransform: 'uppercase',
+            fontFamily: "'JetBrains Mono', monospace",
+            padding: '3px 7px', borderRadius: 4,
+            background: 'rgba(234,179,8,0.15)',
+            border: '1px solid rgba(234,179,8,0.32)',
+            flexShrink: 0,
+          }}>{label}</span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: 13, fontWeight: 600, color: C.text,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              fontFamily: "'Hanken Grotesk', sans-serif",
+            }}>{filename || '(unnamed)'}</div>
+            <div style={{
+              fontSize: 10, color: C.dim,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>{formatSize(size)} · {mimeType || 'application/octet-stream'}</div>
+          </div>
+          <a
+            href={downloadUrl}
+            download={filename || 'attachment'}
+            style={{
+              padding: '6px 12px', borderRadius: 6,
+              background: 'rgba(234,179,8,0.18)',
+              border: '1px solid rgba(234,179,8,0.42)',
+              color: '#eab308', textDecoration: 'none',
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontFamily: "'JetBrains Mono', monospace",
+              flexShrink: 0,
+            }}
+          >↓ Download</a>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close preview"
+            title="Close (Esc)"
+            style={{
+              padding: '6px 12px', borderRadius: 6,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: C.text2, cursor: 'pointer',
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontFamily: "'JetBrains Mono', monospace",
+              flexShrink: 0,
+            }}
+          >Close</button>
+        </div>
+
+        <div style={{
+          flex: 1, overflow: 'hidden',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.45)',
+          minHeight: 0,
+        }}>
+          {previewKind === 'image' && (
+            <img
+              src={inlineUrl} alt={filename || ''}
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            />
+          )}
+          {previewKind === 'pdf' && (
+            <iframe
+              title={filename || 'PDF preview'}
+              src={inlineUrl}
+              style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+            />
+          )}
+          {previewKind === 'text' && (
+            <iframe
+              title={filename || 'Text preview'}
+              src={inlineUrl}
+              style={{ width: '100%', height: '100%', border: 'none', background: '#0d0e10' }}
+            />
+          )}
+          {previewKind === 'audio' && (
+            <audio controls src={inlineUrl} style={{ width: '80%' }} />
+          )}
+          {previewKind === 'video' && (
+            <video controls src={inlineUrl} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+          )}
+          {previewKind === 'binary' && (
+            <BinaryFallback label={label} filename={filename} size={size} mimeType={mimeType} downloadUrl={downloadUrl} />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BinaryFallback({ label, filename, size, mimeType, downloadUrl }) {
+  return (
+    <div style={{
+      padding: '40px 32px', textAlign: 'center', color: C.text2,
+      maxWidth: 440,
+    }}>
+      <div style={{
+        margin: '0 auto 18px',
+        width: 96, height: 96, borderRadius: 12,
+        background: 'rgba(234,179,8,0.10)',
+        border: '1px solid rgba(234,179,8,0.30)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#eab308', fontWeight: 700, fontSize: 20,
+        fontFamily: "'JetBrains Mono', monospace",
+        letterSpacing: '0.08em',
+      }}>{label}</div>
+      <div style={{
+        fontSize: 16, fontWeight: 600, color: C.text,
+        fontFamily: "'Instrument Serif', serif", marginBottom: 6,
+      }}>{filename || '(unnamed)'}</div>
+      <div style={{
+        fontSize: 11, color: C.dim,
+        fontFamily: "'JetBrains Mono', monospace", marginBottom: 22,
+      }}>{formatSize(size)} · {mimeType}</div>
+      <p style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 22 }}>
+        This file type can’t be previewed in the browser. Download it to open in the right app.
+      </p>
+      <a
+        href={downloadUrl}
+        download={filename || 'attachment'}
+        style={{
+          display: 'inline-block', padding: '10px 18px', borderRadius: 8,
+          background: 'rgba(234,179,8,0.20)',
+          border: '1px solid rgba(234,179,8,0.45)',
+          color: '#eab308', textDecoration: 'none',
+          fontSize: 12, fontWeight: 700,
+          letterSpacing: '0.08em', textTransform: 'uppercase',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >↓ Download {filename ? filename.split('.').pop().toUpperCase() : 'File'}</a>
+    </div>
+  )
+}
+
+function buildAttachmentUrl({ messageId, connectionId, attachment, disposition }) {
+  const { attachmentId, filename, mimeType } = attachment
+  const connQs = connectionId ? `&connection_id=${encodeURIComponent(connectionId)}` : ''
+  return `/api/dashboard/mail/attachment?id=${encodeURIComponent(messageId)}&attachmentId=${encodeURIComponent(attachmentId)}&mimeType=${encodeURIComponent(mimeType || 'application/octet-stream')}&filename=${encodeURIComponent(filename || 'attachment')}${connQs}&disposition=${disposition}`
+}
+
+// R17 — pick a tight label per file. Filename extension wins (it's what the
+// user actually sees in Finder); fall back to mimeType heuristics; final
+// fallback is "FILE". Always upper-case, max 5 chars to fit the badge.
+function mimeLabel(filename, mimeType) {
+  const fromName = (filename || '').toLowerCase().split('.').pop()
+  if (fromName && fromName !== filename?.toLowerCase() && fromName.length <= 5) {
+    return fromName.toUpperCase()
+  }
+  const mt = (mimeType || '').toLowerCase()
+  if (!mt) return 'FILE'
+  if (mt === 'application/pdf') return 'PDF'
+  if (mt === 'application/zip' || mt.includes('compressed')) return 'ZIP'
+  if (mt.startsWith('image/')) return mt.split('/')[1].toUpperCase().slice(0, 5)
+  if (mt.startsWith('audio/')) return mt.split('/')[1].toUpperCase().slice(0, 5)
+  if (mt.startsWith('video/')) return mt.split('/')[1].toUpperCase().slice(0, 5)
+  if (mt.includes('spreadsheetml') || mt.includes('excel')) return 'XLSX'
+  if (mt.includes('wordprocessingml') || mt.includes('msword')) return 'DOCX'
+  if (mt.includes('presentationml') || mt.includes('powerpoint')) return 'PPTX'
+  if (mt.startsWith('text/csv')) return 'CSV'
+  if (mt.startsWith('text/')) return 'TXT'
+  if (mt === 'application/json') return 'JSON'
+  return 'FILE'
 }
 
 function formatSize(bytes) {
