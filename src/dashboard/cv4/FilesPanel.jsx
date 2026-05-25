@@ -9,6 +9,9 @@
 // Data sources:
 //   1. /api/dashboard/project-files?slug={slug}  — disk-based canon + research (local only)
 //   2. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
+//   3. /api/dashboard/files?type=uploads&client={world}[&project={slug}]  — chat-uploaded
+//      files (RAG-tunnel storage, surfaced via the messages table). Added R79-f14
+//      so screenshots dropped in chat appear under the Media filter.
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -33,7 +36,7 @@ function fileExt(name) {
   return (name || '').split('.').pop().toLowerCase()
 }
 
-function fileKind(name) {
+function fileKind(name, mime) {
   const ext = fileExt(name)
   if (['mp4', 'mov', 'webm', 'mkv', 'avi', 'm4v'].includes(ext)) return 'video'
   if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext)) return 'audio'
@@ -42,6 +45,14 @@ function fileKind(name) {
   if (['md', 'txt'].includes(ext)) return 'text'
   if (['xlsx', 'xls', 'csv'].includes(ext)) return 'spreadsheet'
   if (['docx', 'doc'].includes(ext)) return 'doc'
+  // Fallback to mime type when the extension is missing or unrecognized
+  // (chat uploads sometimes arrive with quirky filenames but trustworthy mime).
+  if (mime && typeof mime === 'string') {
+    if (mime.startsWith('image/')) return 'image'
+    if (mime.startsWith('video/')) return 'video'
+    if (mime.startsWith('audio/')) return 'audio'
+    if (mime === 'application/pdf') return 'pdf'
+  }
   return 'file'
 }
 
@@ -590,6 +601,26 @@ export default function FilesPanel({ projectSlug }) {
       })))
       .catch(() => [])
 
+    // Chat-uploaded files (RAG-tunnel storage, mined from the messages table).
+    // R79-f14 (2026-05-25): screenshots dropped in chat now appear under the
+    // Media filter without waiting on a tunnel-list endpoint or a storage
+    // migration.
+    const chatUploadsP = authFetch(
+      `/api/dashboard/files?type=uploads&client=${encodeURIComponent(world)}${projectSlug ? `&project=${encodeURIComponent(projectSlug)}` : ''}`
+    )
+      .then(r => r.ok ? r.json() : null)
+      .then(body => (body?.files || []).map(f => ({
+        name: f.name,
+        relativePath: f.relativePath || f.name,
+        url: f.url,
+        age: relativeAge(f.date),
+        kind: fileKind(f.name, f.mime),
+        size: f.size,
+        mime: f.mime,
+        _ts: f.date ? new Date(f.date).getTime() : 0,
+      })))
+      .catch(() => [])
+
     // text_files / scaffold MDs (mission canon: VISION/CONTEXT/BUILD/RESEARCH).
     // These live under the project slug as their client_id. R10-11: use the
     // real filename path (e.g. "research/README.md") instead of wrapping under
@@ -618,7 +649,7 @@ export default function FilesPanel({ projectSlug }) {
       }))
       .catch(() => [])
 
-    Promise.all([uploadsP, textP]).then(([uploads, texts]) => {
+    Promise.all([uploadsP, textP, chatUploadsP]).then(([uploads, texts, chatUploads]) => {
       if (cancelled) return
       // Project-scope text files (skip ones tagged for other projects).
       const scopedTexts = projectSlug
@@ -626,10 +657,16 @@ export default function FilesPanel({ projectSlug }) {
         : texts
       // Dedupe by relativePath — Storage uploads (freshly mirrored) shadow
       // the events-table scaffold rows that carry the same canonical filename.
-      // Uploads come first so they win when seen.
+      // Storage uploads come first, then chat uploads (RAG tunnel), then text
+      // scaffolds. We dedupe on URL primarily (chat uploads have unique RAG
+      // URLs) and on normalized name (so an upload named CONTEXT.md doesn't
+      // double-render alongside the scaffold).
       const seen = new Set()
-      const merged = [...uploads, ...scopedTexts].filter(f => {
+      const seenUrls = new Set()
+      const merged = [...uploads, ...chatUploads, ...scopedTexts].filter(f => {
         if (!f.url) return false
+        if (seenUrls.has(f.url)) return false
+        seenUrls.add(f.url)
         const key = f.relativePath || f.name || f.url
         // Normalize: events scaffold might be 'CONTEXT', upload is 'CONTEXT.md'.
         const norm = key.toLowerCase().replace(/\.(md|txt|json|yaml|yml)$/, '')
