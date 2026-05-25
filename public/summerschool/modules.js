@@ -134,7 +134,7 @@ window.SSMod = (function () {
           <p style="font-family: var(--font-body); font-size: 13px; color: var(--ink-quiet); font-style: italic; margin-top: var(--space-5);">Tap or hover any word for its definition.</p>
         </article>
         <aside class="questions">
-          <h4>Questions · need ${Math.max(2, qs.length - 1)} of ${qs.length}</h4>
+          <h4>Questions · need ${qs.length === 1 ? 1 : (qs.length <= 3 ? qs.length - 1 : Math.ceil(qs.length * 0.75))} of ${qs.length}</h4>
           ${qs.map((q, i) => `
             <div class="q-item" data-q="${i}">
               <div class="q-prompt">${q.q}</div>
@@ -151,7 +151,9 @@ window.SSMod = (function () {
       </div>
     `;
 
-    const required = Math.max(2, qs.length - 1);  // need most-but-not-all right
+    // Need most-but-not-all right — but never more than exist.
+    // 1 Q → need 1, 2 Qs → need 1, 3 Qs → need 2, 4 Qs → need 3
+    const required = qs.length === 1 ? 1 : (qs.length <= 3 ? qs.length - 1 : Math.ceil(qs.length * 0.75));
     let answered = 0;
     let attempted = 0;
     const doneBtn = host.querySelector('#r-done');
