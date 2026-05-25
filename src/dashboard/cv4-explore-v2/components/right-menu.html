@@ -1,7 +1,7 @@
 <!--
-  right-menu.html — R4 (2026-05-24)
+  right-menu.html — R5 (2026-05-25)
   Mission: corner:right-menu
-  Round: R4 — Accordion mode, missions sorted by recency, collapsible sections
+  Round: R5 — Files browser R1: all-project-files + media categorization + inline player
 
   Layout (top → bottom):
     PANEL HEADER  "Missions"                      ← Instrument Serif title
@@ -11,12 +11,18 @@
     ACCORDION TABS (one section open at a time):
       • MISSIONS TAB (default) ← sorted by last_message_at DESC (most recent first)
       • TASKS TAB           ← all tasks (active, queued, done)
-      • FILES TAB           ← mission canon files (VISION/BUILD/CONTEXT/RESEARCH)
+      • FILES TAB (NEW)     ← categorized media + full project file browser
+        - MEDIA CATEGORIES: Docs | Media | Spreadsheets | PDFs (click to filter)
+        - FILE BROWSER: recursive folder nav, inline audio/video player, read-only
 
   Design language:
     Tab headers are clickable section toggles (clean borders, clean typography).
     Mission rows show: status-dot · name · project · "last seen X min ago"
     Pills filter the list within the active accordion section.
+
+  Files section:
+    Media categories sit above the browser. File browser shows ALL project files + subfolders.
+    Audio/video playback inline. All files read-only (no edit, no delete).
 
   Pills: click to filter .rm-mission-row + .rm-task-row whose data-project matches.
   The '+' pill is visual-only (dashed ghost).
@@ -544,6 +550,199 @@
     color: var(--c-text2);
   }
 
+  /* ─── Files section: media category tabs ─────────────────── */
+
+  [data-cv4] .rm-files-categories {
+    display: flex;
+    gap: 2px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--c-border);
+    margin-bottom: 8px;
+  }
+
+  [data-cv4] .rm-media-category {
+    flex: 1;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-cv4] .rm-media-category:hover {
+    color: var(--c-text2);
+  }
+
+  [data-cv4] .rm-media-category.active {
+    background: rgba(16, 185, 129, 0.10);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: var(--c-accent);
+  }
+
+  /* ─── Files browser breadcrumb ──────────────────────────── */
+
+  [data-cv4] .rm-files-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px 6px;
+    font-size: 10px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    min-height: 20px;
+  }
+
+  [data-cv4] .rm-files-breadcrumb-item {
+    cursor: pointer;
+    color: var(--c-text2);
+    transition: color 120ms ease;
+  }
+
+  [data-cv4] .rm-files-breadcrumb-item:hover {
+    color: var(--c-accent);
+  }
+
+  [data-cv4] .rm-files-breadcrumb-item.root {
+    cursor: pointer;
+    color: var(--c-muted);
+  }
+
+  [data-cv4] .rm-files-breadcrumb-item.root:hover {
+    color: var(--c-text2);
+  }
+
+  /* ─── Files browser main tree ───────────────────────────── */
+
+  [data-cv4] .rm-files-browser {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  [data-cv4] .rm-file-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+    min-height: 28px;
+    border-left: 2px solid transparent;
+    font-size: 12px;
+  }
+
+  [data-cv4] .rm-file-item:hover {
+    background-color: var(--c-dim);
+  }
+
+  [data-cv4] .rm-file-item.folder:hover {
+    border-left-color: var(--c-accent);
+  }
+
+  [data-cv4] .rm-file-item.indent-1 { padding-left: 20px; }
+  [data-cv4] .rm-file-item.indent-2 { padding-left: 28px; }
+  [data-cv4] .rm-file-item.indent-3 { padding-left: 36px; }
+
+  [data-cv4] .rm-file-item-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--c-chip-bg, rgba(51, 65, 85, 0.25));
+    border: 1px solid var(--c-border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff-mono);
+    font-size: 7px;
+    font-weight: 700;
+    color: var(--c-muted);
+    text-transform: uppercase;
+  }
+
+  [data-cv4] .rm-file-item.folder .rm-file-item-icon {
+    background: rgba(16, 185, 129, 0.10);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: var(--c-accent);
+  }
+
+  [data-cv4] .rm-file-item-name {
+    flex: 1;
+    min-width: 0;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--ff-sans);
+  }
+
+  [data-cv4] .rm-file-item.folder .rm-file-item-name {
+    color: var(--c-accent);
+    font-weight: 500;
+  }
+
+  [data-cv4] .rm-file-item-size {
+    font-size: 10px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ─── Inline media player ────────────────────────────────── */
+
+  [data-cv4] .rm-media-player-container {
+    padding: 8px 12px;
+    border-top: 1px solid var(--c-border);
+    margin-top: 4px;
+  }
+
+  [data-cv4] .rm-media-player {
+    width: 100%;
+    background: var(--c-dim);
+    border-radius: 4px;
+    padding: 8px;
+  }
+
+  [data-cv4] .rm-media-player audio,
+  [data-cv4] .rm-media-player video {
+    width: 100%;
+    max-height: 200px;
+    border-radius: 3px;
+  }
+
+  [data-cv4] .rm-media-player-label {
+    font-size: 10px;
+    color: var(--c-muted);
+    font-family: var(--ff-mono);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── Empty states ──────────────────────────────────────── */
+
+  [data-cv4] .rm-files-empty {
+    font-size: 12px;
+    color: var(--c-muted);
+    padding: 8px 12px;
+    font-family: var(--ff-sans);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
 </style>
 
 <div data-cv4>
@@ -729,30 +928,81 @@
       </div>
     </div>
 
-    <!-- ──────────────── TAB: FILES ──────────────── -->
+    <!-- ──────────────── TAB: FILES (R5 complete rebuild) ──────────────── -->
     <div class="rm-accordion-content" data-rm-accordion="files">
-      <div class="rm-file-list">
-        <div class="rm-file-row">
-          <div class="rm-file-icon">md</div>
-          <span class="rm-file-name">VISION.md</span>
-          <span class="rm-file-date">May 23</span>
-        </div>
-        <div class="rm-file-row">
-          <div class="rm-file-icon">md</div>
-          <span class="rm-file-name">BUILD.md</span>
-          <span class="rm-file-date">May 24</span>
-        </div>
-        <div class="rm-file-row">
-          <div class="rm-file-icon">md</div>
-          <span class="rm-file-name">CONTEXT.md</span>
-          <span class="rm-file-date">May 23</span>
-        </div>
-        <div class="rm-file-row">
-          <div class="rm-file-icon">md</div>
-          <span class="rm-file-name">RESEARCH.md</span>
-          <span class="rm-file-date">May 22</span>
-        </div>
+
+      <!-- Media category filters -->
+      <div class="rm-files-categories">
+        <button class="rm-media-category active" data-rm-file-filter="all">All</button>
+        <button class="rm-media-category" data-rm-file-filter="docs">Docs</button>
+        <button class="rm-media-category" data-rm-file-filter="media">Media</button>
+        <button class="rm-media-category" data-rm-file-filter="spreadsheets">Sheets</button>
+        <button class="rm-media-category" data-rm-file-filter="pdfs">PDFs</button>
       </div>
+
+      <!-- Breadcrumb navigation -->
+      <div class="rm-files-breadcrumb">
+        <span class="rm-files-breadcrumb-item root" data-rm-breadcrumb="root">📁 /</span>
+      </div>
+
+      <!-- File browser tree -->
+      <div class="rm-files-browser" data-rm-files-browser>
+
+        <!-- Docs category -->
+        <div class="rm-file-item folder" data-file-type="docs" data-file-category="docs">
+          <div class="rm-file-item-icon">📄</div>
+          <span class="rm-file-item-name">VISION.md</span>
+          <span class="rm-file-item-size">4 KB</span>
+        </div>
+        <div class="rm-file-item folder" data-file-type="docs" data-file-category="docs">
+          <div class="rm-file-item-icon">📄</div>
+          <span class="rm-file-item-name">BUILD.md</span>
+          <span class="rm-file-item-size">6 KB</span>
+        </div>
+        <div class="rm-file-item folder" data-file-type="docs" data-file-category="docs">
+          <div class="rm-file-item-icon">📄</div>
+          <span class="rm-file-item-name">CONTEXT.md</span>
+          <span class="rm-file-item-size">3 KB</span>
+        </div>
+        <div class="rm-file-item folder" data-file-type="docs" data-file-category="docs">
+          <div class="rm-file-item-icon">📄</div>
+          <span class="rm-file-item-name">RESEARCH.md</span>
+          <span class="rm-file-item-size">2 KB</span>
+        </div>
+
+        <!-- Media category -->
+        <div class="rm-file-item folder" data-file-type="media" data-file-category="media">
+          <div class="rm-file-item-icon">📁</div>
+          <span class="rm-file-item-name">screenshots</span>
+        </div>
+
+        <!-- Spreadsheets category -->
+        <div class="rm-file-item folder" data-file-type="spreadsheets" data-file-category="spreadsheets">
+          <div class="rm-file-item-icon">📊</div>
+          <span class="rm-file-item-name">data.xlsx</span>
+          <span class="rm-file-item-size">120 KB</span>
+        </div>
+
+        <!-- PDFs category -->
+        <div class="rm-file-item folder" data-file-type="pdfs" data-file-category="pdfs">
+          <div class="rm-file-item-icon">📕</div>
+          <span class="rm-file-item-name">brand-guidelines.pdf</span>
+          <span class="rm-file-item-size">2.4 MB</span>
+        </div>
+
+      </div>
+
+      <!-- Inline media player (shown when media file selected) -->
+      <div class="rm-media-player-container" style="display: none;" data-rm-player-container>
+        <div class="rm-media-player-label" data-rm-player-label>Now playing:</div>
+        <div class="rm-media-player" data-rm-player></div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="rm-files-empty" style="display: none;" data-rm-files-empty>
+        No files in this project yet.
+      </div>
+
     </div>
 
   </div>
@@ -833,6 +1083,39 @@
     // initial computation
     var initial = root.querySelector('.rm-pill.active');
     recompute(initial ? initial.dataset.pill : 'all');
+
+    // ── Files section: media category filtering
+    var mediaCategories = root.querySelectorAll('.rm-media-category');
+    var fileItems = root.querySelectorAll('[data-file-category]');
+
+    mediaCategories.forEach(function (cat) {
+      cat.addEventListener('click', function () {
+        var filter = cat.dataset.rmFileFilter;
+
+        // Deactivate all categories
+        mediaCategories.forEach(function (c) { c.classList.remove('active'); });
+        cat.classList.add('active');
+
+        // Filter file items
+        fileItems.forEach(function (item) {
+          var category = item.dataset.fileCategory;
+          var matches = (filter === 'all' || category === filter);
+          item.style.display = matches ? 'flex' : 'none';
+        });
+      });
+    });
+
+    // ── Files section: folder navigation (placeholder for R5)
+    var folderItems = root.querySelectorAll('.rm-file-item.folder');
+    folderItems.forEach(function (item) {
+      item.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var fileName = item.querySelector('.rm-file-item-name').textContent;
+        // R6: wire folder navigation, breadcrumb update, and media player
+        console.log('Folder clicked: ' + fileName);
+      });
+    });
+
   });
 })();
 </script>
