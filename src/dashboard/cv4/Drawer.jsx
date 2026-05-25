@@ -14,6 +14,12 @@ import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 import { authFetch } from '../lib/authFetch.js'
 
 const PANEL_WIDTH = 300
+const MENU = {
+  bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+  displayFont: "'Instrument Serif', Georgia, serif",
+  monoFont: "'JetBrains Mono', monospace",
+  amber: 'var(--c-yellow)',
+}
 
 export default function CV4Drawer({
   open,
@@ -172,10 +178,10 @@ export default function CV4Drawer({
       @keyframes cv4DrawerFade { from { opacity: 0 } to { opacity: 1 } }
       @keyframes cv4Spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
       [data-cv4-drawer] [data-row]:hover { background: rgba(255,255,255,0.035); }
-      [data-cv4-drawer] [data-row][data-active="true"] { background: rgba(16,185,129,0.08); }
+      [data-cv4-drawer] [data-row][data-active="true"] { background: rgba(234,179,8,0.08); }
       [data-cv4-drawer] [data-row][data-active="true"]::before {
         content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 2px;
-        background: ${C.accent}; border-radius: 0 2px 2px 0;
+        background: ${MENU.amber}; border-radius: 0 2px 2px 0;
       }
       [data-cv4-drawer] [data-row] { position: relative; }
       [data-cv4-refresh-btn] { opacity: 0.45; transition: opacity 0.15s, color 0.15s; }
@@ -223,23 +229,29 @@ export default function CV4Drawer({
           background: C.bg,
           borderRight: '1px solid ' + C.border,
           display: 'flex', flexDirection: 'column',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: MENU.bodyFont,
           overflow: 'hidden',
         }}
       >
         {sharedStyles}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px 10px',
+          padding: '14px 16px 12px',
           borderBottom: '1px solid ' + C.border,
         }}>
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: C.dim,
-            letterSpacing: '0.10em', textTransform: 'uppercase',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            Explorer
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+            <span style={{
+              fontFamily: MENU.displayFont,
+              fontSize: 22,
+              lineHeight: 1,
+              color: C.text,
+            }}>Explorer</span>
+            <span style={{
+              fontSize: 9, fontWeight: 700, color: C.dim,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              fontFamily: MENU.monoFont,
+            }}>Projects · missions · agents</span>
+          </div>
           <button
             data-cv4-refresh-btn
             data-spinning={refreshing ? 'true' : 'false'}
@@ -297,21 +309,27 @@ export default function CV4Drawer({
           display: 'flex', flexDirection: 'column',
           paddingTop: 'env(safe-area-inset-top, 0px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: MENU.bodyFont,
         }}
       >
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px 10px',
+          padding: '14px 16px 12px',
           borderBottom: '1px solid ' + C.border,
         }}>
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: C.dim,
-            letterSpacing: '0.10em', textTransform: 'uppercase',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            Explorer
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+            <span style={{
+              fontFamily: MENU.displayFont,
+              fontSize: 22,
+              lineHeight: 1,
+              color: C.text,
+            }}>Explorer</span>
+            <span style={{
+              fontSize: 9, fontWeight: 700, color: C.dim,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              fontFamily: MENU.monoFont,
+            }}>Projects · missions · agents</span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               data-cv4-refresh-btn
@@ -373,7 +391,7 @@ function DrawerBody({
   onClose,
 }) {
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 12px' }}>
       <DrawerSearchRow
         projectRooms={projectRooms}
         agents={agents}
@@ -525,20 +543,24 @@ function DrawerBody({
 
 function TreeSection({ title, action = null, children }) {
   return (
-    <div style={{ marginBottom: 6 }}>
+    <section style={{
+      margin: '0 0 10px',
+      padding: '8px 0 6px',
+      borderTop: '1px solid rgba(255,255,255,0.045)',
+    }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 14px 4px',
+        padding: '0 6px 6px',
       }}>
         <span style={{
           fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
           textTransform: 'uppercase', color: C.dim,
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: MENU.monoFont,
         }}>{title}</span>
         {action}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column' }}>{children}</div>
-    </div>
+    </section>
   )
 }
 
@@ -549,7 +571,8 @@ function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onT
       data-active={active ? 'true' : 'false'}
       style={{
         display: 'flex', alignItems: 'center', gap: 4,
-        padding: '4px 10px 4px 8px',
+        padding: '5px 8px 5px 4px',
+        borderRadius: 5,
         cursor: 'pointer',
       }}
       onClick={onOpen}
@@ -578,6 +601,7 @@ function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onT
         fontSize: 13, fontWeight: 500, color: active ? C.text : C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
+        fontFamily: MENU.bodyFont,
       }}>{label}</span>
       {hasNotif && (
         <span
@@ -585,8 +609,8 @@ function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onT
           title="New message in this project"
           style={{
             width: 7, height: 7, borderRadius: '50%',
-            background: '#10B981',
-            boxShadow: '0 0 0 2px rgba(16,185,129,0.25)',
+            background: MENU.amber,
+            boxShadow: '0 0 0 2px rgba(234,179,8,0.22)',
             flexShrink: 0, marginLeft: 4,
           }}
         />
@@ -617,7 +641,8 @@ function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick }
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '3px 10px 3px 44px',
+        padding: '4px 8px 4px 40px',
+        borderRadius: 5,
         cursor: 'pointer',
       }}
     >
@@ -628,8 +653,8 @@ function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick }
         title={hasNotif ? 'New message in this room' : (isActive ? 'Recent chat in this room' : '')}
         style={{
           width: hasNotif ? 7 : 6, height: hasNotif ? 7 : 6, borderRadius: '50%',
-          background: isActive ? '#10B981' : 'transparent',
-          boxShadow: hasNotif ? '0 0 0 2px rgba(16,185,129,0.25)' : (isActive ? '0 0 0 1px rgba(16,185,129,0.35)' : 'none'),
+          background: isActive ? MENU.amber : 'transparent',
+          boxShadow: hasNotif ? '0 0 0 2px rgba(234,179,8,0.22)' : (isActive ? '0 0 0 1px rgba(234,179,8,0.35)' : 'none'),
           flexShrink: 0,
         }}
       />
@@ -638,12 +663,13 @@ function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick }
         color: isActive ? C.text : C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
+        fontFamily: MENU.bodyFont,
       }}>{mission.name}</span>
       {mission.status && mission.status !== 'in-progress' && (
         <span style={{
           fontSize: 9, fontWeight: 700,
           letterSpacing: '0.08em', textTransform: 'uppercase',
-          color: C.muted, fontFamily: "'JetBrains Mono', monospace",
+          color: C.muted, fontFamily: MENU.monoFont,
           flexShrink: 0,
         }}>{mission.status}</span>
       )}
@@ -704,7 +730,8 @@ function AgentRow({ agent, active, onClick }) {
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '4px 14px',
+        padding: '5px 8px',
+        borderRadius: 5,
         cursor: 'pointer',
       }}
     >
@@ -714,7 +741,7 @@ function AgentRow({ agent, active, onClick }) {
         border: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 9, fontWeight: 800, color: C.muted,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: MENU.monoFont,
         overflow: 'hidden',
       }}>
         {spriteUrl && !imgFailed ? (
@@ -732,6 +759,7 @@ function AgentRow({ agent, active, onClick }) {
         fontSize: 13, fontWeight: 500, color: active ? C.text : C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
+        fontFamily: MENU.bodyFont,
       }}>{agent.name}</span>
     </div>
   )
@@ -744,13 +772,14 @@ function PlainRow({ icon, label, onClick }) {
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '4px 14px',
+        padding: '5px 8px',
+        borderRadius: 5,
         cursor: 'pointer',
         color: C.muted,
       }}
     >
       {icon}
-      <span style={{ fontSize: 13, fontWeight: 500, color: C.text2 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: C.text2, fontFamily: MENU.bodyFont }}>{label}</span>
     </div>
   )
 }
@@ -765,7 +794,8 @@ function NewMissionRow({ onClick }) {
       onClick={(e) => { e.stopPropagation(); onClick() }}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '3px 10px 3px 44px',
+        padding: '4px 8px 4px 40px',
+        borderRadius: 5,
         cursor: 'pointer',
       }}
       onMouseEnter={(e) => { e.currentTarget.querySelector('[data-label]').style.color = C.muted }}
@@ -784,7 +814,7 @@ function NewMissionRow({ onClick }) {
         data-label
         style={{
           fontSize: 11.5, fontWeight: 500, color: C.dim,
-          fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
+          fontFamily: MENU.bodyFont,
           userSelect: 'none',
         }}
       >New mission</span>
@@ -798,6 +828,7 @@ function Empty({ label }) {
       padding: '4px 14px 8px 30px',
       fontSize: 11, color: C.muted,
       fontStyle: 'italic',
+      fontFamily: MENU.bodyFont,
     }}>{label}</div>
   )
 }
@@ -841,10 +872,10 @@ function ToolRow({ icon, label, active, onClick }) {
     >
       <div style={{
         width: 20, height: 20, borderRadius: 4, flexShrink: 0,
-        background: active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${active ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+        background: active ? 'rgba(234,179,8,0.12)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${active ? 'rgba(234,179,8,0.35)' : 'rgba(255,255,255,0.08)'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: active ? C.accent : C.muted,
+        color: active ? MENU.amber : C.muted,
       }}>
         {icon}
       </div>
@@ -852,6 +883,7 @@ function ToolRow({ icon, label, active, onClick }) {
         fontSize: 13, fontWeight: 500, color: active ? C.text : C.text2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         flex: 1,
+        fontFamily: MENU.bodyFont,
       }}>{label}</span>
     </div>
   )
@@ -998,7 +1030,7 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
           placeholder="Messages, files…"
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            color: C.text, fontFamily: "'Inter', sans-serif", fontSize: 13,
+            color: C.text, fontFamily: MENU.bodyFont, fontSize: 13,
           }}
           onKeyDown={e => { if (e.key === 'Escape') close() }}
         />
@@ -1007,7 +1039,7 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
           aria-label="Close search"
           style={{
             background: 'none', border: 'none', color: C.muted, cursor: 'pointer',
-            padding: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
+            padding: 0, fontFamily: MENU.monoFont, fontSize: 10,
             letterSpacing: '0.08em', textTransform: 'uppercase',
           }}
         >ESC</button>
@@ -1056,14 +1088,14 @@ function DrawerSearchRow({ projectRooms, agents, worldId, onSelectProject, onSel
             <div style={{
               marginTop: 4, padding: '6px 8px',
               fontSize: 11, color: C.dim, fontStyle: 'italic',
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: MENU.bodyFont,
             }}>No matches</div>
           )}
           {searching && !anyHits && (
             <div style={{
               marginTop: 4, padding: '6px 8px',
               fontSize: 10, color: C.dim,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: MENU.monoFont,
               letterSpacing: '0.08em', textTransform: 'uppercase',
             }}>Searching…</div>
           )}
@@ -1080,7 +1112,7 @@ function SearchGroup({ title, children }) {
         fontSize: 9, fontWeight: 700, color: C.dim,
         letterSpacing: '0.10em', textTransform: 'uppercase',
         padding: '4px 4px 2px',
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: MENU.monoFont,
       }}>{title}</div>
       {children}
     </div>
@@ -1095,7 +1127,7 @@ function SearchHitRow({ children, meta, onClick }) {
         textAlign: 'left', padding: '6px 8px',
         background: 'transparent', border: 'none', cursor: 'pointer',
         color: C.text, fontSize: 13,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: MENU.bodyFont,
         display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 2,
       }}
       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
@@ -1105,7 +1137,7 @@ function SearchHitRow({ children, meta, onClick }) {
       {meta ? (
         <span style={{
           fontSize: 9, color: C.dim,
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: MENU.monoFont,
           letterSpacing: '0.08em', textTransform: 'uppercase',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{meta}</span>

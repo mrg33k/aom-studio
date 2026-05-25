@@ -24,6 +24,13 @@ import { useTasks } from '../hooks/useTasks.js'
 import { authFetch } from '../lib/authFetch.js'
 import FilesPanel from './FilesPanel.jsx'
 
+const MENU = {
+  bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+  displayFont: "'Instrument Serif', Georgia, serif",
+  monoFont: "'JetBrains Mono', monospace",
+  amber: 'var(--c-yellow)',
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function relativeAge(ts) {
@@ -53,7 +60,7 @@ function agentBadgeText(task) {
 function StatusDot({ status }) {
   let bg, pulse = false
   if (status === 'active' || status === 'running' || status === 'building') {
-    bg = C.accent; pulse = true
+    bg = MENU.amber; pulse = true
   } else if (status === 'queued' || status === 'queuing') {
     bg = C.yellow
   } else {
@@ -77,14 +84,26 @@ function StatusDot({ status }) {
 function PanelHeader({ children }) {
   return (
     <div style={{
-      padding: '16px 12px 4px',
-      fontFamily: "'Instrument Serif', Georgia, serif",
-      fontSize: 24,
-      fontWeight: 400,
-      lineHeight: 1.1,
-      color: C.text,
-      letterSpacing: '-0.01em',
-    }}>{children}</div>
+      padding: '16px 14px 10px',
+      borderBottom: '1px solid rgba(255,255,255,0.045)',
+    }}>
+      <div style={{
+        fontFamily: MENU.displayFont,
+        fontSize: 26,
+        fontWeight: 400,
+        lineHeight: 1,
+        color: C.text,
+      }}>{children}</div>
+      <div style={{
+        marginTop: 3,
+        fontFamily: MENU.monoFont,
+        fontSize: 9,
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        color: C.dim,
+      }}>Missions · tasks · files</div>
+    </div>
   )
 }
 
@@ -92,12 +111,12 @@ function PanelHeader({ children }) {
 
 function ProjectPills({ projects, active, onChange }) {
   const baseStyle = {
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: MENU.monoFont,
     fontSize: 10,
     fontWeight: 500,
     letterSpacing: '0.04em',
-    padding: '4px 10px',
-    borderRadius: 999,
+    padding: '5px 9px',
+    borderRadius: 3,
     cursor: 'pointer',
     transition: 'background 120ms ease, color 120ms ease, border-color 120ms ease',
     userSelect: 'none',
@@ -114,9 +133,9 @@ function ProjectPills({ projects, active, onChange }) {
       style.background = 'transparent'
       style.cursor = 'default'
     } else if (isActive) {
-      style.color = C.accent
-      style.background = 'rgba(16,185,129,0.10)'
-      style.borderColor = 'rgba(16,185,129,0.35)'
+      style.color = MENU.amber
+      style.background = 'rgba(234,179,8,0.09)'
+      style.borderColor = 'rgba(234,179,8,0.32)'
     } else {
       style.color = C.text2
       style.background = C.chipBg
@@ -135,9 +154,10 @@ function ProjectPills({ projects, active, onChange }) {
   return (
     <div style={{
       display: 'flex',
-      flexWrap: 'wrap',
+      overflowX: 'auto',
       gap: 4,
-      padding: '4px 12px 14px',
+      padding: '10px 14px 12px',
+      scrollbarWidth: 'none',
     }}>
       {pill('all', 'all')}
       {projects.map(slug => pill(slug, slug))}
@@ -156,8 +176,8 @@ function SectionLabel({ children }) {
       fontWeight: 700,
       color: C.muted,
       letterSpacing: '0.12em',
-      padding: '20px 12px 8px',
-      fontFamily: "'Inter', sans-serif",
+      padding: '16px 14px 7px',
+      fontFamily: MENU.monoFont,
     }}>{children}</div>
   )
 }
@@ -185,10 +205,12 @@ function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, las
 
   return (
     <div style={{
-      padding: '2px 12px 8px',
-      fontFamily: "'Inter', sans-serif",
+      padding: '12px 14px',
+      fontFamily: MENU.bodyFont,
+      background: 'rgba(255,255,255,0.018)',
+      borderBottom: '1px solid rgba(255,255,255,0.045)',
     }}>
-      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{primary}</div>
+      <div style={{ fontSize: 13.5, color: C.text, lineHeight: 1.45 }}>{primary}</div>
       {lastActiveName && (
         <div style={{ fontSize: 11, color: C.muted, marginTop: 4, lineHeight: 1.4 }}>
           {'Last active: '}
@@ -196,7 +218,7 @@ function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, las
           {lastActiveAge && (
             <span style={{
               color: C.muted,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: MENU.monoFont,
               marginLeft: 5,
             }}>{lastActiveAge}</span>
           )}
@@ -210,7 +232,7 @@ function SummaryBlock({ missionCount, runningCount, queuedCount, scopeLabel, las
 
 function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
   const stripeColor = isCurrent
-    ? C.accent
+    ? MENU.amber
     : dotStatus === 'queued'
     ? 'rgba(245,158,11,0.5)'
     : 'transparent'
@@ -220,12 +242,13 @@ function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
       display: 'flex',
       alignItems: 'flex-start',
       gap: 6,
-      padding: '7px 12px',
+      padding: '8px 14px',
       cursor: 'pointer',
       transition: 'background 120ms ease',
-      minHeight: 34,
+      minHeight: 38,
       borderLeft: '2px solid ' + stripeColor,
-      background: isCurrent ? 'rgba(16,185,129,0.04)' : 'transparent',
+      borderBottom: '1px solid rgba(255,255,255,0.025)',
+      background: isCurrent ? 'rgba(234,179,8,0.055)' : 'transparent',
     }}
       onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = C.s1 }}
       onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent' }}
@@ -237,11 +260,11 @@ function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
           fontSize: 13,
           fontWeight: 500,
           lineHeight: 1.3,
-          color: isCurrent ? C.accent : C.text,
+          color: isCurrent ? MENU.amber : C.text,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: MENU.bodyFont,
         }}>{mission.slug || mission.name || 'unnamed'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{
@@ -252,13 +275,13 @@ function MissionRow({ mission, projectSlug, dotStatus, ageLabel, isCurrent }) {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: MENU.bodyFont,
           }}>{projectSlug}</span>
           {ageLabel && (
             <span style={{
               fontSize: 10,
               color: C.muted,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: MENU.monoFont,
               whiteSpace: 'nowrap',
               flexShrink: 0,
             }}>{ageLabel}</span>
@@ -280,7 +303,7 @@ function TaskRow({ task, isDone }) {
   const isRunning = status === 'running' || status === 'building'
   const isQueued = status === 'queued' || status === 'planning' || status === 'classifying'
   const stripeColor = isRunning
-    ? C.accent
+    ? MENU.amber
     : isQueued
     ? 'rgba(245,158,11,0.5)'
     : 'transparent'
@@ -290,11 +313,12 @@ function TaskRow({ task, isDone }) {
       display: 'flex',
       alignItems: 'flex-start',
       gap: 8,
-      padding: '7px 12px',
+      padding: '8px 14px',
       cursor: 'pointer',
-      minHeight: 34,
+      minHeight: 38,
       transition: 'background 120ms ease',
       borderLeft: '2px solid ' + (isDone ? 'transparent' : stripeColor),
+      borderBottom: '1px solid rgba(255,255,255,0.025)',
     }}
       onMouseEnter={e => e.currentTarget.style.background = C.s1}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -302,7 +326,7 @@ function TaskRow({ task, isDone }) {
       {/* Agent badge */}
       <div style={{
         width: 20, height: 20,
-        borderRadius: '50%',
+        borderRadius: 4,
         background: C.dim,
         border: '1px solid ' + C.border2,
         fontSize: 9,
@@ -314,7 +338,7 @@ function TaskRow({ task, isDone }) {
         flexShrink: 0,
         marginTop: 1,
         textTransform: 'uppercase',
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: MENU.monoFont,
         opacity: isDone ? 0.45 : 1,
       }}>{badge}</div>
 
@@ -329,7 +353,7 @@ function TaskRow({ task, isDone }) {
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: MENU.bodyFont,
           textDecoration: isDone ? 'line-through' : 'none',
         }}>{title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
@@ -339,7 +363,7 @@ function TaskRow({ task, isDone }) {
           <span style={{
             fontSize: 10,
             color: C.muted,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: MENU.monoFont,
           }}>{age}{isDone ? ' ago' : ''}</span>
         </div>
       </div>
@@ -357,7 +381,7 @@ function StatusIndicator({ status }) {
 
   let color, label
   if (isRunning) {
-    color = C.accent; label = 'running'
+    color = MENU.amber; label = 'running'
   } else if (isQueued) {
     color = C.yellow; label = 'queued'
   } else if (isWaiting) {
@@ -374,7 +398,7 @@ function StatusIndicator({ status }) {
       alignItems: 'center',
       gap: 4,
       fontSize: 10,
-      fontFamily: "'JetBrains Mono', monospace",
+      fontFamily: MENU.monoFont,
       color,
       flexShrink: 0,
     }}>
@@ -397,8 +421,8 @@ function Divider() {
     <div style={{
       height: 1,
       background: C.border,
-      margin: '4px 0',
-      opacity: 0.3,
+      margin: 0,
+      opacity: 0.55,
     }} />
   )
 }
@@ -415,7 +439,9 @@ function AccordionTabs({ active, onChange }) {
     <div style={{
       display: 'flex',
       borderBottom: '1px solid ' + C.border,
-      margin: '0 0 4px 0',
+      margin: 0,
+      padding: '4px 8px 0',
+      gap: 4,
     }}>
       {tabs.map(t => (
         <button
@@ -423,18 +449,19 @@ function AccordionTabs({ active, onChange }) {
           onClick={() => onChange(t.key)}
           style={{
             flex: 1,
-            padding: '9px 8px',
+            padding: '9px 8px 8px',
             background: 'transparent',
-            border: 'none',
-            borderBottom: active === t.key ? '2px solid ' + C.accent : '2px solid transparent',
+            border: '1px solid transparent',
+            borderBottom: active === t.key ? '1px solid ' + MENU.amber : '1px solid transparent',
+            borderRadius: '4px 4px 0 0',
             cursor: 'pointer',
             fontSize: 11,
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: active === t.key ? C.accent : C.muted,
+            color: active === t.key ? MENU.amber : C.muted,
             transition: 'color 120ms ease, border-color 120ms ease',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: MENU.monoFont,
             marginBottom: -1,
           }}
           onMouseEnter={e => { if (active !== t.key) e.currentTarget.style.color = C.text2 }}
@@ -454,7 +481,7 @@ function EmptyState({ text }) {
       color: C.muted,
       padding: '4px 12px 8px',
       fontStyle: 'italic',
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: MENU.bodyFont,
     }}>{text}</div>
   )
 }
@@ -476,12 +503,41 @@ export default function RightMenu() {
     setMissionsLoading(true)
     ;(async () => {
       try {
-        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
-        if (!r.ok) return
-        const j = await r.json().catch(() => null)
+        // Fetch missions tree + recent messages in parallel
+        const [treeRes, msgsRes] = await Promise.all([
+          authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' }),
+          // Recent messages (last 30 days) to derive per-project activity timestamps
+          authFetch(`/api/dashboard/messages-recent?client=${encodeURIComponent(worldId)}&limit=200`, { credentials: 'include' })
+            .catch(() => null),
+        ])
+
+        if (!treeRes.ok) return
+        const j = await treeRes.json().catch(() => null)
         if (cancelled || !j || !Array.isArray(j.projects)) return
 
-        // Flatten: one row per mission with project slug + task status
+        // Build a project → last message timestamp map from recent messages
+        const projectLastMsg = new Map()
+        if (msgsRes?.ok) {
+          const msgs = await msgsRes.json().catch(() => null)
+          for (const msg of (Array.isArray(msgs?.messages) ? msgs.messages : (Array.isArray(msgs) ? msgs : []))) {
+            const ts = msg?.created_at || msg?.timestamp
+            const clientId = msg?.client_id || ''
+            if (!ts || !clientId) continue
+            // client_id can be: "corner" (project room), "corner:right-menu" (mission room)
+            const projectSlug = clientId.includes(':') ? clientId.split(':')[0] : clientId
+            const missionSlug = clientId.includes(':') ? clientId.split(':').slice(1).join(':') : null
+            const key = missionSlug ? `${projectSlug}:${missionSlug}` : projectSlug
+            if (!projectLastMsg.has(key) || new Date(ts) > new Date(projectLastMsg.get(key))) {
+              projectLastMsg.set(key, ts)
+            }
+            // Also set project-level key
+            if (!projectLastMsg.has(projectSlug) || new Date(ts) > new Date(projectLastMsg.get(projectSlug))) {
+              projectLastMsg.set(projectSlug, ts)
+            }
+          }
+        }
+
+        // Flatten: one row per mission
         const flat = []
         for (const p of j.projects) {
           for (const m of (p.missions || [])) {
@@ -489,20 +545,29 @@ export default function RightMenu() {
             const hasRunning = tasks.some(t => ['running', 'building', 'active'].includes(t.status))
             const hasQueued = tasks.some(t => ['queued', 'planning', 'classifying'].includes(t.status))
             const dotStatus = hasRunning ? 'running' : hasQueued ? 'queued' : 'idle'
+
+            const projectSlug = p.slug || p.name
+            const missionKey = `${projectSlug}:${m.slug}`
+
+            // Recency: mission-level message first, then project-level, then registry timestamps
+            const lastTouched =
+              m.last_message_at ||
+              projectLastMsg.get(missionKey) ||
+              projectLastMsg.get(projectSlug) ||
+              m.last_updated ||
+              null
+
             flat.push({
               slug: m.slug || m.path,
               name: m.name || m.slug || m.path,
-              projectSlug: p.slug || p.name,
+              projectSlug,
               dotStatus,
-              // last_message_at = most recent message in this mission (from messages table join)
-              // last_updated = when the CONTEXT.md was last touched on disk
-              lastTouched: m.last_message_at || m.last_updated || null,
+              lastTouched,
             })
           }
         }
 
-        // Sort: most recently active mission first (last message or last update).
-        // Missions with no timestamp fall to the bottom, alphabetical among themselves.
+        // Sort: most recently active mission first
         flat.sort((a, b) => {
           if (a.lastTouched && b.lastTouched) return new Date(b.lastTouched) - new Date(a.lastTouched)
           if (a.lastTouched) return -1
@@ -611,6 +676,7 @@ export default function RightMenu() {
       overflowY: 'auto',
       overflowX: 'hidden',
       background: C.bg,
+      fontFamily: MENU.bodyFont,
     }}>
       <style>{`
         @keyframes rm-breathe {
@@ -649,7 +715,7 @@ export default function RightMenu() {
 
           {/* Missions list — sorted by recency (last_message_at DESC) */}
           {missionsLoading && (
-            <div style={{ padding: '8px 12px', fontSize: 11, color: C.muted, fontFamily: "'Inter', sans-serif" }}>
+            <div style={{ padding: '10px 14px', fontSize: 11, color: C.muted, fontFamily: MENU.bodyFont }}>
               Loading…
             </div>
           )}
@@ -714,7 +780,7 @@ export default function RightMenu() {
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'color 120ms ease',
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: MENU.bodyFont,
                 marginTop: 2,
               }}
               onMouseEnter={e => e.currentTarget.style.color = C.text2}
