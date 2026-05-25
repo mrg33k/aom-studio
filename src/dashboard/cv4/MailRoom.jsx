@@ -128,7 +128,22 @@ export default function MailRoom({ email, onBack }) {
   const when = email.date
     ? new Date(email.date).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : ''
-  const attachments = Array.isArray(body?.attachments) ? body.attachments : []
+  // R16 — merge real attachments + inline parts into one strip. Gmail
+  // flags forwarded images as Content-Disposition: inline; the original
+  // HTML still references them via cid: (which we swap into iframe img
+  // src), but Patrik also wants to see them as visible cards so they
+  // never feel hidden. Deduplicate by attachmentId.
+  const allAttachments = useMemo(() => {
+    const seen = new Set()
+    const out = []
+    for (const a of (body?.attachments || [])) {
+      if (a.attachmentId && !seen.has(a.attachmentId)) { seen.add(a.attachmentId); out.push(a) }
+    }
+    for (const a of (body?.inline || [])) {
+      if (a.attachmentId && !seen.has(a.attachmentId)) { seen.add(a.attachmentId); out.push(a) }
+    }
+    return out
+  }, [body?.attachments, body?.inline])
 
   return (
     <div data-cv4-mail-room data-cv4-mail-fullview style={{
@@ -162,6 +177,17 @@ export default function MailRoom({ email, onBack }) {
           </div>
         )}
 
+        {/* R16 — Attachments above the body so they're never hidden below
+            a tall HTML email. Patrik missed the xlsx on the first pass
+            because the body iframe pushed the strip off-screen. */}
+        {allAttachments.length > 0 && (
+          <AttachmentStrip
+            messageId={body?.id}
+            connectionId={activeConnection?.id || null}
+            attachments={allAttachments}
+          />
+        )}
+
         {!bodyLoading && !bodyErr && iframeSrcdoc && (
           <iframe
             title="Email body"
@@ -172,14 +198,6 @@ export default function MailRoom({ email, onBack }) {
               width: '100%', border: 'none', display: 'block',
               height: iframeHeight, background: 'transparent',
             }}
-          />
-        )}
-
-        {attachments.length > 0 && (
-          <AttachmentStrip
-            messageId={body?.id}
-            connectionId={activeConnection?.id || null}
-            attachments={attachments}
           />
         )}
       </div>
