@@ -59,25 +59,39 @@
   }
 
   /* ─── Project pills row ─────────────────────────────────── */
+  /* Fix 1 (R6): more vertical breathing room + fade mask on right edge */
+
+  [data-cv4] .rm-pills-wrapper {
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.045);
+  }
 
   [data-cv4] .rm-pills {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 4px 12px 14px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 14px 12px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-mask-image: linear-gradient(to right, black 82%, transparent 100%);
+    mask-image: linear-gradient(to right, black 82%, transparent 100%);
   }
+
+  [data-cv4] .rm-pills::-webkit-scrollbar { display: none; }
 
   [data-cv4] .rm-pill {
     font-family: var(--ff-mono);
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.04em;
-    padding: 4px 10px;
-    border-radius: 999px;
+    padding: 7px 12px;
+    border-radius: 3px;
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
-    border: 1px solid var(--c-border);
+    flex-shrink: 0;
+    border: 1px solid var(--c-border2);
     background: var(--c-chip-bg, rgba(51, 65, 85, 0.25));
     color: var(--c-text2);
     transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
@@ -89,9 +103,9 @@
   }
 
   [data-cv4] .rm-pill.active {
-    color: var(--c-accent);
-    background: rgba(16, 185, 129, 0.10);
-    border-color: rgba(16, 185, 129, 0.35);
+    color: var(--c-yellow);
+    background: rgba(234, 179, 8, 0.09);
+    border-color: rgba(234, 179, 8, 0.32);
   }
 
   [data-cv4] .rm-pill.ghost {
@@ -321,6 +335,73 @@
   /* Rows hidden by pill filter */
   [data-cv4] .rm-mission-row.rm-filtered,
   [data-cv4] .rm-task-row.rm-filtered {
+    display: none;
+  }
+
+  /* ─── Project group header (accordion-by-project, "all" view) ─ */
+  /* Fix 3 (R6): collapsible groups replace flat list in all view */
+
+  [data-cv4] .rm-project-group {
+    display: block;
+  }
+
+  [data-cv4] .rm-project-group-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px 7px 12px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.022);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 120ms ease;
+    user-select: none;
+  }
+
+  [data-cv4] .rm-project-group-header:hover {
+    background: rgba(255,255,255,0.04);
+  }
+
+  [data-cv4] .rm-group-project-name {
+    flex: 1;
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-cv4] .rm-group-count {
+    font-family: var(--ff-mono);
+    font-size: 9px;
+    color: var(--c-muted);
+    flex-shrink: 0;
+    margin-right: 3px;
+  }
+
+  [data-cv4] .rm-group-caret {
+    font-size: 11px;
+    color: var(--c-muted);
+    flex-shrink: 0;
+    display: inline-block;
+    transition: transform 180ms ease;
+    line-height: 1;
+  }
+
+  [data-cv4] .rm-project-group.collapsed .rm-group-caret {
+    transform: rotate(-90deg);
+  }
+
+  [data-cv4] .rm-project-group.collapsed .rm-project-group-body {
+    display: none;
+  }
+
+  /* Inside a group, hide project line on mission rows (group header names it) */
+  [data-cv4] .rm-project-group .rm-mission-project {
     display: none;
   }
 
@@ -752,13 +833,19 @@
     <div class="rm-panel-header">Missions</div>
 
     <!-- ──────────────── PROJECT PILLS ──────────────── -->
-    <div class="rm-pills" role="tablist">
-      <span class="rm-pill active" data-pill="all">all</span>
-      <span class="rm-pill" data-pill="corner">corner</span>
-      <span class="rm-pill" data-pill="ambition">ambition</span>
-      <span class="rm-pill" data-pill="skylar">skylar</span>
-      <span class="rm-pill" data-pill="brandon">brandon</span>
-      <span class="rm-pill ghost" data-pill="__add__" title="add project">+</span>
+    <!-- R6 Fix 1: wrapped in rm-pills-wrapper, horizontal scroll + fade mask -->
+    <div class="rm-pills-wrapper">
+      <div class="rm-pills" role="tablist">
+        <span class="rm-pill active" data-pill="all">all</span>
+        <span class="rm-pill" data-pill="corner">corner</span>
+        <span class="rm-pill" data-pill="ambition">ambition</span>
+        <span class="rm-pill" data-pill="skylar">skylar</span>
+        <span class="rm-pill" data-pill="brandon">brandon</span>
+        <span class="rm-pill" data-pill="intelliplay">intelliplay</span>
+        <span class="rm-pill" data-pill="s3c">s3c</span>
+        <span class="rm-pill" data-pill="isa">isa</span>
+        <span class="rm-pill ghost" data-pill="__add__" title="add project">+</span>
+      </div>
     </div>
 
     <!-- ──────────────── 1. SUMMARY ──────────────── -->
@@ -790,71 +877,113 @@
     </div>
 
     <!-- ──────────────── TAB: MISSIONS (sorted by recency) ──────────────── -->
+    <!-- R6 Fix 3: accordion-by-project in "all" view. Active groups open, idle collapsed. -->
     <div class="rm-accordion-content active" data-rm-accordion="missions">
-      <div class="rm-mission-list">
+      <div class="rm-mission-list" data-rm-mission-list>
 
-        <a href="#" class="rm-mission-row current" data-project="corner" data-lastmessage="2026-05-24T14:32:00Z">
-          <span class="rm-dot active"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">right-menu</span>
-            <span class="rm-mission-project">corner</span>
+        <!-- ── corner (active — default open) ── -->
+        <div class="rm-project-group" data-rm-group="corner">
+          <div class="rm-project-group-header" data-rm-group-toggle="corner">
+            <span class="rm-dot active"></span>
+            <span class="rm-group-project-name">corner</span>
+            <span class="rm-group-count">3</span>
+            <span class="rm-group-caret">▾</span>
           </div>
-          <span class="rm-mission-lastseen">now</span>
-        </a>
+          <div class="rm-project-group-body">
+            <a href="#" class="rm-mission-row current" data-project="corner" data-lastmessage="2026-05-24T14:32:00Z">
+              <span class="rm-dot active"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">right-menu</span>
+                <span class="rm-mission-project">corner</span>
+              </div>
+              <span class="rm-mission-lastseen">now</span>
+            </a>
+            <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-24T14:27:00Z">
+              <span class="rm-dot active"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">corner-ui-cv4</span>
+                <span class="rm-mission-project">corner</span>
+              </div>
+              <span class="rm-mission-lastseen">5m ago</span>
+            </a>
+            <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-21T09:15:00Z">
+              <span class="rm-dot"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">mission-panel</span>
+                <span class="rm-mission-project">corner</span>
+              </div>
+              <span class="rm-mission-lastseen">3d ago</span>
+            </a>
+          </div>
+        </div>
 
-        <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-24T14:27:00Z">
-          <span class="rm-dot active"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">corner-ui-cv4</span>
-            <span class="rm-mission-project">corner</span>
+        <!-- ── ambition (active — default open) ── -->
+        <div class="rm-project-group" data-rm-group="ambition">
+          <div class="rm-project-group-header" data-rm-group-toggle="ambition">
+            <span class="rm-dot queued"></span>
+            <span class="rm-group-project-name">ambition</span>
+            <span class="rm-group-count">2</span>
+            <span class="rm-group-caret">▾</span>
           </div>
-          <span class="rm-mission-lastseen">5m ago</span>
-        </a>
+          <div class="rm-project-group-body">
+            <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:45:00Z">
+              <span class="rm-dot active"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">hero-section</span>
+                <span class="rm-mission-project">ambition</span>
+              </div>
+              <span class="rm-mission-lastseen">47m ago</span>
+            </a>
+            <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:15:00Z">
+              <span class="rm-dot queued"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">brand-refresh</span>
+                <span class="rm-mission-project">ambition</span>
+              </div>
+              <span class="rm-mission-lastseen">1h ago</span>
+            </a>
+          </div>
+        </div>
 
-        <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:45:00Z">
-          <span class="rm-dot active"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">hero-section</span>
-            <span class="rm-mission-project">ambition</span>
+        <!-- ── skylar (idle — default collapsed) ── -->
+        <div class="rm-project-group collapsed" data-rm-group="skylar">
+          <div class="rm-project-group-header" data-rm-group-toggle="skylar">
+            <span class="rm-dot"></span>
+            <span class="rm-group-project-name">skylar</span>
+            <span class="rm-group-count">1</span>
+            <span class="rm-group-caret">▾</span>
           </div>
-          <span class="rm-mission-lastseen">47m ago</span>
-        </a>
+          <div class="rm-project-group-body">
+            <a href="#" class="rm-mission-row" data-project="skylar" data-lastmessage="2026-05-23T18:30:00Z">
+              <span class="rm-dot"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">campaign-launch</span>
+                <span class="rm-mission-project">skylar</span>
+              </div>
+              <span class="rm-mission-lastseen">20h ago</span>
+            </a>
+          </div>
+        </div>
 
-        <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:15:00Z">
-          <span class="rm-dot queued"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">brand-refresh</span>
-            <span class="rm-mission-project">ambition</span>
+        <!-- ── brandon (idle — default collapsed) ── -->
+        <div class="rm-project-group collapsed" data-rm-group="brandon">
+          <div class="rm-project-group-header" data-rm-group-toggle="brandon">
+            <span class="rm-dot"></span>
+            <span class="rm-group-project-name">brandon</span>
+            <span class="rm-group-count">1</span>
+            <span class="rm-group-caret">▾</span>
           </div>
-          <span class="rm-mission-lastseen">1h ago</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="skylar" data-lastmessage="2026-05-23T18:30:00Z">
-          <span class="rm-dot"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">campaign-launch</span>
-            <span class="rm-mission-project">skylar</span>
+          <div class="rm-project-group-body">
+            <a href="#" class="rm-mission-row" data-project="brandon" data-lastmessage="2026-05-22T10:00:00Z">
+              <span class="rm-dot"></span>
+              <div class="rm-mission-main">
+                <span class="rm-mission-name">lbx-documentary</span>
+                <span class="rm-mission-project">brandon</span>
+              </div>
+              <span class="rm-mission-lastseen">2d ago</span>
+            </a>
           </div>
-          <span class="rm-mission-lastseen">20h ago</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="brandon" data-lastmessage="2026-05-22T10:00:00Z">
-          <span class="rm-dot"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">lbx-documentary</span>
-            <span class="rm-mission-project">brandon</span>
-          </div>
-          <span class="rm-mission-lastseen">2d ago</span>
-        </a>
-
-        <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-21T09:15:00Z">
-          <span class="rm-dot"></span>
-          <div class="rm-mission-main">
-            <span class="rm-mission-name">mission-panel</span>
-            <span class="rm-mission-project">corner</span>
-          </div>
-          <span class="rm-mission-lastseen">3d ago</span>
-        </a>
+        </div>
 
       </div>
     </div>
@@ -1111,10 +1240,41 @@
       item.addEventListener('click', function (e) {
         e.stopPropagation();
         var fileName = item.querySelector('.rm-file-item-name').textContent;
-        // R6: wire folder navigation, breadcrumb update, and media player
+        // R7: wire folder navigation, breadcrumb update, and media player
         console.log('Folder clicked: ' + fileName);
       });
     });
+
+    // ── R6 Fix 3: Project group accordion toggle ─────────────────────────────
+    var groupToggles = root.querySelectorAll('[data-rm-group-toggle]');
+    groupToggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function () {
+        var slug = toggle.dataset.rmGroupToggle;
+        var group = root.querySelector('[data-rm-group="' + slug + '"]');
+        if (!group) return;
+        group.classList.toggle('collapsed');
+        // Persist state in localStorage
+        try {
+          var stored = JSON.parse(localStorage.getItem('rm-collapsed-projects') || '{}');
+          stored[slug] = group.classList.contains('collapsed');
+          localStorage.setItem('rm-collapsed-projects', JSON.stringify(stored));
+        } catch (e) {}
+      });
+    });
+
+    // Restore collapsed state from localStorage on load
+    try {
+      var storedCollapsed = JSON.parse(localStorage.getItem('rm-collapsed-projects') || '{}');
+      Object.keys(storedCollapsed).forEach(function (slug) {
+        var group = root.querySelector('[data-rm-group="' + slug + '"]');
+        if (!group) return;
+        if (storedCollapsed[slug]) {
+          group.classList.add('collapsed');
+        } else {
+          group.classList.remove('collapsed');
+        }
+      });
+    } catch (e) {}
 
   });
 })();
