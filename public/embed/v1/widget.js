@@ -94,31 +94,34 @@
     })
   }
 
+  // Long-poll the bridge for assistant replies. No timeout: agents can take
+  // 30s, 3 minutes, or longer (especially when they do real research). The
+  // visitor's tab is the natural lifetime — close the tab, polling stops.
+  // Returns a handle with cancel() so a new submit can replace the previous
+  // poller cleanly.
   function waitForReply(sinceTs, onReply, opts) {
-    var t0 = Date.now()
-    var maxMs = (opts && opts.maxMs) || 60000
-    var intervalMs = (opts && opts.intervalMs) || 1500
+    var intervalMs = (opts && opts.intervalMs) || 2000
     var cancelled = false
+    var cursor = sinceTs
     function tick() {
       if (cancelled) return
-      pollMessages(sinceTs)
+      pollMessages(cursor)
         .then(function (resp) {
+          if (cancelled) return
           var msgs = (resp && resp.messages) || []
           if (msgs.length) {
             onReply(null, msgs)
-            return
-          }
-          if (Date.now() - t0 > maxMs) {
-            onReply(new Error('timeout'), [])
-            return
+            // Advance the cursor past the latest rendered reply so we don't
+            // re-render it on the next tick. Then keep ticking so later
+            // streaming assistant rows in the same conversation still flow.
+            var last = msgs[msgs.length - 1]
+            if (last && last.timestamp) cursor = last.timestamp
           }
           setTimeout(tick, intervalMs)
         })
-        .catch(function (err) {
-          if (Date.now() - t0 > maxMs) {
-            onReply(err, [])
-            return
-          }
+        .catch(function () {
+          // Transient network blip — retry. Polling will heal on its own once
+          // the bridge or network recovers.
           setTimeout(tick, intervalMs)
         })
     }
@@ -227,42 +230,40 @@
       }
     })
 
+    var activePoller = null
+
     form.addEventListener('submit', function (e) {
       e.preventDefault()
       var content = textarea.value.trim()
       if (!content) return
+      // Cancel any previous in-flight poller so a new send replaces it cleanly.
+      if (activePoller) { activePoller.cancel(); activePoller = null }
       addMsg('visitor', content)
       textarea.value = ''
       textarea.style.height = 'auto'
-      sendBtn.disabled = true
+      sendBtn.disabled = false  // re-enable immediately so visitor can keep typing
       setTyping(true)
 
       postChat(content)
         .then(function (resp) {
-          waitForReply(
+          activePoller = waitForReply(
             resp.since_ts,
             function (err, msgs) {
+              // No more timeouts: this callback only fires when real msgs land.
               setTyping(false)
-              sendBtn.disabled = false
               if (err && (!msgs || !msgs.length)) {
-                addMsg(
-                  'agent',
-                  err.message === 'timeout'
-                    ? "The EA didn't respond in time. The message was logged — try again or check back in a minute."
-                    : 'Hit a wall. Try once more?'
-                )
+                addMsg('agent', 'Hit a wall. Try once more?')
                 return
               }
               msgs.forEach(function (m) {
                 addMsg('agent', m.text)
               })
             },
-            { maxMs: 60000, intervalMs: 1500 }
+            { intervalMs: 2000 }
           )
         })
         .catch(function (err) {
           setTyping(false)
-          sendBtn.disabled = false
           addMsg('agent', 'Connection error. Try again in a moment.')
           console.warn('[corner-embed]', err)
         })
