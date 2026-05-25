@@ -29,6 +29,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { useCornerAuth, useCornerNav } from '../CornerContext.jsx'
 import { useTasks } from '../hooks/useTasks.js'
+import { useProjects } from '../hooks/useProjects.js'
 import { authFetch } from '../lib/authFetch.js'
 import FilesPanel from './FilesPanel.jsx'
 
@@ -1266,10 +1267,19 @@ export default function RightMenu() {
     handleSelectTask,
   } = nav
   const { rightNow, queued, done } = useTasks(worldId)
+  // R10-13: useProjects queries the projects table directly so newly-created
+  // projects appear in the pills row even when they have zero missions yet.
+  // (missions-tree only surfaces a project once it has at least one mission /
+  // dynamic agent_status row / task — so a fresh project would otherwise be
+  // invisible until you also create a mission inside it.)
+  const { projects: dbProjects } = useProjects(worldId)
 
   // ── Missions ────────────────────────────────────────────────────────────────
   const [missionsFlat, setMissionsFlat] = useState([])
   const [missionsLoading, setMissionsLoading] = useState(true)
+  // R10-13: bump this to force the missions-tree fetch to re-run after a
+  // mission has been created via the inline affordance.
+  const [missionsRefetchKey, setMissionsRefetchKey] = useState(0)
 
   useEffect(() => {
     if (!worldId) return
@@ -1344,7 +1354,7 @@ export default function RightMenu() {
       }
     })()
     return () => { cancelled = true }
-  }, [worldId])
+  }, [worldId, missionsRefetchKey])
 
   // ── Folders + assignments (R7-B/C) ──────────────────────────────────────────
   const [folders, setFolders] = useState([])
@@ -1421,25 +1431,30 @@ export default function RightMenu() {
   const [pendingProjects, setPendingProjects] = useState([])
   const [pendingMissions, setPendingMissions] = useState([])
 
-  // Project pills derived from missions + pending (new-in-session) projects.
+  // Project pills = union of missions-derived projects + projects-table rows
+  // (useProjects) + pending (new-in-session) — so newly-created projects with
+  // zero missions still appear in the pills.
   const [activePill, setActivePill] = useState('all')
   const projectsList = useMemo(() => {
     const seen = new Set()
     const out = []
     for (const m of missionsFlat) {
       if (m.projectSlug && !seen.has(m.projectSlug)) {
-        seen.add(m.projectSlug)
-        out.push(m.projectSlug)
+        seen.add(m.projectSlug); out.push(m.projectSlug)
+      }
+    }
+    for (const p of (dbProjects || [])) {
+      if (p?.slug && !seen.has(p.slug)) {
+        seen.add(p.slug); out.push(p.slug)
       }
     }
     for (const slug of pendingProjects) {
       if (slug && !seen.has(slug)) {
-        seen.add(slug)
-        out.push(slug)
+        seen.add(slug); out.push(slug)
       }
     }
     return out
-  }, [missionsFlat, pendingProjects])
+  }, [missionsFlat, dbProjects, pendingProjects])
 
   // Effective missions = server missions + pending (new-in-session) missions
   // that haven't yet shown up in a missions-tree refetch.
@@ -1517,6 +1532,9 @@ export default function RightMenu() {
   const handleCreateProjectInline = useCallback((slug, name) => {
     setPendingProjects(prev => prev.some(p => p === slug) ? prev : [...prev, slug])
     setActivePill(slug)
+    // R10-13: kick a missions-tree refetch so the new project's dynamic
+    // missions (if any) and agent_status row show up alongside the pill.
+    setMissionsRefetchKey(k => k + 1)
   }, [])
 
   const handleCreateMissionInline = useCallback((projectSlug, missionSlug, missionName) => {
@@ -1531,7 +1549,10 @@ export default function RightMenu() {
         lastTouched: new Date().toISOString(),
       }]
     })
-    // Navigate to the new mission room
+    // R10-13: re-fetch missions-tree so the new mission lands in the server
+    // truth (via agent_status / scaffolds) and replaces the optimistic
+    // placeholder on the next render.
+    setMissionsRefetchKey(k => k + 1)
     if (handleSelectMission) {
       handleSelectMission(
         { slug: missionSlug, bare_slug: missionSlug, name: missionName || missionSlug, project_slug: projectSlug },
