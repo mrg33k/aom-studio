@@ -165,7 +165,7 @@ export default function CV4Drawer({
           is_done: !!m.is_done,
         })
       }
-      map.set(p.slug, { missions, missionMeta, unfiled: p.unfiled_tasks || [] })
+      map.set(p.slug, { missions, missionMeta, unfiled: p.unfiled_tasks || [], tree: p.tree || null })
     }
     return map
   }, [tasksTree])
@@ -502,27 +502,42 @@ function DrawerBody({
                 />
                 {isExpanded && (
                   <div>
-                    {hasMissions && missions.map(m => {
-                      // corner:mission-rooms — tasks retired 2026-05-17. Only
-                      // last_message_at metadata drives the active dot; no
-                      // task tree, no expand-tasks, no unfiled tasks section.
-                      const missionKey = `${p.slug}:${m.slug}`
-                      const liveMeta = tasksByProject?.get(p.slug)?.missionMeta?.get(missionKey)
-                        || tasksByProject?.get(p.slug)?.missionMeta?.get(m.slug)
-                        || null
-                      return (
-                        <MissionRow
-                          key={`${p.slug}-${m.slug}`}
-                          mission={m}
-                          lastMessageAt={liveMeta?.last_message_at || null}
-                          hasNotif={missionNotif.has(missionKey)}
-                          onClick={() => {
-                            onSelectMission?.(m, p)
-                            onClose()
-                          }}
-                        />
-                      )
-                    })}
+                    {/* R-MP-2 — if the API gave us a nested tree for this project,
+                        render it with collapsible parent/child rows. Otherwise
+                        fall back to the legacy flat list. Both paths use the
+                        same MissionRow + expanded Set. */}
+                    {(tasksByProject?.get(p.slug)?.tree && tasksByProject.get(p.slug).tree.length > 0) ? (
+                      <MissionTreeBranch
+                        nodes={tasksByProject.get(p.slug).tree}
+                        projectSlug={p.slug}
+                        projectName={p.name}
+                        expanded={expanded}
+                        onToggle={toggle}
+                        onSelectMission={onSelectMission}
+                        onClose={onClose}
+                        missionNotif={missionNotif}
+                        depth={0}
+                      />
+                    ) : (
+                      hasMissions && missions.map(m => {
+                        const missionKey = `${p.slug}:${m.slug}`
+                        const liveMeta = tasksByProject?.get(p.slug)?.missionMeta?.get(missionKey)
+                          || tasksByProject?.get(p.slug)?.missionMeta?.get(m.slug)
+                          || null
+                        return (
+                          <MissionRow
+                            key={`${p.slug}-${m.slug}`}
+                            mission={m}
+                            lastMessageAt={liveMeta?.last_message_at || null}
+                            hasNotif={missionNotif.has(missionKey)}
+                            onClick={() => {
+                              onSelectMission?.(m, p)
+                              onClose()
+                            }}
+                          />
+                        )
+                      })
+                    )}
                     {/* R78-p9b — new mission door: always visible when expanded */}
                     {onNewMission && (
                       <NewMissionRow onClick={() => onNewMission(p)} />
@@ -646,11 +661,61 @@ function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onT
   )
 }
 
-function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick }) {
+function MissionTreeBranch({ nodes, projectSlug, projectName, expanded, onToggle, onSelectMission, onClose, missionNotif, depth = 0 }) {
+  // R-MP-2 — recursive renderer for a project's nested mission tree.
+  // Each parent gets a chevron toggle controlled by the shared `expanded`
+  // Set (same one that opens projects). Children indent by depth.
+  return nodes.map(node => {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0
+    const missionKey = node.slug // already "<projectSlug>:<rawSlug>"
+    const isExpanded = expanded.has(missionKey)
+    const missionForRow = {
+      slug: node.raw_slug,
+      name: node.name,
+      status: node.status,
+      is_done: node.is_done,
+      projectSlug,
+    }
+    return (
+      <div key={missionKey}>
+        <MissionRow
+          mission={missionForRow}
+          lastMessageAt={node.last_message_at || null}
+          hasNotif={missionNotif.has(missionKey)}
+          depth={depth}
+          hasChildren={hasChildren}
+          isExpanded={isExpanded}
+          onToggleChildren={hasChildren ? () => onToggle(missionKey) : null}
+          onClick={() => {
+            onSelectMission?.(missionForRow, { slug: projectSlug, name: projectName })
+            onClose?.()
+          }}
+        />
+        {hasChildren && isExpanded && (
+          <MissionTreeBranch
+            nodes={node.children}
+            projectSlug={projectSlug}
+            projectName={projectName}
+            expanded={expanded}
+            onToggle={onToggle}
+            onSelectMission={onSelectMission}
+            onClose={onClose}
+            missionNotif={missionNotif}
+            depth={depth + 1}
+          />
+        )}
+      </div>
+    )
+  })
+}
+
+function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick, depth = 0, hasChildren = false, isExpanded = false, onToggleChildren = null }) {
   // corner:mission-rooms — tasks retired 2026-05-17. Active dot is driven by
   // recent chat in the mission room. corner:notifications R2 — the same dot
   // also lights for an unread notification, which takes the headline meaning
   // (a notification is a stronger signal than "recent activity").
+  // R-MP-2 — depth indents nested mission rows; hasChildren shows a chevron
+  // toggle that opens/closes the child branch without selecting the parent.
   const recentChat = (() => {
     if (!lastMessageAt) return false
     const then = new Date(lastMessageAt).getTime()
@@ -658,21 +723,41 @@ function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick }
     return (Date.now() - then) < (24 * 60 * 60 * 1000)
   })()
   const isActive = hasNotif || recentChat
+  const indentBase = 40
+  const indentStep = 14
+  const paddingLeft = indentBase + (depth * indentStep)
   return (
     <div
       data-row
       data-active={isActive ? 'true' : undefined}
       data-test-id="mission-row"
       data-mission-slug={mission?.slug || ''}
+      data-mission-depth={depth}
       data-mission-active={isActive ? 'true' : 'false'}
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '4px 8px 4px 40px',
+        padding: `4px 8px 4px ${paddingLeft}px`,
         borderRadius: 5,
         cursor: 'pointer',
       }}
     >
+      {hasChildren ? (
+        <span
+          onClick={e => { e.stopPropagation(); onToggleChildren?.() }}
+          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 14, height: 14, marginRight: -2, flexShrink: 0,
+            cursor: 'pointer', color: C.muted,
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.12s',
+            fontFamily: MENU.monoFont, fontSize: 10, lineHeight: 1,
+          }}
+        >›</span>
+      ) : (
+        <span style={{ width: 14, flexShrink: 0 }} />
+      )}
       <DocIcon />
       <span
         data-active-dot

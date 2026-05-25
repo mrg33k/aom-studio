@@ -66,7 +66,11 @@ function deriveDisplayName(slug) {
   return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-function scanDir(parentDir, projectSlug) {
+function scanDir(parentDir, projectSlug, parentRawSlug = null, depth = 0) {
+  // R-MP-2: recurse into nested <mission>/missions/<child>/ folders so
+  // page → section → sub-section trees survive into the registry.
+  // raw_slug becomes path-joined with '-' so it stays unique within a project
+  // (home + home/missions/hero → 'home' and 'home-hero').
   const missionsDir = path.join(parentDir, 'missions')
   let entries
   try { entries = fs.readdirSync(missionsDir, { withFileTypes: true }) }
@@ -79,21 +83,28 @@ function scanDir(parentDir, projectSlug) {
     const fm = readContext(dir)
     const status = fm.status || 'in-progress'
     const lastUpdated = fm.last_updated || null
-    // R-MP-3 — workstream grouping. Read from CONTEXT.md frontmatter
-    // (workstream: <slug>). Null means top-level / unsorted; the API
-    // groups those under a virtual "Other" workstream.
+    // R-MP-3 — workstream grouping (legacy flat tier). Null means
+    // top-level / unsorted. The nested tree from R-MP-2 supersedes this
+    // for projects that use the page → section nest, but workstream
+    // grouping still works for legacy flat-mission projects.
     const workstream = fm.workstream || null
+    const rawSlug = parentRawSlug ? `${parentRawSlug}-${e.name}` : e.name
     out.push({
-      slug: `${projectSlug}:${e.name}`,
-      raw_slug: e.name,
+      slug: `${projectSlug}:${rawSlug}`,
+      raw_slug: rawSlug,
+      folder_name: e.name,
+      parent_raw_slug: parentRawSlug,
+      depth,
       project_slug: projectSlug,
       workstream,
-      name: deriveDisplayName(e.name),
+      name: fm.name || deriveDisplayName(e.name),
       status,
       is_done: isDoneStatus(status),
       last_updated: lastUpdated,
       path: dir.replace(REPO_ROOT + '/', ''),
     })
+    // Recurse into this mission's own missions/<child>/ for the next tier.
+    out.push(...scanDir(dir, projectSlug, rawSlug, depth + 1))
   }
   return out
 }

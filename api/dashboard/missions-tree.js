@@ -170,8 +170,12 @@ export default async function handler(req, res) {
     const proj = getProject(m.project_slug)
     proj.missions.set(m.slug, {
       slug: m.slug,
+      raw_slug: m.raw_slug || null,
+      folder_name: m.folder_name || null,
+      parent_raw_slug: m.parent_raw_slug || null,
+      depth: typeof m.depth === 'number' ? m.depth : 0,
       name: m.name || m.raw_slug || m.slug,
-      // R-MP-3 — workstream grouping. Null means top-level / Other bucket.
+      // R-MP-3 — workstream grouping (legacy). Null means top-level / Other bucket.
       workstream: m.workstream || null,
       status: m.status || null,
       is_done: !!m.is_done,
@@ -270,14 +274,39 @@ export default async function handler(req, res) {
       return (a.name || '').localeCompare(b.name || '')
     })
 
+    // R-MP-2 — nested tree. Build a parent → children mapping using
+    // raw_slug + parent_raw_slug from the registry. Missions whose
+    // parent_raw_slug is null become tree roots. Children attach to
+    // their parents recursively. Sort siblings by is_done then name.
+    const childrenByParent = new Map()
+    const knownRawSlugs = new Set(missions.map(m => m.raw_slug).filter(Boolean))
+    for (const m of missions) {
+      if (!m.raw_slug) continue
+      const parentKey = (m.parent_raw_slug && knownRawSlugs.has(m.parent_raw_slug))
+        ? m.parent_raw_slug
+        : null
+      if (!childrenByParent.has(parentKey)) childrenByParent.set(parentKey, [])
+      childrenByParent.get(parentKey).push(m)
+    }
+    function buildSubtree(parentRawSlug) {
+      const list = (childrenByParent.get(parentRawSlug) || []).slice()
+      list.sort((a, b) => {
+        if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
+        return (a.name || '').localeCompare(b.name || '')
+      })
+      return list.map(m => ({ ...m, children: buildSubtree(m.raw_slug) }))
+    }
+    const tree = buildSubtree(null)
+
     projects.push({
       slug: proj.slug,
       name: proj.name,
       // Flat list kept for backwards-compat with existing consumers
-      // (Drawer.jsx + the cv4 mission-tree mockup before R-MP-4 wires
-      // the nested shape). Nested workstreams added in parallel.
+      // (Drawer.jsx + the cv4 mission-tree mockup before R-MP-2 wires
+      // the nested shape). Workstreams + tree added in parallel.
       missions,
       workstreams,
+      tree,
       unfiled_tasks: proj.unfiled_tasks,
     })
   }
