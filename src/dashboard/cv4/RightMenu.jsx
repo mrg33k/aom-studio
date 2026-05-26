@@ -2016,7 +2016,7 @@ export default function RightMenu() {
         Projects
       </PanelHeader>
 
-      <ProjectPills projects={pillProjects} active={activePill} onChange={setActivePill} onPillContextMenu={(e, key, label) => { const proj = pillProjects.find(p => p.slug === key) || { slug: key, name: label }; openProjectMenu(e.clientX, e.clientY, proj) }} />
+      <ProjectPills projects={projectsList} active={activePill} onChange={setActivePill} onPillContextMenu={(e, key, label) => { openProjectMenu(e.clientX, e.clientY, { slug: key, name: label || key }) }} />
 
       {/* R10-14: filter recents against the live projectsList so entries
           pointing at deleted projects auto-disappear. Patrik 2026-05-25:
