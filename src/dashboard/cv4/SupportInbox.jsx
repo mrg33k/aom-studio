@@ -37,20 +37,34 @@ function truncate(str, n = 80) {
   return str.length > n ? str.slice(0, n) + '…' : str
 }
 
-// Count user messages in a group that have no assistant reply after them.
+// Count user/visitor messages in a group that have no agent reply after them.
+// Messages table uses role='user' for visitors and role='agent' for replies.
 function countUnread(msgs) {
   let unread = 0
   for (let i = msgs.length - 1; i >= 0; i--) {
     if (msgs[i].role === 'user') {
       unread++
     } else {
-      break // hit an assistant reply — everything before is "answered"
+      break // hit an agent reply — everything before is "answered"
     }
   }
   return unread
 }
 
+// Get clean display text for a message.
+// Support messages embed the system prompt in `text`; visitor_text is the
+// clean version in metadata (if present).
+function getDisplayText(msg) {
+  if (msg.metadata?.visitor_text) return msg.metadata.visitor_text
+  // Strip leading [system: ...] block if present
+  const raw = msg.text || ''
+  const sysEnd = raw.indexOf(']\n\n')
+  if (raw.startsWith('[system:') && sysEnd !== -1) return raw.slice(sysEnd + 3).trim()
+  return raw
+}
+
 // Group messages by embed_visitor_id, sorted by last message desc.
+// Note: messages table uses `timestamp` (not `created_at`).
 function groupByVisitor(messages) {
   const map = {}
   for (const msg of messages) {
@@ -60,7 +74,7 @@ function groupByVisitor(messages) {
   }
   // Sort messages within each group oldest→newest
   const groups = Object.entries(map).map(([vid, msgs]) => {
-    const sorted = [...msgs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    const sorted = [...msgs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     const last = sorted[sorted.length - 1]
     return {
       visitorId: vid,
@@ -70,7 +84,7 @@ function groupByVisitor(messages) {
     }
   })
   // Sort groups newest-last-message first
-  groups.sort((a, b) => new Date(b.lastMessage?.created_at || 0) - new Date(a.lastMessage?.created_at || 0))
+  groups.sort((a, b) => new Date(b.lastMessage?.timestamp || 0) - new Date(a.lastMessage?.timestamp || 0))
   return groups
 }
 
@@ -156,7 +170,7 @@ function ThreadView({ group, onBack }) {
                   fontFamily: "'Inter', sans-serif",
                   whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                 }}>
-                  {msg.content}
+                  {getDisplayText(msg)}
                 </div>
               </div>
               <div style={{
@@ -169,7 +183,7 @@ function ThreadView({ group, onBack }) {
                   {isUser ? 'visitor' : 'agent'}
                 </span>
                 <span>·</span>
-                <span>{timeAgo(msg.created_at)}</span>
+                <span>{timeAgo(msg.timestamp)}</span>
               </div>
             </div>
           )
@@ -222,7 +236,7 @@ function InboxList({ groups, selectedVisitorId, onSelectVisitor }) {
       {groups.map((group) => {
         const isSelected = group.visitorId === selectedVisitorId
         const lastMsg = group.lastMessage
-        const preview = truncate(lastMsg?.content || '', 80)
+        const preview = truncate(lastMsg ? getDisplayText(lastMsg) : '', 80)
         return (
           <button
             key={group.visitorId}
@@ -290,7 +304,7 @@ function InboxList({ groups, selectedVisitorId, onSelectVisitor }) {
                   fontFamily: "'JetBrains Mono', monospace",
                   flexShrink: 0,
                 }}>
-                  {timeAgo(lastMsg?.created_at)}
+                  {timeAgo(lastMsg?.timestamp)}
                 </span>
               </div>
             </div>
@@ -321,7 +335,9 @@ export default function SupportInbox({ isDesktop = false }) {
   const [error, setError] = useState(null)
   const [selectedVisitorId, setSelectedVisitorId] = useState(null)
 
-  // Fetch support messages
+  // Fetch support messages.
+  // Filter: metadata->>embed_id = 'emb_corner_support'
+  // Schema note: column is `text` (not `content`), `timestamp` (not `created_at`).
   const fetchMessages = useCallback(async () => {
     if (!supabase) {
       setError('Supabase not configured')
@@ -332,12 +348,10 @@ export default function SupportInbox({ isDesktop = false }) {
       setError(null)
       const { data, error: err } = await supabase
         .from('messages')
-        .select('id, content, role, created_at, metadata')
-        .eq('agent', 'rex')
-        .eq('project', 'corner')
-        .eq('mission_slug', 'support')
+        .select('id, text, role, timestamp, metadata')
+        .eq('metadata->>embed_id', 'emb_corner_support')
         .not('metadata->>embed_visitor_id', 'is', null)
-        .order('created_at', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(500)
 
       if (err) throw new Error(err.message)
@@ -356,7 +370,9 @@ export default function SupportInbox({ isDesktop = false }) {
     return () => clearInterval(interval)
   }, [fetchMessages])
 
-  // Real-time subscription
+  // Real-time subscription — Postgres changes on the messages table.
+  // We can't filter on JSONB in the Realtime filter string, so we subscribe
+  // to all inserts and refetch (the fetch is cheap, 500 rows max).
   useEffect(() => {
     if (!supabase) return
     const channel = supabase
@@ -365,9 +381,11 @@ export default function SupportInbox({ isDesktop = false }) {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: 'mission_slug=eq.support',
-      }, () => {
-        fetchMessages()
+      }, (payload) => {
+        // Only refetch if the new row is a support message
+        if (payload?.new?.metadata?.embed_id === 'emb_corner_support') {
+          fetchMessages()
+        }
       })
       .subscribe()
     return () => {
