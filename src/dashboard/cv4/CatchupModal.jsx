@@ -163,17 +163,6 @@ function NotifCard({ notif, direction, onChipReply, onTextReply }) {
             </span>
           </div>
         </div>
-        <span style={{
-          padding: '2px 7px', borderRadius: 3,
-          fontSize: 10, fontWeight: 700,
-          fontFamily: "'JetBrains Mono', monospace",
-          textTransform: 'uppercase', letterSpacing: '0.06em',
-          flexShrink: 0,
-          background: badgeStyle.bg, color: badgeStyle.color,
-          border: `1px solid ${badgeStyle.border}`,
-        }}>
-          {BADGE_LABELS[notif.badgeType] || 'Message'}
-        </span>
       </div>
 
       {/* Message preview */}
@@ -410,15 +399,22 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
   const backdropRef = useRef(null)
   const modalRef = useRef(null)
 
-  // Reset state when modal opens with new notifications
+  // Reset state when modal opens. Intentionally NOT depending on
+  // `notifications` — the parent builds that array inline so the
+  // reference is unstable across every parent re-render, which would
+  // snap currentIndex back to 0 on every dataPipe tick and make the
+  // user feel like cards never advance ("they stack"). We only need
+  // to reset when the modal transitions from closed → open or the
+  // notification count changes.
+  const notifCount = notifications ? notifications.length : 0
   useEffect(() => {
-    if (!isOpen || !notifications || notifications.length === 0) return
+    if (!isOpen || notifCount === 0) return
     setCurrentIndex(0)
     setDirection('forward')
     setReplied(0)
     setSkipped(0)
     setIsComplete(false)
-  }, [isOpen, notifications])
+  }, [isOpen, notifCount])
 
   // Keyboard navigation
   useEffect(() => {
