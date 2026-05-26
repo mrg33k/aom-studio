@@ -98,9 +98,11 @@ export default function HomeView({
     return agents.filter(a => a.is_ea)
   }, [agents, pinnedAgents])
 
-  // Projects: pinned first, then chronologically by last_message_at (recent 5 max).
-  const visibleProjects = useMemo(() => {
-    if (!projectRooms || projectRooms.length === 0) return []
+  // Recent (top 5): pinned first, then chronologically by last_message_at.
+  // All-projects (the rest): alphabetical, shown in a second section below recent
+  // so the user can find any project even when it's not pinned/recent.
+  const { recentProjects, allProjects } = useMemo(() => {
+    if (!projectRooms || projectRooms.length === 0) return { recentProjects: [], allProjects: [] }
     const pinSet = new Set(pinnedProjects)
     const sorted = [...projectRooms].sort((a, b) => {
       const aPin = pinSet.has(a.slug)
@@ -110,7 +112,12 @@ export default function HomeView({
       const bTs = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
       return bTs - aTs
     })
-    return sorted.slice(0, 5)
+    const recent = sorted.slice(0, 5)
+    const recentSlugs = new Set(recent.map(p => p.slug))
+    const rest = [...projectRooms]
+      .filter(p => !recentSlugs.has(p.slug))
+      .sort((a, b) => (a.name || a.slug || '').localeCompare(b.name || b.slug || ''))
+    return { recentProjects: recent, allProjects: rest }
   }, [projectRooms, pinnedProjects])
 
   function toggleAgentPin(slug) {
@@ -253,11 +260,11 @@ export default function HomeView({
 
         {/* Projects */}
         <div className="hm-section">
-          <div className="hm-section-label">Projects</div>
-          {visibleProjects.length === 0 && (
+          <div className="hm-section-label">Recent</div>
+          {recentProjects.length === 0 && (
             <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No projects yet.</div>
           )}
-          {visibleProjects.map(p => {
+          {recentProjects.map(p => {
             const isPinned = pinnedProjects.includes(p.slug)
             const isExpanded = !!expandedProjects[p.slug]
             const missions = (p.missions || []).filter(m => m && m.slug)
@@ -325,6 +332,82 @@ export default function HomeView({
             )
           })}
         </div>
+
+        {/* ALL PROJECTS — every project the user has access to, alphabetical.
+            Sits below the recent-5 so users can find anything that's not
+            currently pinned/recent without leaving home. */}
+        {allProjects.length > 0 && (
+          <div className="hm-section">
+            <div className="hm-section-label">All Projects</div>
+            {allProjects.map(p => {
+              const isPinned = pinnedProjects.includes(p.slug)
+              const isExpanded = !!expandedProjects[p.slug]
+              const missions = (p.missions || []).filter(m => m && m.slug)
+              return (
+                <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
+                  <div className="hm-proj-head">
+                    <button
+                      className="hm-proj-name"
+                      onClick={() => onSelectProject && onSelectProject(p, null)}
+                    >{p.name || p.slug}</button>
+                    <button
+                      className="hm-icon-btn chat"
+                      onClick={() => onSelectProject && onSelectProject(p, null)}
+                      title={'Open ' + (p.name || p.slug) + ' chat'}
+                      aria-label={'Open ' + (p.name || p.slug) + ' chat'}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <path d="M4 3 H20 A2 2 0 0 1 22 5 V15 A2 2 0 0 1 20 17 H8 L3 22 V5 A2 2 0 0 1 4 3 Z"/>
+                      </svg>
+                    </button>
+                    <button
+                      className="hm-icon-btn"
+                      onClick={() => toggleExpand(p.slug)}
+                      title="Toggle missions"
+                      aria-label={'Toggle ' + (p.name || p.slug) + ' missions'}
+                    >
+                      <svg className="hm-caret-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+                    <button
+                      className={'hm-pin' + (isPinned ? ' pinned' : '')}
+                      onClick={() => toggleProjectPin(p.slug)}
+                      title={isPinned ? 'Unpin' : 'Pin'}
+                      aria-label={(isPinned ? 'Unpin ' : 'Pin ') + (p.name || p.slug)}
+                    >
+                      {isPinned ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+                      )}
+                    </button>
+                  </div>
+                  {isExpanded && missions.length > 0 && (
+                    <div className="hm-missions">
+                      {missions.slice(0, 8).map(m => (
+                        <button
+                          key={m.slug}
+                          className="hm-mission"
+                          onClick={() => onSelectProject && onSelectProject(p, m)}
+                        >
+                          <span className={'hm-mdot' + (m.status === 'running' || m.status === 'active' ? ' active' : m.status === 'queued' ? ' queued' : '')}></span>
+                          <span className="hm-mname">{m.name || m.slug}</span>
+                          <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {isExpanded && missions.length === 0 && (
+                    <div className="hm-missions">
+                      <div style={{ padding: '9px 16px', color: '#5A6F8C', fontSize: 13, fontStyle: 'italic' }}>No missions yet.</div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

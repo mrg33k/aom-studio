@@ -1906,7 +1906,9 @@ export default function CornerV4() {
         [data-shell="cv4"][data-theme="light"] h4 { color: #2A2620; }
         [data-shell="cv4"][data-theme="light"] p { color: #3D362C; }
 
-        /* Theme toggle — sits inline in the top nav next to the bell. */
+        /* Home + Theme toggle — sit inline in the top nav next to the bell.
+           Mission: corner:home-screen. */
+        [data-shell="cv4"] [data-cv4-home-toggle],
         [data-shell="cv4"] [data-cv4-theme-toggle] {
           width: 32px; height: 32px;
           display: inline-flex; align-items: center; justify-content: center;
@@ -1918,18 +1920,33 @@ export default function CornerV4() {
           padding: 0;
           transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
         }
+        [data-shell="cv4"] [data-cv4-home-toggle]:hover,
         [data-shell="cv4"] [data-cv4-theme-toggle]:hover {
           background: rgba(255,255,255,0.05);
           color: #F1F5F9;
         }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home-toggle],
         [data-shell="cv4"][data-theme="light"] [data-cv4-theme-toggle] {
           background: transparent;
           border: 1px solid rgba(0,0,0,0.12);
           color: #5C5448;
         }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home-toggle]:hover,
         [data-shell="cv4"][data-theme="light"] [data-cv4-theme-toggle]:hover {
           background: rgba(0,0,0,0.04);
           color: #2A2620;
+        }
+
+        /* Home button: sage-accent when the user is currently on the home view. */
+        [data-shell="cv4"] [data-cv4-home-toggle][data-active="true"] {
+          color: #10B981;
+          border-color: rgba(16,185,129,0.35);
+          background: rgba(16,185,129,0.05);
+        }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home-toggle][data-active="true"] {
+          color: #0E8E63;
+          border-color: rgba(14,142,99,0.40);
+          background: rgba(14,142,99,0.06);
         }
       `}</style>
 
@@ -1959,6 +1976,26 @@ export default function CornerV4() {
           <AomLogo />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button
+            type="button"
+            data-cv4-home-toggle
+            data-active={isHomeMode ? 'true' : 'false'}
+            aria-label="Go to home"
+            title="Home"
+            onClick={() => {
+              setSelectedAgent(null)
+              setConversationTarget(null)
+              setActiveTool(null)
+              try {
+                const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+                navigate(basePath)
+              } catch (_) {}
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+              <path d="M12 2 L2 11 H5 V21 H10 V14 H14 V21 H19 V11 H22 Z"/>
+            </svg>
+          </button>
           <button
             type="button"
             data-cv4-theme-toggle
