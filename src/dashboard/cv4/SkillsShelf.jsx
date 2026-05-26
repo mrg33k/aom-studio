@@ -193,8 +193,12 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        width: '100%',
         minHeight: 0,
-        background: C.s1,
+        minWidth: 0,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        background: C.bg,
         color: C.text,
         fontFamily: "'Inter', sans-serif",
       }}
@@ -205,6 +209,8 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
           padding: '14px 16px 10px',
           borderBottom: `1px solid ${C.border}`,
           flexShrink: 0,
+          boxSizing: 'border-box',
+          width: '100%',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -239,7 +245,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
           </button>
         </div>
 
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', width: '100%' }}>
           <input
             ref={inputRef}
             type="text"
@@ -250,6 +256,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
             data-testid="cv4-skills-search"
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               padding: '8px 12px 8px 32px',
               borderRadius: 8,
               border: `1px solid ${C.border}`,
@@ -297,8 +304,12 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
         style={{
           flex: 1,
           overflowY: 'auto',
+          overflowX: 'hidden',
           padding: '8px 12px 32px',
           minHeight: 0,
+          minWidth: 0,
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {filtered.length === 0 && (
@@ -331,6 +342,10 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
                   border: `1px solid ${tier.accentEdge}`,
                   boxShadow: `0 1px 0 ${tier.accentGlow} inset`,
                   marginBottom: 10,
+                  boxSizing: 'border-box',
+                  width: '100%',
+                  minWidth: 0,
+                  overflow: 'hidden',
                 }}
               >
                 <span
@@ -361,7 +376,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
                     style={{
                       marginTop: 2,
                       fontSize: 11,
-                      color: 'rgba(255,255,255,0.72)',
+                      color: C.text2,
                       fontFamily: "'Inter', sans-serif",
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -377,7 +392,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
                     fontSize: 11,
                     fontWeight: 700,
                     color: tier.accent,
-                    background: 'rgba(0,0,0,0.18)',
+                    background: C.bg,
                     border: `1px solid ${tier.accentEdge}`,
                     borderRadius: 999,
                     padding: '2px 8px',
@@ -396,6 +411,8 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
                     borderLeft: `2px solid ${tier.accentEdge}`,
                     paddingLeft: 10,
                     marginLeft: 4,
+                    boxSizing: 'border-box',
+                    minWidth: 0,
                   }}
                 >
                   <div
@@ -434,6 +451,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
                       flexWrap: 'wrap',
                       gap: 6,
                       paddingBottom: 4,
+                      minWidth: 0,
                     }}
                   >
                     {sec.items.map((skill) => (
@@ -476,11 +494,13 @@ function SkillChip({ skill, tier, onClick }) {
         borderRadius: 999,
         border: `1px solid ${accentEdge}`,
         background: accentSoft,
-        color: '#F8FAFC',
+        color: C.text,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 11,
         cursor: 'pointer',
         whiteSpace: 'nowrap',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
         transition: 'all 0.12s ease',
       }}
       onMouseEnter={(e) => {
@@ -492,12 +512,12 @@ function SkillChip({ skill, tier, onClick }) {
       onMouseLeave={(e) => {
         e.currentTarget.style.background = accentSoft
         e.currentTarget.style.borderColor = accentEdge
-        e.currentTarget.style.color = '#F8FAFC'
+        e.currentTarget.style.color = C.text
         e.currentTarget.style.boxShadow = 'none'
       }}
     >
-      <span style={{ opacity: 0.65 }}>/</span>
-      <span>{stripped}</span>
+      <span style={{ opacity: 0.55 }}>/</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{stripped}</span>
     </button>
   )
 }
