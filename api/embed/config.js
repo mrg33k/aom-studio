@@ -1,19 +1,18 @@
 // GET /api/embed/config?id=<embed_id>
 //
-// Returns the public-safe placement config for a widget. Reads the registry
-// from api/embed/_embeds.json so new embeds are a JSON-only change — no code
-// edits, no merge conflicts when multiple agents add embeds in parallel.
+// Returns the public-safe placement config for a widget. Reads from
+// lib/embed-registry.js which checks Supabase first, then falls back to
+// api/embed/_embeds.json. New embeds shipped via /api/embed/create are
+// available immediately — no redeploy.
 //
-// Never returns the context_overlay or secrets — the widget renders with
+// Never returns context overlays or secrets — the widget renders with
 // surface_name + placement only. Routing (agent / project / mission_slug)
-// lives in REGISTRY but is also non-public; it's consumed server-side by
-// chat.js, messages.js, steps.js.
+// lives in the registry but is also non-public; chat.js, messages.js, and
+// steps.js consume it server-side through the same helper.
 
-import embedsFile from './_embeds.json' with { type: 'json' }
+import { getEmbed } from '../../lib/embed-registry.js'
 
-const REGISTRY = embedsFile.embeds || {}
-
-export default function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   const origin = req.headers.origin || ''
 
@@ -27,7 +26,7 @@ export default function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'method' })
 
   const id = (req.query && req.query.id) || ''
-  const cfg = REGISTRY[id]
+  const cfg = await getEmbed(id)
   if (!cfg) return res.status(404).json({ error: 'unknown embed_id' })
 
   if (origin && cfg.host_allowlist.indexOf(origin) < 0) {
@@ -45,4 +44,5 @@ export default function handler(req, res) {
   })
 }
 
-export { REGISTRY }
+// Backward-compat re-export. Callers should migrate to getEmbed directly.
+export { getEmbed }

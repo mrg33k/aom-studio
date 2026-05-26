@@ -8,9 +8,10 @@
 //   2. Result — script tag (auto-copied), step-by-step instructions,
 //                CLI command to ship.
 //
-// R0 (mission corner:embed-modal): preview-only via /api/embed/preview.
-// Actual ship is still `make-embed.py --deploy` in terminal. R1 adds
-// /api/embed/create for one-click deploy.
+// R1 (mission corner:embed-modal): preview via /api/embed/preview, ship via
+// /api/embed/create. Create writes to Supabase `embed_configs` so the embed
+// is live without a redeploy. The CLI fallback (make-embed.py --deploy)
+// stays available for power-users / git-checked-in embeds.
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { C } from '../../lib/cv3Colors.js'
 
@@ -105,6 +106,10 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
   const [result, setResult] = useState(null)
   const [copiedTag, setCopiedTag] = useState(false)
   const [copiedCli, setCopiedCli] = useState(false)
+  // R1 ship state — driven by POST /api/embed/create from the result screen.
+  const [shipStatus, setShipStatus] = useState('idle') // 'idle' | 'shipping' | 'shipped' | 'error'
+  const [shipError, setShipError] = useState(null)
+  const [shipResult, setShipResult] = useState(null)
 
   // Routing context derived from the room — read-only chips in the modal.
   // selectedProject.missionSlug carries the BARE mission name (e.g.
@@ -151,6 +156,9 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
     setScreen('form')
     setResult(null)
     setError(null)
+    setShipStatus('idle')
+    setShipError(null)
+    setShipResult(null)
   }, [open, ctx.missionName, ctx.projectName])
 
   // ESC closes
@@ -171,14 +179,12 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
     }
   }, [screen, result])
 
-  const handleSubmit = useCallback(async () => {
-    setError(null)
-    setSubmitting(true)
+  const buildPayload = useCallback((pinEmbedId) => {
     const host_allowlist = hosts
       .split(/\n+/)
       .map(s => s.trim())
       .filter(Boolean)
-    const payload = {
+    return {
       agent: ctx.agent,
       project: ctx.project,
       mission_slug: ctx.missionSlug,
@@ -188,8 +194,17 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
       opening_prompt: opening.trim(),
       accent: accent.trim() || '#E5451F',
       font_display: fontDisplay.trim() || undefined,
-      embed_id: embedIdOverride.trim() || undefined,
+      embed_id: pinEmbedId || (embedIdOverride.trim() || undefined),
     }
+  }, [hosts, ctx, label, opening, accent, fontDisplay, embedIdOverride])
+
+  const handleSubmit = useCallback(async () => {
+    setError(null)
+    setSubmitting(true)
+    setShipStatus('idle')
+    setShipError(null)
+    setShipResult(null)
+    const payload = buildPayload(null)
     try {
       const resp = await fetch('/api/embed/preview', {
         method: 'POST',
@@ -209,7 +224,41 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
     } finally {
       setSubmitting(false)
     }
-  }, [hosts, ctx, label, opening, accent, fontDisplay, embedIdOverride])
+  }, [buildPayload])
+
+  // R1 — POST /api/embed/create with the same payload + the pinned embed_id
+  // from the preview response, so the script tag the user already copied is
+  // the one that goes live in Supabase.
+  const handleShip = useCallback(async () => {
+    if (!result?.embed_id) return
+    setShipStatus('shipping')
+    setShipError(null)
+    const payload = buildPayload(result.embed_id)
+    try {
+      const resp = await fetch('/api/embed/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok) {
+        if (resp.status === 409) {
+          setShipStatus('error')
+          setShipError(`Embed ID "${data.embed_id || result.embed_id}" already exists. Open Advanced and set a different ID, or use the CLI command below to update the existing one.`)
+          return
+        }
+        const reason = data.details || data.error || `HTTP ${resp.status}`
+        setShipStatus('error')
+        setShipError(String(reason))
+        return
+      }
+      setShipResult(data)
+      setShipStatus('shipped')
+    } catch (err) {
+      setShipStatus('error')
+      setShipError(String(err?.message || err))
+    }
+  }, [result, buildPayload])
 
   if (!open) return null
 
@@ -281,6 +330,10 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
               ctx={ctx}
               copiedTag={copiedTag} setCopiedTag={setCopiedTag}
               copiedCli={copiedCli} setCopiedCli={setCopiedCli}
+              shipStatus={shipStatus}
+              shipError={shipError}
+              shipResult={shipResult}
+              onShip={handleShip}
             />
           )}
         </div>
@@ -488,7 +541,12 @@ function FormScreen({
   )
 }
 
-function ResultScreen({ result, ctx, copiedTag, setCopiedTag, copiedCli, setCopiedCli }) {
+function ResultScreen({
+  result, ctx, copiedTag, setCopiedTag, copiedCli, setCopiedCli,
+  shipStatus, shipError, shipResult, onShip,
+}) {
+  const isShipped = shipStatus === 'shipped'
+  const isShipping = shipStatus === 'shipping'
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Identity badge */}
@@ -501,9 +559,77 @@ function ResultScreen({ result, ctx, copiedTag, setCopiedTag, copiedCli, setCopi
           padding: '3px 8px',
           borderRadius: 8,
         }}>{result.embed_id}</span>
-        <span style={{ fontSize: 12, color: C.fgMuted || '#9aa3ad' }}>
-          ready to ship
+        <span style={{ fontSize: 12, color: isShipped ? '#10b981' : (C.fgMuted || '#9aa3ad') }}>
+          {isShipped ? 'live now' : 'ready to ship'}
         </span>
+      </div>
+
+      {/* Ship it — R1 primary action */}
+      <div style={{
+        padding: '14px 16px',
+        background: isShipped ? 'rgba(16,185,129,0.08)' : 'rgba(229,69,31,0.06)',
+        border: `1px solid ${isShipped ? 'rgba(16,185,129,0.28)' : 'rgba(229,69,31,0.22)'}`,
+        borderRadius: 12,
+        display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <div style={{
+              fontFamily: "'Instrument Serif', Georgia, serif",
+              fontStyle: 'italic',
+              fontSize: 17,
+              color: isShipped ? '#10b981' : C.fg || '#e8edf3',
+            }}>
+              {isShipped ? 'Your embed is live.' : 'Ship it now'}
+            </div>
+            <div style={{ fontSize: 12, color: C.fgMuted || '#9aa3ad', marginTop: 2 }}>
+              {isShipped
+                ? 'Paste the script tag on your page — no redeploy needed.'
+                : 'One-click deploy. Goes live in Supabase immediately — no terminal step required.'}
+            </div>
+          </div>
+          {!isShipped && (
+            <button
+              onClick={onShip}
+              disabled={isShipping}
+              style={{
+                appearance: 'none', border: 0,
+                background: isShipping ? 'rgba(229,69,31,0.5)' : '#E5451F',
+                color: '#fff',
+                padding: '10px 22px',
+                borderRadius: 10,
+                fontFamily: "'Oswald', sans-serif",
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: isShipping ? 'wait' : 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >{isShipping ? 'Shipping…' : 'Ship it'}</button>
+          )}
+        </div>
+        {isShipped && shipResult?.live_url && (
+          <a
+            href={shipResult.live_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: 13, color: '#10b981',
+              textDecoration: 'underline',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >{shipResult.live_url}</a>
+        )}
+        {shipError && (
+          <div style={{
+            fontSize: 12, color: '#fca5a5',
+            background: 'rgba(239,68,68,0.08)',
+            border: '1px solid rgba(239,68,68,0.22)',
+            borderRadius: 8,
+            padding: '8px 10px',
+          }}>{shipError}</div>
+        )}
       </div>
 
       {/* Script tag */}
@@ -579,7 +705,7 @@ function ResultScreen({ result, ctx, copiedTag, setCopiedTag, copiedCli, setCopi
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
             color: C.fgMuted || '#9aa3ad',
-          }}>3. Ship the config {copiedCli && <span style={{ color: '#10b981', marginLeft: 8 }}>✓ Copied</span>}</div>
+          }}>3. CLI fallback (optional) {copiedCli && <span style={{ color: '#10b981', marginLeft: 8 }}>✓ Copied</span>}</div>
           <button
             onClick={() => {
               copyText(result.cli_command).then(() => {
@@ -597,7 +723,7 @@ function ResultScreen({ result, ctx, copiedTag, setCopiedTag, copiedCli, setCopi
             }}>Copy</button>
         </div>
         <p style={{ fontSize: 12, color: C.fgMuted || '#9aa3ad', margin: '0 0 8px 0' }}>
-          Run this in your <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>aom-studio/</code> terminal to register and deploy the config:
+          Only needed if you want the config checked into git (for code review, parallel branches, or a redeploy-safe ship). Most cases — just click "Ship it" above.
         </p>
         <pre style={{
           background: '#06090d',
@@ -614,24 +740,26 @@ function ResultScreen({ result, ctx, copiedTag, setCopiedTag, copiedCli, setCopi
       </div>
 
       {/* Preview link */}
-      <div style={{
-        padding: '12px 14px',
-        background: 'rgba(16,185,129,0.06)',
-        border: '1px solid rgba(16,185,129,0.18)',
-        borderRadius: 10,
-        fontSize: 13,
-      }}>
-        <strong style={{ color: '#10b981', fontWeight: 600 }}>Preview:</strong>
-        <a
-          href={result.preview_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ marginLeft: 8, color: '#10b981', textDecoration: 'underline' }}
-        >{result.preview_url}</a>
-        <div style={{ marginTop: 4, fontSize: 12, color: C.fgMuted || '#9aa3ad' }}>
-          The preview is live AFTER you run the CLI command above (step 3).
+      {!isShipped && (
+        <div style={{
+          padding: '12px 14px',
+          background: 'rgba(16,185,129,0.06)',
+          border: '1px solid rgba(16,185,129,0.18)',
+          borderRadius: 10,
+          fontSize: 13,
+        }}>
+          <strong style={{ color: '#10b981', fontWeight: 600 }}>Preview:</strong>
+          <a
+            href={result.preview_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ marginLeft: 8, color: '#10b981', textDecoration: 'underline' }}
+          >{result.preview_url}</a>
+          <div style={{ marginTop: 4, fontSize: 12, color: C.fgMuted || '#9aa3ad' }}>
+            Hit "Ship it" above to make it live, or run the CLI fallback.
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

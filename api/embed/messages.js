@@ -4,7 +4,7 @@
 // (agent + project) newer than `since`. Widget polls this every 1.5s after
 // posting until a reply arrives (max ~60s).
 
-import { REGISTRY } from './config.js'
+import { getEmbed } from '../../lib/embed-registry.js'
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   const since = q.since || new Date(Date.now() - 5 * 60 * 1000).toISOString()
   const visitorId = q.visitor_id || ''
 
-  const cfg = REGISTRY[embedId]
+  const cfg = await getEmbed(embedId)
   if (!cfg) return res.status(404).json({ error: 'unknown embed_id' })
 
   if (origin && cfg.host_allowlist.indexOf(origin) < 0) {
