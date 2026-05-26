@@ -16,8 +16,17 @@
 (function () {
   'use strict'
 
+  // Find the widget script tag. `document.currentScript` works for the
+  // common case (synchronous parse on a normal page). When it returns
+  // null we fall back to a selector that matches us by src; the prior
+  // "last <script> tag" fallback got fooled by third-party beacons
+  // (e.g. Cloudflare Insights) that inject themselves after we load,
+  // causing data-* attributes (theme, embed id, visitor id) to silently
+  // come back null.
   var script =
     document.currentScript ||
+    document.querySelector('script[data-embed-id][src*="embed/v1/widget.js"]') ||
+    document.querySelector('script[src*="embed/v1/widget.js"]') ||
     (function () {
       var s = document.getElementsByTagName('script')
       return s[s.length - 1]
