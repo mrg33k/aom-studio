@@ -52,6 +52,7 @@ export default function ComposerCommandsMenu({
     profileOpen, setProfileOpen,
     recipesOpen, setRecipesOpen,
     canonFilesOpen, setCanonFilesOpen,
+    embedModalMission, setEmbedModalMission,
   } = useChatSettingsCtx()
 
   const selectedAgentRecord = agents?.find(a => String(a?.id) === String(selectedAgent?.id || selectedAgent?.agent_id))
@@ -249,6 +250,19 @@ export default function ComposerCommandsMenu({
                   }}
                   active={hasAgent ? profileOpen : canonFilesOpen}
                   testid={`cv4-commands-info-${selectedAgent?.slug || selectedProject?.slug || 'room'}`}
+                />
+              )}
+              {/* Embed this room — opens the embed modal for sharing. */}
+              {selectedProject?.id && (
+                <MenuRow
+                  icon={<EmbedIcon />}
+                  label="Embed room"
+                  detail="Share this chat"
+                  onClick={() => {
+                    setEmbedModalMission?.(selectedProject?.slug)
+                    setOpen(false)
+                  }}
+                  testid={`cv4-commands-embed-${selectedProject?.slug || 'project'}`}
                 />
               )}
               {/* Super-agent only: clear context. Kept available but rendered
@@ -540,6 +554,25 @@ function SettingsIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  )
+}
+
+function HomePinIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+      <circle cx="18" cy="9" r="2" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function EmbedIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
     </svg>
   )
 }

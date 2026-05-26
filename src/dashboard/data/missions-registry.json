@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T06:05:42.901Z",
+  "generated_at": "2026-05-26T08:13:59.729Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -156,20 +156,6 @@
       "path": "corner/missions/dispatch-reliability"
     },
     {
-      "slug": "corner:embed-modal",
-      "raw_slug": "embed-modal",
-      "folder_name": "embed-modal",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": "embed-modal",
-      "name": "Embed Modal",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/embed-modal"
-    },
-    {
       "slug": "corner:embeddable-agents",
       "raw_slug": "embeddable-agents",
       "folder_name": "embeddable-agents",
@@ -182,6 +168,34 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/embeddable-agents"
+    },
+    {
+      "slug": "corner:embeddable-agents-embed-modal",
+      "raw_slug": "embeddable-agents-embed-modal",
+      "folder_name": "embed-modal",
+      "parent_raw_slug": "embeddable-agents",
+      "depth": 1,
+      "project_slug": "corner",
+      "workstream": "embed-modal",
+      "name": "Embed Modal",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/embeddable-agents/missions/embed-modal"
+    },
+    {
+      "slug": "corner:embeddable-agents-support",
+      "raw_slug": "embeddable-agents-support",
+      "folder_name": "support",
+      "parent_raw_slug": "embeddable-agents",
+      "depth": 1,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Support",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/embeddable-agents/missions/support"
     },
     {
       "slug": "corner:files-in-app",
@@ -210,6 +224,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/followups"
+    },
+    {
+      "slug": "corner:home",
+      "raw_slug": "home",
+      "folder_name": "home",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Home",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/home"
     },
     {
       "slug": "corner:home-screen",
@@ -406,6 +434,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/notifications"
+    },
+    {
+      "slug": "corner:notifications-catchup",
+      "raw_slug": "notifications-catchup",
+      "folder_name": "notifications-catchup",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Notifications Catchup",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/notifications-catchup"
     },
     {
       "slug": "corner:onboarding",
@@ -630,20 +672,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/suggested-responses"
-    },
-    {
-      "slug": "corner:support",
-      "raw_slug": "support",
-      "folder_name": "support",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": "support",
-      "name": "Support",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/support"
     },
     {
       "slug": "corner:tenant-health",
@@ -1682,6 +1710,20 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
     },
     {
+      "slug": "corner:notifications-catchup",
+      "raw_slug": "notifications-catchup",
+      "folder_name": "notifications-catchup",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Notifications Catchup",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/corner/missions/notifications-catchup"
+    },
+    {
       "slug": "corner:support",
       "raw_slug": "support",
       "folder_name": "support",
@@ -2329,8 +2371,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 54,
-      "in_flight": 54,
+      "total": 57,
+      "in_flight": 57,
       "done": 0
     },
     {

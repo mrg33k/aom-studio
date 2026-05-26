@@ -1,0 +1,1134 @@
+<!--
+  CatchupModal — Notifications Catch-Up
+  Mission: corner:notifications-catchup R1
+  Author: Bobby (design/build pass)
+  Date: 2026-05-26
+
+  USAGE: Include in any view that renders notifications.
+  Requires: tokens.css, base.css
+
+  JS API exposed as `window.CatchupModal`:
+    .open(notifications: CatchupNotification[])  — opens modal, starts from card 0
+    .close()                                      — closes modal
+    .onReply(fn(notification, replyText))         — callback when user sends any reply
+    .onSkip(fn(notification))                     — callback when user taps Skip
+
+  CatchupNotification shape:
+  {
+    id: string,
+    senderName: string,
+    senderInitials: string,
+    senderType: 'agent' | 'human',        // controls avatar color
+    roomName: string,                      // e.g. "Corner · Brand"
+    timeAgo: string,                       // e.g. "14 min ago"
+    badgeType: 'mention' | 'task' | 'message',
+    messagePreview: string,                // full text (component clips to 2 lines)
+    suggestedReplies: string[],            // exactly 3 strings
+  }
+
+  COMPONENT STRUCTURE:
+    .catchup-backdrop               — full-viewport overlay
+      .catchup-modal                — 640px desktop / full-screen mobile
+        .catchup-header             — title + progress dots + close btn
+        .catchup-card-viewport      — clipping container for cards
+          .catchup-card             — one card per notification
+            .cn-sender-row          — avatar + name + context + badge
+            .cn-message-preview     — 2-line preview with Show more toggle
+            .cn-chips               — suggested reply pills
+            .cn-custom-reply        — textarea + send button
+        .catchup-footer             — ← Back | Skip | Next →
+      .catchup-completion           — "All caught up" screen (replaces cards)
+-->
+
+<!-- ─── COMPONENT HTML ─── -->
+<div id="catchup-backdrop" class="catchup-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-label="Notification catch-up">
+
+  <div class="catchup-modal">
+
+    <!-- Header -->
+    <div class="catchup-header">
+      <div class="catchup-title">
+        <div class="catchup-title-icon" aria-hidden="true">
+          <!-- Bell icon -->
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        Catch up
+      </div>
+
+      <div class="catchup-progress" aria-live="polite">
+        <span class="cn-progress-counter" id="cn-progress-text">1 of 4</span>
+        <div class="cn-progress-dots" id="cn-progress-dots" aria-hidden="true">
+          <!-- Dots injected by JS -->
+        </div>
+      </div>
+
+      <button class="cn-close-btn" id="cn-close-btn" aria-label="Close catch-up">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Card viewport -->
+    <div class="catchup-card-viewport" id="cn-card-viewport">
+      <!-- Cards injected by JS -->
+    </div>
+
+    <!-- Completion screen (hidden until done) -->
+    <div class="catchup-completion" id="cn-completion" style="display: none;" aria-live="assertive">
+      <div class="cn-confetti" id="cn-confetti" aria-hidden="true"></div>
+      <div class="cn-check-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="cn-done-title">All caught up</div>
+      <div class="cn-done-stats" id="cn-done-stats">
+        <!-- Injected by JS: "3 replied · 1 skipped" -->
+      </div>
+      <div class="cn-done-summary" id="cn-done-summary">
+        <!-- Injected by JS -->
+      </div>
+      <button class="cn-done-close-btn" id="cn-done-close-btn">Back to dashboard</button>
+    </div>
+
+    <!-- Footer navigation -->
+    <div class="catchup-footer" id="cn-footer">
+      <button class="cn-nav-btn" id="cn-back-btn" disabled aria-label="Previous notification">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        Back
+      </button>
+      <button class="cn-skip-btn" id="cn-skip-btn">Skip →</button>
+      <button class="cn-nav-btn" id="cn-next-btn" aria-label="Next notification">
+        Next
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </div>
+
+  </div><!-- .catchup-modal -->
+</div><!-- .catchup-backdrop -->
+
+
+<!-- ─── COMPONENT STYLES ─── -->
+<style>
+  /* ── Backdrop overlay ── */
+  .catchup-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: var(--z-modal, 500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .catchup-backdrop.cn-open {
+    animation: cnBackdropIn 0.25s ease;
+  }
+
+  @keyframes cnBackdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Modal shell ── */
+  .catchup-modal {
+    background: var(--c-dim, #1A2438);
+    border: 1px solid var(--c-border, #2D3A4A);
+    border-radius: 12px;
+    width: min(640px, 92vw);
+    max-height: 90dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 48px rgba(0,0,0,0.35);
+    position: relative;
+  }
+
+  .catchup-modal.cn-open {
+    animation: cnModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes cnModalIn {
+    from {
+      transform: translateY(24px) scale(0.97);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* ── Header ── */
+  .catchup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--c-border, #2D3A4A);
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .catchup-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-text, #E8EBEF);
+    white-space: nowrap;
+  }
+
+  .catchup-title-icon {
+    width: 22px;
+    height: 22px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-accent, #10B981);
+    flex-shrink: 0;
+  }
+
+  /* ── Progress ── */
+  .catchup-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .cn-progress-counter {
+    font-size: 11px;
+    font-family: var(--ff-mono, monospace);
+    color: var(--c-text2, #A7B5C8);
+    white-space: nowrap;
+  }
+
+  .cn-progress-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .cn-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-border, #2D3A4A);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .cn-dot.cn-done {
+    background: var(--c-accent, #10B981);
+  }
+
+  .cn-dot.cn-current {
+    background: var(--c-accent, #10B981);
+    box-shadow: 0 0 0 2.5px rgba(16,185,129,0.2);
+  }
+
+  /* ── Close button ── */
+  .cn-close-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--c-border, #2D3A4A);
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--c-text2, #A7B5C8);
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .cn-close-btn:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--c-accent, #10B981);
+    color: var(--c-text, #E8EBEF);
+  }
+
+  /* ── Card viewport ── */
+  .catchup-card-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── Individual card ── */
+  .catchup-card {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+    will-change: transform;
+  }
+
+  /* Card states for slide animation */
+  .catchup-card[data-state="visible"]      { transform: translateX(0);     opacity: 1; }
+  .catchup-card[data-state="enter-right"]  { transform: translateX(100%);  opacity: 0; }
+  .catchup-card[data-state="enter-left"]   { transform: translateX(-100%); opacity: 0; }
+  .catchup-card[data-state="exit-left"]    { transform: translateX(-60%) scale(0.94); opacity: 0; }
+  .catchup-card[data-state="exit-right"]   { transform: translateX(60%) scale(0.94);  opacity: 0; }
+
+  /* ── Sender row ── */
+  .cn-sender-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cn-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: var(--ff-sans, sans-serif);
+  }
+
+  .cn-avatar[data-type="agent"] {
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.28);
+    color: var(--c-accent, #10B981);
+  }
+
+  .cn-avatar[data-type="human"] {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: #60A5FA;
+  }
+
+  .cn-sender-info { flex: 1; min-width: 0; }
+
+  .cn-sender-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-text, #E8EBEF);
+  }
+
+  .cn-sender-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+  }
+
+  .cn-room {
+    font-size: 11px;
+    color: var(--c-muted, #5A6F8C);
+    font-family: var(--ff-mono, monospace);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cn-meta-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--c-muted, #5A6F8C);
+    flex-shrink: 0;
+  }
+
+  .cn-time {
+    font-size: 11px;
+    color: var(--c-muted, #5A6F8C);
+    white-space: nowrap;
+  }
+
+  /* ── Badge ── */
+  .cn-badge {
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--ff-mono, monospace);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+
+  .cn-badge[data-type="mention"] {
+    background: rgba(245,158,11,0.12);
+    color: var(--c-warning, #F59E0B);
+    border: 1px solid rgba(245,158,11,0.25);
+  }
+
+  .cn-badge[data-type="task"] {
+    background: rgba(16,185,129,0.1);
+    color: var(--c-accent, #10B981);
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+
+  .cn-badge[data-type="message"] {
+    background: rgba(59,130,246,0.1);
+    color: #60A5FA;
+    border: 1px solid rgba(59,130,246,0.2);
+  }
+
+  /* ── Message preview ── */
+  .cn-message-preview {
+    background: var(--c-s1, #08141C);
+    border: 1px solid var(--c-border, #2D3A4A);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .cn-preview-text {
+    font-size: 14px;
+    color: var(--c-text, #E8EBEF);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .cn-preview-text.cn-expanded {
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+
+  .cn-show-more {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--c-accent, #10B981);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--ff-sans, sans-serif);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    transition: opacity 0.15s ease;
+  }
+
+  .cn-show-more:hover { opacity: 0.75; }
+
+  /* ── Chips section ── */
+  .cn-chips-label {
+    font-size: 10px;
+    font-family: var(--ff-mono, monospace);
+    color: var(--c-muted, #5A6F8C);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .cn-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cn-chip {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(16,185,129,0.3);
+    background: transparent;
+    color: var(--c-accent, #10B981);
+    font-size: 13px;
+    font-family: var(--ff-sans, sans-serif);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    white-space: nowrap;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Third chip (neutral / "not now" flavor) */
+  .cn-chip:last-child {
+    border-color: var(--c-border, #2D3A4A);
+    color: var(--c-text2, #A7B5C8);
+  }
+
+  .cn-chip:last-child:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--c-text2, #A7B5C8);
+    color: var(--c-text, #E8EBEF);
+  }
+
+  .cn-chip:hover {
+    background: rgba(16,185,129,0.1);
+    border-color: var(--c-accent, #10B981);
+    transform: translateY(-1px);
+  }
+
+  .cn-chip.cn-chip-selected {
+    background: var(--c-accent, #10B981);
+    border-color: var(--c-accent, #10B981);
+    color: #08141C;
+    font-weight: 600;
+    transform: none;
+  }
+
+  .cn-chip.cn-chip-submitting {
+    background: var(--c-accent, #10B981);
+    border-color: var(--c-accent, #10B981);
+    color: #08141C;
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* ── Custom reply ── */
+  .cn-custom-reply {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .cn-reply-input {
+    flex: 1;
+    background: var(--c-s1, #08141C);
+    border: 1px solid var(--c-border, #2D3A4A);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--c-text, #E8EBEF);
+    font-size: 14px;
+    font-family: var(--ff-sans, sans-serif);
+    resize: none;
+    min-height: 40px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: border-color 0.15s ease;
+  }
+
+  .cn-reply-input::placeholder {
+    color: var(--c-muted, #5A6F8C);
+  }
+
+  .cn-reply-input:focus {
+    outline: none;
+    border-color: var(--c-accent, #10B981);
+  }
+
+  .cn-send-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--c-accent, #10B981);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+  }
+
+  .cn-send-btn:hover {
+    background: #0CA771;
+  }
+
+  .cn-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ── Completion screen ── */
+  .catchup-completion {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .catchup-completion.cn-open {
+    animation: cnCompletionIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes cnCompletionIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .cn-check-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(16,185,129,0.1);
+    border: 2px solid rgba(16,185,129,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-accent, #10B981);
+    animation: cnCheckPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  }
+
+  @keyframes cnCheckPop {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .cn-done-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--c-text, #E8EBEF);
+    letter-spacing: -0.025em;
+  }
+
+  .cn-done-stats {
+    display: flex;
+    gap: 28px;
+  }
+
+  .cn-done-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .cn-done-stat-num {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .cn-done-stat-label {
+    font-size: 10px;
+    color: var(--c-muted, #5A6F8C);
+    font-family: var(--ff-mono, monospace);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .cn-done-summary {
+    font-size: 13px;
+    color: var(--c-text2, #A7B5C8);
+    line-height: 1.55;
+    max-width: 300px;
+  }
+
+  .cn-done-close-btn {
+    margin-top: 8px;
+    padding: 10px 28px;
+    background: var(--c-accent, #10B981);
+    color: #08141C;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-family: var(--ff-sans, sans-serif);
+    min-height: 44px;
+  }
+
+  .cn-done-close-btn:hover {
+    background: #0CA771;
+  }
+
+  /* ── Confetti ── */
+  .cn-confetti {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .cn-confetti-piece {
+    position: absolute;
+    border-radius: 2px;
+    opacity: 0.9;
+    animation: cnConfettiFall var(--dur, 1.4s) ease-out var(--delay, 0s) forwards;
+  }
+
+  @keyframes cnConfettiFall {
+    0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0.9; }
+    80%  { opacity: 0.7; }
+    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot, 360deg)) scale(0.2); opacity: 0; }
+  }
+
+  /* ── Footer ── */
+  .catchup-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--c-border, #2D3A4A);
+    flex-shrink: 0;
+  }
+
+  .cn-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--c-border, #2D3A4A);
+    border-radius: 6px;
+    color: var(--c-text2, #A7B5C8);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: var(--ff-sans, sans-serif);
+    min-height: 36px;
+  }
+
+  .cn-nav-btn:hover:not(:disabled) {
+    border-color: var(--c-accent, #10B981);
+    color: var(--c-text, #E8EBEF);
+  }
+
+  .cn-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .cn-skip-btn {
+    font-size: 12px;
+    color: var(--c-muted, #5A6F8C);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--ff-sans, sans-serif);
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+    min-height: 36px;
+  }
+
+  .cn-skip-btn:hover {
+    color: var(--c-text2, #A7B5C8);
+  }
+
+  /* ── Mobile overrides (≤767px) ── */
+  @media (max-width: 767px) {
+    .catchup-backdrop {
+      align-items: flex-end;
+    }
+
+    .catchup-modal {
+      width: 100vw;
+      max-width: 100vw;
+      height: 100dvh;
+      max-height: 100dvh;
+      border-radius: 0;
+      border: none;
+    }
+
+    .catchup-card {
+      padding: 16px;
+    }
+
+    .cn-chip {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+
+    .catchup-footer {
+      padding-bottom: max(14px, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* ── Extra-small (≤389px) ── */
+  @media (max-width: 389px) {
+    .catchup-card { padding: 12px; gap: 12px; }
+    .cn-chips-row { gap: 6px; }
+  }
+</style>
+
+
+<!-- ─── COMPONENT JAVASCRIPT ─── -->
+<script>
+(function () {
+  'use strict';
+
+  const backdrop   = document.getElementById('catchup-backdrop');
+  const modal      = backdrop.querySelector('.catchup-modal');
+  const viewport   = document.getElementById('cn-card-viewport');
+  const footer     = document.getElementById('cn-footer');
+  const backBtn    = document.getElementById('cn-back-btn');
+  const skipBtn    = document.getElementById('cn-skip-btn');
+  const nextBtn    = document.getElementById('cn-next-btn');
+  const closeBtn   = document.getElementById('cn-close-btn');
+  const progressText = document.getElementById('cn-progress-text');
+  const progressDots = document.getElementById('cn-progress-dots');
+  const completion = document.getElementById('cn-completion');
+  const doneClose  = document.getElementById('cn-done-close-btn');
+  const doneStats  = document.getElementById('cn-done-stats');
+  const doneSummary= document.getElementById('cn-done-summary');
+  const confettiEl = document.getElementById('cn-confetti');
+
+  let notifications = [];
+  let currentIndex  = 0;
+  let replied       = 0;
+  let skipped       = 0;
+  let cards         = [];
+
+  let onReplyFn = null;
+  let onSkipFn  = null;
+
+  // Touch swipe tracking
+  let touchStartX = 0;
+
+  // ── Badge label map ──────────────────────────
+  const BADGE_LABELS = {
+    mention: '@mention',
+    task:    'Task done',
+    message: 'Message',
+  };
+
+  // ── Open modal ───────────────────────────────
+  function open(notifs) {
+    notifications = notifs || [];
+    currentIndex  = 0;
+    replied       = 0;
+    skipped       = 0;
+    cards         = [];
+
+    viewport.innerHTML = '';
+    completion.style.display = 'none';
+    footer.style.display     = 'flex';
+
+    // Build all cards (one per notification)
+    notifications.forEach((n, i) => {
+      const card = buildCard(n, i);
+      card.dataset.state = i === 0 ? 'visible' : 'enter-right';
+      viewport.appendChild(card);
+      cards.push(card);
+    });
+
+    updateProgress();
+    updateNavButtons();
+
+    backdrop.style.display = 'flex';
+    backdrop.classList.add('cn-open');
+    modal.classList.add('cn-open');
+
+    // Bind touch swipe
+    backdrop.addEventListener('touchstart', onTouchStart, { passive: true });
+    backdrop.addEventListener('touchend',   onTouchEnd,   { passive: true });
+  }
+
+  // ── Close modal ──────────────────────────────
+  function close() {
+    backdrop.style.display = 'none';
+    backdrop.classList.remove('cn-open');
+    modal.classList.remove('cn-open');
+    backdrop.removeEventListener('touchstart', onTouchStart);
+    backdrop.removeEventListener('touchend',   onTouchEnd);
+  }
+
+  // ── Build one notification card ──────────────
+  function buildCard(n, index) {
+    const card = document.createElement('div');
+    card.className = 'catchup-card';
+
+    const truncated = n.messagePreview.length > 160;
+    const preview   = truncated ? n.messagePreview.slice(0, 160) + '…' : n.messagePreview;
+
+    const chips = (n.suggestedReplies || []).slice(0, 3).map(r =>
+      `<button class="cn-chip" data-reply="${escHtml(r)}">${escHtml(r)}</button>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="cn-sender-row">
+        <div class="cn-avatar" data-type="${n.senderType || 'agent'}">${escHtml(n.senderInitials)}</div>
+        <div class="cn-sender-info">
+          <div class="cn-sender-name">${escHtml(n.senderName)}</div>
+          <div class="cn-sender-meta">
+            <span class="cn-room">${escHtml(n.roomName)}</span>
+            <div class="cn-meta-dot"></div>
+            <span class="cn-time">${escHtml(n.timeAgo)}</span>
+          </div>
+        </div>
+        <span class="cn-badge" data-type="${n.badgeType || 'message'}">
+          ${BADGE_LABELS[n.badgeType] || 'Message'}
+        </span>
+      </div>
+
+      <div class="cn-message-preview">
+        <p class="cn-preview-text">${escHtml(n.messagePreview)}</p>
+        ${truncated ? `<button class="cn-show-more">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          Show full message
+        </button>` : ''}
+      </div>
+
+      <div class="cn-chips-section">
+        <div class="cn-chips-label">Suggested replies</div>
+        <div class="cn-chips-row">${chips}</div>
+      </div>
+
+      <div class="cn-custom-reply">
+        <textarea
+          class="cn-reply-input"
+          placeholder="Write a reply… (sent to ${escHtml(n.senderName)} in ${escHtml(n.roomName)})"
+          rows="1"
+        ></textarea>
+        <button class="cn-send-btn" aria-label="Send reply">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#08141C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    // Show-more toggle
+    const showMoreBtn = card.querySelector('.cn-show-more');
+    if (showMoreBtn) {
+      showMoreBtn.addEventListener('click', () => {
+        const textEl = card.querySelector('.cn-preview-text');
+        textEl.classList.toggle('cn-expanded');
+        showMoreBtn.textContent = textEl.classList.contains('cn-expanded') ? 'Show less ↑' : 'Show full message ↓';
+      });
+    }
+
+    // Chip clicks
+    card.querySelectorAll('.cn-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        if (chip.classList.contains('cn-chip-submitting')) return;
+        // Highlight
+        card.querySelectorAll('.cn-chip').forEach(c => c.classList.remove('cn-chip-selected'));
+        chip.classList.add('cn-chip-selected');
+        // Brief pause → auto-advance
+        setTimeout(() => {
+          chip.classList.add('cn-chip-submitting');
+          if (onReplyFn) onReplyFn(n, chip.dataset.reply);
+          replied++;
+          advanceCard();
+        }, 450);
+      });
+    });
+
+    // Custom reply send
+    const input   = card.querySelector('.cn-reply-input');
+    const sendBtn = card.querySelector('.cn-send-btn');
+
+    // Auto-resize textarea
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = input.scrollHeight + 'px';
+    });
+
+    sendBtn.addEventListener('click', () => {
+      const txt = input.value.trim();
+      if (!txt) return;
+      if (onReplyFn) onReplyFn(n, txt);
+      replied++;
+      advanceCard();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+
+    return card;
+  }
+
+  // ── Navigate ─────────────────────────────────
+  function advanceCard(direction = 'forward') {
+    if (currentIndex >= notifications.length - 1) {
+      showCompletion();
+      return;
+    }
+    goToCard(currentIndex + 1, 'forward');
+  }
+
+  function goToCard(targetIndex, direction) {
+    const current = cards[currentIndex];
+    const target  = cards[targetIndex];
+
+    if (direction === 'forward') {
+      current.dataset.state = 'exit-left';
+      target.dataset.state  = 'enter-right';
+      requestAnimationFrame(() => {
+        target.dataset.state = 'visible';
+      });
+    } else {
+      current.dataset.state = 'exit-right';
+      target.dataset.state  = 'enter-left';
+      requestAnimationFrame(() => {
+        target.dataset.state = 'visible';
+      });
+    }
+
+    currentIndex = targetIndex;
+    updateProgress();
+    updateNavButtons();
+  }
+
+  // ── Progress ─────────────────────────────────
+  function updateProgress() {
+    const total = notifications.length;
+    progressText.textContent = `${currentIndex + 1} of ${total}`;
+
+    progressDots.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'cn-dot' +
+        (i < currentIndex ? ' cn-done' : i === currentIndex ? ' cn-current' : '');
+      progressDots.appendChild(dot);
+    }
+  }
+
+  function updateNavButtons() {
+    backBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex >= notifications.length - 1;
+  }
+
+  // ── Completion ───────────────────────────────
+  function showCompletion() {
+    viewport.style.display = 'none';
+    footer.style.display   = 'none';
+
+    // Progress header: all dots done
+    progressText.textContent = 'All done';
+    progressDots.querySelectorAll('.cn-dot').forEach(d => {
+      d.classList.remove('cn-current');
+      d.classList.add('cn-done');
+    });
+
+    completion.style.display = 'flex';
+    completion.classList.add('cn-open');
+
+    // Stats
+    doneStats.innerHTML = `
+      <div class="cn-done-stat">
+        <div class="cn-done-stat-num" style="color: var(--c-accent)">${replied}</div>
+        <div class="cn-done-stat-label">Replied</div>
+      </div>
+      <div class="cn-done-stat">
+        <div class="cn-done-stat-num" style="color: var(--c-text2)">${skipped}</div>
+        <div class="cn-done-stat-label">Skipped</div>
+      </div>
+    `;
+
+    const names = notifications.slice(0, 3).map(n => n.senderName).join(', ');
+    doneSummary.textContent = replied > 0
+      ? `Replies sent to ${names}.`
+      : 'All notifications reviewed.';
+
+    spawnConfetti();
+  }
+
+  // ── Confetti ─────────────────────────────────
+  function spawnConfetti() {
+    confettiEl.innerHTML = '';
+    const colors  = ['#10B981','#F59E0B','#60A5FA','#F472B6','#A78BFA','#FB923C'];
+    for (let i = 0; i < 30; i++) {
+      const el    = document.createElement('div');
+      el.className = 'cn-confetti-piece';
+      const angle = Math.random() * 360;
+      const dist  = 60 + Math.random() * 130;
+      const tx    = Math.cos(angle * Math.PI / 180) * dist;
+      const ty    = Math.sin(angle * Math.PI / 180) * dist + 50;
+      const rot   = (Math.random() - 0.5) * 720;
+      el.style.cssText = `
+        left: calc(50% + ${(Math.random()-0.5)*50}px);
+        top: 45%;
+        width:  ${5 + Math.random() * 7}px;
+        height: ${5 + Math.random() * 7}px;
+        background: ${colors[i % colors.length]};
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+        --tx: ${tx}px; --ty: ${ty}px; --rot: ${rot}deg;
+        --dur: ${0.8 + Math.random() * 0.7}s;
+        --delay: ${Math.random() * 0.25}s;
+      `;
+      confettiEl.appendChild(el);
+    }
+  }
+
+  // ── Touch swipe ───────────────────────────────
+  function onTouchStart(e) {
+    touchStartX = e.touches[0].clientX;
+  }
+
+  function onTouchEnd(e) {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) < 60) return;
+    if (dx < 0 && currentIndex < notifications.length - 1) {
+      goToCard(currentIndex + 1, 'forward');
+    } else if (dx > 0 && currentIndex > 0) {
+      goToCard(currentIndex - 1, 'back');
+    }
+  }
+
+  // ── Button wiring ─────────────────────────────
+  closeBtn.addEventListener('click', close);
+  doneClose.addEventListener('click', close);
+
+  backBtn.addEventListener('click', () => {
+    if (currentIndex > 0) goToCard(currentIndex - 1, 'back');
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (currentIndex < notifications.length - 1) goToCard(currentIndex + 1, 'forward');
+  });
+
+  skipBtn.addEventListener('click', () => {
+    if (onSkipFn) onSkipFn(notifications[currentIndex]);
+    skipped++;
+    advanceCard('forward');
+  });
+
+  // Backdrop click (outside modal) closes
+  backdrop.addEventListener('click', e => {
+    if (e.target === backdrop) close();
+  });
+
+  // Escape key closes
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && backdrop.style.display !== 'none') close();
+    if (e.key === 'ArrowRight') nextBtn.click();
+    if (e.key === 'ArrowLeft')  backBtn.click();
+    if (e.key === 's') skipBtn.click();
+  });
+
+  // ── Utility ───────────────────────────────────
+  function escHtml(str) {
+    const el = document.createElement('div');
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
+  // ── Public API ────────────────────────────────
+  window.CatchupModal = {
+    open,
+    close,
+    onReply(fn)  { onReplyFn = fn; },
+    onSkip(fn)   { onSkipFn  = fn; },
+  };
+
+})();
+</script>

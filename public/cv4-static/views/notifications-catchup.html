@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications Catch-Up — CV4 Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <link rel="stylesheet" href="../styles/base.css" />
+  <style>
+    /* ─── Page shell (simulates the dashboard background) ─── */
+    body {
+      margin: 0;
+      background: var(--c-s1);
+      font-family: var(--ff-sans);
+      color: var(--c-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Mockup nav — for switching between states ─── */
+    .mockup-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      background: rgba(8, 14, 28, 0.95);
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-lg);
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .mockup-nav span {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+      margin-right: var(--sp-md);
+    }
+
+    .state-btn {
+      padding: 5px var(--sp-md);
+      background: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 4px;
+      color: var(--c-text2);
+      font-size: var(--fs-xs);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--ff-sans);
+    }
+
+    .state-btn:hover,
+    .state-btn.active {
+      background: var(--c-accent);
+      border-color: var(--c-accent);
+      color: #08141C;
+      font-weight: var(--fw-semibold);
+    }
+
+    /* ─── Dashboard shell placeholder ─── */
+    .dashboard-shell {
+      margin-top: 44px;
+      display: flex;
+      height: calc(100vh - 44px);
+      position: relative;
+    }
+
+    .dashboard-sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--c-dim);
+      border-right: 1px solid var(--c-border);
+      padding: var(--sp-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-md);
+    }
+
+    .sidebar-section-label {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: var(--sp-xs) 0;
+      border-bottom: 1px solid var(--c-border);
+      margin-top: var(--sp-md);
+    }
+
+    .sidebar-agent {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-sm) var(--sp-md);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .sidebar-agent:hover {
+      background: rgba(255,255,255,0.04);
+    }
+
+    .sidebar-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--c-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: var(--fw-bold);
+      color: #08141C;
+      flex-shrink: 0;
+    }
+
+    .sidebar-agent-name {
+      font-size: var(--fs-sm);
+      color: var(--c-text);
+      font-weight: var(--fw-medium);
+    }
+
+    .sidebar-agent-preview {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    .sidebar-bell {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      padding: var(--sp-md);
+      border-top: 1px solid var(--c-border);
+    }
+
+    /* Bell trigger area */
+    .bell-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      flex: 1;
+    }
+
+    .bell-icon {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .bell-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--c-text2);
+    }
+
+    .bell-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--c-error);
+      color: white;
+      font-size: 9px;
+      font-weight: var(--fw-bold);
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+    }
+
+    .catchup-trigger {
+      padding: 6px var(--sp-md);
+      background: var(--c-accent);
+      color: #08141C;
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-bold);
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .catchup-trigger:hover {
+      background: var(--c-accent-hover);
+    }
+
+    .dashboard-main {
+      flex: 1;
+      padding: var(--sp-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-lg);
+      overflow: auto;
+      position: relative;
+    }
+
+    .dashboard-greeting {
+      font-size: var(--fs-2xl);
+      font-weight: var(--fw-extrabold);
+      color: var(--c-text);
+      letter-spacing: -0.03em;
+    }
+
+    .dashboard-sub {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      margin-top: var(--sp-xs);
+    }
+
+    /* ─── CATCH-UP MODAL ─── */
+    .catchup-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: var(--z-modal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: backdropIn 0.25s ease;
+    }
+
+    @keyframes backdropIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* Desktop: 60% modal */
+    .catchup-modal {
+      background: var(--c-dim);
+      border: 1px solid var(--c-border);
+      border-radius: 12px;
+      width: min(640px, 90vw);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+      animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    @keyframes modalIn {
+      from {
+        transform: translateY(24px) scale(0.97);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* ─── Modal header ─── */
+    .catchup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-lg) var(--sp-xl);
+      border-bottom: 1px solid var(--c-border);
+      flex-shrink: 0;
+    }
+
+    .catchup-title {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+    }
+
+    .catchup-title-icon {
+      width: 20px;
+      height: 20px;
+      background: var(--c-accent-light);
+      border: 1px solid var(--c-accent-medium);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .catchup-title-icon svg {
+      width: 11px;
+      height: 11px;
+      stroke: var(--c-accent);
+    }
+
+    .catchup-progress {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-sm);
+    }
+
+    .progress-counter {
+      font-size: var(--fs-xs);
+      font-family: var(--ff-mono);
+      color: var(--c-text2);
+      white-space: nowrap;
+    }
+
+    .progress-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .progress-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--c-border);
+      transition: background 0.2s ease;
+    }
+
+    .progress-dot.done {
+      background: var(--c-accent);
+    }
+
+    .progress-dot.current {
+      background: var(--c-accent);
+      box-shadow: 0 0 0 2px var(--c-accent-light);
+    }
+
+    .close-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 5px;
+      cursor: pointer;
+      color: var(--c-text2);
+      transition: all 0.15s ease;
+    }
+
+    .close-btn:hover {
+      background: var(--c-dim);
+      border-color: var(--c-accent);
+      color: var(--c-text);
+    }
+
+    .close-btn svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+    }
+
+    /* ─── Card area ─── */
+    .card-viewport {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      min-height: 0;
+    }
+
+    /* Cards slide left/right */
+    .catchup-card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      padding: var(--sp-xl);
+      gap: var(--sp-lg);
+      overflow-y: auto;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+
+    .catchup-card.state-enter-right {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    .catchup-card.state-enter-left {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+
+    .catchup-card.state-visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .catchup-card.state-exit-left {
+      transform: translateX(-60%) scale(0.94);
+      opacity: 0;
+    }
+
+    .catchup-card.state-exit-right {
+      transform: translateX(60%) scale(0.94);
+      opacity: 0;
+    }
+
+    /* ─── Sender row ─── */
+    .sender-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-md);
+    }
+
+    .sender-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: var(--fw-bold);
+      flex-shrink: 0;
+    }
+
+    .sender-avatar.agent {
+      background: var(--c-accent-light);
+      border: 1px solid var(--c-accent-medium);
+      color: var(--c-accent);
+    }
+
+    .sender-avatar.human {
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.25);
+      color: #60A5FA;
+    }
+
+    .sender-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sender-name {
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+    }
+
+    .sender-context {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-xs);
+      margin-top: 2px;
+    }
+
+    .sender-room {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+    }
+
+    .sender-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--c-muted);
+      flex-shrink: 0;
+    }
+
+    .sender-time {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+    }
+
+    .notification-type-badge {
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: var(--fw-semibold);
+      font-family: var(--ff-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-mention {
+      background: rgba(245,158,11,0.12);
+      color: var(--c-warning);
+      border: 1px solid rgba(245,158,11,0.25);
+    }
+
+    .badge-task {
+      background: var(--c-accent-light);
+      color: var(--c-accent);
+      border: 1px solid var(--c-accent-medium);
+    }
+
+    .badge-message {
+      background: rgba(59,130,246,0.1);
+      color: #60A5FA;
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    /* ─── Message preview ─── */
+    .message-preview {
+      background: var(--c-s1);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      padding: var(--sp-lg);
+      position: relative;
+    }
+
+    .message-preview-text {
+      font-size: var(--fs-sm);
+      color: var(--c-text);
+      line-height: var(--lh-normal);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .message-preview-text.expanded {
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+
+    .show-more-btn {
+      margin-top: var(--sp-xs);
+      font-size: var(--fs-xs);
+      color: var(--c-accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: var(--ff-sans);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .show-more-btn:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── Suggested chips ─── */
+    .chips-label {
+      font-size: var(--fs-xs);
+      font-family: var(--ff-mono);
+      color: var(--c-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-sm);
+    }
+
+    .chip {
+      padding: 7px var(--sp-md);
+      border-radius: 20px;
+      border: 1px solid var(--c-accent-medium);
+      background: transparent;
+      color: var(--c-accent);
+      font-size: var(--fs-sm);
+      font-family: var(--ff-sans);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-xs);
+    }
+
+    .chip:hover {
+      background: var(--c-accent-light);
+      border-color: var(--c-accent);
+      transform: translateY(-1px);
+    }
+
+    .chip.selected {
+      background: var(--c-accent);
+      border-color: var(--c-accent);
+      color: #08141C;
+      font-weight: var(--fw-semibold);
+    }
+
+    .chip.submitting {
+      background: var(--c-accent);
+      border-color: var(--c-accent);
+      color: #08141C;
+      opacity: 0.7;
+      cursor: default;
+    }
+
+    /* Second chip color variant */
+    .chip.secondary {
+      border-color: var(--c-border);
+      color: var(--c-text2);
+    }
+
+    .chip.secondary:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--c-text2);
+      color: var(--c-text);
+    }
+
+    /* ─── Custom reply input ─── */
+    .custom-reply {
+      display: flex;
+      gap: var(--sp-sm);
+      align-items: flex-end;
+    }
+
+    .reply-input {
+      flex: 1;
+      background: var(--c-s1);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      padding: var(--sp-md);
+      color: var(--c-text);
+      font-size: var(--fs-sm);
+      font-family: var(--ff-sans);
+      resize: none;
+      min-height: 40px;
+      max-height: 120px;
+      transition: border-color 0.15s ease;
+      line-height: var(--lh-normal);
+    }
+
+    .reply-input::placeholder {
+      color: var(--c-muted);
+    }
+
+    .reply-input:focus {
+      outline: none;
+      border-color: var(--c-accent);
+    }
+
+    .reply-send-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--c-accent);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .reply-send-btn:hover {
+      background: var(--c-accent-hover);
+    }
+
+    .reply-send-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: #08141C;
+    }
+
+    /* ─── Modal footer: navigation ─── */
+    .catchup-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-lg) var(--sp-xl);
+      border-top: 1px solid var(--c-border);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-xs);
+      padding: 8px var(--sp-md);
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--ff-sans);
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      border-color: var(--c-accent);
+      color: var(--c-text);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .nav-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+    }
+
+    .skip-btn {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--ff-sans);
+      padding: var(--sp-xs) var(--sp-sm);
+      border-radius: 4px;
+      transition: color 0.15s ease;
+    }
+
+    .skip-btn:hover {
+      color: var(--c-text2);
+    }
+
+    /* ─── COMPLETION SCREEN ─── */
+    .completion-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-3xl);
+      gap: var(--sp-lg);
+      animation: completionIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes completionIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .completion-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--c-accent-light);
+      border: 2px solid var(--c-accent-medium);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: checkPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+    }
+
+    @keyframes checkPop {
+      from {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .completion-icon svg {
+      width: 28px;
+      height: 28px;
+      stroke: var(--c-accent);
+      stroke-width: 2.5;
+    }
+
+    .completion-title {
+      font-size: var(--fs-xl);
+      font-weight: var(--fw-extrabold);
+      color: var(--c-text);
+      letter-spacing: -0.02em;
+      text-align: center;
+    }
+
+    .completion-summary {
+      font-size: var(--fs-sm);
+      color: var(--c-text2);
+      text-align: center;
+      line-height: var(--lh-normal);
+    }
+
+    .completion-stats {
+      display: flex;
+      gap: var(--sp-xl);
+    }
+
+    .completion-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .completion-stat-number {
+      font-size: var(--fs-2xl);
+      font-weight: var(--fw-extrabold);
+      color: var(--c-accent);
+      letter-spacing: -0.03em;
+    }
+
+    .completion-stat-label {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .completion-close-btn {
+      margin-top: var(--sp-md);
+      padding: var(--sp-md) var(--sp-2xl);
+      background: var(--c-accent);
+      color: #08141C;
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-semibold);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--ff-sans);
+    }
+
+    .completion-close-btn:hover {
+      background: var(--c-accent-hover);
+    }
+
+    /* ─── CSS Confetti ─── */
+    .confetti-container {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      top: 40%;
+      animation: confettiFall var(--dur, 1.5s) ease-out var(--delay, 0s) forwards;
+    }
+
+    @keyframes confettiFall {
+      0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 1;
+      }
+      80% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate(var(--tx, 0px), var(--ty, 80px)) rotate(var(--rot, 360deg)) scale(0.3);
+        opacity: 0;
+      }
+    }
+
+    /* ─── MOBILE: full-screen override ─── */
+    @media (max-width: 767px) {
+      .dashboard-sidebar {
+        display: none;
+      }
+
+      .catchup-modal {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+        border: none;
+      }
+
+      .catchup-backdrop {
+        align-items: flex-end;
+      }
+
+      .catchup-card {
+        padding: var(--sp-lg);
+      }
+
+      .catchup-footer {
+        padding: var(--sp-md) var(--sp-lg);
+        padding-bottom: max(var(--sp-md), env(safe-area-inset-bottom));
+      }
+
+      .chips-row {
+        gap: var(--sp-xs);
+      }
+
+      .chip {
+        font-size: var(--fs-xs);
+        padding: 6px var(--sp-sm);
+      }
+
+      .completion-stats {
+        gap: var(--sp-lg);
+      }
+    }
+
+    /* ─── Swipe hint (mobile only) ─── */
+    .swipe-hint {
+      display: none;
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      font-family: var(--ff-mono);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    @media (max-width: 767px) {
+      .swipe-hint {
+        display: block;
+      }
+    }
+
+    /* ─── State: transition mid-swipe preview ─── */
+    .card-stack {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* Background card peek (subtle) */
+    .card-peek {
+      position: absolute;
+      inset: var(--sp-lg) var(--sp-lg) var(--sp-lg) var(--sp-lg);
+      background: var(--c-s1);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      transform: scale(0.95) translateY(8px);
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* Active foreground card */
+    .card-foreground {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* ─── Demo state sections (separate HTML blocks) ─── */
+    .state-section {
+      display: none;
+    }
+
+    .state-section.active {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mockup nav: switch between states -->
+<nav class="mockup-nav">
+  <span>CV4 · notifications-catchup</span>
+  <button class="state-btn active" onclick="showState('trigger')">State 0: Trigger</button>
+  <button class="state-btn" onclick="showState('card1')">State 1: Card (focused)</button>
+  <button class="state-btn" onclick="showState('midswipe')">State 2: Mid-swipe</button>
+  <button class="state-btn" onclick="showState('done')">State 3: Done</button>
+</nav>
+
+<!-- Dashboard shell (always visible as background) -->
+<div class="dashboard-shell">
+
+  <!-- Left sidebar placeholder -->
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-section-label">Agents</div>
+    <div class="sidebar-agent">
+      <div class="sidebar-avatar" style="background: rgba(139,92,246,0.15); color: #A78BFA;">St</div>
+      <div>
+        <div class="sidebar-agent-name">Steffen</div>
+        <div class="sidebar-agent-preview">Brand guidelines ready</div>
+      </div>
+    </div>
+    <div class="sidebar-agent">
+      <div class="sidebar-avatar" style="background: rgba(59,130,246,0.1); color: #60A5FA;">Bo</div>
+      <div>
+        <div class="sidebar-agent-name">Bobby</div>
+        <div class="sidebar-agent-preview">CV4 modal shipped</div>
+      </div>
+    </div>
+    <div class="sidebar-agent">
+      <div class="sidebar-avatar" style="background: rgba(236,72,153,0.1); color: #F472B6;">Cl</div>
+      <div>
+        <div class="sidebar-agent-name">Cleo</div>
+        <div class="sidebar-agent-preview">Reel cut complete</div>
+      </div>
+    </div>
+    <div class="sidebar-section-label" style="margin-top: var(--sp-sm);">Projects</div>
+    <div class="sidebar-agent">
+      <div class="sidebar-avatar" style="background: rgba(251,146,60,0.1); color: #FB923C; border-radius: 6px;">Am</div>
+      <div>
+        <div class="sidebar-agent-name">Ambition</div>
+        <div class="sidebar-agent-preview">3 tasks active</div>
+      </div>
+    </div>
+    <div class="sidebar-agent">
+      <div class="sidebar-avatar" style="background: rgba(16,185,129,0.1); color: var(--c-accent); border-radius: 6px;">Co</div>
+      <div>
+        <div class="sidebar-agent-name">Corner</div>
+        <div class="sidebar-agent-preview">Design shipped</div>
+      </div>
+    </div>
+
+    <!-- Bell + Catch Up button (State 0: trigger) -->
+    <div class="sidebar-bell" id="bell-section">
+      <div class="bell-wrapper">
+        <div class="bell-icon" title="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="bell-badge">4</span>
+        </div>
+        <button class="catchup-trigger" id="catchup-open-btn" onclick="showState('card1')">
+          Catch up →
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content area -->
+  <main class="dashboard-main">
+    <div>
+      <div class="dashboard-greeting">Good morning, Patrik.</div>
+      <div class="dashboard-sub">You have 4 unread notifications · 2 tasks need your attention</div>
+    </div>
+    <!-- rest of dashboard fades into background -->
+  </main>
+
+</div>
+
+
+<!-- ─────────────────────────────────────── -->
+<!-- STATE 1: Card focused (first card)     -->
+<!-- ─────────────────────────────────────── -->
+<div id="state-card1" class="state-section catchup-backdrop">
+  <div class="catchup-modal">
+
+    <!-- Header -->
+    <div class="catchup-header">
+      <div class="catchup-title">
+        <div class="catchup-title-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        Catch up
+      </div>
+
+      <div class="catchup-progress">
+        <span class="progress-counter">1 of 4</span>
+        <div class="progress-dots">
+          <div class="progress-dot current"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+      </div>
+
+      <button class="close-btn" onclick="showState('trigger')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Card viewport -->
+    <div class="card-viewport">
+      <div class="catchup-card state-visible">
+
+        <!-- Sender row -->
+        <div class="sender-row">
+          <div class="sender-avatar agent">St</div>
+          <div class="sender-info">
+            <div class="sender-name">Steffen</div>
+            <div class="sender-context">
+              <span class="sender-room"># Corner · Brand</span>
+              <div class="sender-dot"></div>
+              <span class="sender-time">14 min ago</span>
+            </div>
+          </div>
+          <span class="notification-type-badge badge-mention">@mention</span>
+        </div>
+
+        <!-- Message preview -->
+        <div class="message-preview">
+          <p class="message-preview-text">
+            Hey @Patrik — the new brand guidelines doc is ready for review. I've updated the typography scale, finalized the AOM Orange + Night palette, and added the component pattern library. Want me to prep a PDF export?
+          </p>
+          <button class="show-more-btn">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            Show full message
+          </button>
+        </div>
+
+        <!-- Suggested replies -->
+        <div>
+          <div class="chips-label">Suggested replies</div>
+          <div class="chips-row" style="margin-top: var(--sp-sm);">
+            <button class="chip" onclick="selectChip(this)">Yes, export it 📄</button>
+            <button class="chip" onclick="selectChip(this)">Looks great, thanks</button>
+            <button class="chip secondary" onclick="selectChip(this)">I'll review tomorrow</button>
+          </div>
+        </div>
+
+        <!-- Custom reply -->
+        <div class="custom-reply">
+          <textarea
+            class="reply-input"
+            placeholder="Write a reply… (sent to Steffen in Corner · Brand)"
+            rows="1"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+          ></textarea>
+          <button class="reply-send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </div>
+
+      </div><!-- end card -->
+    </div><!-- end viewport -->
+
+    <!-- Footer -->
+    <div class="catchup-footer">
+      <button class="nav-btn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <button class="skip-btn">Skip →</button>
+      <button class="nav-btn" onclick="showState('midswipe')">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+  </div><!-- end modal -->
+</div>
+
+
+<!-- ─────────────────────────────────────── -->
+<!-- STATE 2: Mid-swipe transition          -->
+<!-- ─────────────────────────────────────── -->
+<div id="state-midswipe" class="state-section catchup-backdrop">
+  <div class="catchup-modal" style="overflow: visible;">
+
+    <!-- Header -->
+    <div class="catchup-header">
+      <div class="catchup-title">
+        <div class="catchup-title-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        Catch up
+      </div>
+
+      <div class="catchup-progress">
+        <span class="progress-counter">2 of 4</span>
+        <div class="progress-dots">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot current"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+      </div>
+
+      <button class="close-btn" onclick="showState('trigger')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Card viewport with TWO cards to show transition -->
+    <div class="card-viewport" style="overflow: hidden; border-radius: 0 0 0 0;">
+
+      <!-- Background card peek -->
+      <div class="card-peek"></div>
+
+      <!-- Exiting card (sliding left) -->
+      <div class="catchup-card state-exit-left" style="z-index: 2; background: var(--c-dim);">
+        <div class="sender-row">
+          <div class="sender-avatar agent">St</div>
+          <div class="sender-info">
+            <div class="sender-name">Steffen</div>
+            <div class="sender-context">
+              <span class="sender-room"># Corner · Brand</span>
+              <div class="sender-dot"></div>
+              <span class="sender-time">14 min ago</span>
+            </div>
+          </div>
+          <span class="notification-type-badge badge-mention">@mention</span>
+        </div>
+        <div class="message-preview" style="opacity: 0.5;">
+          <p class="message-preview-text">Hey @Patrik — the new brand guidelines doc is ready for review…</p>
+        </div>
+      </div>
+
+      <!-- Entering card (sliding in from right) -->
+      <div class="catchup-card state-enter-right" style="z-index: 3; background: var(--c-dim);">
+        <div class="sender-row">
+          <div class="sender-avatar agent" style="background: rgba(139,92,246,0.15); color: #A78BFA;">Bo</div>
+          <div class="sender-info">
+            <div class="sender-name">Bobby</div>
+            <div class="sender-context">
+              <span class="sender-room"># Corner · CV4</span>
+              <div class="sender-dot"></div>
+              <span class="sender-time">32 min ago</span>
+            </div>
+          </div>
+          <span class="notification-type-badge badge-task">Task done</span>
+        </div>
+        <div class="message-preview">
+          <p class="message-preview-text">
+            CV4 modal component shipped ✓ — notifications catch-up modal is live in cv4-explore-v2/. All three states (card, mid-swipe, done) working. Desktop + mobile both verified.
+          </p>
+        </div>
+        <div>
+          <div class="chips-label">Suggested replies</div>
+          <div class="chips-row" style="margin-top: var(--sp-sm);">
+            <button class="chip">Nice, ship it</button>
+            <button class="chip">Run QA first</button>
+            <button class="chip secondary">What's next?</button>
+          </div>
+        </div>
+        <div class="custom-reply">
+          <textarea class="reply-input" placeholder="Write a reply…" rows="1"></textarea>
+          <button class="reply-send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Transition label overlay -->
+      <div style="
+        position: absolute;
+        bottom: var(--sp-lg);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(8,14,28,0.9);
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        padding: 5px var(--sp-md);
+        font-size: var(--fs-xs);
+        color: var(--c-muted);
+        font-family: var(--ff-mono);
+        z-index: 10;
+        pointer-events: none;
+        white-space: nowrap;
+      ">
+        ← swipe / transition in progress (350ms ease)
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="catchup-footer">
+      <button class="nav-btn" onclick="showState('card1')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <button class="skip-btn">Skip →</button>
+      <button class="nav-btn" onclick="showState('done')">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────── -->
+<!-- STATE 3: Done / All caught up          -->
+<!-- ─────────────────────────────────────── -->
+<div id="state-done" class="state-section catchup-backdrop">
+  <div class="catchup-modal">
+
+    <!-- Header: empty progress, all filled -->
+    <div class="catchup-header">
+      <div class="catchup-title">
+        <div class="catchup-title-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        Catch up
+      </div>
+      <div class="catchup-progress">
+        <span class="progress-counter">All done</span>
+        <div class="progress-dots">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+        </div>
+      </div>
+      <button class="close-btn" onclick="showState('trigger')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Completion screen -->
+    <div class="card-viewport">
+      <!-- Confetti -->
+      <div class="confetti-container" id="confetti-container"></div>
+
+      <div class="completion-screen">
+        <div class="completion-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+
+        <div class="completion-title">All caught up</div>
+
+        <div class="completion-stats">
+          <div class="completion-stat">
+            <div class="completion-stat-number">3</div>
+            <div class="completion-stat-label">Replied</div>
+          </div>
+          <div class="completion-stat">
+            <div class="completion-stat-number" style="color: var(--c-text2);">1</div>
+            <div class="completion-stat-label">Skipped</div>
+          </div>
+        </div>
+
+        <div class="completion-summary">
+          Replies sent to Steffen, Bobby, and Cleo.<br/>
+          You're good — no unread backlog.
+        </div>
+
+        <button class="completion-close-btn" onclick="showState('trigger')">
+          Back to dashboard
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer: empty, just padding -->
+    <div class="catchup-footer" style="justify-content: center;">
+      <span style="font-size: var(--fs-xs); color: var(--c-muted); font-family: var(--ff-mono);">
+        Replies routed to source threads · Catch up closes automatically
+      </span>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+  // ─── State switcher ───
+  function showState(state) {
+    // Hide all modals
+    document.querySelectorAll('.catchup-backdrop').forEach(el => {
+      el.style.display = 'none';
+    });
+
+    // Update active button
+    document.querySelectorAll('.state-btn').forEach(btn => btn.classList.remove('active'));
+
+    if (state === 'trigger') {
+      document.querySelectorAll('.state-btn')[0].classList.add('active');
+    } else if (state === 'card1') {
+      document.getElementById('state-card1').style.display = 'flex';
+      document.querySelectorAll('.state-btn')[1].classList.add('active');
+    } else if (state === 'midswipe') {
+      document.getElementById('state-midswipe').style.display = 'flex';
+      document.querySelectorAll('.state-btn')[2].classList.add('active');
+    } else if (state === 'done') {
+      document.getElementById('state-done').style.display = 'flex';
+      document.querySelectorAll('.state-btn')[3].classList.add('active');
+      spawnConfetti();
+    }
+  }
+
+  // ─── Chip selection ───
+  function selectChip(chipEl) {
+    const row = chipEl.closest('.chips-row');
+    row.querySelectorAll('.chip').forEach(c => c.classList.remove('selected', 'submitting'));
+    chipEl.classList.add('selected');
+
+    // Simulate 0.5s submit then advance
+    setTimeout(() => {
+      chipEl.classList.add('submitting');
+    }, 100);
+    setTimeout(() => {
+      showState('midswipe');
+    }, 600);
+  }
+
+  // ─── Confetti ───
+  function spawnConfetti() {
+    const container = document.getElementById('confetti-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const colors = ['#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#A78BFA', '#FB923C'];
+    const count = 28;
+
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const angle = (Math.random() * 360);
+      const dist = 60 + Math.random() * 120;
+      const tx = Math.cos(angle * Math.PI / 180) * dist;
+      const ty = Math.sin(angle * Math.PI / 180) * dist + 40;
+      const rot = (Math.random() - 0.5) * 720;
+
+      piece.style.cssText = `
+        left: calc(50% + ${(Math.random() - 0.5) * 40}px);
+        background: ${colors[i % colors.length]};
+        --tx: ${tx}px;
+        --ty: ${ty}px;
+        --rot: ${rot}deg;
+        --dur: ${0.8 + Math.random() * 0.8}s;
+        --delay: ${Math.random() * 0.3}s;
+        width: ${5 + Math.random() * 8}px;
+        height: ${5 + Math.random() * 8}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+        opacity: 0.9;
+      `;
+      container.appendChild(piece);
+    }
+  }
+
+  // Touch swipe support (mobile)
+  let touchStartX = 0;
+  let currentState = 'trigger';
+
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+  });
+
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) < 60) return; // threshold
+
+    const modal = document.querySelector('.catchup-backdrop[style*="flex"]');
+    if (!modal) return;
+
+    if (dx < 0) {
+      // Swipe left → next
+      if (modal.id === 'state-card1') showState('midswipe');
+      else if (modal.id === 'state-midswipe') showState('done');
+    } else {
+      // Swipe right → back
+      if (modal.id === 'state-midswipe') showState('card1');
+      else if (modal.id === 'state-done') showState('midswipe');
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -570,6 +570,108 @@
       flex: 1;
     }
 
+    /* ── Mail section (R2 corner:left-menu) ─────────────────────── */
+    .mail-section {
+      margin-bottom: var(--sp-sm);
+    }
+    .mail-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: var(--sp-sm) var(--sp-md);
+      background: transparent;
+      border: none;
+      border-radius: 5px;
+      color: var(--c-text2);
+      font-size: var(--fs-sm);
+      cursor: pointer;
+      text-align: left;
+      transition: background-color 0.15s ease, color 0.15s ease;
+      position: relative;
+      min-height: unset;
+    }
+    .mail-toggle:hover { background: var(--c-dim-faint); color: var(--c-text); }
+    .mail-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .mail-label { flex: 1; font-size: var(--fs-sm); }
+    .mail-disc {
+      font-size: 9px;
+      color: var(--c-muted);
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+    }
+    .mail-disc.open { transform: rotate(90deg); }
+    /* Orange unread dot */
+    .mail-unread-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #F97316; /* orange-500 */
+      flex-shrink: 0;
+      display: none;
+      box-shadow: 0 0 0 1.5px var(--c-bg);
+    }
+    .mail-unread-dot.visible { display: block; }
+    /* Mail drawer */
+    .mail-drawer {
+      display: none;
+      flex-direction: column;
+      gap: 1px;
+      padding: 2px var(--sp-sm) var(--sp-sm);
+    }
+    .mail-drawer.open { display: flex; }
+    .mail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px var(--sp-sm);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .mail-row:hover { background: var(--c-dim-faint); }
+    .mail-row-from {
+      font-size: var(--fs-xs);
+      font-weight: var(--fw-semibold);
+      color: var(--c-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+      flex-shrink: 0;
+    }
+    .mail-row-subject {
+      font-size: var(--fs-xs);
+      color: var(--c-text2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .mail-row-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #F97316;
+      flex-shrink: 0;
+      margin-top: 4px;
+      visibility: hidden;
+    }
+    .mail-row-dot.new { visibility: visible; }
+    .mail-view-all {
+      font-size: var(--fs-xs);
+      color: var(--c-muted);
+      text-align: center;
+      padding: 4px;
+      cursor: pointer;
+      transition: color 0.12s;
+    }
+    .mail-view-all:hover { color: var(--c-text2); }
+
     /* ── Left rail tree (R1 corner:left-menu) ──────────────────── */
     .nav-back-link {
       display: flex;
@@ -753,6 +855,19 @@
       <span>←</span>
       <span>Home</span>
     </a>
+
+    <!-- Mail section (R2 corner:left-menu) — closed by default, orange dot on new mail -->
+    <div class="mail-section" id="mail-section">
+      <button class="mail-toggle" id="mail-toggle-btn" onclick="mailToggle()" aria-expanded="false" aria-label="Mail inbox">
+        <span class="mail-icon">✉</span>
+        <span class="mail-label">Mail</span>
+        <span class="mail-unread-dot" id="mail-unread-dot" aria-label="New mail"></span>
+        <span class="mail-disc" id="mail-disc">▶</span>
+      </button>
+      <div class="mail-drawer" id="mail-drawer" role="region" aria-label="Recent mail">
+        <!-- seed rows; real rows injected by mailLoadPreview() -->
+      </div>
+    </div>
 
     <!-- New project CTA -->
     <button class="tree-new-root-btn" onclick="treeCreateProject()">
@@ -1103,6 +1218,98 @@
 
     // Initial render
     renderTree();
+  </script>
+
+  <script>
+    // ── Mail section (R2 corner:left-menu) ─────────────────────────
+    // Collapsed by default. Orange dot when mail arrived after last open.
+    // "Last looked" stored in localStorage. Real data wired in R3 via /api/dashboard/mail/list.
+
+    const __MAIL_KEY = 'corner:mail-last-looked';
+
+    // Seed preview — real data replaces this in R3
+    const __MAIL_SEED = [
+      { id: '1', from: 'Stevie H.', subject: 'Re: Newspaper printing', ts: Date.now() - 1000 * 60 * 14, isNew: true },
+      { id: '2', from: 'Kyle M.',   subject: 'Invoice follow-up',      ts: Date.now() - 1000 * 60 * 60 * 2, isNew: true },
+      { id: '3', from: 'Ash',       subject: 'Brand assets ready',     ts: Date.now() - 1000 * 60 * 60 * 5, isNew: false },
+    ];
+
+    function mailGetLastLooked() {
+      try { return parseInt(localStorage.getItem(__MAIL_KEY) || '0', 10); } catch { return 0; }
+    }
+
+    function mailSetLastLooked() {
+      try { localStorage.setItem(__MAIL_KEY, String(Date.now())); } catch { /* noop */ }
+    }
+
+    function mailHasUnread() {
+      const last = mailGetLastLooked();
+      return __MAIL_SEED.some(m => m.ts > last);
+    }
+
+    function mailRenderDot() {
+      const dot = document.getElementById('mail-unread-dot');
+      if (!dot) return;
+      if (mailHasUnread()) dot.classList.add('visible');
+      else dot.classList.remove('visible');
+    }
+
+    function mailFmtAge(ts) {
+      const diff = Date.now() - ts;
+      if (diff < 60000) return 'just now';
+      if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+      return Math.floor(diff / 86400000) + 'd ago';
+    }
+
+    function mailRenderPreview() {
+      const drawer = document.getElementById('mail-drawer');
+      if (!drawer) return;
+      const last = mailGetLastLooked();
+      const rows = __MAIL_SEED.slice(0, 4).map(m => {
+        const isNew = m.ts > last;
+        return `<div class="mail-row" onclick="mailOpenThread('${m.id}')">
+          <span class="mail-row-dot ${isNew ? 'new' : ''}"></span>
+          <span class="mail-row-from">${m.from}</span>
+          <span class="mail-row-subject">${m.subject}</span>
+        </div>`;
+      }).join('');
+      drawer.innerHTML = rows + `<div class="mail-view-all" onclick="mailViewAll()">View all mail →</div>`;
+    }
+
+    function mailToggle() {
+      const drawer = document.getElementById('mail-drawer');
+      const disc = document.getElementById('mail-disc');
+      const btn = document.getElementById('mail-toggle-btn');
+      if (!drawer) return;
+      const isOpen = drawer.classList.contains('open');
+      if (isOpen) {
+        drawer.classList.remove('open');
+        disc && disc.classList.remove('open');
+        btn && btn.setAttribute('aria-expanded', 'false');
+      } else {
+        // Mark as looked — hide dot
+        mailSetLastLooked();
+        mailRenderPreview();
+        drawer.classList.add('open');
+        disc && disc.classList.add('open');
+        btn && btn.setAttribute('aria-expanded', 'true');
+        mailRenderDot(); // re-evaluate (now should clear)
+      }
+    }
+
+    function mailOpenThread(id) {
+      // R3: navigate to Mail Room with thread pre-selected
+      console.log('[mail] open thread:', id);
+    }
+
+    function mailViewAll() {
+      // R3: navigate to the Mail Room view
+      console.log('[mail] view all');
+    }
+
+    // Init
+    mailRenderDot();
   </script>
 
   <!-- Center: project chat thread -->
