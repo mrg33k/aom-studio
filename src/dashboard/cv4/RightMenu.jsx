@@ -1129,7 +1129,11 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
 // ── Folder row (R7-C) ───────────────────────────────────────────────────────
 // Indented under its parent project group; click toggles its own collapse.
 
-function FolderRow({ folder, count, isCollapsed, onToggle }) {
+function FolderRow({ folder, count, isCollapsed, onToggle, depth = 0 }) {
+  // R-MP-2 — subfolders indent by depth; same chevron pattern as MissionRow
+  const indentBase = 20
+  const indentStep = 14
+  const paddingLeft = indentBase + (depth * indentStep)
   return (
     <div
       onClick={onToggle}
@@ -1138,7 +1142,7 @@ function FolderRow({ folder, count, isCollapsed, onToggle }) {
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        padding: '4px 14px 4px 20px',
+        padding: `4px 14px 4px ${paddingLeft}px`,
         cursor: 'pointer',
         background: 'transparent',
         transition: 'background 120ms ease, color 120ms ease',
@@ -1847,23 +1851,44 @@ export default function RightMenu() {
           projectSlug={group.projectSlug}
           onCreateFolder={handleCreateFolder}
         />
-        {/* Folders, in folder-creation order */}
-        {projectFolders.map(folder => {
-          const bucket = folderBuckets.get(folder.slug) || []
-          const fKey = `${folder.project_slug}:${folder.slug}`
-          const isFolderCollapsed = !!collapsedFolders[fKey]
-          return (
-            <div key={folder.slug}>
-              <FolderRow
-                folder={folder}
-                count={bucket.length}
-                isCollapsed={isFolderCollapsed}
-                onToggle={() => toggleFolderCollapse(group.projectSlug, folder.slug)}
-              />
-              {!isFolderCollapsed && bucket.map(m => renderMissionTreeRow(m, 0, `folder-${folder.slug}`))}
-            </div>
-          )
-        })}
+        {/* Folders, nested by parent_folder_slug. Top-level folders (parent=null)
+            render as roots; subfolders render recursively under their parent. */}
+        {(() => {
+          const childrenOf = new Map()
+          for (const f of projectFolders) {
+            const key = f.parent_folder_slug || null
+            if (!childrenOf.has(key)) childrenOf.set(key, [])
+            childrenOf.get(key).push(f)
+          }
+          function renderFolderNode(folder, depth) {
+            const bucket = folderBuckets.get(folder.slug) || []
+            const childFolders = childrenOf.get(folder.slug) || []
+            const fKey = `${folder.project_slug}:${folder.slug}`
+            const isFolderCollapsed = !!collapsedFolders[fKey]
+            const totalCount = bucket.length + childFolders.reduce((sum, cf) => {
+              const cb = folderBuckets.get(cf.slug) || []
+              return sum + cb.length
+            }, 0)
+            return (
+              <div key={folder.slug}>
+                <FolderRow
+                  folder={folder}
+                  count={totalCount}
+                  isCollapsed={isFolderCollapsed}
+                  onToggle={() => toggleFolderCollapse(group.projectSlug, folder.slug)}
+                  depth={depth}
+                />
+                {!isFolderCollapsed && (
+                  <>
+                    {childFolders.map(cf => renderFolderNode(cf, depth + 1))}
+                    {bucket.map(m => renderMissionTreeRow(m, depth + 1, `folder-${folder.slug}`))}
+                  </>
+                )}
+              </div>
+            )
+          }
+          return (childrenOf.get(null) || []).map(root => renderFolderNode(root, 0))
+        })()}
         {/* Ungrouped roots — each renders with its children nested */}
         {ungrouped.map(m => renderMissionTreeRow(m, 0, 'ungrouped'))}
       </>

@@ -78,7 +78,7 @@ export default async function handler(req, res) {
     const world = String(req.query.client || 'aom').trim().toLowerCase()
     try {
       const [foldersRes, assignRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/mission_folders?world=eq.${encodeURIComponent(world)}&select=id,project_slug,slug,name,created_at&order=created_at.asc`, { headers: sbHeaders() }),
+        fetch(`${SUPABASE_URL}/rest/v1/mission_folders?world=eq.${encodeURIComponent(world)}&select=id,project_slug,slug,name,parent_folder_slug,created_at&order=created_at.asc`, { headers: sbHeaders() }),
         fetch(`${SUPABASE_URL}/rest/v1/mission_folder_assignments?world=eq.${encodeURIComponent(world)}&folder_slug=not.is.null&select=project_slug,mission_slug,folder_slug,updated_at`, { headers: sbHeaders() }),
       ])
       const folders = foldersRes.ok ? await foldersRes.json() : []
@@ -94,6 +94,7 @@ export default async function handler(req, res) {
     const body = await readBody(req)
     const project_slug = String(body.project_slug || '').trim().toLowerCase()
     const name = String(body.name || '').trim()
+    const parent_folder_slug = body.parent_folder_slug ? String(body.parent_folder_slug).trim().toLowerCase() : null
     if (!project_slug || !name) return res.status(400).json({ error: 'project_slug and name required' })
 
     try { await verifyTenant('aom', req) } catch (e) {
@@ -114,7 +115,7 @@ export default async function handler(req, res) {
       const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/mission_folders`, {
         method: 'POST',
         headers: sbHeaders({ Prefer: 'return=representation' }),
-        body: JSON.stringify({ world, project_slug, slug, name, created_by: user_id }),
+        body: JSON.stringify({ world, project_slug, slug, name, parent_folder_slug, created_by: user_id }),
       })
       if (insertRes.ok) {
         const rows = await insertRes.json()
