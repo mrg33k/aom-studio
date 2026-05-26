@@ -82,7 +82,7 @@ function ConfettiPiece({ index }) {
 
 // ── Notification Card ─────────────────────────────────────────────────────────
 
-function NotifCard({ notif, state, onChipReply, onTextReply }) {
+function NotifCard({ notif, direction, onChipReply, onTextReply }) {
   const [expanded, setExpanded] = useState(false)
   const [inputVal, setInputVal] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -114,28 +114,21 @@ function NotifCard({ notif, state, onChipReply, onTextReply }) {
     }
   }, [handleSend])
 
-  // State-driven position/opacity for slide animation
-  const stateStyles = {
-    visible:     { transform: 'translateX(0)',       opacity: 1 },
-    'enter-right': { transform: 'translateX(100%)',  opacity: 0 },
-    'enter-left':  { transform: 'translateX(-100%)', opacity: 0 },
-    'exit-left':   { transform: 'translateX(-60%) scale(0.94)', opacity: 0 },
-    'exit-right':  { transform: 'translateX(60%) scale(0.94)',  opacity: 0 },
-  }
+  // R21b — One card on screen at a time. Parent passes a fresh key each time
+  // currentIndex changes so React remounts the card and the CSS keyframe
+  // animation fires cleanly with no stacking artifacts on rapid Skip/Next.
+  const animationName = direction === 'back' ? 'cnCardInLeft' : 'cnCardInRight'
 
   return (
     <div style={{
-      position: 'absolute',
-      inset: 0,
       display: 'flex',
       flexDirection: 'column',
-      padding: 20,
-      gap: 16,
+      padding: '18px 20px 20px',
+      gap: 14,
       overflowY: 'auto',
       overscrollBehavior: 'contain',
-      transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease',
-      willChange: 'transform',
-      ...(stateStyles[state] || stateStyles.visible),
+      animation: `${animationName} 0.28s cubic-bezier(0.16, 1, 0.3, 1)`,
+      maxHeight: '100%',
     }}>
 
       {/* Sender row */}
@@ -316,8 +309,7 @@ function NotifCard({ notif, state, onChipReply, onTextReply }) {
 function CompletionScreen({ replied, skipped, senderNames, onClose }) {
   return (
     <div style={{
-      position: 'absolute',
-      inset: 0,
+      position: 'relative',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -407,7 +399,10 @@ function CompletionScreen({ replied, skipped, senderNames, onClose }) {
 
 export default function CatchupModal({ isOpen, notifications, onClose, onReply, onSkip }) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [cardStates, setCardStates] = useState([]) // ['visible', 'enter-right', ...]
+  // R21b — direction is purely a CSS-animation hint passed to the current
+  // card. We render ONE card at a time and remount on index change, so
+  // there's nothing to orchestrate across siblings.
+  const [direction, setDirection] = useState('forward')
   const [replied, setReplied] = useState(0)
   const [skipped, setSkipped] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
@@ -419,10 +414,10 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
   useEffect(() => {
     if (!isOpen || !notifications || notifications.length === 0) return
     setCurrentIndex(0)
+    setDirection('forward')
     setReplied(0)
     setSkipped(0)
     setIsComplete(false)
-    setCardStates(notifications.map((_, i) => i === 0 ? 'visible' : 'enter-right'))
   }, [isOpen, notifications])
 
   // Keyboard navigation
@@ -440,35 +435,10 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
 
   const total = notifications ? notifications.length : 0
 
-  const goToCard = useCallback((targetIndex, direction) => {
-    setCardStates(prev => {
-      const next = [...prev]
-      if (direction === 'forward') {
-        next[currentIndex] = 'exit-left'
-        next[targetIndex] = 'enter-right'
-        // One frame later, snap to visible
-        requestAnimationFrame(() => {
-          setCardStates(s => {
-            const ss = [...s]
-            ss[targetIndex] = 'visible'
-            return ss
-          })
-        })
-      } else {
-        next[currentIndex] = 'exit-right'
-        next[targetIndex] = 'enter-left'
-        requestAnimationFrame(() => {
-          setCardStates(s => {
-            const ss = [...s]
-            ss[targetIndex] = 'visible'
-            return ss
-          })
-        })
-      }
-      return next
-    })
+  const goToCard = useCallback((targetIndex, dir) => {
+    setDirection(dir === 'back' ? 'back' : 'forward')
     setCurrentIndex(targetIndex)
-  }, [currentIndex])
+  }, [])
 
   const advanceOrComplete = useCallback((repliedCount, skippedCount) => {
     if (currentIndex >= total - 1) {
@@ -547,6 +517,14 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
           from { transform: translateY(24px) scale(0.97); opacity: 0; }
           to { transform: translateY(0) scale(1); opacity: 1; }
         }
+        @keyframes cnCardInRight {
+          from { transform: translateX(28px); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes cnCardInLeft {
+          from { transform: translateX(-28px); opacity: 0; }
+          to   { transform: translateX(0);     opacity: 1; }
+        }
         @keyframes cnCompletionIn {
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
@@ -583,15 +561,16 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
         aria-modal="true"
         aria-label="Notification catch-up"
       >
-        {/* Modal */}
+        {/* Modal — sizes to content (header + current card + footer), capped
+            at 90dvh so a long expanded message doesn't push it offscreen. */}
         <div
           ref={modalRef}
           style={{
             background: C.bg2,
             border: `1px solid ${C.border}`,
             borderRadius: 12,
-            width: 'min(640px, 92vw)',
-            height: 'min(640px, 90dvh)',
+            width: 'min(560px, 92vw)',
+            maxHeight: '90dvh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -678,26 +657,28 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
             </button>
           </div>
 
-          {/* Card viewport (or completion screen) */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-            {!isComplete ? (
-              notifications.map((notif, i) => (
-                <NotifCard
-                  key={notif.id || i}
-                  notif={notif}
-                  state={cardStates[i] || 'enter-right'}
-                  onChipReply={handleChipReply}
-                  onTextReply={handleTextReply}
-                />
-              ))
-            ) : (
+          {/* Card viewport — renders ONE card at a time. Remounting on
+              currentIndex change is what triggers the slide-in animation
+              cleanly (no DOM-stacked siblings, no rapid-click overlap).
+              flex:1 + minHeight:0 lets the card scroll internally when an
+              expanded message would otherwise push past the 90dvh cap. */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            {!isComplete && notifications[currentIndex] ? (
+              <NotifCard
+                key={currentIndex}
+                notif={notifications[currentIndex]}
+                direction={direction}
+                onChipReply={handleChipReply}
+                onTextReply={handleTextReply}
+              />
+            ) : isComplete ? (
               <CompletionScreen
                 replied={replied}
                 skipped={skipped}
                 senderNames={senderNames}
                 onClose={onClose}
               />
-            )}
+            ) : null}
           </div>
 
           {/* Footer (hidden on completion) */}
