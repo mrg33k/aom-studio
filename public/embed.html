@@ -227,7 +227,12 @@
       if (theme !== 'light' && theme !== 'dark') theme = '';
       if (theme === 'light') document.body.classList.add('ce-theme-light');
       var s = document.createElement('script');
-      s.src = '/embed/v1/widget.js';
+      // Cache-bust the widget URL so a freshly-deployed widget.js
+      // bypasses the browser's 4-hour HTTP cache. Bump WIDGET_VERSION
+      // (or any unique token) whenever widget.js ships a change that
+      // hosts need to pick up immediately. The query string is opaque
+      // to the server; same file is served.
+      s.src = '/embed/v1/widget.js?v=n3r2p2';
       s.setAttribute('data-embed-id', id);
       s.setAttribute('data-mount', '#corner-embed');
       // Pass visitor_id override if provided so tenant support threads stay scoped.
