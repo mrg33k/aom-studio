@@ -813,12 +813,11 @@ function MissionRow({
         display: 'flex',
         alignItems: 'flex-start',
         gap: 6,
-        padding: `8px 14px 8px ${paddingLeft}px`,
+        padding: `5px 14px 5px ${paddingLeft}px`,
         cursor: 'pointer',
         transition: 'background 120ms ease',
-        minHeight: 38,
+        minHeight: 30,
         borderLeft: '2px solid ' + stripeColor,
-        borderBottom: '1px solid rgba(255,255,255,0.025)',
         background: isCurrent ? 'rgba(234,179,8,0.055)' : 'transparent',
       }}
       onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = C.s1 }}
@@ -917,7 +916,6 @@ function TaskRow({ task, isDone, onClick }) {
         minHeight: 38,
         transition: 'background 120ms ease',
         borderLeft: '2px solid ' + (isDone ? 'transparent' : stripeColor),
-        borderBottom: '1px solid rgba(255,255,255,0.025)',
       }}
       onMouseEnter={e => e.currentTarget.style.background = C.s1}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -1140,10 +1138,9 @@ function FolderRow({ folder, count, isCollapsed, onToggle }) {
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        padding: '6px 14px 6px 26px',
+        padding: '4px 14px 4px 20px',
         cursor: 'pointer',
         background: 'transparent',
-        borderBottom: '1px solid rgba(255,255,255,0.02)',
         transition: 'background 120ms ease, color 120ms ease',
         userSelect: 'none',
       }}
