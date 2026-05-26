@@ -36,13 +36,56 @@ function writeStored(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch (_) {}
 }
 
-function greetingFor(date = new Date()) {
+// Rotating greeting variants — picks one at random per page load so the
+// welcome feels human, not boilerplate. Patrik 2026-05-25: "it should swap
+// each reload or new time they come to home". Each variant ends in a period
+// (or question mark when phrased as one) so the welcome reads as a complete
+// sentence under the brutalist treatment.
+const GREETINGS = {
+  morning: [
+    'Good morning,',
+    'Morning,',
+    "Coffee's on,",
+    "What's the play,",
+    'Up early,',
+    'Fresh start,',
+  ],
+  afternoon: [
+    'Good afternoon,',
+    'Afternoon,',
+    'Back at it,',
+    'Mid-day check,',
+    'Still rolling,',
+    'Long lunch,',
+  ],
+  evening: [
+    'Good evening,',
+    'Evening,',
+    'Welcome back,',
+    'Last stretch,',
+    'Final push,',
+    'Almost there,',
+  ],
+  late: [
+    'Burning the midnight oil,',
+    'Late night,',
+    'Workshop hours,',
+    'Still going,',
+    "Couldn't sleep,",
+    "It's that hour,",
+  ],
+}
+
+function pickGreeting(date = new Date()) {
   const h = date.getHours()
-  if (h < 5) return 'Burning the midnight oil,'
-  if (h < 12) return 'Good morning,'
-  if (h < 17) return 'Good afternoon,'
-  if (h < 21) return 'Good evening,'
-  return 'Late night,'
+  let slot = 'evening'
+  if (h < 5) slot = 'late'
+  else if (h < 12) slot = 'morning'
+  else if (h < 17) slot = 'afternoon'
+  else if (h < 21) slot = 'evening'
+  else slot = 'late'
+  const pool = GREETINGS[slot]
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 function displayName(user) {
@@ -83,6 +126,7 @@ export default function HomeView({
   const [pinnedProjects, setPinnedProjects] = useState(() => readStored(PIN_PROJECTS_KEY + ':' + userId, []))
   const [expandedProjects, setExpandedProjects] = useState(() => readStored(EXPANDED_PROJECTS_KEY + ':' + userId, {}))
   const [searchText, setSearchText] = useState('')
+  const greeting = useMemo(() => pickGreeting(), [])
 
   useEffect(() => { writeStored(PIN_AGENTS_KEY + ':' + userId, pinnedAgents) }, [pinnedAgents, userId])
   useEffect(() => { writeStored(PIN_PROJECTS_KEY + ':' + userId, pinnedProjects) }, [pinnedProjects, userId])
@@ -140,9 +184,9 @@ export default function HomeView({
       <style>{`
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.4} }
         [data-cv4-home] .hm-shell { max-width:780px; margin:0 auto; padding:72px 32px 64px; }
-        [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(36px,5vw,56px); line-height:1.0; letter-spacing:-.025em; margin:0 0 48px; -webkit-font-smoothing:antialiased; }
-        [data-cv4-home] .hm-welcome .hm-l1 { display:block; color:#E8EBEF; }
-        [data-cv4-home] .hm-welcome .hm-l2 { display:block; color:#A7B5C8; }
+        [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(34px,5vw,54px); line-height:1.05; letter-spacing:-.025em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
+        [data-cv4-home] .hm-welcome .hm-l1 { color:#E8EBEF; }
+        [data-cv4-home] .hm-welcome .hm-l2 { color:#A7B5C8; margin-left:0.32em; }
         [data-cv4-home] .hm-search { position:relative; margin-bottom:52px; }
         [data-cv4-home] .hm-search input { width:100%; box-sizing:border-box; padding:16px 68px 16px 50px; background:transparent; border:1px solid #2D3A4A; border-radius:2px; color:#E8EBEF; font-family:inherit; font-size:16px; font-weight:400; outline:none; transition:border-color 120ms ease, background-color 120ms ease; }
         [data-cv4-home] .hm-search input::placeholder { color:#5A6F8C; font-weight:400; }
@@ -215,8 +259,8 @@ export default function HomeView({
       <div className="hm-shell">
         {/* Welcome */}
         <h1 className="hm-welcome">
-          <span className="hm-l1">{greetingFor()}</span>
-          <span className="hm-l2">{displayName(user)}</span>
+          <span className="hm-l1">{greeting}</span>{' '}
+          <span className="hm-l2">{displayName(user)}.</span>
         </h1>
 
         {/* Search */}
