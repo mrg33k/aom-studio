@@ -971,6 +971,7 @@ export default function CornerV4() {
   const cv4HomeView = useMemo(() => (
     <HomeView
       user={currentUser}
+      worldId={worldId}
       agents={agents}
       projectRooms={projectRooms}
       onSelectAgent={(agent) => {
@@ -2313,6 +2314,7 @@ export default function CornerV4() {
             ) : isHomeMode ? (
               <HomeView
                 user={currentUser}
+                worldId={worldId}
                 agents={agents}
                 projectRooms={projectRooms}
                 onSelectAgent={(agent) => {
