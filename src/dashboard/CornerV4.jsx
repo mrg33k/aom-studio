@@ -644,26 +644,49 @@ export default function CornerV4() {
     if (routeProjectId) navigate(basePath)
   }, [navigate, routeProjectId])
 
+  // R21c: notifications carry `item.project` from a message's `project` column,
+  // which is sometimes the display name (e.g. "aheadofmarket.com") instead of
+  // the canonical DB slug ("aheadofmarket"). Without normalization, clicking a
+  // notification navigates to /project/<display-name>, the tenant-isolation
+  // guard rejects it as inaccessible, and ChatPanel falls back to its home
+  // view — feels like the home screen is "blocking" the click. Resolve against
+  // projectRooms by exact slug, then case-insensitive name, then case-insensitive
+  // slug; if nothing matches, pass through (the guard will do its job).
+  const resolveCanonicalProject = useCallback((input) => {
+    if (!input || !Array.isArray(projectRooms) || projectRooms.length === 0) return null
+    const raw = String(input)
+    const lower = raw.toLowerCase()
+    return (
+      projectRooms.find(p => p?.slug === raw) ||
+      projectRooms.find(p => (p?.name || '').toLowerCase() === lower) ||
+      projectRooms.find(p => (p?.slug || '').toLowerCase() === lower) ||
+      null
+    )
+  }, [projectRooms])
+
   // Called by ChatPanel (and the CV4 drawer) when a project is selected.
   // Carries `slug` so the drawer's active highlight + Tasks-tab scoping can key on it.
   // Navigates to <basePath>/project/:slug so ChatPanel's useParams picks up
   // projectId → routes to ProjectChatView instead of the conversations list.
   const handleSelectProject = useCallback((project) => {
+    const canonical = resolveCanonicalProject(project?.slug)
+    const canonicalSlug = canonical?.slug || project?.slug
+    const canonicalName = canonical?.name || project?.name || canonicalSlug
     // Navigation reset: clear overlay state so user lands in the new surface clean.
     setSelectedMail(null)
     setActiveTool(null)
     setSelectedAgent(null)
-    setConversationTarget({ name: project.name, slug: project.slug, type: 'project' })
+    setConversationTarget({ name: canonicalName, slug: canonicalSlug, type: 'project' })
     setTab('chat')
     setUnreadChat(0)
-    if (project?.slug) {
+    if (canonicalSlug) {
       // corner:notifications R2 — opening the project room clears its
       // project-level notification dot (roomKey = project slug).
-      setNotifReadAt(prev => ({ ...prev, [project.slug]: new Date().toISOString() }))
+      setNotifReadAt(prev => ({ ...prev, [canonicalSlug]: new Date().toISOString() }))
       const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-      navigate(`${basePath}/project/${project.slug}`)
+      navigate(`${basePath}/project/${canonicalSlug}`)
     }
-  }, [navigate])
+  }, [navigate, resolveCanonicalProject])
 
   // R78-p9 corner:new-projects — self-serve creation. The "+ New project"
   // door in the drawer opens a name popup; on submit we create the room and
@@ -713,13 +736,17 @@ export default function CornerV4() {
   // every outgoing message's metadata so the SDK reply is mission-aware.
   const handleSelectMission = useCallback((mission, project) => {
     if (!mission || !project) return
+    // R21c: same display-name vs canonical-slug mismatch as handleSelectProject.
+    // The project arg from notification paths can carry a display string.
+    const canonical = resolveCanonicalProject(project?.slug)
+    const canonicalProjectSlug = canonical?.slug || project?.slug
     // Navigation reset: clear overlay state so user lands in the mission room clean.
     setSelectedMail(null)
     setActiveTool(null)
     setSelectedAgent(null)
     setConversationTarget({
       name: mission.name || mission.slug,
-      slug: project.slug,
+      slug: canonicalProjectSlug,
       type: 'project',
       missionSlug: mission.slug,
       missionName: mission.name || mission.slug,
@@ -730,10 +757,10 @@ export default function CornerV4() {
     setUnreadChat(0)
     // corner:notifications R2 — opening the mission room clears that mission's
     // notification dot (roomKey = full mission_slug "project:mission").
-    setNotifReadAt(prev => ({ ...prev, [`${project.slug}:${mission.slug}`]: new Date().toISOString() }))
+    setNotifReadAt(prev => ({ ...prev, [`${canonicalProjectSlug}:${mission.slug}`]: new Date().toISOString() }))
     const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-    navigate(`${basePath}/project/${project.slug}?mission=${encodeURIComponent(mission.slug)}`)
-  }, [navigate])
+    navigate(`${basePath}/project/${canonicalProjectSlug}?mission=${encodeURIComponent(mission.slug)}`)
+  }, [navigate, resolveCanonicalProject])
 
   // R78-p9b corner:new-projects — self-serve mission creation. The "New mission"
   // row in an expanded project triggers a name popup; on submit we scaffold the
