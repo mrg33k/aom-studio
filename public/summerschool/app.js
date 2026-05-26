@@ -18,28 +18,24 @@
     return;
   }
 
-  // ?fix-stars=N → admin one-shot to overwrite the gold-star count.
-  // 2026-05-26 hardening: only allows INCREASE by default. A typo or stray
-  // link can no longer roll Ethan back (he was on 41, somehow got knocked
-  // back to 11 — root cause unclear, but this kills the most likely vector).
-  // To intentionally decrease, pass &force=1 along with fix-stars.
-  // Also records a lastSeenStars shadow so we have forensic evidence if a
-  // future drop happens by another vector.
+  // ?fix-stars=N OR #fix-stars=N → admin one-shot to overwrite the gold-star
+  // count. Accepts BOTH query and hash (some Safari setups mangle queries —
+  // hash always survives). Only allows INCREASE by default (a typo or stray
+  // link can't roll him back). Decreases require &force=1 or #force=1.
   {
     const params = new URLSearchParams(window.location.search);
-    const fix = params.get('fix-stars');
+    const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    const fix = params.get('fix-stars') || hashParams.get('fix-stars');
     if (fix !== null) {
       const n = parseInt(fix, 10);
-      const force = params.get('force') === '1';
+      const force = params.get('force') === '1' || hashParams.get('force') === '1';
       if (!Number.isNaN(n) && n >= 0) {
         try {
           const raw = localStorage.getItem('ss-state-v1');
           const s = raw ? JSON.parse(raw) : {};
           const current = s.goldStars || 0;
           if (n < current && !force) {
-            // Refusing to decrease without force. Log a console line so a
-            // debugging adult can see what happened.
-            console.warn('[SS] fix-stars=' + n + ' refused: would decrease from ' + current + '. Pass &force=1 to override.');
+            console.warn('[SS] fix-stars=' + n + ' refused: would decrease from ' + current + '. Add force=1 to override.');
           } else {
             s.goldStars = n;
             s.lastSeenStars = { value: n, at: new Date().toISOString(), source: 'fix-stars' + (force ? ' force' : '') };
@@ -50,6 +46,102 @@
       window.location.replace(window.location.pathname);
       return;
     }
+  }
+
+  // ?admin=1 → inline admin panel. Bypasses URL-parse issues entirely;
+  // Patrik opens this on Ethan's iPad in Safari, sees current state,
+  // taps a button to set stars to any value. Writes directly to whichever
+  // origin this iPad is using (no www-vs-bare-domain origin guessing).
+  if (new URLSearchParams(window.location.search).has('admin')) {
+    const raw = localStorage.getItem('ss-state-v1');
+    const s = raw ? JSON.parse(raw) : { goldStars: 0, days: {}, streak: 0 };
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const d = (s.days && s.days[todayStr]) || { completedBlocks: [], blockMetrics: {} };
+    const completedCount = (d.completedBlocks || []).length;
+    const starsToday = d.starsToday || 0;
+    const lastSeen = s.lastSeenStars && s.lastSeenStars.value;
+    const origin = window.location.origin;
+
+    document.body.innerHTML = '';
+    document.body.style.background = '#F5EFE5';
+    document.body.style.fontFamily = "'Fraunces', 'Times New Roman', serif";
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'max-width: 520px; margin: 24px auto; padding: 24px; background: #FFF; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.08);';
+    wrap.innerHTML = `
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #C8932E; margin-bottom: 8px;">Summer School · Admin</div>
+      <h1 style="font-size: 28px; line-height: 1.15; font-weight: 500; margin: 0 0 16px;">Ethan's state</h1>
+
+      <div style="background: #F5EFE5; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px;">
+        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
+          <span style="color: #6B6B6B;">Origin (THIS device)</span><span style="font-family: 'Geist', system-ui, sans-serif; font-size: 13px;">${origin}</span>
+        </div>
+        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
+          <span style="color: #6B6B6B;">Lifetime gold stars</span><strong style="color: #C8932E;">★ ${s.goldStars || 0}</strong>
+        </div>
+        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
+          <span style="color: #6B6B6B;">Stars earned today</span><span>${starsToday} / 30 cap</span>
+        </div>
+        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
+          <span style="color: #6B6B6B;">Modules done today</span><span>${completedCount}</span>
+        </div>
+        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
+          <span style="color: #6B6B6B;">Last-seen shadow value</span><span>${lastSeen != null ? lastSeen : '—'}</span>
+        </div>
+        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
+          <span style="color: #6B6B6B;">Streak</span><span>${s.streak || 0} days</span>
+        </div>
+      </div>
+
+      <div style="background: #FBF7EE; border-left: 4px solid #E8A03A; border-radius: 0 10px 10px 0; padding: 14px 16px; margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #C8932E; margin-bottom: 6px;">Set stars to a new value</div>
+        <div style="font-size: 14px; color: #4A4A4A; margin-bottom: 10px;">Type a number. Tap Set. Tap Open Summer School to return.</div>
+        <div style="display:flex; gap: 8px; margin-bottom: 10px;">
+          <input id="admin-stars-input" type="number" min="0" step="1" placeholder="e.g. 41" style="flex:1; padding: 12px 14px; font-size: 18px; border: 1.5px solid rgba(26,24,20,0.18); border-radius: 8px; font-family: inherit;">
+          <button id="admin-stars-set" style="background: #1A1814; color: #F5EFE5; padding: 12px 22px; border: 0; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;">Set</button>
+        </div>
+        <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+          <button class="admin-quick-set" data-n="30" style="background: rgba(232,160,58,0.18); color: #8B6510; padding: 8px 14px; border: 0; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;">Set to 30</button>
+          <button class="admin-quick-set" data-n="41" style="background: rgba(232,160,58,0.18); color: #8B6510; padding: 8px 14px; border: 0; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;">Set to 41</button>
+          <button class="admin-quick-set" data-n="50" style="background: rgba(232,160,58,0.18); color: #8B6510; padding: 8px 14px; border: 0; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;">Set to 50</button>
+        </div>
+        <div id="admin-confirm" style="margin-top: 12px; font-size: 14px; color: #2D6B3C; min-height: 1.2em;"></div>
+      </div>
+
+      <a href="/summerschool/?day=tuesday" style="display: inline-block; background: #1A1814; color: #F5EFE5; padding: 12px 22px; border-radius: 999px; text-decoration: none; font-weight: 600;">Open Summer School →</a>
+
+      <div style="margin-top: 24px; font-size: 12px; color: #9A9388;">
+        Tip: if this page shows the wrong origin (e.g. you opened the link as "aheadofmarket.com" but the iPad has him saved under "www.aheadofmarket.com"), the iPad has DIFFERENT state at the other origin. Open Safari on the iPad, paste the URL of the version Ethan normally uses, then add <code>?admin=1</code> to it.
+      </div>
+    `;
+    document.body.appendChild(wrap);
+
+    const setStars = (n) => {
+      const cur = (() => {
+        try { return JSON.parse(localStorage.getItem('ss-state-v1') || '{}').goldStars || 0; } catch (e) { return 0; }
+      })();
+      try {
+        const s2 = JSON.parse(localStorage.getItem('ss-state-v1') || '{}');
+        s2.goldStars = n;
+        s2.lastSeenStars = { value: n, at: new Date().toISOString(), source: 'admin-panel' };
+        localStorage.setItem('ss-state-v1', JSON.stringify(s2));
+        const c = document.querySelector('#admin-confirm');
+        c.textContent = '✓ Set to ' + n + '. (Was ' + cur + '.) Open Summer School to check.';
+        c.style.color = '#2D6B3C';
+      } catch (e) {
+        const c = document.querySelector('#admin-confirm');
+        c.textContent = 'Save failed — localStorage may be blocked. ' + e.message;
+        c.style.color = '#8B3838';
+      }
+    };
+
+    document.querySelector('#admin-stars-set').onclick = () => {
+      const v = parseInt(document.querySelector('#admin-stars-input').value, 10);
+      if (!Number.isNaN(v) && v >= 0) setStars(v);
+    };
+    document.querySelectorAll('.admin-quick-set').forEach(btn => {
+      btn.onclick = () => setStars(parseInt(btn.dataset.n, 10));
+    });
+    return;
   }
 
   // Continuous lastSeenStars shadow: every page load, if the loaded value
