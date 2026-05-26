@@ -587,11 +587,11 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
         <div
           ref={modalRef}
           style={{
-            background: C.dim,
+            background: C.bg2,
             border: `1px solid ${C.border}`,
             borderRadius: 12,
             width: 'min(640px, 92vw)',
-            maxHeight: '90dvh',
+            height: 'min(640px, 90dvh)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',

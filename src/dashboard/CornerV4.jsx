@@ -1089,20 +1089,14 @@ export default function CornerV4() {
         setConversationTarget({ name: agent.name, type: 'agent' })
       }}
       onSelectProject={(proj, mission) => {
-        setConversationTarget({
-          name: proj.name || proj.slug,
-          slug: proj.slug,
-          type: 'project',
-          missionSlug: mission?.slug || null,
-        })
-        try {
-          const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-          const url = basePath + '/project/' + proj.slug + (mission?.slug ? ('?mission=' + encodeURIComponent(mission.slug)) : '')
-          navigate(url)
-        } catch (_) {}
+        if (mission && mission.slug) {
+          handleSelectMission(mission, proj)
+        } else {
+          handleSelectProject(proj)
+        }
       }}
     />
-  ), [currentUser, agents, projectRooms, navigate])
+  ), [currentUser, agents, projectRooms, handleSelectMission, handleSelectProject, worldId])
 
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,
@@ -2463,17 +2457,11 @@ export default function CornerV4() {
                   setConversationTarget({ name: agent.name, type: 'agent' })
                 }}
                 onSelectProject={(proj, mission) => {
-                  setConversationTarget({
-                    name: proj.name || proj.slug,
-                    slug: proj.slug,
-                    type: 'project',
-                    missionSlug: mission?.slug || null,
-                  })
-                  try {
-                    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
-                    const url = basePath + '/project/' + proj.slug + (mission?.slug ? ('?mission=' + encodeURIComponent(mission.slug)) : '')
-                    navigate(url)
-                  } catch (_) {}
+                  if (mission && mission.slug) {
+                    handleSelectMission(mission, proj)
+                  } else {
+                    handleSelectProject(proj)
+                  }
                 }}
               />
             ) : (
