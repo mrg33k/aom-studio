@@ -2210,6 +2210,10 @@ export default function CornerV4() {
           onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
           onSelectMission={(mission, project) => handleSelectMission(mission, project)}
           refreshKey={drawerRefreshKey}
+          skillsShelfOpen={skillsShelfOpen}
+          onToggleSkillsShelf={toggleSkillsShelf}
+          onCloseSkillsShelf={() => setSkillsShelfOpen(false)}
+          onPickSkill={handlePickSkill}
           onSelectTask={(task, mission, project) => {
             if (project) handleSelectProject(project)
             if (mission) {
