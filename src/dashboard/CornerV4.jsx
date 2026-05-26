@@ -60,6 +60,8 @@ import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 // R10 — MailListPanel moved into the left rail (cv4/LeftMailPanel.jsx),
 // imported via cv4/Drawer.jsx; no longer mounted here directly.
 import MailRoom from './cv4/MailRoom.jsx'
+// corner:support N1 — Support Inbox (Patrik workspace only, worldId==='aom')
+import SupportInbox from './cv4/SupportInbox.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -133,6 +135,8 @@ export default function CornerV4() {
   // until the EA sends a reply or the user clears it.
   const [activeTool, setActiveTool] = useState(null)
   const [selectedMail, setSelectedMail] = useState(null)
+  // corner:support N1 — Support Inbox view (Patrik workspace only)
+  const [showSupportInbox, setShowSupportInbox] = useState(false)
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -2047,6 +2051,29 @@ export default function CornerV4() {
               </svg>
             )}
           </button>
+          {/* corner:support N1 — Support Inbox button, Patrik workspace only */}
+          {worldId === 'aom' && (
+            <button
+              type="button"
+              data-cv4-support-inbox-toggle
+              data-active={showSupportInbox ? 'true' : 'false'}
+              aria-label="Support Inbox"
+              title="Support Inbox"
+              onClick={() => {
+                setShowSupportInbox(s => !s)
+                if (!showSupportInbox) {
+                  setSelectedMail(null)
+                  setActiveTool(null)
+                }
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+              </svg>
+            </button>
+          )}
+
           <div style={{ position: 'relative' }}>
             <BellIcon
               count={totalUnread}
@@ -2271,10 +2298,13 @@ export default function CornerV4() {
               margin: '0 auto',
             }}
           >
-            {/* R10 — Mail list moved to the left rail. Right rail / mobile
+            {/* corner:support N1 — Support Inbox (Patrik only) */}
+            {showSupportInbox && worldId === 'aom' ? (
+              <SupportInbox isDesktop={isDesktop} onClose={() => setShowSupportInbox(false)} />
+            ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
-                in the left rail still opens MailRoom in the center column. */}
-            {(!isDesktop && tab === 'tasks') ? (
+                in the left rail still opens MailRoom in the center column. */
+            (!isDesktop && tab === 'tasks') ? (
               selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
                 : <RightMenu />
