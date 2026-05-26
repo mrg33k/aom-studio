@@ -430,6 +430,61 @@ function DrawerBody({
   onToggleSkillsShelf,
   skillsShelfOpen = false,
 }) {
+  // ── Mail new-mail dot (R21, 2026-05-26) ──────────────────────────────────
+  // Orange dot on the Mail pill when there's email newer than the last time
+  // the user opened the Mail section. localStorage key cv4.mail.lastCheck
+  // stores the ISO timestamp of the last open; no cross-session reset.
+  const MAIL_LAST_CHECK_KEY = 'cv4.mail.lastCheck'
+  const [hasNewMail, setHasNewMail] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        // Step 1: get Gmail connection
+        const r = await authFetch('/api/dashboard/mail/connections')
+        if (!r.ok || cancelled) return
+        const body = await r.json()
+        const connections = Array.isArray(body?.connections) ? body.connections : []
+        if (connections.length === 0) return // no Gmail connected
+
+        // Step 2: fetch newest email in awaiting-reply bucket
+        const connection = connections[0]
+        const r2 = await authFetch(
+          `/api/dashboard/mail/list?connection_id=${encodeURIComponent(connection.id)}&bucket=awaiting-reply`
+        )
+        if (!r2.ok || cancelled) return
+        const body2 = await r2.json()
+        if (body2?.mode === 'not-connected') return
+        const emails = Array.isArray(body2?.emails) ? body2.emails : []
+        if (emails.length === 0) return
+
+        // Step 3: compare newest email date vs stored lastCheck
+        const newestDate = emails[0]?.date
+        if (!newestDate) return
+
+        const lastCheck = typeof window !== 'undefined' ? localStorage.getItem(MAIL_LAST_CHECK_KEY) : null
+        if (!lastCheck) {
+          // Never opened mail → show dot
+          if (!cancelled) setHasNewMail(true)
+          return
+        }
+        const lastCheckTime = new Date(lastCheck).getTime()
+        const newestTime = new Date(newestDate).getTime()
+        if (newestTime > lastCheckTime && !cancelled) setHasNewMail(true)
+      } catch { /* swallow — dot stays off on any error */ }
+    })()
+    return () => { cancelled = true }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMailOpen = useCallback(() => {
+    // User opened the Mail section — stamp the lastCheck + clear dot
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem(MAIL_LAST_CHECK_KEY, new Date().toISOString())
+    } catch { /* swallow */ }
+    setHasNewMail(false)
+  }, [])
+
   // ── R6 right-click + long-press wiring ──
   const dispatchToChat = useChatDispatch()
   const isMobile = useIsMobile()
@@ -530,7 +585,12 @@ function DrawerBody({
           heading. Mail defaults to OPEN; Agents + Projects to closed;
           Account to OPEN. LeftMailPanel's internal "Mail" label is
           dropped — the TreeSection header IS the title now. */}
-      <TreeSection title="Mail" collapsible>
+      {/* R21 (2026-05-26) — Mail defaults to CLOSED (defaultCollapsed) per
+          Patrik: the mail list loads via API every time the drawer opens, so
+          showing it expanded on every page load was unnecessary noise. Orange
+          dot (badge) appears when new email arrived since the user last viewed
+          the list. Dot clears on open (handleMailOpen stamps localStorage). */}
+      <TreeSection title="Mail" collapsible defaultCollapsed badge={hasNewMail} onOpen={handleMailOpen}>
         <LeftMailPanel
           selectedMailId={selectedMailId}
           onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
@@ -733,9 +793,19 @@ function DrawerBody({
 // The `action` element (e.g. + New on Projects) remains visible
 // regardless of expanded state — you can spin up a project without
 // expanding the list first.
-function TreeSection({ title, action = null, collapsible = false, defaultCollapsed = false, children }) {
+// badge = boolean — renders a small orange dot next to the title (used by
+// Mail section to signal new email since the user last opened the section).
+// onOpen = callback — fires when the section transitions from closed to open.
+function TreeSection({ title, action = null, collapsible = false, defaultCollapsed = false, badge = false, onOpen, children }) {
   const [open, setOpen] = useState(!defaultCollapsed)
   const showChildren = !collapsible || open
+
+  const handleToggle = useCallback(() => {
+    const next = !open
+    setOpen(next)
+    if (next && onOpen) onOpen()
+  }, [open, onOpen])
+
   return (
     <section style={{
       margin: '0 0 8px',
@@ -749,7 +819,7 @@ function TreeSection({ title, action = null, collapsible = false, defaultCollaps
         {collapsible ? (
           <button
             type="button"
-            onClick={() => setOpen(o => !o)}
+            onClick={handleToggle}
             aria-expanded={open}
             style={{
               flex: 1, minWidth: 0,
@@ -772,6 +842,20 @@ function TreeSection({ title, action = null, collapsible = false, defaultCollaps
               textTransform: 'uppercase', color: C.muted,
               fontFamily: MENU.monoFont,
             }}>{title}</span>
+            {badge && (
+              <span
+                title="New email"
+                aria-label="New email"
+                style={{
+                  display: 'inline-block',
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#FF4F00',
+                  boxShadow: '0 0 0 2px rgba(255,79,0,0.22)',
+                  flexShrink: 0, marginLeft: 2,
+                  alignSelf: 'center',
+                }}
+              />
+            )}
           </button>
         ) : (
           <span style={{
