@@ -21,6 +21,139 @@ import {
   useChatContextMenuCtx,
 } from '../chat/ChatPanelContext.jsx'
 
+// AttachmentPreview -- email-style modal that opens any chat attachment in
+// place. Image/video/audio/pdf render directly; text files fetch and render;
+// Office docs go through view.officeapps.live.com; everything else gets a
+// clean download button. Triggered by clicking a file card or image in chat
+// instead of the old window.open new-tab pattern (R79-f15, 2026-05-25).
+function AttachmentPreview({ att, onClose }) {
+  const [textBody, setTextBody] = useState(null)
+  const url = att?.url || ''
+  const name = att?.name || (url ? decodeURIComponent(url.split('/').pop().split('?')[0]) : 'file')
+  const mime = (att?.mime || '').toLowerCase()
+  const ext = (name.split('.').pop() || '').toLowerCase()
+
+  const isImage  = mime.startsWith('image/') || ['png','jpg','jpeg','gif','webp','svg','bmp','heic'].includes(ext)
+  const isVideo  = mime.startsWith('video/') || ['mp4','mov','webm','mkv','avi','m4v'].includes(ext)
+  const isAudio  = mime.startsWith('audio/') || ['mp3','wav','m4a','flac','aac','ogg'].includes(ext)
+  const isPdf    = mime === 'application/pdf' || ext === 'pdf'
+  const isOffice = ['pptx','ppt','docx','doc','xlsx','xls'].includes(ext)
+  const isText   = (
+    mime.startsWith('text/') ||
+    mime === 'application/json' || mime === 'application/xml' || mime === 'application/yaml' ||
+    ['md','txt','csv','json','yaml','yml','py','js','jsx','ts','tsx','html','xml','log','css','sh'].includes(ext)
+  )
+
+  useEffect(() => {
+    if (!isText || !url) return
+    setTextBody(null)
+    fetch(url)
+      .then(r => r.ok ? r.text() : 'Could not load file.')
+      .then(setTextBody)
+      .catch(() => setTextBody('Could not load file.'))
+  }, [url, isText])
+
+  if (!att) return null
+
+  const officeSrc = isOffice
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+    : null
+
+  return (
+    <div
+      onClick={onClose}
+      onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+      tabIndex={-1}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 10000,
+        background: 'rgba(5,10,20,0.92)', backdropFilter: 'blur(20px)',
+        display: 'flex', flexDirection: 'column',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          margin: '40px auto', width: 'min(1100px, 92vw)',
+          maxHeight: 'calc(100vh - 80px)',
+          display: 'flex', flexDirection: 'column',
+          background: 'rgba(15,23,42,0.85)',
+          border: `1px solid ${C.border2}`,
+          borderRadius: 16,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '14px 20px',
+          borderBottom: `1px solid ${C.border}`,
+          flexShrink: 0,
+        }}>
+          <span style={{
+            flex: 1, minWidth: 0,
+            fontSize: 14, color: C.text, fontFamily: "'Inter', sans-serif",
+            fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{name}</span>
+          <a href={url} download={name} style={{
+            fontSize: 12, color: C.text2, textDecoration: 'none',
+            padding: '6px 12px', border: `1px solid ${C.border2}`, borderRadius: 6,
+            fontFamily: "'Inter', sans-serif",
+          }}>Download</a>
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{
+            fontSize: 12, color: C.text2, textDecoration: 'none',
+            padding: '6px 12px', border: `1px solid ${C.border2}`, borderRadius: 6,
+            fontFamily: "'Inter', sans-serif",
+          }}>Open in new tab</a>
+          <button onClick={onClose} aria-label="Close preview" style={{
+            background: 'none', border: 'none', color: C.muted,
+            cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1,
+          }}>{'\u2715'}</button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {isImage && (
+            <img src={url} alt={name} style={{ maxWidth: '100%', maxHeight: '80vh', display: 'block' }} />
+          )}
+          {isVideo && (
+            <video src={url} controls autoPlay style={{ width: '100%', maxHeight: '80vh', background: '#000' }} />
+          )}
+          {isAudio && (
+            <div style={{ padding: 32, width: '100%', maxWidth: 480 }}>
+              <audio src={url} controls autoPlay style={{ width: '100%' }} />
+            </div>
+          )}
+          {isPdf && (
+            <iframe src={url} title={name} style={{ width: '100%', height: '85vh', border: 'none', background: '#fff' }} />
+          )}
+          {isOffice && (
+            <iframe src={officeSrc} title={name} style={{ width: '100%', height: '85vh', border: 'none', background: '#fff' }} />
+          )}
+          {isText && (
+            <div style={{
+              padding: '20px 28px', width: '100%',
+              fontSize: 13, color: C.text2,
+              fontFamily: "'JetBrains Mono', monospace",
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6,
+              alignSelf: 'stretch',
+            }}>{textBody == null ? 'Loading...' : textBody}</div>
+          )}
+          {!isImage && !isVideo && !isAudio && !isPdf && !isOffice && !isText && (
+            <div style={{ padding: 40, textAlign: 'center', color: C.muted }}>
+              <div style={{ fontSize: 14, marginBottom: 12 }}>No inline preview for this file type.</div>
+              <a href={url} download={name} style={{
+                display: 'inline-block', padding: '8px 16px',
+                background: C.accent, color: '#000',
+                borderRadius: 6, fontSize: 13, fontWeight: 600,
+                textDecoration: 'none', fontFamily: "'Inter', sans-serif",
+              }}>Download {name}</a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 function MissionMarkerCard({ msg, projectSlug, floatStyle }) {
   // mission-rooms: condensed in-project marker that says "work was being
   // done over in mission X" without re-printing the transcript. Click =
@@ -262,6 +395,8 @@ function isSummaryMessage(msg, arr, idx) {
 // memo + the keystroke-stable send context (2026-05-22) keep this list out of
 // the typing path; it now only re-renders when messages/steps actually change.
 function MessageList({ roomType = 'agent' }) {
+  // R79-f15: in-chat attachment preview modal (replaces window.open).
+  const [previewAtt, setPreviewAtt] = useState(null)
   const isProject = roomType === 'project'
 
   const {
@@ -1221,7 +1356,7 @@ function MessageList({ roomType = 'agent' }) {
                       const isAudio = att.mime && att.mime.startsWith('audio/')
                       const openAttachment = () => {
                         if (!att.url) return
-                        try { window.open(att.url, '_blank', 'noopener,noreferrer') } catch (_) {}
+                        setPreviewAtt(att)
                       }
                       if (isVideo) {
                         return (
@@ -1624,6 +1759,7 @@ function MessageList({ roomType = 'agent' }) {
         onResearch={(m) => handleMessageResearch?.(m)}
       />
     )}
+    {previewAtt && <AttachmentPreview att={previewAtt} onClose={() => setPreviewAtt(null)} />}
     </>
   )
 }
