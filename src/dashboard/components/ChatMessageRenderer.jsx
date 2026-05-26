@@ -145,6 +145,46 @@ const listStyles = `
   .chat-message-container {
     display: contents;
   }
+
+  /* Light-theme overrides — keep inline code, hash IDs, links, and quote
+     borders readable on the cream paper background. Dark navy (#1E3A8A,
+     Tailwind blue-900) hits WCAG AA comfortably against #F6F2E9 / #FAF7F0
+     while still reading as "blue" so the existing visual language survives. */
+  [data-theme="light"] .cmr-content code,
+  [data-theme="light"] .message-content code {
+    background: rgba(26,31,44,0.06);
+    border-color: rgba(26,31,44,0.10);
+    color: #1E3A8A;
+  }
+  [data-theme="light"] .cmr-content pre,
+  [data-theme="light"] .message-content pre {
+    background: rgba(26,31,44,0.05);
+    border-color: rgba(26,31,44,0.10);
+  }
+  [data-theme="light"] .cmr-content pre code,
+  [data-theme="light"] .message-content pre code {
+    color: #1E3A8A;
+    background: none;
+    border: none;
+  }
+  [data-theme="light"] .cmr-content a,
+  [data-theme="light"] .message-content a {
+    color: #1E40AF;
+    text-decoration-color: rgba(30,64,175,0.35);
+  }
+  [data-theme="light"] .cmr-content a:hover,
+  [data-theme="light"] .message-content a:hover {
+    color: #1E3A8A;
+    text-decoration-color: rgba(30,58,138,0.7);
+  }
+  [data-theme="light"] .cmr-content blockquote,
+  [data-theme="light"] .message-content blockquote {
+    border-left-color: rgba(26,31,44,0.22);
+  }
+  [data-theme="light"] .cmr-content hr,
+  [data-theme="light"] .message-content hr {
+    border-top-color: rgba(26,31,44,0.14);
+  }
 `
 
 let stylesInjected = false

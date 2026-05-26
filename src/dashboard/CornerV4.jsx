@@ -1072,6 +1072,46 @@ export default function CornerV4() {
           text-decoration-color: rgba(125,211,252,0.35) !important;
           text-underline-offset: 3px !important;
         }
+        /* Light-theme overrides — bubble prose, hash IDs, inline code,
+           and links were all pinned to slate/sky colors that wash out
+           on the cream paper background. Switch to dark navy
+           (Tailwind blue-900/800) so contrast hits WCAG AA. Same
+           specificity as the dark rules above, declared later, so
+           data-theme="light" wins via source order. */
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content p,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content p,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content li,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content li,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content strong,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content strong,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content h1,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content h2,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content h3,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content h1,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content h2,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content h3 {
+          color: #1A1F2C !important;
+        }
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content code,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content code {
+          background: rgba(26,31,44,0.06) !important;
+          border: 1px solid rgba(26,31,44,0.10) !important;
+          color: #1E3A8A !important;
+        }
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .cmr-content a,
+        [data-shell="cv4"][data-theme="light"] [data-bubble] .message-content a {
+          color: #1E40AF !important;
+          text-decoration-color: rgba(30,64,175,0.35) !important;
+        }
+        [data-shell="cv4"][data-theme="light"] [data-bubble="user"] {
+          background: rgba(26,31,44,0.05) !important;
+          border-color: rgba(26,31,44,0.10) !important;
+        }
+        [data-shell="cv4"][data-theme="light"] [data-bubble="assistant"] {
+          border-left-color: rgba(26,31,44,0.10) !important;
+        }
         /* Hide bubble chrome a bit — the prose IS the thing. */
         [data-shell="cv4"] [data-bubble="assistant"] {
           background: transparent !important;
