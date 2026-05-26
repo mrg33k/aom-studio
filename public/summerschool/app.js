@@ -19,25 +19,57 @@
   }
 
   // ?fix-stars=N → admin one-shot to overwrite the gold-star count.
-  // Day-1 retro fix: Ethan ended with 125 stars from the broken per-tile
-  // economy; real-work portion was ~30. Patrik hits ?fix-stars=30 once on
-  // his device to roll back.
+  // 2026-05-26 hardening: only allows INCREASE by default. A typo or stray
+  // link can no longer roll Ethan back (he was on 41, somehow got knocked
+  // back to 11 — root cause unclear, but this kills the most likely vector).
+  // To intentionally decrease, pass &force=1 along with fix-stars.
+  // Also records a lastSeenStars shadow so we have forensic evidence if a
+  // future drop happens by another vector.
   {
-    const fix = new URLSearchParams(window.location.search).get('fix-stars');
+    const params = new URLSearchParams(window.location.search);
+    const fix = params.get('fix-stars');
     if (fix !== null) {
       const n = parseInt(fix, 10);
+      const force = params.get('force') === '1';
       if (!Number.isNaN(n) && n >= 0) {
         try {
           const raw = localStorage.getItem('ss-state-v1');
           const s = raw ? JSON.parse(raw) : {};
-          s.goldStars = n;
-          localStorage.setItem('ss-state-v1', JSON.stringify(s));
+          const current = s.goldStars || 0;
+          if (n < current && !force) {
+            // Refusing to decrease without force. Log a console line so a
+            // debugging adult can see what happened.
+            console.warn('[SS] fix-stars=' + n + ' refused: would decrease from ' + current + '. Pass &force=1 to override.');
+          } else {
+            s.goldStars = n;
+            s.lastSeenStars = { value: n, at: new Date().toISOString(), source: 'fix-stars' + (force ? ' force' : '') };
+            localStorage.setItem('ss-state-v1', JSON.stringify(s));
+          }
         } catch (e) {}
       }
       window.location.replace(window.location.pathname);
       return;
     }
   }
+
+  // Continuous lastSeenStars shadow: every page load, if the loaded value
+  // is LOWER than the last seen value, log a console warning. Surfaces any
+  // mystery drops (iPad evicted localStorage, schema migration ate a field,
+  // future bug) the next time we open devtools on the iPad.
+  try {
+    const raw = localStorage.getItem('ss-state-v1');
+    if (raw) {
+      const s = JSON.parse(raw);
+      const last = s.lastSeenStars && typeof s.lastSeenStars.value === 'number' ? s.lastSeenStars.value : null;
+      const cur = typeof s.goldStars === 'number' ? s.goldStars : 0;
+      if (last !== null && cur < last) {
+        console.warn('[SS] gold-star drop detected: had ' + last + ' (' + (s.lastSeenStars && s.lastSeenStars.at) + '), now ' + cur + '. Use ?fix-stars=' + last + ' to restore.');
+      }
+      // Always update the shadow so the next session has the latest value
+      s.lastSeenStars = { value: cur, at: new Date().toISOString(), source: 'page-load' };
+      localStorage.setItem('ss-state-v1', JSON.stringify(s));
+    }
+  } catch (e) {}
 
   // ?report=1 → progress report. Patrik's morning glance at how Ethan did.
   // Shows today's blocks, time per block, stars earned, feedback sent to Dad.
