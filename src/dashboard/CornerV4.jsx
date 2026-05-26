@@ -623,6 +623,9 @@ export default function CornerV4() {
 
   // Select an agent and switch to chat tab
   const handleSelectAgent = useCallback((agent) => {
+    // Navigation reset: clear overlay state so user lands in the new surface clean.
+    setSelectedMail(null)
+    setActiveTool(null)
     setSelectedAgent(agent)
     setConversationTarget({ name: agent.name, type: 'agent' })
     setTab('chat')
@@ -642,6 +645,9 @@ export default function CornerV4() {
   // Navigates to <basePath>/project/:slug so ChatPanel's useParams picks up
   // projectId → routes to ProjectChatView instead of the conversations list.
   const handleSelectProject = useCallback((project) => {
+    // Navigation reset: clear overlay state so user lands in the new surface clean.
+    setSelectedMail(null)
+    setActiveTool(null)
     setSelectedAgent(null)
     setConversationTarget({ name: project.name, slug: project.slug, type: 'project' })
     setTab('chat')
@@ -703,6 +709,9 @@ export default function CornerV4() {
   // every outgoing message's metadata so the SDK reply is mission-aware.
   const handleSelectMission = useCallback((mission, project) => {
     if (!mission || !project) return
+    // Navigation reset: clear overlay state so user lands in the mission room clean.
+    setSelectedMail(null)
+    setActiveTool(null)
     setSelectedAgent(null)
     setConversationTarget({
       name: mission.name || mission.slug,
@@ -795,6 +804,9 @@ export default function CornerV4() {
   // feedback_chats_are_one_template.md doctrine holds.
   const handleSelectTask = useCallback((task) => {
     if (!task || !task.id) return
+    // Navigation reset: clear overlay state so user lands in the task room clean.
+    setSelectedMail(null)
+    setActiveTool(null)
     const rawTitle = task.title || task.text || `Task ${String(task.id).slice(0, 8)}`
     setSelectedAgent({
       slug: `task:${task.id}`,
