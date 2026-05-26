@@ -18,6 +18,11 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Super-admin (Patrik) is allowed access to every world without needing a
+// world_members row in each tenant. Same UUID lives in
+// src/dashboard/lib/clientConfig.js::SUPER_ADMIN_USER_ID and api/worlds/index.js.
+// Override via env for staging / forks.
+const SUPER_ADMIN_USER_ID = process.env.SUPER_ADMIN_USER_ID || '833f6828-1dae-409c-a24b-1438f46544d0';
 
 export class TenantAuthError extends Error {
   constructor(message, status = 403) {
@@ -137,6 +142,13 @@ export async function verifyTenant(requestedTenant, req) {
   const user = await getUserFromJwt(jwt);
   if (!user) throw new TenantAuthError('invalid jwt', 401);
 
+  // Super-admin bypass: Patrik (and any future super-admin UID) can read
+  // every tenant. Without this, the smoke-test harness can't impersonate
+  // through Patrik's session, and the dashboard world-switcher is dead in
+  // any world Patrik isn't explicitly a member of.
+  if (user.id === SUPER_ADMIN_USER_ID) {
+    return { ok: true, tenant, userId: user.id, isAdmin: true };
+  }
   const callerWorld = String(user.user_metadata?.world || '').toLowerCase();
   if (callerWorld && callerWorld === tenant) {
     return { ok: true, tenant, userId: user.id, isAdmin: false };
