@@ -151,13 +151,25 @@ window.SS = window.SS || {};
       const dedupeKey = `${event}|${blockId}`;
       const d = ensureDay(today());
       d.awarded = d.awarded || {};
+      d.starsToday = d.starsToday || 0;
       if (d.awarded[dedupeKey]) {
         // Already awarded for this block today. Silently no-op — no toast,
         // no star, no console noise. The kid clicked through a completed
         // block again; that's fine, but it isn't worth a second prize.
         return load().goldStars;
       }
+
+      // 2026-05-26 daily cap (Patrik): max 30 stars per day, no matter what.
+      // If awarding this event would push past 30, refuse entirely (don't
+      // award a partial — keeps the rule simple: each event either fires
+      // intact or doesn't fire). The kid hits a ceiling, that ceiling is 30.
+      const DAILY_STAR_CAP = 30;
+      if (d.starsToday + rule.stars > DAILY_STAR_CAP) {
+        return load().goldStars;
+      }
+
       d.awarded[dedupeKey] = Date.now();
+      d.starsToday += rule.stars;
 
       const s = load();
       s.goldStars += rule.stars;
