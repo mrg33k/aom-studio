@@ -9,7 +9,7 @@
 // agent's response.
 
 import crypto from 'crypto'
-import { REGISTRY } from './config.js'
+import { getEmbed } from '../../lib/embed-registry.js'
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'embed_id and content required' })
   }
 
-  const cfg = REGISTRY[embed_id]
+  const cfg = await getEmbed(embed_id)
   if (!cfg) return res.status(404).json({ error: 'unknown embed_id' })
   if (!cfg.active) return res.status(410).json({ error: 'embed offline' })
 

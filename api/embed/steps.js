@@ -8,7 +8,7 @@
 // sees real progress while the agent works ("Looking at SRWPartnerships.jsx",
 // "Running a quick command", "Reading your message"...).
 
-import { REGISTRY } from './config.js'
+import { getEmbed } from '../../lib/embed-registry.js'
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
   const embedId = q.embed_id
   const parentId = q.parent_message_id
 
-  const cfg = REGISTRY[embedId]
+  const cfg = await getEmbed(embedId)
   if (!cfg) return res.status(404).json({ error: 'unknown embed_id' })
   if (!parentId) return res.status(400).json({ error: 'parent_message_id required' })
 
