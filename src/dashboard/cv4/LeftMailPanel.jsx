@@ -12,7 +12,7 @@
 // Replaces the standalone MailHero from R9 and the right-rail MailListPanel
 // mount in CornerV4. Mail lives in the left rail full-stop.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 import { getUserWorld } from '../lib/clientConfig.js'
