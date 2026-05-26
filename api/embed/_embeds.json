@@ -53,7 +53,7 @@
         "agent": "elon",
         "client_id": "aom",
         "project": "corner",
-        "mission_slug": "corner:support"
+        "mission_slug": "corner:embeddable-agents/support"
       }
     },
     "emb_summerschool": {
