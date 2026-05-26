@@ -371,7 +371,10 @@ function FileViewer({ file, onClose }) {
 
 // ── Single file row ─────────────────────────────────────────────────────────
 
-function FileRow({ file, isActive, onClick, onContextMenu, longPressHandlers, indent = 0 }) {
+function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent = 0 }) {
+  const longPressHandlers = useLongPress(
+    onLongPress ? (x, y) => onLongPress(x, y, file) : null
+  )
   const kind = fileKind(file.name)
   const icon = kindIcon(kind)
   const color = kindColor(kind)
@@ -524,7 +527,7 @@ function countFiles(node, filterFn) {
 }
 
 // ── Folder/file tree renderer ─────────────────────────────────────────────
-function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, makeLongPress}) {
+function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, onFileLongPress}) {
   const isOpen = openFolders.has(pathKey)
   const fileCount = countFiles(node, filterFn)
 
@@ -554,7 +557,7 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
               filterFn={filterFn}
               pathKey={pathKey + '/' + childName}
               onFileContextMenu={onFileContextMenu}
-              makeLongPress={makeLongPress}
+              onFileLongPress={onFileLongPress}
             />
           ))}
           {node.files.filter(filterFn || (() => true)).map(f => (
@@ -564,7 +567,7 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
               isActive={activeFile?.url === f.url}
               onClick={() => onFileClick(f)}
               onContextMenu={onFileContextMenu ? (e) => onFileContextMenu(e, f) : undefined}
-              longPressHandlers={makeLongPress ? makeLongPress(f) : undefined}
+              onLongPress={onFileLongPress}
               indent={depth + 1}
             />
           ))}
@@ -615,7 +618,6 @@ export default function FilesPanel({ projectSlug }) {
     e.preventDefault()
     openCtxMenu(e.clientX, e.clientY, file)
   }, [openCtxMenu])
-  const makeLongPress = useCallback((file) => (x, y) => openCtxMenu(x, y, file), [openCtxMenu])
 
   // Action handlers — Open routes through existing file-click;
   // Pin persists in localStorage keyed by world + project scope.
@@ -841,7 +843,7 @@ export default function FilesPanel({ projectSlug }) {
           isActive={activeFile?.url === f.url}
           onClick={() => handleFileClick(f)}
           onContextMenu={(e) => handleFileContextMenu(e, f)}
-          longPressHandlers={makeLongPress(f)}
+          onLongPress={openCtxMenu}
           indent={0}
         />
       ))}
@@ -860,7 +862,7 @@ export default function FilesPanel({ projectSlug }) {
           filterFn={filterFn}
           pathKey={name}
           onFileContextMenu={handleFileContextMenu}
-          makeLongPress={makeLongPress}
+          onFileLongPress={openCtxMenu}
         />
       ))}
 
