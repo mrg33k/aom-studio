@@ -831,11 +831,11 @@ function MissionRow({
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 14, height: 18, marginRight: -2, marginTop: 1, flexShrink: 0,
             cursor: 'pointer', color: C.muted,
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
             transition: 'transform 0.12s',
-            fontFamily: MENU.monoFont, fontSize: 11, lineHeight: 1,
+            fontFamily: MENU.monoFont, fontSize: 10, lineHeight: 1,
           }}
-        >›</span>
+        >▾</span>
       ) : (depth > 0 ? <span style={{ width: 14, flexShrink: 0 }} /> : null)}
       <StatusDot status={dotStatus} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1076,9 +1076,8 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
         gap: 7,
         padding: '8px 14px 8px 12px',
         cursor: 'pointer',
-        background: 'rgba(255,255,255,0.022)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
+        background: 'transparent',
+        borderTop: '1px solid rgba(255,255,255,0.025)',
         transition: 'background 120ms ease, color 120ms ease',
         userSelect: 'none',
       }}
@@ -1161,7 +1160,6 @@ function FolderRow({ folder, count, isCollapsed, onToggle, depth = 0 }) {
         transition: 'transform 180ms ease',
         lineHeight: 1,
       }}>▾</span>
-      <span style={{ color: C.muted, fontSize: 11, lineHeight: 1, flexShrink: 0 }}>▸</span>
       <span style={{
         flex: 1,
         fontSize: 11,
@@ -1840,17 +1838,6 @@ export default function RightMenu() {
     }
     return (
       <>
-        {/* R10-6: + new mission · + new folder at TOP so they're the first
-            thing visible when a project group expands. */}
-        <NewMissionAffordance
-          projectSlug={group.projectSlug}
-          worldId={worldId}
-          onCreated={handleCreateMissionInline}
-        />
-        <NewFolderAffordance
-          projectSlug={group.projectSlug}
-          onCreateFolder={handleCreateFolder}
-        />
         {/* Folders, nested by parent_folder_slug. Top-level folders (parent=null)
             render as roots; subfolders render recursively under their parent. */}
         {(() => {
