@@ -2206,6 +2206,47 @@ export default function CornerV4() {
             </button>
           )}
 
+          {/* corner:support N3 — Support button moved LEFT of the notifications
+              bell so it sits beside the other tenant-action controls instead of
+              crowding the avatar. Non-Patrik tenants only. */}
+          {worldId && worldId !== 'aom' && (
+            <button
+              type="button"
+              aria-label="Open Support chat"
+              title="Get support"
+              onClick={() => setSupportOpen(o => !o)}
+              data-cv4-support-toggle
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px',
+                background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.25)',
+                borderRadius: 20,
+                color: '#34D399',
+                cursor: 'pointer',
+                fontSize: 12, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.04em',
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(16,185,129,0.2)'
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(16,185,129,0.12)'
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              Support
+            </button>
+          )}
+
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
             {/* corner:notifications-catchup R2 — "Catch up" button when ≥3 unread */}
             {totalUnread >= 3 && (
@@ -2261,45 +2302,6 @@ export default function CornerV4() {
               />
             )}
           </div>
-
-          {/* corner:support N2 — Support button, non-Patrik tenants only */}
-          {worldId && worldId !== 'aom' && (
-            <button
-              type="button"
-              aria-label="Open Support chat"
-              title="Get support"
-              onClick={() => setSupportOpen(o => !o)}
-              data-cv4-support-toggle
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px',
-                background: 'rgba(16,185,129,0.12)',
-                border: '1px solid rgba(16,185,129,0.25)',
-                borderRadius: 20,
-                color: '#34D399',
-                cursor: 'pointer',
-                fontSize: 12, fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: '0.04em',
-                transition: 'background 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(16,185,129,0.2)'
-                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(16,185,129,0.12)'
-                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              Support
-            </button>
-          )}
 
           <UserAvatar
             user={currentUser}
@@ -2818,8 +2820,11 @@ function NewRoomModal({ kind = 'project', busy = false, error = null, onSubmit, 
 // tagged with visitor_id=support-<worldId> so Patrik can distinguish
 // who is who in the corner:support mission room.
 function CornerSupportModal({ worldId, onClose }) {
+  // bare=1 strips the embed test-page scaffold + forces inline widget mount,
+  // so the iframe shows ONLY the chat instead of a nested test page (which
+  // read as a "second modal" inside this host modal).
   const embedSrc =
-    'https://www.aheadofmarket.com/embed?id=emb_corner_support&visitor_id=' +
+    'https://www.aheadofmarket.com/embed?id=emb_corner_support&bare=1&visitor_id=' +
     encodeURIComponent('support-' + worldId)
 
   return (

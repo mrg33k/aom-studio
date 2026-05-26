@@ -35,6 +35,12 @@
   // Useful when the host page knows the user (e.g. tenant world dashboards
   // pass "support-<worldId>" so conversations are scoped per tenant).
   var VISITOR_ID_OVERRIDE = script.getAttribute('data-visitor-id') || ''
+  // Optional: data-force-inline=1 overrides config.placement.mode so the
+  // widget always mounts inside data-mount (#corner-embed) instead of
+  // spawning a fixed bottom-right launcher. Used by CornerSupportModal's
+  // bare-mode iframe so the widget fills the modal instead of rendering a
+  // second floating bubble on top of the test-page scaffold.
+  var FORCE_INLINE = script.getAttribute('data-force-inline') === '1'
 
   var VISITOR_KEY = 'corner_embed_visitor_v1'
   function visitorId() {
@@ -154,7 +160,7 @@
       return
     }
 
-    var inline = config.placement && config.placement.mode === 'inline'
+    var inline = FORCE_INLINE || (config.placement && config.placement.mode === 'inline')
     var host = inline
       ? document.querySelector(mountSelector)
       : (function () {

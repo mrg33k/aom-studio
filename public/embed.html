@@ -159,6 +159,22 @@
       main { padding: 24px 16px 32px; }
       footer { padding: 14px 20px 18px; flex-direction: column; gap: 6px; }
     }
+
+    /* corner:embeddable-agents/support N3 — bare mode for iframed embeds.
+       When the page loads with ?bare=1 the host (e.g. CornerSupportModal)
+       already provides its own chrome and the in-iframe test scaffold
+       (header / hero copy / footer / starfield) reads as a second modal.
+       Strip everything except the mount target and let the widget fill. */
+    body.ce-bare { background: transparent; display: block; height: 100%; }
+    body.ce-bare::before, body.ce-bare::after { display: none; }
+    body.ce-bare > header,
+    body.ce-bare > footer,
+    body.ce-bare main > .hero > .label,
+    body.ce-bare main > .hero > h1,
+    body.ce-bare main > .hero > .sub { display: none; }
+    body.ce-bare main { padding: 0; height: 100%; }
+    body.ce-bare .hero { gap: 0; height: 100%; max-width: none; }
+    body.ce-bare #corner-embed { max-width: none; height: 100%; }
   </style>
 </head>
 <body>
@@ -185,17 +201,26 @@
     // Allow ?id=<embed_id> for cycling test embeds at the same URL.
     // Falls back to the SR website mission embed (R0 default).
     // Allow ?visitor_id=<id> to scope the session (e.g. "support-bens-arsenal").
+    // Allow ?bare=1 to strip the test-page scaffold + force the widget to
+    // mount inline (used by CornerSupportModal so the iframe shows ONLY the
+    // chat, not a nested test page inside the host modal).
     (function () {
       var params = new URLSearchParams(window.location.search);
       var id = (params.get('id') || 'emb_sr_website').trim();
       if (!/^emb_[a-z0-9_-]{3,40}$/.test(id)) id = 'emb_sr_website';
       var visitorId = (params.get('visitor_id') || '').trim();
+      var bare = params.get('bare') === '1';
+      if (bare) document.body.classList.add('ce-bare');
       var s = document.createElement('script');
       s.src = '/embed/v1/widget.js';
       s.setAttribute('data-embed-id', id);
       s.setAttribute('data-mount', '#corner-embed');
       // Pass visitor_id override if provided so tenant support threads stay scoped.
       if (visitorId) s.setAttribute('data-visitor-id', visitorId);
+      // Force inline mount in bare mode so the widget fills the iframe instead
+      // of spawning its own fixed bottom-right launcher (which read as the
+      // "second modal" inside CornerSupportModal).
+      if (bare) s.setAttribute('data-force-inline', '1');
       document.body.appendChild(s);
     })();
   </script>
