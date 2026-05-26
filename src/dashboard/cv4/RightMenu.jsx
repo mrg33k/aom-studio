@@ -836,18 +836,17 @@ function MissionRow({
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 14, height: 18, marginRight: -2, marginTop: 1, flexShrink: 0,
+            width: 16, height: 20, marginRight: 2, marginTop: 0, flexShrink: 0,
             cursor: 'pointer', color: C.muted,
             transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
             transition: 'transform 0.12s',
-            fontFamily: MENU.monoFont, fontSize: 10, lineHeight: 1,
+            fontFamily: MENU.monoFont, fontSize: 13, lineHeight: 1,
           }}
         >▾</span>
-      ) : (depth > 0 ? <span style={{ width: 14, flexShrink: 0 }} /> : null)}
-      <StatusDot status={dotStatus} />
+      ) : (depth > 0 ? <span style={{ width: 16, flexShrink: 0 }} /> : null)}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 500,
           lineHeight: 1.3,
           color: isCurrent ? MENU.amber : C.text,
@@ -1893,7 +1892,7 @@ export default function RightMenu() {
     const bareSlug = rawSlug.includes(':') ? rawSlug.split(':').slice(1).join(':') : rawSlug
     handleSelectMission(
       {
-        slug: qualified,
+        slug: bareSlug,
         bare_slug: bareSlug,
         name: mission.name || bareSlug,
         project_slug: mission.projectSlug,
@@ -2147,7 +2146,11 @@ export default function RightMenu() {
               mission tree shows. Design matches FilesPanel's clean hierarchy. */}
           {!missionsLoading && filteredMissions.length > 0 && activePill === 'all' && (
             (groupedMissions || []).map(group => {
-              const isCollapsed = !!collapsedProjects[group.projectSlug]
+              // Collapse by default if project has 5+ missions
+              const shouldCollapseByDefault = group.missions.length >= 5
+              const isCollapsed = collapsedProjects[group.projectSlug] !== undefined
+                ? !!collapsedProjects[group.projectSlug]
+                : shouldCollapseByDefault
               return (
                 <div key={group.projectSlug}>
                   <ProjectGroupHeader
