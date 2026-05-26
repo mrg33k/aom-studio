@@ -18,7 +18,7 @@
 //   - Project row dropdown → expands inline mission list
 //   - Pin toggle → updates localStorage and resorts list
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -133,47 +133,55 @@ export default function HomeView({
   // endpoint RightMenu uses). projectRooms from useDataPipe doesn't include
   // missions, so we self-fetch here. Result is a { [projectSlug]: missions[] }
   // map keyed for cheap lookup in the project row render.
+  //
+  // fetchMissions is extracted as a callable so it can be:
+  //   1. Run on mount (via the useEffect below)
+  //   2. Re-run every 60s (background interval)
+  //   3. Triggered on-demand when the user expands a project that shows 0 missions
   const [missionsByProject, setMissionsByProject] = useState({})
-  useEffect(() => {
+  const fetchMissions = useCallback(async () => {
     if (!worldId) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch(
-          '/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId),
-          { credentials: 'include' }
-        )
-        if (!res.ok) return
-        const j = await res.json().catch(() => null)
-        if (cancelled || !j || !Array.isArray(j.projects)) return
-        const next = {}
-        for (const proj of j.projects) {
-          if (!proj?.slug) continue
-          const missions = (proj.missions || []).map(m => {
-            const tasks = m.tasks || []
-            const hasRunning = tasks.some(tk => ['running', 'building', 'active'].includes(tk.status))
-            const hasQueued = tasks.some(tk => ['queued', 'planning', 'classifying'].includes(tk.status))
-            return {
-              slug: m.raw_slug || m.slug,
-              name: m.name || m.raw_slug || m.slug,
-              last_message_at: m.last_message_at || m.last_updated || null,
-              status: hasRunning ? 'running' : hasQueued ? 'queued' : 'idle',
-              depth: typeof m.depth === 'number' ? m.depth : 0,
-            }
-          })
-          missions.sort((a, b) => {
-            if (a.last_message_at && b.last_message_at) return new Date(b.last_message_at) - new Date(a.last_message_at)
-            if (a.last_message_at) return -1
-            if (b.last_message_at) return 1
-            return (a.name || '').localeCompare(b.name || '')
-          })
-          next[proj.slug] = missions
-        }
-        if (!cancelled) setMissionsByProject(next)
-      } catch (_) {}
-    })()
-    return () => { cancelled = true }
+    try {
+      const res = await fetch(
+        '/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId),
+        { credentials: 'include' }
+      )
+      if (!res.ok) return
+      const j = await res.json().catch(() => null)
+      if (!j || !Array.isArray(j.projects)) return
+      const next = {}
+      for (const proj of j.projects) {
+        if (!proj?.slug) continue
+        const missions = (proj.missions || []).map(m => {
+          const tasks = m.tasks || []
+          const hasRunning = tasks.some(tk => ['running', 'building', 'active'].includes(tk.status))
+          const hasQueued = tasks.some(tk => ['queued', 'planning', 'classifying'].includes(tk.status))
+          return {
+            slug: m.raw_slug || m.slug,
+            name: m.name || m.raw_slug || m.slug,
+            last_message_at: m.last_message_at || m.last_updated || null,
+            status: hasRunning ? 'running' : hasQueued ? 'queued' : 'idle',
+            depth: typeof m.depth === 'number' ? m.depth : 0,
+          }
+        })
+        missions.sort((a, b) => {
+          if (a.last_message_at && b.last_message_at) return new Date(b.last_message_at) - new Date(a.last_message_at)
+          if (a.last_message_at) return -1
+          if (b.last_message_at) return 1
+          return (a.name || '').localeCompare(b.name || '')
+        })
+        next[proj.slug] = missions
+      }
+      setMissionsByProject(next)
+    } catch (_) {}
   }, [worldId])
+
+  useEffect(() => {
+    fetchMissions()
+    // Refresh every 60s so newly-created missions appear without a page reload.
+    const timer = setInterval(fetchMissions, 60000)
+    return () => clearInterval(timer)
+  }, [fetchMissions])
 
   useEffect(() => { writeStored(PIN_AGENTS_KEY + ':' + userId, pinnedAgents) }, [pinnedAgents, userId])
   useEffect(() => { writeStored(PIN_PROJECTS_KEY + ':' + userId, pinnedProjects) }, [pinnedProjects, userId])
@@ -189,19 +197,31 @@ export default function HomeView({
     return agents.filter(a => a.is_ea)
   }, [agents, pinnedAgents])
 
-  // Recent (top 5): pinned first, then chronologically by last_message_at.
-  // All-projects (the rest): alphabetical, shown in a second section below recent
-  // so the user can find any project even when it's not pinned/recent.
+  // Recent (top 5): pinned first, then chronologically by effective last activity.
+  // Effective activity = max(project.last_message_at, latest mission.last_message_at).
+  // useDataPipe doesn't set last_message_at on projectRooms, so we derive recency
+  // from the missions data which does carry timestamps. This means a project bubbles
+  // up to "recent" when any of its missions has recent activity.
   const { recentProjects, allProjects } = useMemo(() => {
     if (!projectRooms || projectRooms.length === 0) return { recentProjects: [], allProjects: [] }
     const pinSet = new Set(pinnedProjects)
+
+    // Compute effective last-active timestamp per project
+    const effectiveTs = (p) => {
+      const projTs = p.last_message_at ? new Date(p.last_message_at).getTime() : 0
+      const missions = missionsByProject[p.slug] || []
+      const missionTs = missions.reduce((max, m) => {
+        const t = m.last_message_at ? new Date(m.last_message_at).getTime() : 0
+        return t > max ? t : max
+      }, 0)
+      return Math.max(projTs, missionTs)
+    }
+
     const sorted = [...projectRooms].sort((a, b) => {
       const aPin = pinSet.has(a.slug)
       const bPin = pinSet.has(b.slug)
       if (aPin !== bPin) return aPin ? -1 : 1
-      const aTs = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
-      const bTs = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
-      return bTs - aTs
+      return effectiveTs(b) - effectiveTs(a)
     })
     const recent = sorted.slice(0, 5)
     const recentSlugs = new Set(recent.map(p => p.slug))
@@ -209,7 +229,7 @@ export default function HomeView({
       .filter(p => !recentSlugs.has(p.slug))
       .sort((a, b) => (a.name || a.slug || '').localeCompare(b.name || b.slug || ''))
     return { recentProjects: recent, allProjects: rest }
-  }, [projectRooms, pinnedProjects])
+  }, [projectRooms, pinnedProjects, missionsByProject])
 
   function toggleAgentPin(slug) {
     setPinnedAgents(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug])
@@ -218,7 +238,13 @@ export default function HomeView({
     setPinnedProjects(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug])
   }
   function toggleExpand(slug) {
-    setExpandedProjects(prev => ({ ...prev, [slug]: !prev[slug] }))
+    const wasExpanded = !!expandedProjects[slug]
+    setExpandedProjects(prev => ({ ...prev, [slug]: !wasExpanded }))
+    // If opening an accordion that has 0 cached missions, fetch immediately
+    // so the user sees missions appear rather than a stale "No missions yet."
+    if (!wasExpanded && (!missionsByProject[slug] || missionsByProject[slug].length === 0)) {
+      fetchMissions()
+    }
   }
 
   return (
