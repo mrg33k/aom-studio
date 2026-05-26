@@ -1623,6 +1623,15 @@ export default function RightMenu() {
   const [showAllMissions, setShowAllMissions] = useState(false)
   const COMPLETED_CAP = 5
   const RECENT_MISSIONS_CAP = 8
+  // MUST be declared BEFORE displayedMissions useMemo (TDZ guard — same rule as
+  // pendingProjects/pendingMissions above). Was previously misplaced at line ~1711
+  // after the useMemo that references it in its dependency array, causing a
+  // ReferenceError: Cannot access 'recentMissions' before initialization on every
+  // first mount → black screen. Fixed 2026-05-26.
+  const [recentMissions, setRecentMissions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY(worldId)) || '[]') }
+    catch { return [] }
+  })
 
   // Current mission / project from conversation target
   const currentMission = conversationTarget?.type === 'mission' ? conversationTarget.slug : null
@@ -1708,10 +1717,7 @@ export default function RightMenu() {
   //   project room → { type: 'project', slug: project, name } (no missionSlug)
   //   agent room   → set via selectedAgent (separate slice); conversationTarget
   //                  may be null OR { type: 'agent', slug: 'elon' }.
-  const [recentMissions, setRecentMissions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(RECENT_KEY(worldId)) || '[]') }
-    catch { return [] }
-  })
+  // (recentMissions useState declaration moved up before displayedMissions useMemo — TDZ fix)
 
   useEffect(() => {
     const t = conversationTarget
