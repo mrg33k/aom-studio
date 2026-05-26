@@ -43,30 +43,7 @@ window.SSMod = (function () {
   }
 
   function complete(blockId, data) {
-    // 2026-05-26 exploit fix: detect a re-completion BEFORE we write state
-    // so the speed-bonus guard can see the truth (isBlockDone is true if
-    // he's tapping through a card that was already done today).
-    const wasAlreadyDone = window.SS && window.SS.isBlockDone(blockId);
-
     if (window.SS) window.SS.completeBlock(blockId, data);
-
-    // Speed compliment: if this was a FIRST completion AND finished under
-    // half the budgeted minutes, fire a one-star bonus. Re-tapping a done
-    // card never re-fires (SS.awardStar dedupes too, but we belt-and-
-    // suspenders skip the call entirely so no toast fires either).
-    if (!wasAlreadyDone) {
-      try {
-        const metrics = window.SS && window.SS.todayMetrics();
-        const m = metrics && metrics.blockMetrics && metrics.blockMetrics[blockId];
-        const budgetMin = (data && data.budgetMinutes) || _activeBlockBudgetMin || 6;
-        if (m && m.durationMs) {
-          const half = budgetMin * 60 * 1000 * 0.5;
-          if (m.durationMs > 0 && m.durationMs < half) {
-            window.SS.awardStar('speed-bonus', { blockId, durationMs: m.durationMs });
-          }
-        }
-      } catch (e) { /* don't let metrics blow up the flow */ }
-    }
     window.SSRoute.next();
   }
 
@@ -1071,7 +1048,6 @@ window.SSMod = (function () {
   // END-OF-DAY SPLASH
   // ============================================================
   function splash(host, block) {
-    const stars = window.SS ? window.SS.goldStars : 0;
     const lastWrite = window.SS ? window.SS.latestWriting() : null;
     const dadApproved = lastWrite && lastWrite.dadApproved;
 
@@ -1117,7 +1093,6 @@ window.SSMod = (function () {
         <div class="label">Day complete</div>
         <h1>Nice work, Ethan.</h1>
         <div class="stats">
-          <div class="stat"><div class="v">${stars}</div><div class="l">Gold stars</div></div>
           <div class="stat"><div class="v">${streak}</div><div class="l">Day streak</div></div>
         </div>
 
@@ -2583,11 +2558,7 @@ window.SSMod = (function () {
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Time on task</div>
             <div style="font-family: var(--font-serif); font-size: 38px; line-height: 1; color: var(--ink);">${totalMin}<span style="font-size:18px; color: var(--ink-quiet);"> min</span></div>
           </div>
-          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card);">
-            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Gold stars</div>
-            <div style="font-family: var(--font-serif); font-size: 38px; line-height: 1; color: var(--amber);">★ ${m.goldStars || 0}</div>
-          </div>
-          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card);">
+          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card); grid-column: span 2;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Fastest module</div>
             <div style="font-family: var(--font-serif); font-size: 22px; line-height: 1.15; color: var(--ink);">${fastest ? fastest.title : '—'}</div>
             ${fastest ? `<div style="font-size: 13px; color: var(--ink-quiet); margin-top: var(--space-2);">${fastestSec}s — fast.</div>` : ''}

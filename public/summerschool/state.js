@@ -94,10 +94,17 @@ window.SS = window.SS || {};
     // Star events are predefined. Anything not in the table awards ZERO stars.
     get goldStars() { return load().goldStars; },
 
-    awardStar(event, payload) {
-      // Backward-compat: old call sites passed a free-text reason string.
-      // Those land in 'legacy-zero' bucket — zero stars, a one-time console
-      // note so we can find and update remaining bad callers.
+    // Gold-star system retired 2026-05-26 (Patrik): "jsut remove the stars."
+    // Kept as a no-op so every existing call site still runs without error.
+    // The internal counter no longer increments; no toasts; no UI references.
+    // Progress is now tracked purely by modules-done / time-on-task / streak.
+    awardStar(/* event, payload */) {
+      return load().goldStars || 0;
+    },
+
+    // Legacy POLICY table kept inline for reference but unused. Will be
+    // deleted in a follow-up sweep once we're sure nothing reads it.
+    _legacyAwardStar(event, payload) {
       if (typeof event !== 'string') return load().goldStars;
       const POLICY = {
         // real work — earn stars
