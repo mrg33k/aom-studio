@@ -957,6 +957,36 @@ export default function CornerV4() {
     currentUserSlug, personalTodos,
   }), [agents, inboxItems, projectRooms, queued, rightNow, waiting, done, allTasks, refreshTasks, addOptimisticTask, currentUserSlug, personalTodos])
 
+  // R-home-screen R4 hotfix: replace ChatPanel's CV3 ConversationsView
+  // fallback with our brutalist HomeView. ChatPanel reads cv4HomeView from
+  // the nav context — when set, it renders that instead of the legacy
+  // ConversationsView whenever there's no selectedAgent + no projectId.
+  // Kills the "old home view flashes / leaks under mail" regression.
+  const cv4HomeView = useMemo(() => (
+    <HomeView
+      user={currentUser}
+      agents={agents}
+      projectRooms={projectRooms}
+      onSelectAgent={(agent) => {
+        setSelectedAgent(agent)
+        setConversationTarget({ name: agent.name, type: 'agent' })
+      }}
+      onSelectProject={(proj, mission) => {
+        setConversationTarget({
+          name: proj.name || proj.slug,
+          slug: proj.slug,
+          type: 'project',
+          missionSlug: mission?.slug || null,
+        })
+        try {
+          const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+          const url = basePath + '/project/' + proj.slug + (mission?.slug ? ('?mission=' + encodeURIComponent(mission.slug)) : '')
+          navigate(url)
+        } catch (_) {}
+      }}
+    />
+  ), [currentUser, agents, projectRooms, navigate])
+
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,
     selectedAgent, conversationTarget,
@@ -965,7 +995,8 @@ export default function CornerV4() {
     attachedMission, setAttachedMission,
     activeTool, selectedMail, setSelectedMail,
     stageFilesRef,
-  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleSelectMission, handleSelectTask, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef])
+    cv4HomeView,
+  }), [tab, handleTabChange, selectedAgent, conversationTarget, handleSelectAgent, handleSelectProject, handleSelectMission, handleSelectTask, handleBackFromConversation, prefillMessage, attachedMission, activeTool, selectedMail, stageFilesRef, cv4HomeView])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
