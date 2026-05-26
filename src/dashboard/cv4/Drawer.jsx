@@ -14,6 +14,7 @@ import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 import { authFetch } from '../lib/authFetch.js'
 import LeftMailPanel from './LeftMailPanel.jsx'
 import SkillsShelf from './SkillsShelf.jsx'
+import SkillsBadge from './SkillsBadge.jsx'
 
 const PANEL_WIDTH = 300
 const MENU = {
@@ -56,8 +57,11 @@ export default function CV4Drawer({
   // project or mission is created to force an immediate missions-tree refetch.
   refreshKey = 0,
   // corner:skills-picker R1: when true, replace the project tree body with
-  // the SkillsShelf takeover. CornerV4 owns the toggle state.
+  // the SkillsShelf takeover. CornerV4 owns the toggle state. The badge
+  // lives inside the Drawer body (above Agents) so the user sees the
+  // affordance from the same rail it takes over.
   skillsShelfOpen = false,
+  onToggleSkillsShelf,
   onCloseSkillsShelf,
   onPickSkill,
 }) {
@@ -236,6 +240,8 @@ export default function CV4Drawer({
       onLogout={onLogout}
       onClose={docked ? () => {} : onClose}
       isSuperAdmin={isSuperAdmin}
+      onToggleSkillsShelf={onToggleSkillsShelf}
+      skillsShelfOpen={skillsShelfOpen}
     />
   )
 
@@ -419,6 +425,8 @@ function DrawerBody({
   onLogout,
   onClose,
   isSuperAdmin = false,
+  onToggleSkillsShelf,
+  skillsShelfOpen = false,
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 8px 12px', minWidth: 0 }}>
@@ -440,6 +448,12 @@ function DrawerBody({
         selectedMailId={selectedMailId}
         onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
       />
+
+      {/* corner:skills-picker R1 — purple "Browse skills" CTA above the
+          Agents section. Click opens the Skills shelf takeover. */}
+      {onToggleSkillsShelf && (
+        <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
+      )}
 
       <TreeSection title="Agents">
         {agents.length === 0 ? (

@@ -1,62 +1,118 @@
-// SkillsBadge — purple Skills button injected into the right-rail header.
-// Clicking opens the Skills shelf, which takes over the left rail.
+// SkillsBadge — purple rectangular CTA in the left-rail Drawer, above the
+// Agents section. Click opens the Skills shelf, which takes over the rest
+// of the rail.
 //
 // corner:skills-picker R1, 2026-05-25.
 
 const PURPLE = '#A78BFA'
-const PURPLE_RING = 'rgba(167,139,250,0.42)'
+const PURPLE_DEEP = '#7C3AED'
 
 export default function SkillsBadge({ open, onToggle }) {
   return (
     <button
       type="button"
-      title={open ? 'Close Skills' : 'Open Skills'}
-      aria-label="Skills"
+      title={open ? 'Close Skills' : 'Browse skills'}
+      aria-label={open ? 'Close skills' : 'Browse skills'}
       aria-expanded={open}
       data-testid="cv4-skills-badge"
       onClick={onToggle}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '5px 10px 5px 8px',
-        height: 26,
-        borderRadius: 999,
+        gap: 10,
+        width: '100%',
+        padding: '11px 14px',
+        marginBottom: 10,
+        borderRadius: 10,
         background: open
-          ? 'linear-gradient(135deg, rgba(167,139,250,0.32) 0%, rgba(139,92,246,0.40) 100%)'
-          : 'linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(139,92,246,0.26) 100%)',
-        border: `1px solid ${open ? PURPLE_RING : 'rgba(167,139,250,0.32)'}`,
-        color: PURPLE,
-        fontFamily: "'JetBrains Mono', 'Menlo', monospace",
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
+          ? 'linear-gradient(135deg, rgba(167,139,250,0.45) 0%, rgba(124,58,237,0.55) 100%)'
+          : 'linear-gradient(135deg, rgba(167,139,250,0.28) 0%, rgba(124,58,237,0.42) 100%)',
+        border: `1px solid ${open ? 'rgba(167,139,250,0.85)' : 'rgba(167,139,250,0.55)'}`,
+        color: '#FFFFFF',
+        fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontSize: 13,
+        fontWeight: 600,
+        letterSpacing: '0.005em',
         cursor: 'pointer',
-        flexShrink: 0,
-        transition: 'all 0.15s ease',
+        transition: 'all 0.18s ease',
         boxShadow: open
-          ? '0 0 0 3px rgba(167,139,250,0.10), 0 2px 8px rgba(124,58,237,0.32)'
-          : '0 1px 4px rgba(124,58,237,0.20)',
+          ? '0 0 0 3px rgba(167,139,250,0.16), 0 6px 18px rgba(124,58,237,0.38)'
+          : '0 3px 10px rgba(124,58,237,0.28)',
+        textAlign: 'left',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={(e) => {
+        if (!open) {
+          e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.38) 0%, rgba(124,58,237,0.52) 100%)'
+          e.currentTarget.style.boxShadow = '0 5px 14px rgba(124,58,237,0.36)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!open) {
+          e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.28) 0%, rgba(124,58,237,0.42) 100%)'
+          e.currentTarget.style.boxShadow = '0 3px 10px rgba(124,58,237,0.28)'
+        }
       }}
     >
-      <SparkleIcon />
-      <span>Skills</span>
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 26,
+          height: 26,
+          borderRadius: 7,
+          background: 'rgba(255,255,255,0.16)',
+          flexShrink: 0,
+        }}
+      >
+        <BoltIcon />
+      </span>
+      <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.15, color: '#FFFFFF' }}>
+          {open ? 'Close skills' : 'Browse skills'}
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 500,
+            color: 'rgba(255,255,255,0.78)',
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginTop: 2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {open ? 'tap to go back' : `fire any skill into any mission`}
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          fontSize: 14,
+          color: 'rgba(255,255,255,0.85)',
+          flexShrink: 0,
+          transition: 'transform 0.18s',
+          transform: open ? 'rotate(90deg)' : 'none',
+        }}
+      >
+        ›
+      </span>
     </button>
   )
 }
 
-function SparkleIcon() {
+function BoltIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"
-        fill="currentColor"
-      />
-      <path
-        d="M19 16L19.6 18.4L22 19L19.6 19.6L19 22L18.4 19.6L16 19L18.4 18.4L19 16Z"
-        fill="currentColor"
-        opacity="0.7"
+        d="M13 2L4.5 13.5h6L11 22l8.5-11.5h-6L13 2z"
+        fill="#FFFFFF"
       />
     </svg>
   )

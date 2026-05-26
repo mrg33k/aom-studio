@@ -2001,6 +2001,7 @@ export default function CornerV4() {
             onSelectMission={(mission, project) => handleSelectMission(mission, project)}
             refreshKey={drawerRefreshKey}
             skillsShelfOpen={skillsShelfOpen}
+            onToggleSkillsShelf={toggleSkillsShelf}
             onCloseSkillsShelf={() => setSkillsShelfOpen(false)}
             onPickSkill={handlePickSkill}
             onSelectTask={(task, mission, project) => {
@@ -2043,7 +2044,7 @@ export default function CornerV4() {
             {(!isDesktop && tab === 'tasks') ? (
               selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
-                : <RightMenu skillsShelfOpen={skillsShelfOpen} onToggleSkillsShelf={toggleSkillsShelf} />
+                : <RightMenu />
             ) : (
               selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
@@ -2066,7 +2067,7 @@ export default function CornerV4() {
           >
             {/* R10 — Right rail is Missions/Tasks/Files only. Mail moved
                 to the left rail (LeftMailPanel inside CV4Drawer). */}
-            <RightMenu skillsShelfOpen={skillsShelfOpen} onToggleSkillsShelf={toggleSkillsShelf} />
+            <RightMenu />
           </aside>
         )}
       </div>
