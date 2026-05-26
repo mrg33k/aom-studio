@@ -855,29 +855,6 @@ function MissionRow({
           textOverflow: 'ellipsis',
           fontFamily: MENU.bodyFont,
         }}>{mission.name || mission.slug || 'unnamed'}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {!hideProject && (
-            <span style={{
-              fontSize: 11,
-              fontWeight: 400,
-              lineHeight: 1.2,
-              color: C.muted,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontFamily: MENU.bodyFont,
-            }}>{projectSlug}</span>
-          )}
-          {ageLabel && (
-            <span style={{
-              fontSize: 10,
-              color: C.muted,
-              fontFamily: MENU.monoFont,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}>{ageLabel}</span>
-          )}
-        </div>
       </div>
       {showMove && (
         <MoveToFolderButton
