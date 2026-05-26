@@ -855,6 +855,21 @@ function MissionRow({
           textOverflow: 'ellipsis',
           fontFamily: MENU.bodyFont,
         }}>{mission.name || mission.slug || 'unnamed'}</span>
+        {(!hideProject || ageLabel) && (
+          <span style={{
+            fontSize: 11,
+            lineHeight: 1.2,
+            color: C.muted,
+            fontFamily: MENU.monoFont,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {!hideProject && projectSlug && <span>{projectSlug}</span>}
+            {!hideProject && projectSlug && ageLabel && <span style={{ opacity: 0.6 }}> · </span>}
+            {ageLabel && <span style={{ fontSize: 10 }}>{ageLabel}</span>}
+          </span>
+        )}
       </div>
       {showMove && (
         <MoveToFolderButton
@@ -1765,6 +1780,22 @@ export default function RightMenu() {
     return effectiveMissions.filter(m => m.projectSlug === activePill)
   }, [effectiveMissions, activePill])
 
+  // R8: flat sort by recency (lastTouched DESC). Running/queued bubble naturally
+  // because they have fresh timestamps. Missions with no lastTouched fall to the
+  // bottom in alphabetical order so the list is still deterministic.
+  const sortedMissions = useMemo(() => {
+    const arr = [...filteredMissions]
+    arr.sort((a, b) => {
+      const aT = a.lastTouched ? new Date(a.lastTouched).getTime() : 0
+      const bT = b.lastTouched ? new Date(b.lastTouched).getTime() : 0
+      if (aT !== bT) return bT - aT
+      const an = (a.name || a.slug || '').toLowerCase()
+      const bn = (b.name || b.slug || '').toLowerCase()
+      return an.localeCompare(bn)
+    })
+    return arr
+  }, [filteredMissions])
+
   const filteredActiveTasks = useMemo(() => {
     if (activePill === 'all') return activeTasks
     return activeTasks.filter(t => taskProjectSlug(t) === activePill)
@@ -2119,112 +2150,33 @@ export default function RightMenu() {
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
-          {/* ALL view: project group accordions, folders interleaved */}
-          {activePill === 'all' && groupedMissions && groupedMissions.map(group => {
-            const idleDefault = !group.hasRunning && !group.hasQueued
-            const isCollapsed = collapsedProjects.hasOwnProperty(group.projectSlug)
-              ? collapsedProjects[group.projectSlug]
-              : idleDefault
-            return (
-              <div key={group.projectSlug}>
-                <ProjectGroupHeader
-                  projectSlug={group.projectSlug}
-                  count={group.missions.length}
-                  isRunning={group.hasRunning}
-                  isQueued={group.hasQueued}
-                  isCollapsed={isCollapsed}
-                  onToggle={() => toggleProjectCollapse(group.projectSlug)}
-                  onContextMenu={(e) => { e.preventDefault(); openProjectMenu(e.clientX, e.clientY, { slug: group.projectSlug, name: group.projectSlug }) }}
-                />
-                {!isCollapsed && renderGroupBody(group)}
-              </div>
-            )
-          })}
-
-          {/* Specific pill view: flat list (no grouping). Folders still shown
-              if any exist for this project. */}
-          {activePill !== 'all' && (
-            (() => {
-              const projectFolders = folders.filter(f => f.project_slug === activePill)
-              const folderBuckets = new Map()
-              const ungrouped = []
-              for (const m of filteredMissions) {
-                const folderSlug = assignments[`${m.projectSlug}:${m.slug}`] || null
-                if (folderSlug) {
-                  if (!folderBuckets.has(folderSlug)) folderBuckets.set(folderSlug, [])
-                  folderBuckets.get(folderSlug).push(m)
-                } else {
-                  ungrouped.push(m)
-                }
+          {/* R8: flat sorted list. Same shape as FilesPanel canonical files —
+              one row pattern, one type scale, no group headers or folder
+              wrappers folding missions out of sight. Project meta on each row
+              when activePill === 'all'; hidden when scoped to one project
+              (the pill already names it). */}
+          {!missionsLoading && sortedMissions.length > 0 && sortedMissions.map((m, i) => (
+            <MissionRow
+              key={`${m.projectSlug}:${m.slug}-${i}`}
+              mission={m}
+              projectSlug={m.projectSlug}
+              dotStatus={m.dotStatus}
+              ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+              isCurrent={
+                (currentMission && m.slug === currentMission) ||
+                (currentProject && m.projectSlug === currentProject && !currentMission)
               }
-              return (
-                <>
-                  {/* Affordances retired — right-click ProjectGroupHeader or
-                      FolderRow to create missions / folders / subfolders. */}
-                  {projectFolders.map(folder => {
-                    const bucket = folderBuckets.get(folder.slug) || []
-                    const fKey = `${folder.project_slug}:${folder.slug}`
-                    const isFolderCollapsed = !!collapsedFolders[fKey]
-                    return (
-                      <div key={folder.slug}>
-                        <FolderRow
-                          folder={folder}
-                          count={bucket.length}
-                          isCollapsed={isFolderCollapsed}
-                          onToggle={() => toggleFolderCollapse(activePill, folder.slug)}
-                          onContextMenu={(e) => { e.preventDefault(); openFolderMenu(e.clientX, e.clientY, folder) }}
-                        />
-                        {!isFolderCollapsed && bucket.map((m, i) => (
-                          <MissionRow
-                            key={`${folder.slug}-${m.slug}-${i}`}
-                            mission={m}
-                            projectSlug={m.projectSlug}
-                            dotStatus={m.dotStatus}
-                            ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-                            isCurrent={
-                              (currentMission && m.slug === currentMission) ||
-                              (currentProject && m.projectSlug === currentProject && !currentMission)
-                            }
-                            hideProject={false}
-                            onClick={() => onMissionClick(m)}
-                            onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
-                            onLongPress={openMissionMenu}
-                            showMove={true}
-                            currentFolderSlug={folder.slug}
-                            folders={folders}
-                            onMove={(missionSlug, folderSlug) => handleMoveMission(activePill, missionSlug, folderSlug)}
-                            onCreateFolder={handleCreateFolder}
-                          />
-                        ))}
-                      </div>
-                    )
-                  })}
-                  {ungrouped.map((m, i) => (
-                    <MissionRow
-                      key={`ungrouped-${m.slug}-${i}`}
-                      mission={m}
-                      projectSlug={m.projectSlug}
-                      dotStatus={m.dotStatus}
-                      ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-                      isCurrent={
-                        (currentMission && m.slug === currentMission) ||
-                        (currentProject && m.projectSlug === currentProject && !currentMission)
-                      }
-                      hideProject={false}
-                      onClick={() => onMissionClick(m)}
-                      onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
-                      onLongPress={openMissionMenu}
-                      showMove={true}
-                      currentFolderSlug={null}
-                      folders={folders}
-                      onMove={(missionSlug, folderSlug) => handleMoveMission(activePill, missionSlug, folderSlug)}
-                      onCreateFolder={handleCreateFolder}
-                    />
-                  ))}
-                </>
-              )
-            })()
-          )}
+              hideProject={activePill !== 'all'}
+              onClick={() => onMissionClick(m)}
+              onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
+              onLongPress={openMissionMenu}
+              showMove={true}
+              currentFolderSlug={assignments[`${m.projectSlug}:${m.slug}`] || null}
+              folders={folders}
+              onMove={(missionSlug, folderSlug) => handleMoveMission(m.projectSlug, missionSlug, folderSlug)}
+              onCreateFolder={handleCreateFolder}
+            />
+          ))}
         </>
       )}
 

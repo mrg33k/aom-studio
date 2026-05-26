@@ -876,114 +876,63 @@
       <button class="rm-accordion-tab" data-rm-tab="files">Files</button>
     </div>
 
-    <!-- ──────────────── TAB: MISSIONS (sorted by recency) ──────────────── -->
-    <!-- R6 Fix 3: accordion-by-project in "all" view. Active groups open, idle collapsed. -->
+    <!-- ──────────────── TAB: MISSIONS (R8 — flat sorted list) ──────────────── -->
+    <!-- R8: project-group accordions retired. Flat list sorted by recency.
+         Each row carries its own project label so the "all" view is legible
+         without folding anything out of sight. Matches FilesPanel canonical
+         file rows: status-dot · name · (project · age). -->
     <div class="rm-accordion-content active" data-rm-accordion="missions">
       <div class="rm-mission-list" data-rm-mission-list>
 
-        <!-- ── corner (active — default open) ── -->
-        <div class="rm-project-group" data-rm-group="corner">
-          <div class="rm-project-group-header" data-rm-group-toggle="corner">
-            <span class="rm-dot active"></span>
-            <span class="rm-group-project-name">corner</span>
-            <span class="rm-group-count">3</span>
-            <span class="rm-group-caret">▾</span>
+        <a href="#" class="rm-mission-row current" data-project="corner" data-lastmessage="2026-05-24T14:32:00Z">
+          <span class="rm-dot active"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">right-menu</span>
+            <span class="rm-mission-project">corner · now</span>
           </div>
-          <div class="rm-project-group-body">
-            <a href="#" class="rm-mission-row current" data-project="corner" data-lastmessage="2026-05-24T14:32:00Z">
-              <span class="rm-dot active"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">right-menu</span>
-                <span class="rm-mission-project">corner</span>
-              </div>
-              <span class="rm-mission-lastseen">now</span>
-            </a>
-            <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-24T14:27:00Z">
-              <span class="rm-dot active"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">corner-ui-cv4</span>
-                <span class="rm-mission-project">corner</span>
-              </div>
-              <span class="rm-mission-lastseen">5m ago</span>
-            </a>
-            <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-21T09:15:00Z">
-              <span class="rm-dot"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">mission-panel</span>
-                <span class="rm-mission-project">corner</span>
-              </div>
-              <span class="rm-mission-lastseen">3d ago</span>
-            </a>
+        </a>
+        <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-24T14:27:00Z">
+          <span class="rm-dot active"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">corner-ui-cv4</span>
+            <span class="rm-mission-project">corner · 5m ago</span>
           </div>
-        </div>
-
-        <!-- ── ambition (active — default open) ── -->
-        <div class="rm-project-group" data-rm-group="ambition">
-          <div class="rm-project-group-header" data-rm-group-toggle="ambition">
-            <span class="rm-dot queued"></span>
-            <span class="rm-group-project-name">ambition</span>
-            <span class="rm-group-count">2</span>
-            <span class="rm-group-caret">▾</span>
+        </a>
+        <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:45:00Z">
+          <span class="rm-dot active"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">hero-section</span>
+            <span class="rm-mission-project">ambition · 47m ago</span>
           </div>
-          <div class="rm-project-group-body">
-            <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:45:00Z">
-              <span class="rm-dot active"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">hero-section</span>
-                <span class="rm-mission-project">ambition</span>
-              </div>
-              <span class="rm-mission-lastseen">47m ago</span>
-            </a>
-            <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:15:00Z">
-              <span class="rm-dot queued"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">brand-refresh</span>
-                <span class="rm-mission-project">ambition</span>
-              </div>
-              <span class="rm-mission-lastseen">1h ago</span>
-            </a>
+        </a>
+        <a href="#" class="rm-mission-row" data-project="ambition" data-lastmessage="2026-05-24T13:15:00Z">
+          <span class="rm-dot queued"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">brand-refresh</span>
+            <span class="rm-mission-project">ambition · 1h ago</span>
           </div>
-        </div>
-
-        <!-- ── skylar (idle — default collapsed) ── -->
-        <div class="rm-project-group collapsed" data-rm-group="skylar">
-          <div class="rm-project-group-header" data-rm-group-toggle="skylar">
-            <span class="rm-dot"></span>
-            <span class="rm-group-project-name">skylar</span>
-            <span class="rm-group-count">1</span>
-            <span class="rm-group-caret">▾</span>
+        </a>
+        <a href="#" class="rm-mission-row" data-project="corner" data-lastmessage="2026-05-21T09:15:00Z">
+          <span class="rm-dot"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">mission-panel</span>
+            <span class="rm-mission-project">corner · 3d ago</span>
           </div>
-          <div class="rm-project-group-body">
-            <a href="#" class="rm-mission-row" data-project="skylar" data-lastmessage="2026-05-23T18:30:00Z">
-              <span class="rm-dot"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">campaign-launch</span>
-                <span class="rm-mission-project">skylar</span>
-              </div>
-              <span class="rm-mission-lastseen">20h ago</span>
-            </a>
+        </a>
+        <a href="#" class="rm-mission-row" data-project="skylar" data-lastmessage="2026-05-23T18:30:00Z">
+          <span class="rm-dot"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">campaign-launch</span>
+            <span class="rm-mission-project">skylar · 20h ago</span>
           </div>
-        </div>
-
-        <!-- ── brandon (idle — default collapsed) ── -->
-        <div class="rm-project-group collapsed" data-rm-group="brandon">
-          <div class="rm-project-group-header" data-rm-group-toggle="brandon">
-            <span class="rm-dot"></span>
-            <span class="rm-group-project-name">brandon</span>
-            <span class="rm-group-count">1</span>
-            <span class="rm-group-caret">▾</span>
+        </a>
+        <a href="#" class="rm-mission-row" data-project="brandon" data-lastmessage="2026-05-22T10:00:00Z">
+          <span class="rm-dot"></span>
+          <div class="rm-mission-main">
+            <span class="rm-mission-name">lbx-documentary</span>
+            <span class="rm-mission-project">brandon · 2d ago</span>
           </div>
-          <div class="rm-project-group-body">
-            <a href="#" class="rm-mission-row" data-project="brandon" data-lastmessage="2026-05-22T10:00:00Z">
-              <span class="rm-dot"></span>
-              <div class="rm-mission-main">
-                <span class="rm-mission-name">lbx-documentary</span>
-                <span class="rm-mission-project">brandon</span>
-              </div>
-              <span class="rm-mission-lastseen">2d ago</span>
-            </a>
-          </div>
-        </div>
+        </a>
 
       </div>
     </div>
