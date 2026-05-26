@@ -394,7 +394,9 @@ window.SSMod = (function () {
   // TYPING SPRINT
   // ============================================================
   function typing(host, block) {
-    const target = day().typingTarget;
+    // Per-block override so each subject session has its own typing target.
+    // Falls back to day().typingTarget for legacy callers.
+    const target = (block && block.typingTarget) || day().typingTarget;
     host.innerHTML = `
       ${topRail(50, 'sprint')}
       ${moduleHead('Typing Sprint · from today\'s reading', 'Type it fast. Type it right.')}
@@ -714,15 +716,23 @@ window.SSMod = (function () {
   // ARDUINO — writing micro (handwritten)
   // ============================================================
   function writingMini(host, block) {
-    const a = day().arduino;
+    // Per-block override so each subject session can have its own prompt.
+    // block.prompt = "..." or block.writingPrompt = "..." also works.
+    // block.minSentences (default 2). Falls back to day().arduino.writingPrompt.
+    const prompt = (block && (block.prompt || block.writingPrompt))
+      || (day().arduino && day().arduino.writingPrompt)
+      || 'Write two sentences about today\'s lesson.';
+    const minSentences = (block && block.minSentences) || 2;
+    const label = (block && block.label) || 'Prompt';
+    const eyebrow = (block && block.eyebrow) || 'Quick Write';
     host.innerHTML = `
-      ${topRail(80, 'on paper')}
-      ${moduleHead('Quick Write', 'On paper, two sentences')}
+      ${topRail(0, 'on paper')}
+      ${moduleHead(eyebrow, 'On paper, ' + minSentences + ' sentence' + (minSentences === 1 ? '' : 's'))}
       <div class="writing-stage module-narrow">
         <div class="writing-prompt">
-          <div class="label">Prompt</div>
-          <div class="text" data-dict>${a.writingPrompt}</div>
-          <div class="meta"><span>Hand write it</span><span>2 sentences min</span></div>
+          <div class="label">${label}</div>
+          <div class="text" data-dict>${prompt}</div>
+          <div class="meta"><span>Hand write it</span><span>${minSentences} sentence${minSentences === 1 ? '' : 's'} min</span></div>
         </div>
         <div class="approve-card">
           <div class="big">When it's written</div>
@@ -734,11 +744,11 @@ window.SSMod = (function () {
         </div>
       </div>
     `;
+    startBlockTimer(host, block);
     ['approve-dad', 'approve-mom'].forEach(id => {
       host.querySelector('#' + id).onclick = () => {
         if (window.SS) {
           window.SS.dadApproveLatest();
-          window.SS.awardStar('writing-approved');
         }
         complete(block.id, { approver: id === 'approve-dad' ? 'dad' : 'mom' });
       };
@@ -1450,10 +1460,12 @@ window.SSMod = (function () {
   function tiles(host, block) {
     // Resolve the list of {word, clue} pairs this block should use.
     // Three modes:
-    //  - block.count: 10 → randomly pull N from day().tileVocab
-    //  - block.words: ['studio', 'robux'] → look up in tileVocab (legacy strings)
+    //  - block.count: 10 → randomly pull N from pool
+    //  - block.words: ['studio', 'robux'] → look up in pool (legacy strings)
     //  - block.words: [{word, clue}, ...] → use as-is
-    const pool = (day().tileVocab) || [];
+    // Pool: block.tileVocab > day().tileVocab — per-block override lets each
+    // subject session use its own word list (math vocab, photo terms, etc).
+    const pool = (block && block.tileVocab) || day().tileVocab || [];
     const lookupClue = (w) => (pool.find(t => t.word === w) || { clue: 'From today\'s reading' }).clue;
     let wordList;
     if (block.count) {
@@ -1571,8 +1583,11 @@ window.SSMod = (function () {
   // SPEED-READ — reuse RSVP logic
   // ============================================================
   function speedread(host, block) {
-    const words = day().passage.paragraphs.join(' ').split(/\s+/);
-    const srQuiz = day().passage.srComprehension || [];
+    // Per-block override: block.passage = { paragraphs: [], srComprehension: [] }
+    // lets each subject session run its own speed-read on its own text.
+    const passage = (block && block.passage) || day().passage;
+    const words = passage.paragraphs.join(' ').split(/\s+/);
+    const srQuiz = passage.srComprehension || [];
     let idx = 0, playing = false, timer = null;
     let stage = 'read';  // 'read' or 'quiz'
 

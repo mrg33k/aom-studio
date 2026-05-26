@@ -882,10 +882,566 @@ window.CURRICULUM.tuesday = {
 
     { id: 'bag-12', kind: 'topic', type: 'bag', minutes: 5, title: 'Pitch it to Mom or Dad' },
 
-    // ===== FRAME 2: Show Mom or Dad (free-form display + photo) =====
+    // ================================================================
+    // AFTERNOON SESSIONS (added 2026-05-26 PM)
+    // Patrik: "should just alwayas be /summerschool" — single URL, single
+    // continuous flow. He finishes the morning, the afternoon kicks in.
+    // Three deep-dive subjects: Friendships, Drawing, MPC ONE.
+    // ================================================================
+
+    // ============================================================
+    // AFTERNOON SUBJECT 1: FRIENDSHIPS
+    // ============================================================
+    { id: 'f-01', kind: 'topic', type: 'concept', minutes: 3, subject: 'Friendships', tag: 'Friendships · 01 of 12',
+      title: 'What this session is for',
+      body: [
+        'Most kids never get taught how friendships actually work. They figure it out by trial and error — slow, painful, and you can lose people you didn\'t mean to.',
+        'Today: what real friendships actually need, what kills them fast, and how to make a new friend without sounding weird. Specific moves, not vibes.'
+      ],
+      check: {
+        q: 'What\'s the goal of today\'s friendship session?',
+        choices: [
+          'Get more followers',
+          'Understand what real friendships actually need to work',
+          'Memorize a list of cool things to say'
+        ],
+        right: 1
+      },
+      cta: 'Ready' },
+
+    { id: 'f-02', kind: 'topic', type: 'video', minutes: 14, subject: 'Friendships', tag: 'Friendships · 02 of 12',
+      title: 'Watch: How To Make Friends',
+      video: {
+        title: 'How To Make Friends — Kurzgesagt',
+        ytId: 'I9hJ_Rux9y0',
+        summary: [
+          'Real friendships need three things: regular time together, doing stuff side-by-side (not just talking), and being vulnerable enough that the other person sees the real you.',
+          'It takes roughly 50 hours to move from acquaintance to casual friend, 90 to "real" friend, 200+ to close friend. No shortcut.',
+          'Biggest myth: good friendships happen automatically. They don\'t. You have to be the one who texts, who shows up, who plans things — at least sometimes. Most adults are LONELY because they stopped doing this.'
+        ],
+        questions: [
+          { q: "Roughly how many hours does it take to become 'real' friends with someone?", a: ['About 10 hours', 'About 90 hours', 'About 1,000 hours'], right: 1 },
+          { q: 'What\'s one of the three things real friendships need?', a: ['Expensive gifts', 'Doing stuff side-by-side, not just talking', 'Always agreeing on everything'], right: 1 },
+          { q: 'Why are so many adults lonely?', a: ['Everyone is busy', 'They stopped doing the work of texting first and planning things', 'They don\'t like people anymore'], right: 1 },
+          { q: 'Friendships happen…', a: ['Automatically if you wait', 'When you put in time and effort, on purpose', 'Only at school'], right: 1 },
+          { q: 'What myth does the video kill?', a: ['That friendships need work', 'That friendships just happen on their own', 'That you can have too many friends'], right: 1 }
+        ]
+      }
+    },
+
+    { id: 'f-03', kind: 'topic', type: 'concept', minutes: 4, subject: 'Friendships', tag: 'Friendships · 03 of 12',
+      title: 'The 60-second make-a-friend',
+      body: [
+        'A specific move you can use at school, at camp, anywhere new. When you meet someone:',
+        '<strong>1. Say YOUR name first.</strong> Most kids skip this and dive into a joke or a question. Saying your name first is rare and lands well.',
+        '<strong>2. Ask ONE real question.</strong> Not a yes/no question. Something they\'d have an opinion on. "What class do you actually like so far?" beats "How\'s school?"',
+        '<strong>3. LISTEN.</strong> Don\'t plan your next move while they talk. Actually listen. Ask one follow-up to whatever they said.',
+        'That\'s the whole move. 60 seconds. Most people you do this to will remember you a week later.'
+      ],
+      check: {
+        q: 'Which of these is a real opening question?',
+        choices: [
+          '"How\'s school?"',
+          '"What class do you actually like so far?"',
+          '"Are you new?"'
+        ],
+        right: 1
+      },
+      cta: 'Got the move' },
+
+    { id: 'f-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Friendships', tag: 'Friendships · 04 of 12',
+      title: 'Three things that kill friendships',
+      body: [
+        '<strong>1. Pick-me energy.</strong> Trying too hard to be the favorite. Performing for laughs. Smells desperate, even when other kids can\'t articulate why they back away.',
+        '<strong>2. Compliment-fishing.</strong> "I\'m so bad at this" hoping someone says "no you\'re great." Feels safer than just doing the thing, but everyone sees it and it makes you small.',
+        '<strong>3. Negging your friends to look better.</strong> Putting down the people closest to you, even as "jokes." People notice who you treat your friends like, and decide whether to trust you with their friendship based on that.',
+        'All three smell desperate. The opposite of all three is quiet confidence.'
+      ],
+      check: {
+        q: 'Why does pick-me energy push people away?',
+        choices: [
+          'It\'s funny',
+          'It smells like effort to be liked, which feels desperate to other kids',
+          'It\'s against school rules'
+        ],
+        right: 1
+      },
+      cta: 'Locked in' },
+
+    { id: 'f-05', kind: 'topic', type: 'concept', minutes: 4, subject: 'Friendships', tag: 'Friendships · 05 of 12',
+      title: 'Quiet confidence — the opposite move',
+      body: [
+        'Quiet confidence is harder and worth way more. You don\'t need everyone to know you\'re great. You don\'t fish for compliments. When you do something well, you just... do it. You don\'t announce it.',
+        'People notice quiet confidence WAY more than loud confidence. It\'s also more attractive to be around — nobody wants to spend time with someone who needs constant reassurance.',
+        'Quiet confidence is built by doing real things and letting the doing speak. The kids who play it cool aren\'t cool. The kids who do hard things and don\'t talk about them — those are the ones everyone wants around.'
+      ],
+      check: {
+        q: 'What does quiet confidence sound like?',
+        choices: [
+          'Loud bragging about every accomplishment',
+          'You did the thing well — and let the doing speak for itself',
+          'Constant put-downs of others'
+        ],
+        right: 1
+      },
+      cta: 'Got it' },
+
+    { id: 'f-06', kind: 'topic', type: 'speedread', minutes: 4, subject: 'Friendships', tag: 'Friendships · 06 of 12',
+      title: 'Speed-read: a real friendship',
+      passage: {
+        paragraphs: [
+          'In 1971, two students named Steve Wozniak and Steve Jobs met through a mutual friend at Homestead High School in Cupertino, California. Wozniak was a quiet, technical guy who built electronics for fun. Jobs was four years younger, louder, and obsessed with the BUSINESS side of what Wozniak made.',
+          'Their friendship worked because each had something the other didn\'t. Wozniak could build anything. Jobs could SELL anything. They didn\'t compete. They covered each other.',
+          'Five years later, in 1976, they started a company called Apple Computer in Jobs\'s parents\' garage. They argued constantly — about money, about decisions, about credit. But they kept showing up for each other for years, because the friendship was real before the business was.',
+          'The lesson isn\'t "find someone with different skills." The lesson is: real friends are people who can keep showing up even when it\'s annoying. Wozniak and Jobs annoyed each other for decades. They were still friends until Jobs died in 2011.'
+        ],
+        srComprehension: [
+          { q: 'Where did Wozniak and Jobs meet?', choices: ['MIT', 'High school in California', 'A coding bootcamp'], right: 1 },
+          { q: 'What made their friendship work?', choices: ['They were exactly alike', 'Each had something the other didn\'t', 'They both knew the same people'], right: 1 },
+          { q: 'What\'s the passage\'s lesson?', choices: ['Find skilled people', 'Real friends keep showing up even when it\'s annoying', 'Start a business with your friend'], right: 1 }
+        ]
+      }
+    },
+
+    { id: 'f-07', kind: 'topic', type: 'typing', minutes: 3, subject: 'Friendships', tag: 'Friendships · 07 of 12',
+      title: 'Type it fast',
+      typingTarget: 'The fastest way to make a friend is to say your name first, ask one real question, and actually listen.' },
+
+    { id: 'f-08', kind: 'topic', type: 'concept', minutes: 4, subject: 'Friendships', tag: 'Friendships · 08 of 12',
+      title: 'Scenario — the lunch table',
+      body: [
+        'You\'re at the lunch table. A kid you don\'t know sits down next to you. Pick what you do.',
+        '(Think about the moves: name first, real question, listen.)'
+      ],
+      check: {
+        q: 'Best move?',
+        choices: [
+          'Stare at your phone, let them open if they want',
+          'Look up: "Hey, I\'m Ethan — what\'d you have first period?"',
+          'Make a joke about lunch food'
+        ],
+        right: 1
+      },
+      cta: 'Picked' },
+
+    { id: 'f-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Friendships', tag: 'Friendships · 09 of 12',
+      title: 'Scenario — the friend drift',
+      body: [
+        'You\'ve been friends with someone for two years. They start hanging out with a new kid and ignoring you. Pick what you actually do.',
+        '(Drift is normal. How you handle it tells the friend whether you\'re worth keeping.)'
+      ],
+      check: {
+        q: 'Most useful move?',
+        choices: [
+          'Drop them immediately, find new friends',
+          'Stop talking to them and wait for them to come back',
+          '"Hey, I\'ve missed hanging out. Want to grab lunch this week?" Direct, no drama.'
+        ],
+        right: 2
+      },
+      cta: 'Got it' },
+
+    { id: 'f-10', kind: 'topic', type: 'writing-mini', minutes: 5, subject: 'Friendships', tag: 'Friendships · 10 of 12',
+      eyebrow: 'Quick Write · Friendships',
+      label: 'Write about a real friend',
+      prompt: 'Pick a friend. Write their name. Then write ONE moment when they were a real friend to you — and what made it real.',
+      minSentences: 3 },
+
+    { id: 'f-11', kind: 'topic', type: 'concept', minutes: 4, subject: 'Friendships', tag: 'Friendships · 11 of 12',
+      title: 'Wrap quiz — synthesis',
+      body: [
+        'You\'ve seen the video, the 60-second move, the killers, the quiet confidence rule, two scenarios. Synthesize.'
+      ],
+      check: {
+        q: 'Which combo is the strongest friendship move from today?',
+        choices: [
+          'Loud bragging + lots of compliments to others',
+          'Show up regularly + listen + don\'t pick-me-fish',
+          'Avoid texting first + wait for invites'
+        ],
+        right: 1
+      },
+      cta: 'Wrap done' },
+
+    { id: 'f-12', kind: 'topic', type: 'writing-mini', minutes: 5, subject: 'Friendships', tag: 'Friendships · 12 of 12',
+      eyebrow: 'Apply it · Friendships',
+      label: 'Text one friend today',
+      prompt: 'Pick ONE friend you want to text right now. Write what you\'d say. Then actually send it. No "hey" — say something real. (Bonus: ask them a real question, not a yes/no.)',
+      minSentences: 2 },
+
+    // ============================================================
+    // AFTERNOON SUBJECT 2: DRAWING BASICS
+    // ============================================================
+    { id: 'd-01', kind: 'topic', type: 'concept', minutes: 3, subject: 'Drawing', tag: 'Drawing · 01 of 12',
+      title: 'Drawing isn\'t about talent',
+      body: [
+        'Most kids quit drawing around age 9 because they think they\'re "not good at it." That\'s never the actual problem.',
+        'Drawing is about <strong>seeing</strong>. The kids who get good aren\'t born with magic hands — they learn to LOOK at things differently. Once you see the world as basic shapes, you can draw anything.',
+        'Today: break any object into 4-5 basic shapes + a Proko fundamentals tutorial.'
+      ],
+      check: {
+        q: 'Drawing is about...',
+        choices: [
+          'A natural talent some people are born with',
+          'Practice + a way of seeing — anyone can learn it',
+          'Expensive supplies and the right pencils'
+        ],
+        right: 1
+      },
+      cta: 'Ready' },
+
+    { id: 'd-02', kind: 'topic', type: 'video', minutes: 12, subject: 'Drawing', tag: 'Drawing · 02 of 12',
+      title: 'Watch: Intro to Drawing Basics (Proko)',
+      video: {
+        title: 'Intro to Drawing Basics — Proko',
+        ytId: '2szSyXx8cZQ',
+        summary: [
+          'Drawing well comes down to three things: how you SEE (proportions, shapes, relationships), how you THINK about what you\'re drawing (structure, not surface), and how you MOVE your hand (lines, weight, control).',
+          'Beginners try to copy the SURFACE — every line they see. Pros draw the STRUCTURE underneath first — the box, the cylinder, the sphere — then add the details on top of the structure.',
+          'Most useful exercise: break the thing you\'re drawing into simple 3D shapes BEFORE any detail. A hand = a flat box + 5 cylinders. A car = a long box + 4 circles. Structure-first beats talent every time.'
+        ],
+        questions: [
+          { q: 'Per Proko, what\'s the difference between how beginners and pros draw?', a: ['Pros use better pencils', 'Beginners copy surface, pros draw structure first', 'Pros are born with talent'], right: 1 },
+          { q: 'What\'s the "structure-first" habit?', a: ['Draw every line you see', 'Break the thing into simple 3D shapes before adding detail', 'Always start at the top'], right: 1 },
+          { q: 'A hand can be broken into:', a: ['One blob', 'A flat box + 5 cylinders', 'A circle and a triangle'], right: 1 },
+          { q: 'The single most useful exercise:', a: ['Practicing straight lines', 'Breaking your subject into simple shapes BEFORE detail', 'Drawing only what you see'], right: 1 },
+          { q: 'Drawing well comes down to:', a: ['Talent only', 'Better supplies only', 'Seeing + thinking + moving your hand'], right: 2 }
+        ]
+      }
+    },
+
+    { id: 'd-03', kind: 'topic', type: 'concept', minutes: 4, subject: 'Drawing', tag: 'Drawing · 03 of 12',
+      title: 'The 5-shape rule',
+      body: [
+        'Everything visible can be broken down into combinations of five shapes: <strong>circles, squares, triangles, lines, and curves</strong>.',
+        '<strong>A simple face:</strong> circle (head) + 2 ellipses (eyes) + triangle (nose) + curve (mouth). Done.',
+        '<strong>A car:</strong> rectangle (body) + 4 circles (wheels) + triangles (windshield).',
+        '<strong>A tree:</strong> rectangle (trunk) + triangles or scribble-cluster (leaves).',
+        'Once you see in shapes, you can draw anything. The hard part is seeing.'
+      ],
+      check: {
+        q: 'A simple cartoon face is mostly made of:',
+        choices: [
+          'Random scribbles you have to get right',
+          'Circles, lines, ellipses, and a curve',
+          'Squares and only squares'
+        ],
+        right: 1
+      },
+      cta: 'I see it' },
+
+    { id: 'd-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Drawing', tag: 'Drawing · 04 of 12',
+      title: 'Look longer than you draw',
+      body: [
+        'Beginners draw too fast. They look at the subject once, then stare at the paper.',
+        'Pros do the opposite: <strong>look for 2 seconds, draw for 1 second, look again for 2.</strong>',
+        'The LOOKING is the drawing. Your hand is just executing what your eyes figured out. Train your eyes first.'
+      ],
+      check: {
+        q: 'What ratio do pros use?',
+        choices: [
+          'Look 1, draw 2 — get it down fast',
+          'Look 2, draw 1 — looking is the work',
+          'Don\'t look, just feel it'
+        ],
+        right: 1
+      },
+      cta: 'Got it' },
+
+    { id: 'd-05', kind: 'topic', type: 'speedread', minutes: 4, subject: 'Drawing', tag: 'Drawing · 05 of 12',
+      title: 'Speed-read: a young artist',
+      passage: {
+        paragraphs: [
+          'In 1976, a kid named Yoshitaka Amano started working at a Japanese animation studio called Tatsunoko Production. He was 15 years old. He had no formal art training. He just drew constantly.',
+          'For three years he did the lowest job at the studio: in-between animation, drawing the frames between the key poses. Boring work. But every spare hour, he sketched. He filled notebooks with character designs nobody asked him to make.',
+          'In 1979, a small game company called Square hired him to design characters for a new role-playing game. The game was called Final Fantasy. It became one of the biggest game franchises in history. Amano became famous.',
+          'He wasn\'t the most talented artist when he started. He was the one who drew when no one was watching. Three years of nobody-watching practice was what made him good.'
+        ],
+        srComprehension: [
+          { q: 'How old was Amano when he started?', choices: ['10', '15', '22'], right: 1 },
+          { q: 'What did he do during spare hours for 3 years?', choices: ['Studied math', 'Sketched character designs nobody asked for', 'Watched anime'], right: 1 },
+          { q: 'The lesson:', choices: ['Be born talented', 'Practice when no one is watching', 'Get a famous job early'], right: 1 }
+        ]
+      }
+    },
+
+    { id: 'd-06', kind: 'topic', type: 'typing', minutes: 3, subject: 'Drawing', tag: 'Drawing · 06 of 12',
+      title: 'Type it fast',
+      typingTarget: 'Everything you see is made of circles, squares, triangles, lines, and curves. Look first, then draw.' },
+
+    { id: 'd-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Drawing', tag: 'Drawing · 07 of 12',
+      title: 'Apply it — break down a chair',
+      body: [
+        'Look at any chair near you. What basic shapes is it made of? Don\'t draw it yet — just SEE it.',
+        '(Most chairs: rectangle for the seat. Rectangle for the back. Lines for the legs. Maybe a small curve at the top.)'
+      ],
+      check: {
+        q: 'A typical chair is mostly:',
+        choices: [
+          'One big blob shape',
+          'Rectangles (seat + back) + lines (legs)',
+          'All triangles'
+        ],
+        right: 1
+      },
+      cta: 'I see it' },
+
+    { id: 'd-08', kind: 'topic', type: 'concept', minutes: 4, subject: 'Drawing', tag: 'Drawing · 08 of 12',
+      title: 'Lines and weight — depth without shading',
+      body: [
+        'Heavy lines feel CLOSE. Light lines feel FAR.',
+        'Mix them in one drawing and you get depth without any shading. The thing in front gets a thicker outline. The thing behind gets a thin one.',
+        'This is how comic artists make their drawings pop — they\'re not better at shading, they\'re smart about line weight.'
+      ],
+      check: {
+        q: 'Heavy lines make something feel:',
+        choices: [
+          'Far away',
+          'Close / in front',
+          'Sad'
+        ],
+        right: 1
+      },
+      cta: 'Got it' },
+
+    { id: 'd-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Drawing', tag: 'Drawing · 09 of 12',
+      title: 'Shape ID — coffee mug',
+      body: [
+        'Quick mental practice. Picture each object in your head, then pick the basic shapes it\'s mostly made of.',
+        '<em>This one: a coffee mug.</em>'
+      ],
+      check: {
+        q: 'A coffee mug is mostly:',
+        choices: [
+          'A cylinder + a curve (handle)',
+          'A square + a triangle',
+          'A single dot'
+        ],
+        right: 0
+      },
+      cta: 'Got it' },
+
+    { id: 'd-10', kind: 'topic', type: 'writing-mini', minutes: 5, subject: 'Drawing', tag: 'Drawing · 10 of 12',
+      eyebrow: 'Quick Write · Drawing',
+      label: 'Decompose a real object',
+      prompt: 'Pick a real object near you right now. Write down its 4-5 basic shapes. (Example: a lamp = cylinder + cone + line + circle.)',
+      minSentences: 2 },
+
+    { id: 'd-11', kind: 'topic', type: 'concept', minutes: 5, subject: 'Drawing', tag: 'Drawing · 11 of 12',
+      title: 'Harder — bicycle in your head',
+      body: [
+        'Picture a bicycle. Don\'t draw it. Just SEE the shapes.',
+        'Two circles for the wheels. Triangles for the frame. Lines for the handlebars, the seat post, the spokes. Maybe a small rectangle for the seat.',
+        'See how it works? Even something that looks "complicated" is shapes in a specific arrangement.'
+      ],
+      check: {
+        q: 'A bike is mostly:',
+        choices: [
+          'Squares and arrows',
+          'Two circles (wheels) + triangles (frame) + lines',
+          'Just circles, no triangles'
+        ],
+        right: 1
+      },
+      cta: 'Locked in' },
+
+    { id: 'd-12', kind: 'topic', type: 'writing-mini', minutes: 6, subject: 'Drawing', tag: 'Drawing · 12 of 12',
+      eyebrow: 'Apply it · Drawing',
+      label: 'Actually draw the thing',
+      prompt: 'Get a piece of paper. Pick the object from step 10. Draw it using ONLY basic shapes — don\'t go for detail. Just shapes. Take a photo when done and show Mom or Dad.',
+      minSentences: 1 },
+
+    // ============================================================
+    // AFTERNOON SUBJECT 3: MPC ONE (brand new)
+    // ============================================================
+    { id: 'm-mpc-01', kind: 'topic', type: 'concept', minutes: 3, subject: 'MPC ONE', tag: 'MPC · 01 of 12',
+      title: 'First time on the MPC',
+      body: [
+        'This is your first time on the Akai MPC ONE. Don\'t be intimidated — pros use it, but the BASICS are simple.',
+        'Today: what the pads do, how kits work, what BPM means, and how to make your first 4-bar beat. By the end you\'ll have your first beat saved.'
+      ],
+      check: {
+        q: 'What\'s the goal of this session?',
+        choices: [
+          'Memorize every button on the MPC',
+          'Make your first 4-bar beat from scratch',
+          'Master mixing and mastering'
+        ],
+        right: 1
+      },
+      cta: 'Let\'s go' },
+
+    { id: 'm-mpc-02', kind: 'topic', type: 'video', minutes: 8, subject: 'MPC ONE', tag: 'MPC · 02 of 12',
+      title: 'Watch: Getting Started with MPC One',
+      video: {
+        title: 'Getting Started with MPC One — Akai Professional (official)',
+        ytId: 'RQSFWGatlYc',
+        summary: [
+          'The MPC ONE has 16 PADS — the big squares. Each pad plays one sound. You tap them with your finger. Velocity-sensitive: harder = louder.',
+          'A KIT is a folder of sounds (kick, snare, hi-hat) where each sound is assigned to a pad. The MPC comes with built-in kits — pick one and you\'re ready.',
+          'TEMPO is set in BPM (beats per minute). Set this BEFORE you record. Hip-hop is 70-100 BPM, trap 130-170 (half-time feel), rock around 120.',
+          'When your timing is messy, QUANTIZE snaps your notes to the nearest beat — like spell-check for drums. Turn it on for the first 100 beats you make.'
+        ],
+        questions: [
+          { q: 'How many pads does the MPC ONE have?', a: ['8', '16', '32'], right: 1 },
+          { q: 'What\'s a kit?', a: ['A type of microphone', 'A folder of sounds, each assigned to a pad', 'The drumsticks'], right: 1 },
+          { q: 'BPM stands for:', a: ['Beats Per Measure', 'Beats Per Minute', 'Bass Played Manually'], right: 1 },
+          { q: 'What does Quantize do?', a: ['Makes your beat louder', 'Snaps your notes to the nearest beat (fixes sloppy timing)', 'Erases your beat'], right: 1 },
+          { q: 'When do you set the tempo?', a: ['After recording', 'Before recording — set BPM first', 'Doesn\'t matter'], right: 1 }
+        ]
+      }
+    },
+
+    { id: 'm-mpc-03', kind: 'topic', type: 'concept', minutes: 3, subject: 'MPC ONE', tag: 'MPC · 03 of 12',
+      title: 'The pads — 16 squares, 16 sounds',
+      body: [
+        'The 16 PADS are the biggest, most obvious thing on the MPC. Each one plays one sound.',
+        'Tap them with your finger. Hit harder = louder (velocity-sensitive).',
+        'You can also use the pads for melodies — set them to a chromatic scale and play notes. But for your first beat, stick with drums.'
+      ],
+      check: {
+        q: 'How does pad velocity work?',
+        choices: [
+          'Every pad is the same volume',
+          'Harder taps play louder',
+          'You can\'t change volume from the pads'
+        ],
+        right: 1
+      },
+      cta: 'Got it' },
+
+    { id: 'm-mpc-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 04 of 12',
+      title: 'A kit is a folder of sounds',
+      body: [
+        'A KIT is a set of sounds bundled together — kick, snare, hi-hat, claps, maybe a few melodic stabs.',
+        'Each sound in the kit gets assigned to a pad. Pad 1 might be kick, Pad 2 snare, Pad 3 hi-hat, etc.',
+        'The MPC comes with built-in kits in different genres — hip-hop, trap, lo-fi, drum & bass. Pick one you like and you\'re ready to tap out a beat.'
+      ],
+      check: {
+        q: 'What\'s a kit?',
+        choices: [
+          'A guitar accessory',
+          'A folder of sounds, each assigned to a pad',
+          'The cable that connects to your speakers'
+        ],
+        right: 1
+      },
+      cta: 'Locked' },
+
+    { id: 'm-mpc-05', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 05 of 12',
+      title: 'BPM — the tempo',
+      body: [
+        '<strong>BPM = Beats Per Minute.</strong> How fast the beat is.',
+        '<strong>Hip-hop:</strong> 70-100 BPM. Slow, head-noddy.',
+        '<strong>Trap:</strong> 130-170 BPM technically, but feels slow because the snare hits HALF as often (half-time).',
+        '<strong>Rock:</strong> around 120.',
+        '<strong>House/EDM:</strong> 120-128.',
+        'Set BPM BEFORE you record. Change it later and your beat sounds weird.'
+      ],
+      check: {
+        q: 'BPM stands for:',
+        choices: [
+          'Beats Per Measure',
+          'Beats Per Minute',
+          'Bass Played Manually'
+        ],
+        right: 1
+      },
+      cta: 'Got it' },
+
+    { id: 'm-mpc-06', kind: 'topic', type: 'speedread', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 06 of 12',
+      title: 'Speed-read: J Dilla',
+      passage: {
+        paragraphs: [
+          'James DeWitt Yancey — known as J Dilla — was a producer from Detroit who changed hip-hop production forever. He died in 2006 at age 32 from a rare blood disease, but his work shaped every beat-maker who came after him.',
+          'His weapon was the Akai MPC 3000 — the great-grandfather of the MPC ONE you\'re holding. He used it for almost his entire career. He could have used any tool. He picked the MPC.',
+          'Dilla\'s thing was DRUNK timing. He\'d tap out drums slightly off the grid — kick slightly early, snare slightly late. Everyone else quantized everything to perfect timing. Dilla did the opposite. His beats SWUNG.',
+          'Producers like Kanye, Pharrell, and 9th Wonder all studied Dilla\'s timing. The "Dilla shuffle" is now its own thing. He took the most precise machine on earth and made it feel HUMAN. That\'s craft.'
+        ],
+        srComprehension: [
+          { q: 'What MPC did J Dilla use?', choices: ['MPC ONE', 'MPC 3000', 'MPC X'], right: 1 },
+          { q: 'What was Dilla\'s signature?', choices: ['Perfect quantized timing', 'Slightly-off "drunk" timing that swung', 'Loud kicks'], right: 1 },
+          { q: 'Lesson from the passage?', choices: ['Always quantize', 'Take a precise machine and make it feel human', 'Buy expensive gear'], right: 1 }
+        ]
+      }
+    },
+
+    { id: 'm-mpc-07', kind: 'topic', type: 'typing', minutes: 3, subject: 'MPC ONE', tag: 'MPC · 07 of 12',
+      title: 'Type it fast',
+      typingTarget: 'A kit is a folder of sounds. The pads play them. Tempo is BPM. Make a beat in 4 bars.' },
+
+    { id: 'm-mpc-08', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 08 of 12',
+      title: 'Mental practice — your first 4 bars',
+      body: [
+        'Imagine you\'re about to record. You set BPM to 90 (chill hip-hop). The pads are loaded with a kit. The metronome is clicking.',
+        'What do you record first?',
+        '(The foundation of almost every beat is the kick drum. Without a kick, nothing else has anywhere to land.)'
+      ],
+      check: {
+        q: 'First thing to tap out?',
+        choices: [
+          'A full melody you made up',
+          'The kick drum on beat 1 of each bar — that\'s the foundation',
+          'Random pads to "feel it out"'
+        ],
+        right: 1
+      },
+      cta: 'Got it' },
+
+    { id: 'm-mpc-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 09 of 12',
+      title: 'Quantize — the magic forgiveness button',
+      body: [
+        'If your tapping is sloppy (it will be), QUANTIZE snaps every note to the nearest beat. Like spell-check for drumming.',
+        'Use it the first 100 times you record. Once your hands get tighter, turn it off and add feel — like J Dilla\'s "drunk timing." But not yet.',
+        'For your first beat: quantize is ON. Period.'
+      ],
+      check: {
+        q: 'What does quantize do?',
+        choices: [
+          'Makes your beat louder',
+          'Snaps your notes to the nearest beat — fixes sloppy timing',
+          'Erases your last note'
+        ],
+        right: 1
+      },
+      cta: 'Locked' },
+
+    { id: 'm-mpc-10', kind: 'topic', type: 'writing-mini', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 10 of 12',
+      eyebrow: 'Quick Write · MPC',
+      label: 'Spec your first beat',
+      prompt: 'Write the genre + BPM + 3 sounds you\'ll use. Two sentences. (Example: "Lo-fi hip-hop at 80 BPM. Soft kick, dusty snare, a vinyl hi-hat.")',
+      minSentences: 2 },
+
+    { id: 'm-mpc-11', kind: 'topic', type: 'concept', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 11 of 12',
+      title: 'The 4-bar structure',
+      body: [
+        '<strong>Bar 1:</strong> kick on beats 1 + 3. Snare on beats 2 + 4. That\'s the classic boom-bap pattern.',
+        '<strong>Bar 2:</strong> same pattern. Repetition locks it in.',
+        '<strong>Bar 3:</strong> add hi-hat on every 8th note (between every beat). Texture.',
+        '<strong>Bar 4:</strong> pull the snare on beat 4. Leave kick + hi-hat. That little gap pulls the listener back into bar 1.',
+        'Loop those 4 bars. Now you have a beat.'
+      ],
+      check: {
+        q: 'Where does the snare typically hit in boom-bap?',
+        choices: [
+          'Beats 1 and 3',
+          'Beats 2 and 4',
+          'Never — snares are optional'
+        ],
+        right: 1
+      },
+      cta: 'Got the structure' },
+
+    { id: 'm-mpc-12', kind: 'topic', type: 'writing-mini', minutes: 6, subject: 'MPC ONE', tag: 'MPC · 12 of 12',
+      eyebrow: 'Apply it · MPC',
+      label: 'Make your first beat',
+      prompt: 'Go to your MPC. Power it on. Pick a kit. Set BPM. Tap out a 4-bar beat using the structure from step 11. Save it. (Bonus: name it.)',
+      minSentences: 1 },
+
+    // ===== FRAME 2: Show Mom or Dad (after the full day) =====
     { id: 'showoff-tue', kind: 'topic', type: 'showdad', title: 'Show Mom or Dad what you learned', minutes: 6 },
 
-    // ===== FRAME 3: Report card =====
+    // ===== FRAME 3: Report card (end of day) =====
     { id: 'report-tue', kind: 'drill', type: 'report-card', title: 'Tuesday — report card', minutes: 2 }
   ]
 };
