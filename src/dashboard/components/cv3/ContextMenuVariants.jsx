@@ -178,39 +178,80 @@ const I = {
 }
 
 export function MissionContextMenu({
-  open, x, y, mission, projects = [], mobile = false, onClose,
-  onOpen, onOpenDoc, onMarkActive, onMoveTo, onArchive,
+  open, x, y, mission, projects = [], folders = [], mobile = false, onClose,
+  onAgentPrompt, onRename, onDelete, onCreateSubfolder, onMoveToFolder,
 }) {
   const [stage, setStage] = useStage('root', open)
   if (!open || !mission) return null
-  if (stage === 'projects') {
-    const items = (projects || []).filter(pr => pr?.slug)
-      .sort((a, b) => (a.name || a.slug).localeCompare(b.name || b.slug))
-      .map(pr => ({
-        key: pr.slug, label: pr.name || pr.slug,
-        testId: `mission-ctx-moveto-${pr.slug}`,
-        disabled: (mission.project || '').toLowerCase() === String(pr.slug).toLowerCase(),
-        onSelect: () => onMoveTo?.(mission, pr),
-      }))
-    if (!items.length) items.push({ key: 'none', label: 'No projects available', disabled: true })
-    return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? `Move ${mission.slug || mission.name} to…` : undefined} testId="mission-ctx-project-picker" />
-  }
-  if (stage === 'docs') {
-    const items = ['BUILD', 'VISION', 'CONTEXT', 'RESEARCH'].map(kind => ({
-      key: kind, label: kind, icon: I.doc,
-      testId: `mission-ctx-doc-${kind}`,
-      onSelect: () => onOpenDoc?.(mission, kind),
+  // Sub-stage for "Move to subfolder"
+  if (stage === 'folders') {
+    const items = (folders || []).map(f => ({
+      key: f.slug, label: f.name || f.slug, icon: I.move,
+      testId: `mission-ctx-movefolder-${f.slug}`,
+      onSelect: () => onMoveToFolder?.(mission, f),
     }))
-    return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? `Open ${mission.slug || mission.name} doc…` : undefined} testId="mission-ctx-doc-picker" />
+    items.unshift({ key: '__root', label: '(no folder — top level)', icon: I.move,
+      testId: 'mission-ctx-movefolder-root',
+      onSelect: () => onMoveToFolder?.(mission, null),
+    })
+    return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? `Move ${mission.name || mission.slug} to subfolder…` : undefined} testId="mission-ctx-folder-picker" />
   }
+  const name = mission.name || mission.slug || 'this mission'
+  const ref = '`' + (mission.slug || name) + '`'
   const items = [
-    { key: 'open', label: 'Open mission', icon: I.open, testId: 'mission-ctx-open', onSelect: () => onOpen?.(mission) },
-    { key: 'docs', label: 'Open doc…', icon: I.doc, hasSubmenu: true, testId: 'mission-ctx-docs', onSelect: () => { setStage('docs'); return 'keep' } },
-    { key: 'active', label: 'Mark active', icon: I.pin, testId: 'mission-ctx-active', onSelect: () => onMarkActive?.(mission) },
-    { key: 'move', label: 'Move to project…', icon: I.move, hasSubmenu: true, testId: 'mission-ctx-move', onSelect: () => { setStage('projects'); return 'keep' } },
-    { key: 'archive', label: 'Archive', icon: I.archive, variant: 'danger', testId: 'mission-ctx-archive', onSelect: () => onArchive?.(mission) },
+    { key: 'brief-me', label: 'Brief me', icon: I.open, testId: 'mission-ctx-brief',
+      onSelect: () => onAgentPrompt?.('Brief me on mission ' + ref + '. What is the state and what is blocked?') },
+    { key: 'whats-next', label: "What's next", icon: I.open, testId: 'mission-ctx-whats-next',
+      onSelect: () => onAgentPrompt?.('What is next on mission ' + ref + '? Propose the next round.') },
+    { key: 'rename', label: 'Rename', icon: I.copy, testId: 'mission-ctx-rename',
+      onSelect: () => onRename?.(mission) },
+    { key: 'create-subfolder', label: 'Create subfolder…', icon: I.move, testId: 'mission-ctx-create-subfolder',
+      onSelect: () => onCreateSubfolder?.(mission) },
+    { key: 'move-to-folder', label: 'Move to subfolder…', icon: I.move, hasSubmenu: true, testId: 'mission-ctx-move-folder',
+      onSelect: () => { setStage('folders'); return 'keep' } },
+    { key: 'delete', label: 'Delete', icon: I.archive, variant: 'danger', testId: 'mission-ctx-delete',
+      onSelect: () => onDelete?.(mission) },
   ]
-  return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? (mission.name || mission.slug) : undefined} testId="mission-ctx-root" />
+  return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? name : undefined} testId="mission-ctx-root" />
+}
+
+
+
+// ProjectContextMenu — Rename / Create subfolder / Move to subfolder / Delete (direct)
+// + Brief me (agent-routed). Used in Drawer left rail + ContextNav top pills.
+export function ProjectContextMenu({ open, x, y, project, folders = [], mobile = false, onClose,
+  onAgentPrompt, onRename, onDelete, onCreateSubfolder, onMoveToFolder }) {
+  const [stage, setStage] = useStage('root', open)
+  if (!open || !project) return null
+
+  if (stage === 'folders') {
+    const items = (folders || []).map(f => ({
+      key: f.slug, label: f.name || f.slug, icon: I.move,
+      testId: `project-ctx-movefolder-${f.slug}`,
+      onSelect: () => onMoveToFolder?.(project, f),
+    }))
+    items.unshift({ key: '__root', label: '(no folder — top level)', icon: I.move,
+      testId: 'project-ctx-movefolder-root',
+      onSelect: () => onMoveToFolder?.(project, null),
+    })
+    return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? `Move ${project.name || project.slug} to subfolder…` : undefined} testId="project-ctx-folder-picker" />
+  }
+
+  const name = project.name || project.slug || 'this project'
+  const ref = '`' + (project.slug || name) + '`'
+  const items = [
+    { key: 'brief-me', label: 'Brief me', icon: I.open, testId: 'project-ctx-brief',
+      onSelect: () => onAgentPrompt?.('Brief me on project ' + ref + '. What is the state across its missions?') },
+    { key: 'rename', label: 'Rename', icon: I.copy, testId: 'project-ctx-rename',
+      onSelect: () => onRename?.(project) },
+    { key: 'create-subfolder', label: 'Create subfolder…', icon: I.move, testId: 'project-ctx-create-subfolder',
+      onSelect: () => onCreateSubfolder?.(project) },
+    { key: 'move-to-folder', label: 'Move to subfolder…', icon: I.move, hasSubmenu: true, testId: 'project-ctx-move-folder',
+      onSelect: () => { setStage('folders'); return 'keep' } },
+    { key: 'delete', label: 'Delete', icon: I.archive, variant: 'danger', testId: 'project-ctx-delete',
+      onSelect: () => onDelete?.(project) },
+  ]
+  return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? name : undefined} testId="project-ctx-root" />
 }
 
 // Agent-routed Research / Summarize / Pull quotes + utility Copy path / Reveal.
