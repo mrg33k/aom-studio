@@ -216,11 +216,12 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <div
             style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: 22,
-              fontWeight: 400,
+              fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+              fontSize: 18,
+              fontWeight: 600,
               color: C.text,
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.005em',
+              lineHeight: 1.1,
               flex: 1,
             }}
           >
