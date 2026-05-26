@@ -1667,15 +1667,13 @@ export default function RightMenu() {
     return adds.length === 0 ? missionsFlat : [...adds, ...missionsFlat]
   }, [missionsFlat, pendingMissions])
 
-  // R7-D: agent / EA / super-agent room → snap pill back to 'all'.
-  // Otherwise: if in a project room, follow that project's pill.
+  // R7-D: always show 'all' grouped projects view (hierarchical with collapsible
+  // project folders). Agent / EA / super-agent rooms also snap to 'all'.
+  // 2026-05-26: user feedback — missions should always show organized by project
+  // with subfolders collapsed by default, not filtered to a single project.
   useEffect(() => {
-    if (inAgentRoom) {
-      setActivePill('all')
-    } else if (currentProject && projectsList.includes(currentProject)) {
-      setActivePill(currentProject)
-    }
-  }, [inAgentRoom, currentProject, projectsList])
+    setActivePill('all')
+  }, [])
 
   // R8-2 / R10-fix: recent rooms strip — last 10 distinct rooms visited, per
   // world. Tracks ANY navigation: mission rooms, project rooms, and agent rooms.

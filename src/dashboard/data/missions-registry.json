@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T04:43:45.185Z",
+  "generated_at": "2026-05-26T06:05:42.901Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -478,6 +478,20 @@
       "path": "corner/missions/right-menu"
     },
     {
+      "slug": "corner:room-canon",
+      "raw_slug": "room-canon",
+      "folder_name": "room-canon",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Room Canon",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/room-canon"
+    },
+    {
       "slug": "corner:room-header",
       "raw_slug": "room-header",
       "folder_name": "room-header",
@@ -630,6 +644,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/support"
+    },
+    {
+      "slug": "corner:tenant-health",
+      "raw_slug": "tenant-health",
+      "folder_name": "tenant-health",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Tenant Health",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/tenant-health"
     },
     {
       "slug": "corner:tenant-isolation",
@@ -1654,6 +1682,20 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
     },
     {
+      "slug": "corner:support",
+      "raw_slug": "support",
+      "folder_name": "support",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Support",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/corner/missions/support"
+    },
+    {
       "slug": "corner:theme-and-density",
       "raw_slug": "theme-and-density",
       "folder_name": "theme-and-density",
@@ -2287,8 +2329,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 51,
-      "in_flight": 51,
+      "total": 54,
+      "in_flight": 54,
       "done": 0
     },
     {
