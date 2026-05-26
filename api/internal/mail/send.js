@@ -81,8 +81,14 @@ async function fetchSignature(accessToken) {
   }
 }
 
-function buildRfc822({ from, to, cc, bcc, subject, bodyHtml, bodyText, inReplyTo, references }) {
-  const boundary = `=_corner_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`
+// Attachment input: { filename, mime_type, data_base64 } (base64 already encoded).
+// When attachments[] present, wraps the multipart/alternative body inside a
+// multipart/mixed envelope so Gmail treats each attachment as a real file.
+function buildRfc822({ from, to, cc, bcc, subject, bodyHtml, bodyText, inReplyTo, references, attachments }) {
+  const altBoundary = `=_corner_alt_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`
+  const mixedBoundary = `=_corner_mix_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`
+  const hasAttachments = Array.isArray(attachments) && attachments.length > 0
+
   const headers = []
   headers.push(`From: ${from}`)
   if (to) headers.push(`To: ${to}`)
@@ -92,21 +98,49 @@ function buildRfc822({ from, to, cc, bcc, subject, bodyHtml, bodyText, inReplyTo
   headers.push('MIME-Version: 1.0')
   if (inReplyTo) headers.push(`In-Reply-To: ${inReplyTo}`)
   if (references) headers.push(`References: ${references}`)
-  headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`)
+  headers.push(
+    hasAttachments
+      ? `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`
+      : `Content-Type: multipart/alternative; boundary="${altBoundary}"`
+  )
   const lines = [headers.join('\r\n'), '']
-  lines.push(`--${boundary}`)
+
+  if (hasAttachments) {
+    lines.push(`--${mixedBoundary}`)
+    lines.push(`Content-Type: multipart/alternative; boundary="${altBoundary}"`)
+    lines.push('')
+  }
+  lines.push(`--${altBoundary}`)
   lines.push('Content-Type: text/plain; charset="UTF-8"')
   lines.push('Content-Transfer-Encoding: 7bit')
   lines.push('')
   lines.push(bodyText)
   lines.push('')
-  lines.push(`--${boundary}`)
+  lines.push(`--${altBoundary}`)
   lines.push('Content-Type: text/html; charset="UTF-8"')
   lines.push('Content-Transfer-Encoding: 7bit')
   lines.push('')
   lines.push(bodyHtml)
   lines.push('')
-  lines.push(`--${boundary}--`)
+  lines.push(`--${altBoundary}--`)
+
+  if (hasAttachments) {
+    for (const att of attachments) {
+      const name = String(att.filename || 'attachment.bin').replace(/"/g, '')
+      const mime = String(att.mime_type || 'application/octet-stream')
+      const b64 = String(att.data_base64 || '')
+      const wrapped = b64.replace(/\s+/g, '').match(/.{1,76}/g)?.join('\r\n') || ''
+      lines.push('')
+      lines.push(`--${mixedBoundary}`)
+      lines.push(`Content-Type: ${mime}; name="${name}"`)
+      lines.push('Content-Transfer-Encoding: base64')
+      lines.push(`Content-Disposition: attachment; filename="${name}"`)
+      lines.push('')
+      lines.push(wrapped)
+    }
+    lines.push('')
+    lines.push(`--${mixedBoundary}--`)
+  }
   return lines.join('\r\n')
 }
 
@@ -145,6 +179,8 @@ export default async function handler(req, res) {
     inReplyTo,
     references,
     includeSignature,
+    attachments,      // optional: [{filename, mime_type, data_base64}, ...]
+    draft,            // optional: true -> save to Gmail Drafts instead of sending
   } = payload
 
   if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
@@ -176,7 +212,36 @@ export default async function handler(req, res) {
     bodyText: finalBodyText,
     inReplyTo: inReplyTo || '',
     references: references || '',
+    attachments: Array.isArray(attachments) ? attachments : [],
   })
+
+  // Draft mode: save to Gmail Drafts instead of sending. Same RFC 822 body
+  // shape; Gmail's drafts.create wraps it in { message: { raw, threadId } }.
+  // Lets the EA park a draft for the user to review before they hit send.
+  if (draft) {
+    const draftResp = await gmailFetch(creds.accessToken, '/drafts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: {
+          raw: encB64Url(raw),
+          threadId: threadId || undefined,
+        },
+      }),
+    })
+    if (!draftResp.ok) {
+      const text = await draftResp.text().catch(() => '')
+      return res.status(502).json({ error: 'gmail-draft', status: draftResp.status, detail: text.slice(0, 300) })
+    }
+    const draftRow = await draftResp.json()
+    return res.status(200).json({
+      ok: true,
+      draft: true,
+      id: draftRow.id,
+      messageId: draftRow.message?.id,
+      threadId: draftRow.message?.threadId,
+    })
+  }
 
   const sendResp = await gmailFetch(creds.accessToken, '/messages/send', {
     method: 'POST',
