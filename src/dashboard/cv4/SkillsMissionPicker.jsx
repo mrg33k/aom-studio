@@ -180,11 +180,11 @@ export default function SkillsMissionPicker({ skill, worldId, missions: missions
           </div>
           <div
             style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: 22,
-              fontWeight: 400,
+              fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+              fontSize: 18,
+              fontWeight: 600,
               color: C.text,
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.005em',
               lineHeight: 1.2,
             }}
           >
@@ -216,7 +216,7 @@ export default function SkillsMissionPicker({ skill, worldId, missions: missions
               padding: '8px 12px',
               borderRadius: 8,
               border: `1px solid ${C.border}`,
-              background: C.dim || 'rgba(255,255,255,0.04)',
+              background: C.bg2 || 'rgba(255,255,255,0.04)',
               color: C.text,
               fontFamily: "'Inter', sans-serif",
               fontSize: 13,
