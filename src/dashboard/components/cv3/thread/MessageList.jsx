@@ -408,6 +408,7 @@ function MessageList({ roomType = 'agent' }) {
   } = useChatMessagesCtx()
   const {
     sending, setSending, isAgentTyping, setIsAgentTyping, sendAgentTextRef,
+    sendAgentText, sendProjectText,
   } = useChatSendCtx()
   const { chatSearchOpen, chatSearchResults } = useChatSearchCtx()
   const {
@@ -1319,6 +1320,64 @@ function MessageList({ roomType = 'agent' }) {
                       </div>
                     )
                   })()}
+                  {/* corner:suggested-responses — tap-to-send chips under the
+                       assistant bubble. Quiet pills, hover to lift, click to
+                       send the chip text as the user's next message. Absence
+                       of metadata.chips => agent opted out for this reply. */}
+                  {!isUser && Array.isArray(msg.metadata?.chips) && msg.metadata.chips.length > 0 && (
+                    <div
+                      data-chips
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 6,
+                        marginTop: 8,
+                      }}
+                    >
+                      {msg.metadata.chips.slice(0, 4).map((chip, ci) => {
+                        const text = typeof chip === 'string' ? chip.trim() : ''
+                        if (!text) return null
+                        return (
+                          <button
+                            key={ci}
+                            type="button"
+                            data-testid="suggested-response-chip"
+                            onClick={() => {
+                              try {
+                                const fn = isProject ? sendProjectText : sendAgentText
+                                fn?.(text)
+                              } catch (_) {}
+                            }}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 14,
+                              border: '1px solid rgba(255,255,255,0.14)',
+                              background: 'rgba(255,255,255,0.04)',
+                              color: '#CBD5E1',
+                              fontSize: 12,
+                              lineHeight: 1.4,
+                              fontFamily: "'Inter', sans-serif",
+                              letterSpacing: '-0.005em',
+                              cursor: 'pointer',
+                              transition: 'background 120ms ease, border-color 120ms ease, color 120ms ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.24)'
+                              e.currentTarget.style.color = '#E2E8F0'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'
+                              e.currentTarget.style.color = '#CBD5E1'
+                            }}
+                          >
+                            {text}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                   {/* Agent rooms: other-user name below bubble. */}
                   {!isProject && isUser && msg.user_name && msg.user_name !== displayName && (
                     <div style={{
