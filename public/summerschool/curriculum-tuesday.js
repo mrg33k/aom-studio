@@ -1,28 +1,48 @@
-/* Summer School — TUESDAY curriculum
+/* Summer School — TUESDAY curriculum (reshaped 2026-05-26)
  *
- * Day 2 in the genius track. Spine: reading, writing, math, Roblox/coding +
- * a kid-founder story + 4 named "tricks" he can carry forward.
+ * Week-level frame: one named trick per day, four subjects per day, ~40 internal
+ * beats. Tuesday's trick = SPINE WORDS (reading). The other three named tricks
+ * (Chunking, Question Opener, Slow-Fast-Slow) move to Wed/Thu/Fri.
  *
- * Trick-arc pedagogy: every spelling/writing/reading/presenting block teaches
- * ONE named technique, demos it, has him try it once, then uses it on the
- * thing he actually hates. Tomorrow recalls today's tricks.
+ * Tuesday's four subjects:
+ *   1. Reading      — Spine Words trick + Robert Nay passage in three chunks
+ *   2. Math         — Constant of Proportionality (video + summary + practice)
+ *   3. Roblox Dev   — Why every Roblox game has a leaderboard (concept)
+ *   4. Entrepreneurship — Build-A-Game Day 2: pitch the game named Monday
  *
- * Curriculum source notes:
- *   - Robert Nay / Bubble Ball facts verified via Wikipedia, HuffPost (2011),
- *     Kotaku (2011), and Forbes 30 Under 30 2012 listing.
- *   - Khan Academy video qGTYSAeLTOE = "Intro to rates" (already shipped Monday).
- *     For Tuesday's deeper math, queueing constant-of-proportionality variant —
- *     will verify embeddability in the walker before ship.
- *   - Roblox-dev micro-lesson uses leaderboard concept (universal in Roblox
- *     games, instantly relatable, intro to game-state thinking).
+ * Math video: rzDQ_ZIpi84 (Khan Academy 7th grade, "Constant of proportionality
+ * from tables"). Verified embeddable 2026-05-26. Replaces the previous dead
+ * video ID (1qO3KP9XpNo returned "Video unavailable").
+ *
+ * Pedagogy: one trick today, applied across reading + writing-on-paper.
+ * Pitch opener is just "pull them in" today; Thursday we'll come back to it
+ * with the named Question Opener trick and upgrade the opener.
  */
 
 window.CURRICULUM = window.CURRICULUM || {};
 window.CURRICULUM.tuesday = {
   weekOf: '2026-06-09',
   day: 'tuesday',
-  theme: 'CRAFT + STORY',
-  themeDesc: 'Reading, writing, math, code — and a 14-year-old who beat Angry Birds.',
+  theme: 'SPINE WORDS',
+  themeDesc: 'One trick today — Spine Words. Plus math, code, and the pitch.',
+
+  // ===== Day-specific welcome content =====
+  // The welcome renderer reads this if present and tailors the orientation
+  // to today. Without this, the welcome block would render Monday's intro
+  // (Mikaila / Arduino / Unit Rates) on Tuesday.
+  welcomeContent: {
+    dayLabel: 'Day 2',
+    showParentNote: false,
+    bullets: [
+      "<strong>The Spine Words trick</strong> — scan a passage for names, numbers, and big words FIRST. Reading goes 2x faster.",
+      "The story of <strong>Robert Nay</strong> — a 14-year-old who taught himself to code at the public library and beat Angry Birds.",
+      "Today's 7th-grade math concept — <strong>Constant of Proportionality</strong> — the trick to find k by asking what y is when x is 1.",
+      "Why every Roblox game has a <strong>leaderboard</strong> — and what choosing the score says about the game you're really making.",
+      "<strong>Build-A-Game Day 2</strong> — pitch the game you named yesterday. By Friday you'll have a real game-design doc.",
+      "Plus drills throughout the day — all themed around what you just read."
+    ],
+    howItWorks: "One trick today (Spine Words). It comes back tomorrow when you meet the next one. The pieces stack."
+  },
 
   // ===== The kid-founder anchor passage =====
   // Real story, age-appropriate, lands the "you can ship something at 14" punch
@@ -73,16 +93,6 @@ window.CURRICULUM.tuesday = {
     ]
   },
 
-  // ===== Spelling words for Tuesday — pulled from today's passage =====
-  // Bigger pool, no in-round repeats. Drilled with the Chunking trick.
-  spelling: {
-    pool: ['library', 'physics', 'puzzle', 'obstacles', 'downloaded', 'programming', 'platform', 'puzzle', 'million', 'company', 'fifteen', 'youngest', 'special', 'background', 'taught', 'released'],
-    // Distinct lists per round — no repeats within a round
-    round1: ['library', 'physics', 'puzzle', 'obstacles', 'million', 'fifteen'],
-    round2: ['programming', 'downloaded', 'youngest', 'company', 'special', 'background'],
-    round3: ['taught', 'released', 'library', 'programming', 'puzzle', 'company']
-  },
-
   // ===== Math: Constant of Proportionality =====
   // Trick: "When y = kx, k is what y equals when x = 1. Look for k by asking 'what's y when x is 1?'"
   mathLesson: {
@@ -90,8 +100,11 @@ window.CURRICULUM.tuesday = {
     domain: 'Ratios & Proportional Relationships',
     title: 'Constant of Proportionality',
     goal: 'Find the constant k in a proportional relationship y = kx.',
-    // Will verify in walker; falls back to summary if embed fails
-    videoId: '1qO3KP9XpNo',
+    // Verified embed 2026-05-26: Khan Academy 7th grade, "Constant of
+    // proportionality from tables" — matches the table examples in the
+    // summary below (pizza slices, hours of work). Previous ID
+    // 1qO3KP9XpNo returned "Video unavailable" — replaced.
+    videoId: 'rzDQ_ZIpi84',
     summary: [
       "When two things are PROPORTIONAL, they grow together at a fixed rate. If you double one, you double the other. That fixed rate has a name: the constant of proportionality. We call it k.",
       "Every proportional relationship can be written as y = kx. The 'y' is one quantity. The 'x' is the other. The 'k' is the constant that ties them together. For example: if a pizza shop sells 3 slices for $6, that's $2 per slice. The constant is 2. The equation is y = 2x, where y is dollars and x is slices.",
@@ -112,8 +125,9 @@ window.CURRICULUM.tuesday = {
     ]
   },
 
-  // ===== The 4 named tricks for hated subjects =====
-  // Each one becomes its own trick-arc block. Tomorrow's lessons recall them.
+  // ===== Today's one named trick: Spine Words (reading) =====
+  // The other three named tricks (Chunking / Question Opener / Slow-Fast-Slow)
+  // belong to Wed / Thu / Fri respectively. One trick per day = it sticks.
   tricks: {
     reading: {
       name: 'The Spine Words trick',
@@ -124,62 +138,25 @@ window.CURRICULUM.tuesday = {
       tryPrompt: 'Look at the next paragraph for 5 seconds. Just scan. What are the SPINE words?',
       tryAnswerHint: 'Names, places, numbers, the big bold idea.',
       showoffPrompt: 'Read chunk 3 of the Robert Nay passage. Use the Spine Words trick FIRST. Time yourself.',
-    },
-
-    spelling: {
-      name: 'The Chunking trick',
-      subject: 'spelling',
-      hatedBecause: 'Long words look like one giant blob. You guess at them.',
-      trick: 'Break the word into THREE-LETTER BITES. Sound out each chunk. Then put them back together. Try it: "accessory" = ac-ces-so-ry. "Library" = lib-rar-y. "Programming" = pro-gram-ming. Once you can chunk it, you can spell it.',
-      demoText: 'Watch: O-B-S-T-A-C-L-E-S. Chunked: OB-STA-CLES. Three bites. Now you can spell obstacles without guessing.',
-      tryPrompt: 'Chunk this word into bites you can pronounce: "downloaded"',
-      tryAnswerHint: 'DOWN-LOAD-ED. Three chunks.',
-      showoffPrompt: 'Spell 6 hard words from the passage using the Chunking trick.',
-    },
-
-    writing: {
-      name: 'The Question Opener trick',
-      subject: 'writing',
-      hatedBecause: 'Staring at a blank page sucks. You don\'t know how to start.',
-      trick: 'Open your writing with a QUESTION. Any question. The reader has to keep reading to find the answer — that\'s the hook. "What if a 14-year-old could beat Angry Birds?" "Why does every Roblox game have a leaderboard?" "How much would you pay to be the best at one thing?" Questions pull the reader in. Statements don\'t.',
-      demoText: 'Boring opener: "I made a game called Skyfall." Question opener: "What if you could parkour across rooftops with your friends in real time?" Same game, totally different pull.',
-      tryPrompt: 'Rewrite this opener as a question: "Roblox studios make money from in-game purchases."',
-      tryAnswerHint: 'Try: "How does a Roblox studio actually make money — and how much of your $10 do they really see?"',
-      showoffPrompt: 'Write a 5-sentence pitch for your Roblox game. The FIRST sentence must be a question.',
-    },
-
-    presenting: {
-      name: 'The Slow-Fast-Slow trick',
-      subject: 'presenting',
-      hatedBecause: 'Talking out loud feels awkward. You rush through to get it over with.',
-      trick: 'When you read or present out loud, change your speed on purpose. SLOW down on the FIRST sentence (gives weight). SPEED UP through the boring middle (you don\'t lose people). SLOW DOWN again on the punch line (lands the point). Same words, totally different impact. Try it on any sentence — you\'ll hear it.',
-      demoText: 'Fast monotone: "Robert Nay was 14 when he beat Angry Birds with a game he made in a month."  \nSlow-fast-slow: "Robert Nay was 14... when he beat Angry Birds... with a game he made — IN ONE MONTH." Big difference. Same sentence.',
-      tryPrompt: 'Read this out loud twice. Once flat. Once with slow-fast-slow: "He didn\'t have any special background. He just decided to start before he was ready."',
-      tryAnswerHint: 'Pause for a half-beat after "background" and before "start." Slow down on "before he was ready."',
-      showoffPrompt: 'Record yourself reading your Roblox pitch out loud using the Slow-Fast-Slow trick.',
     }
   },
 
-  // ===== Handwriting page =====
-  // He copies the 4 trick names + rules onto paper. Photographs. Uploads.
-  // Cements the tricks AND practices handwriting.
+  // ===== Handwriting page (slimmed to today's one trick) =====
+  // He copies the Spine Words rule onto paper. Photographs. Uploads.
+  // One trick today — fewer lines, more focus.
   handwriting: {
-    title: 'Today\'s 4 tricks — write them on paper',
-    intro: 'Grab a piece of paper and a pen. Write the 4 tricks you learned today. Take your time. When you\'re done, take a photo and upload it below.',
+    title: 'Today\'s trick — write it on paper',
+    intro: 'Grab a piece of paper and a pen. Write down the Spine Words trick in your own words. Take your time — neat lines. When you\'re done, take a photo and upload it below.',
     lines: [
-      'Reading: the SPINE WORDS trick — scan for names, numbers, bold words FIRST.',
-      'Spelling: the CHUNKING trick — break long words into 3-letter bites.',
-      'Writing: the QUESTION OPENER trick — start with a question, the reader has to keep going.',
-      'Presenting: the SLOW-FAST-SLOW trick — slow on first sentence, fast through middle, slow on punch.'
+      'The SPINE WORDS trick: before I read, I SCAN for names, numbers, and bold words. Those are the SPINE — they tell me what the passage is about. Then when I read for real, I\'m filling in details, not searching for them.'
     ],
-    why: 'Writing them by hand makes them stick in your brain in a way typing never does. Plus your handwriting gets reps.',
+    why: 'Writing it by hand makes it stick in your brain in a way typing never does. Plus your handwriting gets reps.',
     showoffPrompt: 'Take a photo of your paper. Upload it below.',
   },
 
   // ===== Roblox dev micro-lesson =====
   // Real concept: leaderboards. Why every Roblox game has one.
-  // No embedded video tonight; concept only. Verified Roblox Education video
-  // hunt is a Wednesday queue item.
+  // Concept-only today; the Studio walkthrough comes later this week.
   robloxLesson: {
     title: 'Why every Roblox game has a leaderboard',
     paragraphs: [
@@ -198,21 +175,23 @@ window.CURRICULUM.tuesday = {
   },
 
   // ===== Build-A-Game Day 2 beat =====
+  // Pitch the game named Monday. Today the opener just needs to be interesting.
+  // Thursday's Question Opener trick will come back and upgrade it.
   bagBeat: {
     day: 'tue',
     key: 'pitch',
-    title: 'Day 2: Pitch your game with the Question Opener trick',
-    intro: 'Yesterday you named your game. Today you pitch it — using one of the tricks you learned this morning.',
-    whatIsPitch: 'Reminder: a pitch is a short, exciting way to sell your idea. The point is to make someone want to play your game in under 30 seconds.',
+    title: 'Day 2: Pitch your game',
+    intro: 'Yesterday you named your game. Today you pitch it. Get someone excited about it in under 30 seconds.',
+    whatIsPitch: 'A pitch is a short, exciting way to sell your idea. The point is to make someone want to play your game by the time you stop talking.',
     template: [
-      { label: 'Opener (must be a QUESTION)', hint: 'Use the Question Opener trick. Pull the reader in with something they have to read further to answer. "What if..." / "Why does..." / "How would you..."' },
+      { label: 'Opener', hint: 'Pull them in fast. One sentence that makes someone want to hear more. (We\'ll come back Thursday and upgrade this with a special trick.)' },
       { label: 'The world', hint: 'One sentence on where the game takes place. Be specific.' },
       { label: 'What you do', hint: 'One sentence on the action — what does the player actually do moment-to-moment?' },
       { label: 'What makes it different', hint: 'One sentence on why this isn\'t just another game like all the others.' },
       { label: 'The hook line', hint: 'One last sentence that makes someone want to play it RIGHT NOW.' }
     ],
     why: 'Tomorrow we\'ll add a Level 1 design to it. By Friday you\'ll have a real game-design doc.',
-    help: 'Write each part on paper. Then RECORD YOURSELF READING THE PITCH out loud using the Slow-Fast-Slow trick. (Bonus stars if you do.)'
+    help: 'Write each part on paper. Then read your pitch out loud once. (Bonus stars if you record it.)'
   },
 
   // ===== Today's typing target =====
@@ -234,35 +213,33 @@ window.CURRICULUM.tuesday = {
     { word: 'downloaded', clue: 'Got from the internet onto your device' }
   ],
 
-  // ===== TUESDAY BLOCK PLAN (~14 blocks, ~3.5 hours) =====
-  // Trimmed from Monday's 47. Every block earns its keep. Trick blocks anchor
-  // the day, real content fills the rest, drills are tied to today's content
-  // (not abstract repetition).
+  // ===== TUESDAY BLOCK PLAN — ~40 internal beats across 4 subjects =====
+  // Subject breakdown:
+  //   Reading (Spine Words trick + Robert Nay in 3 chunks) ≈ 14 beats
+  //   Math (video + summary + 3 concept Qs + 5 practice)   ≈ 9 beats
+  //   Roblox Dev (4 paragraphs + 3 Qs + AI seed)           ≈ 5 beats
+  //   Entrepreneurship (BAG Day 2 pitch)                   ≈ 6 beats
+  //   Frame (welcome + handwriting + show-dad + splash)    ≈ 6 beats
+  //                                                       = ~40 beats
   blocks: [
     { id: 'welcome-tue',    kind: 'drill', type: 'welcome',          title: 'Welcome to Tuesday',                minutes: 2  },
 
-    { id: 'trick-reading',  kind: 'topic', type: 'trick-arc',        title: 'Reading — Spine Words',             minutes: 10, trickKey: 'reading' },
+    { id: 'trick-reading',  kind: 'topic', type: 'trick-arc',        title: 'Reading — Spine Words',             minutes: 12, trickKey: 'reading' },
     { id: 'reading-1',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 1',              minutes: 10, slice: [0, 2] },
-
-    { id: 'trick-spelling', kind: 'topic', type: 'trick-arc',        title: 'Spelling — Chunking',               minutes: 10, trickKey: 'spelling' },
-    { id: 'spelling-1',     kind: 'drill', type: 'spelling',         title: 'Spelling — apply Chunking',         minutes: 10, words: ['library','physics','puzzle','obstacles','million','fifteen'] },
 
     { id: 'mathlesson-tue', kind: 'topic', type: 'mathlesson',       title: 'Math — Constant of Proportionality', minutes: 18 },
 
     { id: 'reading-2',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 2',              minutes: 10, slice: [2, 4] },
 
-    { id: 'trick-writing',  kind: 'topic', type: 'trick-arc',        title: 'Writing — Question Opener',         minutes: 10, trickKey: 'writing' },
-    { id: 'bag-tue',        kind: 'topic', type: 'bag',              title: 'Build-A-Game Day 2 — pitch',        minutes: 20 },
+    { id: 'bag-tue',        kind: 'topic', type: 'bag',              title: 'Build-A-Game Day 2 — pitch',        minutes: 18 },
 
     { id: 'reading-3',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 3 (the point)',  minutes: 10, slice: [4, 5] },
 
     { id: 'roblox-lesson',  kind: 'topic', type: 'roblox-lesson',    title: 'Roblox — why every game has a leaderboard', minutes: 12 },
 
-    { id: 'handwriting-tue',kind: 'topic', type: 'handwriting',      title: 'Write the 4 tricks on paper',       minutes: 10 },
+    { id: 'handwriting-tue',kind: 'topic', type: 'handwriting',      title: 'Write the Spine Words trick on paper', minutes: 8 },
 
-    { id: 'trick-present',  kind: 'topic', type: 'trick-arc',        title: 'Reading aloud — Slow-Fast-Slow',    minutes: 10, trickKey: 'presenting' },
-
-    { id: 'showoff-tue',    kind: 'topic', type: 'showdad',          title: 'Show Mom or Dad what you learned',  minutes: 10 },
+    { id: 'showoff-tue',    kind: 'topic', type: 'showdad',          title: 'Show Mom or Dad what you learned',  minutes: 8 },
 
     { id: 'splash-tue',     kind: 'drill', type: 'splash',           title: 'End of Tuesday',                    minutes: 2  }
   ]

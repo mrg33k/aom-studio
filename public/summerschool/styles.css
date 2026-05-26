@@ -957,31 +957,45 @@ input, textarea {
 
 /* ============ UTIL ============ */
 
+/* 2026-05-26 reshape: every .center-actions sticks to the bottom of its
+ * scroll container by default. Before, only blocks that explicitly added
+ * .sticky-cta were sticky — a kid could scroll a long quiz and the
+ * Continue button stayed below the fold, looking broken. Now every
+ * advance button stays visible without per-block opt-in.
+ *
+ * Add .center-actions-inline if you ever need a non-sticky inline action
+ * (e.g. a small inline button mid-content, not the final advance).        */
 .center-actions {
-  padding: var(--space-5);
+  padding: var(--space-4) var(--space-5) calc(env(safe-area-inset-bottom, 0) + var(--space-5));
   display: flex;
   gap: var(--space-3);
-}
-
-/* Sticky-bottom variant for quiz "Done" buttons — keeps the CTA above the
- * fold no matter how many questions the kid scrolls through. The Done
- * button stays visible the whole time and unlocks in place. */
-.center-actions.sticky-cta {
+  justify-content: center;
   position: sticky;
   bottom: 0;
   z-index: 5;
   background: linear-gradient(180deg, rgba(245,239,229,0) 0%, rgba(245,239,229,0.85) 30%, var(--cream) 60%);
-  padding: var(--space-4) var(--space-5) calc(env(safe-area-inset-bottom, 0) + var(--space-5));
   margin: 0 calc(var(--space-5) * -1) calc(var(--space-5) * -1);
-  justify-content: center;
 }
-.center-actions.sticky-cta .btn-primary,
-.center-actions.sticky-cta .btn-amber {
+.center-actions.center-actions-inline {
+  position: static;
+  background: none;
+  margin: 0;
+  padding: var(--space-3);
+  justify-content: flex-start;
+}
+
+.center-actions .btn-primary,
+.center-actions .btn-amber {
   min-width: 220px;
   font-size: 16px;
   padding: 14px 28px;
   box-shadow: 0 6px 20px rgba(26,24,20,0.18);
 }
+
+/* sticky-cta is now a no-op alias for backwards compatibility — many
+ * renderers still pass it explicitly. Keeping it lets every existing
+ * `class="center-actions sticky-cta"` continue to render correctly. */
+.center-actions.sticky-cta { /* alias, see .center-actions above */ }
 
 .muted { color: var(--ink-quiet); }
 .serif { font-family: var(--font-serif); }

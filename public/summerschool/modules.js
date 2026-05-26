@@ -48,7 +48,9 @@ window.SSMod = (function () {
   }
 
   // ============================================================
-  // WELCOME (day 1 orientation)
+  // WELCOME (day orientation)
+  // Reads day().welcomeContent if present (day-specific copy + bullets);
+  // otherwise falls back to Monday's day-1 orientation hardcoded below.
   // ============================================================
   function welcome(host, block) {
     const greeting = (() => {
@@ -57,12 +59,25 @@ window.SSMod = (function () {
       if (h < 17) return 'Afternoon';
       return 'Evening';
     })();
-    host.innerHTML = `
-      ${topRail(0, 'Day 1', false)}
-      <div class="greeting"><h1>${greeting}, Ethan.</h1>
-        <div class="sub">Today's theme — <strong>${day().theme}</strong>. ${day().themeDesc}</div>
-      </div>
 
+    const wc = day().welcomeContent;
+    const dayLabel = wc && wc.dayLabel ? wc.dayLabel : 'Day 1';
+    const showParentNote = !wc || wc.showParentNote !== false;
+    const bullets = (wc && Array.isArray(wc.bullets) && wc.bullets.length > 0)
+      ? wc.bullets
+      : [
+          "How Roblox studios actually make money — the long road a Robux purchase travels before a developer sees a paycheck.",
+          "The 3-bucket money rule (save / spend / give) and how to split your own money with it.",
+          "What else your Zeus Car's Arduino chip can do — including 8 lines of code that run a real traffic light.",
+          "Your first 7th-grade math concept — <strong>Unit Rates</strong> — taught with a short Khan Academy video.",
+          "The story of <strong>Mikaila Ulmer</strong>, a 12-year-old who built a real lemonade business that's now in stores across the country.",
+          "Plus the day's drills — typing, spelling, Word Run, Word Tiles, Speed-Read — all themed around what you just read."
+        ];
+    const howItWorks = (wc && wc.howItWorks)
+      ? wc.howItWorks
+      : "How it works: you learn, then you practice. Read or watch something. Then the games and drills test what you just picked up. Each block is only a few minutes — the day shuffles formats so your brain stays locked in.";
+
+    const parentNoteHtml = showParentNote ? `
       <div class="parent-note">
         <div class="parent-note-eyebrow">From Mom &amp; Dad</div>
         <div class="parent-note-body">
@@ -73,39 +88,30 @@ window.SSMod = (function () {
         </div>
         <div class="parent-note-sig">— Mom &amp; Dad</div>
       </div>
+    ` : '';
+
+    host.innerHTML = `
+      ${topRail(0, dayLabel, false)}
+      <div class="greeting"><h1>${greeting}, Ethan.</h1>
+        <div class="sub">Today's theme — <strong>${day().theme}</strong>. ${day().themeDesc}</div>
+      </div>
+
+      ${parentNoteHtml}
 
       <div style="padding: var(--space-3) var(--space-5);">
         <div style="font-family: var(--font-serif); font-size: 18px; line-height: 1.55; color: var(--ink); margin-bottom: var(--space-5);">
           Today you'll learn:
         </div>
         <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-3);">
-          <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
-            <span style="color: var(--amber); font-weight: 600;">·</span>
-            <span>How Roblox studios actually make money — the long road a Robux purchase travels before a developer sees a paycheck.</span>
-          </li>
-          <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
-            <span style="color: var(--amber); font-weight: 600;">·</span>
-            <span>The 3-bucket money rule (save / spend / give) and how to split your own money with it.</span>
-          </li>
-          <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
-            <span style="color: var(--amber); font-weight: 600;">·</span>
-            <span>What else your Zeus Car's Arduino chip can do — including 8 lines of code that run a real traffic light.</span>
-          </li>
-          <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
-            <span style="color: var(--amber); font-weight: 600;">·</span>
-            <span>Your first 7th-grade math concept — <strong>Unit Rates</strong> — taught with a short Khan Academy video.</span>
-          </li>
-          <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
-            <span style="color: var(--amber); font-weight: 600;">·</span>
-            <span>The story of <strong>Mikaila Ulmer</strong>, a 12-year-old who built a real lemonade business that's now in stores across the country.</span>
-          </li>
-          <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
-            <span style="color: var(--amber); font-weight: 600;">·</span>
-            <span>Plus the day's drills — typing, spelling, Word Run, Word Tiles, Speed-Read — all themed around what you just read.</span>
-          </li>
+          ${bullets.map(b => `
+            <li style="display: flex; gap: var(--space-3); align-items: baseline; font-family: var(--font-serif); font-size: 17px; color: var(--ink);">
+              <span style="color: var(--amber); font-weight: 600;">·</span>
+              <span>${b}</span>
+            </li>
+          `).join('')}
         </ul>
         <div style="margin-top: var(--space-6); padding: var(--space-4) var(--space-5); background: var(--cream-card); border-left: 3px solid var(--amber); border-radius: 0 var(--r-md) var(--r-md) 0; font-family: var(--font-serif); font-style: italic; font-size: 15px; line-height: 1.5; color: var(--ink-soft);">
-          How it works: you learn, then you practice. Read or watch something. Then the games and drills test what you just picked up. Each block is only a few minutes — the day shuffles formats so your brain stays locked in.
+          ${howItWorks}
         </div>
       </div>
       <div class="center-actions">

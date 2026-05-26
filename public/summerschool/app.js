@@ -445,10 +445,12 @@
 
     // split into Today's Class (topic) and Daily Drills (drill) but keep order
     const nextIdx = blocks.findIndex(x => !(SS && SS.isBlockDone(x.id)));
-    // Soft lock: he can tap the next 3 unfinished blocks ahead. Lets him
-    // skip past a bug / boring module while we fix. Blocks 4+ ahead stay
-    // locked so he doesn't blow through the day randomly.
-    const SKIP_WINDOW = 3;
+    // Strict sequential (2026-05-26 reshape). Only the next undone block is
+    // tappable. Prior 3-block soft-skip allowed him to bypass content that
+    // never got marked done — we caught a section he skipped Monday. Set
+    // SKIP_WINDOW back to a small positive number ONLY after every block
+    // type's forward "Continue" wiring is reliable on the live page.
+    const SKIP_WINDOW = 0;
     const renderBlockCard = (b, idx) => {
       const done = SS && SS.isBlockDone(b.id);
       const isNext = idx === nextIdx;
