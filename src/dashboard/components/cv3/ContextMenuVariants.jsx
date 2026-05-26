@@ -213,20 +213,31 @@ export function MissionContextMenu({
   return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? (mission.name || mission.slug) : undefined} testId="mission-ctx-root" />
 }
 
-export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onOpen, onCopyPath, onReveal, onCopySnippet, onPin }) {
+// Agent-routed Research / Summarize / Pull quotes + utility Copy path / Reveal.
+// onAgentPrompt(text) drops the templated prompt into the active chat via
+// useChatDispatch (called by the parent surface).
+export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onAgentPrompt, onCopyPath, onReveal }) {
   if (!open || !file) return null
+  const name = file.displayName || file.name || file.path || 'this file'
+  const path = file.path || file.full_path || file.relativePath || file.name || ''
+  const ref = path ? '`' + path + '`' : '`' + name + '`'
   const items = [
-    { key: 'open', label: 'Open', icon: I.open, testId: 'file-ctx-open', onSelect: () => onOpen?.(file) },
-    { key: 'copy-path', label: 'Copy path', icon: I.copy, testId: 'file-ctx-copy-path', onSelect: () => {
-      const path = file.path || file.full_path || file.name || ''
-      if (path) navigator.clipboard?.writeText(path).catch(() => {})
-      onCopyPath?.(file)
-    } },
-    { key: 'reveal', label: 'Reveal in mission', icon: I.reveal, testId: 'file-ctx-reveal', disabled: !(file.mission || file.mission_slug), onSelect: () => onReveal?.(file) },
-    { key: 'copy-snippet', label: 'Copy as quoted snippet', icon: I.copy, testId: 'file-ctx-copy-snippet', onSelect: () => onCopySnippet?.(file) },
-    { key: 'pin', label: file.pinned ? 'Unpin from top' : 'Pin to top', icon: I.pin, testId: 'file-ctx-pin', onSelect: () => onPin?.(file) },
+    { key: 'research', label: 'Research', icon: I.copy, testId: 'file-ctx-research',
+      onSelect: () => onAgentPrompt?.('Research this file: ' + ref + '. Skim it, tell me what is in it and what is worth doing next.') },
+    { key: 'summarize', label: 'Summarize', icon: I.open, testId: 'file-ctx-summarize',
+      onSelect: () => onAgentPrompt?.('Summarize ' + ref + ' for me in plain English. Lead with the punchline.') },
+    { key: 'pull-quotes', label: 'Pull quotes', icon: I.copy, testId: 'file-ctx-pull-quotes',
+      onSelect: () => onAgentPrompt?.('Pull the 3-5 most-cited or most-load-bearing lines from ' + ref + ' and quote them back to me.') },
+    { key: 'copy-path', label: 'Copy path', icon: I.copy, testId: 'file-ctx-copy-path',
+      onSelect: () => {
+        if (path) navigator.clipboard?.writeText(path).catch(() => {})
+        onCopyPath?.(file)
+      } },
+    { key: 'reveal', label: 'Reveal in mission', icon: I.reveal, testId: 'file-ctx-reveal',
+      disabled: !(file.mission || file.mission_slug),
+      onSelect: () => onReveal?.(file) },
   ]
-  return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? (file.name || file.path) : undefined} testId="file-ctx-root" />
+  return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? name : undefined} testId="file-ctx-root" />
 }
 
 export function PillContextMenu({ open, x, y, pill, mobile = false, isPinned, isHidden, onClose, onOpenChat, onOpenFiles, onTogglePin, onToggleHide }) {

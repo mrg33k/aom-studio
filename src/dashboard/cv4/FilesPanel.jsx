@@ -24,6 +24,7 @@ import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 import { useCornerAuth } from '../CornerContext.jsx'
 import { FileContextMenu, useLongPress, useIsMobile } from '../components/cv3/ContextMenuVariants.jsx'
+import useChatDispatch from '../components/cv3/useChatDispatch.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -619,24 +620,22 @@ export default function FilesPanel({ projectSlug }) {
     openCtxMenu(e.clientX, e.clientY, file)
   }, [openCtxMenu])
 
-  // Action handlers — Open routes through existing file-click;
-  // Pin persists in localStorage keyed by world + project scope.
-  const handleCtxOpen = useCallback((file) => { handleFileClick(file); closeCtxMenu() }, [handleFileClick, closeCtxMenu])
-  const handleCtxPin = useCallback((file) => {
-    if (!file) return
-    try {
-      const key = `corner_pinned_files_${world}_${projectSlug || 'global'}`
-      const cur = JSON.parse(localStorage.getItem(key) || '[]')
-      const next = cur.includes(file.url) ? cur.filter(u => u !== file.url) : [...cur, file.url]
-      localStorage.setItem(key, JSON.stringify(next))
-    } catch (_) {}
-  }, [world, projectSlug])
-  // onReveal + onCopySnippet stub through to console for R3; surface upgrades in a follow-up.
-  const handleCtxReveal = useCallback((file) => { try { console.log('[FilesPanel] reveal in mission', file) } catch (_) {} }, [])
-  const handleCtxCopySnippet = useCallback((file) => {
-    const ref = file?.relativePath || file?.path || file?.name || ''
-    if (ref) navigator.clipboard?.writeText(`> see: ${ref}`).catch(() => {})
-  }, [])
+  // Action handlers — agent-routed (Research/Summarize/Pull quotes) drop into
+  // active chat via useChatDispatch. Copy path is direct utility. Reveal jumps
+  // to the file's mission home in the file panel.
+  const dispatchToChat = useChatDispatch()
+  const handleAgentPrompt = useCallback(async (text) => {
+    closeCtxMenu()
+    const r = await dispatchToChat(text)
+    if (!r?.ok) console.warn('[FilesPanel] chat dispatch failed', r)
+  }, [dispatchToChat, closeCtxMenu])
+  const handleCtxReveal = useCallback((file) => {
+    closeCtxMenu()
+    // Reveal = expand the mission folder + scroll the row into view if mission known.
+    const m = file?.mission || file?.mission_slug
+    if (m) try { setOpenFolders(prev => new Set([...prev, m, ''])) } catch (_) {}
+  }, [closeCtxMenu])
+  const handleCtxCopyPath = useCallback(() => { closeCtxMenu() }, [closeCtxMenu])
 
 
   useEffect(() => {
@@ -877,10 +876,9 @@ export default function FilesPanel({ projectSlug }) {
         file={ctxMenu?.file || null}
         mobile={isMobile}
         onClose={closeCtxMenu}
-        onOpen={handleCtxOpen}
+        onAgentPrompt={handleAgentPrompt}
+        onCopyPath={handleCtxCopyPath}
         onReveal={handleCtxReveal}
-        onCopySnippet={handleCtxCopySnippet}
-        onPin={handleCtxPin}
       />
 
       <div style={{ height: 16 }} />
