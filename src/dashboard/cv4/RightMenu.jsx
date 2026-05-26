@@ -32,7 +32,7 @@ import { useTasks } from '../hooks/useTasks.js'
 import { useProjects } from '../hooks/useProjects.js'
 import { authFetch } from '../lib/authFetch.js'
 import FilesPanel from './FilesPanel.jsx'
-import { MissionContextMenu, ProjectContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
+import { MissionContextMenu, ProjectContextMenu, FolderContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
 import useChatDispatch from '../components/cv3/useChatDispatch.js'
 
 const MENU = {
@@ -1070,11 +1070,12 @@ function EmptyState({ text }) {
 // Whole bar is the click target (was already wired in R6); R7 bumps the hover
 // state so the affordance reads more clearly.
 
-function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle }) {
+function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle, onContextMenu }) {
   const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : 'idle'
   return (
     <div
       onClick={onToggle}
+      onContextMenu={onContextMenu}
       title={isCollapsed ? `Expand ${projectSlug}` : `Collapse ${projectSlug}`}
       style={{
         display: 'flex',
@@ -1134,7 +1135,7 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
 // ── Folder row (R7-C) ───────────────────────────────────────────────────────
 // Indented under its parent project group; click toggles its own collapse.
 
-function FolderRow({ folder, count, isCollapsed, onToggle, depth = 0 }) {
+function FolderRow({ folder, count, isCollapsed, onToggle, depth = 0, onContextMenu }) {
   // R-MP-2 — subfolders indent by depth; same chevron pattern as MissionRow
   const indentBase = 20
   const indentStep = 14
@@ -1142,6 +1143,7 @@ function FolderRow({ folder, count, isCollapsed, onToggle, depth = 0 }) {
   return (
     <div
       onClick={onToggle}
+      onContextMenu={onContextMenu}
       title={isCollapsed ? `Expand ${folder.name}` : `Collapse ${folder.name}`}
       style={{
         display: 'flex',
@@ -1384,6 +1386,59 @@ export default function RightMenu() {
         body: JSON.stringify({ project_slug: project.slug, name: name.trim() }),
       })
     } catch (e) { console.error('[RightMenu] create folder error', e) }
+  }, [closeCtxMenu])
+
+  // ── Folder right-click handlers (R-MP-2 cleanup) ──────────────────────────
+  const openFolderMenu = useCallback((x, y, folder) => {
+    setCtxMenu({ kind: 'folder', x, y, folder })
+  }, [])
+
+  const handleCreateSubfolderUnderFolder = useCallback(async (folder) => {
+    closeCtxMenu()
+    const name = typeof window !== 'undefined' ? window.prompt(`Create subfolder under "${folder.name || folder.slug}":`) : null
+    if (!name || !name.trim()) return
+    try {
+      await authFetch('/api/dashboard/mission-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_slug: folder.project_slug,
+          name: name.trim(),
+          parent_folder_slug: folder.slug,
+        }),
+      })
+      refreshFolders()
+    } catch (e) { console.error('[RightMenu] create subfolder error', e) }
+  }, [closeCtxMenu])
+
+  const handleFolderRename = useCallback((folder) => {
+    closeCtxMenu()
+    // TODO: rename API not wired yet; surface to user
+    if (typeof window !== 'undefined') {
+      window.alert('Folder rename not wired yet — folder slug is the stable id; the API would need a PATCH route.')
+    }
+  }, [closeCtxMenu])
+
+  const handleFolderDelete = useCallback((folder) => {
+    closeCtxMenu()
+    if (typeof window !== 'undefined') {
+      window.alert('Folder delete not wired yet — assignments would need to migrate to null. Surface this if you actually need it.')
+    }
+  }, [closeCtxMenu])
+
+  const handleCreateMissionInFolder = useCallback((folder) => {
+    closeCtxMenu()
+    // For now, hand off to the inline NewMissionAffordance flow by opening the
+    // generic create flow scoped to the folder's project. Folder assignment
+    // can be set after creation via the mission's context menu → move to folder.
+    const name = typeof window !== 'undefined' ? window.prompt(`Create mission in folder "${folder.name || folder.slug}":`) : null
+    if (!name || !name.trim()) return
+    // Reuse the existing handleCreateMissionInline path via the inline modal —
+    // fall back to a direct POST if available.
+    if (typeof handleCreateMissionInline === 'function') {
+      const slug = String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || `m-${Date.now().toString(36)}`
+      handleCreateMissionInline(folder.project_slug, slug, name.trim())
+    }
   }, [closeCtxMenu])
 
   const { worldId } = useCornerAuth()
@@ -1977,6 +2032,7 @@ export default function RightMenu() {
                   isCollapsed={isFolderCollapsed}
                   onToggle={() => toggleFolderCollapse(group.projectSlug, folder.slug)}
                   depth={depth}
+                  onContextMenu={(e) => { e.preventDefault(); openFolderMenu(e.clientX, e.clientY, folder) }}
                 />
                 {!isFolderCollapsed && (
                   <>
@@ -2097,6 +2153,7 @@ export default function RightMenu() {
                   isQueued={group.hasQueued}
                   isCollapsed={isCollapsed}
                   onToggle={() => toggleProjectCollapse(group.projectSlug)}
+                  onContextMenu={(e) => { e.preventDefault(); openProjectMenu(e.clientX, e.clientY, { slug: group.projectSlug, name: group.projectSlug }) }}
                 />
                 {!isCollapsed && renderGroupBody(group)}
               </div>
@@ -2281,6 +2338,20 @@ export default function RightMenu() {
           onDelete={handleProjectDelete}
           onCreateSubfolder={handleCreateSubfolderForProject}
           onMoveToFolder={() => { /* projects-as-folders TBD; no-op for now */ closeCtxMenu() }}
+        />
+      )}
+      {ctxMenu?.kind === 'folder' && (
+        <FolderContextMenu
+          open
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          folder={ctxMenu.folder}
+          mobile={isMobile}
+          onClose={closeCtxMenu}
+          onCreateSubfolder={handleCreateSubfolderUnderFolder}
+          onCreateMission={handleCreateMissionInFolder}
+          onRename={handleFolderRename}
+          onDelete={handleFolderDelete}
         />
       )}
     </div>

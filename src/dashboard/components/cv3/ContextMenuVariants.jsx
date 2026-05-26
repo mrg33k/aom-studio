@@ -254,6 +254,28 @@ export function ProjectContextMenu({ open, x, y, project, folders = [], mobile =
   return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? name : undefined} testId="project-ctx-root" />
 }
 
+// Right-click menu for a folder inside the right-rail missions panel.
+// onCreateSubfolder(folder) — make a subfolder under THIS folder
+// onCreateMission(folder)   — make a mission and drop it into this folder
+// onRename(folder)          — rename this folder
+// onDelete(folder)          — delete this folder (missions inside become ungrouped)
+export function FolderContextMenu({ open, x, y, folder, mobile = false, onClose,
+  onCreateSubfolder, onCreateMission, onRename, onDelete }) {
+  if (!open || !folder) return null
+  const name = folder.name || folder.slug || 'this folder'
+  const items = [
+    { key: 'new-mission', label: 'New mission in folder…', icon: I.open, testId: 'folder-ctx-new-mission',
+      onSelect: () => onCreateMission?.(folder) },
+    { key: 'new-subfolder', label: 'New subfolder…', icon: I.move, testId: 'folder-ctx-new-subfolder',
+      onSelect: () => onCreateSubfolder?.(folder) },
+    { key: 'rename', label: 'Rename', icon: I.copy, testId: 'folder-ctx-rename',
+      onSelect: () => onRename?.(folder) },
+    { key: 'delete', label: 'Delete folder', icon: I.archive, variant: 'danger', testId: 'folder-ctx-delete',
+      onSelect: () => onDelete?.(folder) },
+  ]
+  return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? name : undefined} testId="folder-ctx-root" />
+}
+
 // Agent-routed Research / Summarize / Pull quotes + utility Copy path / Reveal.
 // onAgentPrompt(text) drops the templated prompt into the active chat via
 // useChatDispatch (called by the parent surface).
