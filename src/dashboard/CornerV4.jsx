@@ -926,30 +926,31 @@ export default function CornerV4() {
   // messages in the SAME room that landed BEFORE the unread one. That
   // gives the user enough thread context to remember what the agent is
   // replying to instead of seeing a one-liner cold.
-  // Returns an array ordered oldest → newest (so it reads top-to-bottom
-  // above the highlighted unread message in the modal).
+  //
+  // Routes through /api/dashboard/supabase-messages (server-side, service
+  // role) instead of supabase-js directly. Reason: when Patrik switches
+  // into a tenant world (e.g. karens-world) his JWT still scopes to his
+  // home world via RLS, so a direct client-side query returns empty even
+  // though the data exists. The server endpoint sees everything.
+  //
+  // Returns an array ordered oldest → newest (the endpoint already
+  // reverses to chronological).
   const fetchCatchupContext = useCallback(async (notif) => {
-    if (!supabase || !notif || !worldId) return []
+    if (!notif || !worldId || !notif._agent) return []
     try {
-      let q = supabase
-        .from('messages')
-        .select('id, role, text, agent, timestamp, user_name, metadata')
-        .eq('client_id', worldId)
-        .lt('timestamp', notif.timestamp || new Date().toISOString())
-        .order('timestamp', { ascending: false })
-        .limit(2)
-
-      // Same-agent / same-project / same-mission scoping. Mirrors the
-      // filter used elsewhere in the dashboard for "what's in this room".
-      if (notif._agent) q = q.eq('agent', notif._agent)
-      if (notif._project) q = q.eq('project', notif._project)
-      else q = q.or('project.is.null,project.eq.')
-      if (notif._missionSlug) q = q.eq('metadata->>mission_slug', notif._missionSlug)
-
-      const { data, error } = await q
-      if (error || !data) return []
-      // Reverse → chronological so the modal renders top-down as a thread.
-      return data.slice().reverse().map(m => ({
+      const params = new URLSearchParams()
+      params.set('client', worldId)
+      params.set('agent', notif._agent)
+      if (notif._project) params.set('project', notif._project)
+      if (notif._missionSlug) params.set('mission_slug', notif._missionSlug)
+      if (notif.timestamp) params.set('before', notif.timestamp)
+      params.set('limit', '2')
+      const res = await authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
+      if (!res.ok) return []
+      const data = await res.json()
+      const msgs = Array.isArray(data?.messages) ? data.messages : []
+      // Endpoint already returns oldest → newest.
+      return msgs.map(m => ({
         id: m.id,
         role: m.role || (m.user_name ? 'user' : 'agent'),
         text: m.text || '',
@@ -960,7 +961,7 @@ export default function CornerV4() {
       console.warn('[CatchupModal] context fetch failed', e)
       return []
     }
-  }, [worldId])
+  }, [worldId, authFetch])
 
   // R6 corner:task-rooms — open the task room as a chat surface using the
   // existing ThreadView (same chat template as agent + project chats).

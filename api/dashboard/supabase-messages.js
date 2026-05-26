@@ -83,8 +83,18 @@ export default async function handler(req, res) {
     // ?all=true: fetch ALL messages across all agents (for AOM Team Room aggregate view)
     const agentFilter = (all === 'true' || all === '1') ? '' : `&agent=eq.${encodeURIComponent(agent)}`
     const searchFilter = searchQuery ? `&text=ilike.*${encodeURIComponent(searchQuery)}*` : ''
+    // corner:notifications-catchup R3 — room-scoped filters for the catch-up
+    // context fetcher. Same shape any chat surface uses:
+    //   ?project=<slug>               — project rooms
+    //   ?mission_slug=<slug>          — mission rooms (metadata->>mission_slug)
+    //   ?before=<iso>                 — only messages strictly earlier than this timestamp
+    // Optional + backward-compatible — existing callers pass none of these
+    // and get the original behavior.
+    const projectFilter = req.query.project ? `&project=eq.${encodeURIComponent(req.query.project)}` : ''
+    const missionFilter = req.query.mission_slug ? `&metadata->>mission_slug=eq.${encodeURIComponent(req.query.mission_slug)}` : ''
+    const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results
-    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${missionFilter}${beforeFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
