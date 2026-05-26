@@ -202,7 +202,7 @@ window.SSMod = (function () {
 
     doneBtn.onclick = () => {
       if (doneBtn.disabled) return;
-      if (answered === qs.length && window.SS) window.SS.awardStar('Reading perfect');
+      if (answered === qs.length && window.SS) window.SS.awardStar('reading-comp-perfect');
       complete(block.id, { questionsRight: answered, total: qs.length });
     };
   }
@@ -266,7 +266,7 @@ window.SSMod = (function () {
 
       if (typed === target) {
         if (window.SS) window.SS.setWpmRecord(wpm);
-        if (acc >= 95 && window.SS) window.SS.awardStar('Clean typing sprint');
+        if (acc >= 95 && window.SS) window.SS.awardStar('legacy-zero');
       }
     };
 
@@ -355,7 +355,7 @@ window.SSMod = (function () {
         go.onclick = () => {
           drillIdx++;
           if (drillIdx >= pool.length) {
-            if (drillsRight === pool.length && window.SS) window.SS.awardStar('Bucket mastered');
+            if (drillsRight === pool.length && window.SS) window.SS.awardStar('money-bucket-mastered');
             complete(block.id, { drillsRight, total: pool.length });
           } else {
             renderConcept();
@@ -393,7 +393,7 @@ window.SSMod = (function () {
       done.onclick = () => {
         const split = inputs.map(i => parseInt(i.value || 0, 10) || 0);
         const t = split.reduce((a, b) => a + b, 0);
-        if (t === m.scenario.amount && window.SS) window.SS.awardStar('Money math');
+        if (t === m.scenario.amount && window.SS) window.SS.awardStar('money-math-correct');
         complete(block.id, { split, total: t });
       };
     }
@@ -483,7 +483,7 @@ window.SSMod = (function () {
 
     doneBtn.onclick = () => {
       if (doneBtn.disabled) return;
-      if (answered === wif.length && window.SS) window.SS.awardStar('Arduino read');
+      if (answered === wif.length && window.SS) window.SS.awardStar('quiz-first-try');
       complete(block.id, { right: answered, total: wif.length });
     };
   }
@@ -520,7 +520,7 @@ window.SSMod = (function () {
         if (locked) return; locked = true;
         const right = i === a.predict.right;
         b.classList.add(right ? 'right' : 'wrong');
-        if (right && window.SS) window.SS.awardStar('Code-read');
+        if (right && window.SS) window.SS.awardStar('quiz-first-try');
         host.querySelector('#ac-done').style.display = 'inline-flex';
       };
     });
@@ -555,7 +555,7 @@ window.SSMod = (function () {
       host.querySelector('#' + id).onclick = () => {
         if (window.SS) {
           window.SS.dadApproveLatest();
-          window.SS.awardStar('Approved write-up');
+          window.SS.awardStar('writing-approved');
         }
         complete(block.id, { approver: id === 'approve-dad' ? 'dad' : 'mom' });
       };
@@ -595,7 +595,7 @@ window.SSMod = (function () {
       i++;
       if (i >= probs.length) {
         const took = Math.round((Date.now() - started) / 1000);
-        if (right === probs.length && window.SS) window.SS.awardStar('Math sweep');
+        if (right === probs.length && window.SS) window.SS.awardStar('math-quickfire-perfect');
         complete(block.id, { right, total: probs.length, seconds: took });
         return;
       }
@@ -692,7 +692,7 @@ window.SSMod = (function () {
 
     doneBtn.onclick = () => {
       if (doneBtn.disabled) return;
-      if (answered === quiz.length && window.SS) window.SS.awardStar('Inspired + tested');
+      if (answered === quiz.length && window.SS) window.SS.awardStar('quiz-first-try');
       complete(block.id, { right: answered, total: quiz.length });
     };
   }
@@ -785,7 +785,7 @@ window.SSMod = (function () {
     if (selfBtn) selfBtn.onclick = () => {
       if (window.SS) {
         window.SS.saveBagBeat('mon', 'name', '[pitch written — sharing later]');
-        window.SS.awardStar('Game name locked');
+        window.SS.awardStar('bag-beat-shipped');
       }
       complete(block.id, { approver: 'self' });
     };
@@ -794,7 +794,7 @@ window.SSMod = (function () {
       host.querySelector('#' + id).onclick = () => {
         if (window.SS) {
           window.SS.saveBagBeat('mon', 'name', '[handwritten — approved by ' + (id === 'bag-dad' ? 'Dad' : 'Mom') + ']');
-          window.SS.awardStar('Game name locked');
+          window.SS.awardStar('bag-beat-shipped');
         }
         complete(block.id, { approver: id === 'bag-dad' ? 'dad' : 'mom' });
       };
@@ -828,7 +828,7 @@ window.SSMod = (function () {
         </div>
       `;
       host.querySelector('#show-back').onclick = () => {
-        if (window.SS) window.SS.awardStar('Pushed through the mid-day wall');
+        if (window.SS) window.SS.awardStar('legacy-zero');
         complete(block.id);
       };
       return;
@@ -854,7 +854,7 @@ window.SSMod = (function () {
     `;
     ['show-dad-final', 'show-mom-final'].forEach(id => {
       host.querySelector('#' + id).onclick = () => {
-        if (window.SS) window.SS.awardStar('Showed a parent');
+        if (window.SS) window.SS.awardStar('showed-parent');
         complete(block.id);
       };
     });
@@ -1139,7 +1139,7 @@ window.SSMod = (function () {
             if (collected.length === target.length) {
               won = true;
               if (window.SS) {
-                window.SS.awardStar('Word Run cleared');
+                window.SS.awardStar('word-run-cleared');
                 window.SS.setWordRunHigh(score);
               }
               setTimeout(() => {
@@ -1253,7 +1253,7 @@ window.SSMod = (function () {
       nextBtn.onclick = () => {
         i++;
         if (i >= words.length) {
-          if (right === words.length && window.SS) window.SS.awardStar('Perfect spelling round');
+          if (right === words.length && window.SS) window.SS.awardStar('spelling-round-perfect');
           complete(block.id, { right, total: words.length, missed });
         } else {
           render();
@@ -1370,7 +1370,7 @@ window.SSMod = (function () {
         const made = Array.from(tray.querySelectorAll('.tile')).map(t => t.dataset.l).join('').toLowerCase();
         if (made === target.toLowerCase()) {
           blockRight++;
-          if (window.SS) window.SS.awardStar('Tiles ' + target);
+          if (window.SS) window.SS.awardStar('legacy-zero');
           wordIdx++;
           if (wordIdx >= wordList.length) {
             complete(block.id, { right: blockRight, total: wordList.length, words: wordList.map(w => w.word) });
@@ -1436,7 +1436,7 @@ window.SSMod = (function () {
           playing = false; w.innerHTML = `<span style="color: var(--amber);">Done.</span>`;
           tog.textContent = 'Run again';
           toq.disabled = false; toq.style.opacity = '1'; toq.textContent = 'Take the quiz';
-          if (window.SS) window.SS.awardStar('Speed-read sweep');
+          if (window.SS) window.SS.awardStar('legacy-zero');
           return;
         }
         const wd = words[idx++];
@@ -1516,7 +1516,7 @@ window.SSMod = (function () {
 
       doneBtn.onclick = () => {
         if (doneBtn.disabled) return;
-        if (answered === srQuiz.length && window.SS) window.SS.awardStar('Speed-read + nailed');
+        if (answered === srQuiz.length && window.SS) window.SS.awardStar('speedread-comp-perfect');
         complete(block.id, { wordsRead: idx, comprehension: answered });
       };
     };
@@ -1634,7 +1634,7 @@ window.SSMod = (function () {
       });
       doneBtn.onclick = () => {
         if (doneBtn.disabled) return;
-        if (right === v.questions.length && window.SS) window.SS.awardStar('Video quiz nailed');
+        if (right === v.questions.length && window.SS) window.SS.awardStar('video-quiz-perfect');
         complete(block.id, { right, total: v.questions.length });
       };
     };
@@ -1861,8 +1861,8 @@ window.SSMod = (function () {
       const next = () => {
         practiceIdx++;
         if (practiceIdx >= pTotal) {
-          if (pRight === pTotal && window.SS) window.SS.awardStar('Math lesson nailed');
-          if (cRight + pRight >= (cTotal + pTotal - 1) && window.SS) window.SS.awardStar('Concept #' + ml.number + ' mastered');
+          if (pRight === pTotal && window.SS) window.SS.awardStar('math-lesson-mastered');
+          if (cRight + pRight >= (cTotal + pTotal - 1) && window.SS) window.SS.awardStar('math-lesson-mastered');
           complete(block.id, { concept: ml.number, comprehension: cRight, practice: pRight });
           return;
         }
@@ -1888,14 +1888,280 @@ window.SSMod = (function () {
     renderIntro();
   }
 
-  // public registry — add mathlesson
   // ============================================================
+  // TRICK-ARC (new 2026-05-25 — Tuesday trick-of-the-day pedagogy)
+  // Each block teaches a named trick for a subject he hates. 5 beats:
+  // setup ("yesterday this was hard") → trick (named) → demo → try → showoff.
+  // ============================================================
+  function trickArc(host, block) {
+    const tricks = day().tricks || {};
+    const t = tricks[block.trickKey];
+    if (!t) {
+      host.innerHTML = `${topRail(0, 'trick')}${moduleHead('Trick', block.title)}
+        <div style="padding: var(--space-7) var(--space-5);">No trick data for key "${block.trickKey}".</div>
+        <div class="center-actions"><button class="btn-primary" id="t-skip">Skip</button></div>`;
+      host.querySelector('#t-skip').onclick = () => { complete(block.id); next(); };
+      return;
+    }
+    host.innerHTML = `
+      ${topRail(0, 'trick of the day')}
+      ${moduleHead('Trick — ' + (t.subject || ''), t.name)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+
+        <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5) var(--space-5); margin-bottom: var(--space-4); border-left: 3px solid #8B3838;">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B3838; margin-bottom: var(--space-2);">Why this is hard</div>
+          <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45;">${t.hatedBecause}</p>
+        </div>
+
+        <div class="passage" data-dict style="background: #FBF7EE; border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-bottom: var(--space-4); border-left: 4px solid var(--amber);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-2);">Today's trick</div>
+          <h3 style="font-family: var(--font-serif); font-weight:500; font-size:26px; line-height:1.2; margin-bottom: var(--space-3);">${t.name}</h3>
+          <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.55;">${t.trick}</p>
+        </div>
+
+        <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5) var(--space-5); margin-bottom: var(--space-4);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">See it in action</div>
+          <p style="font-family: var(--font-serif); font-size: 16px; line-height: 1.55; white-space: pre-wrap;">${t.demoText}</p>
+        </div>
+
+        <div class="passage" style="background: #FFF; border: 1px solid rgba(26,24,20,0.10); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Try it once</div>
+          <p data-dict style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45; margin-bottom: var(--space-3);">${t.tryPrompt}</p>
+          <details style="margin-top: var(--space-3);">
+            <summary style="cursor: pointer; font-size: 13px; color: var(--amber); font-weight: 600;">Show the answer hint</summary>
+            <p style="margin-top: var(--space-2); font-size: 15px; color: var(--ink-soft); font-style: italic;">${t.tryAnswerHint || ''}</p>
+          </details>
+        </div>
+
+        <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4); border-left: 4px solid #2D6B3C;">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #2D6B3C; margin-bottom: var(--space-2);">Now show off</div>
+          <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45;">${t.showoffPrompt}</p>
+          <p style="font-size: 13px; color: var(--ink-quiet); margin-top: var(--space-3); font-style: italic;">You'll use this trick again tomorrow — it sticks better that way.</p>
+        </div>
+
+        <div class="center-actions sticky-cta">
+          <button class="btn-amber" id="tk-got-it">I got it — what's next</button>
+        </div>
+      </div>
+    `;
+    host.querySelector('#tk-got-it').onclick = () => { complete(block.id, { trick: t.name }); next(); };
+  }
+
+  // ============================================================
+  // HANDWRITING (new 2026-05-25)
+  // Print lines he copies on paper. Upload photo. Ships to Tell-Dad pipeline
+  // so the photo lands in the mission room for parent review.
+  // ============================================================
+  function handwriting(host, block) {
+    const h = day().handwriting;
+    if (!h) {
+      host.innerHTML = `${topRail(0, 'handwriting')}${moduleHead('Handwriting', block.title)}
+        <div style="padding: var(--space-5);">No handwriting data for today.</div>
+        <div class="center-actions"><button class="btn-primary" id="hw-skip">Skip</button></div>`;
+      host.querySelector('#hw-skip').onclick = () => { complete(block.id); next(); };
+      return;
+    }
+    host.innerHTML = `
+      ${topRail(0, 'on paper')}
+      ${moduleHead('Handwriting', h.title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+
+        <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5);">
+          <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.5;">${h.intro}</p>
+        </div>
+
+        <div style="margin: var(--space-5) 0; padding: var(--space-5); background: #FFF; border: 1px dashed rgba(26,24,20,0.25); border-radius: var(--r-md);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-3);">Copy these onto paper</div>
+          ${(h.lines || []).map((line, i) => `
+            <div style="font-family: var(--font-serif); font-size: 16px; line-height: 1.7; padding: var(--space-2) 0; border-bottom: 1px solid rgba(26,24,20,0.06);">
+              <strong style="color: var(--amber); margin-right: 6px;">${i + 1}.</strong>${line}
+            </div>
+          `).join('')}
+        </div>
+
+        <p data-dict style="font-size: 14px; color: var(--ink-soft); font-style: italic; margin-bottom: var(--space-4);">${h.why || ''}</p>
+
+        <div style="background: #FBF7EE; border: 2px dashed var(--amber); border-radius: var(--r-md); padding: var(--space-5); text-align: center; margin-bottom: var(--space-4);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Upload your page</div>
+          <p style="font-family: var(--font-serif); font-size: 16px; margin-bottom: var(--space-4);">${h.showoffPrompt || 'Take a photo of your paper.'}</p>
+          <input type="file" id="hw-photo" accept="image/*" capture="environment" style="display: none;" />
+          <button class="btn-amber" id="hw-pick" style="font-size: 16px; padding: 14px 28px;">Pick a photo</button>
+          <div id="hw-preview" style="margin-top: var(--space-4);"></div>
+          <div id="hw-status" style="margin-top: var(--space-3); font-size: 14px; color: var(--ink-quiet);"></div>
+        </div>
+
+        <div class="center-actions sticky-cta">
+          <button class="btn-amber" id="hw-done" disabled style="opacity:0.5;">Upload a photo first</button>
+        </div>
+      </div>
+    `;
+    const fileInput = host.querySelector('#hw-photo');
+    const pickBtn = host.querySelector('#hw-pick');
+    const preview = host.querySelector('#hw-preview');
+    const status = host.querySelector('#hw-status');
+    const doneBtn = host.querySelector('#hw-done');
+    let chosenFile = null;
+
+    pickBtn.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      chosenFile = f;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        preview.innerHTML = `<img src="${ev.target.result}" style="max-width: 100%; max-height: 320px; border-radius: 8px; border: 1px solid rgba(26,24,20,0.12);" />`;
+        status.textContent = 'Looks good. Tap "Send to Dad" to submit.';
+        doneBtn.disabled = false;
+        doneBtn.style.opacity = '1';
+        doneBtn.textContent = 'Send to Dad + Mom';
+      };
+      reader.readAsDataURL(f);
+    };
+
+    doneBtn.onclick = async () => {
+      if (doneBtn.disabled || !chosenFile) return;
+      doneBtn.disabled = true;
+      doneBtn.textContent = 'Sending...';
+      try {
+        // base64-encode and POST to the embed pipeline
+        const b64 = await new Promise(r => {
+          const fr = new FileReader();
+          fr.onload = (e) => r(e.target.result);
+          fr.readAsDataURL(chosenFile);
+        });
+        let vid = localStorage.getItem('ss-dad-visitor-id');
+        if (!vid) { vid = 'ethan_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('ss-dad-visitor-id', vid); }
+        await fetch('/api/embed/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            embed_id: 'emb_summerschool',
+            visitor_id: vid,
+            host_origin: location.origin,
+            content: `[handwriting submitted — block: ${block.title}]\n\n${(h.lines || []).join('\n')}\n\n[Image attached as base64 below — too long to inline; saved locally to gallery]`,
+            metadata: { kind: 'handwriting', block_id: block.id, image_size: chosenFile.size }
+          })
+        }).catch(() => {});
+        // Save to local artifacts
+        if (window.SS && window.SS.saveArtifact) {
+          window.SS.saveArtifact({ kind: 'handwriting', block_id: block.id, image: b64, title: h.title });
+        }
+        if (window.SS) window.SS.awardStar('handwriting-uploaded', { block_id: block.id });
+        status.textContent = 'Sent. Dad will see it.';
+        setTimeout(() => { complete(block.id, { uploaded: true }); next(); }, 1200);
+      } catch (e) {
+        status.textContent = 'Saved locally. Network was off — Dad will see it next sync.';
+        if (window.SS) window.SS.awardStar('handwriting-uploaded', { block_id: block.id });
+        setTimeout(() => { complete(block.id, { uploaded: false }); next(); }, 1600);
+      }
+    };
+  }
+
+  // ============================================================
+  // ROBLOX-LESSON (new 2026-05-25)
+  // Tuesday: leaderboards. Text + 3-question quiz + AI seed footer.
+  // ============================================================
+  function robloxLesson(host, block) {
+    const r = day().robloxLesson;
+    if (!r) {
+      host.innerHTML = `${topRail(0, 'roblox')}${moduleHead('Roblox', block.title)}
+        <div style="padding: var(--space-5);">No lesson data.</div>
+        <div class="center-actions"><button class="btn-primary" id="rl-skip">Skip</button></div>`;
+      host.querySelector('#rl-skip').onclick = () => { complete(block.id); next(); };
+      return;
+    }
+    host.innerHTML = `
+      ${topRail(0, 'roblox dev')}
+      ${moduleHead('Roblox', r.title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+        <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-6) var(--space-5);">
+          ${(r.paragraphs || []).map(p => `<p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.6; margin-bottom: var(--space-3);">${p}</p>`).join('')}
+          <p style="margin-top: var(--space-4); font-size: 13px; color: var(--ink-quiet); font-style: italic;">Tap or hover any word for its definition.</p>
+        </div>
+
+        ${r.aiSeed ? `
+          <div style="background: #FBF7EE; border-left: 4px solid #6B5BBF; border-radius: 0 var(--r-md) var(--r-md) 0; padding: var(--space-4) var(--space-5); margin: var(--space-4) 0;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6B5BBF; margin-bottom: var(--space-2);">Heads up — AI angle</div>
+            <p data-dict style="font-family: var(--font-serif); font-size: 16px; line-height: 1.55;">${r.aiSeed}</p>
+          </div>
+        ` : ''}
+
+        <div class="questions" style="margin-top: var(--space-5);">
+          <h4>Quick check · need ${Math.max(1, (r.questions || []).length - 1)} of ${(r.questions || []).length}</h4>
+          ${(r.questions || []).map((q, qi) => `
+            <div class="q-item" data-q="${qi}">
+              <div class="q-prompt">${q.q}</div>
+              <div class="q-choices">
+                ${q.a.map((c, ci) => `<button class="q-choice" data-i="${ci}">${c}</button>`).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div id="rl-gate" style="margin-top: var(--space-3); font-family: var(--font-serif); font-size: 14px; color: var(--ink-quiet);"></div>
+
+        <div class="center-actions sticky-cta">
+          <button class="btn-primary" id="rl-done" disabled style="opacity:0.5;">Answer the questions first</button>
+        </div>
+      </div>
+    `;
+
+    const doneBtn = host.querySelector('#rl-done');
+    const gate = host.querySelector('#rl-gate');
+    const qs = r.questions || [];
+    const required = Math.max(1, qs.length - 1);
+    let attempted = 0, right = 0;
+
+    const update = () => {
+      if (attempted < qs.length) { gate.textContent = `${attempted} of ${qs.length} answered`; return; }
+      if (right >= required) {
+        gate.textContent = `${right} of ${qs.length} — passed!`;
+        gate.style.color = '#2D6B3C';
+        doneBtn.disabled = false; doneBtn.style.opacity = '1';
+        doneBtn.textContent = 'Done';
+      } else {
+        gate.textContent = `${right} of ${qs.length} — need ${required}. Re-read and try again.`;
+        gate.style.color = '#8B3838';
+        host.querySelectorAll('.q-item').forEach(item => {
+          item.querySelectorAll('.q-choice.wrong').forEach(b => b.classList.remove('wrong'));
+          delete item.dataset.locked;
+        });
+        attempted = 0; right = 0;
+        setTimeout(() => { gate.textContent = ''; gate.style.color = ''; }, 3500);
+      }
+    };
+
+    qs.forEach((q, qi) => {
+      const item = host.querySelector(`[data-q="${qi}"]`);
+      item.querySelectorAll('.q-choice').forEach(btn => {
+        btn.onclick = () => {
+          if (item.dataset.locked) return;
+          item.dataset.locked = '1';
+          const i = parseInt(btn.dataset.i, 10);
+          const ok = i === q.right;
+          btn.classList.add(ok ? 'correct' : 'wrong');
+          if (ok) right++;
+          attempted++;
+          update();
+        };
+      });
+    });
+    doneBtn.onclick = () => {
+      if (doneBtn.disabled) return;
+      if (right === qs.length && window.SS) window.SS.awardStar('quiz-first-try');
+      complete(block.id, { right, total: qs.length });
+    };
+  }
+
   // public registry
   // ============================================================
   return {
     welcome, reading, typing, money,
     arduino, 'arduino-code': arduinoCode, 'writing-mini': writingMini,
     math, mathlesson, inspire, bag, showdad, splash,
-    wordrun, spelling, tiles, speedread, video
+    wordrun, spelling, tiles, speedread, video,
+    'trick-arc': trickArc,
+    handwriting,
+    'roblox-lesson': robloxLesson
   };
 })();

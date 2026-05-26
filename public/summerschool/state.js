@@ -89,14 +89,56 @@ window.SS = window.SS || {};
       return s.streak;
     },
 
-    // gold stars
+    // gold stars — policy-driven economy (day-1 fix: 125 stars in one day was 25x pace)
+    // Target: ~10 stars/day cap from real work, ~50/week, 150 = GameStop game every other Fri-ish.
+    // Star events are predefined. Anything not in the table awards ZERO stars.
     get goldStars() { return load().goldStars; },
-    awardStar(reason) {
+
+    awardStar(event, payload) {
+      // Backward-compat: old call sites passed a free-text reason string.
+      // Those land in 'legacy-zero' bucket — zero stars, a one-time console
+      // note so we can find and update remaining bad callers.
+      if (typeof event !== 'string') return load().goldStars;
+      const POLICY = {
+        // real work — earn stars
+        'reading-comp-perfect':     { stars: 3, copy: 'Nailed the reading + comp' },
+        'quiz-first-try':           { stars: 2, copy: 'Quiz passed first try' },
+        'spelling-round-perfect':   { stars: 2, copy: 'Perfect spelling round' },
+        'handwriting-uploaded':     { stars: 3, copy: 'Handwriting submitted' },
+        'bag-beat-shipped':         { stars: 3, copy: 'Build-A-Game beat shipped' },
+        'writing-approved':         { stars: 2, copy: 'Writing approved' },
+        'video-quiz-perfect':       { stars: 2, copy: 'Video quiz nailed' },
+        'speedread-comp-perfect':   { stars: 2, copy: 'Speed-read + nailed comp' },
+        'math-quickfire-perfect':   { stars: 2, copy: 'Math sweep perfect' },
+        'math-lesson-mastered':     { stars: 3, copy: 'Math concept mastered' },
+        'word-run-cleared':         { stars: 1, copy: 'Word Run cleared' },
+        'tiles-round-complete':     { stars: 1, copy: 'Word Tiles round complete' },
+        'wpm-personal-best':        { stars: 1, copy: 'New WPM record' },
+        'showed-parent':            { stars: 1, copy: 'Showed Mom or Dad' },
+        'money-math-correct':       { stars: 1, copy: 'Money math correct' },
+        'money-bucket-mastered':    { stars: 1, copy: 'Bucket mastered' },
+        'day-complete':             { stars: 3, copy: 'Day complete' },
+        'week-streak':              { stars: 5, copy: 'Week streak hit' },
+        // explicit zero — old habit events the day-1 retro nuked
+        'legacy-zero':              { stars: 0, copy: '' },
+      };
+      const rule = POLICY[event];
+      if (!rule) {
+        // Unknown event name — log once, award 0. Likely a typo / old call site.
+        if (!window.__ssStarMissing) window.__ssStarMissing = {};
+        if (!window.__ssStarMissing[event]) {
+          window.__ssStarMissing[event] = 1;
+          console.warn(`[SS] awardStar: unknown event "${event}" — 0 stars awarded. Add to POLICY table.`);
+        }
+        return load().goldStars;
+      }
+      if (rule.stars <= 0) return load().goldStars;
       const s = load();
-      s.goldStars++;
+      s.goldStars += rule.stars;
       save();
-      // notify UI
-      window.dispatchEvent(new CustomEvent('ss:star', { detail: { count: s.goldStars, reason } }));
+      window.dispatchEvent(new CustomEvent('ss:star', {
+        detail: { count: s.goldStars, reason: rule.copy, awarded: rule.stars, event, payload }
+      }));
       return s.goldStars;
     },
 
@@ -183,7 +225,7 @@ window.SS = window.SS || {};
       if (wpm > s.wpmRecord) {
         s.wpmRecord = wpm;
         save();
-        SS.awardStar(`New WPM record: ${wpm}`);
+        SS.awardStar('wpm-personal-best', { wpm });
         return true;
       }
       return false;

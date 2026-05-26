@@ -45,7 +45,18 @@
   if (!host) { console.warn('no #app-host'); return; }
 
   const SS = window.SS;
-  const day = () => window.CURRICULUM.monday;
+
+  // Day-of-week routing — picks today's curriculum, falls back to monday.
+  // Override with ?day=tuesday for testing or previewing.
+  // 2026-05-25: added tuesday (Robert Nay + 4-trick day). Wed-Fri queued.
+  const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const day = () => {
+    const forced = new URLSearchParams(window.location.search).get('day');
+    if (forced && window.CURRICULUM && window.CURRICULUM[forced]) return window.CURRICULUM[forced];
+    const today = DAY_NAMES[new Date().getDay()];
+    if (window.CURRICULUM && window.CURRICULUM[today]) return window.CURRICULUM[today];
+    return window.CURRICULUM.monday;
+  };
 
   // ---- side rail — FAB by default, taps to expand ----
   // Ethan flagged: the always-on sidebar blocked activities. So the rail is
