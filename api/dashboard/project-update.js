@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     const r = await fetch(url, {
       method: 'PATCH',
       headers: sbHeaders(),
-      body: JSON.stringify({ name: trimmedName, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ name: trimmedName }),
     })
     if (!r.ok) {
       const t = await r.text()
