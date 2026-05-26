@@ -1351,9 +1351,9 @@ function MessageList({ roomType = 'agent' }) {
                             style={{
                               padding: '4px 10px',
                               borderRadius: 14,
-                              border: '1px solid rgba(255,255,255,0.14)',
-                              background: 'rgba(255,255,255,0.04)',
-                              color: '#CBD5E1',
+                              border: `1px solid ${C.border2}`,
+                              background: C.chipBg,
+                              color: C.text2,
                               fontSize: 12,
                               lineHeight: 1.4,
                               fontFamily: "'Inter', sans-serif",
@@ -1362,14 +1362,14 @@ function MessageList({ roomType = 'agent' }) {
                               transition: 'background 120ms ease, border-color 120ms ease, color 120ms ease',
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.24)'
-                              e.currentTarget.style.color = '#E2E8F0'
+                              e.currentTarget.style.background = C.bg2
+                              e.currentTarget.style.borderColor = C.border2
+                              e.currentTarget.style.color = C.text
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'
-                              e.currentTarget.style.color = '#CBD5E1'
+                              e.currentTarget.style.background = C.chipBg
+                              e.currentTarget.style.borderColor = C.border2
+                              e.currentTarget.style.color = C.text2
                             }}
                           >
                             {text}
