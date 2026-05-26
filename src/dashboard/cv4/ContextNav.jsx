@@ -133,20 +133,21 @@ export default function CV4ContextNav({
               data-testid="cv4-context-title-switcher"
               onClick={() => setSwitcherOpen(o => !o)}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
+                display: 'inline-flex', alignItems: 'center', gap: 6,
                 background: 'none', border: 'none', padding: 0,
                 cursor: 'pointer',
                 color: C.text,
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
                 minWidth: 0,
               }}
             >
               <span style={{
-                fontSize: 14, fontWeight: 600,
-                letterSpacing: '-0.01em',
+                fontSize: 17, fontWeight: 800,
+                letterSpacing: '-0.018em',
+                textTransform: 'uppercase',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>{title}</span>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                 stroke={C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 style={{ flexShrink: 0, transform: switcherOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms ease' }}>
                 <polyline points="6 9 12 15 18 9" />
@@ -154,9 +155,10 @@ export default function CV4ContextNav({
             </button>
           ) : (
             <span style={{
-              fontSize: 14, fontWeight: 600, color: C.text,
-              fontFamily: "'Inter', sans-serif",
-              letterSpacing: '-0.01em',
+              fontSize: 17, fontWeight: 800, color: C.text,
+              fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+              letterSpacing: '-0.018em',
+              textTransform: 'uppercase',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{title}</span>
           )}

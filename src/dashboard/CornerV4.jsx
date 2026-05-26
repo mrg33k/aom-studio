@@ -39,6 +39,8 @@ import { HomeIcon, TasksIcon, ChatIcon } from './components/cv3/icons.jsx'
 import UserAvatar from './components/cv3/UserAvatar.jsx'
 import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
+import HomeView from './cv4/HomeView.jsx'
+import { useDefaultView } from './hooks/useDefaultView.js'
 import WorldSelector from './components/WorldSelector.jsx'
 import {
   CornerAuthProvider,
@@ -344,6 +346,26 @@ export default function CornerV4() {
   // and filters personal/non-personal tasks by the viewer's slug.
   const { agents, inboxItems, projectRooms, personalTodos, refetch: refetchData } = useDataPipe(null, worldId, currentUserSlug)
 
+  // Default-view setting: 'home' (default) OR { kind:'agent'|'project', slug:'...' }.
+  // Lets the user override what loads first when opening the dashboard.
+  // Mission: corner:home-screen R1.
+  const { defaultView, setDefaultView, resetToHome } = useDefaultView(currentUser?.id)
+  const isHomeMode = (!conversationTarget && !routeProjectId && (defaultView?.kind === 'home' || !defaultView?.kind))
+
+  // Expose setDefaultView / resetToHome via window so the composer-menu
+  // "Make default room" command and the user-avatar "Reset default view"
+  // entry can invoke them without prop drilling for R1.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.__cv4SetDefaultView = (value) => setDefaultView(value)
+    window.__cv4ResetDefaultView = () => resetToHome()
+    window.__cv4CurrentConversation = conversationTarget
+    window.__cv4SelectedAgent = selectedAgent
+    return () => {
+      try { delete window.__cv4SetDefaultView; delete window.__cv4ResetDefaultView; delete window.__cv4CurrentConversation; delete window.__cv4SelectedAgent } catch (_) {}
+    }
+  }, [setDefaultView, resetToHome, conversationTarget, selectedAgent])
+
   // corner:shared-rooms M8 — world-transition reset.
   // The auto-select effect below pins selectedAgent on first paint. On a slow
   // auth resolve (or an admin world-override flip) the agents list changes
@@ -369,22 +391,35 @@ export default function CornerV4() {
   // hard-coding a slug. (Previously hard-coded 'elon', which broke non-AOM worlds
   // like arsenal where the EA slug is 'ea'.) Skips auto-select if the user
   // already has a conversation in flight (e.g. landed on /cv4/project/:id).
+  // R-home-screen: default first paint = HomeView. Auto-route only fires when
+  // the user has set a non-home default (an agent or project room). Without that
+  // override, the home view renders and the user picks where to go.
   useEffect(() => {
     if (!agents || agents.length === 0) return
     if (selectedAgent || conversationTarget) return
-    // mission-rooms: if the URL is on a project (or mission) page, the
-    // URL-restore effect below owns the conversationTarget. Don't race
-    // against it — that wins the same-render setSelectedAgent battle and
-    // the user lands on the wrong room.
     if (routeProjectId) return
-    const target =
-      agents.find(a => a.is_ea && a.is_terminal)
-      || agents.find(a => a.is_ea)
-      || agents[0]
-    if (!target) return
-    setSelectedAgent(target)
-    setConversationTarget({ name: target.name, type: 'agent' })
-  }, [agents, selectedAgent, conversationTarget, routeProjectId])
+    const kind = defaultView?.kind
+    if (!kind || kind === 'home') return  // home is the default — let HomeView render
+    if (kind === 'agent' && defaultView.slug) {
+      const target = agents.find(a => a.slug === defaultView.slug)
+      if (target) {
+        setSelectedAgent(target)
+        setConversationTarget({ name: target.name, type: 'agent' })
+        return
+      }
+    }
+    if (kind === 'project' && defaultView.slug) {
+      const proj = (projectRooms || []).find(p => p.slug === defaultView.slug)
+      if (proj) {
+        setConversationTarget({ name: proj.name || proj.slug, slug: proj.slug, type: 'project' })
+        try {
+          const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+          navigate(basePath + '/project/' + proj.slug)
+        } catch (_) {}
+        return
+      }
+    }
+  }, [agents, projectRooms, selectedAgent, conversationTarget, routeProjectId, defaultView, navigate])
 
   // Tenant access guard (2026-05-25): if the URL points at a project the
   // current user can't access, redirect to the dashboard root. Without
@@ -1945,6 +1980,54 @@ export default function CornerV4() {
                   isNightMode={true}
                   isMobile={false}
                 />
+
+                {/* corner:home-screen — Default View control. Shows current
+                    default (home OR a pinned room) + a reset to home button. */}
+                <div style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', color: C.dim,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  margin: '14px 0 6px',
+                }}>Default View</div>
+                <button
+                  type="button"
+                  onClick={() => { resetToHome(); }}
+                  disabled={!defaultView || defaultView.kind === 'home' || !defaultView.kind}
+                  style={{
+                    width: '100%',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 10px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 2,
+                    color: (!defaultView || defaultView.kind === 'home' || !defaultView.kind) ? C.muted : C.text,
+                    cursor: (!defaultView || defaultView.kind === 'home' || !defaultView.kind) ? 'default' : 'pointer',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.10em', textTransform: 'uppercase',
+                    textAlign: 'left',
+                  }}
+                  data-testid="cv4-default-view-reset"
+                  title="Reset default view to home"
+                  aria-label="Reset default view to home"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ flexShrink: 0 }}>
+                    <path d="M12 2 L2 11 H5 V21 H10 V14 H14 V21 H19 V11 H22 Z"/>
+                  </svg>
+                  <span style={{ flex: 1 }}>
+                    {(!defaultView || defaultView.kind === 'home' || !defaultView.kind)
+                      ? 'Home (default)'
+                      : 'Reset to home'}
+                  </span>
+                </button>
+                {defaultView && defaultView.kind && defaultView.kind !== 'home' && (
+                  <div style={{
+                    fontSize: 10, fontFamily: "'Inter', sans-serif",
+                    color: C.muted, marginTop: 6, lineHeight: 1.4,
+                  }}>
+                    Currently opens to <strong style={{ color: C.text2, fontWeight: 600 }}>{defaultView.slug}</strong> on first load.
+                  </div>
+                )}
               </div>
             )}
           />
@@ -2045,10 +2128,33 @@ export default function CornerV4() {
               selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
                 : <RightMenu />
+            ) : selectedMail ? (
+              <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
+            ) : isHomeMode ? (
+              <HomeView
+                user={currentUser}
+                agents={agents}
+                projectRooms={projectRooms}
+                onSelectAgent={(agent) => {
+                  setSelectedAgent(agent)
+                  setConversationTarget({ name: agent.name, type: 'agent' })
+                }}
+                onSelectProject={(proj, mission) => {
+                  setConversationTarget({
+                    name: proj.name || proj.slug,
+                    slug: proj.slug,
+                    type: 'project',
+                    missionSlug: mission?.slug || null,
+                  })
+                  try {
+                    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
+                    const url = basePath + '/project/' + proj.slug + (mission?.slug ? ('?mission=' + encodeURIComponent(mission.slug)) : '')
+                    navigate(url)
+                  } catch (_) {}
+                }}
+              />
             ) : (
-              selectedMail
-                ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
-                : <ChatPanel key={selectedAgent?.slug || 'chat'} />
+              <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
           </div>
         </div>
