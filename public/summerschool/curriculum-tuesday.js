@@ -213,34 +213,292 @@ window.CURRICULUM.tuesday = {
     { word: 'downloaded', clue: 'Got from the internet onto your device' }
   ],
 
-  // ===== TUESDAY BLOCK PLAN — ~40 internal beats across 4 subjects =====
-  // Subject breakdown:
-  //   Reading (Spine Words trick + Robert Nay in 3 chunks) ≈ 14 beats
-  //   Math (video + summary + 3 concept Qs + 5 practice)   ≈ 9 beats
-  //   Roblox Dev (4 paragraphs + 3 Qs + AI seed)           ≈ 5 beats
-  //   Entrepreneurship (BAG Day 2 pitch)                   ≈ 6 beats
-  //   Frame (welcome + handwriting + show-dad + splash)    ≈ 6 beats
-  //                                                       = ~40 beats
+  // ===== TUESDAY BLOCK PLAN — 40 atomic modules, 4 subjects × 10 each =====
+  // Each card = one tap, one short focused unit, one Continue. Patrik 2026-05-26:
+  // "10 modules 4 subjects per day to help him lock it all in so 40 modules per day."
+  //
+  // Subject buckets (10 each):
+  //   Reading      — Spine Words trick + Robert Nay passage paragraph-by-paragraph
+  //   Math         — Constant of Proportionality (intro, video, 4 summary reads, Qs, practice)
+  //   Roblox Dev   — Why leaderboards (intro, 4 paragraphs, 3 Qs, AI seed, reflection)
+  //   BAG (pitch)  — Day 2 pitch broken into 10 micro-modules
+  //
+  // Plus 3 frame blocks (welcome / show-mom-dad / report-card) that bookend the day.
+  // Total = 43 cards. Per-module timer is 3-4 min default; auto-extends +2 if needed.
+
+  // Reusable concept card body for "did it land?" reflection prompts on each subject's last module
+  spineWordsTrickText: 'Before reading the passage, SCAN it first. Look for names, numbers, dates, the big words. Those are the SPINE — they tell you what the passage is about before you read a word of it. Then when you read for real, your brain already has the shape — you\'re just filling in details.',
+
   blocks: [
-    { id: 'welcome-tue',    kind: 'drill', type: 'welcome',          title: 'Welcome to Tuesday',                minutes: 2  },
+    // ===== FRAME 1: Welcome =====
+    { id: 'welcome-tue', kind: 'drill', type: 'welcome', title: 'Welcome to Tuesday', minutes: 2 },
 
-    { id: 'trick-reading',  kind: 'topic', type: 'trick-arc',        title: 'Reading — Spine Words',             minutes: 12, trickKey: 'reading' },
-    { id: 'reading-1',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 1',              minutes: 10, slice: [0, 2] },
+    // ============================================================
+    // READING — 10 modules
+    // ============================================================
+    { id: 'r-01', kind: 'topic', type: 'concept', minutes: 3, subject: 'Reading', tag: 'Reading · 01 of 10',
+      title: 'The Spine Words trick',
+      body: [
+        'Today\'s trick is called <strong>Spine Words</strong>. It works on any reading — books, articles, even a wall of text in a video game tutorial.',
+        'Here it is: Before you read a paragraph, <strong>SCAN it first</strong>. Look for the names, the numbers, the dates, the bold words. Those are the SPINE — they tell you what the paragraph is about before you read it.',
+        'Then when you read for real, you\'re filling in details on a shape you already know. Reading goes about 2x faster and you remember way more.'
+      ],
+      cta: 'Got it' },
 
-    { id: 'mathlesson-tue', kind: 'topic', type: 'mathlesson',       title: 'Math — Constant of Proportionality', minutes: 18 },
+    { id: 'r-02', kind: 'topic', type: 'concept', minutes: 3, subject: 'Reading', tag: 'Reading · 02 of 10',
+      title: 'Spine Words — demo on Robert Nay',
+      body: [
+        'Watch the trick work on this paragraph you\'re about to read:',
+        '<em>Spine words = <strong>Robert Nay · 14 · Bubble Ball · Corona SDK · 2 million downloads · Angry Birds · App Store</strong></em>',
+        'Just from those, you already half-know the story: a 14-year-old made a game called Bubble Ball using a tool called Corona SDK, it got 2 million downloads, and it beat Angry Birds on the App Store.',
+        'Now when you read the paragraph, you\'re confirming what you already half-know. That\'s the move.'
+      ],
+      cta: 'I see it' },
 
-    { id: 'reading-2',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 2',              minutes: 10, slice: [2, 4] },
+    { id: 'r-03', kind: 'topic', type: 'concept', minutes: 3, subject: 'Reading', tag: 'Reading · 03 of 10',
+      title: 'Try it once',
+      body: [
+        'Look at this next paragraph for 5 seconds. Just scan. Don\'t read for meaning yet — just spot the spine words.',
+        '<em>"In late 2010, Angry Birds was the number one free game on the iPhone App Store. It had been there for months. Rovio, the company that made it, had over 100 employees. Their game had been downloaded more than 50 million times."</em>',
+        'What are the SPINE words? Read it, scan it, then tap "show the answer" below to check yourself.'
+      ],
+      reveal: { prompt: 'Your turn — what\'s the spine?', answer: 'Late 2010 · Angry Birds · #1 free game · iPhone App Store · Rovio · 100 employees · 50 million downloads. Numbers, names, dates — that\'s the spine.' },
+      cta: 'I tried it' },
 
-    { id: 'bag-tue',        kind: 'topic', type: 'bag',              title: 'Build-A-Game Day 2 — pitch',        minutes: 18 },
+    { id: 'r-04', kind: 'topic', type: 'reading', minutes: 4, slice: [0, 1], title: 'Robert Nay — paragraph 1' },
+    { id: 'r-05', kind: 'topic', type: 'reading', minutes: 4, slice: [1, 2], title: 'Robert Nay — paragraph 2' },
+    { id: 'r-06', kind: 'topic', type: 'reading', minutes: 5, slice: [2, 3], title: 'Robert Nay — paragraph 3 (the build)' },
+    { id: 'r-07', kind: 'topic', type: 'reading', minutes: 5, slice: [3, 4], title: 'Robert Nay — paragraph 4 (the release)' },
+    { id: 'r-08', kind: 'topic', type: 'reading', minutes: 5, slice: [4, 5], title: 'Robert Nay — paragraph 5 (the point)' },
 
-    { id: 'reading-3',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 3 (the point)',  minutes: 10, slice: [4, 5] },
+    { id: 'r-09', kind: 'topic', type: 'speedread', minutes: 4, title: 'Speed-Read drill — the whole story' },
 
-    { id: 'roblox-lesson',  kind: 'topic', type: 'roblox-lesson',    title: 'Roblox — why every game has a leaderboard', minutes: 12 },
+    { id: 'r-10', kind: 'topic', type: 'handwriting', minutes: 5, title: 'Write the Spine Words trick on paper' },
 
-    { id: 'handwriting-tue',kind: 'topic', type: 'handwriting',      title: 'Write the Spine Words trick on paper', minutes: 8 },
+    // ============================================================
+    // MATH — 10 modules (Constant of Proportionality)
+    // ============================================================
+    { id: 'm-01', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 01 of 10',
+      title: 'What does "proportional" even mean?',
+      body: [
+        '<strong>Proportional</strong> means two things grow together at a fixed rate. If you double one, you double the other.',
+        'Pizza shop: 1 slice for $2. 2 slices for $4. 3 slices for $6. The price grows at a fixed rate of $2 per slice — that\'s proportional.',
+        'Today\'s lesson: find that fixed rate. They call it the <strong>constant of proportionality</strong>, or just <strong>k</strong>.'
+      ],
+      cta: 'Ready' },
 
-    { id: 'showoff-tue',    kind: 'topic', type: 'showdad',          title: 'Show Mom or Dad what you learned',  minutes: 8 },
+    { id: 'm-02', kind: 'topic', type: 'mathlesson', step: 'video', minutes: 6,
+      title: 'Watch the Khan Academy lesson' },
 
-    { id: 'splash-tue',     kind: 'drill', type: 'splash',           title: 'End of Tuesday',                    minutes: 2  }
+    { id: 'm-03', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 03 of 10',
+      title: 'The equation: y = kx',
+      body: [
+        'Every proportional relationship can be written the same way: <strong>y = kx</strong>.',
+        'The <strong>y</strong> is one quantity. The <strong>x</strong> is the other. The <strong>k</strong> is the constant that ties them together.',
+        'Pizza shop again: if y is dollars and x is slices, then y = 2x (because $2 per slice). The k is 2.'
+      ],
+      cta: 'Makes sense' },
+
+    { id: 'm-04', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 04 of 10',
+      title: 'The trick to find k fast',
+      body: [
+        'Here\'s the move: ask yourself, <strong>"what is y when x is 1?"</strong> That number IS k.',
+        'If 3 slices cost $6, then 1 slice costs $2 — so k = 2.',
+        'If 5 hours of work pays $75, then 1 hour pays $15 — so k = 15.',
+        'The constant is always y at x = 1. Find that, you find k.'
+      ],
+      cta: 'Got the trick' },
+
+    { id: 'm-05', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 05 of 10',
+      title: 'Once you know k, you know everything',
+      body: [
+        'Want to know what 9 slices cost? y = 2 × 9 = $18.',
+        'Want to know what 12 hours of work pays? y = 15 × 12 = $180.',
+        'The constant k unlocks the whole table. Speed (miles per hour), price (dollars per pound), wage (dollars per hour) — all k. All findable by asking what y is when x is 1.'
+      ],
+      cta: 'Show me the test' },
+
+    { id: 'm-06', kind: 'topic', type: 'mathlesson', step: 'q-1', minutes: 3, title: 'Math check — what does k mean?' },
+    { id: 'm-07', kind: 'topic', type: 'mathlesson', step: 'q-23', minutes: 4, title: 'Math check — find k from a real example' },
+
+    { id: 'm-08', kind: 'topic', type: 'mathlesson', step: 'practice-1', minutes: 4, title: 'Practice — problems 1 + 2' },
+    { id: 'm-09', kind: 'topic', type: 'mathlesson', step: 'practice-2', minutes: 4, title: 'Practice — problems 3 + 4' },
+    { id: 'm-10', kind: 'topic', type: 'mathlesson', step: 'practice-3', minutes: 3, title: 'Practice — problem 5' },
+
+    // ============================================================
+    // ROBLOX DEV — 10 modules (Why every game has a leaderboard)
+    // ============================================================
+    { id: 'rb-01', kind: 'topic', type: 'concept', minutes: 3, subject: 'Roblox Dev', tag: 'Roblox · 01 of 10',
+      title: 'Open any Roblox game — what do you see first?',
+      body: [
+        'Open literally any Roblox game. Within 30 seconds, you\'ll see a <strong>leaderboard</strong> — the top players, the high scores, the current round\'s ranking.',
+        'It\'s not an accident. Every studio puts one in on purpose. Today we figure out why — and what it means for the game you\'re going to build.'
+      ],
+      cta: 'Why?' },
+
+    { id: 'rb-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Roblox Dev', tag: 'Roblox · 02 of 10',
+      title: 'Three jobs a leaderboard does',
+      body: [
+        '<strong>1. It gives every player a GOAL the moment they spawn.</strong> Even if you\'re not the best, you can see what better looks like.',
+        '<strong>2. It makes the game COMPETITIVE without forcing anyone to compete.</strong> You can ignore the leaderboard if you want. The people who care, care.',
+        '<strong>3. It makes players come BACK.</strong> "I was rank 8 yesterday — I want to hit rank 5 today." That\'s the loop.'
+      ],
+      cta: 'Three jobs, locked in' },
+
+    { id: 'rb-03', kind: 'topic', type: 'concept', minutes: 3, subject: 'Roblox Dev', tag: 'Roblox · 03 of 10',
+      title: 'What a leaderboard actually IS (technically)',
+      body: [
+        'Behind the scenes a Roblox leaderboard is just a piece of <strong>game-state</strong> — a table that tracks every player\'s score, sorted high-to-low, refreshed every few seconds.',
+        'That\'s it. A table, sorted, refreshed. Not magic. You can write one in Roblox Studio in a few lines of Lua.'
+      ],
+      cta: 'Got it' },
+
+    { id: 'rb-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Roblox Dev', tag: 'Roblox · 04 of 10',
+      title: 'The big move: what you measure becomes what they optimize for',
+      body: [
+        'You — the developer — decide what counts as score. Kills. Coins. Distance traveled. Time alive. Pets adopted.',
+        '<strong>Whatever you measure becomes what players optimize for.</strong>',
+        'Make it kills, and you\'re building a combat game. Make it kindness (points for helping other players), and you\'re building something totally different. The leaderboard IS the game design, condensed into one column of numbers.'
+      ],
+      cta: 'That\'s heavy' },
+
+    { id: 'rb-05', kind: 'topic', type: 'concept', minutes: 2, subject: 'Roblox Dev', tag: 'Roblox · 05 of 10',
+      title: 'Quick check — three jobs',
+      body: ['What\'s ONE of the three jobs a leaderboard does?'],
+      reveal: { prompt: 'Pick the answer in your head, then tap to check.', answer: 'Gives every player a goal the moment they spawn. (Also: makes the game competitive without forcing it; makes them come back.)' },
+      cta: 'Got that one' },
+
+    { id: 'rb-06', kind: 'topic', type: 'concept', minutes: 2, subject: 'Roblox Dev', tag: 'Roblox · 06 of 10',
+      title: 'Quick check — what is it, technically?',
+      body: ['What is a leaderboard, technically?'],
+      reveal: { prompt: 'Try to answer it before tapping.', answer: 'A piece of game-state — a table of players sorted by score, refreshed every few seconds. That\'s it.' },
+      cta: 'Got it' },
+
+    { id: 'rb-07', kind: 'topic', type: 'concept', minutes: 2, subject: 'Roblox Dev', tag: 'Roblox · 07 of 10',
+      title: 'Quick check — the deeper point',
+      body: ['What\'s the deeper point about WHAT you choose to put on the leaderboard?'],
+      reveal: { prompt: 'Take your shot, then check.', answer: 'Whatever you measure becomes what players optimize for. The leaderboard IS the game design.' },
+      cta: 'Locked in' },
+
+    { id: 'rb-08', kind: 'topic', type: 'concept', minutes: 3, subject: 'Roblox Dev', tag: 'Roblox · 08 of 10',
+      title: 'A quick word about AI in studios',
+      body: [
+        'Heads up: a lot of Roblox studios now use AI to help generate placeholder leaderboard art, suggest balance changes, even draft NPC dialogue. You\'ll see more of this everywhere.',
+        'The kids who learn to <strong>prompt AI well</strong> right now will have a giant advantage in 5 years. Not "let AI do the thinking" — but "talk to AI like a teammate you give clear instructions to."',
+        'We\'ll come back to this throughout the summer.'
+      ],
+      cta: 'Noted' },
+
+    { id: 'rb-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Roblox Dev', tag: 'Roblox · 09 of 10',
+      title: 'Your turn — what would your leaderboard measure?',
+      body: [
+        'Think about the game you named yesterday. If you put a leaderboard in it, what would it measure?',
+        'Could be: kills, coins, parkour speed, levels cleared, pets fed, friends helped, secret areas found. There\'s no wrong answer — but the answer SHAPES the game.',
+        'Write your answer down — on paper or in your head — and tap continue. We\'ll come back to it Friday.'
+      ],
+      cta: 'Decided' },
+
+    { id: 'rb-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Roblox Dev', tag: 'Roblox · 10 of 10',
+      title: 'Roblox check — wrap',
+      body: [
+        'You just learned why every Roblox game has a leaderboard, what it really is (a sorted table of scores), and the rule that whatever you measure becomes what players go after.',
+        'That\'s pro-level game-design thinking. Most kids playing Roblox have no idea this is how it works.'
+      ],
+      cta: 'On to the pitch' },
+
+    // ============================================================
+    // BUILD-A-GAME — 10 modules (Day 2: Pitch your game)
+    // ============================================================
+    { id: 'bag-01', kind: 'topic', type: 'concept', minutes: 2, subject: 'Pitch', tag: 'Pitch · 01 of 10',
+      title: 'Day 2: pitch the game you named yesterday',
+      body: [
+        'Yesterday you named your game. Today you pitch it.',
+        'A pitch is a short, exciting way to sell your idea. The point: someone wants to play your game by the time you stop talking.',
+        'We\'re going to write it in 5 parts. One part per card.'
+      ],
+      cta: 'Let\'s pitch it' },
+
+    { id: 'bag-02', kind: 'topic', type: 'concept', minutes: 2, subject: 'Pitch', tag: 'Pitch · 02 of 10',
+      title: 'Why pitch?',
+      body: [
+        'Real Roblox studios pitch their games to publishers BEFORE they build them — if the pitch is bad, the game never gets made.',
+        'It also forces you to know what makes your game special. If you can\'t pitch it, you don\'t really know what it is yet.',
+        'By Friday you\'ll have a real game-design doc. Today\'s pitch is the first piece of it.'
+      ],
+      cta: 'Why locked in' },
+
+    { id: 'bag-03', kind: 'topic', type: 'concept', minutes: 3, subject: 'Pitch', tag: 'Pitch · 03 of 10',
+      title: 'Part 1 — The opener',
+      body: [
+        'First sentence: pull them in fast. Something that makes someone want to hear more.',
+        'Examples: "Imagine a Roblox game where the ground is lava but it\'s also a dance floor." / "What if every weapon in the game cost real friendship points to use?"',
+        '(We\'re going to come back to this Thursday and upgrade it with a special trick. For today, just make it interesting.)',
+        '<em>Write your opener on paper or in your head, then tap continue.</em>'
+      ],
+      cta: 'Opener written' },
+
+    { id: 'bag-04', kind: 'topic', type: 'concept', minutes: 3, subject: 'Pitch', tag: 'Pitch · 04 of 10',
+      title: 'Part 2 — The world',
+      body: [
+        'One sentence on WHERE the game takes place. Be specific.',
+        'Bad: "A world."  Better: "A city built on the back of a giant flying turtle."  Better: "A high school where the lockers are portals."',
+        'The more specific, the more your brain (and the player\'s brain) can SEE it.',
+        '<em>Write the world.</em>'
+      ],
+      cta: 'World written' },
+
+    { id: 'bag-05', kind: 'topic', type: 'concept', minutes: 3, subject: 'Pitch', tag: 'Pitch · 05 of 10',
+      title: 'Part 3 — What you do',
+      body: [
+        'One sentence on the ACTION. What does the player actually do moment-to-moment?',
+        'Examples: "You parkour across rooftops collecting glowing orbs." / "You run a lemonade stand and hire other players as employees." / "You hunt ghosts with a camera that has a real shutter delay."',
+        'The action is the heart of the game.',
+        '<em>Write what you do.</em>'
+      ],
+      cta: 'Action written' },
+
+    { id: 'bag-06', kind: 'topic', type: 'concept', minutes: 3, subject: 'Pitch', tag: 'Pitch · 06 of 10',
+      title: 'Part 4 — What makes it different',
+      body: [
+        'One sentence on why this isn\'t just another game like all the others.',
+        'Maybe it\'s the visual style. Maybe it\'s a mechanic nobody\'s tried. Maybe it\'s the AUDIENCE (a game for siblings to play together; a game for people who hate combat).',
+        'Different = memorable.',
+        '<em>Write what makes yours different.</em>'
+      ],
+      cta: 'Different written' },
+
+    { id: 'bag-07', kind: 'topic', type: 'concept', minutes: 3, subject: 'Pitch', tag: 'Pitch · 07 of 10',
+      title: 'Part 5 — The hook line',
+      body: [
+        'One last sentence that makes someone want to play it RIGHT NOW.',
+        'Could be a tagline ("Live every minute like it\'s your last."). Could be a promise ("You will never play another obby again."). Could be a question ("What would you risk for one more level?").',
+        '<em>Write the hook line.</em>'
+      ],
+      cta: 'Hook written' },
+
+    { id: 'bag-08', kind: 'topic', type: 'concept', minutes: 3, subject: 'Pitch', tag: 'Pitch · 08 of 10',
+      title: 'Read it out loud — just once',
+      body: [
+        'Read all 5 sentences out loud, in order, like you\'re telling someone about a movie that\'s about to come out.',
+        'If a sentence sounds clunky out loud, that\'s your brain telling you to rewrite it. (We\'ll add a trick for HOW to read it aloud on Friday — for today, just hear it.)',
+        '<em>Read it twice if you want.</em>'
+      ],
+      cta: 'Read it' },
+
+    { id: 'bag-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Pitch', tag: 'Pitch · 09 of 10',
+      title: 'Write the whole pitch on paper',
+      body: [
+        'Now write all 5 sentences on a piece of paper. Take your time. Neat. The act of writing it down with your hand cements it in your brain in a way typing never does.',
+        'When it\'s on paper, you\'ve got a pitch deck for one game — your game. That\'s a real piece of work.'
+      ],
+      cta: 'Done — on paper' },
+
+    { id: 'bag-10', kind: 'topic', type: 'bag', minutes: 4, title: 'Pitch it to Mom or Dad' },
+
+    // ===== FRAME 2: Show Mom or Dad (free-form display + photo) =====
+    { id: 'showoff-tue', kind: 'topic', type: 'showdad', title: 'Show Mom or Dad what you learned', minutes: 6 },
+
+    // ===== FRAME 3: Report card =====
+    { id: 'report-tue', kind: 'drill', type: 'report-card', title: 'Tuesday — report card', minutes: 2 }
   ]
 };

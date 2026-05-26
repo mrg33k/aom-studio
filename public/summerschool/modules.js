@@ -44,7 +44,139 @@ window.SSMod = (function () {
 
   function complete(blockId, data) {
     if (window.SS) window.SS.completeBlock(blockId, data);
+    // Speed compliment: if the user finished in under half the budgeted
+    // minutes, fire a one-star bonus + toast. Quiet failure if SS is missing.
+    try {
+      const metrics = window.SS && window.SS.todayMetrics();
+      const m = metrics && metrics.blockMetrics && metrics.blockMetrics[blockId];
+      // The block budget lives on the block definition — caller passes it in
+      // via `data.budgetMinutes` when known. Fall back to a generous 6 min.
+      const budgetMin = (data && data.budgetMinutes) || _activeBlockBudgetMin || 6;
+      if (m && m.durationMs) {
+        const half = budgetMin * 60 * 1000 * 0.5;
+        if (m.durationMs > 0 && m.durationMs < half) {
+          window.SS.awardStar('speed-bonus', { blockId, durationMs: m.durationMs });
+        }
+      }
+    } catch (e) { /* don't let metrics blow up the flow */ }
     window.SSRoute.next();
+  }
+
+  // Tracks the currently rendered block's minute budget so complete() can
+  // judge "was that fast?" without every renderer threading it through.
+  let _activeBlockBudgetMin = 6;
+  let _timerInterval = null;
+
+  // ============================================================
+  // PER-MODULE TIMER
+  // Renders a small countdown pill in the top rail. When it hits zero,
+  // automatically adds +2 minutes and shows a quiet "take your time" toast.
+  // Keeps Ethan focused without punishing him.
+  // ============================================================
+  function startBlockTimer(host, block) {
+    _activeBlockBudgetMin = block.minutes || 6;
+    if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+    let remaining = (block.minutes || 6) * 60;
+    let extended = false;
+
+    // Inject a timer pill into the top rail if one isn't there yet.
+    const ensurePill = () => {
+      const rail = host.querySelector('.top-rail');
+      if (!rail) return null;
+      let pill = rail.querySelector('.timer-pill');
+      if (!pill) {
+        pill = document.createElement('span');
+        pill.className = 'timer-pill';
+        rail.appendChild(pill);
+      }
+      return pill;
+    };
+
+    const render = () => {
+      const pill = ensurePill();
+      if (!pill) return;
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      pill.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      pill.classList.toggle('timer-low', remaining > 0 && remaining < 30);
+      pill.classList.toggle('timer-extended', extended);
+    };
+
+    const tick = () => {
+      remaining = Math.max(0, remaining - 1);
+      render();
+      if (remaining === 0 && !extended) {
+        extended = true;
+        remaining = 120;
+        render();
+        showToast('Take your time — added 2 minutes.', { kind: 'gentle' });
+      }
+      if (remaining === 0 && extended) {
+        clearInterval(_timerInterval);
+        _timerInterval = null;
+      }
+    };
+
+    render();
+    _timerInterval = setInterval(tick, 1000);
+  }
+
+  function showToast(msg, opts) {
+    const t = document.createElement('div');
+    t.className = 'ss-toast ' + (opts && opts.kind === 'gentle' ? 'ss-toast-gentle' : 'ss-toast-default');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 2800);
+  }
+
+  // ============================================================
+  // CONCEPT — micro-module renderer
+  // Lightweight card: eyebrow + title + body paragraphs + optional reveal +
+  // sticky Continue button. Powers most of the 40 per-day atomic modules
+  // without rewriting the bigger renderers (mathlesson, reading, etc.).
+  //
+  // Block shape:
+  //   { id, kind:'topic', type:'concept', minutes,
+  //     subject:'Reading'|'Math'|'Roblox'|'Pitch'|...,
+  //     tag: 'Reading · 01 of 10',          // small eyebrow line
+  //     title: 'The Spine Words trick',
+  //     body: ['paragraph 1', 'paragraph 2'],
+  //     reveal: { prompt, answer },         // optional "show the answer" expander
+  //     cta: 'Got it'                       // button label (defaults to "Continue")
+  //   }
+  // ============================================================
+  function concept(host, block) {
+    const tag = block.tag || (block.subject || '');
+    const title = block.title || '';
+    const bodyHtml = (Array.isArray(block.body) ? block.body : [block.body])
+      .filter(Boolean)
+      .map(p => `<p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.55; margin: 0 0 var(--space-3) 0;">${p}</p>`)
+      .join('');
+    const revealHtml = (block.reveal && block.reveal.prompt) ? `
+      <div class="passage" style="background: #FFF; border: 1px solid rgba(26,24,20,0.10); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+        <p data-dict style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45; margin: 0 0 var(--space-3) 0;">${block.reveal.prompt}</p>
+        <details>
+          <summary style="cursor: pointer; font-size: 13px; color: var(--amber); font-weight: 600;">Show the answer</summary>
+          <p style="margin-top: var(--space-2); font-size: 16px; color: var(--ink-soft); font-style: italic; font-family: var(--font-serif); line-height: 1.5;">${block.reveal.answer || ''}</p>
+        </details>
+      </div>
+    ` : '';
+    host.innerHTML = `
+      ${topRail(0, tag)}
+      ${moduleHead(block.subject || 'Today', title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+        <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-bottom: var(--space-4); box-shadow: var(--shadow-card);">
+          ${bodyHtml}
+        </div>
+        ${revealHtml}
+        <div class="center-actions">
+          <button class="btn-primary" id="concept-go">${block.cta || 'Continue'}</button>
+        </div>
+      </div>
+    `;
+    startBlockTimer(host, block);
+    host.querySelector('#concept-go').onclick = () => complete(block.id, { budgetMinutes: block.minutes });
   }
 
   // ============================================================
@@ -166,6 +298,8 @@ window.SSMod = (function () {
       </div>
     `;
 
+    startBlockTimer(host, block);
+
     // Need most-but-not-all right — but never more than exist.
     // 1 Q → need 1, 2 Qs → need 1, 3 Qs → need 2, 4 Qs → need 3
     const required = qs.length === 1 ? 1 : (qs.length <= 3 ? qs.length - 1 : Math.ceil(qs.length * 0.75));
@@ -218,7 +352,7 @@ window.SSMod = (function () {
     doneBtn.onclick = () => {
       if (doneBtn.disabled) return;
       if (answered === qs.length && window.SS) window.SS.awardStar('reading-comp-perfect');
-      complete(block.id, { questionsRight: answered, total: qs.length });
+      complete(block.id, { questionsRight: answered, total: qs.length, budgetMinutes: block.minutes });
     };
   }
 
@@ -1717,6 +1851,13 @@ window.SSMod = (function () {
   // ============================================================
   function mathlesson(host, block) {
     const ml = day().mathLesson;
+    // step controls which stage renders standalone (so each can be its own
+    // module card). Default 'all' = legacy multi-stage flow.
+    //   'video' → just the video, advance on end / skip
+    //   'practice-1' → practice problems 0-1
+    //   'practice-2' → practice problems 2-3
+    //   'practice-3' → practice problem 4 + final reflection
+    const step = block.step || 'all';
     let stage = 0;  // 0 = intro, 1 = video, 2 = comprehension, 3 = practice
     let cRight = 0, pRight = 0;
     let practiceIdx = 0;
@@ -1899,6 +2040,163 @@ window.SSMod = (function () {
       input.onkeydown = (e) => { if (e.key === 'Enter') check.click(); };
       setTimeout(() => input.focus(), 100);
     };
+
+    // Standalone step renderers — each one is its own block card
+    const renderVideoOnly = () => {
+      const summaryHtml = (ml.summary || []).map(p => `<p>${p}</p>`).join('');
+      host.innerHTML = `
+        ${topRail(0, 'lesson video')}
+        ${moduleHead('Math · ' + ml.title, 'Watch the video')}
+        <div class="reading-layout" style="grid-template-columns: 1fr;">
+          <div style="background: #000; border-radius: var(--r-md); overflow: hidden; aspect-ratio: 16 / 9; position: relative;" id="ml-vid-stage">
+            <iframe id="ml-vid" style="width:100%; height:100%; border:0;"
+              src="https://www.youtube.com/embed/${ml.videoId}?rel=0&modestbranding=1&controls=1&fs=0&enablejsapi=1&disablekb=1&iv_load_policy=3"
+              allow="accelerometer; encrypted-media; gyroscope"></iframe>
+          </div>
+          <div id="ml-summary" style="display:none;" data-dict>
+            <div class="passage" style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-top: var(--space-3); box-shadow: var(--shadow-card);">
+              <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Lesson · ${ml.domain}</div>
+              ${summaryHtml || '<p>Lesson summary is being prepared.</p>'}
+            </div>
+          </div>
+          <div class="center-actions">
+            <button class="btn-primary" id="ml-vid-done">Continue</button>
+          </div>
+        </div>
+      `;
+      startBlockTimer(host, block);
+      const advance = () => complete(block.id, { budgetMinutes: block.minutes });
+      host.querySelector('#ml-vid-done').onclick = advance;
+      if (!window.YT) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+      const bind = () => {
+        try {
+          new window.YT.Player('ml-vid', {
+            events: {
+              onError: (e) => {
+                if (e.data === 101 || e.data === 150 || e.data === 153) {
+                  const stg = host.querySelector('#ml-vid-stage');
+                  const summary = host.querySelector('#ml-summary');
+                  if (stg) stg.style.display = 'none';
+                  if (summary) summary.style.display = 'block';
+                }
+              }
+            }
+          });
+        } catch (e) {}
+      };
+      if (window.YT && window.YT.Player) bind();
+      else window.onYouTubeIframeAPIReady = bind;
+    };
+
+    // Standalone practice subset — show N problems, then complete.
+    const renderPracticeSubset = (startIdx, endIdx) => {
+      const subset = ml.practice.slice(startIdx, endIdx);
+      let localIdx = 0;
+      let localRight = 0;
+      const renderOne = () => {
+        const prob = subset[localIdx];
+        if (!prob) {
+          if (localRight === subset.length && window.SS) window.SS.awardStar('math-quickfire-perfect');
+          complete(block.id, { practice: localRight, total: subset.length, budgetMinutes: block.minutes });
+          return;
+        }
+        host.innerHTML = `
+          ${topRail(0, 'practice ' + (localIdx + 1) + ' / ' + subset.length)}
+          ${moduleHead('Math · ' + ml.title, 'Try it yourself')}
+          <div class="math-stage">
+            <div class="math-card">
+              <div style="font-family: var(--font-serif); font-size: 22px; color: var(--ink); margin-bottom: var(--space-5); line-height: 1.4;">${prob.p}</div>
+              <input class="math-input" id="ml-p-i" type="number" step="any" autocomplete="off" />
+              <div style="margin-top: var(--space-3); font-size: 13px; color: var(--ink-quiet);">${prob.unit || ''}</div>
+            </div>
+            <div class="math-meta">
+              <div>Problem <span class="v">${localIdx + 1}</span> of ${subset.length}</div>
+              <div>Right: <span class="v">${localRight}</span></div>
+            </div>
+            <div class="center-actions">
+              <button class="btn-amber" id="ml-p-check">Check</button>
+            </div>
+            <div id="ml-p-feedback" style="text-align: center; font-family: var(--font-serif); font-size: 18px; margin-top: var(--space-3);"></div>
+          </div>
+        `;
+        startBlockTimer(host, block);
+        const input = host.querySelector('#ml-p-i');
+        const check = host.querySelector('#ml-p-check');
+        const fb = host.querySelector('#ml-p-feedback');
+        const goNext = () => { localIdx++; renderOne(); };
+        check.onclick = () => {
+          const v = parseFloat(input.value);
+          if (Math.abs(v - prob.a) < 0.001) {
+            localRight++;
+            fb.textContent = 'Correct.';
+            fb.style.color = '#2D6B3C';
+          } else {
+            fb.textContent = `Not quite — answer was ${prob.a}${prob.unit || ''}`;
+            fb.style.color = '#8B3838';
+          }
+          check.textContent = localIdx === subset.length - 1 ? 'Done' : 'Next';
+          check.onclick = goNext;
+        };
+        input.onkeydown = (e) => { if (e.key === 'Enter') check.click(); };
+        setTimeout(() => input.focus(), 100);
+      };
+      renderOne();
+    };
+
+    // Standalone concept quiz — N questions, then complete.
+    const renderConceptQuiz = (qIndices) => {
+      const qs = qIndices.map(i => ml.questions[i]).filter(Boolean);
+      host.innerHTML = `
+        ${topRail(0, 'comprehension')}
+        ${moduleHead('Math · ' + ml.title, 'Did it land?')}
+        <div class="reading-layout" style="grid-template-columns: 1fr;">
+          <div class="questions">
+            <h4>${qs.length} question${qs.length === 1 ? '' : 's'}</h4>
+            ${qs.map((q, i) => `
+              <div class="q-item" data-q="${i}">
+                <div class="q-prompt">${q.q}</div>
+                <div class="q-choices">
+                  ${q.a.map((c, j) => `<button class="q-choice" data-i="${j}">${c}</button>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="center-actions">
+            <button class="btn-primary" id="ml-cq-done">Continue</button>
+          </div>
+        </div>
+      `;
+      startBlockTimer(host, block);
+      let right = 0;
+      qs.forEach((q, qi) => {
+        const item = host.querySelector(`[data-q="${qi}"]`);
+        item.querySelectorAll('.q-choice').forEach(btn => {
+          btn.onclick = () => {
+            if (item.dataset.locked) return;
+            item.dataset.locked = '1';
+            const i = parseInt(btn.dataset.i, 10);
+            const ok = i === q.right;
+            btn.classList.add(ok ? 'correct' : 'wrong');
+            if (ok) right++;
+          };
+        });
+      });
+      host.querySelector('#ml-cq-done').onclick = () => {
+        if (right === qs.length && window.SS) window.SS.awardStar('quiz-first-try');
+        complete(block.id, { right, total: qs.length, budgetMinutes: block.minutes });
+      };
+    };
+
+    if (step === 'video') return renderVideoOnly();
+    if (step === 'practice-1') return renderPracticeSubset(0, 2);
+    if (step === 'practice-2') return renderPracticeSubset(2, 4);
+    if (step === 'practice-3') return renderPracticeSubset(4, ml.practice.length);
+    if (step === 'q-1') return renderConceptQuiz([0]);
+    if (step === 'q-23') return renderConceptQuiz([1, 2]);
 
     renderIntro();
   }
@@ -2168,6 +2466,96 @@ window.SSMod = (function () {
     };
   }
 
+  // ============================================================
+  // REPORT CARD — end-of-day summary
+  // Renders modules done, total time, fastest module, stars earned. Reads
+  // from SS.todayMetrics(). Used as the splash block on every day.
+  // ============================================================
+  function reportCard(host, block) {
+    const m = (window.SS && window.SS.todayMetrics()) || {};
+    const blocks = (day().blocks || []).filter(b => b.kind !== 'drill' || ['welcome', 'splash', 'report-card'].indexOf(b.type) === -1);
+    const allBlocks = day().blocks || [];
+    const completed = m.completed || [];
+
+    // Filter out frame blocks (welcome / report-card / splash) from the count
+    // so "modules done" is the real module total.
+    const isModule = (b) => b.type !== 'welcome' && b.type !== 'splash' && b.type !== 'report-card';
+    const modules = allBlocks.filter(isModule);
+    const doneModules = modules.filter(b => completed.includes(b.id));
+    const totalCount = modules.length;
+    const doneCount = doneModules.length;
+
+    // Total time + fastest module
+    const metrics = m.blockMetrics || {};
+    let totalMs = 0;
+    let fastest = null;
+    Object.entries(metrics).forEach(([bid, mm]) => {
+      if (mm.durationMs && mm.durationMs > 0) {
+        totalMs += mm.durationMs;
+        if (!fastest || mm.durationMs < fastest.durationMs) {
+          const blk = allBlocks.find(b => b.id === bid);
+          if (blk && isModule(blk)) fastest = { ...mm, title: blk.title, blockId: bid };
+        }
+      }
+    });
+    const totalMin = Math.round(totalMs / 60000);
+    const fastestSec = fastest ? Math.max(1, Math.round(fastest.durationMs / 1000)) : null;
+
+    // Pick a compliment based on speed + completion
+    let compliment = '';
+    if (doneCount === totalCount && totalCount > 0) {
+      compliment = totalMin > 0 && totalMin < 90
+        ? `That's a fast day, Ethan. ${doneCount} modules in ${totalMin} minutes.`
+        : `Big day — ${doneCount} modules. Nice work, dude.`;
+    } else {
+      compliment = `${doneCount} of ${totalCount} modules done. Keep going.`;
+    }
+
+    host.innerHTML = `
+      ${topRail(100, 'day report')}
+      <div style="padding: var(--space-7) var(--space-5);">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">${day().day || 'today'} · report card</div>
+        <h1 style="font-family: var(--font-serif); font-weight: 500; font-size: 36px; line-height: 1.1; margin-bottom: var(--space-5);">${compliment}</h1>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-6);">
+          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card);">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Modules</div>
+            <div style="font-family: var(--font-serif); font-size: 38px; line-height: 1; color: var(--ink);">${doneCount}<span style="font-size:18px; color: var(--ink-quiet);"> / ${totalCount}</span></div>
+          </div>
+          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card);">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Time on task</div>
+            <div style="font-family: var(--font-serif); font-size: 38px; line-height: 1; color: var(--ink);">${totalMin}<span style="font-size:18px; color: var(--ink-quiet);"> min</span></div>
+          </div>
+          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card);">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Gold stars</div>
+            <div style="font-family: var(--font-serif); font-size: 38px; line-height: 1; color: var(--amber);">★ ${m.goldStars || 0}</div>
+          </div>
+          <div style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); box-shadow: var(--shadow-card);">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-quiet); margin-bottom: var(--space-2);">Fastest module</div>
+            <div style="font-family: var(--font-serif); font-size: 22px; line-height: 1.15; color: var(--ink);">${fastest ? fastest.title : '—'}</div>
+            ${fastest ? `<div style="font-size: 13px; color: var(--ink-quiet); margin-top: var(--space-2);">${fastestSec}s — fast.</div>` : ''}
+          </div>
+        </div>
+
+        <div style="background: #FBF7EE; border-left: 4px solid var(--amber); border-radius: 0 var(--r-md) var(--r-md) 0; padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-2);">Streak</div>
+          <div style="font-family: var(--font-serif); font-size: 19px; line-height: 1.45; color: var(--ink);">${(m.streak || 0)} day${(m.streak || 0) === 1 ? '' : 's'} in a row. ${(m.streak || 0) >= 2 ? 'Show up tomorrow.' : 'Keep showing up.'}</div>
+        </div>
+
+        <div class="center-actions">
+          <button class="btn-primary" id="rc-done">${doneCount === totalCount ? 'Day complete — show Mom & Dad' : 'Done for now'}</button>
+        </div>
+      </div>
+    `;
+    host.querySelector('#rc-done').onclick = () => {
+      if (doneCount === totalCount && window.SS) {
+        window.SS.tickStreak();
+        window.SS.awardStar('day-complete');
+      }
+      complete(block.id);
+    };
+  }
+
   // public registry
   // ============================================================
   return {
@@ -2177,6 +2565,8 @@ window.SSMod = (function () {
     wordrun, spelling, tiles, speedread, video,
     'trick-arc': trickArc,
     handwriting,
-    'roblox-lesson': robloxLesson
+    'roblox-lesson': robloxLesson,
+    concept,
+    'report-card': reportCard
   };
 })();

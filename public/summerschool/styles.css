@@ -997,6 +997,58 @@ input, textarea {
  * `class="center-actions sticky-cta"` continue to render correctly. */
 .center-actions.sticky-cta { /* alias, see .center-actions above */ }
 
+/* ============ TIMER PILL (per-module countdown) ============ */
+.top-rail .timer-pill {
+  margin-left: var(--space-3);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(26,24,20,0.06);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.top-rail .timer-pill.timer-low {
+  background: rgba(204, 109, 56, 0.16);
+  color: #8B3838;
+}
+.top-rail .timer-pill.timer-extended {
+  background: rgba(45, 107, 60, 0.12);
+  color: #2D6B3C;
+}
+
+/* ============ TOAST (gentle inline notification) ============ */
+.ss-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0) + 90px);
+  transform: translateX(-50%) translateY(20px);
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  box-shadow: 0 10px 30px rgba(26,24,20,0.28);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  max-width: 90%;
+  text-align: center;
+}
+.ss-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.ss-toast-gentle {
+  background: var(--cream-card);
+  color: var(--ink);
+  border: 1px solid rgba(26,24,20,0.10);
+}
+
 .muted { color: var(--ink-quiet); }
 .serif { font-family: var(--font-serif); }
 

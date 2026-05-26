@@ -115,6 +115,8 @@ window.SS = window.SS || {};
         'tiles-round-complete':     { stars: 1, copy: 'Word Tiles round complete' },
         'wpm-personal-best':        { stars: 1, copy: 'New WPM record' },
         'showed-parent':            { stars: 1, copy: 'Showed Mom or Dad' },
+        'speed-bonus':              { stars: 1, copy: '🚀 That was fast!' },
+        'concept-complete':         { stars: 0, copy: '' },
         'money-math-correct':       { stars: 1, copy: 'Money math correct' },
         'money-bucket-mastered':    { stars: 1, copy: 'Bucket mastered' },
         'day-complete':             { stars: 3, copy: 'Day complete' },
