@@ -7,7 +7,16 @@
 window.SSMod = (function () {
   'use strict';
 
-  const day = () => window.CURRICULUM.monday;
+  // Day-of-week routing — keep in sync with app.js. Picks today's curriculum;
+  // ?day=<name> in URL overrides for preview. Fallback to monday.
+  const DAY_NAMES_MOD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const day = () => {
+    const forced = new URLSearchParams(window.location.search).get('day');
+    if (forced && window.CURRICULUM && window.CURRICULUM[forced]) return window.CURRICULUM[forced];
+    const today = DAY_NAMES_MOD[new Date().getDay()];
+    if (window.CURRICULUM && window.CURRICULUM[today]) return window.CURRICULUM[today];
+    return window.CURRICULUM.monday;
+  };
 
   // helper: element creator
   function el(tag, props = {}, html) {
