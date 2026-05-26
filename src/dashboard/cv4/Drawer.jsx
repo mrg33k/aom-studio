@@ -439,14 +439,17 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* R10-1 — Mail leads, Agents follow. Mail Room lives in the left
-          rail: amber Connect Gmail hero when no token, 5-bucket tabs +
-          email list when connected. Clicking an email pins it as a chat
-          chip on the EA via onSelectMail. */}
-      <LeftMailPanel
-        selectedMailId={selectedMailId}
-        onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
-      />
+      {/* R20 (2026-05-25) — Mail is now a TreeSection too so every section
+          (Mail, Agents, Projects, Account) shares the exact same chevron
+          heading. Mail defaults to OPEN; Agents + Projects to closed;
+          Account to OPEN. LeftMailPanel's internal "Mail" label is
+          dropped — the TreeSection header IS the title now. */}
+      <TreeSection title="Mail" collapsible>
+        <LeftMailPanel
+          selectedMailId={selectedMailId}
+          onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
+        />
+      </TreeSection>
 
       {/* corner:skills-picker R1 — purple "Browse skills" CTA above the
           Agents section. Click opens the Skills shelf takeover. */}
@@ -454,8 +457,6 @@ function DrawerBody({
         <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
       )}
 
-      {/* R19 (2026-05-25) — Agents + Projects default to collapsed so the
-          rail starts quiet; Mail is the always-open lead. Chevron toggles. */}
       <TreeSection title="Agents" collapsible defaultCollapsed>
         {agents.length === 0 ? (
           <Empty label="No agents" />
@@ -471,7 +472,10 @@ function DrawerBody({
         )}
       </TreeSection>
 
-      <NestedUnderMail>
+      {/* R20 — Projects is its own top-level section. Dropped the
+          NestedUnderMail wrapper + "Filed under Mail" label per Patrik:
+          the visual nesting made Projects look subordinate to Agents
+          and the label didn't mean anything. */}
       <TreeSection
         title="Projects"
         collapsible
@@ -584,9 +588,9 @@ function DrawerBody({
         )}
       </TreeSection>
 
-      </NestedUnderMail>
-
-      <TreeSection title="Account">
+      {/* R20 — Account also collapsible (default open) so every section
+          shares the same chevron heading affordance. */}
+      <TreeSection title="Account" collapsible>
         {/* "Reset to AOM" is a super-admin backdoor — wipes world override +
             force-reloads. Useful when the super-admin is debugging tenant
             world-switcher state; harmful (and confusing) for any other user,
@@ -1042,28 +1046,9 @@ function DocIcon() {
   )
 }
 
-// R9/R10 — Visual nest. Projects + Agents are filed under Mail. A subtle
-// left rule + indent communicates the hierarchy without shouting.
-function NestedUnderMail({ children }) {
-  return (
-    <div style={{
-      paddingLeft: 8,
-      marginLeft: 4,
-      marginBottom: 4,
-      borderLeft: '1px solid rgba(234,179,8,0.14)',
-      minWidth: 0,
-    }}>
-      <div style={{
-        fontSize: 8, fontWeight: 700, color: C.dim,
-        letterSpacing: '0.16em', textTransform: 'uppercase',
-        padding: '4px 6px 2px',
-        fontFamily: MENU.monoFont,
-        opacity: 0.7,
-      }}>Filed under Mail</div>
-      {children}
-    </div>
-  )
-}
+// R20 — NestedUnderMail retired. Projects is its own top-level
+// section now; no more "Filed under Mail" label, no more indented
+// border. Function deleted along with the JSX usage.
 
 function SignOutIcon() {
   return (

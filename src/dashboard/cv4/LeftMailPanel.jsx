@@ -226,13 +226,16 @@ function ConnectHero({ state, oauthReason }) {
         }}>
           <MailIcon />
         </div>
+        {/* R20 — "Mail" label dropped because the parent TreeSection's
+            chevron header provides the section title. The hero is now
+            a Connect Gmail CTA with the reason subline. */}
         <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1 }}>
           <span style={{
-            fontFamily: MENU.bodyFont, fontSize: 16, fontWeight: 600,
+            fontFamily: MENU.bodyFont, fontSize: 14, fontWeight: 600,
             letterSpacing: '-0.005em', lineHeight: 1.1,
             color: C.text,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{busy ? 'Connecting…' : 'Mail'}</span>
+          }}>{busy ? 'Connecting…' : 'Connect Gmail'}</span>
           <span style={{
             fontSize: 9, fontWeight: 700, color: C.dim,
             letterSpacing: '0.10em', textTransform: 'uppercase',
@@ -272,18 +275,15 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
   }
 
   return (
-    <div data-cv4-left-mail style={{ margin: '6px 2px 12px' }}>
+    <div data-cv4-left-mail style={{ margin: '2px 2px 12px' }}>
+      {/* R20 — internal "Mail" label removed because the parent
+          TreeSection ("MAIL" chevron header) IS the section title now.
+          What remains: the active account email + "Add another" button. */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '6px 4px 6px',
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        padding: '2px 4px 6px',
         gap: 8,
       }}>
-        <span style={{
-          fontFamily: MENU.bodyFont, fontSize: 16, fontWeight: 600,
-          letterSpacing: '-0.005em', lineHeight: 1.1,
-          color: C.text,
-          flexShrink: 0,
-        }}>Mail</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, flex: 1, justifyContent: 'flex-end' }}>
           {headerEmail && (
             <span title={headerEmail} style={{
