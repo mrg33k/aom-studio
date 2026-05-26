@@ -33,14 +33,16 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
+  // Derive tenant from body (defaults to 'aom'). For shared rooms callers pass shared:<slug>.
+  const requestedTenant = (req.body && (req.body.client_id || req.body.clientId)) || 'aom'
   let tenant
   try {
-    tenant = await verifyTenant(req)
+    tenant = await verifyTenant(requestedTenant, req)
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status || 401).json({ error: err.message })
     return res.status(500).json({ error: err.message || 'auth failure' })
   }
-  const clientId = tenant?.clientId || 'aom'
+  const clientId = tenant?.tenant || requestedTenant
   const updatedBy = tenant?.userId || null
 
   if (req.method === 'PATCH') {
