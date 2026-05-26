@@ -170,6 +170,22 @@ window.SSMod = (function () {
         </details>
       </div>
     ` : '';
+    // 2026-05-26 engagement gate (Patrik): every concept card now requires a
+    // tap on a "Did it land?" check before Continue unlocks. Forces him to
+    // actually engage with the card instead of speed-tapping through. If a
+    // card has no `check`, Continue is enabled immediately (back-compat).
+    const hasCheck = block.check && Array.isArray(block.check.choices) && block.check.choices.length >= 2;
+    const checkHtml = hasCheck ? `
+      <div class="concept-check" id="concept-check" style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Did it land?</div>
+        <div style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45; margin-bottom: var(--space-3);">${block.check.q}</div>
+        <div class="q-choices" style="display: flex; flex-direction: column; gap: var(--space-2);">
+          ${block.check.choices.map((c, i) => `<button class="q-choice" data-i="${i}">${c}</button>`).join('')}
+        </div>
+        <div id="concept-check-feedback" style="margin-top: var(--space-3); font-size: 14px; font-family: var(--font-serif); color: var(--ink-quiet); min-height: 1.2em;"></div>
+      </div>
+    ` : '';
+
     host.innerHTML = `
       ${topRail(0, tag)}
       ${moduleHead(block.subject || 'Today', title)}
@@ -178,13 +194,46 @@ window.SSMod = (function () {
           ${bodyHtml}
         </div>
         ${revealHtml}
+        ${checkHtml}
         <div class="center-actions">
-          <button class="btn-primary" id="concept-go">${block.cta || 'Continue'}</button>
+          <button class="btn-primary" id="concept-go"${hasCheck ? ' disabled style="opacity:0.5;"' : ''}>${hasCheck ? 'Answer the check first' : (block.cta || 'Continue')}</button>
         </div>
       </div>
     `;
     startBlockTimer(host, block);
-    host.querySelector('#concept-go').onclick = () => complete(block.id, { budgetMinutes: block.minutes });
+
+    if (hasCheck) {
+      const goBtn = host.querySelector('#concept-go');
+      const fb = host.querySelector('#concept-check-feedback');
+      const checkBox = host.querySelector('#concept-check');
+      checkBox.querySelectorAll('.q-choice').forEach(btn => {
+        btn.onclick = () => {
+          if (checkBox.dataset.locked) return;
+          checkBox.dataset.locked = '1';
+          const i = parseInt(btn.dataset.i, 10);
+          const ok = i === block.check.right;
+          btn.classList.add(ok ? 'correct' : 'wrong');
+          if (!ok) {
+            // Highlight the right answer so he learns
+            const rightBtn = checkBox.querySelector('.q-choice[data-i="' + block.check.right + '"]');
+            if (rightBtn) rightBtn.classList.add('correct');
+            fb.textContent = 'Not quite — the right one is highlighted. Tap continue when you see it.';
+            fb.style.color = '#8B3838';
+          } else {
+            fb.textContent = 'Yes — that\'s the move.';
+            fb.style.color = '#2D6B3C';
+          }
+          goBtn.disabled = false;
+          goBtn.style.opacity = '1';
+          goBtn.textContent = block.cta || 'Continue';
+        };
+      });
+    }
+
+    host.querySelector('#concept-go').onclick = () => {
+      if (host.querySelector('#concept-go').disabled) return;
+      complete(block.id, { budgetMinutes: block.minutes });
+    };
   }
 
   // ============================================================
