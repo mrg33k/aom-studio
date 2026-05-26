@@ -1323,8 +1323,22 @@ function MessageList({ roomType = 'agent' }) {
                   {/* corner:suggested-responses — tap-to-send chips under the
                        assistant bubble. Quiet pills, hover to lift, click to
                        send the chip text as the user's next message. Absence
-                       of metadata.chips => agent opted out for this reply. */}
-                  {!isUser && Array.isArray(msg.metadata?.chips) && msg.metadata.chips.length > 0 && (
+                       of metadata.chips => agent opted out for this reply.
+                       R1.1 (2026-05-25): only render chips on the LATEST
+                       assistant message in the thread — older chips are
+                       stale ("what to say next" only applies to the most
+                       recent reply, not 20 turns back). */}
+                  {(() => {
+                    if (isUser) return false
+                    const chips = msg.metadata?.chips
+                    if (!Array.isArray(chips) || chips.length === 0) return false
+                    // Suppress chips when any LATER assistant message exists
+                    // in the visible thread (settled, real id — not a temp).
+                    const hasLaterAssistant = arr
+                      .slice(idx + 1)
+                      .some((m) => m.role === 'assistant' && !String(m.id || '').startsWith('temp-'))
+                    return !hasLaterAssistant
+                  })() && (
                     <div
                       data-chips
                       style={{
