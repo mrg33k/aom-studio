@@ -284,16 +284,36 @@ export default async function handler(req, res) {
     throw err;
   }
 
-  // Locate the project directory on disk.
-  const projectDir = path.join(AOM_EA_ROOT, 'corner', 'users', world, 'projects', slug);
-  if (!fs.existsSync(projectDir)) {
-    // Project row exists in DB but files not on disk (cloud deploy, or stale row).
-    // Return empty structure rather than a 404 — the DB is authoritative.
-    return res.status(200).json({ project: slug, world, files: [], missions: [] });
+  // R79-f15 (2026-05-25): Vercel serverless functions can't read Patrik's
+  // local AOM-EA filesystem. Proxy to the studio-side rag-server, which
+  // does have disk access via the cloudflare tunnel.
+  //
+  // The fs.existsSync()/collectFiles()/collectMissions() helpers above are
+  // kept for local dev (vercel dev with AOM_EA_ROOT pointing at the real
+  // checkout) — they fire when RAG_TUNNEL_URL is unset OR the tunnel call
+  // errors out. In prod the tunnel call is the canonical path.
+  const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
+
+  try {
+    const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`;
+    const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+    if (ragRes.ok) {
+      const body = await ragRes.json();
+      // The rag-server payload doesn't include `world` (it's derived from the
+      // tenant gate above). Stitch it in so consumers don't have to look it up.
+      return res.status(200).json({ ...body, world });
+    }
+    // Fall through to local-disk fallback when tunnel is unreachable.
+  } catch (err) {
+    // network error -> fall through
   }
 
+  // Local-disk fallback (vercel dev, or rag tunnel down).
+  const projectDir = path.join(AOM_EA_ROOT, 'corner', 'users', world, 'projects', slug);
+  if (!fs.existsSync(projectDir)) {
+    return res.status(200).json({ project: slug, world, files: [], missions: [] });
+  }
   const files    = collectFiles(projectDir);
   const missions = collectMissions(projectDir);
-
   return res.status(200).json({ project: slug, world, files, missions });
 }

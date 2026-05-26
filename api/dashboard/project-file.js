@@ -202,34 +202,45 @@ export default async function handler(req, res) {
   // ── Raw binary mode (R79-f15): serve the file bytes directly so the dashboard
   //    file viewer can render images / pdfs / pptx etc. with <img>, <iframe>,
   //    <video>, or a download link. Triggered with ?raw=1.
+  //
+  //    In production Vercel can't read AOM-EA disk; bytes come from the rag
+  //    tunnel (studio-local). The local-disk path is the dev fallback.
   const rawMode = String(req.query.raw || '') === '1';
   const leafName = rest[rest.length - 1];
   const mime = mimeFor(leafName);
-
-  let st;
-  try {
-    st = fs.statSync(absPath);
-    if (st.isDirectory()) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-  } catch {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const mtime = st.mtime.toISOString();
+  const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
   if (rawMode) {
-    let buf;
     try {
+      const ragUrl = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(normPath)}`;
+      const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+      if (ragRes.ok) {
+        const buf = Buffer.from(await ragRes.arrayBuffer());
+        const upstreamType = ragRes.headers.get('content-type') || mime;
+        const upstreamLM = ragRes.headers.get('last-modified');
+        res.setHeader('Content-Type', upstreamType);
+        res.setHeader('Content-Length', String(buf.length));
+        if (upstreamLM) res.setHeader('Last-Modified', upstreamLM);
+        res.setHeader('Cache-Control', 'private, max-age=30');
+        res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
+        return res.status(200).send(buf);
+      }
+    } catch (err) {
+      // network error -> local fallback
+    }
+    // Local-disk fallback (vercel dev with real AOM_EA_ROOT, or tunnel down).
+    let buf, st;
+    try {
+      st = fs.statSync(absPath);
+      if (st.isDirectory()) return res.status(404).json({ error: 'Not found' });
       buf = fs.readFileSync(absPath);
     } catch {
       return res.status(404).json({ error: 'Not found' });
     }
     res.setHeader('Content-Type', mime);
     res.setHeader('Content-Length', String(buf.length));
-    res.setHeader('Last-Modified', new Date(mtime).toUTCString());
+    res.setHeader('Last-Modified', new Date(st.mtime).toUTCString());
     res.setHeader('Cache-Control', 'private, max-age=30');
-    // Hint to browsers to render inline when possible; fallback download
-    // gets a sensible filename.
     res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
     return res.status(200).send(buf);
   }
@@ -239,8 +250,30 @@ export default async function handler(req, res) {
   if (isBinaryMime(mime)) {
     return res.status(415).json({ error: 'binary file; use ?raw=1' });
   }
-  let content;
+
+  // Try the rag tunnel first (Vercel prod path), then local disk fallback.
   try {
+    const ragUrl = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(normPath)}`;
+    const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+    if (ragRes.ok) {
+      const content = await ragRes.text();
+      const upstreamLM = ragRes.headers.get('last-modified') || new Date().toISOString();
+      return res.status(200).json({
+        path:          normPath,
+        content,
+        last_modified: upstreamLM,
+        mime,
+      });
+    }
+  } catch (err) {
+    // network error -> local fallback
+  }
+
+  let content, mtime;
+  try {
+    const st = fs.statSync(absPath);
+    if (st.isDirectory()) return res.status(404).json({ error: 'Not found' });
+    mtime = st.mtime.toISOString();
     content = fs.readFileSync(absPath, 'utf-8');
   } catch {
     return res.status(404).json({ error: 'Not found' });
