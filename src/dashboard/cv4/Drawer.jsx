@@ -15,6 +15,8 @@ import { authFetch } from '../lib/authFetch.js'
 import LeftMailPanel from './LeftMailPanel.jsx'
 import SkillsShelf from './SkillsShelf.jsx'
 import SkillsBadge from './SkillsBadge.jsx'
+import { MissionContextMenu, ProjectContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
+import useChatDispatch from '../components/cv3/useChatDispatch.js'
 
 const PANEL_WIDTH = 300
 const MENU = {
@@ -428,6 +430,90 @@ function DrawerBody({
   onToggleSkillsShelf,
   skillsShelfOpen = false,
 }) {
+  // ── R6 right-click + long-press wiring ──
+  const dispatchToChat = useChatDispatch()
+  const isMobile = useIsMobile()
+  const [ctxMenu, setCtxMenu] = useState(null) // {kind, x, y, payload}
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+  const openMissionMenu = useCallback((x, y, mission, projectSlug) => {
+    setCtxMenu({ kind: 'mission', x, y, mission: { ...mission, projectSlug: projectSlug || mission.projectSlug || mission.project } })
+  }, [])
+  const openProjectMenu = useCallback((x, y, project) => {
+    setCtxMenu({ kind: 'project', x, y, project })
+  }, [])
+  const handleAgentPrompt = useCallback(async (text) => {
+    closeCtxMenu()
+    const r = await dispatchToChat(text)
+    if (!r?.ok) console.warn('[Drawer] chat dispatch failed', r)
+  }, [dispatchToChat, closeCtxMenu])
+  const handleMissionRename = useCallback(async (mission) => {
+    closeCtxMenu()
+    const current = mission.name || mission.slug
+    const next = typeof window !== 'undefined' ? window.prompt(`Rename mission "${current}" to:`, current) : null
+    if (!next || next.trim() === current) return
+    try {
+      await authFetch('/api/dashboard/mission-update', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug, mission_slug: mission.slug, name: next.trim() }),
+      })
+    } catch (e) { console.error(e) }
+  }, [closeCtxMenu])
+  const handleMissionDelete = useCallback(async (mission) => {
+    closeCtxMenu()
+    if (typeof window === 'undefined') return
+    if (window.prompt(`Delete mission "${mission.name || mission.slug}"? Type DELETE in caps:`) !== 'DELETE') return
+    try {
+      await authFetch('/api/dashboard/mission-update', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug, mission_slug: mission.slug, confirm: 'DELETE' }),
+      })
+    } catch (e) { console.error(e) }
+  }, [closeCtxMenu])
+  const handleProjectRename = useCallback(async (project) => {
+    closeCtxMenu()
+    const current = project.name || project.slug
+    const next = typeof window !== 'undefined' ? window.prompt(`Rename project "${current}" to:`, current) : null
+    if (!next || next.trim() === current) return
+    try {
+      await authFetch('/api/dashboard/project-update', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: project.slug, name: next.trim() }),
+      })
+    } catch (e) { console.error(e) }
+  }, [closeCtxMenu])
+  const handleProjectDelete = useCallback(async (project) => {
+    closeCtxMenu()
+    if (typeof window === 'undefined') return
+    if (window.prompt(`Delete project "${project.name || project.slug}"? Type DELETE in caps:`) !== 'DELETE') return
+    try {
+      await authFetch('/api/dashboard/project-update', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: project.slug, confirm: 'DELETE' }),
+      })
+    } catch (e) { console.error(e) }
+  }, [closeCtxMenu])
+  const handleCreateSubfolder = useCallback(async (target) => {
+    closeCtxMenu()
+    const projectSlug = target.projectSlug || target.slug
+    const name = typeof window !== 'undefined' ? window.prompt(`Create subfolder under project "${projectSlug}":`) : null
+    if (!name || !name.trim()) return
+    try {
+      await authFetch('/api/dashboard/mission-folders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: projectSlug, name: name.trim() }),
+      })
+    } catch (e) { console.error(e) }
+  }, [closeCtxMenu])
+  const handleMissionMoveToFolder = useCallback(async (mission, folder) => {
+    closeCtxMenu()
+    try {
+      await authFetch('/api/dashboard/mission-folders', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug, mission_slug: mission.slug, folder_slug: folder?.slug || null }),
+      })
+    } catch (e) { console.error(e) }
+  }, [closeCtxMenu])
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 8px 12px', minWidth: 0 }}>
       <DrawerSearchRow
@@ -537,6 +623,8 @@ function DrawerBody({
                   hasNotif={projectNotif.has(p.slug)}
                   onToggle={() => toggle(p.slug)}
                   onOpen={() => { onSelectProject?.(p); onClose() }}
+                  onContextMenu={(e) => { e.preventDefault(); openProjectMenu(e.clientX, e.clientY, p) }}
+                  onLongPress={(x, y) => openProjectMenu(x, y, p)}
                 />
                 {isExpanded && (
                   <div>
@@ -572,6 +660,8 @@ function DrawerBody({
                               onSelectMission?.(m, p)
                               onClose()
                             }}
+                            onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, p.slug) }}
+                            onLongPress={(x, y, mm) => openMissionMenu(x, y, mm, p.slug)}
                           />
                         )
                       })
@@ -614,6 +704,23 @@ function DrawerBody({
           />
         )}
         <PlainRow icon={<SignOutIcon />} label="Sign out" onClick={() => { onLogout?.(); onClose() }} />
+
+      {ctxMenu?.kind === 'mission' && (
+        <MissionContextMenu
+          open x={ctxMenu.x} y={ctxMenu.y} mission={ctxMenu.mission} folders={[]}
+          mobile={isMobile} onClose={closeCtxMenu} onAgentPrompt={handleAgentPrompt}
+          onRename={handleMissionRename} onDelete={handleMissionDelete}
+          onCreateSubfolder={handleCreateSubfolder} onMoveToFolder={handleMissionMoveToFolder}
+        />
+      )}
+      {ctxMenu?.kind === 'project' && (
+        <ProjectContextMenu
+          open x={ctxMenu.x} y={ctxMenu.y} project={ctxMenu.project} folders={[]}
+          mobile={isMobile} onClose={closeCtxMenu} onAgentPrompt={handleAgentPrompt}
+          onRename={handleProjectRename} onDelete={handleProjectDelete}
+          onCreateSubfolder={handleCreateSubfolder} onMoveToFolder={() => closeCtxMenu()}
+        />
+      )}
       </TreeSection>
     </div>
   )
@@ -682,7 +789,8 @@ function TreeSection({ title, action = null, collapsible = false, defaultCollaps
   )
 }
 
-function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onToggle, onOpen }) {
+function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onToggle, onOpen, onContextMenu, onLongPress }) {
+  const longPressHandlers = useLongPress(onLongPress)
   return (
     <div
       data-row
@@ -694,6 +802,8 @@ function FolderRow({ label, hasChildren, expanded, active, hasNotif = false, onT
         cursor: 'pointer',
       }}
       onClick={onOpen}
+      onContextMenu={onContextMenu}
+      {...(longPressHandlers || {})}
     >
       <button
         type="button"
@@ -785,7 +895,8 @@ function MissionTreeBranch({ nodes, projectSlug, projectName, expanded, onToggle
   })
 }
 
-function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick, depth = 0, hasChildren = false, isExpanded = false, onToggleChildren = null }) {
+function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick, onContextMenu, onLongPress, depth = 0, hasChildren = false, isExpanded = false, onToggleChildren = null }) {
+  const longPressHandlers = useLongPress(onLongPress ? (x, y) => onLongPress(x, y, mission) : null)
   // corner:mission-rooms — tasks retired 2026-05-17. Active dot is driven by
   // recent chat in the mission room. corner:notifications R2 — the same dot
   // also lights for an unread notification, which takes the headline meaning
@@ -811,6 +922,8 @@ function MissionRow({ mission, lastMessageAt = null, hasNotif = false, onClick, 
       data-mission-depth={depth}
       data-mission-active={isActive ? 'true' : 'false'}
       onClick={onClick}
+      onContextMenu={onContextMenu}
+      {...(longPressHandlers || {})}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: `4px 8px 4px ${paddingLeft}px`,
