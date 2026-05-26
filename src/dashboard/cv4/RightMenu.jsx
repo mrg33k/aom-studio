@@ -1059,13 +1059,11 @@ function EmptyState({ text }) {
   )
 }
 
-// ── Project group header (R6 + R7-A affordance bump) ────────────────────────
-// Whole bar is the click target (was already wired in R6); R7 bumps the hover
-// state so the affordance reads more clearly.
+// ── Project group header (R9 — matches left drawer FolderRow visual) ────────
+// Clean folder-row style: svg chevron + body font + subtle hover.
+// Mirrors Drawer.jsx FolderRow so both rails feel like the same design system.
 
 function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle, onContextMenu }) {
-  // R-MP-2 cleanup — dot only when there's actual signal (running/queued).
-  // Idle projects don't earn pixels.
   const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : null
   return (
     <div
@@ -1075,56 +1073,46 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 7,
-        padding: '8px 14px 8px 12px',
+        gap: 6,
+        padding: '6px 10px 6px 8px',
         cursor: 'pointer',
-        background: 'transparent',
-        borderTop: '1px solid rgba(255,255,255,0.025)',
-        transition: 'background 120ms ease, color 120ms ease',
+        borderRadius: 4,
+        margin: '1px 4px',
+        transition: 'background 120ms ease',
         userSelect: 'none',
       }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = 'rgba(234,179,8,0.05)'
-        e.currentTarget.querySelectorAll('[data-pg-slug]').forEach(n => n.style.color = C.text)
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.022)'
-        e.currentTarget.querySelectorAll('[data-pg-slug]').forEach(n => n.style.color = C.text2)
-      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
+      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.muted}
+        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        style={{
+          flexShrink: 0,
+          transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)',
+          transition: 'transform 0.12s',
+        }}>
+        <polyline points="9 6 15 12 9 18"/>
+      </svg>
       {dotStatus && <StatusDot status={dotStatus} />}
-      <span data-pg-slug style={{
+      <span style={{
         flex: 1,
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
         color: C.text2,
-        fontFamily: MENU.monoFont,
+        fontFamily: MENU.bodyFont,
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        transition: 'color 120ms ease',
       }}>{projectSlug}</span>
       {count > 0 && (
         <span style={{
           fontSize: 9,
-          color: C.dim,
+          color: C.muted,
           fontFamily: MENU.monoFont,
           flexShrink: 0,
-          marginRight: 3,
         }}>{count}</span>
       )}
-      <span style={{
-        fontSize: 11,
-        color: C.muted,
-        fontFamily: MENU.monoFont,
-        flexShrink: 0,
-        display: 'inline-block',
-        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-        transition: 'transform 180ms ease',
-        lineHeight: 1,
-      }}>▾</span>
     </div>
   )
 }
@@ -2152,33 +2140,46 @@ export default function RightMenu() {
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
-          {/* R8: flat sorted list. Same shape as FilesPanel canonical files —
-              one row pattern, one type scale, no group headers or folder
-              wrappers folding missions out of sight. Project meta on each row
-              when activePill === 'all'; hidden when scoped to one project
-              (the pill already names it). */}
-          {!missionsLoading && sortedMissions.length > 0 && sortedMissions.map((m, i) => (
-            <MissionRow
-              key={`${m.projectSlug}:${m.slug}-${i}`}
-              mission={m}
-              projectSlug={m.projectSlug}
-              dotStatus={m.dotStatus}
-              ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-              isCurrent={
-                (currentMission && m.slug === currentMission) ||
-                (currentProject && m.projectSlug === currentProject && !currentMission)
-              }
-              hideProject={activePill !== 'all'}
-              onClick={() => onMissionClick(m)}
-              onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
-              onLongPress={openMissionMenu}
-              showMove={true}
-              currentFolderSlug={assignments[`${m.projectSlug}:${m.slug}`] || null}
-              folders={folders}
-              onMove={(missionSlug, folderSlug) => handleMoveMission(m.projectSlug, missionSlug, folderSlug)}
-              onCreateFolder={handleCreateFolder}
-            />
-          ))}
+          {/* R9: tree view grouped by project — mirrors left drawer FolderRow
+              structure. Each project is a collapsible folder row; missions
+              and subfolders nest inside. When a specific pill is active the
+              project header is omitted (pill already names it) and just the
+              mission tree shows. Design matches FilesPanel's clean hierarchy. */}
+          {!missionsLoading && filteredMissions.length > 0 && activePill === 'all' && (
+            (groupedMissions || []).map(group => {
+              const isCollapsed = !!collapsedProjects[group.projectSlug]
+              return (
+                <div key={group.projectSlug}>
+                  <ProjectGroupHeader
+                    projectSlug={group.projectSlug}
+                    count={group.missions.length}
+                    isRunning={group.hasRunning}
+                    isQueued={group.hasQueued}
+                    isCollapsed={isCollapsed}
+                    onToggle={() => toggleProjectCollapse(group.projectSlug)}
+                    onContextMenu={(e) => { e.preventDefault(); openProjectMenu(e.clientX, e.clientY, { slug: group.projectSlug, name: group.projectSlug }) }}
+                  />
+                  {!isCollapsed && (
+                    <>
+                      {renderGroupBody(group)}
+                      <NewFolderAffordance projectSlug={group.projectSlug} onCreateFolder={handleCreateFolder} />
+                      <NewMissionAffordance projectSlug={group.projectSlug} worldId={worldId} onCreated={(ps, ms, mn) => handleCreateMissionInline(ps, ms, mn)} />
+                    </>
+                  )}
+                </div>
+              )
+            })
+          )}
+          {!missionsLoading && filteredMissions.length > 0 && activePill !== 'all' && (() => {
+            const syntheticGroup = { projectSlug: activePill, missions: filteredMissions, hasRunning: false, hasQueued: false }
+            return (
+              <>
+                {renderGroupBody(syntheticGroup)}
+                <NewFolderAffordance projectSlug={activePill} onCreateFolder={handleCreateFolder} />
+                <NewMissionAffordance projectSlug={activePill} worldId={worldId} onCreated={(ps, ms, mn) => handleCreateMissionInline(ps, ms, mn)} />
+              </>
+            )
+          })()}
         </>
       )}
 
