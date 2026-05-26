@@ -25,11 +25,37 @@ export function detectProjectTag(text) {
   return m ? m[1].toLowerCase() : null
 }
 
+// Strip http/https URLs from text. URLs contain hostnames that aren't user
+// references to projects — Karen's 2026-05-25 PDF upload was mis-tagged with
+// project="aheadofmarket" because the file URL was
+// https://rag.aheadofmarket.com/files/karens-world/14cd2da3-Invoice.pdf and
+// the fuzzy substring matcher found "aheadofmarket" inside the hostname.
+// Also strips bare www.<host> patterns for completeness.
+function stripUrlsForMatch(text) {
+  if (!text) return ''
+  return text
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/\bwww\.[^\s]+/gi, ' ')
+}
+
+// Word-boundary substring match. Prevents "ambition" from matching "ambitions"
+// or "ambition-mechanical" from accidentally matching only "ambition". Treats
+// hyphens as word characters since slugs contain them.
+function wordBoundaryIncludes(haystack, needle) {
+  if (!haystack || !needle) return false
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`(?:^|[^\\w-])${escaped}(?:[^\\w-]|$)`, 'i')
+  return re.test(haystack)
+}
+
 // Tag-first, then slug/name match against the projects table. Returns slug or null.
 export async function detectProjectFromText({ text, supabaseUrl, headers }) {
   const tag = detectProjectTag(text)
   if (tag) return tag
   if (!text || !supabaseUrl) return null
+  // Strip URLs before fuzzy matching — see stripUrlsForMatch for the receipt.
+  const cleanText = stripUrlsForMatch(text)
+  if (!cleanText.trim()) return null
   try {
     const res = await fetch(
       `${supabaseUrl}/rest/v1/projects?select=slug,name&is_active=eq.true`,
@@ -37,10 +63,9 @@ export async function detectProjectFromText({ text, supabaseUrl, headers }) {
     )
     if (!res.ok) return null
     const projects = await res.json()
-    const lower = text.toLowerCase()
     for (const p of projects) {
-      if (p.slug && lower.includes(p.slug.toLowerCase())) return p.slug
-      if (p.name && p.name.length > 2 && lower.includes(p.name.toLowerCase())) return p.slug
+      if (p.slug && wordBoundaryIncludes(cleanText, p.slug)) return p.slug
+      if (p.name && p.name.length > 2 && wordBoundaryIncludes(cleanText, p.name)) return p.slug
     }
   } catch (_) { /* best-effort */ }
   return null
