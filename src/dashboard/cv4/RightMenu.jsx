@@ -2177,10 +2177,37 @@ export default function RightMenu() {
               hideProject={false} so the project + age line shows as a
               consistent subtitle under every mission name. No inverted
               hierarchy, no random-some-have-age-some-don't. */}
-          {!missionsLoading && activePill === 'all' && !showAllMissions && sortedMissions.length > 0 && (
+          {!missionsLoading && activePill === 'all' && !showAllMissions && sortedMissions.length > 0 && (() => {
+            // Sort by USER INTERACTION: clicks first (recentMissions
+            // localStorage tracks visit order), then by message recency
+            // (lastTouched already includes m.last_message_at). Patrik
+            // 2026-05-26: "showing the most recent clicked in missions by
+            // last mission clicked in or messaged us."
+            const byKey = new Map(sortedMissions.map(m => [`${m.projectSlug}:${m.slug}`, m]))
+            const visitOrder = []
+            const seen = new Set()
+            for (const entry of recentMissions) {
+              if (entry.kind !== 'mission') continue
+              const m = byKey.get(entry.qualified)
+              if (m && !seen.has(entry.qualified)) {
+                visitOrder.push(m)
+                seen.add(entry.qualified)
+              }
+            }
+            // Fill remaining slots with message/activity-sorted missions
+            // the user hasn't clicked yet.
+            for (const m of sortedMissions) {
+              const k = `${m.projectSlug}:${m.slug}`
+              if (!seen.has(k)) {
+                visitOrder.push(m)
+                seen.add(k)
+              }
+            }
+            const recentFlat = visitOrder.slice(0, RECENT_MISSIONS_CAP)
+            return (
             <>
               <SectionLabel>Recent</SectionLabel>
-              {sortedMissions.slice(0, RECENT_MISSIONS_CAP).map(m => (
+              {recentFlat.map(m => (
                 <MissionRow
                   key={`${m.projectSlug}:${m.slug}`}
                   mission={m}
@@ -2202,7 +2229,8 @@ export default function RightMenu() {
                 />
               ))}
             </>
-          )}
+            )
+          })()}
 
           {/* SEE-ALL view — grouped tree by project. Only after the user
               clicks "See all" do we show the full project folder tree with
