@@ -49,9 +49,12 @@ export default function CV4ContextNav({
     return () => document.removeEventListener('mousedown', handler)
   }, [switcherOpen])
 
+  // Default state — first paint / home view: the title IS the room switcher
+  // entry point. switchable=true so the user can jump directly into any room
+  // from the home view without needing the left rail.
   let title = 'Home'
   let dotColor = null
-  let switchable = false
+  let switchable = true
   if (activeTool === 'mail') {
     // Mail Room takeover: title is the room, dot is amber so it reads as
     // "tool mode" instead of an agent thread. Agent switcher stays disabled
