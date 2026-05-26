@@ -32,6 +32,8 @@ import { useTasks } from '../hooks/useTasks.js'
 import { useProjects } from '../hooks/useProjects.js'
 import { authFetch } from '../lib/authFetch.js'
 import FilesPanel from './FilesPanel.jsx'
+import { MissionContextMenu, ProjectContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
+import useChatDispatch from '../components/cv3/useChatDispatch.js'
 
 const MENU = {
   bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -351,7 +353,7 @@ function NewMissionAffordance({ projectSlug, worldId, onCreated }) {
 // ── Project pills ───────────────────────────────────────────────────────────
 // R6: pad 14/16px, chip 7/12, gap 6, right-edge fade-mask gradient.
 
-function ProjectPills({ projects, active, onChange }) {
+function ProjectPills({ projects, active, onChange, onPillContextMenu }) {
   const baseStyle = {
     fontFamily: MENU.monoFont,
     fontSize: 10,
@@ -388,6 +390,7 @@ function ProjectPills({ projects, active, onChange }) {
       <span
         key={key}
         onClick={isAdd ? undefined : () => onChange(key)}
+        onContextMenu={isAdd ? undefined : (e) => { e.preventDefault(); if (typeof onPillContextMenu === 'function') onPillContextMenu(e, key, label) }}
         onMouseEnter={e => { if (!isActive && !isAdd) e.currentTarget.style.color = C.text }}
         onMouseLeave={e => { if (!isActive && !isAdd) e.currentTarget.style.color = C.text2 }}
         style={style}
@@ -793,9 +796,10 @@ function MoveToFolderButton({ projectSlug, missionSlug, currentFolderSlug, folde
 
 function MissionRow({
   mission, projectSlug, dotStatus, ageLabel, isCurrent, hideProject,
-  onClick, showMove, currentFolderSlug, folders, onMove, onCreateFolder,
+  onClick, onContextMenu, onLongPress, showMove, currentFolderSlug, folders, onMove, onCreateFolder,
   depth = 0, hasChildren = false, isExpanded = false, onToggleChildren = null,
 }) {
+  const longPressHandlers = useLongPress(onLongPress ? (x, y) => onLongPress(x, y, mission, projectSlug) : null)
   const stripeColor = isCurrent
     ? MENU.amber
     : dotStatus === 'queued'
@@ -809,6 +813,8 @@ function MissionRow({
   return (
     <div
       onClick={onClick}
+      onContextMenu={onContextMenu}
+      {...(longPressHandlers || {})}
       style={{
         display: 'flex',
         alignItems: 'flex-start',
@@ -1275,6 +1281,111 @@ function NewFolderAffordance({ projectSlug, onCreateFolder }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function RightMenu() {
+  // ── R6 right-click + long-press wiring ──
+  const dispatchToChat = useChatDispatch()
+  const isMobile = useIsMobile()
+  const [ctxMenu, setCtxMenu] = useState(null) // {kind:'mission'|'project', x, y, payload, projectSlug?, folders?}
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+  const openMissionMenu = useCallback((x, y, mission, projectSlug) => {
+    setCtxMenu({ kind: 'mission', x, y, mission, projectSlug })
+  }, [])
+  const openProjectMenu = useCallback((x, y, project) => {
+    setCtxMenu({ kind: 'project', x, y, project })
+  }, [])
+  const handleAgentPrompt = useCallback(async (text) => {
+    closeCtxMenu()
+    const r = await dispatchToChat(text)
+    if (!r?.ok) console.warn('[RightMenu] chat dispatch failed', r)
+  }, [dispatchToChat, closeCtxMenu])
+  const handleMissionRename = useCallback(async (mission) => {
+    closeCtxMenu()
+    const current = mission.name || mission.slug
+    const next = typeof window !== 'undefined' ? window.prompt(`Rename mission "${current}" to:`, current) : null
+    if (!next || next.trim() === current) return
+    try {
+      const r = await authFetch('/api/dashboard/mission-update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug || mission.project, mission_slug: mission.slug, name: next.trim() }),
+      })
+      if (!r.ok) console.warn('[RightMenu] mission rename failed', await r.text())
+    } catch (e) { console.error('[RightMenu] mission rename error', e) }
+  }, [closeCtxMenu])
+  const handleMissionDelete = useCallback(async (mission) => {
+    closeCtxMenu()
+    if (typeof window === 'undefined') return
+    const confirmText = window.prompt(`Delete mission "${mission.name || mission.slug}"? Type DELETE in caps to confirm:`)
+    if (confirmText !== 'DELETE') return
+    try {
+      await authFetch('/api/dashboard/mission-update', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug || mission.project, mission_slug: mission.slug, confirm: 'DELETE' }),
+      })
+    } catch (e) { console.error('[RightMenu] mission delete error', e) }
+  }, [closeCtxMenu])
+  const handleProjectRename = useCallback(async (project) => {
+    closeCtxMenu()
+    const current = project.name || project.slug
+    const next = typeof window !== 'undefined' ? window.prompt(`Rename project "${current}" to:`, current) : null
+    if (!next || next.trim() === current) return
+    try {
+      const r = await authFetch('/api/dashboard/project-update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: project.slug, name: next.trim() }),
+      })
+      if (!r.ok) console.warn('[RightMenu] project rename failed', await r.text())
+    } catch (e) { console.error('[RightMenu] project rename error', e) }
+  }, [closeCtxMenu])
+  const handleProjectDelete = useCallback(async (project) => {
+    closeCtxMenu()
+    if (typeof window === 'undefined') return
+    const confirmText = window.prompt(`Delete project "${project.name || project.slug}"? Type DELETE in caps to confirm:`)
+    if (confirmText !== 'DELETE') return
+    try {
+      await authFetch('/api/dashboard/project-update', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: project.slug, confirm: 'DELETE' }),
+      })
+    } catch (e) { console.error('[RightMenu] project delete error', e) }
+  }, [closeCtxMenu])
+  const handleCreateSubfolderForMission = useCallback(async (mission) => {
+    closeCtxMenu()
+    const name = typeof window !== 'undefined' ? window.prompt(`Create subfolder under project "${mission.projectSlug || mission.project}":`) : null
+    if (!name || !name.trim()) return
+    try {
+      await authFetch('/api/dashboard/mission-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug || mission.project, name: name.trim() }),
+      })
+    } catch (e) { console.error('[RightMenu] create folder error', e) }
+  }, [closeCtxMenu])
+  const handleMissionMoveToFolder = useCallback(async (mission, folder) => {
+    closeCtxMenu()
+    try {
+      await authFetch('/api/dashboard/mission-folders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: mission.projectSlug || mission.project, mission_slug: mission.slug, folder_slug: folder?.slug || null }),
+      })
+    } catch (e) { console.error('[RightMenu] move folder error', e) }
+  }, [closeCtxMenu])
+  const handleCreateSubfolderForProject = useCallback(async (project) => {
+    closeCtxMenu()
+    const name = typeof window !== 'undefined' ? window.prompt(`Create subfolder under project "${project.name || project.slug}":`) : null
+    if (!name || !name.trim()) return
+    try {
+      await authFetch('/api/dashboard/mission-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_slug: project.slug, name: name.trim() }),
+      })
+    } catch (e) { console.error('[RightMenu] create folder error', e) }
+  }, [closeCtxMenu])
+
   const { worldId } = useCornerAuth()
   const nav = useCornerNav()
   const {
@@ -1822,6 +1933,8 @@ export default function RightMenu() {
             }
             hideProject={true}
             onClick={() => onMissionClick(m)}
+            onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, { ...m, projectSlug: m.projectSlug || group?.projectSlug }, m.projectSlug || group?.projectSlug) }}
+            onLongPress={openMissionMenu}
             showMove={true}
             currentFolderSlug={null}
             folders={folders}
@@ -1903,11 +2016,7 @@ export default function RightMenu() {
         Projects
       </PanelHeader>
 
-      <ProjectPills
-        projects={projectsList}
-        active={activePill}
-        onChange={setActivePill}
-      />
+      <ProjectPills projects={pillProjects} active={activePill} onChange={setActivePill} onPillContextMenu={(e, key, label) => { const proj = pillProjects.find(p => p.slug === key) || { slug: key, name: label }; openProjectMenu(e.clientX, e.clientY, proj) }} />
 
       {/* R10-14: filter recents against the live projectsList so entries
           pointing at deleted projects auto-disappear. Patrik 2026-05-25:
@@ -2047,6 +2156,8 @@ export default function RightMenu() {
                             }
                             hideProject={false}
                             onClick={() => onMissionClick(m)}
+                            onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
+                            onLongPress={openMissionMenu}
                             showMove={true}
                             currentFolderSlug={folder.slug}
                             folders={folders}
@@ -2070,6 +2181,8 @@ export default function RightMenu() {
                       }
                       hideProject={false}
                       onClick={() => onMissionClick(m)}
+                      onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
+                      onLongPress={openMissionMenu}
                       showMove={true}
                       currentFolderSlug={null}
                       folders={folders}
@@ -2137,6 +2250,39 @@ export default function RightMenu() {
       )}
 
       <div style={{ height: 24, flexShrink: 0 }} />
+
+      {ctxMenu?.kind === 'mission' && (
+        <MissionContextMenu
+          open
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          mission={ctxMenu.mission}
+          folders={folders}
+          mobile={isMobile}
+          onClose={closeCtxMenu}
+          onAgentPrompt={handleAgentPrompt}
+          onRename={handleMissionRename}
+          onDelete={handleMissionDelete}
+          onCreateSubfolder={handleCreateSubfolderForMission}
+          onMoveToFolder={handleMissionMoveToFolder}
+        />
+      )}
+      {ctxMenu?.kind === 'project' && (
+        <ProjectContextMenu
+          open
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          project={ctxMenu.project}
+          folders={folders}
+          mobile={isMobile}
+          onClose={closeCtxMenu}
+          onAgentPrompt={handleAgentPrompt}
+          onRename={handleProjectRename}
+          onDelete={handleProjectDelete}
+          onCreateSubfolder={handleCreateSubfolderForProject}
+          onMoveToFolder={() => { /* projects-as-folders TBD; no-op for now */ closeCtxMenu() }}
+        />
+      )}
     </div>
   )
 }
