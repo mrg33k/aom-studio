@@ -18,48 +18,19 @@
     return;
   }
 
-  // ?fix-stars=N OR #fix-stars=N → admin one-shot to overwrite the gold-star
-  // count. Accepts BOTH query and hash (some Safari setups mangle queries —
-  // hash always survives). Only allows INCREASE by default (a typo or stray
-  // link can't roll him back). Decreases require &force=1 or #force=1.
-  {
-    const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
-    const fix = params.get('fix-stars') || hashParams.get('fix-stars');
-    if (fix !== null) {
-      const n = parseInt(fix, 10);
-      const force = params.get('force') === '1' || hashParams.get('force') === '1';
-      if (!Number.isNaN(n) && n >= 0) {
-        try {
-          const raw = localStorage.getItem('ss-state-v1');
-          const s = raw ? JSON.parse(raw) : {};
-          const current = s.goldStars || 0;
-          if (n < current && !force) {
-            console.warn('[SS] fix-stars=' + n + ' refused: would decrease from ' + current + '. Add force=1 to override.');
-          } else {
-            s.goldStars = n;
-            s.lastSeenStars = { value: n, at: new Date().toISOString(), source: 'fix-stars' + (force ? ' force' : '') };
-            localStorage.setItem('ss-state-v1', JSON.stringify(s));
-          }
-        } catch (e) {}
-      }
-      window.location.replace(window.location.pathname);
-      return;
-    }
-  }
+  // Star system retired 2026-05-26 (Patrik): the ?fix-stars / hash-fix-stars
+  // URL handlers + lastSeenStars shadow tracking are gone. Old links land on
+  // the hub as if they were no-ops, which is the desired behavior.
 
-  // ?admin=1 → inline admin panel. Bypasses URL-parse issues entirely;
-  // Patrik opens this on Ethan's iPad in Safari, sees current state,
-  // taps a button to set stars to any value. Writes directly to whichever
-  // origin this iPad is using (no www-vs-bare-domain origin guessing).
+  // ?admin=1 → inline state inspector. Star setters retired 2026-05-26 with
+  // the gold-star system itself. Kept the panel as a read-only diagnostic
+  // for the rest of state (modules done, streak, origin, blocks today).
   if (new URLSearchParams(window.location.search).has('admin')) {
     const raw = localStorage.getItem('ss-state-v1');
-    const s = raw ? JSON.parse(raw) : { goldStars: 0, days: {}, streak: 0 };
+    const s = raw ? JSON.parse(raw) : { days: {}, streak: 0 };
     const todayStr = new Date().toISOString().slice(0, 10);
     const d = (s.days && s.days[todayStr]) || { completedBlocks: [], blockMetrics: {} };
     const completedCount = (d.completedBlocks || []).length;
-    const starsToday = d.starsToday || 0;
-    const lastSeen = s.lastSeenStars && s.lastSeenStars.value;
     const origin = window.location.origin;
 
     document.body.innerHTML = '';
@@ -76,94 +47,20 @@
           <span style="color: #6B6B6B;">Origin (THIS device)</span><span style="font-family: 'Geist', system-ui, sans-serif; font-size: 13px;">${origin}</span>
         </div>
         <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
-          <span style="color: #6B6B6B;">Lifetime gold stars</span><strong style="color: #C8932E;">★ ${s.goldStars || 0}</strong>
-        </div>
-        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
-          <span style="color: #6B6B6B;">Stars earned today</span><span>${starsToday} / 30 cap</span>
-        </div>
-        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
-          <span style="color: #6B6B6B;">Modules done today</span><span>${completedCount}</span>
-        </div>
-        <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
-          <span style="color: #6B6B6B;">Last-seen shadow value</span><span>${lastSeen != null ? lastSeen : '—'}</span>
+          <span style="color: #6B6B6B;">Modules done today</span><strong>${completedCount}</strong>
         </div>
         <div style="display:flex; justify-content: space-between; padding: 6px 0; font-size: 15px;">
           <span style="color: #6B6B6B;">Streak</span><span>${s.streak || 0} days</span>
         </div>
       </div>
 
-      <div style="background: #FBF7EE; border-left: 4px solid #E8A03A; border-radius: 0 10px 10px 0; padding: 14px 16px; margin-bottom: 20px;">
-        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #C8932E; margin-bottom: 6px;">Set stars to a new value</div>
-        <div style="font-size: 14px; color: #4A4A4A; margin-bottom: 10px;">Type a number. Tap Set. Tap Open Summer School to return.</div>
-        <div style="display:flex; gap: 8px; margin-bottom: 10px;">
-          <input id="admin-stars-input" type="number" min="0" step="1" placeholder="e.g. 41" style="flex:1; padding: 12px 14px; font-size: 18px; border: 1.5px solid rgba(26,24,20,0.18); border-radius: 8px; font-family: inherit;">
-          <button id="admin-stars-set" style="background: #1A1814; color: #F5EFE5; padding: 12px 22px; border: 0; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;">Set</button>
-        </div>
-        <div style="display:flex; gap: 8px; flex-wrap: wrap;">
-          <button class="admin-quick-set" data-n="30" style="background: rgba(232,160,58,0.18); color: #8B6510; padding: 8px 14px; border: 0; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;">Set to 30</button>
-          <button class="admin-quick-set" data-n="41" style="background: rgba(232,160,58,0.18); color: #8B6510; padding: 8px 14px; border: 0; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;">Set to 41</button>
-          <button class="admin-quick-set" data-n="50" style="background: rgba(232,160,58,0.18); color: #8B6510; padding: 8px 14px; border: 0; border-radius: 999px; font-weight: 600; font-size: 14px; cursor: pointer;">Set to 50</button>
-        </div>
-        <div id="admin-confirm" style="margin-top: 12px; font-size: 14px; color: #2D6B3C; min-height: 1.2em;"></div>
-      </div>
-
       <a href="/summerschool/?day=tuesday" style="display: inline-block; background: #1A1814; color: #F5EFE5; padding: 12px 22px; border-radius: 999px; text-decoration: none; font-weight: 600;">Open Summer School →</a>
-
-      <div style="margin-top: 24px; font-size: 12px; color: #9A9388;">
-        Tip: if this page shows the wrong origin (e.g. you opened the link as "aheadofmarket.com" but the iPad has him saved under "www.aheadofmarket.com"), the iPad has DIFFERENT state at the other origin. Open Safari on the iPad, paste the URL of the version Ethan normally uses, then add <code>?admin=1</code> to it.
-      </div>
     `;
     document.body.appendChild(wrap);
-
-    const setStars = (n) => {
-      const cur = (() => {
-        try { return JSON.parse(localStorage.getItem('ss-state-v1') || '{}').goldStars || 0; } catch (e) { return 0; }
-      })();
-      try {
-        const s2 = JSON.parse(localStorage.getItem('ss-state-v1') || '{}');
-        s2.goldStars = n;
-        s2.lastSeenStars = { value: n, at: new Date().toISOString(), source: 'admin-panel' };
-        localStorage.setItem('ss-state-v1', JSON.stringify(s2));
-        const c = document.querySelector('#admin-confirm');
-        c.textContent = '✓ Set to ' + n + '. (Was ' + cur + '.) Open Summer School to check.';
-        c.style.color = '#2D6B3C';
-      } catch (e) {
-        const c = document.querySelector('#admin-confirm');
-        c.textContent = 'Save failed — localStorage may be blocked. ' + e.message;
-        c.style.color = '#8B3838';
-      }
-    };
-
-    document.querySelector('#admin-stars-set').onclick = () => {
-      const v = parseInt(document.querySelector('#admin-stars-input').value, 10);
-      if (!Number.isNaN(v) && v >= 0) setStars(v);
-    };
-    document.querySelectorAll('.admin-quick-set').forEach(btn => {
-      btn.onclick = () => setStars(parseInt(btn.dataset.n, 10));
-    });
     return;
   }
 
-  // Continuous lastSeenStars shadow: every page load, if the loaded value
-  // is LOWER than the last seen value, log a console warning. Surfaces any
-  // mystery drops (iPad evicted localStorage, schema migration ate a field,
-  // future bug) the next time we open devtools on the iPad.
-  try {
-    const raw = localStorage.getItem('ss-state-v1');
-    if (raw) {
-      const s = JSON.parse(raw);
-      const last = s.lastSeenStars && typeof s.lastSeenStars.value === 'number' ? s.lastSeenStars.value : null;
-      const cur = typeof s.goldStars === 'number' ? s.goldStars : 0;
-      if (last !== null && cur < last) {
-        console.warn('[SS] gold-star drop detected: had ' + last + ' (' + (s.lastSeenStars && s.lastSeenStars.at) + '), now ' + cur + '. Use ?fix-stars=' + last + ' to restore.');
-      }
-      // Always update the shadow so the next session has the latest value
-      s.lastSeenStars = { value: cur, at: new Date().toISOString(), source: 'page-load' };
-      localStorage.setItem('ss-state-v1', JSON.stringify(s));
-    }
-  } catch (e) {}
-
-  // ?report=1 → progress report. Patrik's morning glance at how Ethan did.
+// ?report=1 → progress report. Patrik's morning glance at how Ethan did.
   // Shows today's blocks, time per block, stars earned, feedback sent to Dad.
   if (new URLSearchParams(window.location.search).has('report')) {
     const raw = localStorage.getItem('ss-state-v1');
@@ -197,10 +94,9 @@
           <div style="font-size: 12px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">${todayStr}</div>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Blocks done</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${d.completedBlocks.length}</div></div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Modules done</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${d.completedBlocks.length}</div></div>
           <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Time on task</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${fmtMs(totalMs)}</div></div>
-          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Stars today</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${s.goldStars || 0}</div></div>
           <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Streak</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${s.streak || 0}</div></div>
         </div>
 
@@ -549,19 +445,11 @@
     if (backEl) { e.preventDefault(); go('hub'); return; }
   });
 
-  // ---- gold star earn animation ----
-  window.addEventListener('ss:star', (e) => {
-    const t = document.createElement('div');
-    t.className = 'star-toast';
-    t.innerHTML = `<span class="star">★</span><span class="msg"><b>+1 Gold Star</b> · ${e.detail.reason || 'nice'}</span>`;
-    document.body.appendChild(t);
-    requestAnimationFrame(() => t.classList.add('show'));
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 2200);
-
-    // also tick the hub counter if it's visible
-    const counter = document.querySelector('#hub-star-count');
-    if (counter) counter.textContent = SS.goldStars;
-  });
+  // Star system removed 2026-05-26 — Patrik: "jsut remove the stars" + "we
+  // cant figure out a star system its kinda sad." Kept the listener as a
+  // no-op for backwards compat in case anything still dispatches ss:star.
+  // The real progress signals (modules done, time on task, fastest module,
+  // streak) remain. No toasts, no counters, no reward bar.
 
   // ---- HUB render ----
   function greeting() {
@@ -649,26 +537,10 @@
       <div class="greeting-row">
         <h1>${greeting()}, ${SS ? SS.state.name : 'Ethan'}.</h1>
         <div class="right-stats">
-          <div class="stat-pill"><div class="num"><span class="star">★</span> <span id="hub-star-count">${stars}</span></div><div class="label">Gold Stars</div></div>
+          <div class="stat-pill"><div class="num">${doneCount}<span style="font-size:14px; color: var(--ink-quiet); font-weight: 400;"> / ${blocks.length}</span></div><div class="label">Modules Today</div></div>
           <div class="stat-pill"><div class="num">${streak}</div><div class="label">Day Streak</div></div>
         </div>
       </div>
-
-      ${stars < 150 ? `
-        <div class="reward-bar">
-          <div class="reward-bar-label">
-            <span class="reward-num">${stars}</span> of <strong>150 stars</strong> → <span class="reward-prize">a new game from GameStop</span>
-          </div>
-          <div class="reward-bar-track"><div class="reward-bar-fill" style="width: ${Math.min(100, (stars/150)*100)}%"></div></div>
-        </div>
-      ` : `
-        <div class="reward-bar redeemed">
-          <div class="reward-bar-label" style="text-align: center;">
-            <strong style="color: var(--amber); font-size: 18px;">★ 150 stars earned. New game unlocked.</strong>
-            <div style="margin-top: var(--space-2); font-size: 14px; color: var(--ink-soft);">Ask Mom or Dad about your GameStop trip.</div>
-          </div>
-        </div>
-      `}
 
       <div class="day-theme">Today's theme — <strong>${d.theme}</strong>. ${d.themeDesc}</div>
 
