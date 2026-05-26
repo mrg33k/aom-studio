@@ -215,8 +215,20 @@ function FileViewer({ file, onClose }) {
       return
     }
     // For storage-served text files: GET the URL as raw text.
+    //
+    // R79-f15 (2026-05-25): use authFetch for same-origin /api/dashboard/* URLs
+    // because verifyTenant expects a Bearer token from localStorage (not a
+    // cookie). Plain fetch with credentials:'include' returns 401 here. For
+    // off-origin URLs (Supabase Storage, RAG tunnel) keep the cookie path.
     setLoadingText(true)
-    fetch(url, { credentials: 'include' })
+    // Same-origin /api/dashboard/* needs the Bearer token (verifyTenant reads it
+    // from Authorization, not from a cookie that we don't set). Off-origin URLs
+    // (rag tunnel project-file-raw, Supabase Storage) don't need credentials,
+    // and sending credentials with a wildcard CORS Allow-Origin triggers a
+    // preflight failure — so we explicitly drop credentials in that case.
+    const isLocalApi = typeof url === 'string' && url.startsWith('/api/dashboard/')
+    const doFetch = isLocalApi ? authFetch(url) : fetch(url)
+    doFetch
       .then(r => r.ok ? r.text() : 'Could not load file.')
       .then(t => {
         // Some endpoints wrap content in JSON; try parsing first.
@@ -662,6 +674,15 @@ export default function FilesPanel({ projectSlug }) {
     // emits one entry per non-hidden file. We map every entry to a
     // /api/dashboard/project-file?path=&raw=1 URL so the FileViewer can show
     // images / pdfs inline and offer a click-through for other binaries.
+    // R79-f15: build the file URL using the rag tunnel directly so that
+    // <img>/<video>/<iframe>/<a> can fetch bytes without auth headers (the
+    // browser can't add a Bearer header to a direct asset load). Same trust
+    // posture as the existing /files/<world>/<file> chat-attachment route —
+    // rag-server applies the hidden-segment filter. Text-mode FileViewer can
+    // still use authFetch when it wants the Vercel-proxied path.
+    const RAG_TUNNEL = 'https://rag.aheadofmarket.com'
+    const fileUrlFor = (fullPath) => `${RAG_TUNNEL}/project-file-raw?path=${encodeURIComponent(fullPath)}`
+
     const projectFilesP = projectSlug
       ? authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(projectSlug)}`)
           .then(r => r.ok ? r.json() : null)
@@ -677,7 +698,7 @@ export default function FilesPanel({ projectSlug }) {
               out.push({
                 name: f.name,
                 relativePath: rel,
-                url: `/api/dashboard/project-file?path=${encodeURIComponent(fullPath)}&raw=1`,
+                url: fileUrlFor(fullPath),
                 age: relativeAge(f.last_modified),
                 kind: fileKind(f.name),
                 size: null,
@@ -696,7 +717,7 @@ export default function FilesPanel({ projectSlug }) {
                 out.push({
                   name: f.name,
                   relativePath: rel,
-                  url: `/api/dashboard/project-file?path=${encodeURIComponent(fullPath)}&raw=1`,
+                  url: fileUrlFor(fullPath),
                   age: relativeAge(f.last_modified),
                   kind: fileKind(f.name),
                   size: null,
