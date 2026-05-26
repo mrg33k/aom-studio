@@ -591,7 +591,17 @@ function MessageList({ roomType = 'agent' }) {
   const visibleMessages = useMemo(
     () => renderedMessages.filter(m =>
       !(m.source === 'bridge-stream' && m._streaming && !m.text) &&
-      m.source !== 'clear_context'
+      m.source !== 'clear_context' &&
+      // R79-f15 (2026-05-25): hide chat-health-check infrastructure pings.
+      // The probe is a user-shape row that says
+      //   '[chat-health-check probe at ...] respond with the single word: pong'
+      // and the bridge replies with literally 'pong'. Both rows are deleted
+      // ~60-120s later by the daemon, but for the window they exist they
+      // flash on the dashboard. Source flag covers the probe; the reply has
+      // text==='pong' alone, which is a strong signature too.
+      m.source !== 'chat-health-check-probe' &&
+      !((m.text || '').trim().startsWith('[chat-health-check probe')) &&
+      !(m.role === 'assistant' && /^\s*pong\s*$/i.test(m.text || ''))
     ),
     [renderedMessages]
   )
