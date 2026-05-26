@@ -200,9 +200,19 @@ export function MissionContextMenu({
   const ref = '`' + (mission.slug || name) + '`'
   const items = [
     { key: 'brief-me', label: 'Brief me', icon: I.open, testId: 'mission-ctx-brief',
-      onSelect: () => onAgentPrompt?.('Brief me on mission ' + ref + '. What is the state and what is blocked?') },
+      onSelect: () => onAgentPrompt?.(
+        'Brief me on the mission ' + ref + ' (project: ' + (mission.projectSlug || mission.project || 'corner') + ').\n\n' +
+        'Read its mission home in plain English. Look at CONTEXT.md (current state), BUILD.md (round ledger), the most recent dated file in research/, and last-conversation.md.\n\n' +
+        'Tell me: (1) one sentence on what this mission is about, (2) what is in flight right now, (3) what is blocked, (4) what the obvious next move is.\n\n' +
+        'Work in this chat with me /007 — narrate steps as you read.'
+      ) },
     { key: 'whats-next', label: "What's next", icon: I.open, testId: 'mission-ctx-whats-next',
-      onSelect: () => onAgentPrompt?.('What is next on mission ' + ref + '? Propose the next round.') },
+      onSelect: () => onAgentPrompt?.(
+        'What is next on mission ' + ref + ' (project: ' + (mission.projectSlug || mission.project || 'corner') + ')?\n\n' +
+        'Read CONTEXT.md + BUILD.md in its mission home. Look at what shipped last and what is unfinished.\n\n' +
+        'Propose the next round: round number, what it ships, what it does NOT touch (out-of-scope), one-line completion criteria. Show your reasoning.\n\n' +
+        'Work in this chat /007.'
+      ) },
     { key: 'rename', label: 'Rename', icon: I.copy, testId: 'mission-ctx-rename',
       onSelect: () => onRename?.(mission) },
     { key: 'create-subfolder', label: 'Create subfolder…', icon: I.move, testId: 'mission-ctx-create-subfolder',
@@ -241,7 +251,12 @@ export function ProjectContextMenu({ open, x, y, project, folders = [], mobile =
   const ref = '`' + (project.slug || name) + '`'
   const items = [
     { key: 'brief-me', label: 'Brief me', icon: I.open, testId: 'project-ctx-brief',
-      onSelect: () => onAgentPrompt?.('Brief me on project ' + ref + '. What is the state across its missions?') },
+      onSelect: () => onAgentPrompt?.(
+        'Brief me on project ' + ref + '.\n\n' +
+        'Read the project home (CONTEXT.md, VISION.md, latest research/). List the active missions under it (look in missions/ subfolder). For each, name one sentence on its state.\n\n' +
+        'End with: what is the single most important thing happening on this project right now, and what is the obvious next move.\n\n' +
+        'Work in this chat /007.'
+      ) },
     { key: 'rename', label: 'Rename', icon: I.copy, testId: 'project-ctx-rename',
       onSelect: () => onRename?.(project) },
     { key: 'create-subfolder', label: 'Create subfolder…', icon: I.move, testId: 'project-ctx-create-subfolder',
@@ -286,11 +301,23 @@ export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onA
   const ref = path ? '`' + path + '`' : '`' + name + '`'
   const items = [
     { key: 'research', label: 'Research', icon: I.copy, testId: 'file-ctx-research',
-      onSelect: () => onAgentPrompt?.('Research this file: ' + ref + '. Skim it, tell me what is in it and what is worth doing next.') },
+      onSelect: () => onAgentPrompt?.(
+        'Research this file for me: ' + ref + '.\n\n' +
+        'Open it with the Read tool. Tell me: (1) what is in it in plain English, (2) what is the most useful or surprising thing in it, (3) what would be worth doing next based on what you read.\n\n' +
+        'If it references other files, list them so we can chase them next. Work /007 in this chat.'
+      ) },
     { key: 'summarize', label: 'Summarize', icon: I.open, testId: 'file-ctx-summarize',
-      onSelect: () => onAgentPrompt?.('Summarize ' + ref + ' for me in plain English. Lead with the punchline.') },
+      onSelect: () => onAgentPrompt?.(
+        'Summarize the file ' + ref + ' for me in plain English.\n\n' +
+        'Open it with the Read tool. Lead with the one-sentence punchline, then 3-5 bullets of what is in it, then a final line on what (if anything) needs follow-up.\n\n' +
+        'Work /007 in this chat.'
+      ) },
     { key: 'pull-quotes', label: 'Pull quotes', icon: I.copy, testId: 'file-ctx-pull-quotes',
-      onSelect: () => onAgentPrompt?.('Pull the 3-5 most-cited or most-load-bearing lines from ' + ref + ' and quote them back to me.') },
+      onSelect: () => onAgentPrompt?.(
+        'Pull the 3-5 most load-bearing or most-cited lines from the file ' + ref + ' and quote them back to me verbatim.\n\n' +
+        'Open with the Read tool. Pick lines that capture a decision, a constraint, or a load-bearing fact — not boilerplate. Use markdown blockquote (>) per line. Add a one-sentence why-each-matters under the quote block.\n\n' +
+        'Work /007 in this chat.'
+      ) },
     { key: 'copy-path', label: 'Copy path', icon: I.copy, testId: 'file-ctx-copy-path',
       onSelect: () => {
         if (path) navigator.clipboard?.writeText(path).catch(() => {})

@@ -276,9 +276,28 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
     if (!r?.ok) console.warn('[Mail] chat dispatch failed', r)
   }, [dispatchToChat, closeCtxMenu])
   const tRef = useCallback((t) => '`' + (t.subject || t.threadId || t.id) + '`', [])
-  const handleReply = useCallback((t) => handleAgentPrompt('Draft a reply to the mail thread ' + tRef(t) + ' from ' + (t.from || 'unknown sender') + '. Show me before sending.'), [handleAgentPrompt, tRef])
-  const handleForward = useCallback((t) => handleAgentPrompt('Draft a forward of the mail thread ' + tRef(t) + '. Ask me who to send it to.'), [handleAgentPrompt, tRef])
-  const handleSummarize = useCallback((t) => handleAgentPrompt('Summarize this mail thread: ' + tRef(t) + ' from ' + (t.from || 'unknown') + '. Tell me the ask in one sentence.'), [handleAgentPrompt, tRef])
+  const tEnvelope = useCallback((t) => (
+    'Gmail-ID: ' + (t.id || '?') + '\n' +
+    'Thread-ID: ' + (t.threadId || '?') + '\n' +
+    'Subject: ' + (t.subject || '(no subject)') + '\n' +
+    'From: ' + (t.from || 'unknown')
+  ), [])
+  const handleReply = useCallback((t) => handleAgentPrompt(
+    'Draft a reply to this mail thread.\n\n' + tEnvelope(t) + '\n\n' +
+    'Read the full thread first via `scripts/mail-read.py --id ' + (t.id || '<gmail-id>') + '` (and `mail-search.py` if you need more history with this sender).\n\n' +
+    'Then draft the reply in plain English. Show it to me here in this chat before sending — do NOT call mail-send.py until I say "send it".\n\n' +
+    'Work /007 in this chat.'
+  ), [handleAgentPrompt, tEnvelope])
+  const handleForward = useCallback((t) => handleAgentPrompt(
+    'Draft a forward of this mail thread.\n\n' + tEnvelope(t) + '\n\n' +
+    'Read the thread via `scripts/mail-read.py --id ' + (t.id || '<gmail-id>') + '`. Ask me who to send it to and any framing note before drafting. Then write the forward body and show it to me here before sending.\n\n' +
+    'Work /007 in this chat.'
+  ), [handleAgentPrompt, tEnvelope])
+  const handleSummarize = useCallback((t) => handleAgentPrompt(
+    'Summarize this mail thread for me in plain English.\n\n' + tEnvelope(t) + '\n\n' +
+    'Read it via `scripts/mail-read.py --id ' + (t.id || '<gmail-id>') + '`. Tell me: (1) what they want in one sentence, (2) any deadlines or constraints, (3) what I should do next.\n\n' +
+    'Work /007 in this chat.'
+  ), [handleAgentPrompt, tEnvelope])
   const handleToggleRead = useCallback(async (t) => {
     closeCtxMenu()
     // Endpoint TBD — log for now so we can wire when /api/dashboard/mail/mark-read lands.
