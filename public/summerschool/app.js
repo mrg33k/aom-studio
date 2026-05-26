@@ -22,6 +22,51 @@
   // URL handlers + lastSeenStars shadow tracking are gone. Old links land on
   // the hub as if they were no-ops, which is the desired behavior.
 
+  // ?seed-done=N → backfill the first N module blocks as done. Used after
+  // localStorage gets wiped (origin mismatch, Safari evicted, etc) so we
+  // can put Ethan back at "done with the morning's 41 modules" without
+  // making him redo them. Skips the welcome block (auto-counts as well).
+  // Reload clean afterward.
+  {
+    const seed = new URLSearchParams(window.location.search).get('seed-done');
+    if (seed !== null) {
+      const n = parseInt(seed, 10);
+      if (!Number.isNaN(n) && n >= 0) {
+        try {
+          const todayDay = (() => {
+            const forced = new URLSearchParams(window.location.search).get('day');
+            if (forced && window.CURRICULUM && window.CURRICULUM[forced]) return window.CURRICULUM[forced];
+            const DAY_NAMES = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+            const t = DAY_NAMES[new Date().getDay()];
+            return (window.CURRICULUM && window.CURRICULUM[t]) || (window.CURRICULUM && window.CURRICULUM.tuesday);
+          })();
+          if (todayDay && Array.isArray(todayDay.blocks)) {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const raw = localStorage.getItem('ss-state-v1');
+            const s = raw ? JSON.parse(raw) : {};
+            s.days = s.days || {};
+            s.days[todayStr] = s.days[todayStr] || { completedBlocks: [], blockData: {}, blockMetrics: {} };
+            const d = s.days[todayStr];
+            d.completedBlocks = d.completedBlocks || [];
+            d.blockMetrics = d.blockMetrics || {};
+            // Mark the first N blocks as done (in curriculum order). Include
+            // welcome — total is N blocks counted from the top.
+            let marked = 0;
+            for (let i = 0; i < todayDay.blocks.length && marked < n; i++) {
+              const b = todayDay.blocks[i];
+              if (!d.completedBlocks.includes(b.id)) d.completedBlocks.push(b.id);
+              if (!d.blockMetrics[b.id]) d.blockMetrics[b.id] = { startedAt: Date.now() - 60000, completedAt: Date.now(), durationMs: 60000, opens: 1 };
+              marked++;
+            }
+            localStorage.setItem('ss-state-v1', JSON.stringify(s));
+          }
+        } catch (e) { console.warn('[SS] seed-done failed', e); }
+      }
+      window.location.replace(window.location.pathname);
+      return;
+    }
+  }
+
   // ?admin=1 → inline state inspector. Star setters retired 2026-05-26 with
   // the gold-star system itself. Kept the panel as a read-only diagnostic
   // for the rest of state (modules done, streak, origin, blocks today).
@@ -551,11 +596,47 @@
         </div>
       ` : ''}
 
-      <div class="section-label">Today's plan — ${blocks.length} blocks, ${doneCount} done</div>
+      <div class="section-label">${doneCount > 0 ? `${doneCount} done · ${blocks.length - doneCount} left` : `${blocks.length} modules today`}</div>
       <div class="block-list">
-        ${blocks.map(renderBlockCard).join('')}
+        ${(() => {
+          // 2026-05-26 hub redesign: when there's a wall of done blocks,
+          // collapse them into a single "✓ N done" pill so the next undone
+          // block is the first thing he sees (not module 1 of 87).
+          // The collapsed group expands on tap if he wants to scroll back.
+          const cards = blocks.map((b, i) => ({ b, i, done: SS && SS.isBlockDone(b.id) }));
+          // Find the first undone index — everything before that is "behind."
+          const firstUndoneIdx = cards.findIndex(c => !c.done);
+          const cutoff = firstUndoneIdx === -1 ? cards.length : firstUndoneIdx;
+          const behind = cards.slice(0, cutoff);
+          const ahead = cards.slice(cutoff);
+
+          const behindCollapsed = behind.length >= 5
+            ? `<button class="block-done-group" id="block-done-toggle" style="width:100%; text-align:left; background: rgba(45,107,60,0.08); border: 1px solid rgba(45,107,60,0.18); border-radius: var(--r-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-3); cursor:pointer; display:flex; align-items:center; gap: var(--space-3); font-family: inherit;">
+                <span style="font-size: 18px; color: #2D6B3C;">✓</span>
+                <span style="flex:1; font-family: var(--font-serif); font-size: 17px;">${behind.length} done so far today</span>
+                <span style="font-size: 12px; color: var(--ink-quiet);">tap to show</span>
+              </button>
+              <div class="block-done-expand" id="block-done-expand" style="display:none;">
+                ${behind.map(c => renderBlockCard(c.b, c.i)).join('')}
+              </div>`
+            : behind.map(c => renderBlockCard(c.b, c.i)).join('');
+
+          return behindCollapsed + ahead.map(c => renderBlockCard(c.b, c.i)).join('');
+        })()}
       </div>
     `;
+
+    // wire block-done-group toggle
+    const toggle = host.querySelector('#block-done-toggle');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const exp = host.querySelector('#block-done-expand');
+        if (!exp) return;
+        const showing = exp.style.display !== 'none';
+        exp.style.display = showing ? 'none' : 'block';
+        toggle.querySelector('span:last-child').textContent = showing ? 'tap to show' : 'tap to hide';
+      });
+    }
 
     // wire block clicks
     host.querySelectorAll('[data-block-idx]').forEach(b => {
