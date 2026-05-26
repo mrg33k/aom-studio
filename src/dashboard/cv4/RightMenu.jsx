@@ -34,6 +34,7 @@ import { authFetch } from '../lib/authFetch.js'
 import FilesPanel from './FilesPanel.jsx'
 import { MissionContextMenu, ProjectContextMenu, FolderContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
 import useChatDispatch from '../components/cv3/useChatDispatch.js'
+import EmbedModal from '../components/cv3/EmbedModal.jsx'
 
 const MENU = {
   bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -1284,6 +1285,7 @@ export default function RightMenu() {
   const isMobile = useIsMobile()
   const [ctxMenu, setCtxMenu] = useState(null) // {kind:'mission'|'project', x, y, payload, projectSlug?, folders?}
   const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+  const [embedModalMission, setEmbedModalMission] = useState(null)
   const openMissionMenu = useCallback((x, y, mission, projectSlug) => {
     setCtxMenu({ kind: 'mission', x, y, mission, projectSlug })
   }, [])
@@ -2248,6 +2250,19 @@ export default function RightMenu() {
           onDelete={handleMissionDelete}
           onCreateSubfolder={handleCreateSubfolderForMission}
           onMoveToFolder={handleMissionMoveToFolder}
+          onEmbed={(m) => { closeCtxMenu(); setEmbedModalMission(m) }}
+        />
+      )}
+      {embedModalMission && (
+        <EmbedModal
+          open={!!embedModalMission}
+          onClose={() => setEmbedModalMission(null)}
+          selectedProject={{
+            slug: embedModalMission.projectSlug,
+            missionSlug: embedModalMission.slug,
+            missionName: embedModalMission.name || embedModalMission.slug,
+          }}
+          worldId={worldId}
         />
       )}
       {ctxMenu?.kind === 'project' && (

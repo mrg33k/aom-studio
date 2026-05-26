@@ -179,7 +179,7 @@ const I = {
 
 export function MissionContextMenu({
   open, x, y, mission, projects = [], folders = [], mobile = false, onClose,
-  onAgentPrompt, onRename, onDelete, onCreateSubfolder, onMoveToFolder,
+  onAgentPrompt, onRename, onDelete, onCreateSubfolder, onMoveToFolder, onEmbed,
 }) {
   const [stage, setStage] = useStage('root', open)
   if (!open || !mission) return null
@@ -219,6 +219,8 @@ export function MissionContextMenu({
       onSelect: () => onCreateSubfolder?.(mission) },
     { key: 'move-to-folder', label: 'Move to subfolder…', icon: I.move, hasSubmenu: true, testId: 'mission-ctx-move-folder',
       onSelect: () => { setStage('folders'); return 'keep' } },
+    { key: 'embed-this-room', label: 'Embed this room', icon: I.copy, testId: 'mission-ctx-embed',
+      onSelect: () => onEmbed?.(mission) },
     { key: 'delete', label: 'Delete', icon: I.archive, variant: 'danger', testId: 'mission-ctx-delete',
       onSelect: () => onDelete?.(mission) },
   ]
