@@ -316,15 +316,28 @@ function FileViewer({ file, onClose }) {
           }}>
             {file.name}
           </span>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 12 }}>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 12, alignItems: 'center' }}>
+            <a
+              href={url}
+              download={file.name}
+              title="Download"
+              style={{
+                fontSize: 12, color: C.text2, textDecoration: 'none',
+                padding: '6px 12px', border: `1px solid ${C.border2 || C.border}`, borderRadius: 6,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >Download</a>
             <button
               onClick={() => setExpanded(false)}
               title="Collapse"
-              style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+              aria-label="Collapse to inline viewer"
+              style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1 }}
             >⤡</button>
             <button
               onClick={onClose}
-              style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 14, padding: '0 0 0 4px', lineHeight: 1 }}
+              title="Close"
+              aria-label="Close viewer"
+              style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1 }}
             >✕</button>
           </div>
         </div>
@@ -353,15 +366,28 @@ function FileViewer({ file, onClose }) {
         <span style={{ fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {file.name}
         </span>
-        <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 8 }}>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8, alignItems: 'center' }}>
+          <a
+            href={url}
+            download={file.name}
+            title="Download"
+            style={{
+              fontSize: 10, color: C.text2, textDecoration: 'none',
+              padding: '3px 8px', border: `1px solid ${C.border2 || C.border}`, borderRadius: 4,
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >Download</a>
           <button
             onClick={() => setExpanded(true)}
             title="Expand to full view"
-            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 12, padding: '0 2px', lineHeight: 1 }}
+            aria-label="Expand viewer"
+            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 14, padding: '0 3px', lineHeight: 1 }}
           >⤢</button>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 13, padding: '0 0 0 4px', lineHeight: 1 }}
+            title="Close"
+            aria-label="Close viewer"
+            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 16, padding: '0 3px', lineHeight: 1 }}
           >✕</button>
         </div>
       </div>
