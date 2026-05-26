@@ -199,9 +199,10 @@ export default function CV4ContextNav({
               {agents.length > 0 && (
                 <>
                   <div style={{
-                    fontSize: 10, fontWeight: 700, color: C.dim,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    fontSize: 9, fontWeight: 700, color: C.dim,
+                    letterSpacing: '0.12em', textTransform: 'uppercase',
                     padding: '6px 8px 4px',
+                    fontFamily: "'JetBrains Mono', monospace",
                   }}>Agents</div>
                   {agents.map(agent => (
                     <button
@@ -245,9 +246,10 @@ export default function CV4ContextNav({
                 <>
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 8px' }} />
                   <div style={{
-                    fontSize: 10, fontWeight: 700, color: C.dim,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    fontSize: 9, fontWeight: 700, color: C.dim,
+                    letterSpacing: '0.12em', textTransform: 'uppercase',
                     padding: '6px 8px 4px',
+                    fontFamily: "'JetBrains Mono', monospace",
                   }}>Projects</div>
                   {sortedProjects.map(project => {
                     const pColor = project.color || '#6B8AB0'

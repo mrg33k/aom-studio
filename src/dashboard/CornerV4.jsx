@@ -2116,7 +2116,10 @@ export default function CornerV4() {
               padding: '14px 16px 10px',
               borderBottom: '1px solid ' + C.border,
             }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: "'Inter', sans-serif" }}>
+              <span style={{
+                fontSize: 22, fontWeight: 400, lineHeight: 1, color: C.text,
+                fontFamily: "'Instrument Serif', Georgia, serif",
+              }}>
                 Slash Commands
               </span>
               <button

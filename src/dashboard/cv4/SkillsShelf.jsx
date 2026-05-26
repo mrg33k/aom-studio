@@ -360,24 +360,30 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
                   }}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                  {/* R19 — tier label uses the Drawer's section-heading
+                      cadence (JetBrains Mono uppercase, 10px, 0.12em
+                      letter-spacing) so it reads like "Projects" / "Agents"
+                      / "Account" in the left rail instead of a serif
+                      display title. */}
                   <div
                     style={{
-                      fontFamily: "'Instrument Serif', Georgia, serif",
-                      fontSize: 17,
-                      fontWeight: 400,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10,
+                      fontWeight: 700,
                       lineHeight: 1.1,
                       color: tier.accent,
-                      letterSpacing: '-0.005em',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.12em',
                     }}
                   >
                     {tier.label}
                   </div>
                   <div
                     style={{
-                      marginTop: 2,
+                      marginTop: 4,
                       fontSize: 11,
                       color: C.text2,
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',

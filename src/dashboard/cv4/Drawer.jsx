@@ -439,11 +439,10 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* R10-1 (2026-05-25) — Mail leads, Agents follow (per Patrik). */}
-      {/* Mail Room lives in the left rail.
-          Disconnected: amber Connect Gmail hero (kicks OAuth start).
-          Connected: 5-bucket tab strip + inline email list. Clicking an
-          email pins it as a chat chip on the EA via onSelectMail. */}
+      {/* R10-1 — Mail leads, Agents follow. Mail Room lives in the left
+          rail: amber Connect Gmail hero when no token, 5-bucket tabs +
+          email list when connected. Clicking an email pins it as a chat
+          chip on the EA via onSelectMail. */}
       <LeftMailPanel
         selectedMailId={selectedMailId}
         onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
@@ -455,7 +454,9 @@ function DrawerBody({
         <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
       )}
 
-      <TreeSection title="Agents">
+      {/* R19 (2026-05-25) — Agents + Projects default to collapsed so the
+          rail starts quiet; Mail is the always-open lead. Chevron toggles. */}
+      <TreeSection title="Agents" collapsible defaultCollapsed>
         {agents.length === 0 ? (
           <Empty label="No agents" />
         ) : (
@@ -473,6 +474,8 @@ function DrawerBody({
       <NestedUnderMail>
       <TreeSection
         title="Projects"
+        collapsible
+        defaultCollapsed
         action={onNewProject ? (
           <button
             data-cv4-new-project
@@ -612,9 +615,16 @@ function DrawerBody({
   )
 }
 
-// R10-2: section labels match the right-menu SectionLabel cadence
-// (mono 10px, 0.12em letter-spacing, muted not dim, more breathing above).
-function TreeSection({ title, action = null, children }) {
+// R10-2 — section labels match the right-menu SectionLabel cadence
+// (mono 10px, 0.12em letter-spacing, muted color, breathing padding).
+// R19 — `collapsible` + `defaultCollapsed` props let Agents + Projects
+// default to closed (chevron-toggled) while Account stays always-open.
+// The `action` element (e.g. + New on Projects) remains visible
+// regardless of expanded state — you can spin up a project without
+// expanding the list first.
+function TreeSection({ title, action = null, collapsible = false, defaultCollapsed = false, children }) {
+  const [open, setOpen] = useState(!defaultCollapsed)
+  const showChildren = !collapsible || open
   return (
     <section style={{
       margin: '0 0 8px',
@@ -625,14 +635,45 @@ function TreeSection({ title, action = null, children }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '6px 8px 7px',
       }}>
-        <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: C.muted,
-          fontFamily: MENU.monoFont,
-        }}>{title}</span>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen(o => !o)}
+            aria-expanded={open}
+            style={{
+              flex: 1, minWidth: 0,
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: 0, textAlign: 'left',
+            }}
+          >
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.muted}
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{
+                flexShrink: 0,
+                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.12s',
+              }}>
+              <polyline points="9 6 15 12 9 18"/>
+            </svg>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: C.muted,
+              fontFamily: MENU.monoFont,
+            }}>{title}</span>
+          </button>
+        ) : (
+          <span style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+            textTransform: 'uppercase', color: C.muted,
+            fontFamily: MENU.monoFont,
+          }}>{title}</span>
+        )}
         {action}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>{children}</div>
+      {showChildren && (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>{children}</div>
+      )}
     </section>
   )
 }
