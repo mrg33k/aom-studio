@@ -373,10 +373,19 @@
   let currentBlockIdx = -1;  // -1 = hub
 
   function go(screen) {
-    if (screen === 'hub') { currentBlockIdx = -1; renderHub(); renderRail(); return; }
+    if (screen === 'hub') {
+      currentBlockIdx = -1;
+      window._ssActiveBlock = null;
+      renderHub();
+      renderRail();
+      return;
+    }
     if (typeof screen === 'number') {
       currentBlockIdx = screen;
       const b = day().blocks[screen];
+      // Surface the active block id globally so SS.awardStar can dedupe
+      // by (event, blockId) without every renderer threading it through.
+      window._ssActiveBlock = b && b.id;
       if (b && SS && SS.startBlock) SS.startBlock(b.id);
       renderBlock(b);
       renderRail();
@@ -392,12 +401,16 @@
     while (n < blocks.length && SS && SS.isBlockDone(blocks[n].id)) n++;
     if (n >= blocks.length) {
       currentBlockIdx = -1;
+      window._ssActiveBlock = null;
       renderHub();
       // celebrate
-      if (SS) SS.awardStar('Day complete');
+      if (SS) SS.awardStar('day-complete');
     } else {
       currentBlockIdx = n;
-      renderBlock(blocks[n]);
+      const nextBlock = blocks[n];
+      window._ssActiveBlock = nextBlock && nextBlock.id;
+      if (nextBlock && SS && SS.startBlock) SS.startBlock(nextBlock.id);
+      renderBlock(nextBlock);
     }
     renderRail();
   }

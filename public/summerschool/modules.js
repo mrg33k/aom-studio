@@ -43,22 +43,30 @@ window.SSMod = (function () {
   }
 
   function complete(blockId, data) {
+    // 2026-05-26 exploit fix: detect a re-completion BEFORE we write state
+    // so the speed-bonus guard can see the truth (isBlockDone is true if
+    // he's tapping through a card that was already done today).
+    const wasAlreadyDone = window.SS && window.SS.isBlockDone(blockId);
+
     if (window.SS) window.SS.completeBlock(blockId, data);
-    // Speed compliment: if the user finished in under half the budgeted
-    // minutes, fire a one-star bonus + toast. Quiet failure if SS is missing.
-    try {
-      const metrics = window.SS && window.SS.todayMetrics();
-      const m = metrics && metrics.blockMetrics && metrics.blockMetrics[blockId];
-      // The block budget lives on the block definition — caller passes it in
-      // via `data.budgetMinutes` when known. Fall back to a generous 6 min.
-      const budgetMin = (data && data.budgetMinutes) || _activeBlockBudgetMin || 6;
-      if (m && m.durationMs) {
-        const half = budgetMin * 60 * 1000 * 0.5;
-        if (m.durationMs > 0 && m.durationMs < half) {
-          window.SS.awardStar('speed-bonus', { blockId, durationMs: m.durationMs });
+
+    // Speed compliment: if this was a FIRST completion AND finished under
+    // half the budgeted minutes, fire a one-star bonus. Re-tapping a done
+    // card never re-fires (SS.awardStar dedupes too, but we belt-and-
+    // suspenders skip the call entirely so no toast fires either).
+    if (!wasAlreadyDone) {
+      try {
+        const metrics = window.SS && window.SS.todayMetrics();
+        const m = metrics && metrics.blockMetrics && metrics.blockMetrics[blockId];
+        const budgetMin = (data && data.budgetMinutes) || _activeBlockBudgetMin || 6;
+        if (m && m.durationMs) {
+          const half = budgetMin * 60 * 1000 * 0.5;
+          if (m.durationMs > 0 && m.durationMs < half) {
+            window.SS.awardStar('speed-bonus', { blockId, durationMs: m.durationMs });
+          }
         }
-      }
-    } catch (e) { /* don't let metrics blow up the flow */ }
+      } catch (e) { /* don't let metrics blow up the flow */ }
+    }
     window.SSRoute.next();
   }
 

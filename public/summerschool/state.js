@@ -135,6 +135,30 @@ window.SS = window.SS || {};
         return load().goldStars;
       }
       if (rule.stars <= 0) return load().goldStars;
+
+      // 2026-05-26 exploit fix: Ethan noticed he could re-tap a completed
+      // block ("welcome → Let's go" repeatedly) and farm stars. Each
+      // (event, blockId) pair can only award ONCE per day. We dedupe at
+      // the source — no caller needs to know the rule.
+      //
+      // blockId resolution order:
+      //   1. explicit payload.blockId
+      //   2. global active block id set by the renderer (window._ssActiveBlock)
+      //   3. fallback bucket 'global' (covers events not tied to a block)
+      const blockId = (payload && payload.blockId)
+        || (typeof window !== 'undefined' && window._ssActiveBlock)
+        || 'global';
+      const dedupeKey = `${event}|${blockId}`;
+      const d = ensureDay(today());
+      d.awarded = d.awarded || {};
+      if (d.awarded[dedupeKey]) {
+        // Already awarded for this block today. Silently no-op — no toast,
+        // no star, no console noise. The kid clicked through a completed
+        // block again; that's fine, but it isn't worth a second prize.
+        return load().goldStars;
+      }
+      d.awarded[dedupeKey] = Date.now();
+
       const s = load();
       s.goldStars += rule.stars;
       save();
