@@ -16,6 +16,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 import { getUserWorld } from '../lib/clientConfig.js'
+import { MailThreadContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
+import useChatDispatch from '../components/cv3/useChatDispatch.js'
 
 const MENU = {
   bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -257,6 +259,40 @@ function ConnectHero({ state, oauthReason }) {
 
 // ── CONNECTED PANEL ─────────────────────────────────────────────────────
 function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading, selectedMailId, onSelectMail }) {
+  const dispatchToChat = useChatDispatch()
+  const isMobile = useIsMobile()
+  const [ctxMenu, setCtxMenu] = useState(null)
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+  const openMailMenu = useCallback((x, y, email) => {
+    setCtxMenu({ x, y, thread: {
+      id: email.id, threadId: email.threadId || email.thread_id,
+      subject: email.subject, from: email?.from?.name || email?.from?.email || email?.from || '',
+      unread: !!email.unread,
+    } })
+  }, [])
+  const handleAgentPrompt = useCallback(async (text) => {
+    closeCtxMenu()
+    const r = await dispatchToChat(text)
+    if (!r?.ok) console.warn('[Mail] chat dispatch failed', r)
+  }, [dispatchToChat, closeCtxMenu])
+  const tRef = useCallback((t) => '`' + (t.subject || t.threadId || t.id) + '`', [])
+  const handleReply = useCallback((t) => handleAgentPrompt('Draft a reply to the mail thread ' + tRef(t) + ' from ' + (t.from || 'unknown sender') + '. Show me before sending.'), [handleAgentPrompt, tRef])
+  const handleForward = useCallback((t) => handleAgentPrompt('Draft a forward of the mail thread ' + tRef(t) + '. Ask me who to send it to.'), [handleAgentPrompt, tRef])
+  const handleSummarize = useCallback((t) => handleAgentPrompt('Summarize this mail thread: ' + tRef(t) + ' from ' + (t.from || 'unknown') + '. Tell me the ask in one sentence.'), [handleAgentPrompt, tRef])
+  const handleToggleRead = useCallback(async (t) => {
+    closeCtxMenu()
+    // Endpoint TBD — log for now so we can wire when /api/dashboard/mail/mark-read lands.
+    console.warn('[Mail] toggle-read endpoint not yet wired', t.id)
+  }, [closeCtxMenu])
+  const handleArchive = useCallback(async (t) => {
+    closeCtxMenu()
+    console.warn('[Mail] archive endpoint not yet wired', t.id)
+  }, [closeCtxMenu])
+  const handleSnooze = useCallback(async (t) => {
+    closeCtxMenu()
+    console.warn('[Mail] snooze endpoint not yet wired', t.id)
+  }, [closeCtxMenu])
+
   const headerEmail = connection?.account_email
   // R10-4: token-expired heuristic — when the connected panel shows zero
   // counts across every bucket AND no emails in the active list, the token is
@@ -379,12 +415,23 @@ function ConnectedPanel({ connection, bucket, onBucket, counts, emails, loading,
                 email={e}
                 active={selectedMailId === e.id}
                 onClick={() => onSelectMail?.(e)}
+                onContextMenu={(ev) => { ev.preventDefault(); openMailMenu(ev.clientX, ev.clientY, e) }}
+                onLongPress={openMailMenu}
               />
             ))}
           </ul>
         )}
       </div>
-    </div>
+          {ctxMenu && (
+        <MailThreadContextMenu
+          open x={ctxMenu.x} y={ctxMenu.y} thread={ctxMenu.thread} projects={[]}
+          mobile={isMobile} onClose={closeCtxMenu}
+          onReply={handleReply} onForward={handleForward}
+          onToggleRead={handleToggleRead} onArchive={handleArchive}
+          onSnooze={handleSnooze} onMoveTo={() => closeCtxMenu()}
+        />
+      )}
+      </div>
   )
 }
 
@@ -449,7 +496,8 @@ function PaperclipMicro() {
   )
 }
 
-function MailRow({ email, active, onClick }) {
+function MailRow({ email, active, onClick, onContextMenu, onLongPress }) {
+  const longPressHandlers = useLongPress(onLongPress ? (x, y) => onLongPress(x, y, email) : null)
   // R14 hotfix — /api/dashboard/mail/list returns `from` as
   // { name, email } (object), not the historical "Name <addr>" string. The
   // earlier .match() call threw "h.match is not a function" and crashed
@@ -474,6 +522,8 @@ function MailRow({ email, active, onClick }) {
       data-cv4-mail-row
       data-active={active ? 'true' : 'false'}
       onClick={onClick}
+      onContextMenu={onContextMenu}
+      {...(longPressHandlers || {})}
       style={{
         padding: '7px 10px',
         cursor: 'pointer',
