@@ -187,12 +187,18 @@ function collectFiles(dirAbsPath) {
     });
   }
 
-  // 4. Walk known deliverable subfolders so files agents drop into
-  //    deliverables/, screenshots/, visuals/, etc. surface automatically.
+  // 4. Walk every non-hidden subfolder so any file an agent dropped under the
+  //    mission home (whether into deliverables/, screenshots/, or a custom
+  //    folder like module-3-permission-ladder/) surfaces in the browser.
+  //    Excluded: hidden dirs (archive/, vision-qa/, node_modules/, .git/),
+  //    research/ (handled in step 2), missions/ (handled by collectMissions
+  //    when this is called for a project root; harmless to skip when called
+  //    for a mission root since missions don't nest inside missions/).
   for (const ent of topEntries) {
     if (!ent.isDirectory()) continue;
     if (isHidden(ent.name)) continue;
-    if (!DELIVERABLE_DIRS.has(ent.name)) continue;
+    if (ent.name === 'research') continue;
+    if (ent.name === 'missions') continue;
     const subAbs = path.join(dirAbsPath, ent.name);
     walkDeliverableDir(dirAbsPath, subAbs, 1, ent.name, files);
   }
