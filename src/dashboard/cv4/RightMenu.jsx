@@ -1798,10 +1798,17 @@ export default function RightMenu() {
       const hasChildren = children.length > 0
       const missionKey = `${m.projectSlug}:${m.slug}`
       const isExpanded = expandedMissions.has(missionKey)
+      // Inside the tree, indent + parent row above carry the context.
+      // Strip the breadcrumb prefix (set in the flat-list builder) so the
+      // visible name is just the own name (Hero, Color system, etc.).
+      const treeName = (m.name || '').includes(' \u203A ')
+        ? m.name.split(' \u203A ').pop()
+        : (m.name || m.slug)
+      const missionForRow = { ...m, name: treeName }
       return (
         <div key={`${keyPrefix}-${m.slug}`}>
           <MissionRow
-            mission={m}
+            mission={missionForRow}
             projectSlug={m.projectSlug}
             dotStatus={m.dotStatus}
             ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
