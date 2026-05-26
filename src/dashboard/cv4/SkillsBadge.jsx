@@ -71,8 +71,8 @@ export default function SkillsBadge({ open, onToggle }) {
         <BoltIcon />
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.15, color: '#FFFFFF' }}>
-          {open ? 'Close skills' : 'Browse skills'}
+        <span style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.15, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {open ? 'Close skills' : '100+ Skills ready to go…'}
         </span>
         <span
           style={{
@@ -88,7 +88,7 @@ export default function SkillsBadge({ open, onToggle }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {open ? 'tap to go back' : `fire any skill into any mission`}
+          {open ? 'tap to go back' : 'fire any one into any mission'}
         </span>
       </span>
       <span

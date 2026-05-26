@@ -13,13 +13,20 @@ import { C } from '../lib/cv3Colors.js'
 const PURPLE = '#A78BFA'
 
 // Tier order: easiest / most useful for a new user at top, most intricate
-// at the bottom. Each tier names which `categoryLabel` strings belong in it,
-// in the listed order — categories not enumerated fall into a final
-// "More" bucket so nothing is lost when skills.json grows.
+// at the bottom. Each tier carries its own accent color so the eye sees
+// the groups at a glance. Categories not enumerated fall into a final
+// "More" bucket (slate) so nothing is lost when skills.json grows.
+//
+// Color choice mirrors the tier's feel: mint (welcoming) → amber (creative)
+// → sky (investigative) → magenta (intense).
 const TIERS = [
   {
     label: 'Start here',
-    blurb: 'Daily ops and account basics',
+    blurb: 'Daily ops, account, sessions',
+    accent: '#34D399',         // mint / emerald
+    accentSoft: 'rgba(52, 211, 153, 0.16)',
+    accentEdge: 'rgba(52, 211, 153, 0.50)',
+    accentGlow: 'rgba(52, 211, 153, 0.28)',
     categories: [
       'Account',
       'Session Management',
@@ -29,6 +36,10 @@ const TIERS = [
   {
     label: 'Make stuff',
     blurb: 'Visual, social, voice, outbound',
+    accent: '#FBBF24',         // amber / gold
+    accentSoft: 'rgba(251, 191, 36, 0.16)',
+    accentEdge: 'rgba(251, 191, 36, 0.55)',
+    accentGlow: 'rgba(251, 191, 36, 0.28)',
     categories: [
       'Brand / Design',
       'Social / Marketing',
@@ -39,6 +50,10 @@ const TIERS = [
   {
     label: 'Go deeper',
     blurb: 'Research, strategy, dev, collab',
+    accent: '#38BDF8',         // sky / cyan
+    accentSoft: 'rgba(56, 189, 248, 0.16)',
+    accentEdge: 'rgba(56, 189, 248, 0.50)',
+    accentGlow: 'rgba(56, 189, 248, 0.28)',
     categories: [
       'Research / Intelligence',
       'Collaboration / Communication',
@@ -49,6 +64,10 @@ const TIERS = [
   {
     label: 'Power',
     blurb: 'Production media + system level',
+    accent: '#F472B6',         // rose / magenta
+    accentSoft: 'rgba(244, 114, 182, 0.16)',
+    accentEdge: 'rgba(244, 114, 182, 0.55)',
+    accentGlow: 'rgba(244, 114, 182, 0.28)',
     categories: [
       'Video / Content Production',
       'DaVinci Resolve / Timeline',
@@ -57,6 +76,15 @@ const TIERS = [
     ],
   },
 ]
+
+const MORE_TIER = {
+  label: 'More',
+  blurb: 'Uncategorized',
+  accent: '#94A3B8',         // slate
+  accentSoft: 'rgba(148, 163, 184, 0.14)',
+  accentEdge: 'rgba(148, 163, 184, 0.40)',
+  accentGlow: 'rgba(148, 163, 184, 0.20)',
+}
 
 function score(skill, query) {
   if (!query) return 1
@@ -127,8 +155,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
     }
     if (leftover.length) {
       groups.push({
-        label: 'More',
-        blurb: 'Uncategorized',
+        ...MORE_TIER,
         sections: leftover,
       })
     }
@@ -288,88 +315,153 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
           </div>
         )}
 
-        {filtered.map((tier, ti) => (
-          <div key={tier.label} style={{ marginTop: ti === 0 ? 8 : 22 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 10,
-                padding: '0 4px 4px',
-              }}
-            >
+        {filtered.map((tier, ti) => {
+          const tierCount = tier.sections.reduce((a, s) => a + s.items.length, 0)
+          return (
+            <div key={tier.label} style={{ marginTop: ti === 0 ? 4 : 22 }}>
+              {/* Tier banner: solid colored block w/ label, blurb, count */}
               <div
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: PURPLE,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  background: tier.accentSoft,
+                  border: `1px solid ${tier.accentEdge}`,
+                  boxShadow: `0 1px 0 ${tier.accentGlow} inset`,
+                  marginBottom: 10,
                 }}
               >
-                {tier.label}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: C.muted,
-                  fontFamily: "'Inter', sans-serif",
-                }}
-              >
-                {tier.blurb}
-              </div>
-            </div>
-            <div
-              style={{
-                height: 1,
-                background: 'rgba(167,139,250,0.12)',
-                margin: '0 4px 10px',
-              }}
-            />
-
-            {tier.sections.map((sec) => (
-              <div key={sec.category} style={{ marginBottom: 14 }}>
-                <div
+                <span
+                  aria-hidden="true"
                   style={{
-                    fontSize: 10,
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    background: tier.accent,
+                    boxShadow: `0 0 0 3px ${tier.accentGlow}`,
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Instrument Serif', Georgia, serif",
+                      fontSize: 17,
+                      fontWeight: 400,
+                      lineHeight: 1.1,
+                      color: tier.accent,
+                      letterSpacing: '-0.005em',
+                    }}
+                  >
+                    {tier.label}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      fontSize: 11,
+                      color: 'rgba(255,255,255,0.72)',
+                      fontFamily: "'Inter', sans-serif",
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {tier.blurb}
+                  </div>
+                </div>
+                <span
+                  style={{
                     fontFamily: "'JetBrains Mono', monospace",
-                    color: C.muted,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.10em',
-                    padding: '0 4px 6px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: tier.accent,
+                    background: 'rgba(0,0,0,0.18)',
+                    border: `1px solid ${tier.accentEdge}`,
+                    borderRadius: 999,
+                    padding: '2px 8px',
+                    flexShrink: 0,
                   }}
                 >
-                  {sec.category}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 6,
-                    padding: '0 4px',
-                  }}
-                >
-                  {sec.items.map((skill) => (
-                    <SkillChip
-                      key={skill.name}
-                      skill={skill}
-                      onClick={() => onPickSkill(skill)}
-                    />
-                  ))}
-                </div>
+                  {tierCount}
+                </span>
               </div>
-            ))}
-          </div>
-        ))}
+
+              {tier.sections.map((sec) => (
+                <div
+                  key={sec.category}
+                  style={{
+                    marginBottom: 10,
+                    borderLeft: `2px solid ${tier.accentEdge}`,
+                    paddingLeft: 10,
+                    marginLeft: 4,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '2px 0 6px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 10.5,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color: tier.accent,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.10em',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {sec.category}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: C.muted,
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
+                    >
+                      {sec.items.length}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 6,
+                      paddingBottom: 4,
+                    }}
+                  >
+                    {sec.items.map((skill) => (
+                      <SkillChip
+                        key={skill.name}
+                        skill={skill}
+                        tier={tier}
+                        onClick={() => onPickSkill(skill)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-function SkillChip({ skill, onClick }) {
+function SkillChip({ skill, tier, onClick }) {
   const label = skill.alias || skill.name || ''
   const stripped = label.replace(/^\//, '')
+  // Fall back to purple if no tier is provided (defensive; not expected).
+  const accent = tier?.accent || '#A78BFA'
+  const accentSoft = tier?.accentSoft || 'rgba(167,139,250,0.10)'
+  const accentEdge = tier?.accentEdge || 'rgba(167,139,250,0.40)'
   return (
     <button
       type="button"
@@ -382,9 +474,9 @@ function SkillChip({ skill, onClick }) {
         gap: 4,
         padding: '4px 10px',
         borderRadius: 999,
-        border: '1px solid rgba(167,139,250,0.28)',
-        background: 'rgba(167,139,250,0.08)',
-        color: '#E9DDFE',
+        border: `1px solid ${accentEdge}`,
+        background: accentSoft,
+        color: '#F8FAFC',
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 11,
         cursor: 'pointer',
@@ -392,17 +484,19 @@ function SkillChip({ skill, onClick }) {
         transition: 'all 0.12s ease',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(167,139,250,0.20)'
-        e.currentTarget.style.borderColor = 'rgba(167,139,250,0.55)'
-        e.currentTarget.style.color = '#FFFFFF'
+        e.currentTarget.style.background = accent
+        e.currentTarget.style.borderColor = accent
+        e.currentTarget.style.color = '#0F172A'
+        e.currentTarget.style.boxShadow = `0 4px 12px ${tier?.accentGlow || 'rgba(0,0,0,0.25)'}`
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(167,139,250,0.08)'
-        e.currentTarget.style.borderColor = 'rgba(167,139,250,0.28)'
-        e.currentTarget.style.color = '#E9DDFE'
+        e.currentTarget.style.background = accentSoft
+        e.currentTarget.style.borderColor = accentEdge
+        e.currentTarget.style.color = '#F8FAFC'
+        e.currentTarget.style.boxShadow = 'none'
       }}
     >
-      <span style={{ opacity: 0.55 }}>/</span>
+      <span style={{ opacity: 0.65 }}>/</span>
       <span>{stripped}</span>
     </button>
   )
