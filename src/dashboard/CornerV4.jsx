@@ -2308,7 +2308,7 @@ export default function CornerV4() {
             (!isDesktop && tab === 'tasks') ? (
               selectedMail
                 ? <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
-                : <RightMenu />
+                : <RightMenu handleSelectMission={handleSelectMission} handleSelectProject={handleSelectProject} handleSelectTask={handleSelectTask} />
             ) : selectedMail ? (
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
@@ -2355,7 +2355,7 @@ export default function CornerV4() {
           >
             {/* R10 — Right rail is Missions/Tasks/Files only. Mail moved
                 to the left rail (LeftMailPanel inside CV4Drawer). */}
-            <RightMenu />
+            <RightMenu handleSelectMission={handleSelectMission} handleSelectProject={handleSelectProject} handleSelectTask={handleSelectTask} />
           </aside>
         )}
       </div>
