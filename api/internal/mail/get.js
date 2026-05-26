@@ -50,6 +50,39 @@ function extractBodies(payload) {
   return { text, html }
 }
 
+// Walk the MIME tree collecting attachment parts. Gmail flags real
+// attachments via filename + body.attachmentId. Inline images carry a
+// Content-ID header and live under a multipart/related parent; we expose
+// them separately so the agent can distinguish a real PDF/PO attachment
+// from an embedded signature image. Ported from /api/dashboard/mail/get.js
+// (2026-05-26) so terminal agents see the same shape the UI does.
+function extractAttachments(payload) {
+  const attachments = []
+  const inline = []
+  function walk(part) {
+    if (!part) return
+    const filename = part.filename || ''
+    const attachmentId = part.body?.attachmentId || ''
+    const size = part.body?.size || 0
+    const mime = (part.mimeType || '').toLowerCase()
+    const headers = part.headers || []
+    const contentId = (headers.find(h => (h.name || '').toLowerCase() === 'content-id')?.value || '')
+      .replace(/^<|>$/g, '')
+    const dispoHeader = (headers.find(h => (h.name || '').toLowerCase() === 'content-disposition')?.value || '').toLowerCase()
+    const isInline = dispoHeader.startsWith('inline') || (!!contentId && mime.startsWith('image/'))
+    if (attachmentId && filename) {
+      const item = { attachmentId, filename, mimeType: mime, size, contentId: contentId || null }
+      if (isInline && contentId) inline.push(item)
+      else attachments.push(item)
+    } else if (attachmentId && isInline && contentId && mime.startsWith('image/')) {
+      inline.push({ attachmentId, filename: '', mimeType: mime, size, contentId })
+    }
+    if (Array.isArray(part.parts)) part.parts.forEach(walk)
+  }
+  walk(payload)
+  return { attachments, inline }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
@@ -89,6 +122,7 @@ export default async function handler(req, res) {
   const msg = await r.json()
   const headers = msg.payload?.headers || []
   const bodies = extractBodies(msg.payload)
+  const { attachments, inline } = extractAttachments(msg.payload)
 
   return res.status(200).json({
     id: msg.id,
@@ -105,5 +139,7 @@ export default async function handler(req, res) {
     messageId: headerVal(headers, 'Message-Id') || headerVal(headers, 'Message-ID'),
     inReplyTo: headerVal(headers, 'In-Reply-To'),
     references: headerVal(headers, 'References'),
+    attachments,
+    inline,
   })
 }
