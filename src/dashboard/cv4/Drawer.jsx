@@ -13,6 +13,7 @@ import missionsData from '../data/missions.json'
 import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 import { authFetch } from '../lib/authFetch.js'
 import LeftMailPanel from './LeftMailPanel.jsx'
+import SkillsShelf from './SkillsShelf.jsx'
 
 const PANEL_WIDTH = 300
 const MENU = {
@@ -54,6 +55,11 @@ export default function CV4Drawer({
   // R78-p9c: counter prop — increment from outside (CornerV4) after a new
   // project or mission is created to force an immediate missions-tree refetch.
   refreshKey = 0,
+  // corner:skills-picker R1: when true, replace the project tree body with
+  // the SkillsShelf takeover. CornerV4 owns the toggle state.
+  skillsShelfOpen = false,
+  onCloseSkillsShelf,
+  onPickSkill,
 }) {
   const isSuperAdmin = currentUserId === SUPER_ADMIN_UID
   useEffect(() => {
@@ -233,6 +239,17 @@ export default function CV4Drawer({
     />
   )
 
+  // corner:skills-picker R1 — when Skills shelf is open, it takes over the
+  // entire body of the drawer. Header stays the same so the user can still
+  // close the drawer; the Refresh button isn't relevant in shelf mode but
+  // keeping the header consistent avoids a layout jump.
+  const displayedBody = skillsShelfOpen ? (
+    <SkillsShelf
+      onPickSkill={(skill) => onPickSkill?.(skill)}
+      onClose={() => onCloseSkillsShelf?.()}
+    />
+  ) : body
+
   if (docked) {
     return (
       <aside
@@ -282,7 +299,7 @@ export default function CV4Drawer({
             <RefreshIcon />
           </button>
         </div>
-        {body}
+        {displayedBody}
       </aside>
     )
   }
@@ -371,7 +388,7 @@ export default function CV4Drawer({
             >×</button>
           </div>
         </div>
-        {body}
+        {displayedBody}
       </aside>
     </>
   )

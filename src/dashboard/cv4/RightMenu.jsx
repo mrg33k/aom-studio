@@ -32,6 +32,7 @@ import { useTasks } from '../hooks/useTasks.js'
 import { useProjects } from '../hooks/useProjects.js'
 import { authFetch } from '../lib/authFetch.js'
 import FilesPanel from './FilesPanel.jsx'
+import SkillsBadge from './SkillsBadge.jsx'
 
 const MENU = {
   bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -1275,7 +1276,7 @@ function NewFolderAffordance({ projectSlug, onCreateFolder }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function RightMenu() {
+export default function RightMenu({ skillsShelfOpen = false, onToggleSkillsShelf } = {}) {
   const { worldId } = useCornerAuth()
   const nav = useCornerNav()
   const {
@@ -1885,7 +1886,14 @@ export default function RightMenu() {
         }
       `}</style>
 
-      <PanelHeader action={<NewProjectAffordance onCreate={handleCreateProjectInline} worldId={worldId} />}>
+      <PanelHeader action={
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {onToggleSkillsShelf ? (
+            <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
+          ) : null}
+          <NewProjectAffordance onCreate={handleCreateProjectInline} worldId={worldId} />
+        </div>
+      }>
         Projects
       </PanelHeader>
 
