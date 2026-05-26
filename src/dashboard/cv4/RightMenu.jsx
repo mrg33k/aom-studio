@@ -794,12 +794,17 @@ function MoveToFolderButton({ projectSlug, missionSlug, currentFolderSlug, folde
 function MissionRow({
   mission, projectSlug, dotStatus, ageLabel, isCurrent, hideProject,
   onClick, showMove, currentFolderSlug, folders, onMove, onCreateFolder,
+  depth = 0, hasChildren = false, isExpanded = false, onToggleChildren = null,
 }) {
   const stripeColor = isCurrent
     ? MENU.amber
     : dotStatus === 'queued'
     ? 'rgba(245,158,11,0.5)'
     : 'transparent'
+  // R-MP-2 — nested rows indent + show chevron toggle for parents.
+  const indentBase = 14
+  const indentStep = 16
+  const paddingLeft = indentBase + (depth * indentStep)
 
   return (
     <div
@@ -808,7 +813,7 @@ function MissionRow({
         display: 'flex',
         alignItems: 'flex-start',
         gap: 6,
-        padding: '8px 14px',
+        padding: `8px 14px 8px ${paddingLeft}px`,
         cursor: 'pointer',
         transition: 'background 120ms ease',
         minHeight: 38,
@@ -819,6 +824,20 @@ function MissionRow({
       onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = C.s1 }}
       onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent' }}
     >
+      {hasChildren ? (
+        <span
+          onClick={e => { e.stopPropagation(); onToggleChildren?.() }}
+          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 14, height: 18, marginRight: -2, marginTop: 1, flexShrink: 0,
+            cursor: 'pointer', color: C.muted,
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.12s',
+            fontFamily: MENU.monoFont, fontSize: 11, lineHeight: 1,
+          }}
+        >›</span>
+      ) : (depth > 0 ? <span style={{ width: 14, flexShrink: 0 }} /> : null)}
       <StatusDot status={dotStatus} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
@@ -830,7 +849,7 @@ function MissionRow({
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           fontFamily: MENU.bodyFont,
-        }}>{mission.slug || mission.name || 'unnamed'}</span>
+        }}>{mission.name || mission.slug || 'unnamed'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {!hideProject && (
             <span style={{
@@ -1635,6 +1654,22 @@ export default function RightMenu() {
     })
   }, [])
 
+  // R-MP-2 — expand/collapse state for nested missions (parent → children).
+  // Key is the qualified mission slug: `<projectSlug>:<raw_slug>`. Persisted
+  // so the user's tree shape survives reload.
+  const [expandedMissions, setExpandedMissions] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('rm-expanded-missions') || '[]')) }
+    catch { return new Set() }
+  })
+  const toggleMissionExpand = useCallback((missionKey) => {
+    setExpandedMissions(prev => {
+      const next = new Set(prev)
+      if (next.has(missionKey)) next.delete(missionKey); else next.add(missionKey)
+      try { localStorage.setItem('rm-expanded-missions', JSON.stringify(Array.from(next))) } catch {}
+      return next
+    })
+  }, [])
+
   // Grouped missions (used when activePill === 'all'):
   // each group carries the project's folders + ungrouped pile.
   const groupedMissions = useMemo(() => {
@@ -1721,13 +1756,32 @@ export default function RightMenu() {
     }
   }, [handleSelectTask, handleSelectMission, handleSelectProject])
 
-  // ── Render a project group with folder interleaving ────────────────────────
+  // ── Render a project group with folder interleaving + nested tree ──────────
   function renderGroupBody(group) {
     const projectFolders = folders.filter(f => f.project_slug === group.projectSlug)
-    // Split missions: folder-bound vs ungrouped
+
+    // R-MP-2 — build parent → children map from parent_raw_slug. raw_slug
+    // here is the flat entry's `slug` field (set from m.slug in the API,
+    // which is the raw_slug from the registry; the project prefix is on
+    // missionKey but not on m.slug in this codepath).
+    const knownRawSlugs = new Set(group.missions.map(m => m.slug).filter(Boolean))
+    const childrenByRawSlug = new Map()
+    const roots = []
+    for (const m of group.missions) {
+      const parentInGroup = m.parent_raw_slug && knownRawSlugs.has(m.parent_raw_slug)
+      if (parentInGroup) {
+        if (!childrenByRawSlug.has(m.parent_raw_slug)) childrenByRawSlug.set(m.parent_raw_slug, [])
+        childrenByRawSlug.get(m.parent_raw_slug).push(m)
+      } else {
+        roots.push(m)
+      }
+    }
+
+    // Split ROOT missions: folder-bound vs ungrouped. Children come along
+    // for the ride (rendered nested under their parent regardless of folder).
     const folderBuckets = new Map() // folder_slug → mission[]
     const ungrouped = []
-    for (const m of group.missions) {
+    for (const m of roots) {
       const folderSlug = assignments[`${m.projectSlug}:${m.slug}`] || null
       if (folderSlug) {
         if (!folderBuckets.has(folderSlug)) folderBuckets.set(folderSlug, [])
@@ -1735,6 +1789,41 @@ export default function RightMenu() {
       } else {
         ungrouped.push(m)
       }
+    }
+
+    // Recursive renderer for a mission + its children (sorted by name).
+    function renderMissionTreeRow(m, depth, keyPrefix) {
+      const children = (childrenByRawSlug.get(m.slug) || []).slice().sort((a, b) =>
+        (a.name || '').localeCompare(b.name || ''))
+      const hasChildren = children.length > 0
+      const missionKey = `${m.projectSlug}:${m.slug}`
+      const isExpanded = expandedMissions.has(missionKey)
+      return (
+        <div key={`${keyPrefix}-${m.slug}`}>
+          <MissionRow
+            mission={m}
+            projectSlug={m.projectSlug}
+            dotStatus={m.dotStatus}
+            ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+            isCurrent={
+              (currentMission && m.slug === currentMission) ||
+              (currentProject && m.projectSlug === currentProject && !currentMission)
+            }
+            hideProject={true}
+            onClick={() => onMissionClick(m)}
+            showMove={true}
+            currentFolderSlug={null}
+            folders={folders}
+            onMove={(missionSlug, folderSlug) => handleMoveMission(group.projectSlug, missionSlug, folderSlug)}
+            onCreateFolder={handleCreateFolder}
+            depth={depth}
+            hasChildren={hasChildren}
+            isExpanded={isExpanded}
+            onToggleChildren={hasChildren ? () => toggleMissionExpand(missionKey) : null}
+          />
+          {hasChildren && isExpanded && children.map(c => renderMissionTreeRow(c, depth + 1, keyPrefix))}
+        </div>
+      )
     }
     return (
       <>
@@ -1762,50 +1851,12 @@ export default function RightMenu() {
                 isCollapsed={isFolderCollapsed}
                 onToggle={() => toggleFolderCollapse(group.projectSlug, folder.slug)}
               />
-              {!isFolderCollapsed && bucket.map((m, i) => (
-                <MissionRow
-                  key={`${folder.slug}-${m.slug}-${i}`}
-                  mission={m}
-                  projectSlug={m.projectSlug}
-                  dotStatus={m.dotStatus}
-                  ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-                  isCurrent={
-                    (currentMission && m.slug === currentMission) ||
-                    (currentProject && m.projectSlug === currentProject && !currentMission)
-                  }
-                  hideProject={true}
-                  onClick={() => onMissionClick(m)}
-                  showMove={true}
-                  currentFolderSlug={folder.slug}
-                  folders={folders}
-                  onMove={(missionSlug, folderSlug) => handleMoveMission(group.projectSlug, missionSlug, folderSlug)}
-                  onCreateFolder={handleCreateFolder}
-                />
-              ))}
+              {!isFolderCollapsed && bucket.map(m => renderMissionTreeRow(m, 0, `folder-${folder.slug}`))}
             </div>
           )
         })}
-        {/* Ungrouped missions */}
-        {ungrouped.map((m, i) => (
-          <MissionRow
-            key={`ungrouped-${m.slug}-${i}`}
-            mission={m}
-            projectSlug={m.projectSlug}
-            dotStatus={m.dotStatus}
-            ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-            isCurrent={
-              (currentMission && m.slug === currentMission) ||
-              (currentProject && m.projectSlug === currentProject && !currentMission)
-            }
-            hideProject={true}
-            onClick={() => onMissionClick(m)}
-            showMove={true}
-            currentFolderSlug={null}
-            folders={folders}
-            onMove={(missionSlug, folderSlug) => handleMoveMission(group.projectSlug, missionSlug, folderSlug)}
-            onCreateFolder={handleCreateFolder}
-          />
-        ))}
+        {/* Ungrouped roots — each renders with its children nested */}
+        {ungrouped.map(m => renderMissionTreeRow(m, 0, 'ungrouped'))}
       </>
     )
   }
