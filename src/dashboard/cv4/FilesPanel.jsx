@@ -7,11 +7,17 @@
 //     inline viewer: images/video/audio open below the clicked row
 //
 // Data sources:
-//   1. /api/dashboard/project-files?slug={slug}  — disk-based canon + research (local only)
-//   2. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
-//   3. /api/dashboard/files?type=uploads&client={world}[&project={slug}]  — chat-uploaded
+//   1. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
+//   2. /api/dashboard/files?type=uploads&client={world}[&project={slug}]  — chat-uploaded
 //      files (RAG-tunnel storage, surfaced via the messages table). Added R79-f14
 //      so screenshots dropped in chat appear under the Media filter.
+//   3. /api/dashboard/files?type=text&client={world}  — text_files / scaffold MDs
+//   4. /api/dashboard/project-files?slug={slug}  — disk-based files inside the
+//      project + mission folders (canon + research drops + ANY deliverable an
+//      agent creates in the mission home). Added R79-f15 (2026-05-25) so files
+//      agents write to disk during a session appear automatically — no upload
+//      step required. Bodies fetch via /api/dashboard/project-file?path=&raw=1
+//      which streams the bytes with the right Content-Type.
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -649,7 +655,63 @@ export default function FilesPanel({ projectSlug }) {
       }))
       .catch(() => [])
 
-    Promise.all([uploadsP, textP, chatUploadsP]).then(([uploads, texts, chatUploads]) => {
+    // R79-f15 (2026-05-25): disk files inside the project + mission home. This
+    // is what catches files an agent creates with Write/Bash directly on disk
+    // (decks, exports, screenshots dropped into a mission's deliverables/
+    // folder, etc.). The endpoint walks the project + mission trees and
+    // emits one entry per non-hidden file. We map every entry to a
+    // /api/dashboard/project-file?path=&raw=1 URL so the FileViewer can show
+    // images / pdfs inline and offer a click-through for other binaries.
+    const projectFilesP = projectSlug
+      ? authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(projectSlug)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(body => {
+            if (!body) return []
+            const out = []
+            // Project-root files: relativePath is just the filename (or
+            // relative_path from the API for nested deliverables).
+            for (const f of (body.files || [])) {
+              const rel = f.relative_path || f.name
+              const fullPath = f.path
+              if (!fullPath) continue
+              out.push({
+                name: f.name,
+                relativePath: rel,
+                url: `/api/dashboard/project-file?path=${encodeURIComponent(fullPath)}&raw=1`,
+                age: relativeAge(f.last_modified),
+                kind: fileKind(f.name),
+                size: null,
+                _ts: f.last_modified ? new Date(f.last_modified).getTime() : 0,
+                fromDisk: true,
+              })
+            }
+            // Mission files: prefix relativePath with missions/<slug>/ so the
+            // tree groups them under the mission folder.
+            for (const m of (body.missions || [])) {
+              for (const f of (m.files || [])) {
+                const inner = f.relative_path || f.name
+                const rel = `missions/${m.slug}/${inner}`
+                const fullPath = f.path
+                if (!fullPath) continue
+                out.push({
+                  name: f.name,
+                  relativePath: rel,
+                  url: `/api/dashboard/project-file?path=${encodeURIComponent(fullPath)}&raw=1`,
+                  age: relativeAge(f.last_modified),
+                  kind: fileKind(f.name),
+                  size: null,
+                  _ts: f.last_modified ? new Date(f.last_modified).getTime() : 0,
+                  fromDisk: true,
+                  missionSlug: m.slug,
+                })
+              }
+            }
+            return out
+          })
+          .catch(() => [])
+      : Promise.resolve([])
+
+    Promise.all([uploadsP, textP, chatUploadsP, projectFilesP]).then(([uploads, texts, chatUploads, diskFiles]) => {
       if (cancelled) return
       // Project-scope text files (skip ones tagged for other projects).
       const scopedTexts = projectSlug
@@ -663,7 +725,12 @@ export default function FilesPanel({ projectSlug }) {
       // double-render alongside the scaffold).
       const seen = new Set()
       const seenUrls = new Set()
-      const merged = [...uploads, ...chatUploads, ...scopedTexts].filter(f => {
+      // Order matters: storage > chat uploads > disk files > scaffold rows.
+      // Disk files (R79-f15) cover the same canonical paths as the scaffold
+      // rows for VISION/CONTEXT/BUILD/RESEARCH, but with fresher mtimes and
+      // real on-disk locations — they win the dedup so the viewer reads the
+      // file the agent actually wrote to.
+      const merged = [...uploads, ...chatUploads, ...diskFiles, ...scopedTexts].filter(f => {
         if (!f.url) return false
         if (seenUrls.has(f.url)) return false
         seenUrls.add(f.url)

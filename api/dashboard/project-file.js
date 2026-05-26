@@ -66,12 +66,48 @@ async function resolveProjectWorld(slug) {
 }
 
 // ── MIME helpers ──────────────────────────────────────────────────────────────
+const _BINARY_EXT_MIME = {
+  // Images
+  'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+  'gif': 'image/gif', 'webp': 'image/webp', 'svg': 'image/svg+xml',
+  'bmp': 'image/bmp', 'heic': 'image/heic', 'ico': 'image/x-icon',
+  // PDFs / docs
+  'pdf':  'application/pdf',
+  'doc':  'application/msword',
+  'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'ppt':  'application/vnd.ms-powerpoint',
+  'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'xls':  'application/vnd.ms-excel',
+  'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  // A/V
+  'mp4': 'video/mp4', 'mov': 'video/quicktime', 'webm': 'video/webm',
+  'mkv': 'video/x-matroska', 'avi': 'video/x-msvideo',
+  'mp3': 'audio/mpeg', 'wav': 'audio/wav', 'm4a': 'audio/mp4',
+  'flac': 'audio/flac', 'ogg': 'audio/ogg', 'aac': 'audio/aac',
+  // Archives
+  'zip': 'application/zip', 'tar': 'application/x-tar',
+  'gz':  'application/gzip',
+};
+
 function mimeFor(filename) {
   if (filename.endsWith('.md'))   return 'text/markdown';
   if (filename.endsWith('.txt'))  return 'text/plain';
   if (filename.endsWith('.yaml') || filename.endsWith('.yml')) return 'application/yaml';
   if (filename.endsWith('.json')) return 'application/json';
+  if (filename.endsWith('.csv'))  return 'text/csv';
+  if (filename.endsWith('.html') || filename.endsWith('.htm')) return 'text/html';
+  if (filename.endsWith('.xml'))  return 'application/xml';
+  if (filename.endsWith('.js') || filename.endsWith('.jsx') ||
+      filename.endsWith('.ts') || filename.endsWith('.tsx')) return 'text/javascript';
+  const ext = filename.split('.').pop().toLowerCase();
+  if (_BINARY_EXT_MIME[ext]) return _BINARY_EXT_MIME[ext];
   return 'text/plain';
+}
+
+function isBinaryMime(mime) {
+  return !!mime && !mime.startsWith('text/') &&
+         mime !== 'application/json' && mime !== 'application/yaml' &&
+         mime !== 'application/xml';
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -163,13 +199,48 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid path' });
   }
 
-  let content, mtime;
+  // ── Raw binary mode (R79-f15): serve the file bytes directly so the dashboard
+  //    file viewer can render images / pdfs / pptx etc. with <img>, <iframe>,
+  //    <video>, or a download link. Triggered with ?raw=1.
+  const rawMode = String(req.query.raw || '') === '1';
+  const leafName = rest[rest.length - 1];
+  const mime = mimeFor(leafName);
+
+  let st;
   try {
-    const st = fs.statSync(absPath);
+    st = fs.statSync(absPath);
     if (st.isDirectory()) {
       return res.status(404).json({ error: 'Not found' });
     }
-    mtime = st.mtime.toISOString();
+  } catch {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  const mtime = st.mtime.toISOString();
+
+  if (rawMode) {
+    let buf;
+    try {
+      buf = fs.readFileSync(absPath);
+    } catch {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Length', String(buf.length));
+    res.setHeader('Last-Modified', new Date(mtime).toUTCString());
+    res.setHeader('Cache-Control', 'private, max-age=30');
+    // Hint to browsers to render inline when possible; fallback download
+    // gets a sensible filename.
+    res.setHeader('Content-Disposition', `inline; filename="${leafName.replace(/[\"]/g, '')}"`);
+    return res.status(200).send(buf);
+  }
+
+  // ── Text mode (default) ─────────────────────────────────────────────────────
+  // Refuse binaries in text mode — clients should ask for ?raw=1 for those.
+  if (isBinaryMime(mime)) {
+    return res.status(415).json({ error: 'binary file; use ?raw=1' });
+  }
+  let content;
+  try {
     content = fs.readFileSync(absPath, 'utf-8');
   } catch {
     return res.status(404).json({ error: 'Not found' });
@@ -179,6 +250,6 @@ export default async function handler(req, res) {
     path:          normPath,
     content,
     last_modified: mtime,
-    mime:          mimeFor(rest[rest.length - 1]),
+    mime,
   });
 }

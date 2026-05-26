@@ -46,12 +46,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const HIDDEN_NAMES = new Set([
   'PHONEBOOK.md', 'history.md', 'rules.md', 'decisions.md',
   'lessons.md', 'manifest.yaml', 'assets',
+  '.DS_Store', '.gitignore', '.gitkeep',
 ]);
-const HIDDEN_DIRS = new Set(['archive', 'vision-qa', 'assets']);
+const HIDDEN_DIRS = new Set(['archive', 'vision-qa', 'assets', 'node_modules', '.git']);
 
 function isHidden(name) {
   if (HIDDEN_NAMES.has(name)) return true;
   if (HIDDEN_DIRS.has(name)) return true;
+  if (name.startsWith('.')) return true;
   return false;
 }
 
@@ -63,6 +65,23 @@ const CANON_FILES = [
   { name: 'RESEARCH.md',          kind: 'canon' },
   { name: 'last-conversation.md', kind: 'tape'  },
 ];
+const CANON_NAME_SET = new Set(CANON_FILES.map(c => c.name));
+
+// ── Deliverable subfolders (R79-f15, 2026-05-25) ──────────────────────────────
+// Inside a project or mission home, these subfolders get walked recursively so
+// that any file an agent creates there appears in the Files browser
+// automatically. Per the doctrine in
+//   .claude/rules/save-deliverables-in-mission-folder.md
+// agents save things they build (decks, renders, exports, screenshots,
+// visuals) into the mission's deliverables/ folder; the other names below are
+// common conventional locations we also surface.
+const DELIVERABLE_DIRS = new Set([
+  'deliverables', 'screenshots', 'visuals', 'exports',
+  'renders', 'decks', 'docs', 'briefs', 'output', 'build',
+]);
+
+const MAX_WALK_DEPTH = 3;       // bound recursion inside deliverable folders
+const MAX_FILES_PER_DIR = 500;  // safety: skip absurdly large auto-output dirs
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,6 +99,34 @@ function relPath(absPath) {
   const rel = path.relative(AOM_EA_ROOT, absPath);
   // Normalise to forward slashes on Windows (harmless on POSIX).
   return rel.replace(/\\/g, '/');
+}
+
+// Walk a deliverable subfolder recursively up to MAX_WALK_DEPTH and push every
+// non-hidden file we find. Used for deliverables/, screenshots/, etc.
+function walkDeliverableDir(rootAbs, dirAbs, depth, dirRelInsideHome, files) {
+  if (depth > MAX_WALK_DEPTH) return;
+  let entries;
+  try { entries = fs.readdirSync(dirAbs, { withFileTypes: true }); } catch { return; }
+  if (entries.length > MAX_FILES_PER_DIR) entries = entries.slice(0, MAX_FILES_PER_DIR);
+  for (const ent of entries) {
+    if (isHidden(ent.name)) continue;
+    const abs = path.join(dirAbs, ent.name);
+    const subRel = dirRelInsideHome ? `${dirRelInsideHome}/${ent.name}` : ent.name;
+    if (ent.isDirectory()) {
+      walkDeliverableDir(rootAbs, abs, depth + 1, subRel, files);
+      continue;
+    }
+    if (!ent.isFile()) continue;
+    const mtime = statFile(abs);
+    if (!mtime) continue;
+    files.push({
+      kind:           'deliverable',
+      name:           ent.name,
+      path:           relPath(abs),
+      relative_path:  subRel,
+      last_modified:  mtime,
+    });
+  }
 }
 
 // Collect files from a single directory (project or mission root).
@@ -115,6 +162,39 @@ function collectFiles(dirAbsPath) {
     const nonDrops = files.filter(f => f.kind !== 'research-drop');
     files.length = 0;
     files.push(...nonDrops, ...drops2);
+  }
+
+  // 3. Agent-created files at the top level of the home (R79-f15, 2026-05-25).
+  //    Anything that isn't already canon/tape and isn't in HIDDEN_NAMES. This
+  //    is the line that closes the gap where an agent runs `Write` on something
+  //    like module-3-permission.pptx in the mission folder and the user can't
+  //    see it from the Files browser.
+  let topEntries;
+  try { topEntries = fs.readdirSync(dirAbsPath, { withFileTypes: true }); } catch { topEntries = []; }
+  for (const ent of topEntries) {
+    if (!ent.isFile()) continue;
+    if (isHidden(ent.name)) continue;
+    if (CANON_NAME_SET.has(ent.name)) continue;   // already added in step 1
+    const abs = path.join(dirAbsPath, ent.name);
+    const mtime = statFile(abs);
+    if (!mtime) continue;
+    files.push({
+      kind:           'deliverable',
+      name:           ent.name,
+      path:           relPath(abs),
+      relative_path:  ent.name,
+      last_modified:  mtime,
+    });
+  }
+
+  // 4. Walk known deliverable subfolders so files agents drop into
+  //    deliverables/, screenshots/, visuals/, etc. surface automatically.
+  for (const ent of topEntries) {
+    if (!ent.isDirectory()) continue;
+    if (isHidden(ent.name)) continue;
+    if (!DELIVERABLE_DIRS.has(ent.name)) continue;
+    const subAbs = path.join(dirAbsPath, ent.name);
+    walkDeliverableDir(dirAbsPath, subAbs, 1, ent.name, files);
   }
 
   return files;
