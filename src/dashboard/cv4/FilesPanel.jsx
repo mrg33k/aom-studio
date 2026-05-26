@@ -23,6 +23,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 import { useCornerAuth } from '../CornerContext.jsx'
+import { FileContextMenu, useLongPress, useIsMobile } from '../components/cv3/ContextMenuVariants.jsx'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -370,7 +371,7 @@ function FileViewer({ file, onClose }) {
 
 // ── Single file row ─────────────────────────────────────────────────────────
 
-function FileRow({ file, isActive, onClick, indent = 0 }) {
+function FileRow({ file, isActive, onClick, onContextMenu, longPressHandlers, indent = 0 }) {
   const kind = fileKind(file.name)
   const icon = kindIcon(kind)
   const color = kindColor(kind)
@@ -382,6 +383,8 @@ function FileRow({ file, isActive, onClick, indent = 0 }) {
     <>
       <div
         onClick={onClick}
+        onContextMenu={onContextMenu}
+        {...(longPressHandlers || {})}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -521,7 +524,7 @@ function countFiles(node, filterFn) {
 }
 
 // ── Folder/file tree renderer ─────────────────────────────────────────────
-function TreeNode({ name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey }) {
+function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, makeLongPress}) {
   const isOpen = openFolders.has(pathKey)
   const fileCount = countFiles(node, filterFn)
 
@@ -550,6 +553,8 @@ function TreeNode({ name, node, depth, openFolders, toggleFolder, activeFile, on
               onFileClick={onFileClick}
               filterFn={filterFn}
               pathKey={pathKey + '/' + childName}
+              onFileContextMenu={onFileContextMenu}
+              makeLongPress={makeLongPress}
             />
           ))}
           {node.files.filter(filterFn || (() => true)).map(f => (
@@ -558,6 +563,8 @@ function TreeNode({ name, node, depth, openFolders, toggleFolder, activeFile, on
               file={{ ...f, name: f.displayName || f.name }}
               isActive={activeFile?.url === f.url}
               onClick={() => onFileClick(f)}
+              onContextMenu={onFileContextMenu ? (e) => onFileContextMenu(e, f) : undefined}
+              longPressHandlers={makeLongPress ? makeLongPress(f) : undefined}
               indent={depth + 1}
             />
           ))}
@@ -573,6 +580,9 @@ export default function FilesPanel({ projectSlug }) {
   const [loading, setLoading] = useState(false)
   const [activeFile, setActiveFile] = useState(null)
   const [activeCat, setActiveCat] = useState('all')
+  // R3 — right-click + long-press context menu
+  const [ctxMenu, setCtxMenu] = useState(null) // { x, y, file } | null
+  const isMobile = useIsMobile()
   // Folder open-state keyed by tree path ("" = root, "foo/bar" = nested)
   const [openFolders, setOpenFolders] = useState(new Set(['']))
 
@@ -595,6 +605,37 @@ export default function FilesPanel({ projectSlug }) {
       return next
     })
   }, [])
+
+  // R3 — open ctx menu from right-click (desktop) or long-press (mobile)
+  const openCtxMenu = useCallback((x, y, file) => {
+    setCtxMenu({ x, y, file })
+  }, [])
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+  const handleFileContextMenu = useCallback((e, file) => {
+    e.preventDefault()
+    openCtxMenu(e.clientX, e.clientY, file)
+  }, [openCtxMenu])
+  const makeLongPress = useCallback((file) => (x, y) => openCtxMenu(x, y, file), [openCtxMenu])
+
+  // Action handlers — Open routes through existing file-click;
+  // Pin persists in localStorage keyed by world + project scope.
+  const handleCtxOpen = useCallback((file) => { handleFileClick(file); closeCtxMenu() }, [handleFileClick, closeCtxMenu])
+  const handleCtxPin = useCallback((file) => {
+    if (!file) return
+    try {
+      const key = `corner_pinned_files_${world}_${projectSlug || 'global'}`
+      const cur = JSON.parse(localStorage.getItem(key) || '[]')
+      const next = cur.includes(file.url) ? cur.filter(u => u !== file.url) : [...cur, file.url]
+      localStorage.setItem(key, JSON.stringify(next))
+    } catch (_) {}
+  }, [world, projectSlug])
+  // onReveal + onCopySnippet stub through to console for R3; surface upgrades in a follow-up.
+  const handleCtxReveal = useCallback((file) => { try { console.log('[FilesPanel] reveal in mission', file) } catch (_) {} }, [])
+  const handleCtxCopySnippet = useCallback((file) => {
+    const ref = file?.relativePath || file?.path || file?.name || ''
+    if (ref) navigator.clipboard?.writeText(`> see: ${ref}`).catch(() => {})
+  }, [])
+
 
   useEffect(() => {
     let cancelled = false
@@ -799,6 +840,8 @@ export default function FilesPanel({ projectSlug }) {
           file={{ ...f, name: f.displayName || f.name }}
           isActive={activeFile?.url === f.url}
           onClick={() => handleFileClick(f)}
+          onContextMenu={(e) => handleFileContextMenu(e, f)}
+          longPressHandlers={makeLongPress(f)}
           indent={0}
         />
       ))}
@@ -816,12 +859,27 @@ export default function FilesPanel({ projectSlug }) {
           onFileClick={handleFileClick}
           filterFn={filterFn}
           pathKey={name}
+          onFileContextMenu={handleFileContextMenu}
+          makeLongPress={makeLongPress}
         />
       ))}
 
       {activeFile && (
         <FileViewer file={activeFile} onClose={() => setActiveFile(null)} />
       )}
+
+      <FileContextMenu
+        open={!!ctxMenu}
+        x={ctxMenu?.x || 0}
+        y={ctxMenu?.y || 0}
+        file={ctxMenu?.file || null}
+        mobile={isMobile}
+        onClose={closeCtxMenu}
+        onOpen={handleCtxOpen}
+        onReveal={handleCtxReveal}
+        onCopySnippet={handleCtxCopySnippet}
+        onPin={handleCtxPin}
+      />
 
       <div style={{ height: 16 }} />
     </div>
