@@ -1376,8 +1376,13 @@ export default function RightMenu() {
             const displayName = ancestors.length > 0
               ? [...ancestors, ownName].join(' \u203A ')
               : ownName
+            // R-MP-2 fix — flat.slug must be the bare raw_slug so the folder
+            // assignment lookup (assignments[`${projectSlug}:${m.slug}`]) matches
+            // the key shape stored in the assignments map (project:raw_slug).
+            // Using m.slug here would double-prefix because API ships slug as
+            // 'project:raw_slug' already.
             flat.push({
-              slug: m.slug || m.path,
+              slug: m.raw_slug || m.slug || m.path,
               name: displayName,
               depth: typeof m.depth === 'number' ? m.depth : 0,
               parent_raw_slug: m.parent_raw_slug || null,
