@@ -82,12 +82,26 @@ function ConfettiPiece({ index }) {
 
 // ── Notification Card ─────────────────────────────────────────────────────────
 
-function NotifCard({ notif, direction, onChipReply, onTextReply }) {
+function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext }) {
   const [expanded, setExpanded] = useState(false)
   const [inputVal, setInputVal] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [selectedChip, setSelectedChip] = useState(null)
+  // R3 — context messages from the same room that landed BEFORE this unread
+  // notification, so the user reads it as a thread instead of a cold one-liner.
+  const [contextMsgs, setContextMsgs] = useState(null)  // null=loading, []=none, [..]=loaded
   const inputRef = useRef(null)
+
+  // Fetch context whenever a new notification mounts.
+  useEffect(() => {
+    let cancelled = false
+    setContextMsgs(null)
+    if (!onLoadContext || !notif) { setContextMsgs([]); return }
+    Promise.resolve(onLoadContext(notif))
+      .then(msgs => { if (!cancelled) setContextMsgs(Array.isArray(msgs) ? msgs : []) })
+      .catch(() => { if (!cancelled) setContextMsgs([]) })
+    return () => { cancelled = true }
+  }, [notif?.id, onLoadContext])
 
   const badgeStyle = BADGE_COLORS[notif.badgeType] || BADGE_COLORS.message
 
@@ -165,7 +179,58 @@ function NotifCard({ notif, direction, onChipReply, onTextReply }) {
         </div>
       </div>
 
-      {/* Message preview */}
+      {/* R3 — context messages from the same room that came BEFORE the unread
+          one. Rendered as a quiet thread above the highlighted preview so the
+          user can see what the agent is replying to instead of reading a cold
+          one-liner. Hidden until loaded; empty when there are no prior msgs. */}
+      {contextMsgs && contextMsgs.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{
+            fontSize: 9, fontFamily: "'JetBrains Mono', monospace",
+            color: C.muted, textTransform: 'uppercase', letterSpacing: '0.10em',
+            marginBottom: 2,
+          }}>
+            Earlier in this thread
+          </div>
+          {contextMsgs.map((m) => {
+            const fromUser = m.role === 'user'
+            return (
+              <div key={m.id} style={{
+                display: 'flex',
+                justifyContent: fromUser ? 'flex-end' : 'flex-start',
+              }}>
+                <div style={{
+                  maxWidth: '88%',
+                  background: fromUser ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${fromUser ? 'rgba(59,130,246,0.14)' : C.border}`,
+                  borderRadius: 8,
+                  padding: '8px 11px',
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  color: C.muted,
+                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}>
+                  <span style={{
+                    display: 'block',
+                    fontSize: 10,
+                    color: C.dim || C.muted,
+                    marginBottom: 2,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.02em',
+                  }}>
+                    {m.senderName}
+                  </span>
+                  {(m.text || '').length > 220 ? (m.text.slice(0, 220) + '…') : m.text}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Message preview (the unread one — highlighted) */}
       <div style={{
         background: C.s1,
         border: `1px solid ${C.border}`,
@@ -386,7 +451,7 @@ function CompletionScreen({ replied, skipped, senderNames, onClose }) {
 
 // ── Main Modal ────────────────────────────────────────────────────────────────
 
-export default function CatchupModal({ isOpen, notifications, onClose, onReply, onSkip }) {
+export default function CatchupModal({ isOpen, notifications, onClose, onReply, onSkip, onLoadContext }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   // R21b — direction is purely a CSS-animation hint passed to the current
   // card. We render ONE card at a time and remount on index change, so
@@ -666,6 +731,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
                 direction={direction}
                 onChipReply={handleChipReply}
                 onTextReply={handleTextReply}
+                onLoadContext={onLoadContext}
               />
             ) : isComplete ? (
               <CompletionScreen

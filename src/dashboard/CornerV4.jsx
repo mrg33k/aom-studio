@@ -875,6 +875,8 @@ export default function CornerV4() {
         badgeType: 'message',
         messagePreview: preview,
         suggestedReplies,
+        // raw timestamp + routing keys for fetchCatchupContext
+        timestamp: item.timestamp,
         _agent: item.agent,
         _project: item.project || null,
         _missionSlug: item.missionSlug || null,
@@ -918,6 +920,47 @@ export default function CornerV4() {
     const key = notif._roomKey || notif._agent
     if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
   }, [])
+
+  // corner:notifications-catchup R3 — context fetcher.
+  // For each unread notification the modal shows, look up the last 2
+  // messages in the SAME room that landed BEFORE the unread one. That
+  // gives the user enough thread context to remember what the agent is
+  // replying to instead of seeing a one-liner cold.
+  // Returns an array ordered oldest → newest (so it reads top-to-bottom
+  // above the highlighted unread message in the modal).
+  const fetchCatchupContext = useCallback(async (notif) => {
+    if (!supabase || !notif || !worldId) return []
+    try {
+      let q = supabase
+        .from('messages')
+        .select('id, role, text, agent, timestamp, user_name, metadata')
+        .eq('client_id', worldId)
+        .lt('timestamp', notif.timestamp || new Date().toISOString())
+        .order('timestamp', { ascending: false })
+        .limit(2)
+
+      // Same-agent / same-project / same-mission scoping. Mirrors the
+      // filter used elsewhere in the dashboard for "what's in this room".
+      if (notif._agent) q = q.eq('agent', notif._agent)
+      if (notif._project) q = q.eq('project', notif._project)
+      else q = q.or('project.is.null,project.eq.')
+      if (notif._missionSlug) q = q.eq('metadata->>mission_slug', notif._missionSlug)
+
+      const { data, error } = await q
+      if (error || !data) return []
+      // Reverse → chronological so the modal renders top-down as a thread.
+      return data.slice().reverse().map(m => ({
+        id: m.id,
+        role: m.role || (m.user_name ? 'user' : 'agent'),
+        text: m.text || '',
+        timestamp: m.timestamp,
+        senderName: m.user_name || m.agent || 'Agent',
+      }))
+    } catch (e) {
+      console.warn('[CatchupModal] context fetch failed', e)
+      return []
+    }
+  }, [worldId])
 
   // R6 corner:task-rooms — open the task room as a chat surface using the
   // existing ThreadView (same chat template as agent + project chats).
@@ -2248,8 +2291,12 @@ export default function CornerV4() {
           )}
 
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
-            {/* corner:notifications-catchup R2 — "Catch up" button when ≥3 unread */}
-            {totalUnread >= 3 && (
+            {/* corner:notifications-catchup R3 — "Catch up" REPLACES the bell
+                when unread ≥ 3 (instead of sitting beside it). The bell is the
+                low-traffic surface; the catch-up pill is the high-traffic one
+                and earns the slot on its own when there's that much to catch
+                up on. <3 unread → bell only. ≥3 → catch-up only. */}
+            {totalUnread >= 3 ? (
               <button
                 onClick={() => { setNotifOpen(false); setCatchupOpen(true) }}
                 style={{
@@ -2278,11 +2325,12 @@ export default function CornerV4() {
               >
                 Catch up →
               </button>
+            ) : (
+              <BellIcon
+                count={totalUnread}
+                onClick={() => setNotifOpen(o => !o)}
+              />
             )}
-            <BellIcon
-              count={totalUnread}
-              onClick={() => setNotifOpen(o => !o)}
-            />
             {notifOpen && (
               <NotificationsPanel
                 items={notifItems}
@@ -2705,6 +2753,7 @@ export default function CornerV4() {
         onClose={() => setCatchupOpen(false)}
         onReply={handleCatchupReply}
         onSkip={handleCatchupSkip}
+        onLoadContext={fetchCatchupContext}
       />
 
       {/* ── CORNER SUPPORT MODAL (non-Patrik tenants only) ───────────────── */}
