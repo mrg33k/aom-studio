@@ -58,7 +58,9 @@ function scoreSkill(skill, q) {
   return 0
 }
 
-export default function SlashCommandAutocomplete({ value, setValue, inputRef, caret, onModalCommand }) {
+// surface = 'project' (project + mission chats) or '1on1' (agent direct chats).
+// Skills can declare a `scopes` array to restrict where they appear.
+export default function SlashCommandAutocomplete({ value, setValue, inputRef, caret, onModalCommand, surface = 'project' }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState(0)
   const listRef = useRef(null)
@@ -69,10 +71,16 @@ export default function SlashCommandAutocomplete({ value, setValue, inputRef, ca
   const matches = useMemo(() => {
     if (!active) return []
     const q = active.query
-    const scored = SKILLS.map(s => ({ s, score: scoreSkill(s, q) })).filter(x => x.score > 0)
+    const scoped = SKILLS.filter(s => {
+      // No scopes field → available everywhere (backward compat for the 150+
+      // existing skills). With scopes → only show on listed surfaces.
+      if (!Array.isArray(s.scopes) || s.scopes.length === 0) return true
+      return s.scopes.includes(surface)
+    })
+    const scored = scoped.map(s => ({ s, score: scoreSkill(s, q) })).filter(x => x.score > 0)
     scored.sort((a, b) => b.score - a.score)
     return scored.slice(0, 8).map(x => x.s)
-  }, [active])
+  }, [active, surface])
 
   // Show/hide based on active token + matches
   useEffect(() => {

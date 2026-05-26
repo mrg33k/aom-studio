@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import SlashCommandAutocomplete from '../SlashCommandAutocomplete.jsx'
 import IntegrationsModal from '../IntegrationsModal.jsx'
+import EmbedModal from '../EmbedModal.jsx'
 import { ReplyToChip } from '../ContextMenu.jsx'
 import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import ImageGenPicker from '../shared/ImageGenPicker.jsx'
@@ -94,8 +95,10 @@ export default function ProjectInputBar() {
       window.history.replaceState({}, '', u.toString())
     }
   }, [])
+  const [embedModalOpen, setEmbedModalOpen] = useState(false)
   const handleModalCommand = useCallback((skillName) => {
     if (skillName === '/integrations') setIntegrationsOpen(true)
+    if (skillName === '/embed') setEmbedModalOpen(true)
   }, [])
 
   // CV4 commands menu dispatches 'cv4:open-integrations' to open the modal.
@@ -169,6 +172,12 @@ export default function ProjectInputBar() {
           onModalCommand={handleModalCommand}
         />
         <IntegrationsModal open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
+        <EmbedModal
+          open={embedModalOpen}
+          onClose={() => setEmbedModalOpen(false)}
+          selectedProject={selectedProject}
+          worldId={worldId}
+        />
         <div style={{
           display: 'flex',
           alignItems: 'center',

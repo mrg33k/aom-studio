@@ -3,6 +3,17 @@
   "source": ".claude/skills/INDEX.md",
   "skills": [
     {
+      "name": "/embed",
+      "alias": "/embed-this-room",
+      "description": "Make this room embeddable on any website \u2014 modal-driven",
+      "category": "ops",
+      "categoryLabel": "Workspace / Ops",
+      "kind": "modal",
+      "scopes": [
+        "project"
+      ]
+    },
+    {
       "name": "/video-footage-review",
       "alias": "/footage-review",
       "description": "New footage arrived, need catalog + ratings",
@@ -180,7 +191,7 @@
     {
       "name": "/video-template",
       "alias": null,
-      "description": "Named video templates A/B/C/D/E/F/G/H/I/J/K (continues A1, B1… after Z). Brand-neutral forms; agent adapts each to current brand at call time.",
+      "description": "Named video templates A/B/C/D/E/F/G/H/I/J/K (continues A1, B1\u2026 after Z). Brand-neutral forms; agent adapts each to current brand at call time.",
       "category": "video",
       "categoryLabel": "Video / Content Production"
     },
@@ -306,7 +317,7 @@
     {
       "name": "/remotion-to-resolve",
       "alias": null,
-      "description": "Push Remotion timeline manifest to live Resolve project (Remotion → Resolve bridge)",
+      "description": "Push Remotion timeline manifest to live Resolve project (Remotion \u2192 Resolve bridge)",
       "category": "resolve",
       "categoryLabel": "DaVinci Resolve / Timeline"
     },
@@ -515,7 +526,7 @@
     },
     {
       "name": "/corner-stress-test",
-      "alias": "—",
+      "alias": "\u2014",
       "description": "Stress-test the dashboard chat bridge for memory survival across hiccup classes (model swap, kill, restart, JSONL nuke, mid-turn)",
       "category": "corner",
       "categoryLabel": "Corner Platform"
@@ -1055,7 +1066,7 @@
     {
       "name": "/video-cycle",
       "alias": "/video-cycle \"<brief>\" [footage=<path>]",
-      "description": "Run one cycle of the video-editing mission (`docs/missions/video-editing/`). Raw cut → improvement operator → distill playbook. Use on every real video deliverable so the playbook compounds.",
+      "description": "Run one cycle of the video-editing mission (`docs/missions/video-editing/`). Raw cut \u2192 improvement operator \u2192 distill playbook. Use on every real video deliverable so the playbook compounds.",
       "category": "video",
       "categoryLabel": "Editing mission"
     }

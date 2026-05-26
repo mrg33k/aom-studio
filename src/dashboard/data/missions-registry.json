@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T23:45:52.774Z",
+  "generated_at": "2026-05-26T04:43:45.185Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -156,6 +156,20 @@
       "path": "corner/missions/dispatch-reliability"
     },
     {
+      "slug": "corner:embed-modal",
+      "raw_slug": "embed-modal",
+      "folder_name": "embed-modal",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": "embed-modal",
+      "name": "Embed Modal",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/embed-modal"
+    },
+    {
       "slug": "corner:embeddable-agents",
       "raw_slug": "embeddable-agents",
       "folder_name": "embeddable-agents",
@@ -196,6 +210,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/followups"
+    },
+    {
+      "slug": "corner:home-screen",
+      "raw_slug": "home-screen",
+      "folder_name": "home-screen",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Home Screen",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/home-screen"
     },
     {
       "slug": "corner:image-gen",
@@ -422,6 +450,20 @@
       "path": "corner/missions/record-conversation"
     },
     {
+      "slug": "corner:right-click-menu",
+      "raw_slug": "right-click-menu",
+      "folder_name": "right-click-menu",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Right Click Menu",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/right-click-menu"
+    },
+    {
       "slug": "corner:right-menu",
       "raw_slug": "right-menu",
       "folder_name": "right-menu",
@@ -478,6 +520,20 @@
       "path": "corner/missions/sdk-native-dispatch"
     },
     {
+      "slug": "corner:share-preview",
+      "raw_slug": "share-preview",
+      "folder_name": "share-preview",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Share Preview",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/share-preview"
+    },
+    {
       "slug": "corner:shared-rooms",
       "raw_slug": "shared-rooms",
       "folder_name": "shared-rooms",
@@ -490,6 +546,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/shared-rooms"
+    },
+    {
+      "slug": "corner:skills-picker",
+      "raw_slug": "skills-picker",
+      "folder_name": "skills-picker",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Skills Picker",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/skills-picker"
     },
     {
       "slug": "corner:slash-commands",
@@ -532,6 +602,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/stability-checkpoint"
+    },
+    {
+      "slug": "corner:suggested-responses",
+      "raw_slug": "suggested-responses",
+      "folder_name": "suggested-responses",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Suggested Responses",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/suggested-responses"
     },
     {
       "slug": "corner:support",
@@ -1584,20 +1668,6 @@
       "path": "corner/users/aom/projects/corner/missions/theme-and-density"
     },
     {
-      "slug": "eagle-s-welding:qbo-cleanup",
-      "raw_slug": "qbo-cleanup",
-      "folder_name": "qbo-cleanup",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "eagle-s-welding",
-      "workstream": null,
-      "name": "Qbo Cleanup",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/eagle-s-welding/missions/qbo-cleanup"
-    },
-    {
       "slug": "higher-orbits:documentary-scope",
       "raw_slug": "documentary-scope",
       "folder_name": "documentary-scope",
@@ -2158,6 +2228,20 @@
       "path": "corner/users/aom/projects/space-rising/missions/website"
     },
     {
+      "slug": "sourcing:right-menu",
+      "raw_slug": "right-menu",
+      "folder_name": "right-menu",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "sourcing",
+      "workstream": null,
+      "name": "Right Menu",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/ben/projects/sourcing/missions/right-menu"
+    },
+    {
       "slug": "sourcing:user-flow-audit",
       "raw_slug": "user-flow-audit",
       "folder_name": "user-flow-audit",
@@ -2170,13 +2254,41 @@
       "is_done": false,
       "last_updated": "2026-05-12",
       "path": "corner/users/ben/projects/sourcing/missions/user-flow-audit"
+    },
+    {
+      "slug": "eagle-s-welding:qbo-cleanup",
+      "raw_slug": "qbo-cleanup",
+      "folder_name": "qbo-cleanup",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "eagle-s-welding",
+      "workstream": null,
+      "name": "Qbo Cleanup",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/karens-world/projects/eagle-s-welding/missions/qbo-cleanup"
+    },
+    {
+      "slug": "karens-world-main:family",
+      "raw_slug": "family",
+      "folder_name": "family",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "karens-world-main",
+      "workstream": null,
+      "name": "Family",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/karens-world/projects/karens-world-main/missions/family"
     }
   ],
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 45,
-      "in_flight": 45,
+      "total": 51,
+      "in_flight": 51,
       "done": 0
     },
     {
@@ -2211,12 +2323,6 @@
     },
     {
       "slug": "conrad-foundation",
-      "total": 1,
-      "in_flight": 1,
-      "done": 0
-    },
-    {
-      "slug": "eagle-s-welding",
       "total": 1,
       "in_flight": 1,
       "done": 0
@@ -2283,6 +2389,18 @@
     },
     {
       "slug": "sourcing",
+      "total": 2,
+      "in_flight": 2,
+      "done": 0
+    },
+    {
+      "slug": "eagle-s-welding",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "karens-world-main",
       "total": 1,
       "in_flight": 1,
       "done": 0

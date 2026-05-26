@@ -159,6 +159,7 @@ export default function ThreadInputBar() {
         inputRef={inputRef}
         caret={caret}
         onModalCommand={handleModalCommand}
+        surface="1on1"
       />
       <IntegrationsModal open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
       <div style={{
