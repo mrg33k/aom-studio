@@ -1071,7 +1071,9 @@ function EmptyState({ text }) {
 // state so the affordance reads more clearly.
 
 function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle, onContextMenu }) {
-  const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : 'idle'
+  // R-MP-2 cleanup — dot only when there's actual signal (running/queued).
+  // Idle projects don't earn pixels.
+  const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : null
   return (
     <div
       onClick={onToggle}
@@ -1097,7 +1099,7 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
         e.currentTarget.querySelectorAll('[data-pg-slug]').forEach(n => n.style.color = C.text2)
       }}
     >
-      <StatusDot status={dotStatus} />
+      {dotStatus && <StatusDot status={dotStatus} />}
       <span data-pg-slug style={{
         flex: 1,
         fontSize: 10,
@@ -1111,13 +1113,15 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
         textOverflow: 'ellipsis',
         transition: 'color 120ms ease',
       }}>{projectSlug}</span>
-      <span style={{
-        fontSize: 9,
-        color: C.muted,
-        fontFamily: MENU.monoFont,
-        flexShrink: 0,
-        marginRight: 3,
-      }}>{count}</span>
+      {count > 0 && (
+        <span style={{
+          fontSize: 9,
+          color: C.dim,
+          fontFamily: MENU.monoFont,
+          flexShrink: 0,
+          marginRight: 3,
+        }}>{count}</span>
+      )}
       <span style={{
         fontSize: 11,
         color: C.muted,
@@ -2178,16 +2182,8 @@ export default function RightMenu() {
               }
               return (
                 <>
-                  {/* R10-6: + new mission / + new folder at top */}
-                  <NewMissionAffordance
-                    projectSlug={activePill}
-                    worldId={worldId}
-                    onCreated={handleCreateMissionInline}
-                  />
-                  <NewFolderAffordance
-                    projectSlug={activePill}
-                    onCreateFolder={handleCreateFolder}
-                  />
+                  {/* Affordances retired — right-click ProjectGroupHeader or
+                      FolderRow to create missions / folders / subfolders. */}
                   {projectFolders.map(folder => {
                     const bucket = folderBuckets.get(folder.slug) || []
                     const fKey = `${folder.project_slug}:${folder.slug}`
@@ -2199,6 +2195,7 @@ export default function RightMenu() {
                           count={bucket.length}
                           isCollapsed={isFolderCollapsed}
                           onToggle={() => toggleFolderCollapse(activePill, folder.slug)}
+                          onContextMenu={(e) => { e.preventDefault(); openFolderMenu(e.clientX, e.clientY, folder) }}
                         />
                         {!isFolderCollapsed && bucket.map((m, i) => (
                           <MissionRow
