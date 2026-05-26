@@ -107,9 +107,16 @@ export default function EmbedModal({ open, onClose, selectedProject, worldId }) 
   const [copiedCli, setCopiedCli] = useState(false)
 
   // Routing context derived from the room — read-only chips in the modal.
+  // selectedProject.missionSlug carries the BARE mission name (e.g.
+  // 'marketplace-page'). The preview API + bridge-daemon expect canonical
+  // form ('space-rising:marketplace-page'). Canonicalize here so a stripped
+  // mission name from the room context doesn't fail server-side validation.
   const ctx = useMemo(() => {
     const project = selectedProject?.slug || null
-    const missionSlug = selectedProject?.missionSlug || null
+    const rawMissionSlug = selectedProject?.missionSlug || null
+    const missionSlug = (rawMissionSlug && project && !rawMissionSlug.includes(':'))
+      ? `${project}:${rawMissionSlug}`
+      : rawMissionSlug
     const missionName = selectedProject?.missionName || null
     const projectName = selectedProject?.name || project
     return {
