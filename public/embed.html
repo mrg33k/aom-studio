@@ -184,14 +184,18 @@
   <script>
     // Allow ?id=<embed_id> for cycling test embeds at the same URL.
     // Falls back to the SR website mission embed (R0 default).
+    // Allow ?visitor_id=<id> to scope the session (e.g. "support-bens-arsenal").
     (function () {
       var params = new URLSearchParams(window.location.search);
       var id = (params.get('id') || 'emb_sr_website').trim();
       if (!/^emb_[a-z0-9_-]{3,40}$/.test(id)) id = 'emb_sr_website';
+      var visitorId = (params.get('visitor_id') || '').trim();
       var s = document.createElement('script');
       s.src = '/embed/v1/widget.js';
       s.setAttribute('data-embed-id', id);
       s.setAttribute('data-mount', '#corner-embed');
+      // Pass visitor_id override if provided so tenant support threads stay scoped.
+      if (visitorId) s.setAttribute('data-visitor-id', visitorId);
       document.body.appendChild(s);
     })();
   </script>

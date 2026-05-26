@@ -31,9 +31,15 @@
 
   var mountSelector = script.getAttribute('data-mount') || '#corner-embed'
   var BRIDGE_BASE = script.getAttribute('data-bridge') || ''
+  // Optional: data-visitor-id overrides the generated localStorage id.
+  // Useful when the host page knows the user (e.g. tenant world dashboards
+  // pass "support-<worldId>" so conversations are scoped per tenant).
+  var VISITOR_ID_OVERRIDE = script.getAttribute('data-visitor-id') || ''
 
   var VISITOR_KEY = 'corner_embed_visitor_v1'
   function visitorId() {
+    // Explicit override wins (tenant-scoped support threads).
+    if (VISITOR_ID_OVERRIDE) return VISITOR_ID_OVERRIDE
     try {
       var v = localStorage.getItem(VISITOR_KEY)
       if (v) return v

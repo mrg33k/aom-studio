@@ -455,6 +455,8 @@ export default function CornerV4() {
     userIdentity: parentUserIdentity,
   })
   const [phoneOverlayOpen, setPhoneOverlayOpen] = useState(false)
+  // corner:support N2 — Support button for non-Patrik tenants
+  const [supportOpen, setSupportOpen] = useState(false)
 
   // Auto-close overlay 2 s after transcript dispatches, then toast.
   useEffect(() => {
@@ -2069,6 +2071,46 @@ export default function CornerV4() {
               />
             )}
           </div>
+
+          {/* corner:support N2 — Support button, non-Patrik tenants only */}
+          {worldId && worldId !== 'aom' && (
+            <button
+              type="button"
+              aria-label="Open Support chat"
+              title="Get support"
+              onClick={() => setSupportOpen(o => !o)}
+              data-cv4-support-toggle
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px',
+                background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.25)',
+                borderRadius: 20,
+                color: '#34D399',
+                cursor: 'pointer',
+                fontSize: 12, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.04em',
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(16,185,129,0.2)'
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(16,185,129,0.12)'
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              Support
+            </button>
+          )}
+
           <UserAvatar
             user={currentUser}
             onUserUpdate={setCurrentUser}
@@ -2465,6 +2507,14 @@ export default function CornerV4() {
       )}
 
       <FloatingCallBar />
+
+      {/* ── CORNER SUPPORT MODAL (non-Patrik tenants only) ───────────────── */}
+      {supportOpen && worldId && worldId !== 'aom' && (
+        <CornerSupportModal
+          worldId={worldId}
+          onClose={() => setSupportOpen(false)}
+        />
+      )}
     </div>
           </LiveCallProvider>
         </CornerNavProvider>
@@ -2561,6 +2611,89 @@ function NewRoomModal({ kind = 'project', busy = false, error = null, onSubmit, 
             }}
           >{busy ? 'Creating…' : `Create ${label}`}</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// corner:support N2 — Support chat modal for non-Patrik tenants.
+// Opens the Corner Support embed (emb_corner_support) in an iframe,
+// tagged with visitor_id=support-<worldId> so Patrik can distinguish
+// who is who in the corner:support mission room.
+function CornerSupportModal({ worldId, onClose }) {
+  const embedSrc =
+    'https://www.aheadofmarket.com/embed?id=emb_corner_support&visitor_id=' +
+    encodeURIComponent('support-' + worldId)
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 500,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
+        padding: '0 20px 24px 0',
+        paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(420px, calc(100vw - 32px))',
+          height: 'min(600px, calc(100vh - 80px))',
+          background: '#06090F',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 16,
+          overflow: 'hidden',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+          display: 'flex', flexDirection: 'column',
+        }}
+      >
+        {/* Header bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#10B981',
+              boxShadow: '0 0 6px rgba(16,185,129,0.6)',
+            }} />
+            <span style={{
+              fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
+              fontFamily: "'JetBrains Mono', monospace",
+              color: '#94A3B8', textTransform: 'uppercase',
+            }}>Corner Support</span>
+          </div>
+          <button
+            type="button"
+            aria-label="Close support"
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#475569', padding: 4, borderRadius: 4,
+              display: 'flex', alignItems: 'center',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#94A3B8' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#475569' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Embed iframe */}
+        <iframe
+          src={embedSrc}
+          title="Corner Support"
+          style={{ flex: 1, width: '100%', border: 'none' }}
+          allow="microphone"
+        />
       </div>
     </div>
   )
