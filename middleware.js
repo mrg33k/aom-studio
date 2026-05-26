@@ -40,8 +40,25 @@ const PAGE_META = {
     description: 'Deep-dive strategy briefs on AI advisory, partnerships, sales, and growth. Built by AOM agents, reviewed by humans.',
   },
   '/corner': {
-    title: 'Corner | AI Dashboard for Business',
-    description: 'Your AI team in a dashboard. Agents that handle video, social media, outreach, and strategy. Built by AOM.',
+    title: 'Corner — Your AI Team in a Dashboard',
+    description: 'Corner is the AI-powered business dashboard by AOM. Agents that run video, social, outreach, and strategy — in one place, for businesses that move.',
+    image: 'https://www.aheadofmarket.com/corner-og.png',
+    siteName: 'Corner by AOM',
+    urlBase: 'https://www.aheadofmarket.com',
+  },
+  '/dashboard': {
+    title: 'Corner — Your AI Team in a Dashboard',
+    description: 'Corner is the AI-powered business dashboard by AOM. Agents that run video, social, outreach, and strategy — in one place, for businesses that move.',
+    image: 'https://www.aheadofmarket.com/corner-og.png',
+    siteName: 'Corner by AOM',
+    urlBase: 'https://www.aheadofmarket.com',
+  },
+  '/cv4': {
+    title: 'Corner — Your AI Team in a Dashboard',
+    description: 'Corner is the AI-powered business dashboard by AOM. Agents that run video, social, outreach, and strategy — in one place, for businesses that move.',
+    image: 'https://www.aheadofmarket.com/corner-og.png',
+    siteName: 'Corner by AOM',
+    urlBase: 'https://www.aheadofmarket.com',
   },
   '/brand/v4': {
     title: 'AOM Brand Guidelines v4',
@@ -107,6 +124,8 @@ const PAGE_META = {
 };
 
 function buildHtml(meta, fullUrl, schemaJson) {
+  const siteName = meta.siteName || 'sourcing.directory';
+  const ogUrl = meta.urlBase ? `${meta.urlBase}${new URL(fullUrl).pathname}` : fullUrl;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -114,10 +133,10 @@ function buildHtml(meta, fullUrl, schemaJson) {
   <title>${meta.title}</title>
   <meta name="description" content="${meta.description}" />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="sourcing.directory" />
+  <meta property="og:site_name" content="${siteName}" />
   <meta property="og:title" content="${meta.title}" />
   <meta property="og:description" content="${meta.description}" />
-  <meta property="og:url" content="${fullUrl}" />
+  <meta property="og:url" content="${ogUrl}" />
   <meta property="og:image" content="${meta.image || OG_IMAGE}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -130,7 +149,7 @@ function buildHtml(meta, fullUrl, schemaJson) {
 <body>
   <h1>${meta.title}</h1>
   <p>${meta.description}</p>
-  <a href="${fullUrl}">Visit page</a>
+  <a href="${ogUrl}">Visit page</a>
 </body>
 </html>`;
 }
@@ -236,6 +255,10 @@ export const config = {
     '/skills',
     '/briefs/:path*',
     '/corner',
+    '/dashboard',
+    '/dashboard/:path*',
+    '/cv4',
+    '/cv4/:path*',
     '/brand/:path*',
     '/brands/:path*',
     '/case-study',
