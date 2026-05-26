@@ -19,6 +19,7 @@
 //   - Pin toggle → updates localStorage and resorts list
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { authFetch } from '../lib/authFetch.js'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -142,7 +143,7 @@ export default function HomeView({
   const fetchMissions = useCallback(async () => {
     if (!worldId) return
     try {
-      const res = await fetch(
+      const res = await authFetch(
         '/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId),
         { credentials: 'include' }
       )
