@@ -1913,17 +1913,17 @@ window.SSMod = (function () {
       return;
     }
     host.innerHTML = `
-      ${topRail(0, 'trick of the day')}
-      ${moduleHead('Trick — ' + (t.subject || ''), t.name)}
+      ${topRail(0, t.subject || '')}
+      ${moduleHead(t.subject || '', t.name)}
       <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
 
         <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5) var(--space-5); margin-bottom: var(--space-4); border-left: 3px solid #8B3838;">
-          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B3838; margin-bottom: var(--space-2);">Why this is hard</div>
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B3838; margin-bottom: var(--space-2);">The hard part</div>
           <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45;">${t.hatedBecause}</p>
         </div>
 
         <div class="passage" data-dict style="background: #FBF7EE; border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-bottom: var(--space-4); border-left: 4px solid var(--amber);">
-          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-2);">Today's trick</div>
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-2);">The move</div>
           <h3 style="font-family: var(--font-serif); font-weight:500; font-size:26px; line-height:1.2; margin-bottom: var(--space-3);">${t.name}</h3>
           <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.55;">${t.trick}</p>
         </div>
@@ -1945,7 +1945,7 @@ window.SSMod = (function () {
         <div class="passage" data-dict style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4); border-left: 4px solid #2D6B3C;">
           <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #2D6B3C; margin-bottom: var(--space-2);">Now show off</div>
           <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45;">${t.showoffPrompt}</p>
-          <p style="font-size: 13px; color: var(--ink-quiet); margin-top: var(--space-3); font-style: italic;">You'll use this trick again tomorrow — it sticks better that way.</p>
+          <p style="font-size: 13px; color: var(--ink-quiet); margin-top: var(--space-3); font-style: italic;">You'll use this again tomorrow. It sticks better that way.</p>
         </div>
 
         <div class="center-actions sticky-cta">

@@ -21,8 +21,8 @@ window.CURRICULUM = window.CURRICULUM || {};
 window.CURRICULUM.tuesday = {
   weekOf: '2026-06-09',
   day: 'tuesday',
-  theme: 'TRICK DAY',
-  themeDesc: '4 new tricks for things you hated yesterday.',
+  theme: 'CRAFT + STORY',
+  themeDesc: 'Reading, writing, math, code — and a 14-year-old who beat Angry Birds.',
 
   // ===== The kid-founder anchor passage =====
   // Real story, age-appropriate, lands the "you can ship something at 14" punch
@@ -241,17 +241,17 @@ window.CURRICULUM.tuesday = {
   blocks: [
     { id: 'welcome-tue',    kind: 'drill', type: 'welcome',          title: 'Welcome to Tuesday',                minutes: 2  },
 
-    { id: 'trick-reading',  kind: 'topic', type: 'trick-arc',        title: 'Reading trick — Spine Words',       minutes: 10, trickKey: 'reading' },
+    { id: 'trick-reading',  kind: 'topic', type: 'trick-arc',        title: 'Reading — Spine Words',             minutes: 10, trickKey: 'reading' },
     { id: 'reading-1',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 1',              minutes: 10, slice: [0, 2] },
 
-    { id: 'trick-spelling', kind: 'topic', type: 'trick-arc',        title: 'Spelling trick — Chunking',         minutes: 10, trickKey: 'spelling' },
+    { id: 'trick-spelling', kind: 'topic', type: 'trick-arc',        title: 'Spelling — Chunking',               minutes: 10, trickKey: 'spelling' },
     { id: 'spelling-1',     kind: 'drill', type: 'spelling',         title: 'Spelling — apply Chunking',         minutes: 10, words: ['library','physics','puzzle','obstacles','million','fifteen'] },
 
     { id: 'mathlesson-tue', kind: 'topic', type: 'mathlesson',       title: 'Math — Constant of Proportionality', minutes: 18 },
 
     { id: 'reading-2',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 2',              minutes: 10, slice: [2, 4] },
 
-    { id: 'trick-writing',  kind: 'topic', type: 'trick-arc',        title: 'Writing trick — Question Opener',   minutes: 10, trickKey: 'writing' },
+    { id: 'trick-writing',  kind: 'topic', type: 'trick-arc',        title: 'Writing — Question Opener',         minutes: 10, trickKey: 'writing' },
     { id: 'bag-tue',        kind: 'topic', type: 'bag',              title: 'Build-A-Game Day 2 — pitch',        minutes: 20 },
 
     { id: 'reading-3',      kind: 'topic', type: 'reading',          title: 'Robert Nay — chunk 3 (the point)',  minutes: 10, slice: [4, 5] },
@@ -260,9 +260,9 @@ window.CURRICULUM.tuesday = {
 
     { id: 'handwriting-tue',kind: 'topic', type: 'handwriting',      title: 'Write the 4 tricks on paper',       minutes: 10 },
 
-    { id: 'trick-present',  kind: 'topic', type: 'trick-arc',        title: 'Presenting trick — Slow-Fast-Slow', minutes: 10, trickKey: 'presenting' },
+    { id: 'trick-present',  kind: 'topic', type: 'trick-arc',        title: 'Reading aloud — Slow-Fast-Slow',    minutes: 10, trickKey: 'presenting' },
 
-    { id: 'showoff-tue',    kind: 'topic', type: 'showdad',          title: 'Showoff — tell your 4 tricks',      minutes: 10 },
+    { id: 'showoff-tue',    kind: 'topic', type: 'showdad',          title: 'Show Mom or Dad what you learned',  minutes: 10 },
 
     { id: 'splash-tue',     kind: 'drill', type: 'splash',           title: 'End of Tuesday',                    minutes: 2  }
   ]

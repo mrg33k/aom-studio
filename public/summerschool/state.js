@@ -148,8 +148,33 @@ window.SS = window.SS || {};
       const d = ensureDay(t);
       if (!d.completedBlocks.includes(blockId)) d.completedBlocks.push(blockId);
       if (data) d.blockData[blockId] = data;
+      // record completion time + duration if we have a start timestamp
+      d.blockMetrics = d.blockMetrics || {};
+      const m = d.blockMetrics[blockId] || {};
+      m.completedAt = Date.now();
+      if (m.startedAt && !m.durationMs) m.durationMs = m.completedAt - m.startedAt;
+      d.blockMetrics[blockId] = m;
       save();
       window.dispatchEvent(new CustomEvent('ss:block-complete', { detail: { blockId, data } }));
+    },
+    // Per-block metrics — called by app.js when the user opens a block.
+    startBlock(blockId) {
+      const d = ensureDay(today());
+      d.blockMetrics = d.blockMetrics || {};
+      if (!d.blockMetrics[blockId]) d.blockMetrics[blockId] = { startedAt: Date.now(), opens: 1 };
+      else d.blockMetrics[blockId].opens = (d.blockMetrics[blockId].opens || 0) + 1;
+      save();
+    },
+    todayMetrics() {
+      const d = ensureDay(today());
+      return {
+        date: today(),
+        completed: d.completedBlocks.slice(),
+        blockMetrics: d.blockMetrics || {},
+        blockData: d.blockData || {},
+        goldStars: load().goldStars,
+        streak: load().streak,
+      };
     },
     isBlockDone(blockId) {
       const d = ensureDay(today());

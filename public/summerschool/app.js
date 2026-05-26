@@ -18,6 +18,106 @@
     return;
   }
 
+  // ?fix-stars=N → admin one-shot to overwrite the gold-star count.
+  // Day-1 retro fix: Ethan ended with 125 stars from the broken per-tile
+  // economy; real-work portion was ~30. Patrik hits ?fix-stars=30 once on
+  // his device to roll back.
+  {
+    const fix = new URLSearchParams(window.location.search).get('fix-stars');
+    if (fix !== null) {
+      const n = parseInt(fix, 10);
+      if (!Number.isNaN(n) && n >= 0) {
+        try {
+          const raw = localStorage.getItem('ss-state-v1');
+          const s = raw ? JSON.parse(raw) : {};
+          s.goldStars = n;
+          localStorage.setItem('ss-state-v1', JSON.stringify(s));
+        } catch (e) {}
+      }
+      window.location.replace(window.location.pathname);
+      return;
+    }
+  }
+
+  // ?report=1 → progress report. Patrik's morning glance at how Ethan did.
+  // Shows today's blocks, time per block, stars earned, feedback sent to Dad.
+  if (new URLSearchParams(window.location.search).has('report')) {
+    const raw = localStorage.getItem('ss-state-v1');
+    const s = raw ? JSON.parse(raw) : { goldStars: 0, streak: 0, days: {}, writingPieces: [], artifacts: [] };
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const d = (s.days && s.days[todayStr]) || { completedBlocks: [], blockMetrics: {}, blockData: {} };
+    const blockMeta = (window.CURRICULUM && (window.CURRICULUM.tuesday || window.CURRICULUM.monday)) || {};
+    const blockTitleById = (id) => {
+      for (const k of Object.keys(window.CURRICULUM || {})) {
+        const day = window.CURRICULUM[k];
+        if (day && day.blocks) {
+          const m = day.blocks.find(b => b.id === id);
+          if (m) return m.title;
+        }
+      }
+      return id;
+    };
+    const fmtMs = (ms) => {
+      if (!ms || ms < 0) return '—';
+      const s = Math.round(ms / 1000);
+      if (s < 60) return s + 's';
+      const m = Math.floor(s / 60); const r = s % 60;
+      return `${m}m ${r}s`;
+    };
+    const totalMs = Object.values(d.blockMetrics || {}).reduce((a, m) => a + (m.durationMs || 0), 0);
+    const fb = JSON.parse(localStorage.getItem('ss-dad-feedback') || '[]');
+    document.body.innerHTML = `
+      <div style="max-width: 820px; margin: 32px auto; padding: 24px; font-family: 'Geist', system-ui, sans-serif; background: #FBF7EE; border-radius: 14px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom: 20px;">
+          <h1 style="font-family: 'Fraunces', serif; font-weight: 500; font-size: 36px; margin: 0;">Today's report</h1>
+          <div style="font-size: 12px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">${todayStr}</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Blocks done</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${d.completedBlocks.length}</div></div>
+          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Time on task</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${fmtMs(totalMs)}</div></div>
+          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Stars today</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${s.goldStars || 0}</div></div>
+          <div style="background: #FFF; border-radius: 12px; padding: 16px;"><div style="font-size: 11px; color: #9A9388; letter-spacing: 0.1em; text-transform: uppercase;">Streak</div><div style="font-family: 'Fraunces', serif; font-size: 30px;">${s.streak || 0}</div></div>
+        </div>
+
+        <div style="background: #FFF; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #9A9388; margin-bottom: 12px;">Block-by-block</div>
+          ${(d.completedBlocks || []).map(id => {
+            const m = (d.blockMetrics || {})[id] || {};
+            const dat = (d.blockData || {})[id];
+            return `
+              <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid rgba(26,24,20,0.06); font-family: 'Fraunces', serif; font-size: 16px;">
+                <div>
+                  <div>${blockTitleById(id)}</div>
+                  ${dat ? `<div style="font-size: 12px; color: #9A9388; font-family: 'Geist', system-ui, sans-serif; margin-top: 2px;">${typeof dat === 'object' ? Object.entries(dat).map(([k,v]) => `${k}: ${v}`).join(' · ') : String(dat)}</div>` : ''}
+                </div>
+                <div style="font-size: 14px; color: #5A554C; font-family: 'Geist', system-ui, sans-serif;">${fmtMs(m.durationMs)}${(m.opens && m.opens > 1) ? ` · opened ${m.opens}×` : ''}</div>
+              </div>
+            `;
+          }).join('') || '<div style="color:#9A9388; font-style:italic;">No blocks completed yet today.</div>'}
+        </div>
+
+        ${fb.length ? `
+          <div style="background: #FFF; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #9A9388; margin-bottom: 12px;">Tell-Dad messages (${fb.length})</div>
+            ${fb.slice(-5).reverse().map(f => `
+              <div style="background:#F5EFE5; border-left: 3px solid #E8A03A; padding: 10px 14px; border-radius: 0 8px 8px 0; margin-bottom: 8px;">
+                <div style="font-size: 11px; color:#9A9388; margin-bottom: 4px;">${new Date(f.at).toLocaleString()}${f.block ? ' · ' + f.block : ''}</div>
+                <div style="font-family: 'Fraunces', serif; font-size: 15px; white-space: pre-wrap;">${(f.text || '').replace(/</g,'&lt;')}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div style="display:flex; gap: 12px;">
+          <a href="/summerschool/" style="background: #1A1814; color: #F5EFE5; padding: 10px 20px; border-radius: 999px; text-decoration: none; font-weight: 600;">Back to summer school</a>
+          <a href="/summerschool/?dad=1" style="background: transparent; border: 1.5px solid rgba(26,24,20,0.18); padding: 10px 20px; border-radius: 999px; text-decoration: none; color: inherit; font-weight: 600;">Tell-Dad inbox</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   // ?dad=1 → Dad-mode admin view: show all fix-feedback Ethan has sent
   if (new URLSearchParams(window.location.search).has('dad')) {
     const feedback = JSON.parse(localStorage.getItem('ss-dad-feedback') || '[]');
@@ -276,7 +376,9 @@
     if (screen === 'hub') { currentBlockIdx = -1; renderHub(); renderRail(); return; }
     if (typeof screen === 'number') {
       currentBlockIdx = screen;
-      renderBlock(day().blocks[screen]);
+      const b = day().blocks[screen];
+      if (b && SS && SS.startBlock) SS.startBlock(b.id);
+      renderBlock(b);
       renderRail();
       return;
     }
@@ -367,11 +469,42 @@
       `;
     };
 
+    // Day picker — show days the curriculum has loaded.
+    // Tap a day to switch (uses ?day=<name> URL). Active day highlighted.
+    const availableDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+      .filter(k => window.CURRICULUM && window.CURRICULUM[k]);
+    const activeDay = (function () {
+      const forced = new URLSearchParams(window.location.search).get('day');
+      if (forced && window.CURRICULUM && window.CURRICULUM[forced]) return forced;
+      const DAY_NAMES = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+      const today = DAY_NAMES[new Date().getDay()];
+      if (window.CURRICULUM && window.CURRICULUM[today]) return today;
+      return 'monday';
+    })();
+
     host.innerHTML = `
       <div class="top-rail">
         <span class="label">Today · ${d.theme}</span>
         <div class="meter"><div class="fill" style="width:${pct}%"></div></div>
         <span class="pct">${pct}%</span>
+      </div>
+
+      <div class="day-picker" style="display:flex; flex-wrap: wrap; gap: 8px; margin: var(--space-4) 0 var(--space-4);">
+        ${availableDays.map(name => `
+          <a href="?day=${name}" class="day-pill ${name === activeDay ? 'active' : ''}" style="
+            padding: 8px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-family: 'Geist', system-ui, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: ${name === activeDay ? 'var(--cream)' : 'var(--ink-soft)'};
+            background: ${name === activeDay ? 'var(--ink)' : 'transparent'};
+            border: 1.5px solid ${name === activeDay ? 'var(--ink)' : 'rgba(26,24,20,0.18)'};
+          ">${name.slice(0, 3)}</a>
+        `).join('')}
       </div>
 
       <div class="greeting-row">
