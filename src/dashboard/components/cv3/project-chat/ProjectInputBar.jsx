@@ -7,6 +7,7 @@ import { PasteChipBar, shouldChipPaste } from '../shared/PasteChip.jsx'
 import ImageGenPicker from '../shared/ImageGenPicker.jsx'
 import ComposerCommandsMenu from '../../../cv4/ComposerCommandsMenu.jsx'
 import MissionChip from '../../../cv4/MissionChip.jsx'
+import AttachedSkillChip from '../../../cv4/AttachedSkillChip.jsx'
 import { useCornerNav } from '../../../CornerContext.jsx'
 import {
   useChatCore,
@@ -140,6 +141,10 @@ export default function ProjectInputBar() {
       {isCv4 && attachedMission && (
         <MissionChip mission={attachedMission} onClear={() => setAttachedMission(null)} />
       )}
+      <AttachedSkillChip
+        projectSlug={selectedProject?.slug || null}
+        missionSlug={attachedMission?.slug || null}
+      />
       <div style={{
         position: 'relative',
         maxWidth: isCv4 ? 612 : 560,

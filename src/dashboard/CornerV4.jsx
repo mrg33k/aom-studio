@@ -54,6 +54,7 @@ import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
 import RightMenu from './cv4/RightMenu.jsx'
+import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 // R10 — MailListPanel moved into the left rail (cv4/LeftMailPanel.jsx),
 // imported via cv4/Drawer.jsx; no longer mounted here directly.
 import MailRoom from './cv4/MailRoom.jsx'
@@ -164,6 +165,37 @@ export default function CornerV4() {
   // immediately after a new project or mission is created via the self-serve door.
   const [drawerRefreshKey, setDrawerRefreshKey] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+  // corner:skills-picker R1 — Skills shelf takeover of the left rail, plus
+  // the mission-picker modal that fires after the user clicks a skill chip.
+  const [skillsShelfOpen, setSkillsShelfOpen] = useState(false)
+  const [skillsPickerSkill, setSkillsPickerSkill] = useState(null)
+  const toggleSkillsShelf = useCallback(() => {
+    setSkillsShelfOpen((o) => {
+      const next = !o
+      // Opening the shelf auto-opens the left drawer so users always see the
+      // takeover; closing the shelf doesn't auto-close the drawer.
+      if (next) setDrawerOpen(true)
+      return next
+    })
+  }, [])
+  const handlePickSkill = useCallback((skill) => {
+    if (skill) setSkillsPickerSkill(skill)
+  }, [])
+  const handleSkillAttached = useCallback((mission, _skill) => {
+    setSkillsPickerSkill(null)
+    setSkillsShelfOpen(false)
+    // Route to the chat for that mission's project so the chip shows up on
+    // the right input bar. If the mission picker resolved to a project root
+    // (missionSlug = null), still route to the project.
+    if (mission?.projectSlug && typeof window !== 'undefined') {
+      try {
+        // Append ?mission=<slug> so ProjectChat highlights / attaches it.
+        const path = `/cv4/p/${encodeURIComponent(mission.projectSlug)}`
+        const qs = mission.missionSlug ? `?mission=${encodeURIComponent(mission.missionSlug)}` : ''
+        navigate(path + qs)
+      } catch { /* ignore — fall back to staying put */ }
+    }
+  }, [navigate])
   // R7.1: Tasks panel lives in a right-side docked drawer on desktop. Open
   // by default; toggle button sits in the second-row nav's right slot.
   const [tasksDrawerOpen, setTasksDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
@@ -1968,6 +2000,10 @@ export default function CornerV4() {
             onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
             onSelectMission={(mission, project) => handleSelectMission(mission, project)}
             refreshKey={drawerRefreshKey}
+            skillsShelfOpen={skillsShelfOpen}
+            onToggleSkillsShelf={toggleSkillsShelf}
+            onCloseSkillsShelf={() => setSkillsShelfOpen(false)}
+            onPickSkill={handlePickSkill}
             onSelectTask={(task, mission, project) => {
               // R5 corner:task-rooms — open the task room by routing to the
               // tasks tool with the task id in the URL hash. TasksPanelCv4
@@ -2035,6 +2071,17 @@ export default function CornerV4() {
           </aside>
         )}
       </div>
+
+      {/* corner:skills-picker R1 — modal that picks which mission/project the
+          chosen skill should be attached to. Closes on Esc / backdrop / pick. */}
+      {skillsPickerSkill && (
+        <SkillsMissionPicker
+          skill={skillsPickerSkill}
+          worldId={worldId}
+          onClose={() => setSkillsPickerSkill(null)}
+          onAttached={handleSkillAttached}
+        />
+      )}
 
       {/* R5.1: persistent home input bar removed. Chat is the always-on default,
           and its composer (ThreadInputBar) lives inside ChatPanel. */}

@@ -16,6 +16,7 @@ import {
 } from '../chat/ChatPanelContext.jsx'
 import { useCornerNav } from '../../../CornerContext.jsx'
 import MailChip from '../../../cv4/MailChip.jsx'
+import AttachedSkillChip from '../../../cv4/AttachedSkillChip.jsx'
 
 // CV3 pill input bar: hidden file input, optional reply/chain indicators,
 // slash-command autocomplete, attach button, commands stub, and the
@@ -117,6 +118,7 @@ export default function ThreadInputBar() {
       {activeTool === 'mail' && selectedMail && (
         <MailChip email={selectedMail} onClear={() => setSelectedMail(null)} />
       )}
+      <AttachedSkillChip projectSlug="agent" missionSlug={selectedAgent?.slug || null} />
       <PasteChipBar chips={pasteChips || []} onRemove={removePasteChip} />
       {input.includes('>>') && (() => {
         const parts = input.split('>>').map(s => s.trim()).filter(Boolean)
