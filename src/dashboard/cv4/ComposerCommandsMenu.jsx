@@ -66,6 +66,21 @@ export default function ComposerCommandsMenu({
   const hasAgent = Boolean(selectedAgent?.slug)
 
   const [clearStage, setClearStage] = useState('idle')
+  const [defaultRoomConfirm, setDefaultRoomConfirm] = useState(false)
+
+  const currentRoomName = selectedAgent?.name || selectedProject?.name || null
+  const currentRoomKind = selectedAgent?.slug ? 'agent' : (selectedProject?.slug ? 'project' : null)
+  const currentRoomSlug = selectedAgent?.slug || selectedProject?.slug || null
+  const canMakeDefault = Boolean(currentRoomKind && currentRoomSlug)
+
+  function confirmMakeDefaultRoom() {
+    if (!canMakeDefault) return
+    try {
+      window.__cv4SetDefaultView && window.__cv4SetDefaultView({ kind: currentRoomKind, slug: currentRoomSlug })
+    } catch (_) {}
+    setDefaultRoomConfirm(false)
+    setOpen(false)
+  }
   async function handleClearContext() {
     if (!selectedAgent?.slug) return
     if (clearStage === 'idle') { setClearStage('confirm'); return }
@@ -267,6 +282,41 @@ export default function ComposerCommandsMenu({
                     onClick={handleClearContext}
                     tint={clearStage === 'done' ? '#6EE7B7' : null}
                     testid={`cv4-commands-clear-${selectedAgent?.slug || 'na'}`}
+                  />
+                )
+              )}
+              {/* Make default room — pin the current room as the user's
+                  first-paint default. Shows only when there IS a current room. */}
+              {canMakeDefault && (
+                defaultRoomConfirm ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px' }}>
+                    <span style={{ fontSize: 11, color: '#F9A8D4', flex: 1 }}>
+                      Make {currentRoomName} your default?
+                    </span>
+                    <button
+                      onClick={confirmMakeDefaultRoom}
+                      style={{
+                        height: 24, padding: '0 8px', borderRadius: 6,
+                        background: 'rgba(167,139,250,0.18)', border: '1px solid rgba(167,139,250,0.4)',
+                        cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#A78BFA',
+                      }}
+                    >Yes</button>
+                    <button
+                      onClick={() => setDefaultRoomConfirm(false)}
+                      style={{
+                        height: 24, padding: '0 8px', borderRadius: 6,
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                        cursor: 'pointer', fontSize: 11, color: C.muted,
+                      }}
+                    >No</button>
+                  </div>
+                ) : (
+                  <MenuRow
+                    icon={<HomePinIcon />}
+                    label="Make default room"
+                    detail={'Replace home with ' + currentRoomName}
+                    onClick={() => setDefaultRoomConfirm(true)}
+                    testid={'cv4-commands-make-default-' + (currentRoomSlug || 'na')}
                   />
                 )
               )}
