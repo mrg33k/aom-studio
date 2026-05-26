@@ -1072,18 +1072,18 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '6px 10px 6px 8px',
+        gap: 8,
+        padding: '10px 10px 8px 8px',
+        marginTop: 6,
         cursor: 'pointer',
         borderRadius: 4,
-        margin: '1px 4px',
         transition: 'background 120ms ease',
         userSelect: 'none',
       }}
       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.muted}
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.text2}
         strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
         style={{
           flexShrink: 0,
@@ -1095,10 +1095,10 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
       {dotStatus && <StatusDot status={dotStatus} />}
       <span style={{
         flex: 1,
-        fontSize: 11,
-        fontWeight: 600,
+        fontSize: 13,
+        fontWeight: 700,
         letterSpacing: '-0.01em',
-        color: C.text2,
+        color: C.text,
         fontFamily: MENU.bodyFont,
         whiteSpace: 'nowrap',
         overflow: 'hidden',
@@ -1106,7 +1106,7 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
       }}>{projectSlug}</span>
       {count > 0 && (
         <span style={{
-          fontSize: 9,
+          fontSize: 10,
           color: C.muted,
           fontFamily: MENU.monoFont,
           flexShrink: 0,
@@ -2171,12 +2171,43 @@ export default function RightMenu() {
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
-          {/* R9: tree view grouped by project — mirrors left drawer FolderRow
-              structure. Each project is a collapsible folder row; missions
-              and subfolders nest inside. When a specific pill is active the
-              project header is omitted (pill already names it) and just the
-              mission tree shows. Design matches FilesPanel's clean hierarchy. */}
-          {!missionsLoading && displayedMissions.length > 0 && activePill === 'all' && (
+          {/* DEFAULT (recent) view — flat list sorted by recency across ALL
+              projects. Patrik 2026-05-26: "I should be seeing most recent
+              missions here before clicking see all." Each row uses
+              hideProject={false} so the project + age line shows as a
+              consistent subtitle under every mission name. No inverted
+              hierarchy, no random-some-have-age-some-don't. */}
+          {!missionsLoading && activePill === 'all' && !showAllMissions && sortedMissions.length > 0 && (
+            <>
+              <SectionLabel>Recent</SectionLabel>
+              {sortedMissions.slice(0, RECENT_MISSIONS_CAP).map(m => (
+                <MissionRow
+                  key={`${m.projectSlug}:${m.slug}`}
+                  mission={m}
+                  projectSlug={m.projectSlug}
+                  dotStatus={m.dotStatus}
+                  ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
+                  isCurrent={
+                    (currentMission && m.slug === currentMission) ||
+                    (currentProject && m.projectSlug === currentProject && !currentMission)
+                  }
+                  hideProject={false}
+                  onClick={() => onMissionClick(m)}
+                  onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
+                  onLongPress={openMissionMenu}
+                  showMove={false}
+                  folders={folders}
+                  onMove={(missionSlug, folderSlug) => handleMoveMission(m.projectSlug, missionSlug, folderSlug)}
+                  onCreateFolder={handleCreateFolder}
+                />
+              ))}
+            </>
+          )}
+
+          {/* SEE-ALL view — grouped tree by project. Only after the user
+              clicks "See all" do we show the full project folder tree with
+              collapsible groups, folders, and create affordances. */}
+          {!missionsLoading && displayedMissions.length > 0 && activePill === 'all' && showAllMissions && (
             (groupedMissions || []).map(group => {
               // Collapse by default if project has 5+ missions
               const shouldCollapseByDefault = group.missions.length >= 5
