@@ -8,9 +8,41 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const EA_INDEX = resolve(__dirname, '../../AOM-EA/.claude/skills/INDEX.md')
+
+// Walk up from __dirname looking for an AOM-EA root that contains
+// .claude/skills/INDEX.md. Survives both layouts:
+//   • pre-2026-05-14: aom-studio sibling of AOM-EA → looks like .../aom-studio/scripts → ../../AOM-EA/.claude/skills/INDEX.md
+//   • post-2026-05-14: aom-studio nested in AOM-EA → looks like .../AOM-EA/aom-studio/scripts → ../../.claude/skills/INDEX.md
+//   • worktrees (deeply nested under aom-studio/.claude/worktrees/<name>/scripts) → keep walking
+function findEaIndex(start) {
+  // The candidate we want is a `.claude/skills/INDEX.md` that lives OUTSIDE
+  // the aom-studio tree (i.e., the AOM-EA parent). Walk up and skip any
+  // candidate whose path includes `/aom-studio/` — those are the LOCAL_INDEX
+  // copies (current dir, any worktree checkout, etc.). Also check for the
+  // legacy sibling layout (`AOM-EA/.claude/...`).
+  let dir = start
+  for (let i = 0; i < 16; i++) {
+    const candidate = resolve(dir, '.claude/skills/INDEX.md')
+    if (existsSync(candidate) && !candidate.includes('/aom-studio/')) {
+      return candidate
+    }
+    const sibling = resolve(dir, 'AOM-EA/.claude/skills/INDEX.md')
+    if (existsSync(sibling)) return sibling
+    const parent = resolve(dir, '..')
+    if (parent === dir) break
+    dir = parent
+  }
+  return null
+}
+
+const EA_INDEX = findEaIndex(__dirname)
 const LOCAL_INDEX = resolve(__dirname, '../.claude/skills/INDEX.md')
 const OUT = resolve(__dirname, '../src/data/skills.json')
+
+if (!EA_INDEX) {
+  console.error('build-skills-index: could not locate AOM-EA .claude/skills/INDEX.md by walking up from ' + __dirname)
+  process.exit(1)
+}
 
 function parseIndex(raw) {
   const lines = raw.split('\n')

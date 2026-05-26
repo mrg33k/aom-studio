@@ -1,15 +1,7 @@
 {
-  "generatedAt": "2026-04-25T05:26:45.190Z",
+  "generatedAt": "2026-05-26T01:47:54.504Z",
   "source": ".claude/skills/INDEX.md",
   "skills": [
-    {
-      "name": "/integrations",
-      "alias": "/integrations",
-      "description": "Manage connected integrations for your account",
-      "category": "account",
-      "categoryLabel": "Account",
-      "kind": "modal"
-    },
     {
       "name": "/video-footage-review",
       "alias": "/footage-review",
@@ -25,9 +17,16 @@
       "categoryLabel": "Video / Content Production"
     },
     {
+      "name": "/watch",
+      "alias": null,
+      "description": "Front door for looking at a video. URL or local path, always extracts frames AND processes audio via Gemini multimodal. Supports `--start`/`--end`/`--depth`.",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
       "name": "/video-instant-watch",
       "alias": "/instant-watch",
-      "description": "Watch + report on a video before working with it",
+      "description": "YouTube-only quick read (captions + metadata). Superseded by `/video-watch` for new calls; kept for legacy triggers.",
       "category": "video",
       "categoryLabel": "Video / Content Production"
     },
@@ -305,6 +304,13 @@
       "categoryLabel": "DaVinci Resolve / Timeline"
     },
     {
+      "name": "/remotion-to-resolve",
+      "alias": null,
+      "description": "Push Remotion timeline manifest to live Resolve project (Remotion → Resolve bridge)",
+      "category": "resolve",
+      "categoryLabel": "DaVinci Resolve / Timeline"
+    },
+    {
       "name": "/resolve-broll-catalog",
       "alias": "/broll-catalog",
       "description": "Catalog strongest b-roll moments with timecodes",
@@ -357,6 +363,13 @@
       "name": "/brand-mood-board",
       "alias": "/mood-board",
       "description": "Generate mood board from keywords via Gemini",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/inspiration-clone",
+      "alias": null,
+      "description": "Screenshot a site, recreate its pattern with our content (not a mood board)",
       "category": "brand",
       "categoryLabel": "Brand / Design"
     },
@@ -497,6 +510,13 @@
       "name": "/corner-new-user",
       "alias": "/new-user",
       "description": "Create a new Corner user account",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/corner-stress-test",
+      "alias": "—",
+      "description": "Stress-test the dashboard chat bridge for memory survival across hiccup classes (model swap, kill, restart, JSONL nuke, mid-turn)",
       "category": "corner",
       "categoryLabel": "Corner Platform"
     },
@@ -956,6 +976,13 @@
       "categoryLabel": "Collaboration / Communication"
     },
     {
+      "name": "/illustrator-mcp",
+      "alias": null,
+      "description": "Connect Adobe Illustrator (Beta web app) to Claude Code via Adobe's official MCP server. Walks Patrik through the setup; resumable across sessions.",
+      "category": "integrations",
+      "categoryLabel": "Tool & App Connectors"
+    },
+    {
       "name": "/research-deeply",
       "alias": "/research-deeply <topic>",
       "description": "Reddit + forums + web deep dive. Find the communities that worship the topic.",
@@ -1024,6 +1051,13 @@
       "description": "Find best podcast episodes, pull transcripts, synthesize.",
       "category": "research",
       "categoryLabel": "Research / Intelligence"
+    },
+    {
+      "name": "/video-cycle",
+      "alias": "/video-cycle \"<brief>\" [footage=<path>]",
+      "description": "Run one cycle of the video-editing mission (`docs/missions/video-editing/`). Raw cut → improvement operator → distill playbook. Use on every real video deliverable so the playbook compounds.",
+      "category": "video",
+      "categoryLabel": "Editing mission"
     }
   ]
 }
