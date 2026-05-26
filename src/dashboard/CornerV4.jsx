@@ -2711,6 +2711,7 @@ export default function CornerV4() {
       {supportOpen && worldId && worldId !== 'aom' && (
         <CornerSupportModal
           worldId={worldId}
+          theme={theme}
           onClose={() => setSupportOpen(false)}
         />
       )}
@@ -2815,24 +2816,42 @@ function NewRoomModal({ kind = 'project', busy = false, error = null, onSubmit, 
   )
 }
 
-// corner:support N2 — Support chat modal for non-Patrik tenants.
-// Opens the Corner Support embed (emb_corner_support) in an iframe,
-// tagged with visitor_id=support-<worldId> so Patrik can distinguish
+// corner:support N3-r2 — Support chat modal for non-Patrik tenants.
+// Opens the Corner Support embed (emb_corner_support) in an iframe.
+// Tagged with visitor_id=support-<worldId> so Patrik can distinguish
 // who is who in the corner:support mission room.
-function CornerSupportModal({ worldId, onClose }) {
-  // bare=1 strips the embed test-page scaffold + forces inline widget mount,
-  // so the iframe shows ONLY the chat instead of a nested test page (which
-  // read as a "second modal" inside this host modal).
+//
+// Chrome model (N3-r2): the WIDGET owns the chrome (header, footer,
+// rounded card, shadow). The outer wrapper is invisible — just a click-
+// to-dismiss backdrop and an absolute-positioned close X over the
+// iframe's top-right corner. This kills the "two windows stacked" feel
+// from N3 where both the wrapper AND the widget had their own headers.
+//
+// Theme: the dashboard's current theme (light|dark) flows through to
+// the embed via ?theme=, so the chat surface matches the dashboard
+// instead of always rendering dark.
+function CornerSupportModal({ worldId, theme, onClose }) {
+  const safeTheme = theme === 'light' ? 'light' : 'dark'
+  // bare=1 strips the embed test-page scaffold + forces inline widget mount
+  // (no second nested test-page inside this host modal).
+  // chrome=widget tells the widget to render its OWN header + footer; the
+  //   host suppresses its outer header so the chrome doesn't double.
+  // theme=<light|dark> matches the dashboard's current theme.
   const embedSrc =
-    'https://www.aheadofmarket.com/embed?id=emb_corner_support&bare=1&visitor_id=' +
-    encodeURIComponent('support-' + worldId)
+    'https://www.aheadofmarket.com/embed?id=emb_corner_support&bare=1&chrome=widget&theme=' +
+    safeTheme +
+    '&visitor_id=' + encodeURIComponent('support-' + worldId)
+
+  const isLight = safeTheme === 'light'
+  const closeColor = isLight ? '#475569' : '#94A3B8'
+  const closeHover = isLight ? '#0f172a' : '#E5E7EB'
 
   return (
     <div
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
-        background: 'rgba(0,0,0,0.6)',
+        background: isLight ? 'rgba(15,23,42,0.25)' : 'rgba(0,0,0,0.6)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
         padding: '0 20px 24px 0',
         paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
@@ -2841,61 +2860,52 @@ function CornerSupportModal({ worldId, onClose }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
+          position: 'relative',
           width: 'min(420px, calc(100vw - 32px))',
           height: 'min(600px, calc(100vh - 80px))',
-          background: '#06090F',
-          border: '1px solid rgba(255,255,255,0.07)',
+          background: 'transparent',
           borderRadius: 16,
-          overflow: 'hidden',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
-          display: 'flex', flexDirection: 'column',
+          overflow: 'visible',
         }}
       >
-        {/* Header bar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#10B981',
-              boxShadow: '0 0 6px rgba(16,185,129,0.6)',
-            }} />
-            <span style={{
-              fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
-              fontFamily: "'JetBrains Mono', monospace",
-              color: '#94A3B8', textTransform: 'uppercase',
-            }}>Corner Support</span>
-          </div>
-          <button
-            type="button"
-            aria-label="Close support"
-            onClick={onClose}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#475569', padding: 4, borderRadius: 4,
-              display: 'flex', alignItems: 'center',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#94A3B8' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#475569' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Embed iframe */}
         <iframe
           src={embedSrc}
           title="Corner Support"
-          style={{ flex: 1, width: '100%', border: 'none' }}
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            border: 'none',
+            borderRadius: 16,
+            background: 'transparent',
+            boxShadow: isLight
+              ? '0 24px 60px rgba(15,23,42,0.18)'
+              : '0 24px 60px rgba(0,0,0,0.7)',
+          }}
           allow="microphone"
         />
+        <button
+          type="button"
+          aria-label="Close support"
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: 10, right: 10,
+            width: 26, height: 26,
+            background: isLight ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.06)',
+            border: 'none', cursor: 'pointer',
+            color: closeColor,
+            padding: 4, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = closeHover }}
+          onMouseLeave={e => { e.currentTarget.style.color = closeColor }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
     </div>
   )

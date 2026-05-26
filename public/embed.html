@@ -175,6 +175,16 @@
     body.ce-bare main { padding: 0; height: 100%; }
     body.ce-bare .hero { gap: 0; height: 100%; max-width: none; }
     body.ce-bare #corner-embed { max-width: none; height: 100%; }
+
+    /* corner:embeddable-agents/support N3-r2 — light theme override for the
+       page chrome itself (the widget reads ?theme via data-theme separately).
+       In bare mode the page chrome is hidden anyway, so this matters mainly
+       for the rare non-bare light-mode embed test. */
+    body.ce-theme-light {
+      background: #f6f7fb;
+      color: #0f172a;
+    }
+    body.ce-theme-light::before, body.ce-theme-light::after { opacity: 0.18; }
   </style>
 </head>
 <body>
@@ -204,6 +214,8 @@
     // Allow ?bare=1 to strip the test-page scaffold + force the widget to
     // mount inline (used by CornerSupportModal so the iframe shows ONLY the
     // chat, not a nested test page inside the host modal).
+    // Allow ?theme=light|dark to flow the host page's theme into the widget
+    // (CornerSupportModal passes the dashboard's current theme through).
     (function () {
       var params = new URLSearchParams(window.location.search);
       var id = (params.get('id') || 'emb_sr_website').trim();
@@ -211,6 +223,9 @@
       var visitorId = (params.get('visitor_id') || '').trim();
       var bare = params.get('bare') === '1';
       if (bare) document.body.classList.add('ce-bare');
+      var theme = (params.get('theme') || '').toLowerCase();
+      if (theme !== 'light' && theme !== 'dark') theme = '';
+      if (theme === 'light') document.body.classList.add('ce-theme-light');
       var s = document.createElement('script');
       s.src = '/embed/v1/widget.js';
       s.setAttribute('data-embed-id', id);
@@ -221,6 +236,8 @@
       // of spawning its own fixed bottom-right launcher (which read as the
       // "second modal" inside CornerSupportModal).
       if (bare) s.setAttribute('data-force-inline', '1');
+      // Forward theme to the widget so its panel colors match the host.
+      if (theme) s.setAttribute('data-theme', theme);
       document.body.appendChild(s);
     })();
   </script>

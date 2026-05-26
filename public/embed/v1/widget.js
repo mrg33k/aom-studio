@@ -41,6 +41,11 @@
   // bare-mode iframe so the widget fills the modal instead of rendering a
   // second floating bubble on top of the test-page scaffold.
   var FORCE_INLINE = script.getAttribute('data-force-inline') === '1'
+  // Optional: data-theme=light flips the widget's color tokens to a light
+  // surface so it matches a host page that's in light theme (e.g. the
+  // dashboard CornerSupportModal forwarding ?theme=light).
+  var THEME = (script.getAttribute('data-theme') || '').toLowerCase()
+  if (THEME !== 'light' && THEME !== 'dark') THEME = ''
 
   var VISITOR_KEY = 'corner_embed_visitor_v1'
   function visitorId() {
@@ -197,7 +202,9 @@
     shadow.appendChild(style)
 
     var panel = document.createElement('div')
-    panel.className = inline ? 'ce-panel ce-panel-inline' : 'ce-panel ce-panel-bubble'
+    var panelClasses = inline ? 'ce-panel ce-panel-inline' : 'ce-panel ce-panel-bubble'
+    if (THEME === 'light') panelClasses += ' ce-theme-light'
+    panel.className = panelClasses
     panel.innerHTML = [
       '<div class="ce-header">',
       '  <span class="ce-dot"></span>',
@@ -439,5 +446,25 @@
     '.ce-input button{appearance:none;border:0;background:__ACCENT__;color:#fff;width:40px;border-radius:12px;cursor:pointer;font-size:16px;font-weight:600;}',
     '.ce-input button:disabled{opacity:.4;cursor:not-allowed;}',
     '.ce-footer{padding:8px 14px;font-size:10px;color:#5a6571;text-align:center;border-top:1px solid rgba(255,255,255,0.04);letter-spacing:0.06em;text-transform:uppercase;}',
+    /* corner:embeddable-agents/support N3-r2 — light-theme overrides.
+       Triggered when the widget script tag has data-theme="light", which
+       adds .ce-theme-light to the panel. Tokens flip from the default
+       deep-ink dark surface to a clean light surface that matches the
+       dashboard's light theme. Accent stays the same per host config. */
+    '.ce-panel.ce-theme-light{background:#ffffff;color:#0f172a;border:1px solid rgba(15,23,42,0.08);box-shadow:0 24px 60px rgba(15,23,42,0.18),0 2px 6px rgba(15,23,42,0.06);}',
+    '.ce-panel.ce-theme-light .ce-header{background:linear-gradient(180deg,rgba(229,69,31,0.08) 0%,rgba(255,255,255,0) 100%);border-bottom:1px solid rgba(15,23,42,0.06);}',
+    '.ce-panel.ce-theme-light .ce-title{color:#0f172a;}',
+    '.ce-panel.ce-theme-light .ce-log{background:#f8fafc;}',
+    '.ce-panel.ce-theme-light .ce-msg-agent{background:#ffffff;color:#0f172a;border:1px solid rgba(15,23,42,0.08);}',
+    '.ce-panel.ce-theme-light .ce-input{background:#ffffff;border-top:1px solid rgba(15,23,42,0.06);}',
+    '.ce-panel.ce-theme-light .ce-input textarea{background:#f1f5f9;border:1px solid rgba(15,23,42,0.10);color:#0f172a;}',
+    '.ce-panel.ce-theme-light .ce-input textarea::placeholder{color:#94a3b8;}',
+    '.ce-panel.ce-theme-light .ce-input textarea:focus{background:#ffffff;}',
+    '.ce-panel.ce-theme-light .ce-footer{color:#94a3b8;border-top:1px solid rgba(15,23,42,0.05);}',
+    '.ce-panel.ce-theme-light .ce-step{color:#94a3b8;}',
+    '.ce-panel.ce-theme-light .ce-step-done{color:#cbd5e1;}',
+    '.ce-panel.ce-theme-light .ce-step-done .ce-step-dot{background:#cbd5e1;}',
+    '.ce-panel.ce-theme-light .ce-step-in_progress{color:#0f172a;}',
+    '.ce-panel.ce-theme-light .ce-typing span{background:#94a3b8;}',
   ].join('')
 })()
