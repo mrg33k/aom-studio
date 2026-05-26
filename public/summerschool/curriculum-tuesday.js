@@ -1042,6 +1042,7 @@ window.CURRICULUM.tuesday = {
       cta: 'Got it' },
 
     { id: 'f-10', kind: 'topic', type: 'writing-mini', minutes: 5, subject: 'Friendships', tag: 'Friendships · 10 of 12',
+      title: 'Write about a real friend',
       eyebrow: 'Quick Write · Friendships',
       label: 'Write about a real friend',
       prompt: 'Pick a friend. Write their name. Then write ONE moment when they were a real friend to you — and what made it real.',
@@ -1064,6 +1065,7 @@ window.CURRICULUM.tuesday = {
       cta: 'Wrap done' },
 
     { id: 'f-12', kind: 'topic', type: 'writing-mini', minutes: 5, subject: 'Friendships', tag: 'Friendships · 12 of 12',
+      title: 'Text one friend today',
       eyebrow: 'Apply it · Friendships',
       label: 'Text one friend today',
       prompt: 'Pick ONE friend you want to text right now. Write what you\'d say. Then actually send it. No "hey" — say something real. (Bonus: ask them a real question, not a yes/no.)',
@@ -1222,6 +1224,7 @@ window.CURRICULUM.tuesday = {
       cta: 'Got it' },
 
     { id: 'd-10', kind: 'topic', type: 'writing-mini', minutes: 5, subject: 'Drawing', tag: 'Drawing · 10 of 12',
+      title: 'Decompose a real object',
       eyebrow: 'Quick Write · Drawing',
       label: 'Decompose a real object',
       prompt: 'Pick a real object near you right now. Write down its 4-5 basic shapes. (Example: a lamp = cylinder + cone + line + circle.)',
@@ -1246,6 +1249,7 @@ window.CURRICULUM.tuesday = {
       cta: 'Locked in' },
 
     { id: 'd-12', kind: 'topic', type: 'writing-mini', minutes: 6, subject: 'Drawing', tag: 'Drawing · 12 of 12',
+      title: 'Actually draw the thing',
       eyebrow: 'Apply it · Drawing',
       label: 'Actually draw the thing',
       prompt: 'Get a piece of paper. Pick the object from step 10. Draw it using ONLY basic shapes — don\'t go for detail. Just shapes. Take a photo when done and show Mom or Dad.',
@@ -1407,6 +1411,7 @@ window.CURRICULUM.tuesday = {
       cta: 'Locked' },
 
     { id: 'm-mpc-10', kind: 'topic', type: 'writing-mini', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 10 of 12',
+      title: 'Spec your first beat',
       eyebrow: 'Quick Write · MPC',
       label: 'Spec your first beat',
       prompt: 'Write the genre + BPM + 3 sounds you\'ll use. Two sentences. (Example: "Lo-fi hip-hop at 80 BPM. Soft kick, dusty snare, a vinyl hi-hat.")',
@@ -1433,6 +1438,7 @@ window.CURRICULUM.tuesday = {
       cta: 'Got the structure' },
 
     { id: 'm-mpc-12', kind: 'topic', type: 'writing-mini', minutes: 6, subject: 'MPC ONE', tag: 'MPC · 12 of 12',
+      title: 'Make your first beat',
       eyebrow: 'Apply it · MPC',
       label: 'Make your first beat',
       prompt: 'Go to your MPC. Power it on. Pick a kit. Set BPM. Tap out a 4-bar beat using the structure from step 11. Save it. (Bonus: name it.)',
