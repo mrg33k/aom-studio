@@ -62,6 +62,8 @@ import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 import MailRoom from './cv4/MailRoom.jsx'
 // corner:support N1 — Support Inbox (Patrik workspace only, worldId==='aom')
 import SupportInbox from './cv4/SupportInbox.jsx'
+// corner:notifications-catchup R2 — Slack-style catch-up modal
+import CatchupModal from './cv4/CatchupModal.jsx'
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -140,6 +142,8 @@ export default function CornerV4() {
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
+  // corner:notifications-catchup R2 — catch-up modal
+  const [catchupOpen, setCatchupOpen] = useState(false)
 
   // R49 (2026-04-23): when setPrefillMessage is fired from TasksPanel
   // (new-project recipe), drop it into the home input bar and clear
@@ -793,6 +797,100 @@ export default function CornerV4() {
     const key = item.roomKey || item.agent
     if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
   }, [agents, handleSelectMission, handleSelectProject, handleSelectAgent])
+
+  // corner:notifications-catchup R2 — build the CatchupNotification[] from notifItems.
+  // Maps useDataPipe inboxItems into the shape CatchupModal expects.
+  const buildCatchupNotifications = useCallback((items) => {
+    return (items || []).map(item => {
+      // Resolve display name from agents list
+      const agentObj = (agents || []).find(a => a.slug === item.agent)
+      const senderName = agentObj?.name || item.agent || 'Agent'
+      const initials = senderName.slice(0, 2).toUpperCase()
+
+      // Prettify room name from roomKey ("corner:notifications-catchup" → "Notifications Catchup")
+      const rawRoom = item.roomKey || item.agent || ''
+      const roomName = rawRoom
+        .replace(/^[^:]+:/, '') // strip "project:" prefix
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        || senderName
+
+      // Relative time
+      let timeAgo = ''
+      try {
+        const diff = Date.now() - new Date(item.timestamp).getTime()
+        if (diff < 60000) timeAgo = 'just now'
+        else if (diff < 3600000) timeAgo = `${Math.floor(diff / 60000)}m ago`
+        else if (diff < 86400000) timeAgo = `${Math.floor(diff / 3600000)}h ago`
+        else timeAgo = `${Math.floor(diff / 86400000)}d ago`
+      } catch (_) { timeAgo = '' }
+
+      // Suggested replies heuristic
+      const preview = item.text || ''
+      let suggestedReplies
+      if (preview.includes('?')) {
+        suggestedReplies = ['Yes', 'No', "I'll check later"]
+      } else if (/done|completed|finished|shipped/i.test(preview)) {
+        suggestedReplies = ['Approved', 'Decline', 'Thanks']
+      } else if (/task|update|progress/i.test(preview)) {
+        suggestedReplies = ['Got it', 'Keep going', "I'll review it"]
+      } else {
+        suggestedReplies = ['Got it', 'Tell me more', "I'll get back to you"]
+      }
+
+      return {
+        id: item.id,
+        senderName,
+        senderInitials: initials,
+        senderType: 'agent',
+        roomName,
+        timeAgo,
+        badgeType: 'message',
+        messagePreview: preview,
+        suggestedReplies,
+        _agent: item.agent,
+        _project: item.project || null,
+        _missionSlug: item.missionSlug || null,
+        _roomKey: item.roomKey || item.agent,
+      }
+    })
+  }, [agents])
+
+  // corner:notifications-catchup R2 — reply handler: POST to supabase-messages + mark read
+  const handleCatchupReply = useCallback(async (notif, replyText) => {
+    if (!replyText || !notif) return
+    try {
+      const body = {
+        agent: notif._agent,
+        text: replyText,
+        role: 'user',
+        source: 'corner-dashboard',
+        client_id: worldId,
+        world_id: worldId,
+        user_id: currentUser?.id || null,
+        user_name: currentUser?.email || null,
+      }
+      if (notif._project) body.project = notif._project
+      if (notif._missionSlug) body.metadata = { mission_slug: notif._missionSlug }
+      await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      console.error('[CatchupModal] reply failed', err)
+    }
+    // Mark the notification read
+    const key = notif._roomKey || notif._agent
+    if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
+  }, [worldId, currentUser, authFetch])
+
+  // corner:notifications-catchup R2 — skip handler: just mark read
+  const handleCatchupSkip = useCallback((notif) => {
+    if (!notif) return
+    const key = notif._roomKey || notif._agent
+    if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
+  }, [])
 
   // R6 corner:task-rooms — open the task room as a chat surface using the
   // existing ThreadView (same chat template as agent + project chats).
@@ -2087,7 +2185,38 @@ export default function CornerV4() {
             </button>
           )}
 
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* corner:notifications-catchup R2 — "Catch up" button when ≥3 unread */}
+            {totalUnread >= 3 && (
+              <button
+                onClick={() => { setNotifOpen(false); setCatchupOpen(true) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '5px 10px',
+                  background: 'rgba(16,185,129,0.1)',
+                  border: '1px solid rgba(16,185,129,0.25)',
+                  borderRadius: 20,
+                  color: '#34D399',
+                  cursor: 'pointer',
+                  fontSize: 11, fontWeight: 700,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.03em',
+                  whiteSpace: 'nowrap',
+                  transition: 'background 0.15s, border-color 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(16,185,129,0.2)'
+                  e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(16,185,129,0.1)'
+                  e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'
+                }}
+                aria-label={`Catch up on ${totalUnread} notifications`}
+              >
+                Catch up →
+              </button>
+            )}
             <BellIcon
               count={totalUnread}
               onClick={() => setNotifOpen(o => !o)}
@@ -2551,6 +2680,15 @@ export default function CornerV4() {
       )}
 
       <FloatingCallBar />
+
+      {/* ── CATCHUP MODAL (corner:notifications-catchup R2) ──────────────── */}
+      <CatchupModal
+        isOpen={catchupOpen}
+        notifications={buildCatchupNotifications(notifItems)}
+        onClose={() => setCatchupOpen(false)}
+        onReply={handleCatchupReply}
+        onSkip={handleCatchupSkip}
+      />
 
       {/* ── CORNER SUPPORT MODAL (non-Patrik tenants only) ───────────────── */}
       {supportOpen && worldId && worldId !== 'aom' && (

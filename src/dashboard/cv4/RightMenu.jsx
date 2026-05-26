@@ -1620,7 +1620,9 @@ export default function RightMenu() {
   const [activeTab, setActiveTab] = useState('missions')
   const activeTasks = useMemo(() => [...rightNow, ...queued], [rightNow, queued])
   const [showAllCompleted, setShowAllCompleted] = useState(false)
+  const [showAllMissions, setShowAllMissions] = useState(false)
   const COMPLETED_CAP = 5
+  const RECENT_MISSIONS_CAP = 8
 
   // Current mission / project from conversation target
   const currentMission = conversationTarget?.type === 'mission' ? conversationTarget.slug : null
@@ -1666,6 +1668,27 @@ export default function RightMenu() {
     const adds = pendingMissions.filter(pm => !seen.has(`${pm.projectSlug}:${pm.slug}`))
     return adds.length === 0 ? missionsFlat : [...adds, ...missionsFlat]
   }, [missionsFlat, pendingMissions])
+
+  // Filter missions to show only recent ones by default
+  const displayedMissions = useMemo(() => {
+    if (showAllMissions) return effectiveMissions
+
+    // Build a set of recent mission slugs for fast lookup
+    const recentSet = new Set()
+    for (const entry of recentMissions) {
+      if (entry.kind === 'mission') {
+        recentSet.add(entry.qualified)
+      }
+    }
+
+    // Return missions in recent list, up to RECENT_MISSIONS_CAP
+    const recent = effectiveMissions.filter(m => {
+      const qualified = `${m.projectSlug}:${m.slug}`
+      return recentSet.has(qualified)
+    })
+
+    return recent.length > 0 ? recent.slice(0, RECENT_MISSIONS_CAP) : effectiveMissions.slice(0, RECENT_MISSIONS_CAP)
+  }, [effectiveMissions, recentMissions, showAllMissions])
 
   // R7-D: always show 'all' grouped projects view (hierarchical with collapsible
   // project folders). Agent / EA / super-agent rooms also snap to 'all'.
@@ -1841,10 +1864,15 @@ export default function RightMenu() {
 
   // Grouped missions (used when activePill === 'all'):
   // each group carries the project's folders + ungrouped pile.
+  // Calculate hidden missions count
+  const hiddenMissionsCount = useMemo(() => {
+    return Math.max(0, effectiveMissions.length - displayedMissions.length)
+  }, [effectiveMissions, displayedMissions])
+
   const groupedMissions = useMemo(() => {
     if (activePill !== 'all') return null
     const map = new Map()
-    for (const m of filteredMissions) {
+    for (const m of displayedMissions) {
       const key = m.projectSlug || '__unknown__'
       if (!map.has(key)) {
         map.set(key, { projectSlug: key, missions: [], hasRunning: false, hasQueued: false, lastTouched: null })
@@ -1867,7 +1895,7 @@ export default function RightMenu() {
       if (b.lastTouched) return 1
       return a.projectSlug.localeCompare(b.projectSlug)
     })
-  }, [activePill, filteredMissions])
+  }, [activePill, displayedMissions])
 
   // Summary stats — scoped to active pill
   const runningCount = filteredActiveTasks.filter(t => ['running', 'building', 'active'].includes(t.status)).length
@@ -2133,7 +2161,7 @@ export default function RightMenu() {
             </div>
           )}
 
-          {!missionsLoading && filteredMissions.length === 0 && (
+          {!missionsLoading && displayedMissions.length === 0 && effectiveMissions.length === 0 && (
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
@@ -2142,7 +2170,7 @@ export default function RightMenu() {
               and subfolders nest inside. When a specific pill is active the
               project header is omitted (pill already names it) and just the
               mission tree shows. Design matches FilesPanel's clean hierarchy. */}
-          {!missionsLoading && filteredMissions.length > 0 && activePill === 'all' && (
+          {!missionsLoading && displayedMissions.length > 0 && activePill === 'all' && (
             (groupedMissions || []).map(group => {
               // Collapse by default if project has 5+ missions
               const shouldCollapseByDefault = group.missions.length >= 5
@@ -2171,8 +2199,8 @@ export default function RightMenu() {
               )
             })
           )}
-          {!missionsLoading && filteredMissions.length > 0 && activePill !== 'all' && (() => {
-            const syntheticGroup = { projectSlug: activePill, missions: filteredMissions, hasRunning: false, hasQueued: false }
+          {!missionsLoading && displayedMissions.length > 0 && activePill !== 'all' && (() => {
+            const syntheticGroup = { projectSlug: activePill, missions: displayedMissions, hasRunning: false, hasQueued: false }
             return (
               <>
                 {renderGroupBody(syntheticGroup)}
@@ -2181,6 +2209,30 @@ export default function RightMenu() {
               </>
             )
           })()}
+
+          {/* "See all" button for missions */}
+          {!missionsLoading && !showAllMissions && hiddenMissionsCount > 0 && (
+            <button
+              onClick={() => setShowAllMissions(true)}
+              style={{
+                width: '100%',
+                padding: '6px 12px',
+                background: 'transparent',
+                border: 'none',
+                color: C.muted,
+                fontSize: 11,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'color 120ms ease',
+                fontFamily: MENU.bodyFont,
+                marginTop: 2,
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = C.text2}
+              onMouseLeave={e => e.currentTarget.style.color = C.muted}
+            >
+              See all ({effectiveMissions.length} total)
+            </button>
+          )}
         </>
       )}
 
