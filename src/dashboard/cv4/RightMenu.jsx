@@ -844,6 +844,10 @@ function MissionRow({
           }}
         >▾</span>
       ) : (depth > 0 ? <span style={{ width: 16, flexShrink: 0 }} /> : null)}
+      {/* R-RT-Projects-2 — doc icon so missions read as files-inside-folders */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: 2, flexShrink: 0 }}>
+        <DocIconRM />
+      </span>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
           fontSize: 14,
@@ -1062,9 +1066,46 @@ function EmptyState({ text }) {
   )
 }
 
+// ── Folder + doc icons (mirror Drawer.jsx so both rails feel the same) ──────
+// R-RT-Projects-2 (2026-05-27) — Patrik feedback: "projects and missions don't
+// have folder icons. project folder font is smaller than the missions inside
+// — feels weird." Fixing both: add icons + flip the size hierarchy.
+
+function FolderIconRM({ open }) {
+  if (open) {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        style={{ color: C.muted, flexShrink: 0 }}>
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z"/>
+        <path d="M3 10h18l-2 8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+    )
+  }
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+      style={{ color: C.muted, flexShrink: 0 }}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    </svg>
+  )
+}
+
+function DocIconRM() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+      style={{ color: C.muted, flexShrink: 0 }}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+  )
+}
+
 // ── Project group header (R9 — matches left drawer FolderRow visual) ────────
-// Clean folder-row style: svg chevron + body font + subtle hover.
-// Mirrors Drawer.jsx FolderRow so both rails feel like the same design system.
+// R-RT-Projects-2 (2026-05-27) — added FolderIcon + bumped name fontSize
+// from 13 → 15 so projects sit ABOVE their child missions (14) in the
+// visual hierarchy. Same shape Drawer.jsx uses for its FolderRow.
 
 function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollapsed, onToggle, onContextMenu }) {
   const dotStatus = isRunning ? 'running' : isQueued ? 'queued' : null
@@ -1096,10 +1137,11 @@ function ProjectGroupHeader({ projectSlug, count, isRunning, isQueued, isCollaps
         }}>
         <polyline points="9 6 15 12 9 18"/>
       </svg>
+      <FolderIconRM open={!isCollapsed} />
       {dotStatus && <StatusDot status={dotStatus} />}
       <span style={{
         flex: 1,
-        fontSize: 13,
+        fontSize: 15,
         fontWeight: 700,
         letterSpacing: '-0.01em',
         color: C.text,
@@ -1156,9 +1198,11 @@ function FolderRow({ folder, count, isCollapsed, onToggle, depth = 0, onContextM
         transition: 'transform 180ms ease',
         lineHeight: 1,
       }}>▾</span>
+      {/* R-RT-Projects-2 — folder icon for subfolders too */}
+      <FolderIconRM open={!isCollapsed} />
       <span style={{
         flex: 1,
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 500,
         color: C.text2,
         fontFamily: MENU.bodyFont,
