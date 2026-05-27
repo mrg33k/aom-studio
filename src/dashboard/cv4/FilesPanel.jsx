@@ -422,6 +422,63 @@ function FileViewer({ file, onClose, onLinkClick }) {
   )
 }
 
+// ── Quota indicator (R79-f8) ────────────────────────────────────────────────
+// Tiny strip at the bottom of FilesPanel. Reads /storage-info?world=<>
+// directly from the RAG tunnel (which exposes used_bytes + tier + limit_mb
+// per R79-f8 server change). Hidden for AOM (tier='unlimited') because the
+// indicator would just show "unlimited" with no actionable info.
+
+function QuotaIndicator({ world, refreshKey }) {
+  const [info, setInfo] = useState(null)
+  useEffect(() => {
+    if (!world) return
+    let cancelled = false
+    fetch(`https://rag.aheadofmarket.com/storage-info?world=${encodeURIComponent(world)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => { if (!cancelled) setInfo(body) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [world, refreshKey])
+
+  if (!info || !info.tier || info.tier === 'unlimited') return null
+  const usedMb = Number(info.used_mb || 0)
+  const limitMb = Number(info.limit_mb || 0)
+  const pct = limitMb > 0 ? Math.min(100, Math.round((usedMb / limitMb) * 100)) : 0
+  const usedDisplay = usedMb >= 1024 ? `${(usedMb / 1024).toFixed(1)} GB` : `${usedMb.toFixed(0)} MB`
+  const limitDisplay = limitMb >= 1024 ? `${(limitMb / 1024).toFixed(0)} GB` : `${limitMb.toFixed(0)} MB`
+  const barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : C.accent
+  return (
+    <div
+      data-cv4-quota-indicator
+      style={{
+        padding: '10px 14px',
+        borderTop: '1px solid ' + C.border,
+        background: 'transparent',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 10,
+        color: C.muted,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+        <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          {info.tier === 'paid' ? 'Storage — Paid' : 'Storage — Free'}
+        </span>
+        <span>{usedDisplay} / {limitDisplay}</span>
+      </div>
+      <div
+        style={{
+          height: 3,
+          background: 'rgba(255,255,255,0.06)',
+          borderRadius: 999,
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ width: `${pct}%`, height: '100%', background: barColor, transition: 'width 200ms ease' }} />
+      </div>
+    </div>
+  )
+}
+
 // ── Single file row ─────────────────────────────────────────────────────────
 
 function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent = 0, onLinkClick }) {
@@ -1099,6 +1156,8 @@ export default function FilesPanel({ projectSlug }) {
         onCopyPath={handleCtxCopyPath}
         onReveal={handleCtxReveal}
       />
+
+      <QuotaIndicator world={world} refreshKey={refreshTick} />
 
       <div style={{ height: 16 }} />
     </div>
