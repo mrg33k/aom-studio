@@ -1,21 +1,48 @@
 // POST /api/dashboard/session-handoff
 //
 // R75-b3 (2026-04-24): records a `session_handoff_requested` event when the
-// user clicks "Write handoff" on the in-chat handoff nudge. This is advisory
-// signal only -- a future worker can subscribe to these events to actually
-// write `last-conversation.md` for the scoped agent/project. For now the UI
-// simply resets the exchange counter and the event lands in the `events`
-// table as history.
+// user clicks "Write handoff" on the in-chat handoff nudge.
 //
-// Body: { world_id, chat_key, user_id? }
-// chat_key is either `<agent_slug>` for agent threads, `project:<slug>` for
-// project chats, or `home` for the home EA surface.
+// R75-b4 (2026-05-27): wires up the button for real. In addition to logging
+// the event, this endpoint now injects a trigger message into the room's chat
+// thread so the agent actually receives the signal and writes CONTEXT.md +
+// last-conversation.md per the follow-the-room-canon rule.
+//
+// Body: { world_id, chat_key, user_id?, agent?, project? }
+//   chat_key  -- '<agent_slug>' | 'project:<slug>' | 'home'
+//   agent     -- resolved agent slug (e.g. 'elon', 'rex'). Frontend resolves
+//                via getProjectEA(). Defaults to parsing chat_key if omitted.
+//   project   -- project slug for project rooms (e.g. 'corner'). Undefined for
+//                agent 1:1 and home threads.
 import crypto from 'crypto'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
 export const config = { maxDuration: 10 }
+
+// Derive the agent slug from chat_key when the caller didn't pass it explicitly.
+// Falls back to 'elon' for project rooms and home.
+function resolveAgentFromChatKey(chatKey, agentParam) {
+  if (agentParam && typeof agentParam === 'string' && agentParam.trim()) {
+    return agentParam.trim()
+  }
+  if (!chatKey || chatKey === 'home') return 'elon'
+  if (chatKey.startsWith('project:')) return 'elon'
+  // Anything else is treated as a direct agent slug
+  return chatKey
+}
+
+// The trigger message sent into the room's chat thread. Written as role:'user'
+// so supabase-listener picks it up via the standard routing path.
+// The agent reads this and, per follow-the-room-canon, writes CONTEXT.md +
+// last-conversation.md before replying.
+const HANDOFF_TRIGGER_TEXT = [
+  '[Handoff requested] Please write your current session state to this room\'s',
+  'CONTEXT.md and last-conversation.md right now — what\'s in flight,',
+  'key decisions made this session, what\'s next. Follow the',
+  'follow-the-room-canon rule. Confirm when done.',
+].join(' ')
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -25,18 +52,39 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
-  const { world_id, chat_key, user_id } = req.body || {}
+  const { world_id, chat_key, user_id, agent: agentParam, project: projectParam } = req.body || {}
   if (!chat_key || typeof chat_key !== 'string') {
     return res.status(400).json({ error: 'chat_key required' })
   }
 
-  const payload = {
+  const agentSlug = resolveAgentFromChatKey(chat_key, agentParam)
+  // Project slug: prefer explicit field, else parse from chat_key
+  const projectSlug = (projectParam && typeof projectParam === 'string' && projectParam.trim())
+    ? projectParam.trim()
+    : (chat_key.startsWith('project:') ? chat_key.slice('project:'.length) : null)
+
+  // Resolve client_id from world_id, defaulting to 'aom'
+  const clientId = (world_id && typeof world_id === 'string' && world_id.trim())
+    ? world_id.trim().toLowerCase()
+    : 'aom'
+
+  const supabaseHeaders = {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  }
+
+  // 1. Log the event (existing behaviour — history record, non-fatal if it fails).
+  const eventPayload = {
     id: crypto.randomUUID(),
     event_type: 'session_handoff_requested',
-    agent: chat_key,
+    agent: agentSlug,
     payload: {
       world_id: world_id || null,
       chat_key,
+      agent: agentSlug,
+      project: projectSlug || null,
       user_id: user_id || null,
       source: 'handoff-nudge',
     },
@@ -44,22 +92,49 @@ export default async function handler(req, res) {
   }
 
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
       method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(payload),
+      headers: supabaseHeaders,
+      body: JSON.stringify(eventPayload),
     })
-    if (!resp.ok) {
-      return res.status(502).json({ error: `Supabase ${resp.status}: ${await resp.text()}` })
+  } catch (_) {
+    // Non-fatal — event logging failure shouldn't block the trigger message.
+  }
+
+  // 2. Write the trigger message into the room's chat thread.
+  // role:'user' + source:'corner-dashboard' is what supabase-listener.py
+  // accepts in its allowed_sources list to route the message to the agent.
+  const messagePayload = {
+    id: crypto.randomUUID(),
+    agent: agentSlug,
+    role: 'user',
+    text: HANDOFF_TRIGGER_TEXT,
+    source: 'corner-dashboard',
+    client_id: clientId,
+    ...(projectSlug ? { project: projectSlug } : {}),
+    ...(user_id ? { user_id } : {}),
+    metadata: {
+      handoff_trigger: true,
+      chat_key,
+      initiated_by: 'handoff-nudge',
+    },
+    timestamp: new Date().toISOString(),
+  }
+
+  try {
+    const msgResp = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+      method: 'POST',
+      headers: supabaseHeaders,
+      body: JSON.stringify(messagePayload),
+    })
+    if (!msgResp.ok) {
+      const errText = await msgResp.text()
+      return res.status(502).json({ error: `failed to write trigger message: ${errText}` })
     }
-    const rows = await resp.json()
-    return res.status(200).json({ ok: true, event_id: rows?.[0]?.id || payload.id })
+    const rows = await msgResp.json()
+    const insertedId = (Array.isArray(rows) ? rows[0]?.id : rows?.id) || messagePayload.id
+    return res.status(200).json({ ok: true, message_id: insertedId, agent: agentSlug, project: projectSlug })
   } catch (err) {
-    return res.status(502).json({ error: `failed to write event: ${err.message}` })
+    return res.status(502).json({ error: `failed to write trigger message: ${err.message}` })
   }
 }

@@ -39,6 +39,7 @@ import useChatAttachments from './chat/useChatAttachments.js'
 import useChatRecording from './chat/useChatRecording.js'
 import useChatSend from './chat/useChatSend.js'
 import useChatContextMenu from './chat/useChatContextMenu.js'
+import { getProjectEA } from '../../data/project-ea.js'
 import {
   ChatCoreProvider,
   ChatMessagesProvider,
@@ -243,20 +244,31 @@ export default function ChatPanel() {
   }, [exchangeCount])
 
   const acceptHandoffNudge = useCallback(() => {
-    // Fire-and-forget event record so a future worker can pick this up and
-    // actually write last-conversation.md. Endpoint may not exist yet -- the
-    // UI "fresh start" below is the primary signal.
+    // R75-b4 (2026-05-27): now fires the real trigger. Resolves the agent
+    // slug using getProjectEA (same logic as useChatSend) so the endpoint
+    // can write a properly-routed user message into the room's chat thread.
+    // supabase-listener picks up the message and delivers it to the agent,
+    // which then writes CONTEXT.md + last-conversation.md per follow-the-room-canon.
     try {
+      const resolvedAgent = selectedAgent?.slug
+        || getProjectEA(selectedProject, agents)
+        || 'elon'
+      const resolvedProject = selectedProject?.slug || null
       fetch('/api/dashboard/session-handoff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ world_id: worldId, chat_key: currentChatKey }),
+        body: JSON.stringify({
+          world_id: worldId,
+          chat_key: currentChatKey,
+          agent: resolvedAgent,
+          ...(resolvedProject ? { project: resolvedProject } : {}),
+        }),
       }).catch(() => {})
     } catch {}
     setExchangeCount(0)
     setNudgeTargetTurn(pickNudgeTarget())
     setNudgeDismissed(false)
-  }, [worldId, currentChatKey])
+  }, [worldId, currentChatKey, selectedAgent, selectedProject, agents])
 
   const showHandoffNudge = exchangeCount >= nudgeTargetTurn && !nudgeDismissed
 
