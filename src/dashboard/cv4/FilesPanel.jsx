@@ -19,12 +19,14 @@
 //      step required. Bodies fetch via /api/dashboard/project-file?path=&raw=1
 //      which streams the bytes with the right Content-Type.
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
+import { supabase } from '../lib/supabase.js'
 import { useCornerAuth } from '../CornerContext.jsx'
 import { FileContextMenu, useLongPress, useIsMobile } from '../components/cv3/ContextMenuVariants.jsx'
 import useChatDispatch from '../components/cv3/useChatDispatch.js'
+import ProjectFileReader from './ProjectFileReader.jsx'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -195,7 +197,7 @@ function Divider() {
 
 // ── Inline viewer ───────────────────────────────────────────────────────────
 
-function FileViewer({ file, onClose }) {
+function FileViewer({ file, onClose, onLinkClick }) {
   const [textContent, setTextContent] = useState(null)
   const [loadingText, setLoadingText] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -205,6 +207,15 @@ function FileViewer({ file, onClose }) {
   const rawKind = fileKind(file.name)
   const looksLikeText = rawKind === 'text' || rawKind === 'file' || /\.(md|txt|json|yaml|yml|csv|log)$/i.test(file.name)
   const kind = looksLikeText ? 'text' : rawKind
+  // R79-f5: render markdown bodies via the article-style ProjectFileReader
+  // so links inside become clickable and onLinkClick can route in-place.
+  // .md / no-extension canon files (VISION, CONTEXT, BUILD, RESEARCH, tape)
+  // all qualify. .txt / .json / .yaml / .csv / .log stay in the raw pre
+  // view because they're not authored markdown.
+  const looksLikeMd = kind === 'text' && (
+    /\.md$/i.test(file.name) ||
+    !/\.[a-z0-9]+$/i.test(file.name)  // no extension → canon file
+  )
   const url = file.url
 
   useEffect(() => {
@@ -264,10 +275,25 @@ function FileViewer({ file, onClose }) {
         {kind === 'pdf' && (
           <iframe src={url} style={{ width: '100%', height: expanded ? '80vh' : 220, border: 'none', display: 'block' }} title={file.name} />
         )}
-        {kind === 'text' && (
+        {kind === 'text' && !looksLikeMd && (
           <div style={{ padding: expanded ? '16px 20px' : '8px 12px', fontSize: expanded ? 13 : 11, color: C.text2, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
             {loadingText ? 'Loading…' : (textContent || '')}
           </div>
+        )}
+        {kind === 'text' && looksLikeMd && (
+          loadingText
+            ? <div style={{ padding: '12px', color: C.muted, fontSize: 12 }}>Loading…</div>
+            : (
+              <ProjectFileReader
+                content={textContent || ''}
+                kind={/last-conversation/i.test(file.name) ? 'tape'
+                      : /\/research\//.test(file.relativePath || '') ? 'research-drop'
+                      : 'canon'}
+                name={file.name}
+                lastModified={file._ts ? new Date(file._ts).toISOString() : ''}
+                onLinkClick={onLinkClick}
+              />
+            )
         )}
         {(kind === 'spreadsheet' || kind === 'doc' || kind === 'file') && (
           <div style={{ padding: '10px', textAlign: 'center' }}>
@@ -398,7 +424,7 @@ function FileViewer({ file, onClose }) {
 
 // ── Single file row ─────────────────────────────────────────────────────────
 
-function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent = 0 }) {
+function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent = 0, onLinkClick }) {
   const longPressHandlers = useLongPress(
     onLongPress ? (x, y) => onLongPress(x, y, file) : null
   )
@@ -464,7 +490,7 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
         )}
       </div>
       {isActive && (
-        <FileViewer file={file} onClose={onClick} />
+        <FileViewer file={file} onClose={onClick} onLinkClick={onLinkClick} />
       )}
     </>
   )
@@ -554,7 +580,7 @@ function countFiles(node, filterFn) {
 }
 
 // ── Folder/file tree renderer ─────────────────────────────────────────────
-function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, onFileLongPress}) {
+function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, onFileLongPress, onLinkClick}) {
   const isOpen = openFolders.has(pathKey)
   const fileCount = countFiles(node, filterFn)
 
@@ -585,6 +611,7 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
               pathKey={pathKey + '/' + childName}
               onFileContextMenu={onFileContextMenu}
               onFileLongPress={onFileLongPress}
+              onLinkClick={onLinkClick}
             />
           ))}
           {node.files.filter(filterFn || (() => true)).map(f => (
@@ -596,6 +623,7 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
               onContextMenu={onFileContextMenu ? (e) => onFileContextMenu(e, f) : undefined}
               onLongPress={onFileLongPress}
               indent={depth + 1}
+              onLinkClick={onLinkClick}
             />
           ))}
         </>
@@ -615,6 +643,21 @@ export default function FilesPanel({ projectSlug }) {
   const isMobile = useIsMobile()
   // Folder open-state keyed by tree path ("" = root, "foo/bar" = nested)
   const [openFolders, setOpenFolders] = useState(new Set(['']))
+
+  // R79-f4 — Realtime refresh trigger. Bumped by the watcher subscription
+  // below; the main fetch useEffect depends on it so a bump re-runs the
+  // four parallel fetches without resetting `activeFile` (we don't want to
+  // boot the user out of an open viewer just because a sibling file landed).
+  const [refreshTick, setRefreshTick] = useState(0)
+  const refreshDebounceRef = useRef(null)
+  const bumpRefresh = useCallback(() => {
+    // 800ms debounce coalesces bursts (multi-file copies, mass canon syncs).
+    if (refreshDebounceRef.current) clearTimeout(refreshDebounceRef.current)
+    refreshDebounceRef.current = setTimeout(() => {
+      setRefreshTick((t) => t + 1)
+      refreshDebounceRef.current = null
+    }, 800)
+  }, [])
 
   const world = worldId || 'aom'
 
@@ -663,12 +706,160 @@ export default function FilesPanel({ projectSlug }) {
   }, [closeCtxMenu])
   const handleCtxCopyPath = useCallback(() => { closeCtxMenu() }, [closeCtxMenu])
 
+  // R79-f5 — intra-mission link routing. When the user clicks a link inside
+  // a rendered MD body, resolve the href against the active file's relative
+  // path and swap activeFile to the matching loaded file. External links
+  // (http/https) are already routed in ProjectFileReader to open in a new
+  // tab, so we never see them here.
+  const handleLinkClick = useCallback((href) => {
+    if (!activeFile || typeof href !== 'string' || !href) return
+    // Strip the hash so we can fall back to in-file scroll for pure anchors.
+    const hashIdx = href.indexOf('#')
+    const cleanHref = hashIdx >= 0 ? href.slice(0, hashIdx) : href
+    const anchor = hashIdx >= 0 ? href.slice(hashIdx + 1) : null
+    // Pure anchor (#section) — keep the current file, attempt in-place scroll.
+    if (!cleanHref && anchor) {
+      try {
+        const article = document.querySelector('[data-cv4-reader-body]')
+        const el = article && (article.querySelector(`#${CSS.escape(anchor)}`)
+                              || [...article.querySelectorAll('h1,h2,h3,h4,h5,h6')]
+                                  .find(h => (h.textContent || '').trim().toLowerCase()
+                                    .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') === anchor))
+        if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } catch (_) {}
+      return
+    }
+    // Resolve the cleanHref against the active file's directory.
+    let segs
+    if (cleanHref.startsWith('/')) {
+      segs = cleanHref.replace(/^\/+/, '').split('/')
+    } else {
+      segs = (activeFile.relativePath || '').split('/').slice(0, -1)
+      for (const part of cleanHref.split('/')) {
+        if (part === '' || part === '.') continue
+        if (part === '..') { segs.pop(); continue }
+        segs.push(part)
+      }
+    }
+    const resolvedPath = segs.join('/')
+    // Match priorities: exact relativePath > suffix '/'+path > exact name.
+    const target =
+      files.find(f => f.relativePath === resolvedPath) ||
+      files.find(f => (f.relativePath || '').endsWith('/' + resolvedPath)) ||
+      files.find(f => f.name === resolvedPath || f.name === resolvedPath.split('/').pop())
+    if (target) {
+      setActiveFile(target)
+      // Anchor handling after the body has had time to render — kept simple,
+      // a 200ms delay matches the typical mount cost for the new reader.
+      if (anchor) {
+        setTimeout(() => {
+          try {
+            const article = document.querySelector('[data-cv4-reader-body]')
+            const el = article && [...article.querySelectorAll('h1,h2,h3,h4,h5,h6')]
+              .find(h => (h.textContent || '').trim().toLowerCase()
+                .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') === anchor)
+            if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          } catch (_) {}
+        }, 200)
+      }
+    } else if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[FilesPanel] link did not resolve', { href, resolved: resolvedPath, fromFile: activeFile.relativePath })
+    }
+  }, [activeFile, files])
 
+  // R79-f4 + R79-f12 — live updates.
+  //
+  // The rag-server watcher (scripts/rag-server.py) emits three kinds of
+  // signals into Supabase that the FilesPanel cares about:
+  //   1. messages INSERT with metadata.auto_share=true — a non-canon file
+  //      landed (screenshot, deliverable, attachment). [R79-f4-a]
+  //   2. events INSERT with event_type=canon_changed — VISION / CONTEXT /
+  //      BUILD / RESEARCH / last-conversation got edited in this project
+  //      or one of its missions. [R79-f4-b]
+  //   3. events INSERT with event_type=tree_changed — a new mission was
+  //      scaffolded, or a dated `research/` / `screenshots/` folder was
+  //      created/removed. [R79-f12]
+  //
+  // On any of those, we debounce-coalesce 800ms then bump refreshTick so
+  // the main fetch useEffect below re-runs. No new tables, no polling.
+  useEffect(() => {
+    if (!world) return
+    const channelName = `files-panel-${world}-${projectSlug || 'all'}`
+    const channel = supabase.channel(channelName)
+      // f4-a — auto-share message rows
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `client_id=eq.${world}`,
+        },
+        (payload) => {
+          const m = payload?.new?.metadata
+          if (!m?.auto_share) return
+          // When the panel is scoped to a project, ignore rows for other
+          // projects so we don't refetch on every world-wide auto-share.
+          if (projectSlug && payload.new.project && payload.new.project !== projectSlug) return
+          bumpRefresh()
+        },
+      )
+      // f4-b — canon edits
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'events',
+          filter: 'event_type=eq.canon_changed',
+        },
+        (payload) => {
+          const p = payload?.new?.payload
+          if (projectSlug && p?.project && p.project !== projectSlug) return
+          bumpRefresh()
+        },
+      )
+      // f12 — tree structure changes (new mission scaffolded, etc.)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'events',
+          filter: 'event_type=eq.tree_changed',
+        },
+        (payload) => {
+          const p = payload?.new?.payload
+          if (projectSlug && p?.project && p.project !== projectSlug) return
+          bumpRefresh()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      if (refreshDebounceRef.current) {
+        clearTimeout(refreshDebounceRef.current)
+        refreshDebounceRef.current = null
+      }
+      supabase.removeChannel(channel)
+    }
+  }, [world, projectSlug, bumpRefresh])
+
+  // R79-f4: track the (world, projectSlug) the panel was loaded with so we
+  // only wipe `files` / `activeFile` when the scope actually changes. A
+  // refreshTick bump (live-update) refetches without booting the user out
+  // of an open viewer or flashing the loading state.
+  const scopeKeyRef = useRef(null)
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setFiles([])
-    setActiveFile(null)
+    const scopeKey = `${world}::${projectSlug || ''}`
+    const scopeChanged = scopeKeyRef.current !== scopeKey
+    scopeKeyRef.current = scopeKey
+    if (scopeChanged) {
+      setLoading(true)
+      setFiles([])
+      setActiveFile(null)
+    }
 
     // Project-scoped if a project is selected, else all world files.
     const prefix = projectSlug ? `${world}/${projectSlug}/` : `${world}/`
@@ -835,7 +1026,7 @@ export default function FilesPanel({ projectSlug }) {
     })
 
     return () => { cancelled = true }
-  }, [projectSlug, world])
+  }, [projectSlug, world, refreshTick])
 
   const tree = useMemo(() => buildTree(files), [files])
   const filterFn = activeCat === 'all'
@@ -870,6 +1061,7 @@ export default function FilesPanel({ projectSlug }) {
           onContextMenu={(e) => handleFileContextMenu(e, f)}
           onLongPress={openCtxMenu}
           indent={0}
+          onLinkClick={handleLinkClick}
         />
       ))}
 
@@ -888,11 +1080,12 @@ export default function FilesPanel({ projectSlug }) {
           pathKey={name}
           onFileContextMenu={handleFileContextMenu}
           onFileLongPress={openCtxMenu}
+          onLinkClick={handleLinkClick}
         />
       ))}
 
       {activeFile && (
-        <FileViewer file={activeFile} onClose={() => setActiveFile(null)} />
+        <FileViewer file={activeFile} onClose={() => setActiveFile(null)} onLinkClick={handleLinkClick} />
       )}
 
       <FileContextMenu
