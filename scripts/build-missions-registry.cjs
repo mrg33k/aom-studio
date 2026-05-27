@@ -7,7 +7,13 @@ const fs = require('fs')
 const path = require('path')
 
 const STUDIO_ROOT = path.resolve(__dirname, '..')
-const REPO_ROOT = path.resolve(STUDIO_ROOT, '..')
+// REPO_ROOT defaults to aom-studio's parent, but worktrees live deeper
+// (e.g. aom-studio/.claude/worktrees/<name>) where ../.. lands inside
+// .claude/worktrees with no corner/. AOM_EA_ROOT env override lets the
+// caller point at the real AOM-EA checkout from any working dir.
+const REPO_ROOT = process.env.AOM_EA_ROOT
+  ? path.resolve(process.env.AOM_EA_ROOT)
+  : path.resolve(STUDIO_ROOT, '..')
 const OUT_PATH = path.join(STUDIO_ROOT, 'src', 'dashboard', 'data', 'missions-registry.json')
 
 // On Vercel the parent AOM-EA repo isn't checked out — only aom-studio.
@@ -80,6 +86,48 @@ function scanDir(parentDir, projectSlug, parentRawSlug = null, depth = 0) {
     if (!e.isDirectory()) continue
     if (e.name === 'archive' || e.name.startsWith('.')) continue
     const dir = path.join(missionsDir, e.name)
+    // Workstream passthrough: a folder under missions/ with no CONTEXT.md
+    // is a grouping folder (e.g. aheadofmarket.com/missions/AOM holding
+    // AOM/home, AOM/brands as flat sub-missions). Don't emit it as a
+    // mission — walk its child directories directly so the real missions
+    // surface. raw_slug is path-joined so leaf slugs stay unique
+    // (AOM/home → 'AOM-home').
+    const hasContext = fs.existsSync(path.join(dir, 'CONTEXT.md'))
+    if (!hasContext) {
+      let childEntries = []
+      try { childEntries = fs.readdirSync(dir, { withFileTypes: true }) } catch {}
+      for (const c of childEntries) {
+        if (!c.isDirectory()) continue
+        if (c.name === 'archive' || c.name === 'research' || c.name === 'screenshots'
+            || c.name === 'deliverables' || c.name === 'concepts' || c.name.startsWith('.')) continue
+        const childDir = path.join(dir, c.name)
+        const childHasContext = fs.existsSync(path.join(childDir, 'CONTEXT.md'))
+        if (!childHasContext) continue
+        const fm = readContext(childDir)
+        const status = fm.status || 'in-progress'
+        const lastUpdated = fm.last_updated || null
+        const workstream = fm.workstream || e.name.toLowerCase()
+        const childRawBase = parentRawSlug ? `${parentRawSlug}-${e.name}` : e.name
+        const rawSlug = `${childRawBase}-${c.name}`
+        out.push({
+          slug: `${projectSlug}:${rawSlug}`,
+          raw_slug: rawSlug,
+          folder_name: c.name,
+          parent_raw_slug: parentRawSlug,
+          depth,
+          project_slug: projectSlug,
+          workstream,
+          name: fm.name || deriveDisplayName(c.name),
+          status,
+          is_done: isDoneStatus(status),
+          last_updated: lastUpdated,
+          path: childDir.replace(REPO_ROOT + '/', ''),
+        })
+        // Recurse for further nested page→section→sub-section trees.
+        out.push(...scanDir(childDir, projectSlug, rawSlug, depth + 1))
+      }
+      continue
+    }
     const fm = readContext(dir)
     const status = fm.status || 'in-progress'
     const lastUpdated = fm.last_updated || null

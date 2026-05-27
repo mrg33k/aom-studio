@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T08:17:48.572Z",
+  "generated_at": "2026-05-27T22:24:48.040Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -142,20 +142,6 @@
       "path": "corner/missions/dashboard-speed"
     },
     {
-      "slug": "corner:dispatch-reliability",
-      "raw_slug": "dispatch-reliability",
-      "folder_name": "dispatch-reliability",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Dispatch Reliability",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/dispatch-reliability"
-    },
-    {
       "slug": "corner:embeddable-agents",
       "raw_slug": "embeddable-agents",
       "folder_name": "embeddable-agents",
@@ -182,20 +168,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/embeddable-agents/missions/embed-modal"
-    },
-    {
-      "slug": "corner:embeddable-agents-support",
-      "raw_slug": "embeddable-agents-support",
-      "folder_name": "support",
-      "parent_raw_slug": "embeddable-agents",
-      "depth": 1,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Support",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/embeddable-agents/missions/support"
     },
     {
       "slug": "corner:files-in-app",
@@ -674,20 +646,6 @@
       "path": "corner/missions/suggested-responses"
     },
     {
-      "slug": "corner:tenant-health",
-      "raw_slug": "tenant-health",
-      "folder_name": "tenant-health",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Tenant Health",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/tenant-health"
-    },
-    {
       "slug": "corner:tenant-isolation",
       "raw_slug": "tenant-isolation",
       "folder_name": "tenant-isolation",
@@ -758,8 +716,8 @@
       "path": "corner/missions/voice-chat"
     },
     {
-      "slug": "aheadofmarket.com:ai",
-      "raw_slug": "ai",
+      "slug": "aheadofmarket.com:AOM-ai",
+      "raw_slug": "AOM-ai",
       "folder_name": "ai",
       "parent_raw_slug": null,
       "depth": 0,
@@ -769,11 +727,11 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/ai"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/ai"
     },
     {
-      "slug": "aheadofmarket.com:brands",
-      "raw_slug": "brands",
+      "slug": "aheadofmarket.com:AOM-brands",
+      "raw_slug": "AOM-brands",
       "folder_name": "brands",
       "parent_raw_slug": null,
       "depth": 0,
@@ -783,13 +741,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical",
-      "raw_slug": "brands-ambition-mechanical",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical",
+      "raw_slug": "AOM-brands-ambition-mechanical",
       "folder_name": "ambition-mechanical",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -797,13 +755,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-color-system",
-      "raw_slug": "brands-ambition-mechanical-color-system",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-color-system",
+      "raw_slug": "AOM-brands-ambition-mechanical-color-system",
       "folder_name": "color-system",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -811,13 +769,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/color-system"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/color-system"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-component-library",
-      "raw_slug": "brands-ambition-mechanical-component-library",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-component-library",
+      "raw_slug": "AOM-brands-ambition-mechanical-component-library",
       "folder_name": "component-library",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -825,13 +783,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/component-library"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/component-library"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-hero",
-      "raw_slug": "brands-ambition-mechanical-hero",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-hero",
+      "raw_slug": "AOM-brands-ambition-mechanical-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -839,13 +797,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-industrial-patterns",
-      "raw_slug": "brands-ambition-mechanical-industrial-patterns",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-industrial-patterns",
+      "raw_slug": "AOM-brands-ambition-mechanical-industrial-patterns",
       "folder_name": "industrial-patterns",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -853,13 +811,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/industrial-patterns"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/industrial-patterns"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-logo",
-      "raw_slug": "brands-ambition-mechanical-logo",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-logo",
+      "raw_slug": "AOM-brands-ambition-mechanical-logo",
       "folder_name": "logo",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -867,13 +825,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/logo"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/logo"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-photography",
-      "raw_slug": "brands-ambition-mechanical-photography",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-photography",
+      "raw_slug": "AOM-brands-ambition-mechanical-photography",
       "folder_name": "photography",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -881,13 +839,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/photography"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/photography"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-social-templates",
-      "raw_slug": "brands-ambition-mechanical-social-templates",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-social-templates",
+      "raw_slug": "AOM-brands-ambition-mechanical-social-templates",
       "folder_name": "social-templates",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -895,13 +853,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/social-templates"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/social-templates"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-spacing",
-      "raw_slug": "brands-ambition-mechanical-spacing",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-spacing",
+      "raw_slug": "AOM-brands-ambition-mechanical-spacing",
       "folder_name": "spacing",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -909,13 +867,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/spacing"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/spacing"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-tailwind-config",
-      "raw_slug": "brands-ambition-mechanical-tailwind-config",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-tailwind-config",
+      "raw_slug": "AOM-brands-ambition-mechanical-tailwind-config",
       "folder_name": "tailwind-config",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -923,13 +881,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/tailwind-config"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/tailwind-config"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-typography",
-      "raw_slug": "brands-ambition-mechanical-typography",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-typography",
+      "raw_slug": "AOM-brands-ambition-mechanical-typography",
       "folder_name": "typography",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -937,13 +895,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/typography"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/typography"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-voice-tone",
-      "raw_slug": "brands-ambition-mechanical-voice-tone",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-voice-tone",
+      "raw_slug": "AOM-brands-ambition-mechanical-voice-tone",
       "folder_name": "voice-tone",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -951,13 +909,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/voice-tone"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/voice-tone"
     },
     {
-      "slug": "aheadofmarket.com:brands-ambition-mechanical-website-layout",
-      "raw_slug": "brands-ambition-mechanical-website-layout",
+      "slug": "aheadofmarket.com:AOM-brands-ambition-mechanical-website-layout",
+      "raw_slug": "AOM-brands-ambition-mechanical-website-layout",
       "folder_name": "website-layout",
-      "parent_raw_slug": "brands-ambition-mechanical",
+      "parent_raw_slug": "AOM-brands-ambition-mechanical",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -965,13 +923,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/ambition-mechanical/missions/website-layout"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/ambition-mechanical/missions/website-layout"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom",
-      "raw_slug": "brands-aom",
+      "slug": "aheadofmarket.com:AOM-brands-aom",
+      "raw_slug": "AOM-brands-aom",
       "folder_name": "aom",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -979,13 +937,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-brand-mark",
-      "raw_slug": "brands-aom-brand-mark",
+      "slug": "aheadofmarket.com:AOM-brands-aom-brand-mark",
+      "raw_slug": "AOM-brands-aom-brand-mark",
       "folder_name": "brand-mark",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -993,13 +951,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/brand-mark"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/brand-mark"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-brand-toolkit",
-      "raw_slug": "brands-aom-brand-toolkit",
+      "slug": "aheadofmarket.com:AOM-brands-aom-brand-toolkit",
+      "raw_slug": "AOM-brands-aom-brand-toolkit",
       "folder_name": "brand-toolkit",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1007,13 +965,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/brand-toolkit"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/brand-toolkit"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-color-system",
-      "raw_slug": "brands-aom-color-system",
+      "slug": "aheadofmarket.com:AOM-brands-aom-color-system",
+      "raw_slug": "AOM-brands-aom-color-system",
       "folder_name": "color-system",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1021,13 +979,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/color-system"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/color-system"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-component-library",
-      "raw_slug": "brands-aom-component-library",
+      "slug": "aheadofmarket.com:AOM-brands-aom-component-library",
+      "raw_slug": "AOM-brands-aom-component-library",
       "folder_name": "component-library",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1035,13 +993,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/component-library"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/component-library"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-hero",
-      "raw_slug": "brands-aom-hero",
+      "slug": "aheadofmarket.com:AOM-brands-aom-hero",
+      "raw_slug": "AOM-brands-aom-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1049,13 +1007,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-pattern-library",
-      "raw_slug": "brands-aom-pattern-library",
+      "slug": "aheadofmarket.com:AOM-brands-aom-pattern-library",
+      "raw_slug": "AOM-brands-aom-pattern-library",
       "folder_name": "pattern-library",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1063,13 +1021,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/pattern-library"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/pattern-library"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-photography",
-      "raw_slug": "brands-aom-photography",
+      "slug": "aheadofmarket.com:AOM-brands-aom-photography",
+      "raw_slug": "AOM-brands-aom-photography",
       "folder_name": "photography",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1077,13 +1035,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/photography"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/photography"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-spacing-grid",
-      "raw_slug": "brands-aom-spacing-grid",
+      "slug": "aheadofmarket.com:AOM-brands-aom-spacing-grid",
+      "raw_slug": "AOM-brands-aom-spacing-grid",
       "folder_name": "spacing-grid",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1091,13 +1049,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/spacing-grid"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/spacing-grid"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-template-kit",
-      "raw_slug": "brands-aom-template-kit",
+      "slug": "aheadofmarket.com:AOM-brands-aom-template-kit",
+      "raw_slug": "AOM-brands-aom-template-kit",
       "folder_name": "template-kit",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1105,13 +1063,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/template-kit"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/template-kit"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-typography",
-      "raw_slug": "brands-aom-typography",
+      "slug": "aheadofmarket.com:AOM-brands-aom-typography",
+      "raw_slug": "AOM-brands-aom-typography",
       "folder_name": "typography",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1119,13 +1077,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/typography"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/typography"
     },
     {
-      "slug": "aheadofmarket.com:brands-aom-voice-tone",
-      "raw_slug": "brands-aom-voice-tone",
+      "slug": "aheadofmarket.com:AOM-brands-aom-voice-tone",
+      "raw_slug": "AOM-brands-aom-voice-tone",
       "folder_name": "voice-tone",
-      "parent_raw_slug": "brands-aom",
+      "parent_raw_slug": "AOM-brands-aom",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1133,13 +1091,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/aom/missions/voice-tone"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/aom/missions/voice-tone"
     },
     {
-      "slug": "aheadofmarket.com:brands-artlink",
-      "raw_slug": "brands-artlink",
+      "slug": "aheadofmarket.com:AOM-brands-artlink",
+      "raw_slug": "AOM-brands-artlink",
       "folder_name": "artlink",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1147,13 +1105,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/artlink"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/artlink"
     },
     {
-      "slug": "aheadofmarket.com:brands-artlink-hero",
-      "raw_slug": "brands-artlink-hero",
+      "slug": "aheadofmarket.com:AOM-brands-artlink-hero",
+      "raw_slug": "AOM-brands-artlink-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-artlink",
+      "parent_raw_slug": "AOM-brands-artlink",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1161,13 +1119,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/artlink/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/artlink/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:brands-brands-hub",
-      "raw_slug": "brands-brands-hub",
+      "slug": "aheadofmarket.com:AOM-brands-brands-hub",
+      "raw_slug": "AOM-brands-brands-hub",
       "folder_name": "brands-hub",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1175,13 +1133,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/brands-hub"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/brands-hub"
     },
     {
-      "slug": "aheadofmarket.com:brands-included-health",
-      "raw_slug": "brands-included-health",
+      "slug": "aheadofmarket.com:AOM-brands-included-health",
+      "raw_slug": "AOM-brands-included-health",
       "folder_name": "included-health",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1189,13 +1147,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/included-health"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/included-health"
     },
     {
-      "slug": "aheadofmarket.com:brands-included-health-hero",
-      "raw_slug": "brands-included-health-hero",
+      "slug": "aheadofmarket.com:AOM-brands-included-health-hero",
+      "raw_slug": "AOM-brands-included-health-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-included-health",
+      "parent_raw_slug": "AOM-brands-included-health",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1203,13 +1161,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/included-health/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/included-health/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:brands-s3c",
-      "raw_slug": "brands-s3c",
+      "slug": "aheadofmarket.com:AOM-brands-s3c",
+      "raw_slug": "AOM-brands-s3c",
       "folder_name": "s3c",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1217,13 +1175,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/s3c"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/s3c"
     },
     {
-      "slug": "aheadofmarket.com:brands-s3c-hero",
-      "raw_slug": "brands-s3c-hero",
+      "slug": "aheadofmarket.com:AOM-brands-s3c-hero",
+      "raw_slug": "AOM-brands-s3c-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-s3c",
+      "parent_raw_slug": "AOM-brands-s3c",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1231,13 +1189,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/s3c/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/s3c/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:brands-space-rising",
-      "raw_slug": "brands-space-rising",
+      "slug": "aheadofmarket.com:AOM-brands-space-rising",
+      "raw_slug": "AOM-brands-space-rising",
       "folder_name": "space-rising",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1245,13 +1203,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/space-rising"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/space-rising"
     },
     {
-      "slug": "aheadofmarket.com:brands-space-rising-hero",
-      "raw_slug": "brands-space-rising-hero",
+      "slug": "aheadofmarket.com:AOM-brands-space-rising-hero",
+      "raw_slug": "AOM-brands-space-rising-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-space-rising",
+      "parent_raw_slug": "AOM-brands-space-rising",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1259,13 +1217,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/space-rising/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/space-rising/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:brands-valor-to-victory",
-      "raw_slug": "brands-valor-to-victory",
+      "slug": "aheadofmarket.com:AOM-brands-valor-to-victory",
+      "raw_slug": "AOM-brands-valor-to-victory",
       "folder_name": "valor-to-victory",
-      "parent_raw_slug": "brands",
+      "parent_raw_slug": "AOM-brands",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1273,13 +1231,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/valor-to-victory"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/valor-to-victory"
     },
     {
-      "slug": "aheadofmarket.com:brands-valor-to-victory-hero",
-      "raw_slug": "brands-valor-to-victory-hero",
+      "slug": "aheadofmarket.com:AOM-brands-valor-to-victory-hero",
+      "raw_slug": "AOM-brands-valor-to-victory-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "brands-valor-to-victory",
+      "parent_raw_slug": "AOM-brands-valor-to-victory",
       "depth": 2,
       "project_slug": "aheadofmarket.com",
       "workstream": "brands",
@@ -1287,11 +1245,11 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brands/missions/valor-to-victory/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/brands/missions/valor-to-victory/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:home",
-      "raw_slug": "home",
+      "slug": "aheadofmarket.com:AOM-home",
+      "raw_slug": "AOM-home",
       "folder_name": "home",
       "parent_raw_slug": null,
       "depth": 0,
@@ -1301,13 +1259,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home"
     },
     {
-      "slug": "aheadofmarket.com:home-faq",
-      "raw_slug": "home-faq",
+      "slug": "aheadofmarket.com:AOM-home-faq",
+      "raw_slug": "AOM-home-faq",
       "folder_name": "faq",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1315,13 +1273,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/faq"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/faq"
     },
     {
-      "slug": "aheadofmarket.com:home-hero",
-      "raw_slug": "home-hero",
+      "slug": "aheadofmarket.com:AOM-home-hero",
+      "raw_slug": "AOM-home-hero",
       "folder_name": "hero",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1329,13 +1287,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/hero"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/hero"
     },
     {
-      "slug": "aheadofmarket.com:home-how-to-hire",
-      "raw_slug": "home-how-to-hire",
+      "slug": "aheadofmarket.com:AOM-home-how-to-hire",
+      "raw_slug": "AOM-home-how-to-hire",
       "folder_name": "how-to-hire",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1343,13 +1301,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/how-to-hire"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/how-to-hire"
     },
     {
-      "slug": "aheadofmarket.com:home-live-ticker",
-      "raw_slug": "home-live-ticker",
+      "slug": "aheadofmarket.com:AOM-home-live-ticker",
+      "raw_slug": "AOM-home-live-ticker",
       "folder_name": "live-ticker",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1357,13 +1315,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/live-ticker"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/live-ticker"
     },
     {
-      "slug": "aheadofmarket.com:home-portfolio",
-      "raw_slug": "home-portfolio",
+      "slug": "aheadofmarket.com:AOM-home-portfolio",
+      "raw_slug": "AOM-home-portfolio",
       "folder_name": "portfolio",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1371,13 +1329,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/portfolio"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/portfolio"
     },
     {
-      "slug": "aheadofmarket.com:home-ready-to-start",
-      "raw_slug": "home-ready-to-start",
+      "slug": "aheadofmarket.com:AOM-home-ready-to-start",
+      "raw_slug": "AOM-home-ready-to-start",
       "folder_name": "ready-to-start",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1385,13 +1343,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/ready-to-start"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/ready-to-start"
     },
     {
-      "slug": "aheadofmarket.com:home-see-all-work-cta",
-      "raw_slug": "home-see-all-work-cta",
+      "slug": "aheadofmarket.com:AOM-home-see-all-work-cta",
+      "raw_slug": "AOM-home-see-all-work-cta",
       "folder_name": "see-all-work-cta",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1399,13 +1357,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/see-all-work-cta"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/see-all-work-cta"
     },
     {
-      "slug": "aheadofmarket.com:home-social-clips",
-      "raw_slug": "home-social-clips",
+      "slug": "aheadofmarket.com:AOM-home-social-clips",
+      "raw_slug": "AOM-home-social-clips",
       "folder_name": "social-clips",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1413,13 +1371,13 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/social-clips"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/social-clips"
     },
     {
-      "slug": "aheadofmarket.com:home-why-it-works",
-      "raw_slug": "home-why-it-works",
+      "slug": "aheadofmarket.com:AOM-home-why-it-works",
+      "raw_slug": "AOM-home-why-it-works",
       "folder_name": "why-it-works",
-      "parent_raw_slug": "home",
+      "parent_raw_slug": "AOM-home",
       "depth": 1,
       "project_slug": "aheadofmarket.com",
       "workstream": "home",
@@ -1427,11 +1385,95 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/home/missions/why-it-works"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/home/missions/why-it-works"
     },
     {
-      "slug": "aheadofmarket.com:onboarding",
-      "raw_slug": "onboarding",
+      "slug": "aheadofmarket.com:AOM-site defaults",
+      "raw_slug": "AOM-site defaults",
+      "folder_name": "site defaults",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aheadofmarket.com",
+      "workstream": "site-chrome",
+      "name": "Site chrome",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/site defaults"
+    },
+    {
+      "slug": "aheadofmarket.com:AOM-site defaults-brands-footer",
+      "raw_slug": "AOM-site defaults-brands-footer",
+      "folder_name": "brands-footer",
+      "parent_raw_slug": "AOM-site defaults",
+      "depth": 1,
+      "project_slug": "aheadofmarket.com",
+      "workstream": "site-chrome",
+      "name": "Brands footer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/site defaults/missions/brands-footer"
+    },
+    {
+      "slug": "aheadofmarket.com:AOM-site defaults-brands-top-bar",
+      "raw_slug": "AOM-site defaults-brands-top-bar",
+      "folder_name": "brands-top-bar",
+      "parent_raw_slug": "AOM-site defaults",
+      "depth": 1,
+      "project_slug": "aheadofmarket.com",
+      "workstream": "site-chrome",
+      "name": "Brands top bar",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/site defaults/missions/brands-top-bar"
+    },
+    {
+      "slug": "aheadofmarket.com:AOM-site defaults-footer",
+      "raw_slug": "AOM-site defaults-footer",
+      "folder_name": "footer",
+      "parent_raw_slug": "AOM-site defaults",
+      "depth": 1,
+      "project_slug": "aheadofmarket.com",
+      "workstream": "site-chrome",
+      "name": "Footer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/site defaults/missions/footer"
+    },
+    {
+      "slug": "aheadofmarket.com:AOM-site defaults-top-bar",
+      "raw_slug": "AOM-site defaults-top-bar",
+      "folder_name": "top-bar",
+      "parent_raw_slug": "AOM-site defaults",
+      "depth": 1,
+      "project_slug": "aheadofmarket.com",
+      "workstream": "site-chrome",
+      "name": "Top bar",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/site defaults/missions/top-bar"
+    },
+    {
+      "slug": "aheadofmarket.com:AOM-summerschool",
+      "raw_slug": "AOM-summerschool",
+      "folder_name": "summerschool",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aheadofmarket.com",
+      "workstream": "aom",
+      "name": "Summerschool",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/AOM/summerschool"
+    },
+    {
+      "slug": "aheadofmarket.com:Corner-onboarding",
+      "raw_slug": "Corner-onboarding",
       "folder_name": "onboarding",
       "parent_raw_slug": null,
       "depth": 0,
@@ -1441,91 +1483,7 @@
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/onboarding"
-    },
-    {
-      "slug": "aheadofmarket.com:site-chrome",
-      "raw_slug": "site-chrome",
-      "folder_name": "site-chrome",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Site chrome",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/site-chrome"
-    },
-    {
-      "slug": "aheadofmarket.com:site-chrome-brands-footer",
-      "raw_slug": "site-chrome-brands-footer",
-      "folder_name": "brands-footer",
-      "parent_raw_slug": "site-chrome",
-      "depth": 1,
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Brands footer",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/site-chrome/missions/brands-footer"
-    },
-    {
-      "slug": "aheadofmarket.com:site-chrome-brands-top-bar",
-      "raw_slug": "site-chrome-brands-top-bar",
-      "folder_name": "brands-top-bar",
-      "parent_raw_slug": "site-chrome",
-      "depth": 1,
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Brands top bar",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/site-chrome/missions/brands-top-bar"
-    },
-    {
-      "slug": "aheadofmarket.com:site-chrome-footer",
-      "raw_slug": "site-chrome-footer",
-      "folder_name": "footer",
-      "parent_raw_slug": "site-chrome",
-      "depth": 1,
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Footer",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/site-chrome/missions/footer"
-    },
-    {
-      "slug": "aheadofmarket.com:site-chrome-top-bar",
-      "raw_slug": "site-chrome-top-bar",
-      "folder_name": "top-bar",
-      "parent_raw_slug": "site-chrome",
-      "depth": 1,
-      "project_slug": "aheadofmarket.com",
-      "workstream": "site-chrome",
-      "name": "Top bar",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/site-chrome/missions/top-bar"
-    },
-    {
-      "slug": "aheadofmarket.com:summerschool",
-      "raw_slug": "summerschool",
-      "folder_name": "summerschool",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "aheadofmarket.com",
-      "workstream": null,
-      "name": "Summerschool",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/aheadofmarket.com/missions/summerschool"
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/Corner/onboarding"
     },
     {
       "slug": "ambition-mechanical:ambition-social-clips",
@@ -1584,20 +1542,6 @@
       "path": "corner/users/aom/projects/ambition-mechanical/missions/seo-organic"
     },
     {
-      "slug": "ambition-mechanical:site-walk",
-      "raw_slug": "site-walk",
-      "folder_name": "site-walk",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "ambition-mechanical",
-      "workstream": null,
-      "name": "Site Walk",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/ambition-mechanical/missions/site-walk"
-    },
-    {
       "slug": "ambition-mechanical:social",
       "raw_slug": "social",
       "folder_name": "social",
@@ -1652,6 +1596,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/artlink/missions/brand-page"
+    },
+    {
+      "slug": "barbara-o-neill:cancer-is-a-fungus-baking-soda-treatment-this-is-h",
+      "raw_slug": "cancer-is-a-fungus-baking-soda-treatment-this-is-h",
+      "folder_name": "cancer-is-a-fungus-baking-soda-treatment-this-is-h",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "barbara-o-neill",
+      "workstream": null,
+      "name": "Cancer Is A Fungus Baking Soda Treatment This Is H",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/barbara-o-neill/missions/cancer-is-a-fungus-baking-soda-treatment-this-is-h"
     },
     {
       "slug": "blacknight:page-launch",
@@ -1710,48 +1668,6 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
     },
     {
-      "slug": "corner:notifications-catchup",
-      "raw_slug": "notifications-catchup",
-      "folder_name": "notifications-catchup",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Notifications Catchup",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/corner/missions/notifications-catchup"
-    },
-    {
-      "slug": "corner:support",
-      "raw_slug": "support",
-      "folder_name": "support",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Support",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/corner/missions/support"
-    },
-    {
-      "slug": "corner:theme-and-density",
-      "raw_slug": "theme-and-density",
-      "folder_name": "theme-and-density",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Theme And Density",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/corner/missions/theme-and-density"
-    },
-    {
       "slug": "higher-orbits:documentary-scope",
       "raw_slug": "documentary-scope",
       "folder_name": "documentary-scope",
@@ -1778,6 +1694,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/higher-orbits/missions/mini-doc-series-pitch"
+    },
+    {
+      "slug": "holistic-balance:brand-identity",
+      "raw_slug": "brand-identity",
+      "folder_name": "brand-identity",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "Brand Identity",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/brand-identity"
     },
     {
       "slug": "holistic-balance:course-mapping",
@@ -2312,20 +2242,6 @@
       "path": "corner/users/aom/projects/space-rising/missions/website"
     },
     {
-      "slug": "sourcing:right-menu",
-      "raw_slug": "right-menu",
-      "folder_name": "right-menu",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "sourcing",
-      "workstream": null,
-      "name": "Right Menu",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/ben/projects/sourcing/missions/right-menu"
-    },
-    {
       "slug": "sourcing:user-flow-audit",
       "raw_slug": "user-flow-audit",
       "folder_name": "user-flow-audit",
@@ -2371,8 +2287,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 57,
-      "in_flight": 57,
+      "total": 51,
+      "in_flight": 51,
       "done": 0
     },
     {
@@ -2383,12 +2299,18 @@
     },
     {
       "slug": "ambition-mechanical",
-      "total": 8,
-      "in_flight": 8,
+      "total": 7,
+      "in_flight": 7,
       "done": 0
     },
     {
       "slug": "artlink",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "barbara-o-neill",
       "total": 1,
       "in_flight": 1,
       "done": 0
@@ -2419,8 +2341,8 @@
     },
     {
       "slug": "holistic-balance",
-      "total": 2,
-      "in_flight": 2,
+      "total": 3,
+      "in_flight": 3,
       "done": 0
     },
     {
@@ -2473,8 +2395,8 @@
     },
     {
       "slug": "sourcing",
-      "total": 2,
-      "in_flight": 2,
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
