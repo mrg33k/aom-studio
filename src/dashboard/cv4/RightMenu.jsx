@@ -1002,8 +1002,12 @@ function Divider() {
 // ── Accordion tabs ──────────────────────────────────────────────────────────
 
 function AccordionTabs({ active, onChange }) {
+  // R-RT-Projects-1 (2026-05-27) — first tab body now mirrors the left
+  // drawer's Projects section: project-grouped tree with project + mission
+  // right-click menus. Tab key stays 'missions' to keep persisted state
+  // and existing callers; visible label flips to "Projects".
   const tabs = [
-    { key: 'missions', label: 'Missions' },
+    { key: 'missions', label: 'Projects' },
     { key: 'tasks',    label: 'Tasks'    },
     { key: 'files',    label: 'Files'    },
   ]
@@ -1620,7 +1624,10 @@ export default function RightMenu() {
   const [activeTab, setActiveTab] = useState('missions')
   const activeTasks = useMemo(() => [...rightNow, ...queued], [rightNow, queued])
   const [showAllCompleted, setShowAllCompleted] = useState(false)
-  const [showAllMissions, setShowAllMissions] = useState(false)
+  // R-RT-Projects-1 (2026-05-27) — default to true so the Projects tab
+  // lands on the project-grouped tree (mirror of the left drawer). The
+  // recent-flat default landing path below is now dead and gets removed.
+  const [showAllMissions, setShowAllMissions] = useState(true)
   const COMPLETED_CAP = 5
   const RECENT_MISSIONS_CAP = 8
   // MUST be declared BEFORE displayedMissions useMemo (TDZ guard — same rule as
@@ -2144,7 +2151,10 @@ export default function RightMenu() {
 
       <AccordionTabs active={activeTab} onChange={setActiveTab} />
 
-      {/* ═══════════════ TAB: MISSIONS ═══════════════════════════ */}
+      {/* ═══════════════ TAB: PROJECTS ═══════════════════════════ */}
+      {/* R-RT-Projects-1 (2026-05-27) — was "Missions"; relabeled and
+          re-bodied to mirror the left drawer's Projects section. Tab key
+          stays 'missions' to keep persisted state working. */}
       {activeTab === 'missions' && (
         <>
           {(runningCount + queuedCount) > 0 && (
@@ -2171,70 +2181,12 @@ export default function RightMenu() {
             <EmptyState text={activePill === 'all' ? 'No missions yet' : `No missions in ${activePill}`} />
           )}
 
-          {/* DEFAULT (recent) view — flat list sorted by recency across ALL
-              projects. Patrik 2026-05-26: "I should be seeing most recent
-              missions here before clicking see all." Each row uses
-              hideProject={false} so the project + age line shows as a
-              consistent subtitle under every mission name. No inverted
-              hierarchy, no random-some-have-age-some-don't. */}
-          {!missionsLoading && activePill === 'all' && !showAllMissions && sortedMissions.length > 0 && (() => {
-            // Sort by USER INTERACTION: clicks first (recentMissions
-            // localStorage tracks visit order), then by message recency
-            // (lastTouched already includes m.last_message_at). Patrik
-            // 2026-05-26: "showing the most recent clicked in missions by
-            // last mission clicked in or messaged us."
-            const byKey = new Map(sortedMissions.map(m => [`${m.projectSlug}:${m.slug}`, m]))
-            const visitOrder = []
-            const seen = new Set()
-            for (const entry of recentMissions) {
-              if (entry.kind !== 'mission') continue
-              const m = byKey.get(entry.qualified)
-              if (m && !seen.has(entry.qualified)) {
-                visitOrder.push(m)
-                seen.add(entry.qualified)
-              }
-            }
-            // Fill remaining slots with message/activity-sorted missions
-            // the user hasn't clicked yet.
-            for (const m of sortedMissions) {
-              const k = `${m.projectSlug}:${m.slug}`
-              if (!seen.has(k)) {
-                visitOrder.push(m)
-                seen.add(k)
-              }
-            }
-            const recentFlat = visitOrder.slice(0, RECENT_MISSIONS_CAP)
-            return (
-            <>
-              <SectionLabel>Recent</SectionLabel>
-              {recentFlat.map(m => (
-                <MissionRow
-                  key={`${m.projectSlug}:${m.slug}`}
-                  mission={m}
-                  projectSlug={m.projectSlug}
-                  dotStatus={m.dotStatus}
-                  ageLabel={m.lastTouched ? relativeAge(m.lastTouched) : null}
-                  isCurrent={
-                    (currentMission && m.slug === currentMission) ||
-                    (currentProject && m.projectSlug === currentProject && !currentMission)
-                  }
-                  hideProject={false}
-                  onClick={() => onMissionClick(m)}
-                  onContextMenu={(e) => { e.preventDefault(); openMissionMenu(e.clientX, e.clientY, m, m.projectSlug) }}
-                  onLongPress={openMissionMenu}
-                  showMove={false}
-                  folders={folders}
-                  onMove={(missionSlug, folderSlug) => handleMoveMission(m.projectSlug, missionSlug, folderSlug)}
-                  onCreateFolder={handleCreateFolder}
-                />
-              ))}
-            </>
-            )
-          })()}
-
-          {/* SEE-ALL view — grouped tree by project. Only after the user
-              clicks "See all" do we show the full project folder tree with
-              collapsible groups, folders, and create affordances. */}
+          {/* R-RT-Projects-1 (2026-05-27) — the prior "recent flat" default
+              landing was retired. The tab now lands directly on the
+              project-grouped tree, mirroring the left drawer's Projects
+              section: each project collapses/expands; right-click on a
+              project or mission opens the same context menus the drawer
+              uses (project + mission). */}
           {!missionsLoading && displayedMissions.length > 0 && activePill === 'all' && showAllMissions && (
             (groupedMissions || []).map(group => {
               // Collapse by default if project has 5+ missions
