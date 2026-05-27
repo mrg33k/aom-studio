@@ -428,7 +428,7 @@ export default function HomeView({
                 </div>
                 {isExpanded && missions.length > 0 && (
                   <div className="hm-missions">
-                    {missions.slice(0, 8).map(m => (
+                    {missions.map(m => (
                       <button
                         key={m.slug}
                         className="hm-mission"
@@ -503,7 +503,7 @@ export default function HomeView({
                   </div>
                   {isExpanded && missions.length > 0 && (
                     <div className="hm-missions">
-                      {missions.slice(0, 8).map(m => (
+                      {missions.map(m => (
                         <button
                           key={m.slug}
                           className="hm-mission"
