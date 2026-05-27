@@ -140,6 +140,69 @@
       line-height: var(--lh-normal);
     }
 
+    /* ─── Activity Indicator — corner:live-conversation R1 ──────────────── */
+
+    #activity-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      align-self: flex-start;
+      margin-top: auto;
+      margin-bottom: var(--sp-sm);
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 150ms ease;
+      order: 999;
+    }
+
+    #activity-indicator.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    #activity-indicator.hiding {
+      opacity: 0;
+    }
+
+    .ai-working {
+      font-family: 'Hanken Grotesk', var(--ff-sans);
+      font-size: 13px;
+      font-weight: var(--fw-normal);
+      color: var(--c-muted);
+      line-height: 1.4;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 320px;
+    }
+
+    .ai-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 1px;
+      margin-left: 1px;
+      position: relative;
+      top: -1px;
+    }
+
+    .ai-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background-color: var(--c-muted);
+      opacity: 0.3;
+    }
+
+    @keyframes ai-dot-pulse {
+      0%, 100% { opacity: 0.25; }
+      50%       { opacity: 0.85; }
+    }
+
+    .ai-dot:nth-child(1) { animation: ai-dot-pulse 1.2s ease-in-out infinite 0s; }
+    .ai-dot:nth-child(2) { animation: ai-dot-pulse 1.2s ease-in-out infinite 0.4s; }
+    .ai-dot:nth-child(3) { animation: ai-dot-pulse 1.2s ease-in-out infinite 0.8s; }
+
     .project-chat-input-area {
       padding: var(--sp-lg);
       border-top: 1px solid var(--c-border);
@@ -1377,6 +1440,19 @@
         <div>Perfect. I'll review and get back to Steffen with notes.</div>
         <div class="message-timestamp">10:37 AM</div>
       </div>
+
+      <!-- Activity Indicator — corner:live-conversation R1
+           Single animated line showing what the agent is doing in real time.
+           Appears while tools are running; disappears when the agent sends a message. -->
+      <div id="activity-indicator" role="status" aria-live="polite" aria-label="Agent working">
+        <span class="ai-working" id="ai-working-text">Searching 2 times, Bash 1 time</span>
+        <span class="ai-dots" aria-hidden="true">
+          <span class="ai-dot"></span>
+          <span class="ai-dot"></span>
+          <span class="ai-dot"></span>
+        </span>
+      </div>
+
     </div>
 
     <div class="project-chat-input-area">
@@ -1964,6 +2040,60 @@
         if (e.key === 'Enter') sendMessage();
       });
     });
+
+    /* ─── Activity Indicator — corner:live-conversation R1 ─────────────── */
+    (function () {
+      var indicator = document.getElementById('activity-indicator');
+      var workingText = document.getElementById('ai-working-text');
+      var hideTimer = null;
+      var messagesEl = document.getElementById('messages');
+
+      function showActivity(text) {
+        if (!indicator || !workingText) return;
+        clearTimeout(hideTimer);
+        workingText.textContent = text || 'Working';
+        indicator.classList.remove('hiding');
+        indicator.classList.add('active');
+        if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function hideActivity() {
+        if (!indicator) return;
+        indicator.classList.add('hiding');
+        hideTimer = setTimeout(function () {
+          indicator.classList.remove('active', 'hiding');
+        }, 160);
+      }
+
+      // R2 shipped 2026-05-26 — live Supabase signal active, stub mode off.
+      var STUB = (typeof window.ACTIVITY_STUB !== 'undefined') ? window.ACTIVITY_STUB : false;
+      var STATES = [
+        'Searching 2 times, Bash 1 time',
+        'Writing 1 file',
+        'Searching 3 times, Writing 2 files',
+        'Calling agents 1 time',
+        'Calling tools 3 times',
+        'Working',
+      ];
+
+      if (STUB) {
+        var si = 0;
+        showActivity(STATES[0]);
+        var stubTimer = setInterval(function () {
+          si = (si + 1) % STATES.length;
+          if (si === 0) {
+            hideActivity();
+            setTimeout(function () { showActivity(STATES[1]); si = 1; }, 2000);
+          } else {
+            showActivity(STATES[si]);
+          }
+        }, 2400);
+        window._activityStubStop = function () { clearInterval(stubTimer); };
+      }
+
+      window.activityIndicator = { show: showActivity, hide: hideActivity };
+    })();
+
   </script>
 </body>
 </html>

@@ -1,0 +1,340 @@
+<!-- Activity Indicator Component — cv4-explore-v2 -->
+<!-- Mission: corner:live-conversation R1 -->
+<!--
+  Usage:
+    Include via data-include="components/activity-indicator.html"
+    OR copy the <div id="activity-indicator"> block inline into the chat view
+    just before the closing </div> of .message-list-component.
+
+  Placement:
+    Mount INSIDE .message-list-component, at the bottom, BELOW all messages.
+    It floats naturally after the last message bubble and disappears when the
+    agent stops running tools.
+
+  Data contract:
+    Supabase Realtime subscription on the `events` table:
+      filter: event_type=eq.tool_activity
+      payload: {
+        message_id: string,   // parent user message id
+        agent: string,        // agent slug
+        client_id: string,    // conversation client id
+        text: string,         // "Searching 2 times, Bash 1 time" (pre-formatted)
+        active: boolean       // true = show, false = hide
+      }
+
+    When active=true  → render .ai-working text + animated dots
+    When active=false → fade out + hide
+    When a new assistant message arrives → hide (the reply arrived, work is done)
+
+  Stub mode (R1):
+    The bridge signal (R2) isn't built yet. The component starts in stub mode
+    showing hardcoded text so the visual can be verified. Set
+    window.ACTIVITY_STUB = false to disable stub mode once R2 ships.
+-->
+
+<style>
+  /* ─── Activity Indicator ───────────────────────────────────────────────── */
+
+  #activity-indicator {
+    /* Sits below last message, left-aligned like assistant bubbles */
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: var(--sp-xs) 0 0 0;
+    margin-top: var(--sp-sm);
+    /* Fade transition */
+    opacity: 1;
+    transition: opacity 150ms ease;
+    /* Hidden by default; JS shows it */
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  #activity-indicator.active {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  #activity-indicator.hiding {
+    opacity: 0;
+  }
+
+  .ai-working {
+    /* No background, no border, no card — just ambient text */
+    font-family: 'Hanken Grotesk', var(--ff-sans);
+    font-size: 13px;
+    font-weight: var(--fw-normal);
+    color: var(--c-muted);
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 48px); /* leave room for dots */
+  }
+
+  /* ─── Animated trailing dots ───────────────────────────────────────────── */
+
+  .ai-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    margin-left: 1px;
+    /* Vertical nudge so dots sit on the text baseline */
+    position: relative;
+    top: -1px;
+  }
+
+  .ai-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background-color: var(--c-muted);
+    opacity: 0.3;
+  }
+
+  /* Staggered keyframe: each dot fades in/out at 0.4s offset */
+  @keyframes ai-dot-pulse {
+    0%, 100% { opacity: 0.25; }
+    50%       { opacity: 0.85; }
+  }
+
+  .ai-dot:nth-child(1) {
+    animation: ai-dot-pulse 1.2s ease-in-out infinite 0s;
+  }
+  .ai-dot:nth-child(2) {
+    animation: ai-dot-pulse 1.2s ease-in-out infinite 0.4s;
+  }
+  .ai-dot:nth-child(3) {
+    animation: ai-dot-pulse 1.2s ease-in-out infinite 0.8s;
+  }
+</style>
+
+<!--
+  Mount point — paste this div into .message-list-component at the bottom,
+  after all static message markup. The JS below handles show/hide and
+  live text updates.
+-->
+<div id="activity-indicator" role="status" aria-live="polite" aria-label="Agent working">
+  <span class="ai-working" id="ai-working-text">Searching 2 times, Bash 1 time</span>
+  <span class="ai-dots" aria-hidden="true">
+    <span class="ai-dot"></span>
+    <span class="ai-dot"></span>
+    <span class="ai-dot"></span>
+  </span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  Config
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  // Stub mode: show a hardcoded working state so the visual can be verified
+  // before the bridge signal (R2) ships. Flip to false to go live.
+  var STUB_MODE = (typeof window.ACTIVITY_STUB !== 'undefined')
+    ? window.ACTIVITY_STUB
+    : true;
+
+  // Supabase project config — pulled from the global AOM config if available,
+  // or fallback to the known values for local dev.
+  var SUPABASE_URL = (window.AOM_CONFIG && window.AOM_CONFIG.supabaseUrl)
+    || 'https://mcngatprgluexjjcqpkp.supabase.co';
+  var SUPABASE_ANON_KEY = (window.AOM_CONFIG && window.AOM_CONFIG.supabaseAnonKey)
+    || '';
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  DOM refs
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  var indicator = document.getElementById('activity-indicator');
+  var workingText = document.getElementById('ai-working-text');
+  var hideTimer = null;
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  Show / hide helpers
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  function show(text) {
+    if (!indicator || !workingText) return;
+    clearTimeout(hideTimer);
+    workingText.textContent = text || 'Working';
+    indicator.classList.remove('hiding');
+    indicator.classList.add('active');
+    // Scroll message list to keep indicator visible
+    scrollToIndicator();
+  }
+
+  function hide() {
+    if (!indicator) return;
+    indicator.classList.add('hiding');
+    hideTimer = setTimeout(function () {
+      indicator.classList.remove('active', 'hiding');
+    }, 160); // matches the 150ms CSS opacity transition + margin
+  }
+
+  function scrollToIndicator() {
+    var msgList = indicator.closest('.message-list-component');
+    if (msgList) {
+      // Smooth-scroll to keep indicator in view
+      msgList.scrollTo({ top: msgList.scrollHeight, behavior: 'smooth' });
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  Stub mode: cycle through realistic states every few seconds
+   *  so the visual can be reviewed without a live bridge signal.
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  var STUB_STATES = [
+    'Searching 2 times, Bash 1 time',
+    'Writing 1 file',
+    'Searching 3 times, Writing 2 files',
+    'Calling agents 1 time',
+    'Bash 2 times, Searching 1 time',
+    'Calling tools 3 times',
+    'Working',
+  ];
+
+  function runStub() {
+    var i = 0;
+    show(STUB_STATES[0]);
+
+    var cycleTimer = setInterval(function () {
+      i = (i + 1) % STUB_STATES.length;
+      if (i === 0) {
+        // Simulate "agent finished, indicator disappears"
+        hide();
+        setTimeout(function () {
+          show(STUB_STATES[1]); // reappear as if new tools fired
+          i = 1;
+        }, 2000);
+      } else {
+        show(STUB_STATES[i]);
+      }
+    }, 2400);
+
+    // Expose so tests can stop the cycle
+    window._activityStubStop = function () { clearInterval(cycleTimer); };
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  Live mode: subscribe to Supabase Realtime
+   *  Filter: event_type=eq.tool_activity
+   *
+   *  Payload shape:
+   *    { message_id, agent, client_id, text, active }
+   *
+   *  The bridge emits this event while tools are running.
+   *  active=true  → show indicator with text
+   *  active=false → hide indicator
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  function startRealtimeSubscription() {
+    // Wait for the Supabase client to be available. The chat views initialise
+    // a global `window.supabaseClient` via the shared include.js bootstrap.
+    var maxWait = 20;  // 20 × 250ms = 5s
+    var waited = 0;
+
+    function tryConnect() {
+      var client = window.supabaseClient;
+
+      if (!client && waited < maxWait) {
+        waited++;
+        setTimeout(tryConnect, 250);
+        return;
+      }
+
+      if (!client) {
+        console.warn('[activity-indicator] supabaseClient not found — staying hidden');
+        return;
+      }
+
+      // Derive the current conversation context from the page.
+      // The chat views attach agent_slug + client_id to the body or a meta tag.
+      var agentSlug = document.body.dataset.agent || null;
+      var clientId  = document.body.dataset.clientId || null;
+
+      var channel = client
+        .channel('tool-activity-' + (agentSlug || 'ea'))
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'events',
+            filter: 'event_type=eq.tool_activity',
+          },
+          function (payload) {
+            var row = payload.new;
+            if (!row || !row.payload) return;
+
+            var data;
+            try {
+              data = typeof row.payload === 'string'
+                ? JSON.parse(row.payload)
+                : row.payload;
+            } catch (e) {
+              return;
+            }
+
+            // Scope check: only handle events for THIS conversation
+            if (agentSlug && data.agent && data.agent !== agentSlug) return;
+            if (clientId  && data.client_id && data.client_id !== clientId) return;
+
+            if (data.active) {
+              show(data.text || 'Working');
+            } else {
+              hide();
+            }
+          }
+        )
+        .subscribe();
+
+      // Also hide when a new assistant message is inserted (agent finished speaking)
+      client
+        .channel('messages-watch-' + (agentSlug || 'ea'))
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: clientId ? 'client_id=eq.' + clientId : undefined,
+          },
+          function (payload) {
+            var row = payload.new;
+            if (row && row.role === 'assistant') {
+              hide();
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    tryConnect();
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  Public API — other scripts can call these directly
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  window.activityIndicator = {
+    show: show,
+    hide: hide,
+  };
+
+  /* ──────────────────────────────────────────────────────────────────────────
+   *  Boot
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  if (STUB_MODE) {
+    runStub();
+  } else {
+    startRealtimeSubscription();
+  }
+
+})();
+</script>
