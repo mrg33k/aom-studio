@@ -2275,29 +2275,6 @@ export default function RightMenu() {
             )
           })()}
 
-          {/* "See all" button for missions */}
-          {!missionsLoading && !showAllMissions && hiddenMissionsCount > 0 && (
-            <button
-              onClick={() => setShowAllMissions(true)}
-              style={{
-                width: '100%',
-                padding: '6px 12px',
-                background: 'transparent',
-                border: 'none',
-                color: C.muted,
-                fontSize: 11,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'color 120ms ease',
-                fontFamily: MENU.bodyFont,
-                marginTop: 2,
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = C.text2}
-              onMouseLeave={e => e.currentTarget.style.color = C.muted}
-            >
-              See all ({effectiveMissions.length} total)
-            </button>
-          )}
         </>
       )}
 

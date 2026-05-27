@@ -446,6 +446,12 @@ export default function CornerV4() {
   useEffect(() => {
     if (!routeProjectId) return
     if (!projectRooms || projectRooms.length === 0) return
+    // Skip guard when navigating to a mission URL — handleSelectMission already
+    // validated the project via resolveCanonicalProject before calling navigate().
+    // Blocking mission-URL navigations here causes the "goes to home" bug where
+    // right-menu mission clicks land on the home screen instead of the mission room.
+    const hasMissionParam = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('mission')
+    if (hasMissionParam) return
     const accessible = projectRooms.some(p => p?.slug === routeProjectId)
     if (!accessible) {
       const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cv4')) ? '/cv4' : '/dashboard'
