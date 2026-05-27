@@ -1760,9 +1760,8 @@ Direction C (Engineering Blue) → Coral to blue ⚠ full identity shift</pre>
         }, 160);
       }
 
-      // Stub mode: cycle through realistic states so the visual can be reviewed
-      // before the bridge signal (R2) ships.
-      var STUB = (typeof window.ACTIVITY_STUB !== 'undefined') ? window.ACTIVITY_STUB : true;
+      // R2 shipped 2026-05-26 — live Supabase signal active, stub mode off.
+      var STUB = (typeof window.ACTIVITY_STUB !== 'undefined') ? window.ACTIVITY_STUB : false;
       var STATES = [
         'Searching 2 times, Bash 1 time',
         'Writing 1 file',

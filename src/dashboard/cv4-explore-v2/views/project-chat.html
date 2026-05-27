@@ -2063,8 +2063,8 @@
         }, 160);
       }
 
-      // Stub mode — set window.ACTIVITY_STUB = false once bridge R2 ships
-      var STUB = (typeof window.ACTIVITY_STUB !== 'undefined') ? window.ACTIVITY_STUB : true;
+      // R2 shipped 2026-05-26 — live Supabase signal active, stub mode off.
+      var STUB = (typeof window.ACTIVITY_STUB !== 'undefined') ? window.ACTIVITY_STUB : false;
       var STATES = [
         'Searching 2 times, Bash 1 time',
         'Writing 1 file',
