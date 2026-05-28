@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <meta name="googlebot" content="noindex, nofollow" />
   <meta name="referrer" content="no-referrer" />
-  <title>Scope of Work — Included Health × AOM In-House</title>
+  <title>Scope of Work — Included Health × AOM In-House LLC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -403,6 +403,28 @@
     footer a { color: var(--ih-blue-deep); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
 
+    /* Signature parties — two-column layout */
+    .sig-parties {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 56px;
+      margin-bottom: 56px;
+    }
+    .sig-party-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.005em;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--ih-blue);
+    }
+    .sig-party-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
     /* Mobile */
     @media (max-width: 640px) {
       .wrap { padding: 40px 22px 72px; }
@@ -413,6 +435,7 @@
       .meta-row:last-child { border-bottom: none; }
       .batches { grid-template-columns: 1fr; }
       .sig-grid { grid-template-columns: 1fr; gap: 28px; }
+      .sig-parties { grid-template-columns: 1fr; gap: 40px 0; }
       .invest { flex-direction: column; align-items: flex-start; }
       .invest-amount { font-size: 28px; }
       h1.title { font-size: 34px; }
@@ -452,6 +475,15 @@
         print-color-adjust: exact;
       }
       .sig-section { page-break-before: auto; margin-top: 40px; padding-top: 28px; }
+      .sig-parties {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .sig-party-heading {
+        border-bottom: 2px solid var(--ih-blue);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
       a { color: var(--ih-blue-deep); text-decoration: none; }
       ol li::before, ul li::before {
         -webkit-print-color-adjust: exact;
@@ -465,7 +497,7 @@
 
   <div class="topbar">
     <div class="topbar-inner">
-      <span class="topbar-brand"><span class="pulse"></span>Included Health × AOM In-House</span>
+      <span class="topbar-brand"><span class="pulse"></span>Included Health × AOM In-House LLC</span>
       <span class="topbar-meta">Scope of Work · May 27, 2026</span>
     </div>
   </div>
@@ -480,7 +512,7 @@
     <div class="meta-card">
       <div class="meta-row">
         <div class="meta-label">Prepared by</div>
-        <div class="meta-value">AOM In-House</div>
+        <div class="meta-value">AOM In-House LLC</div>
       </div>
       <div class="meta-row">
         <div class="meta-label">Client</div>
@@ -498,8 +530,8 @@
 
     <section>
       <h2>Overview</h2>
-      <p class="lead">AOM In-House will execute a comprehensive post-production workflow across four (4) distinct video assets for Included Health's SME and Interview video series. The scope covers all foundational phases of post-production, from color correction through final packaged handoff, establishing a seamless pipeline for client-side final mastering and delivery.</p>
-      <p>After Effects compositions and editorial outlines will be provided by Included Health. AOM will not be responsible for motion graphics execution or final delivery mastering.</p>
+      <p class="lead">AOM In-House LLC will execute a comprehensive post-production workflow across four (4) distinct video assets for Included Health's SME and Interview video series. The scope covers all foundational phases of post-production, from color correction through final packaged handoff, establishing a seamless pipeline for client-side final mastering and delivery.</p>
+      <p>After Effects compositions and editorial outlines will be provided by Included Health. AOM In-House LLC will not be responsible for motion graphics execution or final delivery mastering.</p>
     </section>
 
     <section>
@@ -571,24 +603,53 @@
 
     <div class="sig-section">
       <h2>Agreement &amp; Authorization</h2>
-      <p class="sig-intro">By signing below, Included Health agrees to the scope, deliverables, timeline, and investment outlined in this document.</p>
+      <p class="sig-intro">By signing below, both parties agree to the scope, deliverables, timeline, and investment outlined in this agreement.</p>
 
-      <div class="sig-grid">
-        <div class="sig-field-wrap">
-          <div class="sig-label">Client Name</div>
-          <div class="sig-field"></div>
+      <div class="sig-parties">
+        <!-- AOM In-House LLC -->
+        <div class="sig-party">
+          <div class="sig-party-heading">AOM In-House LLC</div>
+          <div class="sig-party-fields">
+            <div class="sig-field-wrap">
+              <div class="sig-label">Name</div>
+              <div class="sig-field"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Signature</div>
+              <div class="sig-field"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Title</div>
+              <div class="sig-field"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Date</div>
+              <div class="sig-field"></div>
+            </div>
+          </div>
         </div>
-        <div class="sig-field-wrap">
-          <div class="sig-label">Title</div>
-          <div class="sig-field"></div>
-        </div>
-        <div class="sig-field-wrap">
-          <div class="sig-label">Signature</div>
-          <div class="sig-field"></div>
-        </div>
-        <div class="sig-field-wrap">
-          <div class="sig-label">Date</div>
-          <div class="sig-field"></div>
+
+        <!-- Included Health -->
+        <div class="sig-party">
+          <div class="sig-party-heading">Included Health</div>
+          <div class="sig-party-fields">
+            <div class="sig-field-wrap">
+              <div class="sig-label">Name</div>
+              <div class="sig-field"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Signature</div>
+              <div class="sig-field"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Title</div>
+              <div class="sig-field"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Date</div>
+              <div class="sig-field"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -606,7 +667,7 @@
     </div>
 
     <footer>
-      Prepared by AOM In-House &nbsp;·&nbsp; <a href="mailto:hello@aom-inhouse.com">hello@aom-inhouse.com</a>
+      Prepared by AOM In-House LLC &nbsp;·&nbsp; <a href="mailto:hello@aom-inhouse.com">hello@aom-inhouse.com</a>
     </footer>
 
   </main>
