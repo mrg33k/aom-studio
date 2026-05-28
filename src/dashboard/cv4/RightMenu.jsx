@@ -21,11 +21,16 @@ export default function RightMenu() {
   const projectSlug =
     conversationTarget?.type === 'project' ? conversationTarget.slug : null
 
-  // Display name — project name when scoped, otherwise nothing
-  const projectName =
-    projectSlug
-      ? (conversationTarget?.name || conversationTarget?.slug || null)
-      : null
+  // When a mission is selected, drill into it so the file browser only shows
+  // that mission's files and the user stays focused.
+  const missionSlug = conversationTarget?.missionSlug || null
+  const missionName = conversationTarget?.missionName || missionSlug || null
+
+  // Header label: mission name when drilled in, project name when project-scoped,
+  // nothing at the world level.
+  const subLabel = missionName || (projectSlug
+    ? (conversationTarget?.name || conversationTarget?.slug || null)
+    : null)
 
   return (
     <div style={{
@@ -54,21 +59,21 @@ export default function RightMenu() {
         }}>
           Files
         </span>
-        {projectName && (
+        {subLabel && (
           <span style={{
             fontSize: 12,
             color: C.muted,
             fontWeight: 400,
             letterSpacing: 0,
           }}>
-            {projectName}
+            {subLabel}
           </span>
         )}
       </div>
 
-      {/* File browser */}
+      {/* File browser — scoped to mission when drilled in, else project or world */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <FilesPanel projectSlug={projectSlug} />
+        <FilesPanel projectSlug={projectSlug} missionSlug={missionSlug} />
       </div>
     </div>
   )

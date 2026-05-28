@@ -604,7 +604,7 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
   )
 }
 
-export default function FilesPanel({ projectSlug }) {
+export default function FilesPanel({ projectSlug, missionSlug }) {
   const { worldId } = useCornerAuth()
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
@@ -830,12 +830,29 @@ export default function FilesPanel({ projectSlug }) {
         seen.add(norm)
         return true
       })
-      setFiles(merged)
+      // When drilled into a specific mission, filter to only that mission's files
+      // and strip the 'missions/<slug>/' prefix so they display at tree root.
+      let finalFiles = merged
+      if (missionSlug) {
+        const prefix = `missions/${missionSlug}/`
+        finalFiles = merged
+          .filter(f =>
+            f.missionSlug === missionSlug ||
+            (f.relativePath || '').startsWith(prefix)
+          )
+          .map(f => ({
+            ...f,
+            relativePath: (f.relativePath || '').startsWith(prefix)
+              ? (f.relativePath.slice(prefix.length) || f.name)
+              : f.relativePath,
+          }))
+      }
+      setFiles(finalFiles)
       setLoading(false)
     })
 
     return () => { cancelled = true }
-  }, [projectSlug, world])
+  }, [projectSlug, missionSlug, world])
 
   const tree = useMemo(() => buildTree(files), [files])
   const filterFn = activeCat === 'all'
@@ -851,9 +868,11 @@ export default function FilesPanel({ projectSlug }) {
       {loading && <EmptyState text="Loading…" />}
 
       {!loading && files.length === 0 && (
-        <EmptyState text={projectSlug
-          ? `No files in ${projectSlug} yet. Upload from chat to see them here.`
-          : 'No files yet. Upload from chat to see them here.'} />
+        <EmptyState text={missionSlug
+          ? `No files in this mission yet.`
+          : projectSlug
+            ? `No files in ${projectSlug} yet. Upload from chat to see them here.`
+            : 'No files yet. Upload from chat to see them here.'} />
       )}
 
       {!loading && files.length > 0 && visibleCount === 0 && (
