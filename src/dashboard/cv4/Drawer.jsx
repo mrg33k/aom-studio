@@ -580,31 +580,7 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* corner:skills-picker R1 — purple "Browse skills" CTA above the
-          Agents section. Click opens the Skills shelf takeover. */}
-      {onToggleSkillsShelf && (
-        <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
-      )}
-
-      <TreeSection title="Agents" collapsible defaultCollapsed>
-        {agents.length === 0 ? (
-          <Empty label="No agents" />
-        ) : (
-          agents.map(a => (
-            <AgentRow
-              key={a.slug}
-              agent={a}
-              active={selectedAgentSlug === a.slug}
-              onClick={() => { onSelectAgent?.(a); onClose() }}
-            />
-          ))
-        )}
-      </TreeSection>
-
-      {/* R20 — Projects is its own top-level section. Dropped the
-          NestedUnderMail wrapper + "Filed under Mail" label per Patrik:
-          the visual nesting made Projects look subordinate to Agents
-          and the label didn't mean anything. */}
+      {/* Projects first — above Agents + Skills per Patrik 2026-05-28 */}
       <TreeSection
         title="Projects"
         collapsible
@@ -718,6 +694,27 @@ function DrawerBody({
               </div>
             )
           })
+        )}
+      </TreeSection>
+
+      {/* corner:skills-picker R1 — purple "Browse skills" CTA above the
+          Agents section. Click opens the Skills shelf takeover. */}
+      {onToggleSkillsShelf && (
+        <SkillsBadge open={skillsShelfOpen} onToggle={onToggleSkillsShelf} />
+      )}
+
+      <TreeSection title="Agents" collapsible defaultCollapsed>
+        {agents.length === 0 ? (
+          <Empty label="No agents" />
+        ) : (
+          agents.map(a => (
+            <AgentRow
+              key={a.slug}
+              agent={a}
+              active={selectedAgentSlug === a.slug}
+              onClick={() => { onSelectAgent?.(a); onClose() }}
+            />
+          ))
         )}
       </TreeSection>
 
