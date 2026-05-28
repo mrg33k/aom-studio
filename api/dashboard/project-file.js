@@ -136,19 +136,21 @@ export default async function handler(req, res) {
 
   const segments = normPath.split('/');
 
-  // ── Path must start with corner/users/<world>/projects/<slug> ───────────────
-  // Expected structure: corner / users / <world> / projects / <slug> / <rest...>
+  // ── Path must start with corner/users/<world>/projects/<slug>
+  //    OR corner/users/<world>/missions/<slug> (user-level mission files) ───────
+  // Expected structure: corner / users / <world> / (projects|missions) / <slug> / <rest...>
   if (
     segments.length < 6 ||
     segments[0] !== 'corner' ||
     segments[1] !== 'users' ||
-    segments[3] !== 'projects'
+    (segments[3] !== 'projects' && segments[3] !== 'missions')
   ) {
     return res.status(404).json({ error: 'Not found' });
   }
 
-  const world = segments[2];
-  const slug  = segments[4];
+  const world       = segments[2];
+  const slug        = segments[4];
+  const isMission   = segments[3] === 'missions';
 
   // Validate world + slug format.
   if (!/^[a-z0-9][a-z0-9-]*$/.test(world) || !/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
@@ -170,18 +172,21 @@ export default async function handler(req, res) {
   // Missions segment is allowed; anything after it follows the same rules.
   // The hidden-segment check above covers segments like 'archive' etc. inside missions.
 
-  // ── Verify project exists in DB and tenant matches ────────────────────────
-  const dbWorld = await resolveProjectWorld(slug);
-  if (!dbWorld) {
-    return res.status(404).json({ error: 'Not found' });
+  // ── Verify project/world and tenant access ────────────────────────────────
+  // For project paths: look up world from the DB and confirm it matches.
+  // For user-level mission paths: the world is explicit in the path segment;
+  //   skip the DB project lookup (there is no project row for a user-mission).
+  if (!isMission) {
+    const dbWorld = await resolveProjectWorld(slug);
+    if (!dbWorld) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    if (dbWorld !== world) {
+      return res.status(404).json({ error: 'Not found' });
+    }
   }
 
-  // Confirm the world in the path matches the DB record.
-  if (dbWorld !== world) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-
-  // Tenant gate.
+  // Tenant gate (always runs — protects both project and mission paths).
   try {
     await verifyTenant(world, req);
   } catch (err) {
