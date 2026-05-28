@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Scope of Work — Included Health × AOM In-House</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ih-blue: #0E5FFF;
+      --ih-blue-deep: #0844C2;
+      --ih-blue-soft: #E8F0FF;
+      --ih-blue-tint: #F4F8FF;
+      --ink: #0A0E1A;
+      --ink-2: #1A2233;
+      --slate: #4A5568;
+      --slate-soft: #6B7280;
+      --line: #E4E8EF;
+      --line-soft: #F0F2F6;
+      --bg: #FFFFFF;
+      --bg-soft: #FAFBFD;
+      --accent-text: #0844C2;
+    }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    /* Top brand bar */
+    .topbar {
+      background: var(--ih-blue);
+      color: #fff;
+      padding: 14px 0;
+    }
+    .topbar-inner {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .topbar-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .topbar-brand .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.18);
+    }
+    .topbar-meta {
+      font-weight: 500;
+      opacity: 0.85;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 64px 32px 96px;
+    }
+
+    /* Header */
+    .doc-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      background: var(--ih-blue-soft);
+      color: var(--accent-text);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .doc-meta-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ih-blue);
+    }
+    h1.title {
+      font-weight: 700;
+      font-size: clamp(36px, 5vw, 52px);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      color: var(--slate);
+      font-size: 19px;
+      max-width: 640px;
+      line-height: 1.5;
+      margin-bottom: 36px;
+    }
+
+    /* Meta card */
+    .meta-card {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 56px;
+    }
+    .meta-row {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line-soft);
+      border-right: 1px solid var(--line-soft);
+    }
+    .meta-row:nth-child(2n) { border-right: none; }
+    .meta-row:nth-last-child(-n+2) { border-bottom: none; }
+    .meta-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--slate-soft);
+      margin-bottom: 6px;
+    }
+    .meta-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .meta-value.amount {
+      color: var(--ih-blue-deep);
+      font-size: 20px;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 48px;
+    }
+    h2 {
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ih-blue);
+      display: inline-block;
+    }
+    h3 {
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: -0.005em;
+      color: var(--ink-2);
+      margin: 24px 0 10px;
+    }
+    p {
+      color: var(--ink-2);
+      margin-bottom: 14px;
+      max-width: 720px;
+    }
+    p.lead {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--ink-2);
+    }
+
+    /* Lists */
+    ol, ul {
+      padding-left: 0;
+      list-style: none;
+      margin: 12px 0 0;
+    }
+    ol li, ul li {
+      position: relative;
+      padding: 10px 0 10px 32px;
+      color: var(--ink-2);
+      font-size: 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    ol li:last-child, ul li:last-child { border-bottom: none; }
+    ol { counter-reset: step; }
+    ol li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--ih-blue);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    ul li::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 19px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ih-blue);
+    }
+    li strong { color: var(--ink); font-weight: 600; }
+
+    /* Batch cards */
+    .batches {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .batch {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 20px 22px;
+      background: var(--bg-soft);
+    }
+    .batch-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ih-blue);
+      margin-bottom: 4px;
+    }
+    .batch-when {
+      font-size: 14px;
+      color: var(--slate);
+      margin-bottom: 14px;
+      font-weight: 500;
+    }
+    .batch-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .batch-list li {
+      padding: 6px 0 6px 16px;
+      border-bottom: none;
+      font-size: 15px;
+      color: var(--ink-2);
+      position: relative;
+    }
+    .batch-list li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      top: 6px;
+      color: var(--ih-blue);
+      background: none;
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      display: inline;
+    }
+
+    /* Investment block */
+    .invest {
+      background: var(--ih-blue-tint);
+      border: 1px solid var(--ih-blue-soft);
+      border-left: 4px solid var(--ih-blue);
+      border-radius: 8px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .invest-label {
+      font-size: 14px;
+      color: var(--slate);
+      max-width: 540px;
+      line-height: 1.5;
+    }
+    .invest-label strong { color: var(--ink); font-weight: 600; }
+    .invest-amount {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--ih-blue-deep);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    /* Delivery callout */
+    .delivery {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--ink-2);
+    }
+    .delivery strong { color: var(--ih-blue-deep); font-weight: 600; }
+
+    /* Signature section */
+    .sig-section {
+      margin-top: 80px;
+      padding-top: 48px;
+      border-top: 1px solid var(--line);
+    }
+    .sig-intro {
+      font-size: 16px;
+      color: var(--ink-2);
+      margin-bottom: 36px;
+      max-width: 720px;
+    }
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 36px 48px;
+      margin-bottom: 56px;
+    }
+    .sig-field {
+      border-bottom: 1.5px solid var(--ink-2);
+      padding-bottom: 6px;
+      min-height: 56px;
+      display: flex;
+      align-items: flex-end;
+    }
+    .sig-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--slate-soft);
+      margin-bottom: 8px;
+    }
+    .sig-field-wrap { display: flex; flex-direction: column; }
+
+    /* Download CTA */
+    .cta-wrap {
+      margin-top: 56px;
+      text-align: center;
+    }
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 36px;
+      background: var(--ih-blue);
+      color: #fff;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(14, 95, 255, 0.24);
+      transition: all 160ms ease;
+    }
+    .btn-download:hover {
+      background: var(--ih-blue-deep);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(14, 95, 255, 0.32);
+    }
+    .btn-download:active { transform: translateY(0); }
+    .btn-download svg { width: 18px; height: 18px; }
+    .cta-hint {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--slate-soft);
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 72px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line-soft);
+      text-align: center;
+      font-size: 13px;
+      color: var(--slate-soft);
+    }
+    footer a { color: var(--ih-blue-deep); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .wrap { padding: 40px 22px 72px; }
+      .topbar-inner { padding: 0 22px; }
+      .meta-card { grid-template-columns: 1fr; }
+      .meta-row { border-right: none; }
+      .meta-row:nth-last-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
+      .meta-row:last-child { border-bottom: none; }
+      .batches { grid-template-columns: 1fr; }
+      .sig-grid { grid-template-columns: 1fr; gap: 28px; }
+      .invest { flex-direction: column; align-items: flex-start; }
+      .invest-amount { font-size: 28px; }
+      h1.title { font-size: 34px; }
+    }
+
+    /* Print styles — clean PDF output */
+    @media print {
+      @page { size: letter; margin: 0.6in; }
+      body { font-size: 11pt; line-height: 1.5; color: #000; }
+      .topbar {
+        background: var(--ih-blue) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 10px 0;
+      }
+      .topbar-inner { max-width: none; padding: 0 0.4in; }
+      .wrap { max-width: none; padding: 24px 0 0; }
+      .cta-wrap, .cta-hint, .btn-download { display: none !important; }
+      .doc-meta {
+        background: var(--ih-blue-soft) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      h1.title { font-size: 26pt; }
+      .subtitle { font-size: 13pt; }
+      h2 {
+        font-size: 16pt;
+        border-bottom: 2px solid var(--ih-blue);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        page-break-after: avoid;
+      }
+      h3 { font-size: 12pt; page-break-after: avoid; }
+      section { page-break-inside: avoid; margin-bottom: 24px; }
+      .meta-card, .batch, .invest, .delivery {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .sig-section { page-break-before: auto; margin-top: 40px; padding-top: 28px; }
+      a { color: var(--ih-blue-deep); text-decoration: none; }
+      ol li::before, ul li::before {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .invest-amount { font-size: 22pt; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span class="topbar-brand"><span class="pulse"></span>Included Health × AOM In-House</span>
+      <span class="topbar-meta">Scope of Work · May 27, 2026</span>
+    </div>
+  </div>
+
+  <main class="wrap">
+
+    <span class="doc-meta"><span class="doc-meta-dot"></span>Agreement</span>
+
+    <h1 class="title">SME + Interview Video<br/>Post-Production</h1>
+    <p class="subtitle">A coordinated post pipeline across four videos — color, edit, two review rounds, and a packaged handoff for client-side final mastering.</p>
+
+    <div class="meta-card">
+      <div class="meta-row">
+        <div class="meta-label">Prepared by</div>
+        <div class="meta-value">AOM In-House</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Client</div>
+        <div class="meta-value">Included Health</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Date</div>
+        <div class="meta-value">May 27, 2026</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Total Budget</div>
+        <div class="meta-value amount">$4,000</div>
+      </div>
+    </div>
+
+    <section>
+      <h2>Overview</h2>
+      <p class="lead">AOM In-House will execute a comprehensive post-production workflow across four (4) distinct video assets for Included Health's SME and Interview video series. The scope covers all foundational phases of post-production, from color correction through final packaged handoff, establishing a seamless pipeline for client-side final mastering and delivery.</p>
+      <p>After Effects compositions and editorial outlines will be provided by Included Health. AOM will not be responsible for motion graphics execution or final delivery mastering.</p>
+    </section>
+
+    <section>
+      <h2>Deliverables Per Video</h2>
+      <p>Each of the four videos will receive:</p>
+      <ol>
+        <li><strong>Color Correction</strong> — Uniform color treatment across all footage</li>
+        <li><strong>Base Edit</strong> — Narrative assembly based on provided editorial outline</li>
+        <li><strong>Round 1 (R1) Review Cut</strong> — Organized, labeled sequence for client review</li>
+        <li><strong>Round 2 (R2) Revision Cut</strong> — Revised cut incorporating R1 feedback</li>
+        <li><strong>Packaged Handoff</strong> — Optimized project files, master timelines, asset packages</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Video Assets + Timeline</h2>
+      <div class="batches">
+        <div class="batch">
+          <div class="batch-label">Batch 01</div>
+          <div class="batch-when">Delivery: Week of June 15</div>
+          <ul class="batch-list">
+            <li>Owen Thought Leadership</li>
+            <li>Quality + Provider Connect</li>
+          </ul>
+        </div>
+        <div class="batch">
+          <div class="batch-label">Batch 02</div>
+          <div class="batch-when">Delivery: Week of June 30</div>
+          <ul class="batch-list">
+            <li>Employee Overview <em style="color:var(--slate-soft);font-size:13px">(outline due June 12)</em></li>
+            <li>Culture of Innovation <em style="color:var(--slate-soft);font-size:13px">(outline due June 12)</em></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Client Responsibilities</h2>
+      <ul>
+        <li>Provide all raw footage and source assets prior to each batch</li>
+        <li>Provide After Effects compositions and editorial outlines per video</li>
+        <li>Deliver Batch 02 outlines by <strong>June 12</strong></li>
+        <li>Provide consolidated R1 feedback within agreed review window</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Not Included in Scope</h2>
+      <ul>
+        <li>Motion graphics design or After Effects execution</li>
+        <li>Audio mixing or sound design</li>
+        <li>Final mastering and delivery</li>
+        <li>Any additional revision rounds beyond R1 and R2</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Investment</h2>
+      <div class="invest">
+        <div class="invest-label">Post-production for 4 videos — <strong>color, base edit, R1 review cut, R2 revision cut, and packaged handoff</strong>.</div>
+        <div class="invest-amount">$4,000</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Delivery Method</h2>
+      <div class="delivery">All deliverables transmitted via <strong>Frame.io</strong></div>
+    </section>
+
+    <div class="sig-section">
+      <h2>Agreement &amp; Authorization</h2>
+      <p class="sig-intro">By signing below, Included Health agrees to the scope, deliverables, timeline, and investment outlined in this document.</p>
+
+      <div class="sig-grid">
+        <div class="sig-field-wrap">
+          <div class="sig-label">Client Name</div>
+          <div class="sig-field"></div>
+        </div>
+        <div class="sig-field-wrap">
+          <div class="sig-label">Title</div>
+          <div class="sig-field"></div>
+        </div>
+        <div class="sig-field-wrap">
+          <div class="sig-label">Signature</div>
+          <div class="sig-field"></div>
+        </div>
+        <div class="sig-field-wrap">
+          <div class="sig-label">Date</div>
+          <div class="sig-field"></div>
+        </div>
+      </div>
+
+      <div class="cta-wrap">
+        <button class="btn-download" onclick="window.print()" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download Agreement (PDF)
+        </button>
+        <div class="cta-hint">Use your browser's "Save as PDF" destination in the print dialog. Sign and return via email.</div>
+      </div>
+    </div>
+
+    <footer>
+      Prepared by AOM In-House &nbsp;·&nbsp; <a href="mailto:hello@aom-inhouse.com">hello@aom-inhouse.com</a>
+    </footer>
+
+  </main>
+
+</body>
+</html>

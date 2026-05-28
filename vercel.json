@@ -81,7 +81,8 @@
     { "source": "/nancy", "destination": "/index.html" },
     { "source": "/higherorbits", "destination": "/index.html" },
     { "source": "/stats", "destination": "/index.html" },
-    { "source": "/internal/scope/higher-orbits-biz7tkhq9h", "destination": "/scope-higher-orbits-biz7tkhq9h.html" }
+    { "source": "/internal/scope/higher-orbits-biz7tkhq9h", "destination": "/scope-higher-orbits-biz7tkhq9h.html" },
+    { "source": "/agreements/included-health", "destination": "/agreements/included-health.html" }
   ],
   "redirects": [
     { "source": "/higher-orbits", "destination": "/higherorbits", "permanent": true }
