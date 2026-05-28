@@ -296,11 +296,33 @@ export function FolderContextMenu({ open, x, y, folder, mobile = false, onClose,
 // Agent-routed Research / Summarize / Pull quotes + utility Copy path / Reveal.
 // onAgentPrompt(text) drops the templated prompt into the active chat via
 // useChatDispatch (called by the parent surface).
-export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onAgentPrompt, onCopyPath, onReveal }) {
+// onMove(file, folderPath)  — move file to folderPath (or '' for root)
+// onDelete(file)            — delete file
+// folders                   — array of folder path strings in current tree
+export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onAgentPrompt, onCopyPath, onReveal, onMove, onDelete, folders = [] }) {
+  const [stage, setStage] = useStage('root', open)
   if (!open || !file) return null
+
+  // Sub-stage: folder picker for "Move to folder"
+  if (stage === 'folders') {
+    const folderItems = folders.map(f => ({
+      key: f, label: f || '/ (root)', icon: I.move,
+      testId: `file-ctx-moveto-${f}`,
+      onSelect: () => onMove?.(file, f),
+    }))
+    if (!folderItems.length) folderItems.push({ key: '__none', label: 'No folders yet', disabled: true })
+    // Always offer root as a move target
+    if (folders.length) {
+      folderItems.unshift({ key: '__root', label: '/ (project root)', icon: I.move, testId: 'file-ctx-moveto-root', onSelect: () => onMove?.(file, '') })
+    }
+    return <MenuOrSheet open mobile={mobile} x={x} y={y} items={folderItems} onClose={onClose} preview={mobile ? `Move ${file.name || 'file'} to…` : undefined} testId="file-ctx-folder-picker" />
+  }
+
   const name = file.displayName || file.name || file.path || 'this file'
-  const path = file.path || file.full_path || file.relativePath || file.name || ''
-  const ref = path ? '`' + path + '`' : '`' + name + '`'
+  const filePath = file.path || file.full_path || file.relativePath || file.name || ''
+  const ref = filePath ? '`' + filePath + '`' : '`' + name + '`'
+  const isDisk = !!file.fromDisk
+
   const items = [
     { key: 'research', label: 'Research', icon: I.copy, testId: 'file-ctx-research',
       onSelect: () => onAgentPrompt?.(
@@ -322,12 +344,19 @@ export function FileContextMenu({ open, x, y, file, mobile = false, onClose, onA
       ) },
     { key: 'copy-path', label: 'Copy path', icon: I.copy, testId: 'file-ctx-copy-path',
       onSelect: () => {
-        if (path) navigator.clipboard?.writeText(path).catch(() => {})
+        if (filePath) navigator.clipboard?.writeText(filePath).catch(() => {})
         onCopyPath?.(file)
       } },
     { key: 'reveal', label: 'Reveal in mission', icon: I.reveal, testId: 'file-ctx-reveal',
       disabled: !(file.mission || file.mission_slug),
       onSelect: () => onReveal?.(file) },
+    // Disk-file operations (move + delete) — only shown for fromDisk files.
+    ...(isDisk ? [
+      { key: 'move', label: 'Move to folder…', icon: I.move, hasSubmenu: true, testId: 'file-ctx-move',
+        onSelect: () => { setStage('folders'); return 'keep' } },
+      { key: 'delete', label: 'Delete', icon: I.archive, variant: 'danger', testId: 'file-ctx-delete',
+        onSelect: () => onDelete?.(file) },
+    ] : []),
   ]
   return <MenuOrSheet open mobile={mobile} x={x} y={y} items={items} onClose={onClose} preview={mobile ? name : undefined} testId="file-ctx-root" />
 }

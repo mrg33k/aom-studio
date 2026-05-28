@@ -398,7 +398,8 @@ function FileViewer({ file, onClose }) {
 
 // ── Single file row ─────────────────────────────────────────────────────────
 
-function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent = 0 }) {
+function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent = 0, isSelected = false, onSelect }) {
+  const [hovered, setHovered] = useState(false)
   const longPressHandlers = useLongPress(
     onLongPress ? (x, y) => onLongPress(x, y, file) : null
   )
@@ -409,11 +410,29 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
     .replace(/\.md$/, '')
     .replace(/^\d{4}-\d{2}-\d{2}-/, '')
 
+  // Show checkbox in place of type icon when hovered or selected.
+  const showCheckbox = hovered || isSelected
+
+  const bgActive  = isSelected ? 'rgba(16,185,129,0.10)' : isActive ? 'rgba(16,185,129,0.06)' : 'transparent'
+  const borderL   = isSelected ? '2px solid ' + C.accent : isActive ? '2px solid ' + C.accent : '2px solid transparent'
+
   return (
     <>
       <div
-        onClick={onClick}
+        onClick={(e) => {
+          // Ctrl/cmd click = toggle selection instead of opening viewer
+          if (e.ctrlKey || e.metaKey) { e.preventDefault(); onSelect?.(file, e); return }
+          onClick?.()
+        }}
         onContextMenu={onContextMenu}
+        onMouseEnter={e => {
+          setHovered(true)
+          if (!isActive && !isSelected) e.currentTarget.style.background = C.s1
+        }}
+        onMouseLeave={e => {
+          setHovered(false)
+          if (!isActive && !isSelected) e.currentTarget.style.background = 'transparent'
+        }}
         {...(longPressHandlers || {})}
         style={{
           display: 'flex',
@@ -421,27 +440,46 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
           gap: 7,
           padding: `5px 12px 5px ${12 + indent * 10}px`,
           cursor: 'pointer',
-          background: isActive ? 'rgba(16,185,129,0.06)' : 'transparent',
-          borderLeft: isActive ? '2px solid ' + C.accent : '2px solid transparent',
+          background: bgActive,
+          borderLeft: borderL,
           transition: 'background 120ms',
         }}
-        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.s1 }}
-        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
       >
-        {/* Type icon tile */}
-        <div style={{
-          width: 16,
-          height: 16,
-          borderRadius: 2,
-          background: 'rgba(51,65,85,0.25)',
-          border: '1px solid ' + C.border,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 8,
-          color,
-        }}>{icon}</div>
+        {/* Checkbox replaces type icon on hover / when selected */}
+        {showCheckbox ? (
+          <div
+            onClick={(e) => { e.stopPropagation(); onSelect?.(file, e) }}
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: 2,
+              flexShrink: 0,
+              border: '1px solid ' + (isSelected ? C.accent : 'rgba(255,255,255,0.30)'),
+              background: isSelected ? C.accent : 'rgba(51,65,85,0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 9,
+              color: '#000',
+              cursor: 'pointer',
+              transition: 'all 80ms ease',
+            }}
+          >{isSelected ? '✓' : ''}</div>
+        ) : (
+          <div style={{
+            width: 16,
+            height: 16,
+            borderRadius: 2,
+            background: 'rgba(51,65,85,0.25)',
+            border: '1px solid ' + C.border,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 8,
+            color,
+          }}>{icon}</div>
+        )}
 
         <span style={{
           flex: 1, minWidth: 0,
@@ -554,7 +592,7 @@ function countFiles(node, filterFn) {
 }
 
 // ── Folder/file tree renderer ─────────────────────────────────────────────
-function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, onFileLongPress}) {
+function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onFileClick, filterFn, pathKey, onFileContextMenu, onFileLongPress, selectedFiles, onSelectFile}) {
   const isOpen = openFolders.has(pathKey)
   const fileCount = countFiles(node, filterFn)
 
@@ -585,6 +623,8 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
               pathKey={pathKey + '/' + childName}
               onFileContextMenu={onFileContextMenu}
               onFileLongPress={onFileLongPress}
+              selectedFiles={selectedFiles}
+              onSelectFile={onSelectFile}
             />
           ))}
           {node.files.filter(filterFn || (() => true)).map(f => (
@@ -592,9 +632,11 @@ function TreeNode({name, node, depth, openFolders, toggleFolder, activeFile, onF
               key={f.url}
               file={{ ...f, name: f.displayName || f.name }}
               isActive={activeFile?.url === f.url}
+              isSelected={selectedFiles?.has(f.url)}
               onClick={() => onFileClick(f)}
               onContextMenu={onFileContextMenu ? (e) => onFileContextMenu(e, f) : undefined}
               onLongPress={onFileLongPress}
+              onSelect={onSelectFile}
               indent={depth + 1}
             />
           ))}
@@ -615,6 +657,11 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
   const isMobile = useIsMobile()
   // Folder open-state keyed by tree path ("" = root, "foo/bar" = nested)
   const [openFolders, setOpenFolders] = useState(new Set(['']))
+  // R12 — multi-select, + Folder, mutations
+  const [selectedFiles, setSelectedFiles] = useState(new Set())  // Set<url>
+  const [refetchKey, setRefetchKey] = useState(0)
+  const [isAddingFolder, setIsAddingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
 
   const world = worldId || 'aom'
 
@@ -662,6 +709,97 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
     if (m) try { setOpenFolders(prev => new Set([...prev, m, ''])) } catch (_) {}
   }, [closeCtxMenu])
   const handleCtxCopyPath = useCallback(() => { closeCtxMenu() }, [closeCtxMenu])
+
+  // R12 — mutation handlers ───────────────────────────────────────────────────
+
+  const handleSelectFile = useCallback((file) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev)
+      if (next.has(file.url)) next.delete(file.url)
+      else next.add(file.url)
+      return next
+    })
+  }, [])
+
+  const clearSelection = useCallback(() => setSelectedFiles(new Set()), [])
+
+  const handleDelete = useCallback(async (file) => {
+    closeCtxMenu()
+    const relPath = file.projectRelativePath || file.relativePath
+    if (!projectSlug || !relPath || !file.fromDisk) return
+    try {
+      await authFetch(
+        `/api/dashboard/project-file-delete?slug=${encodeURIComponent(projectSlug)}&path=${encodeURIComponent(relPath)}`,
+        { method: 'DELETE' }
+      )
+      setSelectedFiles(prev => { const n = new Set(prev); n.delete(file.url); return n })
+      setRefetchKey(k => k + 1)
+    } catch (err) {
+      console.error('[FilesPanel] delete failed', err)
+    }
+  }, [projectSlug, closeCtxMenu])
+
+  const handleMove = useCallback(async (file, targetFolder) => {
+    closeCtxMenu()
+    const relPath = file.projectRelativePath || file.relativePath
+    if (!projectSlug || !relPath || !file.fromDisk) return
+    const fileName = relPath.split('/').pop()
+    const toPath = targetFolder ? `${targetFolder}/${fileName}` : fileName
+    if (toPath === relPath) return  // same location, no-op
+    try {
+      await authFetch('/api/dashboard/project-file-move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: projectSlug, from: relPath, to: toPath }),
+      })
+      setRefetchKey(k => k + 1)
+    } catch (err) {
+      console.error('[FilesPanel] move failed', err)
+    }
+  }, [projectSlug, closeCtxMenu])
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!selectedFiles.size || !projectSlug) return
+    const toDelete = files.filter(f => f.fromDisk && selectedFiles.has(f.url))
+    if (!toDelete.length) { clearSelection(); return }
+    if (!window.confirm(`Delete ${toDelete.length} file${toDelete.length > 1 ? 's' : ''}?`)) return
+    for (const file of toDelete) {
+      const relPath = file.projectRelativePath || file.relativePath
+      if (!relPath) continue
+      try {
+        await authFetch(
+          `/api/dashboard/project-file-delete?slug=${encodeURIComponent(projectSlug)}&path=${encodeURIComponent(relPath)}`,
+          { method: 'DELETE' }
+        )
+      } catch (err) {
+        console.error('[FilesPanel] bulk delete failed for', relPath, err)
+      }
+    }
+    clearSelection()
+    setRefetchKey(k => k + 1)
+  }, [selectedFiles, files, projectSlug, clearSelection])
+
+  const handleCreateFolder = useCallback(async (name) => {
+    const trimmed = name.trim().replace(/[^a-zA-Z0-9 _-]/g, '').trim()
+    if (!trimmed || !projectSlug) return
+    // Kebab-case the folder name
+    const folderName = trimmed.replace(/\s+/g, '-').toLowerCase()
+    const folderPath = missionSlug
+      ? `missions/${missionSlug}/${folderName}`
+      : folderName
+    try {
+      await authFetch('/api/dashboard/project-file-mkdir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: projectSlug, path: folderPath }),
+      })
+      setIsAddingFolder(false)
+      setNewFolderName('')
+      setRefetchKey(k => k + 1)
+    } catch (err) {
+      console.error('[FilesPanel] mkdir failed', err)
+    }
+  }, [projectSlug, missionSlug])
 
 
   useEffect(() => {
@@ -832,7 +970,8 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       })
       // When drilled into a specific mission, filter to only that mission's files
       // and strip the 'missions/<slug>/' prefix so they display at tree root.
-      let finalFiles = merged
+      // Always preserve projectRelativePath (unstripped) for API mutation calls.
+      let finalFiles = merged.map(f => ({ ...f, projectRelativePath: f.relativePath }))
       if (missionSlug) {
         const prefix = `missions/${missionSlug}/`
         finalFiles = merged
@@ -842,6 +981,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
           )
           .map(f => ({
             ...f,
+            projectRelativePath: f.relativePath,   // project-root-relative (full path before stripping)
             relativePath: (f.relativePath || '').startsWith(prefix)
               ? (f.relativePath.slice(prefix.length) || f.name)
               : f.relativePath,
@@ -852,7 +992,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
     })
 
     return () => { cancelled = true }
-  }, [projectSlug, missionSlug, world])
+  }, [projectSlug, missionSlug, world, refetchKey])
 
   const tree = useMemo(() => buildTree(files), [files])
   const filterFn = activeCat === 'all'
@@ -861,9 +1001,78 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
 
   const visibleCount = filterFn ? countFiles(tree, filterFn) : files.length
 
+  // R12 — compute folder paths from the current tree for "Move to" submenu.
+  const folders = useMemo(() => {
+    const result = []
+    function walk(node, prefix) {
+      for (const [name] of node.children.entries()) {
+        const p = prefix ? `${prefix}/${name}` : name
+        result.push(p)
+        walk(node.children.get(name), p)
+      }
+    }
+    walk(tree, '')
+    return result
+  }, [tree])
+
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
       <CategoryFilters active={activeCat} onChange={handleCatChange} />
+
+      {/* R12 — + Folder toolbar */}
+      {projectSlug && (
+        <div style={{
+          padding: '4px 12px',
+          borderBottom: '1px solid ' + C.border,
+          minHeight: 28,
+          display: 'flex',
+          alignItems: 'center',
+        }}>
+          {isAddingFolder ? (
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%' }}>
+              <input
+                autoFocus
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleCreateFolder(newFolderName)
+                  if (e.key === 'Escape') { setIsAddingFolder(false); setNewFolderName('') }
+                }}
+                placeholder="folder name"
+                style={{
+                  flex: 1, background: 'rgba(30,41,59,0.6)',
+                  border: '1px solid ' + C.border, borderRadius: 3,
+                  padding: '3px 7px', fontSize: 11, color: C.text,
+                  fontFamily: "'Inter', sans-serif", outline: 'none',
+                }}
+              />
+              <button
+                onClick={() => handleCreateFolder(newFolderName)}
+                style={{ fontSize: 11, color: C.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+              >✓</button>
+              <button
+                onClick={() => { setIsAddingFolder(false); setNewFolderName('') }}
+                style={{ fontSize: 13, color: C.muted, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+              >✕</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAddingFolder(true)}
+              style={{
+                fontSize: 10, color: C.muted, background: 'none', border: 'none',
+                cursor: 'pointer', padding: 0,
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontFamily: "'Inter', sans-serif",
+                letterSpacing: '0.02em',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = C.text}
+              onMouseLeave={e => e.currentTarget.style.color = C.muted}
+            >
+              + Folder
+            </button>
+          )}
+        </div>
+      )}
 
       {loading && <EmptyState text="Loading…" />}
 
@@ -885,9 +1094,11 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
           key={f.url}
           file={{ ...f, name: f.displayName || f.name }}
           isActive={activeFile?.url === f.url}
+          isSelected={selectedFiles.has(f.url)}
           onClick={() => handleFileClick(f)}
           onContextMenu={(e) => handleFileContextMenu(e, f)}
           onLongPress={openCtxMenu}
+          onSelect={handleSelectFile}
           indent={0}
         />
       ))}
@@ -907,6 +1118,8 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
           pathKey={name}
           onFileContextMenu={handleFileContextMenu}
           onFileLongPress={openCtxMenu}
+          selectedFiles={selectedFiles}
+          onSelectFile={handleSelectFile}
         />
       ))}
 
@@ -924,7 +1137,42 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
         onAgentPrompt={handleAgentPrompt}
         onCopyPath={handleCtxCopyPath}
         onReveal={handleCtxReveal}
+        onDelete={handleDelete}
+        onMove={handleMove}
+        folders={folders}
       />
+
+      {/* R12 — Bulk action bar (appears when files are selected) */}
+      {selectedFiles.size > 0 && (
+        <div style={{
+          position: 'sticky',
+          bottom: 0,
+          background: 'rgba(10,14,22,0.97)',
+          backdropFilter: 'blur(8px)',
+          borderTop: '1px solid ' + C.border,
+          padding: '8px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 11,
+          fontFamily: "'Inter', sans-serif",
+          zIndex: 10,
+        }}>
+          <span style={{ color: C.text, fontWeight: 500 }}>
+            {selectedFiles.size} selected
+          </span>
+          <span style={{ color: C.border }}>·</span>
+          <button
+            onClick={handleBulkDelete}
+            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
+          >Delete</button>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={clearSelection}
+            style={{ color: C.muted, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}
+          >✕</button>
+        </div>
+      )}
 
       <div style={{ height: 16 }} />
     </div>
