@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Will Host & The Andocia Opportunity | Research</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #f8f8f8;
+    }
+
+    .password-gate {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+
+    .password-box {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .password-box h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      color: #1a1a1a;
+    }
+
+    .password-box p {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .password-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .password-input-group input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .password-input-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .password-input-group button {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .password-input-group button:hover {
+      background: #764ba2;
+    }
+
+    .error {
+      color: #d32f2f;
+      font-size: 14px;
+      margin-top: 15px;
+    }
+
+    .article-container {
+      display: none;
+    }
+
+    .article-header {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 60px 20px;
+    }
+
+    .article-content-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .article-header h1 {
+      font-size: 48px;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      color: #1a1a1a;
+    }
+
+    .article-meta {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .article-byline {
+      color: #888;
+      font-size: 13px;
+    }
+
+    .article-body {
+      background: white;
+      padding: 60px 20px;
+    }
+
+    .article-section {
+      max-width: 900px;
+      margin: 0 auto 60px;
+    }
+
+    .article-section h2 {
+      font-size: 32px;
+      margin: 40px 0 20px;
+      color: #1a1a1a;
+    }
+
+    .article-section h3 {
+      font-size: 22px;
+      margin: 30px 0 15px;
+      color: #333;
+    }
+
+    .article-section p {
+      margin-bottom: 16px;
+      color: #444;
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .insight-box {
+      background: #f5f5f5;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 30px 0;
+      border-radius: 4px;
+    }
+
+    .insight-box strong {
+      display: block;
+      color: #667eea;
+      margin-bottom: 8px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .insight-box p {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 30px 0;
+      font-size: 15px;
+    }
+
+    .data-table thead {
+      background: #f5f5f5;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .data-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+      color: #444;
+    }
+
+    .data-table tr:hover {
+      background: #fafafa;
+    }
+
+    .image-block {
+      margin: 40px 0;
+      text-align: center;
+    }
+
+    .image-placeholder {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border: 2px dashed #667eea;
+      border-radius: 8px;
+      padding: 60px 20px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .image-caption {
+      color: #666;
+      font-size: 13px;
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    .list-highlight {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    .list-highlight li {
+      padding: 12px 0 12px 30px;
+      position: relative;
+      color: #444;
+    }
+
+    .list-highlight li:before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .bottom-note {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 30px;
+      margin-top: 60px;
+      text-align: center;
+    }
+
+    .bottom-note p {
+      color: #666;
+      font-size: 15px;
+    }
+
+    @media (max-width: 768px) {
+      .article-header h1 {
+        font-size: 32px;
+      }
+
+      .article-section h2 {
+        font-size: 24px;
+      }
+
+      .article-section p {
+        font-size: 15px;
+      }
+
+      .password-box {
+        padding: 30px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="password-gate" id="passwordGate">
+  <div class="password-box">
+    <h1>Research Access</h1>
+    <p>This document contains strategic research.<br>Enter the password to continue.</p>
+    <div class="password-input-group">
+      <input type="password" id="passwordInput" placeholder="Enter password" />
+      <button onclick="checkPassword()">Access</button>
+    </div>
+    <div id="errorMsg" class="error"></div>
+  </div>
+</div>
+
+<div class="article-container" id="articleContainer">
+  <div class="article-header">
+    <div class="article-content-wrapper">
+      <div class="article-meta">STRATEGIC RESEARCH</div>
+      <h1>Will Host & The Andocia Opportunity</h1>
+      <p class="article-byline">Prepared: May 28, 2026</p>
+    </div>
+  </div>
+
+  <div class="article-body">
+    <div class="article-section">
+      <h2>The Operator Who Changed The Profile</h2>
+      <p>William Host is not a small Pittsburgh marketing agency owner looking to bolt AI onto his existing clients. He is a multi-role operator embedded at the senior level of a $30M+ Inc. 5000 company, running acquisition and business development for one of the fastest-growing fractional services platforms in professional services.</p>
+      <p>The research that came back on Will required a full revision. What looked like a straightforward agency acquisition conversation is something altogether different — and far more interesting.</p>
+    </div>
+
+    <div class="article-section">
+      <h2>Who Is Will Host — The Full Stack</h2>
+      <p>Will operates simultaneously across three professional roles, each substantial in its own right:</p>
+
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Company</th>
+              <th>Nature</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Owner & CEO</strong></td>
+              <td>Andocia Creative Agency</td>
+              <td>Founder-owned marketing agency, Oakmont, PA</td>
+            </tr>
+            <tr>
+              <td><strong>Director of Acquisitions</strong></td>
+              <td>How To MANAGE a Small Law Firm (HTM)</td>
+              <td>Senior business development at $30M+ company</td>
+            </tr>
+            <tr>
+              <td><strong>Chief Brand Officer</strong></td>
+              <td>Beratung Advisors</td>
+              <td>Embedded marketing exec, Pittsburgh financial advisory</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>He is also co-owner of B&H Properties, LLC — Pittsburgh real estate — and holds a B.A. in Communication Studies from West Virginia University.</p>
+
+      <p>This is not portfolio juggling. This is deliberate multi-stakeholder positioning across the legal, marketing, and financial advisory sectors. Two separate LinkedIn profiles (one for Andocia, one for HTM) suggest he compartmentalizes these roles with intention.</p>
+
+      <div class="image-block">
+        <div class="image-placeholder">
+          [Will Host professional profile image — place here]
+        </div>
+        <p class="image-caption">Multi-role operator: agency owner, senior director at $30M+ company, embedded financial advisor</p>
+      </div>
+    </div>
+
+    <div class="article-section">
+      <h2>How To MANAGE a Small Law Firm — The Game-Changing Piece</h2>
+      <p>HTM is the load-bearing element that transforms the entire deal profile.</p>
+
+      <div class="insight-box">
+        <strong>Key Metric</strong>
+        <p>How To MANAGE a Small Law Firm: $30M+ annual revenue, 600+ active members, operating on a <strong>three-year waitlist</strong>, Inc. 5000 honoree every year since 2015 (9+ consecutive years).</p>
+      </div>
+
+      <h3>What It Does</h3>
+      <p>Founded in 2009 by RJon Robins, HTM is a membership-based business coaching and outsourced C-suite services platform for solo and small law firm owners. Members get fractional CEO, COO, CFO, and CMO services — the operational infrastructure that law firm owners don't have in-house.</p>
+
+      <h3>The Pricing & Scale</h3>
+      <ul class="list-highlight">
+        <li><strong>$1,500–$2,000/month per member</strong> — 600+ members paying this = $900K–$1.2M/month recurring revenue</li>
+        <li><strong>$30M+ annual revenue</strong> stated by founder RJon Robins; 8,000% growth since 2009</li>
+        <li><strong>Three-year waitlist</strong> — unmet demand; the model can't scale with humans alone</li>
+        <li><strong>Expansion phase</strong> — as of 2024, partnering with Scaling Up to serve $10M–$50M+ firms; moving upmarket</li>
+      </ul>
+
+      <div class="image-block">
+        <div class="image-placeholder">
+          [HTM office / team image — place here]
+        </div>
+        <p class="image-caption">600+ law firm owners on three-year waitlist for HTM's fractional services</p>
+      </div>
+    </div>
+
+    <div class="article-section">
+      <h2>Will's Role — Director of Acquisitions at HTM</h2>
+      <p>Will is listed on the official HTM team page (howtomanageasmalllawfirm.com/our-team) alongside 80+ other staff members. At a company on a three-year waitlist actively expanding, "Director of Acquisitions" translates to: senior business development, converting prospects into paying members, managing the sales pipeline for 600+ firms.</p>
+
+      <p>How did Will get there? He spoke on marketing at HTM's ISI Mastermind Summit in Miami alongside founder RJon Robins. He was brought in as a marketing authority (Andocia's expertise) for HTM's law firm owner base, and the relationship evolved into a formal staff role. The connection is deep, not transactional.</p>
+
+      <div class="insight-box">
+        <strong>Why This Matters</strong>
+        <p>Will's primary job function is <em>acquiring</em> new clients into a high-growth, high-touch service platform. He understands demand generation, sales pipeline, and how to move prospects from interest to paying membership at scale.</p>
+      </div>
+    </div>
+
+    <div class="article-section">
+      <h2>What His Network Actually Represents</h2>
+      <p>Will's genuine network is substantially larger than a single Pittsburgh agency suggests:</p>
+
+      <ul class="list-highlight">
+        <li><strong>600+ high-growth law firm owner relationships</strong> — HTM's active member base. These are entrepreneurs earning $200K–$500K+/year, already accustomed to paying $1,500–$2,000/month for operational improvement and business coaching</li>
+        <li><strong>RJon Robins & HTM leadership</strong> — a nationally recognized Inc. 5000 founder with deep ties in the legal coaching and professional services space</li>
+        <li><strong>Beratung Advisors financial services network</strong> — as CBO, Will is embedded at a financial planning firm with national media presence (Barron's, Bloomberg, CNBC, Morningstar)</li>
+        <li><strong>Pittsburgh professional services ecosystem</strong> — L3 Leadership, Pittsburgh Leadership Foundation, and local influencer networks</li>
+      </ul>
+
+      <p>This is a network of people who are already paying for premium services, understand ROI on operational and marketing improvement, and are actively managed by a coaching company that has trained them to spend money on business infrastructure.</p>
+    </div>
+
+    <div class="article-section">
+      <h2>The AOM Opportunity — Revised Assessment</h2>
+
+      <h3>What Changed</h3>
+      <p>The initial assessment was simple: "Andocia brings client relationships; probably a small fractional deal."</p>
+      <p>The revised assessment, with HTM in the picture, is substantively different.</p>
+
+      <h3>What Will Actually Brings to the Table</h3>
+      <ul class="list-highlight">
+        <li>A formal senior staff role inside a <strong>$30M recurring revenue machine on the Inc. 5000</strong></li>
+        <li>Direct, meaningful access to <strong>600+ entrepreneurial law firm owners</strong> who are already paying premium prices for operational help</li>
+        <li>Proven demand-generation and client acquisition skill set — <em>that's literally his HTM job</em></li>
+        <li>Three separate professional services relationships (HTM, Andocia, Beratung) across legal, marketing, and financial sectors</li>
+      </ul>
+
+      <div class="image-block">
+        <div class="image-placeholder">
+          [Law firm owners / professional services network image — place here]
+        </div>
+        <p class="image-caption">600+ law firm owners actively buying operational and marketing services</p>
+      </div>
+
+      <h3>The Strategic Fit with AOM</h3>
+      <p>The most interesting play: <strong>AOM becomes the AI execution layer powering HTM's fractional CMO offering at scale.</strong></p>
+
+      <ul class="list-highlight">
+        <li><strong>HTM's fractional CMO program</strong> serves approximately 25% of its member base — that's roughly <strong>150 law firms already paying for outsourced marketing leadership</strong></li>
+        <li><strong>AOM's agent platform</strong> could be positioned as the technology substrate underneath HTM's service model at scale — turning human fractional CMO work into AI-augmented, higher-throughput execution</li>
+        <li><strong>Law firm owners as early adopters</strong> — entrepreneurs who understand ROI, already accustomed to paying for premium services, and actively looking for competitive advantages</li>
+        <li><strong>Will understands both sides</strong> — he's lived the agency experience (Andocia) and the professional services coaching model (HTM). He can translate between both worlds</li>
+      </ul>
+
+      <div class="insight-box">
+        <strong>The Capacity Problem HTM Faces</strong>
+        <p>A three-year waitlist means demand exceeds supply. Human-powered fractional services hit a ceiling. AI-augmented service delivery (powered by AOM's agents) is the obvious answer to that capacity bottleneck — and Will knows it.</p>
+      </div>
+    </div>
+
+    <div class="article-section">
+      <h2>Critical Unknowns for the Deal Conversation</h2>
+      <p>The conversation with Will needs clarity on structure from the start. Several different deals are possible, and each one changes the leverage and path forward:</p>
+
+      <ul class="list-highlight">
+        <li><strong>Is he exploring an acquisition of AOM?</strong> Will/Andocia buys AOM outright</li>
+        <li><strong>Is he pursuing a merger?</strong> Andocia merges with AOM; combined entity serves his network</li>
+        <li><strong>Is he looking to license AOM's platform for HTM clients?</strong> AOM stays independent; HTM becomes a major channel partner</li>
+        <li><strong>Is this a personal investment play?</strong> Will individually invests in AOM and leverages his network for distribution</li>
+      </ul>
+
+      <p>The structure changes everything. Knowing which deal he's really exploring is the first move.</p>
+    </div>
+
+    <div class="article-section">
+      <h2>Financial & Operational Reality Check</h2>
+
+      <h3>He Is Financially Backed</h3>
+      <p>Will is not a bootstrapped agency owner trying to acquire AI capability on the cheap. His compensation at HTM as Director of Acquisitions at a $30M company, plus his CEO role at Andocia, plus his CBO role at Beratung, plus real estate ownership — he has material financial resources and decision-making authority.</p>
+
+      <h3>Red Flags Worth Verifying</h3>
+      <ul class="list-highlight">
+        <li><strong>Dual LinkedIn profiles</strong> — he compartmentalizes his roles deliberately; worth understanding why (legal isolation? client separation? career positioning?)</li>
+        <li><strong>Andocia founding date discrepancy</strong> — 2014 vs 2016 vs 2020 in different sources; unexplained entity restructure</li>
+        <li><strong>No public Andocia revenue</strong> — hard to gauge true scale and health of his agency independently</li>
+        <li><strong>No verified Clutch reviews on Andocia</strong> — no independent client satisfaction signal</li>
+        <li><strong>Where does his primary loyalty live?</strong> — HTM as Director of Acquisitions is a meaningful full-time role; is Andocia still his main business or a side play?</li>
+      </ul>
+    </div>
+
+    <div class="article-section">
+      <h2>Bottom Line</h2>
+      <p>Will Host is not a small Pittsburgh agency owner. He is a multi-role operator with a formal senior position at a <strong>$30M+ Inc. 5000 company that serves 600+ law firm owners on a subscription model.</strong> His network represents a concentrated pool of high-earning professional services entrepreneurs who are active buyers of operational and marketing improvement — and he has the professional services expertise to help position AOM's technology into that ecosystem.</p>
+
+      <p>The most valuable outcome: <strong>positioning AOM as the AI platform layer underneath HTM's fractional CMO offering, transforming 150 law firms from human-served to AI-augmented execution, and building a scalable revenue model around that partnership.</strong></p>
+
+      <p>The next conversation needs to start with one clear question: <strong>What is he actually trying to do?</strong> Is this Andocia looking to acquire AI capability? Is this HTM looking to embed AOM's platform into their member services? Is this a personal investment and distribution play? The answer changes the structure and leverage entirely.</p>
+    </div>
+
+    <div class="bottom-note">
+      <p><strong>Research compiled:</strong> May 28, 2026<br>
+      <strong>Sources:</strong> LinkedIn (multiple profiles), How To MANAGE a Small Law Firm team directory, HTM Inc. 5000 profile, founder interviews, Beratung Advisors public profile, Andocia website</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PASSWORD = "Research!26";
+
+  function checkPassword() {
+    const input = document.getElementById('passwordInput').value;
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (input === PASSWORD) {
+      sessionStorage.setItem('andociaAccess', 'true');
+      document.getElementById('passwordGate').style.display = 'none';
+      document.getElementById('articleContainer').style.display = 'block';
+      errorMsg.textContent = '';
+    } else {
+      errorMsg.textContent = 'Incorrect password. Try again.';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+    }
+  }
+
+  // Allow Enter key to submit
+  document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('passwordInput');
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        checkPassword();
+      }
+    });
+
+    // Check if already authenticated in this session
+    if (sessionStorage.getItem('andociaAccess') === 'true') {
+      document.getElementById('passwordGate').style.display = 'none';
+      document.getElementById('articleContainer').style.display = 'block';
+    } else {
+      input.focus();
+    }
+  });
+</script>
+
+</body>
+</html>
