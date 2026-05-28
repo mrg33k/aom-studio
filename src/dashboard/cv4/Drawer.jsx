@@ -580,23 +580,6 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* R20 (2026-05-25) — Mail is now a TreeSection too so every section
-          (Mail, Agents, Projects, Account) shares the exact same chevron
-          heading. Mail defaults to OPEN; Agents + Projects to closed;
-          Account to OPEN. LeftMailPanel's internal "Mail" label is
-          dropped — the TreeSection header IS the title now. */}
-      {/* R21 (2026-05-26) — Mail defaults to CLOSED (defaultCollapsed) per
-          Patrik: the mail list loads via API every time the drawer opens, so
-          showing it expanded on every page load was unnecessary noise. Orange
-          dot (badge) appears when new email arrived since the user last viewed
-          the list. Dot clears on open (handleMailOpen stamps localStorage). */}
-      <TreeSection title="Mail" collapsible defaultCollapsed badge={hasNewMail} onOpen={handleMailOpen}>
-        <LeftMailPanel
-          selectedMailId={selectedMailId}
-          onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
-        />
-      </TreeSection>
-
       {/* corner:skills-picker R1 — purple "Browse skills" CTA above the
           Agents section. Click opens the Skills shelf takeover. */}
       {onToggleSkillsShelf && (
@@ -736,6 +719,15 @@ function DrawerBody({
             )
           })
         )}
+      </TreeSection>
+
+      {/* R20 (2026-05-25) — Mail moved below Projects (2026-05-28 per Patrik).
+          R21 (2026-05-26) — defaults to CLOSED; orange dot when new mail. */}
+      <TreeSection title="Mail" collapsible defaultCollapsed badge={hasNewMail} onOpen={handleMailOpen}>
+        <LeftMailPanel
+          selectedMailId={selectedMailId}
+          onSelectMail={(email) => { onSelectMail?.(email); onClose() }}
+        />
       </TreeSection>
 
       {/* R20 — Account also collapsible (default open) so every section
