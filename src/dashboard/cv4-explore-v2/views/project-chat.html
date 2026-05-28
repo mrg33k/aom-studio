@@ -751,37 +751,6 @@
     }
     .nav-back-link:hover { background-color: var(--c-dim-faint); color: var(--c-text); }
 
-    /* Left-rail search bar */
-    .left-search {
-      position: relative;
-      margin-bottom: var(--sp-md);
-    }
-    .left-search input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 7px 12px 7px 32px;
-      background: transparent;
-      border: 1px solid var(--c-border);
-      border-radius: 5px;
-      color: var(--c-text);
-      font-family: var(--ff-sans);
-      font-size: var(--fs-sm);
-      outline: none;
-      transition: border-color 120ms ease, background 120ms ease;
-    }
-    .left-search input::placeholder { color: var(--c-muted); }
-    .left-search input:focus { border-color: var(--c-text2); background: rgba(255,255,255,.015); }
-    .left-search-icon {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 13px;
-      height: 13px;
-      color: var(--c-muted);
-      pointer-events: none;
-    }
-
     .tree-new-root-btn {
       display: flex;
       align-items: center;
@@ -950,14 +919,6 @@
       <span>←</span>
       <span>Home</span>
     </a>
-
-    <!-- Search bar -->
-    <div class="left-search">
-      <svg class="left-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input type="text" id="left-search-input" placeholder="Search projects, missions…" autocomplete="off" />
-    </div>
 
     <!-- New project CTA -->
     <button class="tree-new-root-btn" onclick="treeCreateProject()">
