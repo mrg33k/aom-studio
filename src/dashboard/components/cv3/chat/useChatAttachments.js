@@ -240,20 +240,27 @@ export default function useChatAttachments({
       name: file.name,
     }))
 
+    const missionSlugForUpload = selectedProject?.missionSlug || null
+
     let attachText, metadata
     if (attachmentMetas.length === 1) {
       const att = attachmentMetas[0]
       attachText = `Attached file: ${att.name}\n${att.url}`
-      metadata = { attachment: att }
+      metadata = {
+        attachment: att,
+        ...(missionSlugForUpload ? { mission_slug: missionSlugForUpload } : {}),
+      }
     } else {
       const names = attachmentMetas.map(a => a.name).join(', ')
       const urls = attachmentMetas.map(a => a.url).join('\n')
       attachText = `Attached ${attachmentMetas.length} files: ${names}\n${urls}`
-      metadata = { attachments: attachmentMetas }
+      metadata = {
+        attachments: attachmentMetas,
+        ...(missionSlugForUpload ? { mission_slug: missionSlugForUpload } : {}),
+      }
     }
 
     const firstAtt = attachmentMetas[0]
-    const missionSlugForUpload = selectedProject?.missionSlug || null
 
     // Optimistic message (single row for all attachments).
     const tempId = `temp-attach-${Date.now()}`
@@ -281,7 +288,6 @@ export default function useChatAttachments({
         client_id: clientId,
         metadata,
         ...userIdentity,
-        ...(missionSlugForUpload ? { mission_slug: missionSlugForUpload } : {}),
       }),
     })
       .then(r => r.json())
