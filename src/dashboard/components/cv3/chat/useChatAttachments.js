@@ -253,6 +253,7 @@ export default function useChatAttachments({
     }
 
     const firstAtt = attachmentMetas[0]
+    const missionSlugForUpload = selectedProject?.missionSlug || null
 
     // Optimistic message (single row for all attachments).
     const tempId = `temp-attach-${Date.now()}`
@@ -280,6 +281,7 @@ export default function useChatAttachments({
         client_id: clientId,
         metadata,
         ...userIdentity,
+        ...(missionSlugForUpload ? { mission_slug: missionSlugForUpload } : {}),
       }),
     })
       .then(r => r.json())
