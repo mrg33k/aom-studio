@@ -662,6 +662,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
   const [refetchKey, setRefetchKey] = useState(0)
   const [isAddingFolder, setIsAddingFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [showBulkMoveMenu, setShowBulkMoveMenu] = useState(false)
 
   const world = worldId || 'aom'
 
@@ -757,6 +758,30 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       console.error('[FilesPanel] move failed', err)
     }
   }, [projectSlug, closeCtxMenu])
+
+  const handleBulkMove = useCallback(async (targetFolder) => {
+    if (!selectedFiles.size || !projectSlug) return
+    const toMove = files.filter(f => f.fromDisk && selectedFiles.has(f.url))
+    if (!toMove.length) { clearSelection(); setShowBulkMoveMenu(false); return }
+    for (const file of toMove) {
+      const relPath = file.projectRelativePath || file.relativePath
+      if (!relPath) continue
+      const fileName = relPath.split('/').pop()
+      const toPath = targetFolder ? `${targetFolder}/${fileName}` : fileName
+      if (toPath === relPath) continue
+      try {
+        await authFetch('/api/dashboard/project-file-move', {
+          method: 'POST',
+          body: JSON.stringify({ slug: projectSlug, from: relPath, to: toPath }),
+        })
+      } catch (err) {
+        console.error('[FilesPanel] bulk move failed for', relPath, err)
+      }
+    }
+    setShowBulkMoveMenu(false)
+    clearSelection()
+    setRefetchKey(k => k + 1)
+  }, [selectedFiles, files, projectSlug, clearSelection])
 
   const handleBulkDelete = useCallback(async () => {
     if (!selectedFiles.size || !projectSlug) return
@@ -1144,33 +1169,69 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
 
       {/* R12 — Bulk action bar (appears when files are selected) */}
       {selectedFiles.size > 0 && (
-        <div style={{
-          position: 'sticky',
-          bottom: 0,
-          background: 'rgba(10,14,22,0.97)',
-          backdropFilter: 'blur(8px)',
-          borderTop: '1px solid ' + C.border,
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          fontSize: 11,
-          fontFamily: "'Inter', sans-serif",
-          zIndex: 10,
-        }}>
-          <span style={{ color: C.text, fontWeight: 500 }}>
-            {selectedFiles.size} selected
-          </span>
-          <span style={{ color: C.border }}>·</span>
-          <button
-            onClick={handleBulkDelete}
-            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
-          >Delete</button>
-          <div style={{ flex: 1 }} />
-          <button
-            onClick={clearSelection}
-            style={{ color: C.muted, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}
-          >✕</button>
+        <div style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
+          {/* Bulk move folder picker — floats above the bar */}
+          {showBulkMoveMenu && (
+            <div style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: 0,
+              right: 0,
+              background: 'rgba(18,22,32,0.98)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid ' + C.border,
+              borderBottom: 'none',
+              borderRadius: '6px 6px 0 0',
+              maxHeight: 180,
+              overflowY: 'auto',
+              fontSize: 11,
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              {[{ label: '/ (project root)', value: '' }, ...folders.map(f => ({ label: f, value: f }))].map(({ label, value }) => (
+                <button
+                  key={value || '__root'}
+                  onClick={() => handleBulkMove(value)}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '7px 12px', background: 'none', border: 'none',
+                    cursor: 'pointer', color: C.text, fontSize: 11,
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >{label}</button>
+              ))}
+            </div>
+          )}
+          <div style={{
+            background: 'rgba(10,14,22,0.97)',
+            backdropFilter: 'blur(8px)',
+            borderTop: '1px solid ' + C.border,
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: 11,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            <span style={{ color: C.text, fontWeight: 500 }}>
+              {selectedFiles.size} selected
+            </span>
+            <span style={{ color: C.border }}>·</span>
+            <button
+              onClick={() => setShowBulkMoveMenu(v => !v)}
+              style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
+            >Move to…</button>
+            <button
+              onClick={handleBulkDelete}
+              style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
+            >Delete</button>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => { clearSelection(); setShowBulkMoveMenu(false) }}
+              style={{ color: C.muted, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}
+            >✕</button>
+          </div>
         </div>
       )}
 
