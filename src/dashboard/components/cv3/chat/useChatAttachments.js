@@ -203,20 +203,30 @@ export default function useChatAttachments({
   }, [worldId, selectedProject, addPendingAttachment, surfaceUploadError])
 
   const handleFileSelection = useCallback(async (e) => {
-    // R79-f18b: top-level entry log + outer try/catch. Past attempts at fixing
-    // "uploads silently fail" added diagnostics inside the happy path, which
-    // misses anything that throws before or after. Whole function is now
-    // wrapped so an unexpected exception surfaces as a toast instead of
-    // disappearing into the React error boundary.
+    // R79-f18c: ENTRY toast (not just console log) so Patrik can see whether
+    // the click is even reaching this function without opening DevTools.
+    // R79-f18b: top-level entry log + outer try/catch — diagnostics inside the
+    // happy path were missing anything that threw before or after. Whole
+    // function is now wrapped so an unexpected exception surfaces as a toast
+    // instead of disappearing into React's error boundary.
+    const _entryFiles = Array.from(e.target.files || [])
     console.info('[ChatPanel] handleFileSelection ENTRY', {
-      files: Array.from(e.target.files || []).map(f => ({ name: f.name, size: f.size, type: f.type })),
+      files: _entryFiles.map(f => ({ name: f.name, size: f.size, type: f.type })),
       worldId,
       selectedAgentSlug: selectedAgent?.slug || null,
       selectedProjectSlug: selectedProject?.slug || null,
       missionSlug: selectedProject?.missionSlug || null,
       isShared: selectedProject?.isShared || false,
     })
-    const files = Array.from(e.target.files || [])
+    // Visible on-screen diagnostic — disappears in 2s, doesn't block anything.
+    // This is the "did my click work?" signal. If you click attach and see
+    // NO toast at all, the bug is upstream of this function (button wiring).
+    if (_entryFiles.length > 0) {
+      try {
+        showToast(`Upload starting: ${_entryFiles.length} file${_entryFiles.length === 1 ? '' : 's'}…`, 'info', 2500)
+      } catch {}
+    }
+    const files = _entryFiles
     if (!files.length) {
       console.warn('[ChatPanel] upload skipped: file picker returned 0 files (user cancelled?)')
       return
