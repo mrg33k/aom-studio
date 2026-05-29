@@ -208,20 +208,8 @@ export default function ThreadInputBar() {
           {/* Attach */}
           <button
             title="Attach"
-            onClick={() => {
-              // R79-f18d: click log + drop the disabled-while-uploading lock
-              // so a stuck `uploading=true` from a prior crashed upload
-              // doesn't permanently disable the button.
-              console.info('[Attach 1:1] button clicked', {
-                hasInputRef: !!fileInputRef.current,
-                uploading,
-              })
-              if (!fileInputRef.current) {
-                console.error('[Attach 1:1] fileInputRef is null')
-                return
-              }
-              fileInputRef.current.click()
-            }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
             style={{
               width: 36, height: 36, borderRadius: '50%',
               background: 'none', border: 'none',

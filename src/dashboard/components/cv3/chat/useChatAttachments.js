@@ -149,16 +149,6 @@ export default function useChatAttachments({
   const fileInputRef = useRef(null)
   const { showToast } = useSystemToast()
 
-  // R79-f18d: defensive reset. If the room changes (user navigates to a
-  // different project / agent / mission), reset the upload spinner state
-  // so a stuck `uploading=true` from a crashed prior upload doesn't carry
-  // across rooms. Also runs once on mount, which is the moment the user
-  // is most likely to hit this on a fresh page load.
-  useEffect(() => {
-    setUploading(false)
-    setStagingFiles(false)
-  }, [selectedAgent?.slug, selectedProject?.slug, selectedProject?.missionSlug, worldId])
-
   const surfaceUploadError = useCallback((err, filename) => {
     let message
     if (err.status === 413) {
@@ -213,57 +203,13 @@ export default function useChatAttachments({
   }, [worldId, selectedProject, addPendingAttachment, surfaceUploadError])
 
   const handleFileSelection = useCallback(async (e) => {
-    // R79-f18c: ENTRY toast (not just console log) so Patrik can see whether
-    // the click is even reaching this function without opening DevTools.
-    // R79-f18b: top-level entry log + outer try/catch — diagnostics inside the
-    // happy path were missing anything that threw before or after. Whole
-    // function is now wrapped so an unexpected exception surfaces as a toast
-    // instead of disappearing into React's error boundary.
-    const _entryFiles = Array.from(e.target.files || [])
-    console.info('[ChatPanel] handleFileSelection ENTRY', {
-      files: _entryFiles.map(f => ({ name: f.name, size: f.size, type: f.type })),
-      worldId,
-      selectedAgentSlug: selectedAgent?.slug || null,
-      selectedProjectSlug: selectedProject?.slug || null,
-      missionSlug: selectedProject?.missionSlug || null,
-      isShared: selectedProject?.isShared || false,
-    })
-    // Visible on-screen diagnostic — disappears in 2s, doesn't block anything.
-    // This is the "did my click work?" signal. If you click attach and see
-    // NO toast at all, the bug is upstream of this function (button wiring).
-    if (_entryFiles.length > 0) {
-      try {
-        showToast(`Upload starting: ${_entryFiles.length} file${_entryFiles.length === 1 ? '' : 's'}…`, 'info', 2500)
-      } catch {}
-    }
-    const files = _entryFiles
-    if (!files.length) {
-      console.warn('[ChatPanel] upload skipped: file picker returned 0 files (user cancelled?)')
-      return
-    }
-    // R79-f18: convert silent returns into visible toasts so when an upload
-    // disappears we can tell which precondition was missing instead of
-    // staring at an empty network tab. The two known silent paths are
-    // (a) worldId not resolved yet (auth/session race) and (b) no agent or
-    // project selected (user clicked attach before the room was ready).
-    if (!worldId) {
-      console.error('[ChatPanel] upload aborted: worldId missing', { worldId, selectedAgent, selectedProject })
-      showToast('Upload not started — workspace not loaded yet. Refresh and try again.', 'error', 7000)
-      e.target.value = ''
-      return
-    }
+    const files = Array.from(e.target.files || [])
+    if (!files.length || !worldId) return
     const agentKey = selectedAgent ? selectedAgent.slug : (selectedProject ? `project:${selectedProject.slug}` : null)
-    if (!agentKey) {
-      console.error('[ChatPanel] upload aborted: no agent or project selected', { selectedAgent, selectedProject })
-      showToast('Upload not started — pick an agent or project first.', 'error', 7000)
-      e.target.value = ''
-      return
-    }
+    if (!agentKey) return
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
     setUploading(true)
-
-    try {
 
     // Upload all files, collecting results (failed files show toasts; successes bundle into one message)
     const uploaded = []
@@ -271,7 +217,6 @@ export default function useChatAttachments({
       try {
         const result = await uploadOneFile(file, clientId)
         uploaded.push({ file, result })
-        console.info('[ChatPanel] file uploaded ok', { name: file.name, size: result.size, url: result.full_url })
       } catch (err) {
         console.error('[ChatPanel] file attach error:', err)
         surfaceUploadError(err, file.name)
@@ -279,11 +224,7 @@ export default function useChatAttachments({
     }
     setUploading(false)
 
-    if (!uploaded.length) {
-      console.warn('[ChatPanel] upload completed: 0/' + files.length + ' files succeeded — no message posted')
-      return
-    }
-    console.info('[ChatPanel] upload phase complete:', uploaded.length + '/' + files.length, 'files succeeded')
+    if (!uploaded.length) return
 
     // Build a SINGLE message carrying all successfully-uploaded files.
     // Single-file path: keep the "Attached file: name\nurl" shape the listener/
@@ -299,24 +240,16 @@ export default function useChatAttachments({
       name: file.name,
     }))
 
-    const missionSlugForUpload = selectedProject?.missionSlug || null
-
     let attachText, metadata
     if (attachmentMetas.length === 1) {
       const att = attachmentMetas[0]
       attachText = `Attached file: ${att.name}\n${att.url}`
-      metadata = {
-        attachment: att,
-        ...(missionSlugForUpload ? { mission_slug: missionSlugForUpload } : {}),
-      }
+      metadata = { attachment: att }
     } else {
       const names = attachmentMetas.map(a => a.name).join(', ')
       const urls = attachmentMetas.map(a => a.url).join('\n')
       attachText = `Attached ${attachmentMetas.length} files: ${names}\n${urls}`
-      metadata = {
-        attachments: attachmentMetas,
-        ...(missionSlugForUpload ? { mission_slug: missionSlugForUpload } : {}),
-      }
+      metadata = { attachments: attachmentMetas }
     }
 
     const firstAtt = attachmentMetas[0]
@@ -336,10 +269,6 @@ export default function useChatAttachments({
       metadata,
     }])
 
-    console.info('[ChatPanel] posting attachment message to supabase-messages', {
-      agentKey, clientId, attachmentCount: attachmentMetas.length,
-      missionSlugInMetadata: metadata.mission_slug || null,
-    })
     authFetch('/api/dashboard/supabase-messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -353,24 +282,13 @@ export default function useChatAttachments({
         ...userIdentity,
       }),
     })
-      .then(async r => {
-        if (!r.ok) {
-          const body = await r.text().catch(() => '<no body>')
-          console.error('[ChatPanel] supabase-messages POST failed', r.status, body)
-          showToast(`File uploaded but message failed to save (HTTP ${r.status}). Refresh to see it.`, 'error', 7000)
-          throw new Error(`supabase-messages ${r.status}`)
-        }
-        return r.json()
-      })
+      .then(r => r.json())
       .then(data => {
         if (data?.message?.id) {
-          console.info('[ChatPanel] message persisted ok', { id: data.message.id })
           setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
-        } else {
-          console.warn('[ChatPanel] supabase-messages returned 200 but no message.id', data)
         }
       })
-      .catch(err => { console.error('[ChatPanel] supabase-messages POST exception', err) })
+      .catch(() => {})
 
     if (selectedProject && sendProjectTextRef?.current) {
       const names = uploaded.map(r => r.file.name).join(', ')
@@ -379,16 +297,7 @@ export default function useChatAttachments({
         : `I just uploaded ${uploaded.length} files: ${names}. Can you confirm you got them?`
       setTimeout(() => sendProjectTextRef.current?.(autoMsg), 500)
     }
-
-    } catch (err) {
-      // R79-f18b: any unhandled exception from the upload/build/post path
-      // now surfaces as a toast + log instead of vanishing into React's
-      // error boundary. Also unsticks the upload spinner.
-      console.error('[ChatPanel] handleFileSelection unhandled exception', err)
-      setUploading(false)
-      showToast(`Upload failed: ${err?.message || 'unknown error'}. Check console for details.`, 'error', 8000)
-    }
-  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError, showToast])
+  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError])
 
   return {
     pendingAttachments, setPendingAttachments,
