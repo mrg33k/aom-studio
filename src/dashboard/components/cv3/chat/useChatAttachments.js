@@ -203,8 +203,24 @@ export default function useChatAttachments({
   }, [worldId, selectedProject, addPendingAttachment, surfaceUploadError])
 
   const handleFileSelection = useCallback(async (e) => {
+    // R79-f18b: top-level entry log + outer try/catch. Past attempts at fixing
+    // "uploads silently fail" added diagnostics inside the happy path, which
+    // misses anything that throws before or after. Whole function is now
+    // wrapped so an unexpected exception surfaces as a toast instead of
+    // disappearing into the React error boundary.
+    console.info('[ChatPanel] handleFileSelection ENTRY', {
+      files: Array.from(e.target.files || []).map(f => ({ name: f.name, size: f.size, type: f.type })),
+      worldId,
+      selectedAgentSlug: selectedAgent?.slug || null,
+      selectedProjectSlug: selectedProject?.slug || null,
+      missionSlug: selectedProject?.missionSlug || null,
+      isShared: selectedProject?.isShared || false,
+    })
     const files = Array.from(e.target.files || [])
-    if (!files.length) return
+    if (!files.length) {
+      console.warn('[ChatPanel] upload skipped: file picker returned 0 files (user cancelled?)')
+      return
+    }
     // R79-f18: convert silent returns into visible toasts so when an upload
     // disappears we can tell which precondition was missing instead of
     // staring at an empty network tab. The two known silent paths are
@@ -227,12 +243,15 @@ export default function useChatAttachments({
     e.target.value = ''
     setUploading(true)
 
+    try {
+
     // Upload all files, collecting results (failed files show toasts; successes bundle into one message)
     const uploaded = []
     for (const file of files) {
       try {
         const result = await uploadOneFile(file, clientId)
         uploaded.push({ file, result })
+        console.info('[ChatPanel] file uploaded ok', { name: file.name, size: result.size, url: result.full_url })
       } catch (err) {
         console.error('[ChatPanel] file attach error:', err)
         surfaceUploadError(err, file.name)
@@ -240,7 +259,11 @@ export default function useChatAttachments({
     }
     setUploading(false)
 
-    if (!uploaded.length) return
+    if (!uploaded.length) {
+      console.warn('[ChatPanel] upload completed: 0/' + files.length + ' files succeeded — no message posted')
+      return
+    }
+    console.info('[ChatPanel] upload phase complete:', uploaded.length + '/' + files.length, 'files succeeded')
 
     // Build a SINGLE message carrying all successfully-uploaded files.
     // Single-file path: keep the "Attached file: name\nurl" shape the listener/
@@ -293,6 +316,10 @@ export default function useChatAttachments({
       metadata,
     }])
 
+    console.info('[ChatPanel] posting attachment message to supabase-messages', {
+      agentKey, clientId, attachmentCount: attachmentMetas.length,
+      missionSlugInMetadata: metadata.mission_slug || null,
+    })
     authFetch('/api/dashboard/supabase-messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -306,13 +333,24 @@ export default function useChatAttachments({
         ...userIdentity,
       }),
     })
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) {
+          const body = await r.text().catch(() => '<no body>')
+          console.error('[ChatPanel] supabase-messages POST failed', r.status, body)
+          showToast(`File uploaded but message failed to save (HTTP ${r.status}). Refresh to see it.`, 'error', 7000)
+          throw new Error(`supabase-messages ${r.status}`)
+        }
+        return r.json()
+      })
       .then(data => {
         if (data?.message?.id) {
+          console.info('[ChatPanel] message persisted ok', { id: data.message.id })
           setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
+        } else {
+          console.warn('[ChatPanel] supabase-messages returned 200 but no message.id', data)
         }
       })
-      .catch(() => {})
+      .catch(err => { console.error('[ChatPanel] supabase-messages POST exception', err) })
 
     if (selectedProject && sendProjectTextRef?.current) {
       const names = uploaded.map(r => r.file.name).join(', ')
@@ -321,7 +359,16 @@ export default function useChatAttachments({
         : `I just uploaded ${uploaded.length} files: ${names}. Can you confirm you got them?`
       setTimeout(() => sendProjectTextRef.current?.(autoMsg), 500)
     }
-  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError])
+
+    } catch (err) {
+      // R79-f18b: any unhandled exception from the upload/build/post path
+      // now surfaces as a toast + log instead of vanishing into React's
+      // error boundary. Also unsticks the upload spinner.
+      console.error('[ChatPanel] handleFileSelection unhandled exception', err)
+      setUploading(false)
+      showToast(`Upload failed: ${err?.message || 'unknown error'}. Check console for details.`, 'error', 8000)
+    }
+  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError, showToast])
 
   return {
     pendingAttachments, setPendingAttachments,
