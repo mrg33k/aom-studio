@@ -15,7 +15,7 @@
 // reads useCornerAuth/Data/Nav at the top and feeds the values into the
 // scoped hooks + memoized provider values exactly as before.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useProjects } from '../../hooks/useProjects'
 import { formatRelativeTime } from '../../timeUtils'
 import { authFetch } from '../../lib/authFetch.js'
@@ -74,6 +74,19 @@ export default function ChatPanel() {
   } = useCornerNav()
   const { projectId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  // 2026-05-29: when the user lands on /dashboard/project/X?mission=Y directly
+  // (URL bar, bookmark, share-link, hard refresh), conversationTarget is empty
+  // so selectedProject.missionSlug stayed undefined → upload metadata never
+  // carried mission_slug → Files panel filter showed zero files in the room.
+  // Pull mission from the URL search params so direct navigation works the
+  // same as drawer-click navigation.
+  const urlMissionSlug = useMemo(() => {
+    try {
+      const sp = new URLSearchParams(location.search || '')
+      return (sp.get('mission') || '').trim() || null
+    } catch (_) { return null }
+  }, [location.search])
 
   // ── Shared refs (shell owns these so hooks can see the same mutable slot) ─
   // pendingAttachmentsRef + sendAgentTextRef/sendProjectTextRef are the
@@ -184,13 +197,18 @@ export default function ChatPanel() {
     // mission click (drawer or file-manager), conversationTarget carries
     // missionSlug + missionName. Surface them on selectedProject so the
     // chat-send path can pass them through to the bridge.
-    const missionScope = conversationTarget?.missionSlug && conversationTarget?.slug === projectId
+    // 2026-05-29: ALSO accept missionSlug from the URL search param (?mission=Y)
+    // so direct navigation/bookmarks/share-links land in the mission scope.
+    const ctMission = conversationTarget?.missionSlug && conversationTarget?.slug === projectId
       ? {
           missionSlug: conversationTarget.missionSlug,
           missionName: conversationTarget.missionName,
           missionPath: conversationTarget.missionPath,
         }
       : null
+    const missionScope = ctMission || (urlMissionSlug
+      ? { missionSlug: urlMissionSlug, missionName: urlMissionSlug, missionPath: null }
+      : null)
     if (inlineProject) return missionScope ? { ...inlineProject, ...missionScope } : inlineProject
     if (!projectId) return null
     if (projects?.length) {
@@ -207,7 +225,7 @@ export default function ChatPanel() {
     return missionScope
       ? { id: projectId, slug: projectId, name: projectId, ...missionScope }
       : { id: projectId, slug: projectId, name: projectId }
-  }, [projectId, projects, inlineProject, conversationTarget?.missionSlug, conversationTarget?.missionName, conversationTarget?.missionPath, conversationTarget?.slug])
+  }, [projectId, projects, inlineProject, conversationTarget?.missionSlug, conversationTarget?.missionName, conversationTarget?.missionPath, conversationTarget?.slug, urlMissionSlug])
 
   // Reset session-hygiene counters and paste chips when conversation changes.
   // Must come AFTER selectedProject is defined above — referencing it in a dep

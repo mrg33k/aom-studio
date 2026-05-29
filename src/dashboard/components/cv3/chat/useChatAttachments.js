@@ -204,11 +204,26 @@ export default function useChatAttachments({
 
   const handleFileSelection = useCallback(async (e) => {
     const files = Array.from(e.target.files || [])
-    if (!files.length || !worldId) return
+    // 2026-05-29: make the silent bails loud. Patrik couldn't tell why
+    // multi-file uploads were quietly doing nothing. Console + toast both.
+    if (!files.length) {
+      console.warn('[ChatPanel] upload bailed: no files selected')
+      return
+    }
+    if (!worldId) {
+      console.error('[ChatPanel] upload bailed: worldId not loaded — page still signing in')
+      try { showToast('Upload paused: still signing in. Try again in a second.', 'warning', 5000) } catch (_) {}
+      return
+    }
     const agentKey = selectedAgent ? selectedAgent.slug : (selectedProject ? `project:${selectedProject.slug}` : null)
-    if (!agentKey) return
+    if (!agentKey) {
+      console.error('[ChatPanel] upload bailed: no agent or project — open a chat first')
+      try { showToast('Upload failed: open a chat first.', 'warning', 5000) } catch (_) {}
+      return
+    }
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
+    console.log('[ChatPanel] upload starting', { fileCount: files.length, agentKey, clientId, missionSlug: selectedProject?.missionSlug || null })
     setUploading(true)
 
     // Upload all files, collecting results (failed files show toasts; successes bundle into one message)
@@ -217,14 +232,19 @@ export default function useChatAttachments({
       try {
         const result = await uploadOneFile(file, clientId)
         uploaded.push({ file, result })
+        console.log('[ChatPanel] upload ok', { name: file.name, size: result.size, url: result.full_url })
       } catch (err) {
-        console.error('[ChatPanel] file attach error:', err)
+        console.error('[ChatPanel] file attach error:', file.name, err)
         surfaceUploadError(err, file.name)
       }
     }
     setUploading(false)
 
-    if (!uploaded.length) return
+    if (!uploaded.length) {
+      console.error('[ChatPanel] upload bailed: all', files.length, 'files failed — see prior errors')
+      try { showToast(`Upload failed: all ${files.length} files failed. Check console for the reason.`, 'error', 7000) } catch (_) {}
+      return
+    }
 
     // Build a SINGLE message carrying all successfully-uploaded files.
     // Single-file path: keep the "Attached file: name\nurl" shape the listener/
