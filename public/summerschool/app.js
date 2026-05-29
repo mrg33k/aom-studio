@@ -520,11 +520,15 @@
     // never got marked done — we caught a section he skipped Monday. Set
     // SKIP_WINDOW back to a small positive number ONLY after every block
     // type's forward "Continue" wiring is reliable on the live page.
-    const SKIP_WINDOW = 0;
+    // Friday 2026-05-29 pivot: when d.unlockAll is true on the curriculum,
+    // EVERY block is tappable from the start. The gate moved INSIDE each
+    // block (character count + spell check on teach-back, exact-match on
+    // typing-precise). The hub no longer locks.
+    const SKIP_WINDOW = d.unlockAll ? blocks.length : 0;
     const renderBlockCard = (b, idx) => {
       const done = SS && SS.isBlockDone(b.id);
       const isNext = idx === nextIdx;
-      const inSkipWindow = nextIdx >= 0 && idx > nextIdx && idx <= nextIdx + SKIP_WINDOW;
+      const inSkipWindow = d.unlockAll ? true : (nextIdx >= 0 && idx > nextIdx && idx <= nextIdx + SKIP_WINDOW);
       const locked = !done && !isNext && !inSkipWindow;
       const kindLabel = b.kind === 'topic' ? 'Today\'s Class' : 'Daily Drill';
       const kindCls = b.kind === 'topic' ? 'topic' : '';
