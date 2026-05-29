@@ -307,8 +307,19 @@ export default async function handler(req, res) {
     if (type === 'uploads') {
       const clientId = (client || 'aom').toString().trim().toLowerCase()
       const project = req.query.project ? String(req.query.project).trim().toLowerCase() : null
+      const mission = req.query.mission ? String(req.query.mission).trim().toLowerCase() : null
+      const agent = req.query.agent ? String(req.query.agent).trim().toLowerCase() : null
       const limit = Math.min(parseInt(req.query.limit || '500', 10) || 500, 1000)
 
+      // R79-f19 (2026-05-29): uploads now carry chat scope on metadata so the
+      // right-rail file browser can filter to "files uploaded in THIS chat":
+      //   - metadata.project_slug = '<slug>'    (project + mission rooms)
+      //   - metadata.mission_slug = '<slug>'    (mission room only)
+      //   - metadata.agent_slug   = '<slug>'    (1:1 agent room only)
+      // Pre-R79-f19 rows won't have these; project= filter alone surfaces
+      // every project upload (mission rooms inclusive) so historical files
+      // stay visible at the project level.
+      //
       // Schema reality (verified 2026-05-25): the messages table does NOT
       // have top-level attachment_url / file_mime_type / file_size columns.
       // The supabase-messages.js POST conditionally spreads those fields, but
@@ -329,6 +340,8 @@ export default async function handler(req, res) {
         `limit=${limit}`,
       ]
       if (project) baseFilters.push(`project=eq.${encodeURIComponent(project)}`)
+      if (mission) baseFilters.push(`metadata->>mission_slug=eq.${encodeURIComponent(mission)}`)
+      if (agent) baseFilters.push(`metadata->>agent_slug=eq.${encodeURIComponent(agent)}`)
 
       const urlSingle = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachment=not.is.null`
       const urlMulti = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachments=not.is.null`

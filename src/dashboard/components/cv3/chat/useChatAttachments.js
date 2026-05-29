@@ -240,16 +240,27 @@ export default function useChatAttachments({
       name: file.name,
     }))
 
+    // R79-f19: record the chat scope on every upload so the right-rail
+    // file browser can filter to "files uploaded in THIS chat." Three
+    // scopes (Patrik 2026-05-29): mission room → mission_slug + project_slug;
+    // project room → project_slug only; 1:1 agent → agent_slug only.
+    // Disk bytes still live in ~/Documents/Corner/files/<world>/<uuid>-<name>;
+    // routing is purely metadata so uploads can't break if scope is wrong.
+    const uploadScope = {}
+    if (selectedProject?.slug) uploadScope.project_slug = selectedProject.slug
+    if (selectedProject?.missionSlug) uploadScope.mission_slug = selectedProject.missionSlug
+    if (selectedAgent?.slug && !selectedProject) uploadScope.agent_slug = selectedAgent.slug
+
     let attachText, metadata
     if (attachmentMetas.length === 1) {
       const att = attachmentMetas[0]
       attachText = `Attached file: ${att.name}\n${att.url}`
-      metadata = { attachment: att }
+      metadata = { attachment: att, ...uploadScope }
     } else {
       const names = attachmentMetas.map(a => a.name).join(', ')
       const urls = attachmentMetas.map(a => a.url).join('\n')
       attachText = `Attached ${attachmentMetas.length} files: ${names}\n${urls}`
-      metadata = { attachments: attachmentMetas }
+      metadata = { attachments: attachmentMetas, ...uploadScope }
     }
 
     const firstAtt = attachmentMetas[0]

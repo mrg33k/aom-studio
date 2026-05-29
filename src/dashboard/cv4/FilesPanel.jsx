@@ -854,8 +854,15 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
     // R79-f14 (2026-05-25): screenshots dropped in chat now appear under the
     // Media filter without waiting on a tunnel-list endpoint or a storage
     // migration.
+    // R79-f19 (2026-05-29): pass mission scope when the panel is drilled
+    // into a mission room so we only see files uploaded in THAT mission's
+    // chat. The agent_slug path is the 1:1-room case — caller passes
+    // `agentSlug` instead of `projectSlug` when scoped to an agent.
+    const uploadsScope = []
+    if (projectSlug) uploadsScope.push(`project=${encodeURIComponent(projectSlug)}`)
+    if (missionSlug) uploadsScope.push(`mission=${encodeURIComponent(missionSlug)}`)
     const chatUploadsP = authFetch(
-      `/api/dashboard/files?type=uploads&client=${encodeURIComponent(world)}${projectSlug ? `&project=${encodeURIComponent(projectSlug)}` : ''}`
+      `/api/dashboard/files?type=uploads&client=${encodeURIComponent(world)}${uploadsScope.length ? '&' + uploadsScope.join('&') : ''}`
     )
       .then(r => r.ok ? r.json() : null)
       .then(body => (body?.files || []).map(f => ({
