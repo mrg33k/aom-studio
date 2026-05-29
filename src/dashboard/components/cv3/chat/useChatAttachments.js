@@ -309,6 +309,12 @@ export default function useChatAttachments({
         role: 'user',
         source: 'corner-dashboard',
         client_id: clientId,
+        // 2026-05-29 R79-f22: explicitly send the project slug so the row's
+        // `project` column gets populated. Without this, detectProjectFromText
+        // ran on text like "Attached N files: name1.xlsx…" — no project tag,
+        // no slug match — and stamped project=NULL. The Files panel's
+        // `project=eq.<slug>` filter then dropped the row entirely.
+        ...(selectedProject?.slug ? { project: selectedProject.slug } : {}),
         metadata,
         ...userIdentity,
       }),

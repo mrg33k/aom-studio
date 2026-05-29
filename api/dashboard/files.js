@@ -339,7 +339,13 @@ export default async function handler(req, res) {
         'order=timestamp.desc',
         `limit=${limit}`,
       ]
-      if (project) baseFilters.push(`project=eq.${encodeURIComponent(project)}`)
+      // 2026-05-29 R79-f22: project filter is permissive in the same way as
+      // mission. Match rows where the project column equals the slug OR rows
+      // where the column is null but metadata.project_slug equals the slug.
+      // Without this, uploads from clients that didn't pass `project` in the
+      // POST body (or fell through detectProjectFromText) get dropped from
+      // every project view despite carrying the right metadata.
+      if (project) baseFilters.push(`or=(project.eq.${encodeURIComponent(project)},and(project.is.null,metadata->>project_slug.eq.${encodeURIComponent(project)}))`)
       // 2026-05-29: mission filter is permissive — show uploads where
       // mission_slug matches the room AND uploads from this project that
       // don't have a mission_slug at all (pre-scope uploads, drawer-less
