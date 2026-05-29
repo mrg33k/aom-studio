@@ -204,9 +204,25 @@ export default function useChatAttachments({
 
   const handleFileSelection = useCallback(async (e) => {
     const files = Array.from(e.target.files || [])
-    if (!files.length || !worldId) return
+    if (!files.length) return
+    // R79-f18: convert silent returns into visible toasts so when an upload
+    // disappears we can tell which precondition was missing instead of
+    // staring at an empty network tab. The two known silent paths are
+    // (a) worldId not resolved yet (auth/session race) and (b) no agent or
+    // project selected (user clicked attach before the room was ready).
+    if (!worldId) {
+      console.error('[ChatPanel] upload aborted: worldId missing', { worldId, selectedAgent, selectedProject })
+      showToast('Upload not started — workspace not loaded yet. Refresh and try again.', 'error', 7000)
+      e.target.value = ''
+      return
+    }
     const agentKey = selectedAgent ? selectedAgent.slug : (selectedProject ? `project:${selectedProject.slug}` : null)
-    if (!agentKey) return
+    if (!agentKey) {
+      console.error('[ChatPanel] upload aborted: no agent or project selected', { selectedAgent, selectedProject })
+      showToast('Upload not started — pick an agent or project first.', 'error', 7000)
+      e.target.value = ''
+      return
+    }
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
     setUploading(true)
