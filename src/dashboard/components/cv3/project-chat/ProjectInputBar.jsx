@@ -232,8 +232,21 @@ export default function ProjectInputBar() {
           <div data-role="composer-actions" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <button
               title="Attach"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              onClick={() => {
+                // R79-f18d: log the button-click side, not just the handler.
+                // If we never see this log, the click isn't reaching the
+                // button at all (overlay, z-index, pointer-events bug).
+                console.info('[Attach] button clicked', {
+                  hasInputRef: !!fileInputRef.current,
+                  uploading,
+                  inputDisabled: fileInputRef.current?.disabled,
+                })
+                if (!fileInputRef.current) {
+                  console.error('[Attach] fileInputRef is null — input not mounted')
+                  return
+                }
+                fileInputRef.current.click()
+              }}
               style={{
                 width: 36, height: 36, borderRadius: '50%',
                 background: 'none', border: 'none',

@@ -149,6 +149,16 @@ export default function useChatAttachments({
   const fileInputRef = useRef(null)
   const { showToast } = useSystemToast()
 
+  // R79-f18d: defensive reset. If the room changes (user navigates to a
+  // different project / agent / mission), reset the upload spinner state
+  // so a stuck `uploading=true` from a crashed prior upload doesn't carry
+  // across rooms. Also runs once on mount, which is the moment the user
+  // is most likely to hit this on a fresh page load.
+  useEffect(() => {
+    setUploading(false)
+    setStagingFiles(false)
+  }, [selectedAgent?.slug, selectedProject?.slug, selectedProject?.missionSlug, worldId])
+
   const surfaceUploadError = useCallback((err, filename) => {
     let message
     if (err.status === 413) {
