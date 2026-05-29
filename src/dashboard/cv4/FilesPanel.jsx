@@ -874,6 +874,14 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
         size: f.size,
         mime: f.mime,
         _ts: f.date ? new Date(f.date).getTime() : 0,
+        // 2026-05-29 R79-f21: chat uploads come pre-filtered by the server
+        // (project= and mission= are applied in api/dashboard/files.js).
+        // Tag them so the client-side mission filter below doesn't drop them.
+        // Without this tag, the panel's missions/<slug>/ path-prefix filter
+        // would throw them away because chat uploads aren't filesystem files
+        // with that path shape.
+        _source: 'chat-upload',
+        missionSlug: missionSlug || null,
       })))
       .catch(() => [])
 
@@ -1009,7 +1017,13 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
         finalFiles = merged
           .filter(f =>
             f.missionSlug === missionSlug ||
-            (f.relativePath || '').startsWith(prefix)
+            (f.relativePath || '').startsWith(prefix) ||
+            // 2026-05-29 R79-f21: chat uploads are pre-filtered server-side
+            // by api/dashboard/files.js (project= AND mission= filters apply
+            // there with the permissive OR-NULL clause). Tagged with
+            // _source='chat-upload' upstream so we don't drop them just
+            // because they lack a filesystem path prefix.
+            f._source === 'chat-upload'
           )
           .map(f => ({
             ...f,
