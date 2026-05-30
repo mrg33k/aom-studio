@@ -206,6 +206,108 @@
     return;
   }
 
+  // ?answers=1 → Mom & Dad review surface (Patrik 2026-05-29 #5).
+  // Shows every typed answer Ethan submitted today (concept typed-checks,
+  // teach-backs, video-typed answers), grouped by subject, in the order
+  // he wrote them. Used after he hands the iPad over.
+  if (new URLSearchParams(window.location.search).has('answers')) {
+    const raw = localStorage.getItem('ss-state-v1');
+    const s = raw ? JSON.parse(raw) : { artifacts: [], writingPieces: [], days: {} };
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todaysArtifacts = (s.artifacts || []).filter(a =>
+      a.date === todayStr && ['concept-typed', 'teach-back', 'video-typed'].includes(a.kind)
+    );
+    const SUBJECT_ORDER = ['Writing', 'Roblox Coding', 'Spelling', 'MPC ONE'];
+    const grouped = {};
+    SUBJECT_ORDER.forEach(s => grouped[s] = []);
+    grouped['Other'] = [];
+    todaysArtifacts.forEach(a => {
+      const subj = a.subject || 'Other';
+      if (!grouped[subj]) grouped[subj] = [];
+      grouped[subj].push(a);
+    });
+    const totalAnswers = todaysArtifacts.reduce((n, a) => n + (Array.isArray(a.answers) ? a.answers.length : 1), 0);
+    const totalChars = todaysArtifacts.reduce((n, a) => {
+      if (Array.isArray(a.answers)) return n + a.answers.reduce((x, ans) => x + (ans.body || '').length, 0);
+      return n + (a.body || '').length;
+    }, 0);
+
+    const renderAnswer = (q, body) => `
+      <div style="background:#FFF; border:1px solid rgba(26,24,20,0.10); border-radius:10px; padding:18px 20px; margin-bottom:14px;">
+        ${q ? `<div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#C8932E; margin-bottom:6px;">Question</div>
+        <div style="font-family:'Fraunces','Times New Roman',serif; font-size:15px; line-height:1.45; color:#6B6B6B; margin-bottom:12px;">${q}</div>` : ''}
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#1A1814; margin-bottom:6px;">Ethan's answer</div>
+        <div style="font-family:'Fraunces','Times New Roman',serif; font-size:17px; line-height:1.6; color:#1A1814; white-space:pre-wrap;">${(body || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+      </div>
+    `;
+
+    document.body.innerHTML = '';
+    document.body.style.background = '#F5EFE5';
+    document.body.style.margin = '0';
+    document.body.innerHTML = `
+      <div style="max-width:820px; margin:32px auto; padding:24px; font-family:'Geist',system-ui,sans-serif;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#C8932E; margin-bottom:6px;">Summer School · Mom &amp; Dad Review</div>
+            <h1 style="font-family:'Fraunces','Times New Roman',serif; font-size:36px; font-weight:500; margin:0; color:#1A1814;">Ethan's answers — ${todayStr}</h1>
+          </div>
+          <a href="/summerschool/" style="background:#1A1814; color:#F5EFE5; padding:10px 22px; border-radius:999px; text-decoration:none; font-weight:600; font-size:14px;">Back</a>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:24px 0 28px;">
+          <div style="background:#FFF; border-radius:10px; padding:18px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#6B6B6B; margin-bottom:6px;">Answers</div>
+            <div style="font-family:'Fraunces',serif; font-size:32px; color:#1A1814;">${totalAnswers}</div>
+          </div>
+          <div style="background:#FFF; border-radius:10px; padding:18px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#6B6B6B; margin-bottom:6px;">Characters typed</div>
+            <div style="font-family:'Fraunces',serif; font-size:32px; color:#1A1814;">${totalChars}</div>
+          </div>
+          <div style="background:#FFF; border-radius:10px; padding:18px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#6B6B6B; margin-bottom:6px;">Blocks with answers</div>
+            <div style="font-family:'Fraunces',serif; font-size:32px; color:#1A1814;">${todaysArtifacts.length}</div>
+          </div>
+        </div>
+
+        ${Object.keys(grouped).filter(s => grouped[s].length > 0).map(subj => `
+          <div style="margin-bottom:36px;">
+            <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+              <h2 style="font-family:'Fraunces',serif; font-size:24px; font-weight:500; margin:0; color:#1A1814;">${subj}</h2>
+              <span style="font-size:13px; color:#6B6B6B;">${grouped[subj].length} block${grouped[subj].length===1?'':'s'}</span>
+            </div>
+            ${grouped[subj].map(a => {
+              if (Array.isArray(a.answers)) {
+                return `
+                  <div style="margin-bottom:18px;">
+                    <div style="font-size:13px; font-weight:600; color:#6B6B6B; margin-bottom:8px;">${a.title || a.kind}</div>
+                    ${a.answers.map(ans => renderAnswer(ans.q, ans.body)).join('')}
+                  </div>
+                `;
+              }
+              return `
+                <div style="margin-bottom:18px;">
+                  <div style="font-size:13px; font-weight:600; color:#6B6B6B; margin-bottom:8px;">${a.title || a.kind}</div>
+                  ${renderAnswer(a.question, a.body)}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `).join('')}
+
+        ${totalAnswers === 0 ? `
+          <div style="background:#FFF; border-radius:10px; padding:32px; text-align:center; color:#6B6B6B; font-family:'Fraunces',serif; font-size:17px;">
+            No answers yet today. Ethan hasn't submitted any typed responses.
+          </div>
+        ` : ''}
+
+        <div style="margin-top:24px; font-size:12px; color:#6B6B6B; text-align:center;">
+          Saved on this device only — open this same page on Ethan's iPad to see his answers.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   const host = document.getElementById('app-host');
   if (!host) { console.warn('no #app-host'); return; }
 

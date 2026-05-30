@@ -380,11 +380,26 @@ window.SSMod = (function () {
         const ta = host.querySelector('#concept-typed');
         const body = ta ? ta.value.trim() : '';
         data.typedAnswer = body;
-        if (window.SS && window.SS.saveWritingPiece && body) {
-          window.SS.saveWritingPiece(block.typedCheck.q || block.title || 'Concept check', body);
-        }
+        _showReviewModal(host, {
+          title: 'Ready for Mom & Dad?',
+          answers: [{ q: block.typedCheck.q, body }],
+          onEdit: () => {
+            // restore focus + cursor at the end
+            if (ta) { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
+          },
+          onConfirm: () => {
+            if (window.SS && window.SS.saveWritingPiece && body) {
+              window.SS.saveWritingPiece(block.typedCheck.q || block.title || 'Concept check', body);
+            }
+            if (window.SS && window.SS.saveArtifact && body) {
+              window.SS.saveArtifact({ kind: 'concept-typed', block_id: block.id, subject: block.subject, question: block.typedCheck.q, body, title: block.title });
+            }
+            complete(block.id, data);
+          }
+        });
+      } else {
+        complete(block.id, data);
       }
-      complete(block.id, data);
     };
   }
 
@@ -2775,6 +2790,67 @@ window.SSMod = (function () {
   }
 
   // ============================================================
+  // REVIEW MODAL (Patrik 2026-05-29 #5: accountability + verify-before-send)
+  //
+  // Every typed gate (teach-back, concept typed-check, video-typed) routes
+  // through this before completing the block. He has to LOOK at his
+  // answer and confirm "yes, send this to Mom and Dad to review."
+  //
+  // Shape:
+  //   _showReviewModal({
+  //     title: 'Ready for Mom & Dad?',
+  //     answers: [{ q: 'prompt', body: 'his answer' }, ...],
+  //     onEdit: () => {...},      // back to typing
+  //     onConfirm: () => {...}   // commit + advance
+  //   })
+  // ============================================================
+  function _showReviewModal(host, opts) {
+    const answers = opts.answers || [];
+    const title = opts.title || 'Ready for Mom & Dad?';
+    const sub = opts.subtitle || 'Read your answer below. If it looks good, send it. If not, go back and fix it.';
+
+    // Build the review card inside the existing host. Hide the rest by
+    // wrapping all current children, then prepending the review.
+    const existing = Array.from(host.children).map(el => el);
+
+    const wrap = document.createElement('div');
+    wrap.id = 'ss-review-modal';
+    wrap.style.cssText = 'position:fixed; inset:0; background:rgba(26,24,20,0.55); display:flex; align-items:center; justify-content:center; z-index:9999; padding:var(--space-5);';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#FBFAF6; border-radius:var(--r-md); max-width:640px; width:100%; max-height:85vh; overflow-y:auto; padding:var(--space-6) var(--space-6); box-shadow:0 24px 60px rgba(0,0,0,0.35);';
+    const answersHtml = answers.map((a, i) => `
+      <div style="margin-bottom:var(--space-4); padding:var(--space-4); background:#FFF; border:1px solid rgba(26,24,20,0.10); border-radius:var(--r-sm);">
+        ${a.q ? `<div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">${answers.length > 1 ? 'Answer ' + (i + 1) : 'Your answer'}</div>` : ''}
+        ${a.q ? `<div style="font-family:var(--font-serif); font-size:15px; line-height:1.45; color:var(--ink-soft); margin-bottom:var(--space-2);">${a.q}</div>` : ''}
+        <div style="font-family:var(--font-serif); font-size:17px; line-height:1.55; color:var(--ink); white-space:pre-wrap;">${(a.body || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+      </div>
+    `).join('');
+    card.innerHTML = `
+      <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">Verify · Mom & Dad will read this</div>
+      <h2 style="font-family:var(--font-serif); font-size:26px; line-height:1.2; font-weight:500; color:var(--ink); margin:0 0 var(--space-2) 0;">${title}</h2>
+      <p style="font-family:var(--font-serif); font-size:16px; line-height:1.45; color:var(--ink-soft); margin:0 0 var(--space-5) 0;">${sub}</p>
+      ${answersHtml}
+      <div style="display:flex; gap:var(--space-3); margin-top:var(--space-4); justify-content:flex-end; flex-wrap:wrap;">
+        <button class="btn-secondary" id="rv-edit" style="padding:12px 22px; border-radius:999px; border:1.5px solid rgba(26,24,20,0.20); background:transparent; font-family:inherit; font-weight:600; cursor:pointer;">Edit again</button>
+        <button class="btn-primary" id="rv-send" style="padding:12px 22px; border-radius:999px; border:none; background:var(--ink); color:var(--cream); font-family:inherit; font-weight:600; cursor:pointer;">Yes — send to Mom & Dad</button>
+      </div>
+    `;
+    wrap.appendChild(card);
+    document.body.appendChild(wrap);
+
+    const cleanup = () => { wrap.remove(); };
+    wrap.querySelector('#rv-edit').onclick = () => { cleanup(); if (opts.onEdit) opts.onEdit(); };
+    wrap.querySelector('#rv-send').onclick = () => { cleanup(); if (opts.onConfirm) opts.onConfirm(); };
+
+    // Esc closes back to editing
+    const escHandler = (e) => {
+      if (e.key === 'Escape') { document.removeEventListener('keydown', escHandler); cleanup(); if (opts.onEdit) opts.onEdit(); }
+    };
+    document.addEventListener('keydown', escHandler);
+  }
+
+  // ============================================================
   // VIDEO-TYPED — kickoff video + typed teach-back questions
   // Friday 2026-05-29 — Patrik wants every subject to open with an
   // actually-relevant kickoff video. No multi-choice quiz after — he
@@ -2937,13 +3013,24 @@ window.SSMod = (function () {
         const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
         return { q: q.q, body: ta ? ta.value.trim() : '' };
       });
-      if (window.SS && window.SS.saveWritingPiece) {
-        answers.forEach(a => { if (a.body) window.SS.saveWritingPiece(a.q, a.body); });
-      }
-      if (window.SS && window.SS.saveArtifact) {
-        window.SS.saveArtifact({ kind: 'video-typed', block_id: block.id, ytId, answers, title: block.title });
-      }
-      complete(block.id, { ytId, answers, budgetMinutes: block.minutes });
+      _showReviewModal(host, {
+        title: 'Ready for Mom & Dad?',
+        subtitle: 'Read both your answers below. Mom & Dad will see exactly what you wrote.',
+        answers,
+        onEdit: () => {
+          const firstTa = host.querySelector('textarea[data-qi="0"]');
+          if (firstTa) { firstTa.focus(); try { firstTa.setSelectionRange(firstTa.value.length, firstTa.value.length); } catch(e){} }
+        },
+        onConfirm: () => {
+          if (window.SS && window.SS.saveWritingPiece) {
+            answers.forEach(a => { if (a.body) window.SS.saveWritingPiece(a.q, a.body); });
+          }
+          if (window.SS && window.SS.saveArtifact) {
+            window.SS.saveArtifact({ kind: 'video-typed', block_id: block.id, subject: block.subject, ytId, answers, title: block.title });
+          }
+          complete(block.id, { ytId, answers, budgetMinutes: block.minutes });
+        }
+      });
     };
 
     updateSubmit();
@@ -3318,13 +3405,22 @@ window.SSMod = (function () {
     submit.onclick = () => {
       if (submit.disabled) return;
       const body = ta.value.trim();
-      if (window.SS && block.savedAs === 'writingPiece') {
-        window.SS.saveWritingPiece(block.title || 'Teach-back', body);
-      }
-      if (window.SS && window.SS.saveArtifact) {
-        window.SS.saveArtifact({ kind: 'teach-back', block_id: block.id, body, title: block.title });
-      }
-      complete(block.id, { chars: body.length, body, budgetMinutes: block.minutes });
+      _showReviewModal(host, {
+        title: 'Ready for Mom & Dad?',
+        answers: [{ q: block.prompt, body }],
+        onEdit: () => {
+          if (ta) { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
+        },
+        onConfirm: () => {
+          if (window.SS && block.savedAs === 'writingPiece') {
+            window.SS.saveWritingPiece(block.title || block.prompt || 'Teach-back', body);
+          }
+          if (window.SS && window.SS.saveArtifact) {
+            window.SS.saveArtifact({ kind: 'teach-back', block_id: block.id, subject: block.subject, question: block.prompt, body, title: block.title });
+          }
+          complete(block.id, { chars: body.length, body, budgetMinutes: block.minutes });
+        }
+      });
     };
 
     refresh();
