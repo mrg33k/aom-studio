@@ -72,17 +72,17 @@ export default async function handler(req, res) {
   if (supabase) {
     const { data, error } = await supabase
       .from('deal_bank_completed_rounds')
-      .select('id, company, amount_raised, round, date, source_url, notes, created_at')
-      .order('date', { ascending: false, nullsFirst: false })
+      .select('id, company, amount_raised, round, date, source_url, notes, amount_usd_m, segment, short_description, source, investors, region, created_at')
+      .order('amount_usd_m', { ascending: false, nullsFirst: false })
+      .limit(1000)
 
     if (!error && data) {
-      res.status(200).json({ rounds: data, source: 'supabase' })
+      res.status(200).json({ rounds: data, source: 'supabase', count: data.length })
       return
     }
-    // Table likely not created yet — fall through to seed data
     console.warn('[deal-bank/completed] Supabase error (table may not exist yet):', error?.message)
   }
 
   // Fallback to embedded seed data
-  res.status(200).json({ rounds: SEED_ROUNDS, source: 'seed' })
+  res.status(200).json({ rounds: SEED_ROUNDS, source: 'seed', count: SEED_ROUNDS.length })
 }
