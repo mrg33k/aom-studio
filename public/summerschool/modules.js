@@ -7,6 +7,72 @@
 window.SSMod = (function () {
   'use strict';
 
+  // ============================================================
+  // ANTI-COPY-PASTE GUARD (Patrik 2026-05-29 #4: "disable copy and paste
+  // from the text you write, hes a smart kid")
+  //
+  // Two delegated document-level listeners installed once at module load:
+  //   1. copy/cut on lesson text inside #app-host → blocked (he can't
+  //      grab the prompt or concept body and paste it into the answer).
+  //   2. paste into any textarea/input inside #app-host → blocked (so
+  //      even if he copied from somewhere else, it won't paste in).
+  // Allows: copy from his OWN typed textareas (so he can move text
+  // between his answers if he wants); selection itself (so dictionary
+  // tap-to-define still works); typing normally; backspace/delete.
+  // ============================================================
+  (function installNoCheating() {
+    if (typeof document === 'undefined') return;
+    if (document.__ssAntiCheatInstalled) return;
+    document.__ssAntiCheatInstalled = true;
+
+    const blockOnLessonText = (e) => {
+      const t = e.target;
+      // Copying FROM his own typed answer is fine.
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+      // If the selection is inside the lesson host, block.
+      const host = document.getElementById('app-host');
+      if (!host) return;
+      const sel = window.getSelection ? window.getSelection() : null;
+      let node = (sel && sel.anchorNode) || t;
+      while (node) {
+        if (node === host) { e.preventDefault(); return; }
+        node = node.parentNode;
+      }
+    };
+    document.addEventListener('copy', blockOnLessonText);
+    document.addEventListener('cut', blockOnLessonText);
+
+    document.addEventListener('paste', (e) => {
+      const t = e.target;
+      if (!t) return;
+      if (t.tagName !== 'TEXTAREA' && t.tagName !== 'INPUT') return;
+      // Walk up to confirm we're inside the lesson host (Friday + Tue + Wed
+      // all live inside #app-host).
+      const host = document.getElementById('app-host');
+      if (!host) return;
+      let node = t;
+      while (node) {
+        if (node === host) { e.preventDefault(); return; }
+        node = node.parentNode;
+      }
+    });
+
+    // Disable drag-and-drop into textareas/inputs — same exploit as paste.
+    document.addEventListener('drop', (e) => {
+      const t = e.target;
+      if (!t) return;
+      if (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT') {
+        const host = document.getElementById('app-host');
+        if (!host) return;
+        let node = t;
+        while (node) {
+          if (node === host) { e.preventDefault(); return; }
+          node = node.parentNode;
+        }
+      }
+    });
+  })();
+
   // Day-of-week routing — keep in sync with app.js. Picks today's curriculum;
   // ?day=<name> in URL overrides for preview. Fallback to monday.
   const DAY_NAMES_MOD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -148,10 +214,33 @@ window.SSMod = (function () {
       </div>
     ` : '';
     // 2026-05-26 engagement gate (Patrik): every concept card now requires a
-    // tap on a "Did it land?" check before Continue unlocks. Forces him to
-    // actually engage with the card instead of speed-tapping through. If a
-    // card has no `check`, Continue is enabled immediately (back-compat).
-    const hasCheck = block.check && Array.isArray(block.check.choices) && block.check.choices.length >= 2;
+    // gate before Continue unlocks. Forces actual engagement instead of
+    // speed-tapping through.
+    //
+    // 2026-05-29 Patrik update: kill multiple choice — have him type the
+    // answer. A typed gate is used when block.typedCheck is present
+    // (Friday curriculum) — char count + spell-check gate, same logic as
+    // teach-back. Falls back to the old multi-choice gate when
+    // block.check.choices is present (Tuesday/Wednesday — unchanged).
+    const hasTypedCheck = block.typedCheck && block.typedCheck.q;
+    const hasCheck = !hasTypedCheck && block.check && Array.isArray(block.check.choices) && block.check.choices.length >= 2;
+    const typedCheckMin = (block.typedCheck && block.typedCheck.minChars) || 60;
+    const typedCheckHtml = hasTypedCheck ? `
+      <div class="concept-check" id="concept-check" style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Type the answer</div>
+        <div style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45; margin-bottom: var(--space-3);">${block.typedCheck.q}</div>
+        <textarea id="concept-typed" rows="3" placeholder="Type a sentence or two in your own words..." style="width:100%; box-sizing:border-box; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-sm); padding:var(--space-3); font-family:'Geist',system-ui,sans-serif; font-size:15px; line-height:1.5; color:var(--ink); background:#FBFAF6; outline:none; resize:vertical; min-height:90px;"></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:var(--space-2); font-size:13px; font-family:'Geist',system-ui,sans-serif;">
+          <div id="concept-typed-counter" style="color:var(--ink-quiet);">0 / ${typedCheckMin} characters</div>
+          <div id="concept-typed-spell" style="color:var(--ink-quiet);">Spelling: will check at the word count</div>
+        </div>
+        <div id="concept-typed-words" style="display:none; background:#FFF6E5; border:1px solid #E5B947; border-radius:var(--r-sm); padding:var(--space-3); margin-top:var(--space-2);">
+          <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#8B5E14; margin-bottom:var(--space-2);">Spelling — fix these</div>
+          <div id="concept-typed-list" style="font-family:'Geist',system-ui,sans-serif; font-size:14px; line-height:1.7; color:var(--ink);"></div>
+          <div style="margin-top:var(--space-1); font-size:12px; color:var(--ink-quiet);">Tap a word to mark it as a name or special word.</div>
+        </div>
+      </div>
+    ` : '';
     const checkHtml = hasCheck ? `
       <div class="concept-check" id="concept-check" style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
         <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Did it land?</div>
@@ -163,6 +252,11 @@ window.SSMod = (function () {
       </div>
     ` : '';
 
+    const gateLocked = hasCheck || hasTypedCheck;
+    const initialBtnText = hasTypedCheck
+      ? `Type ${typedCheckMin} characters to continue`
+      : (hasCheck ? 'Answer the check first' : (block.cta || 'Continue'));
+
     host.innerHTML = `
       ${topRail(0, tag)}
       ${moduleHead(block.subject || 'Today', title)}
@@ -171,13 +265,84 @@ window.SSMod = (function () {
           ${bodyHtml}
         </div>
         ${revealHtml}
+        ${typedCheckHtml}
         ${checkHtml}
         <div class="center-actions">
-          <button class="btn-primary" id="concept-go"${hasCheck ? ' disabled style="opacity:0.5;"' : ''}>${hasCheck ? 'Answer the check first' : (block.cta || 'Continue')}</button>
+          <button class="btn-primary" id="concept-go"${gateLocked ? ' disabled style="opacity:0.5;"' : ''}>${initialBtnText}</button>
         </div>
       </div>
     `;
     startBlockTimer(host, block);
+
+    if (hasTypedCheck) {
+      const goBtn = host.querySelector('#concept-go');
+      const ta = host.querySelector('#concept-typed');
+      const counter = host.querySelector('#concept-typed-counter');
+      const spellStatus = host.querySelector('#concept-typed-spell');
+      const spellBox = host.querySelector('#concept-typed-words');
+      const spellList = host.querySelector('#concept-typed-list');
+      const userMarkedOK = new Set();
+      let refreshSeq = 0;
+
+      function renderSuspects(suspects) {
+        if (suspects.length === 0) {
+          goBtn.disabled = false;
+          goBtn.style.opacity = '1';
+          goBtn.textContent = block.cta || 'Continue';
+          spellBox.style.display = 'none';
+          spellStatus.textContent = 'Spelling: clean';
+          spellStatus.style.color = '#2D6B3C';
+        } else {
+          goBtn.disabled = true;
+          goBtn.style.opacity = '0.5';
+          goBtn.textContent = `Fix ${suspects.length} spelling${suspects.length === 1 ? '' : 's'}`;
+          spellBox.style.display = 'block';
+          spellStatus.textContent = `Spelling: ${suspects.length} word${suspects.length === 1 ? '' : 's'} to check`;
+          spellStatus.style.color = '#8B5E14';
+          spellList.innerHTML = suspects.map(w => `
+            <span style="display:inline-flex; align-items:center; gap:4px; background:#FFE8B0; padding:4px 10px; border-radius:999px; margin:3px 4px 3px 0; font-weight:600;">
+              ${w}
+              <button data-mark-ok="${w}" style="background:transparent; border:none; cursor:pointer; font-size:11px; color:#8B5E14; padding:0 2px;" title="Mark as a name / accept">✓</button>
+            </span>
+          `).join('');
+          spellList.querySelectorAll('[data-mark-ok]').forEach(btn => {
+            btn.onclick = () => { userMarkedOK.add(btn.dataset.markOk); refresh(); };
+          });
+        }
+      }
+
+      async function refresh() {
+        const mySeq = ++refreshSeq;
+        const text = ta.value;
+        const chars = text.trim().length;
+        counter.textContent = `${chars} / ${typedCheckMin} characters`;
+        counter.style.color = chars >= typedCheckMin ? '#2D6B3C' : 'var(--ink-quiet)';
+
+        if (chars < typedCheckMin) {
+          goBtn.disabled = true;
+          goBtn.style.opacity = '0.5';
+          goBtn.textContent = `${typedCheckMin - chars} more characters`;
+          spellBox.style.display = 'none';
+          spellStatus.textContent = 'Spelling: will check at the word count';
+          spellStatus.style.color = 'var(--ink-quiet)';
+          return;
+        }
+
+        let suspects = _initialFlag(text).filter(w => !userMarkedOK.has(w));
+        if (mySeq === refreshSeq) renderSuspects(suspects);
+        if (suspects.length === 0) return;
+
+        spellStatus.textContent = `Spelling: checking ${suspects.length} word${suspects.length === 1 ? '' : 's'} with dictionary...`;
+        spellStatus.style.color = '#8B5E14';
+        const confirmed = (await _confirmInvalid(suspects)).filter(w => !userMarkedOK.has(w));
+        if (mySeq !== refreshSeq) return;
+        renderSuspects(confirmed);
+      }
+
+      ta.addEventListener('input', refresh);
+      ta.addEventListener('blur', refresh);
+      refresh();
+    }
 
     if (hasCheck) {
       const goBtn = host.querySelector('#concept-go');
@@ -208,8 +373,33 @@ window.SSMod = (function () {
     }
 
     host.querySelector('#concept-go').onclick = () => {
-      if (host.querySelector('#concept-go').disabled) return;
-      complete(block.id, { budgetMinutes: block.minutes });
+      const goBtn = host.querySelector('#concept-go');
+      if (goBtn.disabled) return;
+      const data = { budgetMinutes: block.minutes };
+      if (hasTypedCheck) {
+        const ta = host.querySelector('#concept-typed');
+        const body = ta ? ta.value.trim() : '';
+        data.typedAnswer = body;
+        _showReviewModal(host, {
+          title: 'Ready for Mom & Dad?',
+          answers: [{ q: block.typedCheck.q, body }],
+          onEdit: () => {
+            // restore focus + cursor at the end
+            if (ta) { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
+          },
+          onConfirm: () => {
+            if (window.SS && window.SS.saveWritingPiece && body) {
+              window.SS.saveWritingPiece(block.typedCheck.q || block.title || 'Concept check', body);
+            }
+            if (window.SS && window.SS.saveArtifact && body) {
+              window.SS.saveArtifact({ kind: 'concept-typed', block_id: block.id, subject: block.subject, question: block.typedCheck.q, body, title: block.title });
+            }
+            complete(block.id, data);
+          }
+        });
+      } else {
+        complete(block.id, data);
+      }
     };
   }
 
@@ -2599,6 +2789,846 @@ window.SSMod = (function () {
     };
   }
 
+  // ============================================================
+  // REVIEW MODAL (Patrik 2026-05-29 #5: accountability + verify-before-send)
+  //
+  // Every typed gate (teach-back, concept typed-check, video-typed) routes
+  // through this before completing the block. He has to LOOK at his
+  // answer and confirm "yes, send this to Mom and Dad to review."
+  //
+  // Shape:
+  //   _showReviewModal({
+  //     title: 'Ready for Mom & Dad?',
+  //     answers: [{ q: 'prompt', body: 'his answer' }, ...],
+  //     onEdit: () => {...},      // back to typing
+  //     onConfirm: () => {...}   // commit + advance
+  //   })
+  // ============================================================
+  function _showReviewModal(host, opts) {
+    const answers = opts.answers || [];
+    const title = opts.title || 'Ready for Mom & Dad?';
+    const sub = opts.subtitle || 'Read your answer below. If it looks good, send it. If not, go back and fix it.';
+
+    // Build the review card inside the existing host. Hide the rest by
+    // wrapping all current children, then prepending the review.
+    const existing = Array.from(host.children).map(el => el);
+
+    const wrap = document.createElement('div');
+    wrap.id = 'ss-review-modal';
+    wrap.style.cssText = 'position:fixed; inset:0; background:rgba(26,24,20,0.55); display:flex; align-items:center; justify-content:center; z-index:9999; padding:var(--space-5);';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#FBFAF6; border-radius:var(--r-md); max-width:640px; width:100%; max-height:85vh; overflow-y:auto; padding:var(--space-6) var(--space-6); box-shadow:0 24px 60px rgba(0,0,0,0.35);';
+    const answersHtml = answers.map((a, i) => `
+      <div style="margin-bottom:var(--space-4); padding:var(--space-4); background:#FFF; border:1px solid rgba(26,24,20,0.10); border-radius:var(--r-sm);">
+        ${a.q ? `<div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">${answers.length > 1 ? 'Answer ' + (i + 1) : 'Your answer'}</div>` : ''}
+        ${a.q ? `<div style="font-family:var(--font-serif); font-size:15px; line-height:1.45; color:var(--ink-soft); margin-bottom:var(--space-2);">${a.q}</div>` : ''}
+        <div style="font-family:var(--font-serif); font-size:17px; line-height:1.55; color:var(--ink); white-space:pre-wrap;">${(a.body || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+      </div>
+    `).join('');
+    card.innerHTML = `
+      <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">Verify · Mom & Dad will read this</div>
+      <h2 style="font-family:var(--font-serif); font-size:26px; line-height:1.2; font-weight:500; color:var(--ink); margin:0 0 var(--space-2) 0;">${title}</h2>
+      <p style="font-family:var(--font-serif); font-size:16px; line-height:1.45; color:var(--ink-soft); margin:0 0 var(--space-5) 0;">${sub}</p>
+      ${answersHtml}
+      <div style="display:flex; gap:var(--space-3); margin-top:var(--space-4); justify-content:flex-end; flex-wrap:wrap;">
+        <button class="btn-secondary" id="rv-edit" style="padding:12px 22px; border-radius:999px; border:1.5px solid rgba(26,24,20,0.20); background:transparent; font-family:inherit; font-weight:600; cursor:pointer;">Edit again</button>
+        <button class="btn-primary" id="rv-send" style="padding:12px 22px; border-radius:999px; border:none; background:var(--ink); color:var(--cream); font-family:inherit; font-weight:600; cursor:pointer;">Yes — send to Mom & Dad</button>
+      </div>
+    `;
+    wrap.appendChild(card);
+    document.body.appendChild(wrap);
+
+    const cleanup = () => { wrap.remove(); };
+    wrap.querySelector('#rv-edit').onclick = () => { cleanup(); if (opts.onEdit) opts.onEdit(); };
+    wrap.querySelector('#rv-send').onclick = () => { cleanup(); if (opts.onConfirm) opts.onConfirm(); };
+
+    // Esc closes back to editing
+    const escHandler = (e) => {
+      if (e.key === 'Escape') { document.removeEventListener('keydown', escHandler); cleanup(); if (opts.onEdit) opts.onEdit(); }
+    };
+    document.addEventListener('keydown', escHandler);
+  }
+
+  // ============================================================
+  // VIDEO-TYPED — kickoff video + typed teach-back questions
+  // Friday 2026-05-29 — Patrik wants every subject to open with an
+  // actually-relevant kickoff video. No multi-choice quiz after — he
+  // types the answers in his own words.
+  //
+  // Block shape:
+  //   { id, kind:'topic', type:'video-typed', minutes,
+  //     subject, tag, title,
+  //     video: {
+  //       title: 'Kickoff video — Soft Lies',
+  //       ytId: 'wbftlDzIALA',
+  //       creditLine: 'TEDxKids@ElCajon — Georgia Haukom'
+  //     },
+  //     typedQuestions: [
+  //       { q: 'In your own words...', minChars: 140 },
+  //       { q: 'What stuck with you...', minChars: 100 }
+  //     ],
+  //     cta: 'Done' }
+  // ============================================================
+  function videoTyped(host, block) {
+    const tag = block.tag || (block.subject || '');
+    const title = block.title || (block.video && block.video.title) || 'Watch the video';
+    const v = block.video || {};
+    const ytId = v.ytId || '';
+    const credit = v.creditLine || '';
+    const qs = Array.isArray(block.typedQuestions) ? block.typedQuestions : [];
+
+    host.innerHTML = `
+      ${topRail(0, tag)}
+      ${moduleHead(block.subject || 'Today', title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+        ${credit ? `<div style="font-size:12px; color:var(--ink-quiet); margin-bottom:var(--space-3); font-family:'Geist',system-ui,sans-serif;">From <strong>${credit}</strong></div>` : ''}
+        <div style="background:#000; border-radius:var(--r-md); overflow:hidden; aspect-ratio:16/9; margin-bottom:var(--space-4);">
+          <iframe id="vt-iframe" style="width:100%; height:100%; border:0;"
+            src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&controls=1&fs=0&enablejsapi=1&disablekb=1&iv_load_policy=3"
+            allow="accelerometer; encrypted-media; gyroscope"></iframe>
+        </div>
+        <div style="font-size:13px; color:var(--ink-quiet); margin-bottom:var(--space-5); font-family:'Geist',system-ui,sans-serif;">Watch the whole video. Then answer below in your own words — no clicking past.</div>
+        ${qs.map((q, qi) => {
+          const minC = q.minChars || 120;
+          return `
+            <div class="vt-q" data-qi="${qi}" style="background:#FFF; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-md); padding:var(--space-5); margin-bottom:var(--space-4);">
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">Question ${qi + 1}</div>
+              <div style="font-family:var(--font-serif); font-size:17px; line-height:1.45; margin-bottom:var(--space-3);">${q.q}</div>
+              <textarea data-qi="${qi}" rows="4" placeholder="Type your answer..." style="width:100%; box-sizing:border-box; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-sm); padding:var(--space-3); font-family:'Geist',system-ui,sans-serif; font-size:15px; line-height:1.5; color:var(--ink); background:#FBFAF6; outline:none; resize:vertical; min-height:110px;"></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:var(--space-2); font-size:13px;">
+                <div class="vt-counter" data-qi="${qi}" style="color:var(--ink-quiet);">0 / ${minC} characters</div>
+                <div class="vt-spell" data-qi="${qi}" style="color:var(--ink-quiet);">Spelling: will check at the word count</div>
+              </div>
+              <div class="vt-words" data-qi="${qi}" style="display:none; background:#FFF6E5; border:1px solid #E5B947; border-radius:var(--r-sm); padding:var(--space-3); margin-top:var(--space-2);">
+                <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#8B5E14; margin-bottom:var(--space-2);">Spelling — fix these</div>
+                <div class="vt-list" data-qi="${qi}" style="font-family:'Geist',system-ui,sans-serif; font-size:14px; line-height:1.7; color:var(--ink);"></div>
+                <div style="margin-top:var(--space-1); font-size:12px; color:var(--ink-quiet);">Tap a word to mark it as a name or special word.</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <div class="center-actions">
+          <button class="btn-primary" id="vt-submit" disabled style="opacity:0.5;">Answer every question to continue</button>
+        </div>
+      </div>
+    `;
+    startBlockTimer(host, block);
+
+    const submit = host.querySelector('#vt-submit');
+    const perQuestion = qs.map((q, qi) => ({
+      qi,
+      minChars: q.minChars || 120,
+      userMarkedOK: new Set(),
+      seq: 0,
+      passed: false
+    }));
+
+    function updateSubmit() {
+      const allPassed = perQuestion.every(p => p.passed);
+      if (allPassed && qs.length > 0) {
+        submit.disabled = false;
+        submit.style.opacity = '1';
+        submit.textContent = block.cta || 'Done';
+      } else {
+        submit.disabled = true;
+        submit.style.opacity = '0.5';
+        const remaining = perQuestion.filter(p => !p.passed).length;
+        submit.textContent = `${remaining} question${remaining === 1 ? '' : 's'} left to answer`;
+      }
+    }
+
+    function renderSuspectsFor(qi, suspects) {
+      const p = perQuestion[qi];
+      const wordsBox = host.querySelector(`.vt-words[data-qi="${qi}"]`);
+      const listBox = host.querySelector(`.vt-list[data-qi="${qi}"]`);
+      const spellStatus = host.querySelector(`.vt-spell[data-qi="${qi}"]`);
+      if (suspects.length === 0) {
+        p.passed = true;
+        wordsBox.style.display = 'none';
+        spellStatus.textContent = 'Spelling: clean';
+        spellStatus.style.color = '#2D6B3C';
+      } else {
+        p.passed = false;
+        wordsBox.style.display = 'block';
+        spellStatus.textContent = `Spelling: ${suspects.length} word${suspects.length === 1 ? '' : 's'} to check`;
+        spellStatus.style.color = '#8B5E14';
+        listBox.innerHTML = suspects.map(w => `
+          <span style="display:inline-flex; align-items:center; gap:4px; background:#FFE8B0; padding:4px 10px; border-radius:999px; margin:3px 4px 3px 0; font-weight:600;">
+            ${w}
+            <button data-mark-ok="${w}" data-qi="${qi}" style="background:transparent; border:none; cursor:pointer; font-size:11px; color:#8B5E14; padding:0 2px;" title="Mark as a name / accept">✓</button>
+          </span>
+        `).join('');
+        listBox.querySelectorAll('[data-mark-ok]').forEach(btn => {
+          btn.onclick = () => {
+            p.userMarkedOK.add(btn.dataset.markOk);
+            refreshFor(qi);
+          };
+        });
+      }
+      updateSubmit();
+    }
+
+    async function refreshFor(qi) {
+      const p = perQuestion[qi];
+      const mySeq = ++p.seq;
+      const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
+      const counter = host.querySelector(`.vt-counter[data-qi="${qi}"]`);
+      const spellStatus = host.querySelector(`.vt-spell[data-qi="${qi}"]`);
+      const wordsBox = host.querySelector(`.vt-words[data-qi="${qi}"]`);
+      const text = ta.value;
+      const chars = text.trim().length;
+      counter.textContent = `${chars} / ${p.minChars} characters`;
+      counter.style.color = chars >= p.minChars ? '#2D6B3C' : 'var(--ink-quiet)';
+
+      if (chars < p.minChars) {
+        p.passed = false;
+        wordsBox.style.display = 'none';
+        spellStatus.textContent = 'Spelling: will check at the word count';
+        spellStatus.style.color = 'var(--ink-quiet)';
+        updateSubmit();
+        return;
+      }
+
+      let suspects = _initialFlag(text).filter(w => !p.userMarkedOK.has(w));
+      if (mySeq === p.seq) renderSuspectsFor(qi, suspects);
+      if (suspects.length === 0) return;
+
+      spellStatus.textContent = `Spelling: checking ${suspects.length} word${suspects.length === 1 ? '' : 's'} with dictionary...`;
+      spellStatus.style.color = '#8B5E14';
+      const confirmed = (await _confirmInvalid(suspects)).filter(w => !p.userMarkedOK.has(w));
+      if (mySeq !== p.seq) return;
+      renderSuspectsFor(qi, confirmed);
+    }
+
+    qs.forEach((_, qi) => {
+      const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
+      ta.addEventListener('input', () => refreshFor(qi));
+      ta.addEventListener('blur', () => refreshFor(qi));
+    });
+
+    submit.onclick = () => {
+      if (submit.disabled) return;
+      const answers = qs.map((q, qi) => {
+        const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
+        return { q: q.q, body: ta ? ta.value.trim() : '' };
+      });
+      _showReviewModal(host, {
+        title: 'Ready for Mom & Dad?',
+        subtitle: 'Read both your answers below. Mom & Dad will see exactly what you wrote.',
+        answers,
+        onEdit: () => {
+          const firstTa = host.querySelector('textarea[data-qi="0"]');
+          if (firstTa) { firstTa.focus(); try { firstTa.setSelectionRange(firstTa.value.length, firstTa.value.length); } catch(e){} }
+        },
+        onConfirm: () => {
+          if (window.SS && window.SS.saveWritingPiece) {
+            answers.forEach(a => { if (a.body) window.SS.saveWritingPiece(a.q, a.body); });
+          }
+          if (window.SS && window.SS.saveArtifact) {
+            window.SS.saveArtifact({ kind: 'video-typed', block_id: block.id, subject: block.subject, ytId, answers, title: block.title });
+          }
+          complete(block.id, { ytId, answers, budgetMinutes: block.minutes });
+        }
+      });
+    };
+
+    updateSubmit();
+  }
+
+  // ============================================================
+  // FRIDAY 2026-05-29 — Teach-back, typing-precise, spelling-drill
+  // Three new renderers built for the anti-clickthrough pivot. Each is
+  // gated INSIDE the block (not at the hub). No way to advance without
+  // hitting the gate — character count + spell-check, or exact-match,
+  // or every spelling correct.
+  // ============================================================
+
+  // Wordlist used by spell-check on teach-back. The flow:
+  //   1. Skip words < 4 letters and numbers (always OK).
+  //   2. Skip words in this hardcoded list (~1500 common English words +
+  //      content-specific Friday vocabulary).
+  //   3. Skip words already validated in the dict-cache (any word he ever
+  //      hovered to look up — see dictionary.js).
+  //   4. For everything left, async-fetch Free Dictionary API. If it
+  //      returns 200 → cache + accept. If 404 → flag.
+  //   5. He can tap ✓ on any flagged word to mark it as a name / accept.
+  //
+  // Short words (< 4 letters) and numbers are always OK. The gate is on
+  // word count first, then spelling. Submit unlocks only when both pass.
+  const FRIDAY_WORDLIST = new Set([
+    // pronouns / common
+    'i','you','he','she','it','we','they','me','him','her','us','them','my','your','his','its','our','their','this','that','these','those','what','which','who','whom','whose','where','when','why','how',
+    'am','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','can','could','should','must','might','may','shall',
+    'a','an','the','and','or','but','if','then','because','so','for','to','of','in','on','at','by','from','with','about','as','up','down','out','off','over','under','again','further','once','here','there','now',
+    'not','no','yes','only','very','just','also','too','still','really','almost','always','never','sometimes','today','tomorrow','yesterday','soon','later','before','after','already','yet',
+    // friday content words
+    'soft','lie','lies','lying','truth','truthful','true','false','say','said','saying','tell','told','telling','word','words','speak','spoke','speaking','talk','talked','talking','answer','answered','question','questions','asked','ask','asking',
+    'problem','problems','solution','solutions','solve','solved','solving','attempt','attempts','attempted','try','tried','trying','decision','decisions','decide','decided','deciding','possible','impossible','mistake','mistakes','challenge','challenges','judgment','judgements','judge','judging',
+    'suggest','suggested','suggesting','consider','considered','considering','develop','developed','developing','address','addressed','addressing','improve','improved','improving','prevent','prevented','preventing','struggle','struggled','struggling','respect','respected','respecting',
+    'kick','kicks','snare','snares','hihat','hat','hats','beat','beats','bar','bars','time','metronome','grid','rush','rushing','drag','dragging','tempo','bpm','pad','pads','sound','sounds','record','recorded','recording','play','played','playing','music','song','songs','rhythm','pattern','patterns','easy','hard','harder','hardest','simple','simpler','simplest','foundation',
+    'code','coded','coding','codes','program','programs','programmed','programming','programmer','programmers','computer','computers','game','games','roblox','lua','variable','variables','value','values','box','boxes','print','prints','printed','printing','hello','world','condition','conditions','decide','loop','loops','repeat','repeats','repeated','repeating','score','scores','health','coin','coins','level','levels','player','players','build','building','built',
+    // general kid-vocab
+    'i\'ll','i\'m','you\'re','don\'t','can\'t','won\'t','it\'s','that\'s','what\'s','here\'s','there\'s','let\'s','we\'re','they\'re','isn\'t','aren\'t','wasn\'t','weren\'t','hasn\'t','haven\'t','didn\'t','doesn\'t','wouldn\'t','couldn\'t','shouldn\'t','i\'ve','you\'ve','we\'ve','they\'ve','i\'d','you\'d','he\'d','she\'d','they\'d','we\'d',
+    'good','bad','better','best','worse','worst','great','small','big','little','old','new','first','second','third','last','next','same','different','important','real','fake','right','wrong','easy','hard','fast','slow','high','low','top','bottom','front','back','left','center','middle',
+    'people','person','kid','kids','friend','friends','family','mom','dad','parent','parents','child','children','adult','adults','teacher','teachers','student','students','class','classes','school','schools','home','homes','house','room','rooms','door','doors',
+    'feel','feels','felt','feeling','think','thought','thinking','know','knew','known','knowing','understand','understood','understanding','learn','learned','learning','remember','remembered','remembering','forget','forgot','forgotten','forgetting',
+    'thing','things','something','anything','nothing','everything','someone','anyone','no-one','everyone','somewhere','anywhere','nowhere','everywhere','someday','anytime',
+    'help','helped','helping','work','worked','working','make','made','making','take','took','taking','give','gave','given','giving','get','got','getting','put','putting','keep','kept','keeping','start','started','starting','stop','stopped','stopping','finish','finished','finishing','done','use','used','using','show','showed','showing','see','saw','seen','seeing','look','looked','looking','watch','watched','watching','listen','listened','listening','hear','heard','hearing','read','reading','write','wrote','written','writing','type','typed','typing',
+    'about','around','across','through','between','among','near','far','close','away','inside','outside','upstairs','downstairs',
+    'one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','hundred','thousand','million','first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth',
+    'avoid','avoided','avoiding','admit','admitted','admitting','blame','blamed','blaming','trust','trusted','trusting','believe','believed','believing','honest','honesty','dishonest','damage','damaged','damaging','wreck','wrecked','wrecking','ruin','ruined','ruining','hurt','hurts','hurting','harm','harms','harmed','harming','breath','breathe','breathing',
+    'really','actually','probably','maybe','perhaps','definitely','obviously','clearly','exactly','mostly','partly','mostly','sometimes','often','rarely','always','never','still','already','yet',
+    'because','since','until','while','whenever','wherever','whatever','whoever','however','although','though','unless','except','besides','despite',
+    'lesson','lessons','homework','project','projects','subject','subjects','module','modules','test','tests','quiz','quizzes','check','checked','checking','grade','grades','answer','answers','example','examples',
+    'sequence','sequences','first','then','next','after','before','later','finally','last','order','steps','step',
+    'thank','thanks','please','sorry','okay','ok','sure','fine','well','hey','hi','hello','bye','goodbye',
+    // expanded common vocab (caught in 2026-05-29 first pass)
+    'like','liked','liking','likes','likely','unlikely','move','moved','moving','moves','movement',
+    'conversation','conversations','talk','talked','talking','talks','speak','speech','speeches',
+    'damage','damages','damaged','damaging','hurt','hurts','hurting','harm','harms','harmed','harming','wreck','wrecks','wrecked','wrecking','ruin','ruins','ruined','ruining',
+    'sneak','sneaky','sneaking','sneaked','sneaks','quiet','quietly','loud','loudly','noise','noisy',
+    'kind','kindly','kinds','kindness','mean','meant','meaning','means','meaningful','nice','nicely','rude','rudely',
+    'over','under','through','around','across','between','among','beyond','beside','behind','below','above','within','without',
+    'change','changed','changing','changes','different','differently','differences','difference','same','similar','similarly','various',
+    'plan','plans','planned','planning','idea','ideas','thought','thoughts','mind','minds',
+    'happen','happens','happened','happening','event','events',
+    'word','words','sentence','sentences','line','lines','letter','letters','paragraph','paragraphs','page','pages','book','books','story','stories',
+    'phone','phones','message','messages','text','texts','email','emails','call','calls','called','calling',
+    'screen','screens','app','apps','website','websites','site','sites','video','videos','image','images','photo','photos','picture','pictures',
+    'food','foods','water','drink','drinks','meal','meals','breakfast','lunch','dinner','snack','snacks',
+    'sleep','slept','sleeping','sleeps','tired','rest','rested','resting','wake','waking','woke','woken',
+    'happy','sad','angry','mad','scared','afraid','excited','bored','calm','nervous','worried','confident',
+    'maybe','probably','perhaps','definitely','certainly','sure','unsure',
+    'love','loved','loving','loves','hate','hated','hating','hates','enjoy','enjoyed','enjoying','enjoys','prefer','preferred','preferring','prefers',
+    'open','opened','opening','opens','close','closed','closing','closes','shut','shuts','shutting',
+    'walk','walked','walking','walks','run','ran','running','runs','jump','jumped','jumping','jumps','sit','sat','sitting','sits','stand','stood','standing','stands','lie','lay','lying','lies',
+    'push','pushed','pushing','pushes','pull','pulled','pulling','pulls','lift','lifted','lifting','lifts','drop','dropped','dropping','drops','throw','threw','throwing','throws','catch','caught','catching','catches',
+    'eat','ate','eaten','eating','eats','drink','drank','drunk','drinking','drinks',
+    'find','found','finding','finds','lose','lost','losing','loses','seek','sought','seeking','seeks',
+    'send','sent','sending','sends','receive','received','receiving','receives','share','shared','sharing','shares',
+    'fix','fixed','fixing','fixes','break','broke','broken','breaking','breaks','build','building','builds','make','making','makes','create','created','creating','creates',
+    'choose','chose','chosen','choosing','chooses','choice','choices','option','options',
+    'turn','turned','turning','turns','switch','switched','switching','switches',
+    'light','lights','dark','darkness','color','colors','red','blue','green','yellow','black','white','orange','purple','pink','brown','gray',
+    'mouse','mice','keyboard','keyboards','click','clicked','clicking','clicks','tap','tapped','tapping','taps','press','pressed','pressing','presses','type','typed','typing','types',
+    'save','saved','saving','saves','load','loaded','loading','loads','run','ran','running','runs','crash','crashed','crashing','crashes','bug','bugs','glitch','glitches','error','errors',
+    'win','won','winning','wins','lose','lost','losing','loses','tie','tied','tying','ties',
+    'team','teams','group','groups','crew','partner','partners','friend','friends','enemy','enemies','rival','rivals',
+    'fight','fought','fighting','fights','race','raced','racing','races','game','games','match','matches','round','rounds','battle','battles',
+    'point','points','score','scores','rank','ranks','level','levels','stage','stages','tier','tiers',
+    'rule','rules','law','laws','code','codes','plan','plans','goal','goals','target','targets','aim','aimed','aiming','aims',
+    'name','named','naming','names','call','called','calling','calls',
+    'every','each','any','all','some','none','many','few','several','most','least','more','less','enough','plenty',
+    'whole','part','parts','piece','pieces','side','sides','front','fronts','back','top','tops','bottom','bottoms','edge','edges','middle','center','corner','corners',
+    'inside','outside','within','around','near','far','close','distant',
+    'place','places','spot','spots','area','areas','region','regions','space','spaces',
+    'today','tonight','tomorrow','yesterday','morning','afternoon','evening','night','noon','midnight','dawn','dusk','weekend','weekday',
+    'minute','minutes','hour','hours','second','seconds','day','days','week','weeks','month','months','year','years',
+    'time','times','timer','timers','clock','clocks','watch','watches',
+    'door','doors','window','windows','wall','walls','floor','floors','ceiling','ceilings','roof','roofs','stair','stairs','step',
+    'house','houses','home','homes','apartment','apartments','room','rooms','kitchen','kitchens','bedroom','bedrooms','bathroom','bathrooms','garage','garages','yard','yards',
+    'street','streets','road','roads','highway','highways','sidewalk','sidewalks','park','parks','field','fields',
+    'car','cars','truck','trucks','bus','buses','train','trains','plane','planes','boat','boats','bike','bikes','scooter','scooters',
+    'glass','plate','plates','cup','cups','bowl','bowls','spoon','spoons','fork','forks','knife','knives',
+    'live','lives','lived','living','died','dying','death','born','birth',
+    'meet','met','meeting','meets','introduce','introduced','introducing','introduces','greet','greeted','greeting','greets',
+    'agree','agreed','agreeing','agrees','disagree','disagreed','disagreeing','disagrees','argue','argued','arguing','argues','debate','debated','debating','debates',
+    'happy','happier','happiest','sad','sadder','saddest','old','older','oldest','young','younger','youngest','big','bigger','biggest','small','smaller','smallest','quick','quicker','quickest','slow','slower','slowest','fast','faster','fastest',
+    'cold','colder','coldest','hot','hotter','hottest','warm','warmer','warmest','cool','cooler','coolest','dry','drier','driest','wet','wetter','wettest',
+    'clean','cleaner','cleanest','dirty','dirtier','dirtiest','neat','neater','neatest','messy','messier','messiest',
+    'easy','easier','easiest','hard','harder','hardest','tough','tougher','toughest','simple','simpler','simplest','complex','complicated',
+    'soft','softer','softest','hard','rough','rougher','roughest','smooth','smoother','smoothest','sharp','sharper','sharpest',
+    'bright','brighter','brightest','dim','dimmer','dimmest','clear','clearer','clearest','blurry','blurrier','blurriest',
+    'true','truth','truthful','truly','false','falsely','honest','honesty','dishonest','lie','liar','liars','fake','faking',
+    'real','reality','realistic','imaginary','imagined','imagining','imagines','pretend','pretended','pretending','pretends',
+    'remember','remembered','remembering','remembers','memory','memories','forget','forgot','forgotten','forgetting','forgets',
+    'understand','understood','understanding','understands','confused','confusing','confuses','confusion',
+    'realize','realized','realizing','realizes','realization','notice','noticed','noticing','notices',
+    'agree','agreement','disagree','disagreement','promise','promises','promised','promising',
+    'mistake','mistakes','error','errors','wrong','correctly','correct','correctly','fix','fixes','fixed','fixing',
+    'reason','reasons','because','since','therefore','thus','because',
+    'try','tried','trying','tries','attempt','attempts','attempted','attempting','effort','efforts',
+    'help','helped','helping','helps','helpful','unhelpful','support','supported','supporting','supports',
+    'teach','taught','teaching','teaches','teacher','teachers','learn','learned','learning','learns','student','students',
+    'explain','explained','explaining','explains','explanation','explanations','describe','described','describing','describes','description','descriptions',
+    'ask','asked','asking','asks','question','questioning','questions','tell','told','telling','tells','say','said','saying','says',
+    'reply','replied','replying','replies','respond','responded','responding','responds','response','responses','answer','answered','answering','answers',
+    'phone','phones','calling','called','texting','texted','messaging','messaged',
+    'thanks','thanked','thanking','thank','grateful','gratitude','appreciate','appreciated','appreciating','appreciates',
+    'sorry','apology','apologies','apologize','apologized','apologizing','apologizes','forgive','forgave','forgiving','forgives','forgiveness',
+    'follow','followed','following','follows','lead','led','leading','leads','leader','leaders',
+    'wait','waited','waiting','waits','hurry','hurried','hurrying','hurries','rush','rushed','rushing','rushes',
+    'enter','entered','entering','enters','exit','exited','exiting','exits','arrive','arrived','arriving','arrives','leave','left','leaving','leaves',
+    'come','came','coming','comes','go','went','gone','going','goes',
+    'bring','brought','bringing','brings','take','took','taken','taking','takes','carry','carried','carrying','carries',
+    'buy','bought','buying','buys','sell','sold','selling','sells','pay','paid','paying','pays','cost','costs','costing','price','prices','priced','pricing',
+    'money','cash','dollar','dollars','cent','cents','penny','pennies','coin','coins','bill','bills',
+    'parent','parents','child','children','kid','kids','baby','babies','teen','teens','teenager','teenagers','adult','adults',
+    'brother','brothers','sister','sisters','sibling','siblings','cousin','cousins','aunt','aunts','uncle','uncles','grandma','grandpa','grandparent','grandparents','grandfather','grandmother',
+    'wife','husband','spouse','partner','boyfriend','girlfriend','date','dating','dated','dates',
+    'cat','cats','dog','dogs','pet','pets','animal','animals','bird','birds','fish','fishes','horse','horses','cow','cows','pig','pigs',
+    'flower','flowers','tree','trees','plant','plants','grass','leaf','leaves','seed','seeds','root','roots','branch','branches',
+    'sun','suns','sunny','sunshine','moon','moons','star','stars','sky','skies','cloud','clouds','cloudy','rain','rainy','rained','raining','snow','snowed','snowing','snows','wind','windy',
+    'water','watered','watering','waters','sea','seas','ocean','oceans','lake','lakes','river','rivers','stream','streams','beach','beaches',
+    'sport','sports','ball','balls','soccer','football','basketball','baseball','tennis','golf','hockey','swimming','running',
+    'word','wording','spell','spelled','spelling','sentence','sentences','phrase','phrases','grammar','punctuation','spelling',
+    'song','songs','singing','sang','sung','sing','sings','music','musical','instrument','instruments','drum','drums','drumming','drummer','drummers','beat','beats',
+    'show','shows','showed','showing','demonstrate','demonstrated','demonstrating','demonstrates','display','displayed','displaying','displays',
+    'class','classes','classroom','classrooms','homework','assignment','assignments','exam','exams','test','tests','grade','grades','grading',
+    'movie','movies','film','films','show','shows','tv','television','channel','channels',
+    'gym','exercise','exercised','exercising','exercises','workout','workouts','training','trained','train','trains',
+    'doctor','doctors','nurse','nurses','dentist','dentists','hospital','hospitals','sick','illness','illnesses','health','healthy','unhealthy','disease','diseases',
+    'medicine','medicines','pill','pills','vaccine','vaccines','shot','shots',
+    'wear','wore','worn','wearing','wears','dress','dressed','dressing','dresses','shirt','shirts','pants','pant','shoes','shoe','sock','socks','hat','hats',
+    'pocket','pockets','bag','bags','backpack','backpacks','wallet','wallets','purse','purses',
+    'idea','ideas','plan','plans','planning','planned','design','designed','designing','designs','create','created','creating','creates','invent','invented','inventing','invents','invention','inventions',
+    'project','projects','task','tasks','goal','goals','target','targets','dream','dreams','dreamed','dreaming','dreams','aim','aimed','aiming','aims',
+    'finish','finished','finishing','finishes','complete','completed','completing','completes','done','undone',
+    'work','worked','working','works','job','jobs','career','careers','business','businesses','company','companies',
+    'study','studied','studying','studies','research','researched','researching','researches','review','reviewed','reviewing','reviews',
+    'pick','picked','picking','picks','select','selected','selecting','selects','choose','chose','chosen','choosing','chooses','choice','choices',
+    'show','showed','shown','showing','shows','prove','proved','proven','proving','proves','proof',
+    'count','counted','counting','counts','number','numbers','total','totals','sum','sums','add','added','adding','adds','subtract','subtracted','subtracting','subtracts',
+    'multiply','multiplied','multiplying','multiplies','divide','divided','dividing','divides','math','mathematics','arithmetic',
+    'list','lists','listed','listing','organize','organized','organizing','organizes','sort','sorted','sorting','sorts','arrange','arranged','arranging','arranges',
+    'history','histories','past','present','future','today','tomorrow','yesterday','recently','soon','later','before','after',
+    'happen','happened','happening','happens','event','events','occur','occurred','occurring','occurs','occurrence','occurrences',
+    'visit','visited','visiting','visits','stay','stayed','staying','stays',
+    'feel','felt','feeling','feelings','feels','sense','sensed','sensing','senses','emotion','emotions','emotional',
+    'truth','true','truly','really','actually','indeed','absolutely','certainly','definitely','surely','obviously','clearly','exactly'
+  ]);
+
+  // Words this curriculum mentions that aren't in the common list — accept them
+  const FRIDAY_CONTENT_WORDS = new Set([
+    'ethan','patrik','dad','mom','roblox','lua','mpc','akai','snare','hihat','metronome','tiktok','youtube','console','output','wallop','script','studio','rovio','bubble','angry','birds'
+  ]);
+
+  function _normalizeWord(w) {
+    return String(w || '').toLowerCase().replace(/[^a-z'\-]/g, '').replace(/^'+|'+$/g, '');
+  }
+
+  // In-memory async result cache: word -> 'valid' | 'invalid' | Promise
+  // Survives the session via the same ss-dict-cache-v1 used by dictionary.js.
+  const _spellAsyncCache = new Map();
+
+  function _initialFlag(text) {
+    // Phase 1 (sync): apply local wordlist + dict-cache. Returns words still
+    // suspect after the cheap pass — these need the async API check.
+    const out = [];
+    const seen = new Set();
+    const tokens = String(text || '').split(/\s+/);
+    let dc = {};
+    try { dc = JSON.parse(localStorage.getItem('ss-dict-cache-v1') || '{}'); } catch (e) {}
+    for (const raw of tokens) {
+      const w = _normalizeWord(raw);
+      if (!w) continue;
+      if (w.length < 4) continue;
+      if (/^\d+$/.test(w)) continue;
+      if (seen.has(w)) continue;
+      if (FRIDAY_WORDLIST.has(w)) continue;
+      if (FRIDAY_CONTENT_WORDS.has(w)) continue;
+      if (dc[w] && (dc[w].definition || dc[w].meanings)) continue;
+      if (_spellAsyncCache.get(w) === 'valid') continue;
+      seen.add(w);
+      out.push(w);
+    }
+    return out;
+  }
+
+  async function _confirmInvalid(words) {
+    // Phase 2 (async): for each still-suspect word, query Free Dictionary
+    // API. Cache result. Return only words the API also rejects (404).
+    const stillBad = [];
+    for (const w of words) {
+      const cached = _spellAsyncCache.get(w);
+      if (cached === 'valid') continue;
+      if (cached === 'invalid') { stillBad.push(w); continue; }
+      if (cached instanceof Promise) {
+        const verdict = await cached;
+        if (verdict === 'invalid') stillBad.push(w);
+        continue;
+      }
+      const p = (async () => {
+        try {
+          const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w), { cache: 'force-cache' });
+          if (r.ok) {
+            // also drop into the existing dict-cache so future sessions know
+            try {
+              const dc = JSON.parse(localStorage.getItem('ss-dict-cache-v1') || '{}');
+              if (!dc[w]) { dc[w] = { _spellOnly: true }; localStorage.setItem('ss-dict-cache-v1', JSON.stringify(dc)); }
+            } catch (e) {}
+            _spellAsyncCache.set(w, 'valid');
+            return 'valid';
+          }
+          _spellAsyncCache.set(w, 'invalid');
+          return 'invalid';
+        } catch (e) {
+          // Network failure → be lenient. Don't block the kid because the API is down.
+          _spellAsyncCache.set(w, 'valid');
+          return 'valid';
+        }
+      })();
+      _spellAsyncCache.set(w, p);
+      const verdict = await p;
+      if (verdict === 'invalid') stillBad.push(w);
+    }
+    return stillBad;
+  }
+
+  // ============================================================
+  // TEACH-BACK — typed-artifact gate
+  // Block shape:
+  //   { id, kind:'topic', type:'teach-back', minutes,
+  //     subject, tag, title,
+  //     prompt: 'In your own words, type out...',
+  //     minChars: 200,                  // char-count gate
+  //     spellCheck: true,               // run spell check on submit
+  //     savedAs: 'writingPiece',        // optional — saves to SS.writingPieces
+  //     cta: 'Submit' }
+  // ============================================================
+  function teachBack(host, block) {
+    const tag = block.tag || (block.subject || '');
+    const title = block.title || 'Teach it back';
+    const prompt = block.prompt || 'Type what you learned in your own words.';
+    const minChars = block.minChars || 150;
+
+    host.innerHTML = `
+      ${topRail(0, tag)}
+      ${moduleHead(block.subject || 'Today', title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+        <div class="passage" style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-bottom: var(--space-4); box-shadow: var(--shadow-card);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Type it out</div>
+          <p style="font-family: var(--font-serif); font-size: 18px; line-height: 1.55; margin: 0;">${prompt}</p>
+        </div>
+
+        <div style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-4); margin-bottom: var(--space-3);">
+          <textarea id="tb-text" rows="9" placeholder="Start typing..." style="width: 100%; box-sizing: border-box; border: none; outline: none; resize: vertical; font-family: 'Geist', system-ui, sans-serif; font-size: 16px; line-height: 1.6; color: var(--ink); background: transparent; min-height: 180px;"></textarea>
+        </div>
+
+        <div id="tb-status" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); font-size: 14px; font-family: 'Geist', system-ui, sans-serif;">
+          <div id="tb-counter" style="color: var(--ink-quiet);">0 / ${minChars} characters</div>
+          <div id="tb-spell-status" style="color: var(--ink-quiet);">Spelling: not checked yet</div>
+        </div>
+
+        <div id="tb-spell-words" style="display: none; background: #FFF6E5; border: 1px solid #E5B947; border-radius: var(--r-md); padding: var(--space-4); margin-bottom: var(--space-4);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B5E14; margin-bottom: var(--space-2);">Spelling — fix these</div>
+          <div id="tb-spell-list" style="font-family: 'Geist', system-ui, sans-serif; font-size: 14px; line-height: 1.7; color: var(--ink);"></div>
+          <div style="margin-top: var(--space-2); font-size: 12px; color: var(--ink-quiet);">Tap a word to mark it as a name or special word the dictionary doesn't have.</div>
+        </div>
+
+        <div class="center-actions">
+          <button class="btn-primary" id="tb-submit" disabled style="opacity:0.5;">Keep typing — ${minChars} chars needed</button>
+        </div>
+      </div>
+    `;
+    startBlockTimer(host, block);
+
+    const ta = host.querySelector('#tb-text');
+    const counter = host.querySelector('#tb-counter');
+    const submit = host.querySelector('#tb-submit');
+    const spellStatus = host.querySelector('#tb-spell-status');
+    const spellBox = host.querySelector('#tb-spell-words');
+    const spellList = host.querySelector('#tb-spell-list');
+
+    const userMarkedOK = new Set(); // words he marked as "name / accept"
+    let refreshSeq = 0;             // race-protection: latest async wins
+
+    function renderSpellState(suspects) {
+      if (suspects.length === 0) {
+        submit.disabled = false;
+        submit.style.opacity = '1';
+        submit.textContent = block.cta || 'Submit';
+        spellBox.style.display = 'none';
+        spellStatus.textContent = 'Spelling: clean';
+        spellStatus.style.color = '#2D6B3C';
+      } else {
+        submit.disabled = true;
+        submit.style.opacity = '0.5';
+        submit.textContent = `Fix ${suspects.length} spelling${suspects.length === 1 ? '' : 's'} to submit`;
+        spellBox.style.display = 'block';
+        spellStatus.textContent = `Spelling: ${suspects.length} word${suspects.length === 1 ? '' : 's'} to check`;
+        spellStatus.style.color = '#8B5E14';
+        spellList.innerHTML = suspects.map(w => `
+          <span style="display: inline-flex; align-items: center; gap: 4px; background: #FFE8B0; padding: 4px 10px; border-radius: 999px; margin: 3px 4px 3px 0; font-weight: 600;">
+            ${w}
+            <button data-mark-ok="${w}" style="background: transparent; border: none; cursor: pointer; font-size: 11px; color: #8B5E14; padding: 0 2px;" title="Mark as a name / accept">✓</button>
+          </span>
+        `).join('');
+        spellList.querySelectorAll('[data-mark-ok]').forEach(btn => {
+          btn.onclick = () => { userMarkedOK.add(btn.dataset.markOk); refresh(); };
+        });
+      }
+    }
+
+    async function refresh() {
+      const mySeq = ++refreshSeq;
+      const text = ta.value;
+      const chars = text.trim().length;
+      counter.textContent = `${chars} / ${minChars} characters`;
+      counter.style.color = chars >= minChars ? '#2D6B3C' : 'var(--ink-quiet)';
+
+      if (chars < minChars) {
+        submit.disabled = true;
+        submit.style.opacity = '0.5';
+        submit.textContent = `Keep typing — ${minChars - chars} more`;
+        spellBox.style.display = 'none';
+        spellStatus.textContent = 'Spelling: will check when you hit the word count';
+        spellStatus.style.color = 'var(--ink-quiet)';
+        return;
+      }
+
+      if (block.spellCheck === false) {
+        if (mySeq === refreshSeq) renderSpellState([]);
+        return;
+      }
+
+      // Phase 1: sync flag from the local wordlist
+      let suspects = _initialFlag(text).filter(w => !userMarkedOK.has(w));
+
+      // Show the phase-1 result immediately so he sees something happen
+      if (mySeq === refreshSeq) renderSpellState(suspects);
+
+      if (suspects.length === 0) return;
+
+      // Phase 2: async confirm with the dictionary API. Show "checking..."
+      spellStatus.textContent = `Spelling: checking ${suspects.length} word${suspects.length === 1 ? '' : 's'} with dictionary...`;
+      spellStatus.style.color = '#8B5E14';
+      const confirmed = (await _confirmInvalid(suspects)).filter(w => !userMarkedOK.has(w));
+      if (mySeq !== refreshSeq) return; // a newer refresh ran; abandon
+      renderSpellState(confirmed);
+    }
+
+    ta.addEventListener('input', refresh);
+    ta.addEventListener('blur', refresh);
+
+    submit.onclick = () => {
+      if (submit.disabled) return;
+      const body = ta.value.trim();
+      _showReviewModal(host, {
+        title: 'Ready for Mom & Dad?',
+        answers: [{ q: block.prompt, body }],
+        onEdit: () => {
+          if (ta) { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
+        },
+        onConfirm: () => {
+          if (window.SS && block.savedAs === 'writingPiece') {
+            window.SS.saveWritingPiece(block.title || block.prompt || 'Teach-back', body);
+          }
+          if (window.SS && window.SS.saveArtifact) {
+            window.SS.saveArtifact({ kind: 'teach-back', block_id: block.id, subject: block.subject, question: block.prompt, body, title: block.title });
+          }
+          complete(block.id, { chars: body.length, body, budgetMinutes: block.minutes });
+        }
+      });
+    };
+
+    refresh();
+  }
+
+  // ============================================================
+  // TYPING-PRECISE — type the target string exactly, N reps in a row, no errors
+  // Block shape:
+  //   { id, kind:'topic', type:'typing-precise', minutes,
+  //     subject, tag, title,
+  //     prompt: 'Type this exactly...',
+  //     target: 'I will tell the truth.',
+  //     reps: 3,                        // how many perfect reps in a row
+  //     cta: 'Done' }
+  // ============================================================
+  function typingPrecise(host, block) {
+    const tag = block.tag || (block.subject || '');
+    const title = block.title || 'Type it exactly';
+    const prompt = block.prompt || 'Type this exactly.';
+    const target = block.target || '';
+    const reps = Math.max(1, block.reps || 3);
+
+    host.innerHTML = `
+      ${topRail(0, tag)}
+      ${moduleHead(block.subject || 'Today', title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+        <div class="passage" style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-bottom: var(--space-4); box-shadow: var(--shadow-card);">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Type it exactly · ${reps}x in a row</div>
+          <p style="font-family: var(--font-serif); font-size: 18px; line-height: 1.55; margin: 0 0 var(--space-4) 0;">${prompt}</p>
+          <div style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-3) var(--space-4); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 16px; color: var(--ink); user-select: text;">${target.replace(/</g, '&lt;')}</div>
+        </div>
+
+        <div style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-4); margin-bottom: var(--space-3);">
+          <input id="tp-text" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type it here..." style="width: 100%; box-sizing: border-box; border: none; outline: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 17px; color: var(--ink); background: transparent;" />
+        </div>
+
+        <div id="tp-status" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); font-size: 14px; font-family: 'Geist', system-ui, sans-serif;">
+          <div id="tp-progress" style="color: var(--ink-quiet);">0 / ${reps} perfect reps</div>
+          <div id="tp-feedback" style="color: var(--ink-quiet);">Type the line and press Enter.</div>
+        </div>
+
+        <div class="center-actions">
+          <button class="btn-primary" id="tp-submit" disabled style="opacity:0.5;">${reps} perfect reps to finish</button>
+        </div>
+      </div>
+    `;
+    startBlockTimer(host, block);
+
+    const input = host.querySelector('#tp-text');
+    const progress = host.querySelector('#tp-progress');
+    const feedback = host.querySelector('#tp-feedback');
+    const submit = host.querySelector('#tp-submit');
+
+    let perfect = 0;
+
+    function tick() {
+      progress.textContent = `${perfect} / ${reps} perfect reps`;
+      if (perfect >= reps) {
+        submit.disabled = false;
+        submit.style.opacity = '1';
+        submit.textContent = block.cta || 'Done';
+        feedback.textContent = 'Locked in — nice.';
+        feedback.style.color = '#2D6B3C';
+      } else {
+        submit.disabled = true;
+        submit.style.opacity = '0.5';
+        submit.textContent = `${reps - perfect} more perfect rep${reps - perfect === 1 ? '' : 's'}`;
+      }
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const v = input.value;
+        if (v === target) {
+          perfect++;
+          input.value = '';
+          if (perfect >= reps) {
+            feedback.textContent = '';
+          } else {
+            feedback.textContent = `Perfect. ${reps - perfect} more.`;
+            feedback.style.color = '#2D6B3C';
+          }
+        } else {
+          perfect = 0;
+          input.value = '';
+          feedback.textContent = 'Not exact — count starts over. Try again.';
+          feedback.style.color = '#8B3838';
+        }
+        tick();
+      }
+    });
+
+    submit.onclick = () => {
+      if (submit.disabled) return;
+      if (window.SS && window.SS.saveArtifact) {
+        window.SS.saveArtifact({ kind: 'typing-precise', block_id: block.id, target, reps, title: block.title });
+      }
+      complete(block.id, { reps, budgetMinutes: block.minutes });
+    };
+
+    tick();
+    input.focus();
+  }
+
+  // ============================================================
+  // SPELLING-DRILL — type each of N words exactly; all-correct to advance.
+  // Block shape:
+  //   { id, kind:'topic', type:'spelling-drill', minutes,
+  //     subject, tag, title,
+  //     intro: 'Type these N words exactly...',
+  //     words: ['problem', 'solution', ...],
+  //     cta: 'Done' }
+  // ============================================================
+  function spellingDrill(host, block) {
+    const tag = block.tag || (block.subject || '');
+    const title = block.title || 'Spell each word exactly';
+    const intro = block.intro || 'Type each word exactly as shown.';
+    const words = Array.isArray(block.words) ? block.words : [];
+
+    let idx = 0;
+    let attempts = 0; // total attempts to gauge how many tries
+
+    function showWord() {
+      const target = words[idx] || '';
+      host.innerHTML = `
+        ${topRail(0, tag)}
+        ${moduleHead(block.subject || 'Today', title)}
+        <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+          <div class="passage" style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-6) var(--space-5); margin-bottom: var(--space-4); box-shadow: var(--shadow-card);">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Word ${idx + 1} of ${words.length}</div>
+            <p style="font-family: var(--font-serif); font-size: 17px; line-height: 1.5; margin: 0 0 var(--space-4) 0; color: var(--ink-soft);">${intro}</p>
+            <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+              <div style="font-size: 13px; color: var(--ink-quiet); letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600;">Spell this:</div>
+              <div style="font-family: var(--font-serif); font-size: 36px; line-height: 1; color: var(--ink); letter-spacing: 0.02em;">${target}</div>
+            </div>
+          </div>
+
+          <div style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-4); margin-bottom: var(--space-3);">
+            <input id="sp-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the word..." style="width: 100%; box-sizing: border-box; border: none; outline: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 22px; color: var(--ink); background: transparent;" />
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); font-size: 14px;">
+            <div style="color: var(--ink-quiet);">${idx} / ${words.length} done · attempts: ${attempts}</div>
+            <div id="sp-feedback" style="color: var(--ink-quiet);">Type the word and press Enter.</div>
+          </div>
+
+          <div class="center-actions">
+            <button class="btn-primary" id="sp-check">Check spelling</button>
+          </div>
+        </div>
+      `;
+      startBlockTimer(host, block);
+
+      const input = host.querySelector('#sp-input');
+      const fb = host.querySelector('#sp-feedback');
+      const checkBtn = host.querySelector('#sp-check');
+
+      function tryWord() {
+        attempts++;
+        const v = String(input.value || '').trim().toLowerCase();
+        if (v === target.toLowerCase()) {
+          idx++;
+          if (idx >= words.length) {
+            // done — final celebration card
+            host.innerHTML = `
+              ${topRail(100, `${words.length} / ${words.length}`)}
+              ${moduleHead(block.subject || 'Today', title + ' — done')}
+              <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+                <div class="passage" style="background: var(--cream-card); border-radius: var(--r-md); padding: var(--space-7) var(--space-5); margin-bottom: var(--space-4); box-shadow: var(--shadow-card); text-align: center;">
+                  <div style="font-size: 38px; line-height: 1; margin-bottom: var(--space-3);">✓</div>
+                  <div style="font-family: var(--font-serif); font-size: 22px; line-height: 1.3; color: var(--ink); margin-bottom: var(--space-2);">All ${words.length} spelled perfect.</div>
+                  <div style="font-size: 14px; color: var(--ink-quiet);">${attempts} total attempts.</div>
+                </div>
+                <div class="center-actions">
+                  <button class="btn-primary" id="sp-done">${block.cta || 'Continue'}</button>
+                </div>
+              </div>
+            `;
+            host.querySelector('#sp-done').onclick = () => {
+              if (window.SS && window.SS.saveArtifact) {
+                window.SS.saveArtifact({ kind: 'spelling-drill', block_id: block.id, words, attempts, title: block.title });
+              }
+              complete(block.id, { words: words.length, attempts, budgetMinutes: block.minutes });
+            };
+            return;
+          }
+          showWord();
+        } else {
+          fb.textContent = `Not quite — try again.`;
+          fb.style.color = '#8B3838';
+          input.style.borderColor = '#8B3838';
+          input.value = '';
+          input.focus();
+        }
+      }
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); tryWord(); }
+      });
+      checkBtn.onclick = tryWord;
+      input.focus();
+    }
+
+    if (words.length === 0) { complete(block.id); return; }
+    showWord();
+  }
+
   // public registry
   // ============================================================
   return {
@@ -2610,6 +3640,10 @@ window.SSMod = (function () {
     handwriting,
     'roblox-lesson': robloxLesson,
     concept,
-    'report-card': reportCard
+    'report-card': reportCard,
+    'teach-back': teachBack,
+    'typing-precise': typingPrecise,
+    'spelling-drill': spellingDrill,
+    'video-typed': videoTyped
   };
 })();
