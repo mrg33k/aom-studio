@@ -2,6 +2,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "worktree-*": false,
+      "agent-*": false,
+      "embed-*": false
+    }
+  },
   "rewrites": [
     { "source": "/embed", "destination": "/embed.html" },
     { "source": "/dashboard", "destination": "/index.html" },
