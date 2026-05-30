@@ -1546,13 +1546,15 @@ function MessageList({ roomType = 'agent' }) {
                           onClick={openAttachment}
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAttachment() } }}
                           style={{
-                            alignSelf: isUser ? 'flex-end' : 'flex-start',
+                            alignSelf: isMulti ? 'stretch' : (isUser ? 'flex-end' : 'flex-start'),
                             background: `linear-gradient(180deg, ${C.s2}, ${C.s1})`,
                             border: `1px solid ${C.border2}`,
-                            borderRadius: 16,
-                            padding: '12px 14px',
-                            display: 'flex', alignItems: 'center', gap: 12,
-                            maxWidth: 320, minWidth: 220,
+                            borderRadius: isMulti ? 12 : 16,
+                            padding: isMulti ? '8px 12px' : '12px 14px',
+                            display: 'flex', alignItems: 'center', gap: isMulti ? 10 : 12,
+                            maxWidth: isMulti ? '100%' : 320,
+                            minWidth: isMulti ? 0 : 220,
+                            width: isMulti ? '100%' : undefined,
                             cursor: 'pointer',
                             transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
                             boxShadow: '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)',
@@ -1575,10 +1577,10 @@ function MessageList({ roomType = 'agent' }) {
                           {/* Document icon block with extension ribbon */}
                           <div style={{
                             position: 'relative',
-                            width: 44, height: 52, flexShrink: 0,
+                            width: isMulti ? 32 : 44, height: isMulti ? 38 : 52, flexShrink: 0,
                             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))',
                           }}>
-                            <svg viewBox="0 0 44 52" width="44" height="52" aria-hidden="true">
+                            <svg viewBox="0 0 44 52" width={isMulti ? 32 : 44} height={isMulti ? 38 : 52} aria-hidden="true">
                               <defs>
                                 <linearGradient id={`docGrad-${msg.id}-${attIdx}`} x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="0%" stopColor="rgba(255,255,255,0.10)" />
@@ -1655,8 +1657,60 @@ function MessageList({ roomType = 'agent' }) {
                       )
                     })
                     if (isMulti) {
+                      // R79-f23 Leg 2 (2026-05-30): stack multi-attachments
+                      // vertically with a batch header pill. Old layout was a
+                      // horizontal row that squeezed each card below its
+                      // min-width, end-truncating filenames at the same place
+                      // and producing 4 visually-identical "Arizona S..." cards.
+                      // Vertical stack + full-width cards keeps the
+                      // distinguishing tail of each filename visible.
+                      const totalSize = atts.reduce(
+                        (sum, a) => sum + (typeof a.size === 'number' ? a.size : 0),
+                        0,
+                      )
+                      const totalLabel = totalSize > 0
+                        ? totalSize < 1024 * 1024
+                          ? `${Math.round(totalSize / 1024)} KB`
+                          : `${(totalSize / (1024 * 1024)).toFixed(1)} MB`
+                        : null
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'row', gap: 6, padding: '6px 16px', marginTop: hasText ? 6 : 0 }}>
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 4,
+                          padding: '6px 16px',
+                          marginTop: hasText ? 6 : 0,
+                          maxWidth: 380,
+                          alignSelf: isUser ? 'flex-end' : 'flex-start',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}>
+                          {/* Batch header pill */}
+                          <div style={{
+                            alignSelf: isUser ? 'flex-end' : 'flex-start',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '3px 8px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: `1px solid ${C.border}`,
+                            borderRadius: 999,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            color: C.text2,
+                            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                            marginBottom: 2,
+                          }}>
+                            <span>{atts.length} files</span>
+                            {totalLabel && (
+                              <>
+                                <span style={{ opacity: 0.4 }}>·</span>
+                                <span style={{ opacity: 0.7 }}>{totalLabel}</span>
+                              </>
+                            )}
+                          </div>
                           {items}
                         </div>
                       )
