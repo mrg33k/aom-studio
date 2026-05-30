@@ -979,7 +979,50 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
           .catch(() => [])
       : Promise.resolve([])
 
-    Promise.all([uploadsP, textP, chatUploadsP, projectFilesP]).then(([uploads, texts, chatUploads, diskFiles]) => {
+    // R79-f23 Leg 2 R1 (2026-05-30): primary source for per-chat-folder uploads.
+    // The rag-server /list-chat-files endpoint walks one folder (the active
+    // chat's Uploads/) and returns the file list directly. This replaces the
+    // metadata-filter chatUploadsP source in subsequent rounds; for R1 it
+    // runs alongside as an A/B verification before R2 deletes the legacy
+    // sources. Uses the rag tunnel + Supabase JWT (same auth posture as
+    // /upload-file-binary). Empty list if folder doesn't exist (e.g. no
+    // uploads yet in this chat) — not an error.
+    const chatFilesP = projectSlug
+      ? (async () => {
+          try {
+            const { data } = await supabase.auth.getSession()
+            const jwt = data?.session?.access_token
+            if (!jwt) return []
+            const scope = []
+            scope.push(`world=${encodeURIComponent(world)}`)
+            scope.push(`project=${encodeURIComponent(projectSlug)}`)
+            if (missionSlug) scope.push(`mission=${encodeURIComponent(missionSlug)}`)
+            const r = await fetch(`${RAG_TUNNEL}/list-chat-files?${scope.join('&')}`, {
+              headers: { 'Authorization': `Bearer ${jwt}` },
+            })
+            if (!r.ok) return []
+            const body = await r.json()
+            return (body?.files || []).map(f => ({
+              name: f.name,
+              relativePath: f.name,
+              url: `${RAG_TUNNEL}${f.url}`,
+              age: relativeAge(f.mtime ? new Date(f.mtime).toISOString() : null),
+              kind: fileKind(f.name, f.mime_type),
+              size: f.size,
+              mime: f.mime_type,
+              _ts: f.mtime || 0,
+              // Tag so the mission filter below passes them (same posture as
+              // chat-upload) and so R2 can drop the legacy sources by tag.
+              _source: 'chat-folder',
+              missionSlug: missionSlug || null,
+            }))
+          } catch (_) {
+            return []
+          }
+        })()
+      : Promise.resolve([])
+
+    Promise.all([uploadsP, textP, chatUploadsP, projectFilesP, chatFilesP]).then(([uploads, texts, chatUploads, diskFiles, chatFolderFiles]) => {
       if (cancelled) return
       // Project-scope text files (skip ones tagged for other projects).
       const scopedTexts = projectSlug
@@ -998,7 +1041,12 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       // rows for VISION/CONTEXT/BUILD/RESEARCH, but with fresher mtimes and
       // real on-disk locations — they win the dedup so the viewer reads the
       // file the agent actually wrote to.
-      const merged = [...uploads, ...chatUploads, ...diskFiles, ...scopedTexts].filter(f => {
+      // R79-f23 Leg 2 R1: chatFolderFiles first — direct read of the active
+      // chat's Uploads/ folder is the source of truth for per-chat uploads.
+      // Existing sources stay alongside for one round so we can A/B before
+      // R2 drops the legacy paths. URL dedup catches the overlap (same file
+      // surfaced by both new endpoint and legacy chatUploads).
+      const merged = [...chatFolderFiles, ...uploads, ...chatUploads, ...diskFiles, ...scopedTexts].filter(f => {
         if (!f.url) return false
         if (seenUrls.has(f.url)) return false
         seenUrls.add(f.url)
@@ -1024,7 +1072,11 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
             // there with the permissive OR-NULL clause). Tagged with
             // _source='chat-upload' upstream so we don't drop them just
             // because they lack a filesystem path prefix.
-            f._source === 'chat-upload'
+            f._source === 'chat-upload' ||
+            // R79-f23 Leg 2 R1: same posture for chat-folder reads from the
+            // rag-server walk endpoint. The endpoint scopes by chat folder,
+            // so any file it returns is in-scope by construction.
+            f._source === 'chat-folder'
           )
           .map(f => ({
             ...f,
