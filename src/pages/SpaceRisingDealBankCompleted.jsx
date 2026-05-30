@@ -2,348 +2,218 @@ import React, { useState, useEffect, useMemo } from 'react'
 
 // Space Rising — Deal Bank — Completed Rounds
 // Public grid of closed space-industry funding rounds.
-// Template-aligned with the Space Rising Interactive OS homepage at sourcing.directory/space-rising.
+// System-managed: no user-add flow. Seeded from blacknight research.
 // Route: /space-rising/deal-bank/completed
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
-  .sr-page { box-sizing: border-box; }
-  .sr-page *, .sr-page *::before, .sr-page *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .db-page { box-sizing: border-box; }
+  .db-page *, .db-page *::before, .db-page *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .sr-root {
-    --black: #050608;
-    --bg: #07090C;
-    --surface: #0F1216;
-    --surface2: #161A1F;
-    --surface3: #1E232B;
+  .db-root {
+    --black: #080808;
+    --surface: #121212;
+    --surface2: #1A1A1A;
+    --surface3: #2A2A2A;
     --orange: #E5451F;
-    --orange-dim: rgba(229,69,31,0.12);
-    --orange-border: rgba(229,69,31,0.4);
-    --orange-soft: rgba(229,69,31,0.18);
+    --orange-dim: rgba(229,69,31,0.15);
+    --orange-border: rgba(229,69,31,0.3);
     --white: #FFFFFF;
-    --gray: #8B939C;
-    --gray-l: #C7CCD1;
-    --gray-d: #5A6068;
-    --border: rgba(255,255,255,0.06);
-    --border-strong: rgba(255,255,255,0.1);
+    --gray: #999;
+    --gray-l: #CCCCCC;
+    --border: #1E1E1E;
+    --border-light: rgba(255,255,255,0.08);
+    background: var(--black);
     color: var(--white);
     font-family: 'Inter', sans-serif;
     font-size: 15px;
     line-height: 1.6;
     min-height: 100vh;
-    position: relative;
-    background:
-      radial-gradient(ellipse 800px 600px at 85% 10%, rgba(229,69,31,0.10), transparent 60%),
-      radial-gradient(ellipse 1000px 700px at 0% 100%, rgba(50,80,130,0.10), transparent 60%),
-      var(--bg);
-  }
-  .sr-root::before {
-    content: '';
-    position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    background-image:
-      radial-gradient(circle at 18% 22%, rgba(255,255,255,0.5) 1px, transparent 1.6px),
-      radial-gradient(circle at 72% 58%, rgba(255,255,255,0.35) 1px, transparent 1.6px),
-      radial-gradient(circle at 42% 80%, rgba(255,255,255,0.4) 1px, transparent 1.6px),
-      radial-gradient(circle at 88% 30%, rgba(255,255,255,0.3) 1px, transparent 1.6px),
-      radial-gradient(circle at 8% 60%, rgba(255,255,255,0.3) 1px, transparent 1.6px),
-      radial-gradient(circle at 60% 12%, rgba(255,255,255,0.35) 1px, transparent 1.6px);
-    background-size: 400px 400px, 350px 350px, 500px 500px, 280px 280px, 600px 600px, 320px 320px;
-    opacity: 0.6;
   }
 
-  .sr-shell {
-    position: relative;
-    z-index: 1;
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  /* ── TOP BAR ─────────────────────────────────────────────────────────── */
-  .sr-topbar {
+  /* ── NAV ─────────────────────────────────────────────────────────────── */
+  .db-nav {
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 0;
+    height: 60px;
   }
-  .sr-back {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--gray); text-decoration: none;
-    letter-spacing: 0.04em;
+  .db-nav-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+  .db-nav-logo img { height: 30px; width: auto; }
+  .db-nav-logo-text {
+    font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--white);
   }
-  .sr-back:hover { color: var(--white); }
-  .sr-brand {
-    display: inline-flex; align-items: center; gap: 10px;
-    text-decoration: none;
+  .db-nav-links { display: flex; gap: 24px; align-items: center; }
+  .db-nav-link {
+    font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--gray); text-decoration: none; transition: color .15s;
   }
-  .sr-brand img { height: 26px; width: auto; opacity: 0.85; }
+  .db-nav-link:hover { color: var(--white); }
+  .db-nav-link.active { color: var(--orange); }
 
   /* ── HERO ────────────────────────────────────────────────────────────── */
-  .sr-hero { padding: 36px 0 28px; }
-  .sr-eyebrow {
-    font-family: 'Inter', sans-serif;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.24em;
-    text-transform: uppercase; color: var(--orange);
-    margin-bottom: 14px;
+  .db-hero {
+    border-bottom: 1px solid var(--border);
+    padding: 64px 32px 48px;
+    max-width: 1100px; margin: 0 auto;
   }
-  .sr-title {
-    font-family: 'Oswald', sans-serif;
-    font-size: clamp(40px, 6vw, 64px);
-    font-weight: 700; line-height: 0.96;
-    letter-spacing: 0.02em; text-transform: uppercase;
-    margin-bottom: 16px;
+  .db-hero-eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--orange); margin-bottom: 14px;
   }
-  .sr-sub {
-    font-size: 15px; color: var(--gray-l); max-width: 620px; line-height: 1.6;
+  .db-hero-title {
+    font-family: 'Oswald', sans-serif; font-size: clamp(36px, 5vw, 60px);
+    font-weight: 700; text-transform: uppercase; line-height: .95;
+    letter-spacing: .02em; margin-bottom: 20px;
   }
+  .db-hero-title span { color: var(--orange); }
+  .db-hero-sub { font-size: 16px; color: var(--gray-l); max-width: 600px; line-height: 1.6; }
+  .db-hero-stats {
+    display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap;
+  }
+  .db-stat { display: flex; flex-direction: column; gap: 4px; }
+  .db-stat-val {
+    font-family: 'Oswald', sans-serif; font-size: 28px; font-weight: 700;
+    color: var(--white); letter-spacing: .02em;
+  }
+  .db-stat-label { font-size: 11px; color: var(--gray); letter-spacing: .1em; text-transform: uppercase; }
 
-  /* ── SEARCH ──────────────────────────────────────────────────────────── */
-  .sr-search-wrap {
-    margin: 28px 0 18px;
-    display: flex; align-items: center;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border-strong);
-    border-radius: 999px;
-    padding: 0 18px;
-    max-width: 540px;
-    transition: border-color .15s, background .15s;
+  /* ── SEARCH BAR ──────────────────────────────────────────────────────── */
+  .db-search-bar {
+    padding: 20px 32px;
+    max-width: 1100px; margin: 0 auto;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
   }
-  .sr-search-wrap:focus-within {
-    border-color: var(--orange-border);
-    background: rgba(229,69,31,0.05);
+  .db-search {
+    flex: 1; min-width: 240px; max-width: 420px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 14px; color: var(--white); font-size: 14px;
+    font-family: 'Inter', sans-serif; outline: none; transition: border-color .15s;
   }
-  .sr-search-wrap svg { color: var(--gray); flex-shrink: 0; }
-  .sr-search {
-    flex: 1; background: transparent; border: none; outline: none;
-    color: var(--white); font-family: 'Inter', sans-serif; font-size: 14px;
-    padding: 13px 12px;
-  }
-  .sr-search::placeholder { color: var(--gray); }
+  .db-search::placeholder { color: var(--gray); }
+  .db-search:focus { border-color: rgba(229,69,31,.4); }
+  .db-result-count { font-size: 12px; color: var(--gray); }
 
-  /* ── CHIPS ───────────────────────────────────────────────────────────── */
-  .sr-chips {
-    display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 0 4px;
-  }
-  .sr-chip {
+  /* ── ROUND BADGE ─────────────────────────────────────────────────────── */
+  .db-badge {
     display: inline-flex; align-items: center;
-    padding: 7px 14px;
-    border: 1px solid var(--border-strong);
-    border-radius: 999px;
-    background: rgba(255,255,255,0.025);
-    color: var(--gray-l);
-    font-size: 12px; font-weight: 500;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all .12s;
-    user-select: none;
-  }
-  .sr-chip:hover {
-    border-color: var(--border-strong);
-    color: var(--white);
-    background: rgba(255,255,255,0.06);
-  }
-  .sr-chip.on {
-    border-color: var(--orange-border);
-    background: var(--orange-dim);
-    color: var(--orange);
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    border-radius: 3px; padding: 3px 8px;
   }
 
-  /* ── COUNT BAR ───────────────────────────────────────────────────────── */
-  .sr-count {
-    margin: 20px 0 8px;
-    font-size: 11px; color: var(--gray);
-    text-transform: uppercase; letter-spacing: 0.14em;
-    font-weight: 600;
+  /* ── GRID ────────────────────────────────────────────────────────────── */
+  .db-grid {
+    padding: 8px 32px 60px;
+    max-width: 1100px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
   }
-  .sr-count strong { color: var(--white); font-weight: 700; }
 
-  /* ── LIST (horizontal rows) ──────────────────────────────────────────── */
-  .sr-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 60px; }
-  .sr-row {
+  /* ── CARD ────────────────────────────────────────────────────────────── */
+  .db-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 18px 22px;
-    display: grid;
-    grid-template-columns: 56px 1fr auto;
-    gap: 18px;
-    align-items: center;
-    cursor: pointer;
-    transition: border-color .15s, background .15s, transform .12s;
+    border-radius: 10px; padding: 22px;
+    cursor: pointer; transition: border-color .18s, background .18s, transform .15s;
+    position: relative; overflow: hidden;
   }
-  .sr-row:hover {
-    border-color: var(--orange-border);
-    background: var(--surface2);
+  .db-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--orange); opacity: 0; transition: opacity .18s;
   }
-  .sr-row.expanded {
-    border-color: var(--orange-border);
-    background: var(--surface2);
-  }
-  .sr-row-letter {
-    width: 56px; height: 56px;
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Oswald', sans-serif;
-    font-weight: 700; font-size: 22px;
-    letter-spacing: 0.02em;
-  }
-  .sr-row-mid { min-width: 0; }
-  .sr-row-name {
-    font-family: 'Oswald', sans-serif;
-    font-size: 18px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.01em;
-    line-height: 1.15;
-    margin-bottom: 6px;
-    color: var(--white);
-    overflow: hidden; text-overflow: ellipsis;
-  }
-  .sr-row-meta {
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    font-size: 12px; color: var(--gray);
-  }
-  .sr-badge {
-    display: inline-flex; align-items: center;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase;
-    border-radius: 4px; padding: 3px 8px;
-  }
-  .sr-tag {
-    font-size: 11px; color: var(--gray-l);
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border-strong);
-    padding: 3px 9px; border-radius: 4px;
-    letter-spacing: 0.02em;
-  }
-  .sr-date { font-size: 12px; color: var(--gray); }
-  .sr-row-right {
-    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-  }
-  .sr-amount {
-    font-family: 'Oswald', sans-serif;
-    font-size: 26px; font-weight: 700;
-    color: var(--orange);
-    letter-spacing: 0.01em; line-height: 1; white-space: nowrap;
-  }
-  .sr-region { font-size: 11px; color: var(--gray); letter-spacing: 0.04em; }
+  .db-card:hover { border-color: var(--orange-border); background: var(--surface2); transform: translateY(-2px); }
+  .db-card:hover::before { opacity: 1; }
+  .db-card.expanded { border-color: var(--orange-border); background: var(--surface2); }
+  .db-card.expanded::before { opacity: 1; }
 
-  .sr-expanded-body {
-    grid-column: 1 / -1;
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-    display: flex; flex-direction: column; gap: 10px;
+  .db-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+  .db-card-company {
+    font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .02em; line-height: 1.1;
+    flex: 1;
   }
-  .sr-desc { font-size: 14px; color: var(--gray-l); line-height: 1.55; }
-  .sr-investors {
-    font-size: 12px; color: var(--gray-l); line-height: 1.55;
+  .db-card-amount {
+    font-family: 'Oswald', sans-serif; font-size: 24px; font-weight: 700;
+    color: var(--orange); letter-spacing: .01em; white-space: nowrap;
+    line-height: 1.1;
   }
-  .sr-investors b { color: var(--white); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
-  .sr-source-link {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--orange); text-decoration: none;
+  .db-card-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .db-card-date { font-size: 12px; color: var(--gray); }
+
+  /* ── EXPANDED PANEL ──────────────────────────────────────────────────── */
+  .db-card-expanded {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
   }
-  .sr-source-link:hover { opacity: 0.8; }
+  .db-card-notes { font-size: 13px; color: var(--gray-l); line-height: 1.6; margin-bottom: 12px; }
+  .db-card-source {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    color: var(--orange); text-decoration: none; text-transform: uppercase;
+  }
+  .db-card-source:hover { opacity: .8; }
+  .db-card-expand-hint {
+    margin-top: 10px; font-size: 11px; color: var(--gray);
+    letter-spacing: .06em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 4px;
+  }
 
   /* ── LOADING / EMPTY ─────────────────────────────────────────────────── */
-  .sr-state {
-    padding: 60px 24px; text-align: center;
+  .db-loading {
+    padding: 80px 32px; text-align: center;
     color: var(--gray); font-size: 14px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .db-empty {
+    padding: 60px 32px; text-align: center;
+    color: var(--gray); font-size: 14px;
+    max-width: 1100px; margin: 0 auto;
   }
 
   /* ── FOOTER ──────────────────────────────────────────────────────────── */
-  .sr-footer {
+  .db-footer {
     border-top: 1px solid var(--border);
-    margin-top: 40px; padding: 28px 0;
+    padding: 28px 32px;
+    max-width: 1100px; margin: 0 auto;
     display: flex; justify-content: space-between; align-items: center; gap: 16px;
     flex-wrap: wrap;
-    font-size: 12px; color: var(--gray);
   }
-  .sr-footer a { color: var(--gray-l); text-decoration: none; border-bottom: 1px dotted var(--gray-d); }
-  .sr-footer a:hover { color: var(--white); }
+  .db-footer-note { font-size: 12px; color: var(--gray); }
+  .db-footer-admin {
+    font-size: 11px; color: rgba(255,255,255,.2); letter-spacing: .06em; text-transform: uppercase;
+  }
 
   /* ── MOBILE ──────────────────────────────────────────────────────────── */
-  @media (max-width: 720px) {
-    .sr-shell { padding: 0 16px; }
-    .sr-hero { padding: 24px 0 20px; }
-    .sr-row {
-      grid-template-columns: 44px 1fr;
-      padding: 14px 16px;
-      gap: 14px;
-    }
-    .sr-row-letter { width: 44px; height: 44px; font-size: 18px; border-radius: 10px; }
-    .sr-row-right {
-      grid-column: 1 / -1;
-      flex-direction: row; justify-content: space-between; align-items: center;
-      width: 100%;
-      margin-top: 4px;
-    }
-    .sr-amount { font-size: 22px; }
+  @media (max-width: 680px) {
+    .db-nav { padding: 0 16px; }
+    .db-nav-links { display: none; }
+    .db-hero { padding: 40px 16px 32px; }
+    .db-search-bar { padding: 16px 16px 8px; }
+    .db-grid { padding: 8px 16px 48px; grid-template-columns: 1fr; }
+    .db-footer { padding: 24px 16px; flex-direction: column; align-items: flex-start; }
   }
 `
 
-// Round badge color system — same family as company badges on the OS homepage
-const ROUND_BADGE = {
-  'Pre-Seed':    { bg: 'rgba(148,163,184,0.10)', fg: '#94A3B8' },
-  'Seed':        { bg: 'rgba(168,133,96,0.12)',  fg: '#D4B896' },
-  'Series A':    { bg: 'rgba(34,197,94,0.10)',   fg: '#86EFAC' },
-  'Series B':    { bg: 'rgba(59,130,246,0.10)',  fg: '#93C5FD' },
-  'Series C':    { bg: 'rgba(168,85,247,0.10)',  fg: '#D8B4FE' },
-  'Series D':    { bg: 'rgba(236,72,153,0.10)',  fg: '#F9A8D4' },
-  'Series E':    { bg: 'rgba(232,93,38,0.12)',   fg: '#F0A882' },
-  'Series F':    { bg: 'rgba(232,93,38,0.12)',   fg: '#F0A882' },
-  'Growth':      { bg: 'rgba(245,158,11,0.10)',  fg: '#FCD34D' },
-  'Bridge':      { bg: 'rgba(96,165,250,0.10)',  fg: '#60A5FA' },
-  'Debt':        { bg: 'rgba(244,114,182,0.10)', fg: '#F472B6' },
-  'Convertible': { bg: 'rgba(96,165,250,0.10)',  fg: '#60A5FA' },
-  'Refinancing': { bg: 'rgba(248,113,113,0.10)', fg: '#F87171' },
-  'default':     { bg: 'rgba(139,147,156,0.10)', fg: '#8B939C' },
+const ROUND_BADGE_COLORS = {
+  'Seed':       { bg: 'rgba(168,133,96,0.12)', fg: '#D4B896' },
+  'Series A':   { bg: 'rgba(34,197,94,0.10)',  fg: '#86EFAC' },
+  'Series B':   { bg: 'rgba(59,130,246,0.10)', fg: '#93C5FD' },
+  'Series C':   { bg: 'rgba(168,85,247,0.10)', fg: '#D8B4FE' },
+  'Series D':   { bg: 'rgba(236,72,153,0.10)', fg: '#F9A8D4' },
+  'Series E':   { bg: 'rgba(232,93,38,0.12)',  fg: '#F0A882' },
+  'Growth':     { bg: 'rgba(245,158,11,0.10)', fg: '#FCD34D' },
+  'default':    { bg: 'rgba(138,132,124,0.10)', fg: '#999' },
 }
+
 function roundBadge(round) {
-  if (!round) return ROUND_BADGE.default
-  const key = Object.keys(ROUND_BADGE).find(k => round.startsWith(k))
-  return ROUND_BADGE[key] || ROUND_BADGE.default
-}
-
-// Round-stage filter chips
-const STAGE_FILTERS = [
-  { key: 'all',       label: 'All Rounds' },
-  { key: 'pre-seed',  label: 'Pre-Seed' },
-  { key: 'seed',      label: 'Seed' },
-  { key: 'series-a',  label: 'Series A' },
-  { key: 'series-b',  label: 'Series B' },
-  { key: 'series-c',  label: 'Series C' },
-  { key: 'series-d+', label: 'Series D+' },
-  { key: 'growth',    label: 'Growth / Other' },
-]
-
-function classifyStage(round) {
-  if (!round) return 'growth'
-  const r = round.toLowerCase()
-  if (r.includes('pre-seed') || r.startsWith('pre seed')) return 'pre-seed'
-  if (r.startsWith('seed')) return 'seed'
-  if (r.startsWith('series a')) return 'series-a'
-  if (r.startsWith('series b')) return 'series-b'
-  if (r.startsWith('series c')) return 'series-c'
-  if (r.startsWith('series d') || r.startsWith('series e') || r.startsWith('series f') || r.startsWith('series g')) return 'series-d+'
-  return 'growth'
-}
-
-// Color palettes for the round letter avatar — deterministic by company name
-const LETTER_PALETTES = [
-  { bg: 'rgba(229,69,31,0.16)',  fg: '#F0A882' },
-  { bg: 'rgba(59,130,246,0.16)', fg: '#93C5FD' },
-  { bg: 'rgba(168,85,247,0.16)', fg: '#D8B4FE' },
-  { bg: 'rgba(34,197,94,0.16)',  fg: '#86EFAC' },
-  { bg: 'rgba(245,158,11,0.16)', fg: '#FCD34D' },
-  { bg: 'rgba(236,72,153,0.16)', fg: '#F9A8D4' },
-  { bg: 'rgba(20,184,166,0.16)', fg: '#5EEAD4' },
-]
-function letterPalette(s) {
-  if (!s) return LETTER_PALETTES[0]
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
-  return LETTER_PALETTES[Math.abs(h) % LETTER_PALETTES.length]
+  if (!round) return ROUND_BADGE_COLORS.default
+  const key = Object.keys(ROUND_BADGE_COLORS).find(k => round.startsWith(k))
+  return ROUND_BADGE_COLORS[key] || ROUND_BADGE_COLORS.default
 }
 
 function formatDate(iso) {
@@ -351,66 +221,64 @@ function formatDate(iso) {
   try {
     const d = new Date(iso + 'T12:00:00')
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-  } catch { return iso }
+  } catch {
+    return iso
+  }
 }
 
-function RoundRow({ round }) {
+function RoundCard({ round }) {
   const [expanded, setExpanded] = useState(false)
   const badge = roundBadge(round.round)
-  const pal = letterPalette(round.company)
-  const letter = (round.company || '?').trim().charAt(0).toUpperCase()
   const dateStr = formatDate(round.date)
 
   return (
     <div
-      className={`sr-row${expanded ? ' expanded' : ''}`}
+      className={`db-card${expanded ? ' expanded' : ''}`}
       onClick={() => setExpanded(e => !e)}
-      role="button" tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(v => !v) } }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setExpanded(v => !v) }}
       aria-expanded={expanded}
     >
-      <div className="sr-row-letter" style={{ background: pal.bg, color: pal.fg }}>{letter}</div>
+      <div className="db-card-top">
+        <div className="db-card-company">{round.company}</div>
+        <div className="db-card-amount">{round.amount_raised}</div>
+      </div>
 
-      <div className="sr-row-mid">
-        <div className="sr-row-name">{round.company}</div>
-        <div className="sr-row-meta">
-          {round.round && (
-            <span className="sr-badge" style={{ background: badge.bg, color: badge.fg, border: `1px solid ${badge.fg}28` }}>
-              {round.round}
-            </span>
-          )}
-          {round.segment && <span className="sr-tag">{round.segment}</span>}
-          {dateStr && <span className="sr-date">{dateStr}</span>}
+      <div className="db-card-meta">
+        {round.round && (
+          <span className="db-badge" style={{ background: badge.bg, color: badge.fg, border: `1px solid ${badge.fg}22` }}>
+            {round.round}
+          </span>
+        )}
+        {dateStr && <span className="db-card-date">{dateStr}</span>}
+      </div>
+
+      {!expanded && (
+        <div className="db-card-expand-hint">
+          <span>Details</span>
+          <span style={{ opacity: .6 }}>↓</span>
         </div>
-      </div>
-
-      <div className="sr-row-right">
-        <div className="sr-amount">{round.amount_raised}</div>
-        {round.region && <div className="sr-region">{round.region}</div>}
-      </div>
+      )}
 
       {expanded && (
-        <div className="sr-expanded-body">
-          {round.short_description && <div className="sr-desc">{round.short_description}</div>}
-          {round.investors && (
-            <div className="sr-investors">
-              <b>Investors</b><br />
-              {round.investors}
-            </div>
-          )}
-          {round.notes && !round.short_description && (
-            <div className="sr-desc">{round.notes}</div>
-          )}
+        <div className="db-card-expanded">
+          {round.notes && <p className="db-card-notes">{round.notes}</p>}
           {round.source_url && (
             <a
-              className="sr-source-link"
+              className="db-card-source"
               href={round.source_url}
-              target="_blank" rel="noreferrer"
+              target="_blank"
+              rel="noreferrer"
               onClick={e => e.stopPropagation()}
             >
-              {round.source ? `${round.source} ↗` : 'View source ↗'}
+              Source ↗
             </a>
           )}
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--gray)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>Collapse</span>
+            <span style={{ opacity: .6 }}>↑</span>
+          </div>
         </div>
       )}
     </div>
@@ -421,10 +289,9 @@ export default function SpaceRisingDealBankCompleted() {
   const [rounds, setRounds] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [stage, setStage] = useState('all')
 
   useEffect(() => {
-    document.title = 'Deal Bank — Space Rising Interactive'
+    document.title = 'Completed Rounds — Deal Bank — Space Rising'
     let cancelled = false
     const load = async () => {
       setLoading(true)
@@ -434,7 +301,8 @@ export default function SpaceRisingDealBankCompleted() {
         const j = await r.json()
         if (!cancelled) setRounds(Array.isArray(j.rounds) ? j.rounds : [])
       } catch {
-        if (!cancelled) setRounds([])
+        // Fallback: embedded seed (identical to API seed data)
+        if (!cancelled) setRounds(SEED_FALLBACK)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -444,113 +312,114 @@ export default function SpaceRisingDealBankCompleted() {
   }, [])
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return rounds.filter(r => {
-      if (stage !== 'all' && classifyStage(r.round) !== stage) return false
-      if (!q) return true
-      return (
-        (r.company || '').toLowerCase().includes(q) ||
-        (r.round || '').toLowerCase().includes(q) ||
-        (r.segment || '').toLowerCase().includes(q) ||
-        (r.short_description || '').toLowerCase().includes(q) ||
-        (r.investors || '').toLowerCase().includes(q) ||
-        (r.notes || '').toLowerCase().includes(q)
-      )
-    })
-  }, [rounds, search, stage])
+    if (!search.trim()) return rounds
+    const q = search.toLowerCase()
+    return rounds.filter(r =>
+      r.company.toLowerCase().includes(q) ||
+      (r.round || '').toLowerCase().includes(q) ||
+      (r.notes || '').toLowerCase().includes(q)
+    )
+  }, [rounds, search])
+
+  const totalDisplay = useMemo(() => {
+    // Just count the rounds for display — amounts are text strings not numbers
+    return `${rounds.length} closed rounds`
+  }, [rounds])
 
   return (
-    <div className="sr-root sr-page">
+    <div className="db-root db-page">
       <style>{CSS}</style>
 
-      <div className="sr-shell">
-
-        {/* TOP BAR */}
-        <div className="sr-topbar">
-          <a className="sr-back" href="https://sourcing.directory/space-rising">← Back to Directory</a>
-          <a className="sr-brand" href="https://sourcing.directory/space-rising">
-            <img src="/images/space-rising/logo-white.png" alt="Space Rising Interactive" />
-          </a>
+      {/* NAV */}
+      <nav className="db-nav">
+        <a className="db-nav-logo" href="/brands/space-rising">
+          <img src="/images/space-rising/logo-white.png" alt="Space Rising" />
+          <span className="db-nav-logo-text">Space Rising</span>
+        </a>
+        <div className="db-nav-links">
+          <a className="db-nav-link" href="https://sourcing.directory/space-rising" target="_blank" rel="noreferrer">Directory</a>
+          <a className="db-nav-link active" href="/space-rising/deal-bank/completed">Deal Bank</a>
         </div>
+      </nav>
 
-        {/* HERO */}
-        <header className="sr-hero">
-          <div className="sr-eyebrow">Space Rising Interactive</div>
-          <h1 className="sr-title">Deal Bank</h1>
-          <p className="sr-sub">
-            Closed funding rounds across the space industry. Pre-seed through growth, curated by the Space Rising team.
-          </p>
-        </header>
-
-        {/* SEARCH */}
-        <div className="sr-search-wrap">
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            className="sr-search"
-            type="text"
-            placeholder="Search company, segment, investors, round..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-
-        {/* PRIMARY CHIPS — section nav, mirrors the OS homepage */}
-        <div className="sr-chips" style={{ paddingBottom: 4 }}>
-          <a className="sr-chip" href="https://sourcing.directory/space-rising">Companies</a>
-          <a className="sr-chip" href="https://sourcing.directory/space-rising/jobs">Jobs</a>
-          <a className="sr-chip" href="https://sourcing.directory/space-rising/events">Events</a>
-          <a className="sr-chip" href="https://sourcing.directory/space-rising/reports">Reports</a>
-          <a className="sr-chip" href="https://sourcing.directory/space-rising/marketplace">Marketplace</a>
-          <a className="sr-chip" href="https://sourcing.directory/space-rising/membership">Membership</a>
-          <span className="sr-chip on">Deal Bank</span>
-        </div>
-
-        {/* SECONDARY CHIPS — round stage filter */}
-        <div className="sr-chips">
-          {STAGE_FILTERS.map(s => (
-            <button
-              key={s.key}
-              className={`sr-chip ${stage === s.key ? 'on' : ''}`}
-              onClick={() => setStage(s.key)}
-              type="button"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        {/* COUNT */}
-        <div className="sr-count">
-          {loading
-            ? 'Loading rounds…'
-            : <><strong>{filtered.length}</strong> {filtered.length === 1 ? 'round' : 'rounds'}{(search || stage !== 'all') ? ` matching` : ''}{rounds.length !== filtered.length ? ` of ${rounds.length} total` : ''}</>
-          }
-        </div>
-
-        {/* LIST */}
-        {loading ? (
-          <div className="sr-state">Loading rounds…</div>
-        ) : filtered.length === 0 ? (
-          <div className="sr-state">No rounds match these filters.</div>
-        ) : (
-          <div className="sr-list">
-            {filtered.map(r => (
-              <RoundRow key={r.id || `${r.company}-${r.round}-${r.date}`} round={r} />
-            ))}
+      {/* HERO */}
+      <div className="db-hero">
+        <div className="db-hero-eyebrow">Deal Bank — Completed Rounds</div>
+        <h1 className="db-hero-title">
+          Space Capital<br /><span>Moving</span>
+        </h1>
+        <p className="db-hero-sub">
+          Closed funding rounds across the space industry. Updated by the Space Rising team as deals are announced.
+        </p>
+        {!loading && (
+          <div className="db-hero-stats">
+            <div className="db-stat">
+              <span className="db-stat-val">{rounds.length}</span>
+              <span className="db-stat-label">Rounds tracked</span>
+            </div>
+            <div className="db-stat">
+              <span className="db-stat-val">2026</span>
+              <span className="db-stat-label">Vintage</span>
+            </div>
           </div>
         )}
-
-        {/* FOOTER */}
-        <footer className="sr-footer">
-          <span>
-            Maintained by the <a href="https://sourcing.directory/space-rising">Space Rising Interactive</a> team.
-          </span>
-          <span>Have a round to add? <a href="mailto:hello@spacerising.org">hello@spacerising.org</a></span>
-        </footer>
-
       </div>
+
+      {/* SEARCH */}
+      <div className="db-search-bar">
+        <input
+          className="db-search"
+          type="text"
+          placeholder="Search company, round type, notes..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {!loading && search && (
+          <span className="db-result-count">
+            {filtered.length} of {rounds.length}
+          </span>
+        )}
+      </div>
+
+      {/* GRID */}
+      {loading ? (
+        <div className="db-loading">Loading rounds…</div>
+      ) : filtered.length === 0 ? (
+        <div className="db-empty">
+          {rounds.length === 0
+            ? 'No rounds yet. Check back soon.'
+            : `No rounds match "${search}".`}
+        </div>
+      ) : (
+        <div className="db-grid">
+          {filtered.map(r => (
+            <RoundCard key={r.id || `${r.company}-${r.round}`} round={r} />
+          ))}
+        </div>
+      )}
+
+      {/* FOOTER */}
+      <footer className="db-footer">
+        <p className="db-footer-note">
+          Maintained by Space Rising. Contact{' '}
+          <a href="mailto:hello@aheadofmarket.com" style={{ color: 'inherit', textDecoration: 'underline' }}>
+            hello@aheadofmarket.com
+          </a>{' '}
+          to report a round or correction.
+        </p>
+        <span className="db-footer-admin">AOM Team — to add a round, see admin docs or Supabase Studio</span>
+      </footer>
     </div>
   )
 }
+
+// Inline fallback seed (mirrors the API seed data — used if API is unreachable)
+const SEED_FALLBACK = [
+  { id: 'sf-1', company: 'ORBCOMM', amount_raised: '$460M', round: 'Refinancing (private credit)', date: '2026-04-29', source_url: 'https://satellitetoday.com', notes: 'Private credit refinancing led by Carlyle. Co-investors: Bain Credit (Private Credit Group), Morgan Stanley Private Credit.' },
+  { id: 'sf-2', company: 'Astranis Space Technologies', amount_raised: '$300M', round: 'Series E', date: '2026-05-06', source_url: 'https://spacenews.com', notes: 'microGEO satellite company. Co-led by Snowpoint Ventures and Franklin Templeton. Other investors: a16z, BlackRock, Baillie Gifford, Fidelity, BAM Elevate, Nimble Partners.' },
+  { id: 'sf-3', company: 'Cowboy Space Corporation', amount_raised: '$275M', round: 'Series B', date: '2026-05-08', source_url: 'https://spacenews.com', notes: 'Orbital compute and data centers. Led by Index Ventures. Co-investors: IVP, Blossom Capital, SAIC, Breakthrough Energy Ventures, Construct Capital, a16z, NEA, Interlagos.' },
+  { id: 'sf-4', company: 'Star Catcher', amount_raised: '$65M', round: 'Series A', date: '2026-05-12', source_url: 'https://spacenews.com', notes: 'Power-beaming networks for orbital infrastructure. Led by B Capital. Co-investors: Shield Capital, Cerberus Ventures, GreatPoint Ventures, Helena, Oceans Ventures, MVP Ventures.' },
+  { id: 'sf-5', company: 'Lunar Outpost', amount_raised: '$30M', round: 'Series B', date: '2026-05-07', source_url: 'https://spacenews.com', notes: 'Lunar mobility (rovers). Led by Industrious Ventures. Co-investors: Type One Ventures, Eniac Ventures, Promus Ventures, Reliable Equity.' },
+  { id: 'sf-6', company: 'Scout Space', amount_raised: '$18M', round: 'Series A', date: '2026-05-06', source_url: 'https://payloadspace.com', notes: 'Orbital tracking and space domain awareness (SDA). Led by Washington Harbour Partners. Co-investors: VIPC, Noblis Ventures, Decisive Point, Fusion Fund.' },
+  { id: 'sf-7', company: 'INTALUS, Inc.', amount_raised: '$11M', round: 'Seed', date: '2026-05-06', source_url: 'https://semafor.com', notes: 'Advanced aerospace materials. Led by Origin Ventures. Co-investors: Lockheed Martin, Scout Ventures.' },
+]
