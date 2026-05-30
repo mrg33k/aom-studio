@@ -18,6 +18,20 @@ import { useSystemToast } from '../../../SystemToast.jsx'
 
 const TUNNEL_BASE = 'https://rag.aheadofmarket.com'
 
+// R79-f23 leg1 colon fix (2026-05-30): selectedProject.missionSlug may arrive
+// as the canonical colon-joined form "<project>:<mission>" (mission ledger
+// format). The per-chat-folder disk layout wants just the bare mission slug
+// so the directory looks like .../missions/<mission>/Uploads/ - not
+// .../missions/<project>:<mission>/Uploads/. Strip the leading project
+// prefix if present so disk paths stay clean across all upload paths.
+function _bareMissionSlug(missionSlug, projectSlug) {
+  if (!missionSlug) return missionSlug
+  if (projectSlug && missionSlug.startsWith(projectSlug + ':')) {
+    return missionSlug.slice(projectSlug.length + 1)
+  }
+  return missionSlug
+}
+
 // Read a File/Blob as a base64 string (no data: prefix). Only used for the
 // legacy fallback path -- the primary tunnel path streams raw bytes.
 function fileToBase64(file) {
@@ -203,7 +217,7 @@ export default function useChatAttachments({
     // message metadata stay in lockstep.
     const scope = {}
     if (selectedProject?.slug) scope.project = selectedProject.slug
-    if (selectedProject?.missionSlug) scope.mission = selectedProject.missionSlug
+    if (selectedProject?.missionSlug) scope.mission = _bareMissionSlug(selectedProject.missionSlug, selectedProject.slug)
     if (selectedAgent?.slug && !selectedProject) scope.agent = selectedAgent.slug
     setStagingFiles(true)
     try {
@@ -254,7 +268,7 @@ export default function useChatAttachments({
     // can't drift.
     const scope = {}
     if (selectedProject?.slug) scope.project = selectedProject.slug
-    if (selectedProject?.missionSlug) scope.mission = selectedProject.missionSlug
+    if (selectedProject?.missionSlug) scope.mission = _bareMissionSlug(selectedProject.missionSlug, selectedProject.slug)
     if (selectedAgent?.slug && !selectedProject) scope.agent = selectedAgent.slug
     console.log('[ChatPanel] upload starting', { fileCount: files.length, agentKey, clientId, scope })
     setUploading(true)
@@ -301,7 +315,7 @@ export default function useChatAttachments({
     // routing is purely metadata so uploads can't break if scope is wrong.
     const uploadScope = {}
     if (selectedProject?.slug) uploadScope.project_slug = selectedProject.slug
-    if (selectedProject?.missionSlug) uploadScope.mission_slug = selectedProject.missionSlug
+    if (selectedProject?.missionSlug) uploadScope.mission_slug = _bareMissionSlug(selectedProject.missionSlug, selectedProject.slug)
     if (selectedAgent?.slug && !selectedProject) uploadScope.agent_slug = selectedAgent.slug
 
     let attachText, metadata
