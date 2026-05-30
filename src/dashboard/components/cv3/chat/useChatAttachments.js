@@ -56,7 +56,7 @@ async function maybeCompressImage(file) {
   return { blob, mime: 'image/jpeg' }
 }
 
-async function uploadViaTunnel(file, world, mime) {
+async function uploadViaTunnel(file, world, mime, scope) {
   // The rag-server validates the Supabase JWT directly -- no Vercel signing
   // endpoint needed. The user's logged-in session already proves authorization.
   let jwt = null
@@ -71,7 +71,20 @@ async function uploadViaTunnel(file, world, mime) {
     e.status = 401
     throw e
   }
-  const uploadUrl = `${TUNNEL_BASE}/upload-file-binary?world=${encodeURIComponent(world)}&filename=${encodeURIComponent(file.name || 'upload.bin')}&mime=${encodeURIComponent(mime)}`
+  // R79-f23 (2026-05-30): per-chat scope params so the rag-server lands the
+  // file in the chat-specific Uploads/ folder (VISION pillar 9). project +
+  // mission for mission rooms, project alone for project rooms, agent alone
+  // for 1:1 agent rooms. Without scope the rag-server falls back to the
+  // legacy flat root for backwards compat with cron / scripts.
+  const params = new URLSearchParams({
+    world,
+    filename: file.name || 'upload.bin',
+    mime,
+  })
+  if (scope?.project) params.set('project', scope.project)
+  if (scope?.mission) params.set('mission', scope.mission)
+  if (scope?.agent) params.set('agent', scope.agent)
+  const uploadUrl = `${TUNNEL_BASE}/upload-file-binary?${params.toString()}`
   const r = await fetch(uploadUrl, {
     method: 'POST',
     headers: {
@@ -92,12 +105,17 @@ async function uploadViaTunnel(file, world, mime) {
   return { full_url, size: data.size, mime_type: data.mime_type || mime, filename: file.name }
 }
 
-async function uploadViaLegacyProxy(file, world, mime) {
+async function uploadViaLegacyProxy(file, world, mime, scope) {
+  // Legacy base64-through-Vercel fallback. The legacy /file-upload endpoint
+  // predates R79-f23 chat-folder routing, so files dropped here still land
+  // at the legacy flat root. The chat message metadata still carries the
+  // scope so FilesPanel filters keep them visible. Acceptable as a transient
+  // fallback when the tunnel is unreachable for small files.
   const data_base64 = await fileToBase64(file)
   const r = await authFetch('/api/dashboard/file-upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ world, filename: file.name, data_base64, mime_type: mime }),
+    body: JSON.stringify({ world, filename: file.name, data_base64, mime_type: mime, scope }),
   })
   const data = await r.json()
   if (!r.ok) {
@@ -108,12 +126,12 @@ async function uploadViaLegacyProxy(file, world, mime) {
   return { full_url: data.full_url, size: data.size, mime_type: data.mime_type || mime, filename: file.name }
 }
 
-async function uploadOneFile(file, world) {
+async function uploadOneFile(file, world, scope) {
   const { blob, mime } = await maybeCompressImage(file)
   const wrapped = new File([blob], file.name, { type: mime })
   let result
   try {
-    result = await uploadViaTunnel(wrapped, world, mime)
+    result = await uploadViaTunnel(wrapped, world, mime, scope)
   } catch (err) {
     if (err.status === 413) throw err
     if (err.status === 401 || err.status === 403) throw err
@@ -122,7 +140,7 @@ async function uploadOneFile(file, world) {
       throw err
     }
     console.warn('[ChatPanel] tunnel upload failed, falling back to legacy:', err.message)
-    result = await uploadViaLegacyProxy(wrapped, world, mime)
+    result = await uploadViaLegacyProxy(wrapped, world, mime, scope)
   }
   // Tell the storage meter to refresh immediately -- otherwise it waits up to
   // 30s for the next poll and the user wonders if the upload counted.
@@ -180,11 +198,18 @@ export default function useChatAttachments({
     const files = Array.from(fileList || [])
     if (!files.length || !worldId) return
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
+    // R79-f23: pass per-chat scope so the rag-server writes to the right
+    // chat folder. Same shape as handleFileSelection so disk routing and
+    // message metadata stay in lockstep.
+    const scope = {}
+    if (selectedProject?.slug) scope.project = selectedProject.slug
+    if (selectedProject?.missionSlug) scope.mission = selectedProject.missionSlug
+    if (selectedAgent?.slug && !selectedProject) scope.agent = selectedAgent.slug
     setStagingFiles(true)
     try {
       for (const file of files) {
         try {
-          const result = await uploadOneFile(file, clientId)
+          const result = await uploadOneFile(file, clientId, scope)
           addPendingAttachment({
             id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             name: result.filename || file.name,
@@ -200,7 +225,7 @@ export default function useChatAttachments({
     } finally {
       setStagingFiles(false)
     }
-  }, [worldId, selectedProject, addPendingAttachment, surfaceUploadError])
+  }, [worldId, selectedProject, selectedAgent, addPendingAttachment, surfaceUploadError])
 
   const handleFileSelection = useCallback(async (e) => {
     const files = Array.from(e.target.files || [])
@@ -223,14 +248,22 @@ export default function useChatAttachments({
     }
     const clientId = selectedProject?.isShared ? `shared:${selectedProject.slug}` : worldId
     e.target.value = ''
-    console.log('[ChatPanel] upload starting', { fileCount: files.length, agentKey, clientId, missionSlug: selectedProject?.missionSlug || null })
+    // R79-f23 (2026-05-30): chat scope drives BOTH the disk-folder routing on
+    // the rag-server (project/mission/agent → Uploads/) AND the message
+    // metadata that the FilesPanel filters on. Same source object so they
+    // can't drift.
+    const scope = {}
+    if (selectedProject?.slug) scope.project = selectedProject.slug
+    if (selectedProject?.missionSlug) scope.mission = selectedProject.missionSlug
+    if (selectedAgent?.slug && !selectedProject) scope.agent = selectedAgent.slug
+    console.log('[ChatPanel] upload starting', { fileCount: files.length, agentKey, clientId, scope })
     setUploading(true)
 
     // Upload all files, collecting results (failed files show toasts; successes bundle into one message)
     const uploaded = []
     for (const file of files) {
       try {
-        const result = await uploadOneFile(file, clientId)
+        const result = await uploadOneFile(file, clientId, scope)
         uploaded.push({ file, result })
         console.log('[ChatPanel] upload ok', { name: file.name, size: result.size, url: result.full_url })
       } catch (err) {
