@@ -22,6 +22,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
+import { supabase } from '../lib/supabase.js'
 import { useCornerAuth } from '../CornerContext.jsx'
 import { FileContextMenu, useLongPress, useIsMobile } from '../components/cv3/ContextMenuVariants.jsx'
 import useChatDispatch from '../components/cv3/useChatDispatch.js'
@@ -1039,6 +1040,56 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
 
     return () => { cancelled = true }
   }, [projectSlug, missionSlug, world, refetchKey])
+
+  // R79-f23 Leg 2 (2026-05-30): live refresh when a new attachment-bearing
+  // message lands for this chat. Previously, dragging a file into the
+  // composer rendered a file card in the bubble but the right-rail Files
+  // panel stayed stale until the user hard-refreshed or switched projects.
+  // Subscribe to messages.INSERT scoped to the active project; when the row
+  // carries metadata.attachment(s), bump refetchKey to re-run the data
+  // useEffect above.
+  useEffect(() => {
+    if (!supabase || !projectSlug) return
+    let active = true
+    const channel = supabase
+      .channel(`files-panel-${projectSlug}-${missionSlug || 'root'}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `project=eq.${projectSlug}`,
+        },
+        (payload) => {
+          if (!active) return
+          const msg = payload?.new
+          if (!msg) return
+          const meta = msg.metadata || {}
+          const hasAttachment = !!(
+            msg.attachment_url ||
+            meta.attachment?.url ||
+            (Array.isArray(meta.attachments) && meta.attachments.length)
+          )
+          if (!hasAttachment) return
+          // When drilled into a mission room, ignore project-level uploads.
+          // The mission scope tag is written by useChatAttachments at upload time.
+          if (missionSlug) {
+            const msgMission =
+              meta.mission_slug ||
+              meta.attachment?.mission_slug ||
+              (Array.isArray(meta.attachments) && meta.attachments[0]?.mission_slug)
+            if (msgMission && msgMission !== missionSlug) return
+          }
+          setRefetchKey(k => k + 1)
+        },
+      )
+      .subscribe()
+    return () => {
+      active = false
+      try { supabase.removeChannel(channel) } catch (_) {}
+    }
+  }, [projectSlug, missionSlug])
 
   const tree = useMemo(() => buildTree(files), [files])
   const filterFn = activeCat === 'all'
