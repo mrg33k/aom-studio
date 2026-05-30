@@ -148,10 +148,33 @@ window.SSMod = (function () {
       </div>
     ` : '';
     // 2026-05-26 engagement gate (Patrik): every concept card now requires a
-    // tap on a "Did it land?" check before Continue unlocks. Forces him to
-    // actually engage with the card instead of speed-tapping through. If a
-    // card has no `check`, Continue is enabled immediately (back-compat).
-    const hasCheck = block.check && Array.isArray(block.check.choices) && block.check.choices.length >= 2;
+    // gate before Continue unlocks. Forces actual engagement instead of
+    // speed-tapping through.
+    //
+    // 2026-05-29 Patrik update: kill multiple choice — have him type the
+    // answer. A typed gate is used when block.typedCheck is present
+    // (Friday curriculum) — char count + spell-check gate, same logic as
+    // teach-back. Falls back to the old multi-choice gate when
+    // block.check.choices is present (Tuesday/Wednesday — unchanged).
+    const hasTypedCheck = block.typedCheck && block.typedCheck.q;
+    const hasCheck = !hasTypedCheck && block.check && Array.isArray(block.check.choices) && block.check.choices.length >= 2;
+    const typedCheckMin = (block.typedCheck && block.typedCheck.minChars) || 60;
+    const typedCheckHtml = hasTypedCheck ? `
+      <div class="concept-check" id="concept-check" style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Type the answer</div>
+        <div style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45; margin-bottom: var(--space-3);">${block.typedCheck.q}</div>
+        <textarea id="concept-typed" rows="3" placeholder="Type a sentence or two in your own words..." style="width:100%; box-sizing:border-box; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-sm); padding:var(--space-3); font-family:'Geist',system-ui,sans-serif; font-size:15px; line-height:1.5; color:var(--ink); background:#FBFAF6; outline:none; resize:vertical; min-height:90px;"></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:var(--space-2); font-size:13px; font-family:'Geist',system-ui,sans-serif;">
+          <div id="concept-typed-counter" style="color:var(--ink-quiet);">0 / ${typedCheckMin} characters</div>
+          <div id="concept-typed-spell" style="color:var(--ink-quiet);">Spelling: will check at the word count</div>
+        </div>
+        <div id="concept-typed-words" style="display:none; background:#FFF6E5; border:1px solid #E5B947; border-radius:var(--r-sm); padding:var(--space-3); margin-top:var(--space-2);">
+          <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#8B5E14; margin-bottom:var(--space-2);">Spelling — fix these</div>
+          <div id="concept-typed-list" style="font-family:'Geist',system-ui,sans-serif; font-size:14px; line-height:1.7; color:var(--ink);"></div>
+          <div style="margin-top:var(--space-1); font-size:12px; color:var(--ink-quiet);">Tap a word to mark it as a name or special word.</div>
+        </div>
+      </div>
+    ` : '';
     const checkHtml = hasCheck ? `
       <div class="concept-check" id="concept-check" style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
         <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Did it land?</div>
@@ -163,6 +186,11 @@ window.SSMod = (function () {
       </div>
     ` : '';
 
+    const gateLocked = hasCheck || hasTypedCheck;
+    const initialBtnText = hasTypedCheck
+      ? `Type ${typedCheckMin} characters to continue`
+      : (hasCheck ? 'Answer the check first' : (block.cta || 'Continue'));
+
     host.innerHTML = `
       ${topRail(0, tag)}
       ${moduleHead(block.subject || 'Today', title)}
@@ -171,13 +199,84 @@ window.SSMod = (function () {
           ${bodyHtml}
         </div>
         ${revealHtml}
+        ${typedCheckHtml}
         ${checkHtml}
         <div class="center-actions">
-          <button class="btn-primary" id="concept-go"${hasCheck ? ' disabled style="opacity:0.5;"' : ''}>${hasCheck ? 'Answer the check first' : (block.cta || 'Continue')}</button>
+          <button class="btn-primary" id="concept-go"${gateLocked ? ' disabled style="opacity:0.5;"' : ''}>${initialBtnText}</button>
         </div>
       </div>
     `;
     startBlockTimer(host, block);
+
+    if (hasTypedCheck) {
+      const goBtn = host.querySelector('#concept-go');
+      const ta = host.querySelector('#concept-typed');
+      const counter = host.querySelector('#concept-typed-counter');
+      const spellStatus = host.querySelector('#concept-typed-spell');
+      const spellBox = host.querySelector('#concept-typed-words');
+      const spellList = host.querySelector('#concept-typed-list');
+      const userMarkedOK = new Set();
+      let refreshSeq = 0;
+
+      function renderSuspects(suspects) {
+        if (suspects.length === 0) {
+          goBtn.disabled = false;
+          goBtn.style.opacity = '1';
+          goBtn.textContent = block.cta || 'Continue';
+          spellBox.style.display = 'none';
+          spellStatus.textContent = 'Spelling: clean';
+          spellStatus.style.color = '#2D6B3C';
+        } else {
+          goBtn.disabled = true;
+          goBtn.style.opacity = '0.5';
+          goBtn.textContent = `Fix ${suspects.length} spelling${suspects.length === 1 ? '' : 's'}`;
+          spellBox.style.display = 'block';
+          spellStatus.textContent = `Spelling: ${suspects.length} word${suspects.length === 1 ? '' : 's'} to check`;
+          spellStatus.style.color = '#8B5E14';
+          spellList.innerHTML = suspects.map(w => `
+            <span style="display:inline-flex; align-items:center; gap:4px; background:#FFE8B0; padding:4px 10px; border-radius:999px; margin:3px 4px 3px 0; font-weight:600;">
+              ${w}
+              <button data-mark-ok="${w}" style="background:transparent; border:none; cursor:pointer; font-size:11px; color:#8B5E14; padding:0 2px;" title="Mark as a name / accept">✓</button>
+            </span>
+          `).join('');
+          spellList.querySelectorAll('[data-mark-ok]').forEach(btn => {
+            btn.onclick = () => { userMarkedOK.add(btn.dataset.markOk); refresh(); };
+          });
+        }
+      }
+
+      async function refresh() {
+        const mySeq = ++refreshSeq;
+        const text = ta.value;
+        const chars = text.trim().length;
+        counter.textContent = `${chars} / ${typedCheckMin} characters`;
+        counter.style.color = chars >= typedCheckMin ? '#2D6B3C' : 'var(--ink-quiet)';
+
+        if (chars < typedCheckMin) {
+          goBtn.disabled = true;
+          goBtn.style.opacity = '0.5';
+          goBtn.textContent = `${typedCheckMin - chars} more characters`;
+          spellBox.style.display = 'none';
+          spellStatus.textContent = 'Spelling: will check at the word count';
+          spellStatus.style.color = 'var(--ink-quiet)';
+          return;
+        }
+
+        let suspects = _initialFlag(text).filter(w => !userMarkedOK.has(w));
+        if (mySeq === refreshSeq) renderSuspects(suspects);
+        if (suspects.length === 0) return;
+
+        spellStatus.textContent = `Spelling: checking ${suspects.length} word${suspects.length === 1 ? '' : 's'} with dictionary...`;
+        spellStatus.style.color = '#8B5E14';
+        const confirmed = (await _confirmInvalid(suspects)).filter(w => !userMarkedOK.has(w));
+        if (mySeq !== refreshSeq) return;
+        renderSuspects(confirmed);
+      }
+
+      ta.addEventListener('input', refresh);
+      ta.addEventListener('blur', refresh);
+      refresh();
+    }
 
     if (hasCheck) {
       const goBtn = host.querySelector('#concept-go');
@@ -208,8 +307,18 @@ window.SSMod = (function () {
     }
 
     host.querySelector('#concept-go').onclick = () => {
-      if (host.querySelector('#concept-go').disabled) return;
-      complete(block.id, { budgetMinutes: block.minutes });
+      const goBtn = host.querySelector('#concept-go');
+      if (goBtn.disabled) return;
+      const data = { budgetMinutes: block.minutes };
+      if (hasTypedCheck) {
+        const ta = host.querySelector('#concept-typed');
+        const body = ta ? ta.value.trim() : '';
+        data.typedAnswer = body;
+        if (window.SS && window.SS.saveWritingPiece && body) {
+          window.SS.saveWritingPiece(block.typedCheck.q || block.title || 'Concept check', body);
+        }
+      }
+      complete(block.id, data);
     };
   }
 
@@ -2600,6 +2709,181 @@ window.SSMod = (function () {
   }
 
   // ============================================================
+  // VIDEO-TYPED — kickoff video + typed teach-back questions
+  // Friday 2026-05-29 — Patrik wants every subject to open with an
+  // actually-relevant kickoff video. No multi-choice quiz after — he
+  // types the answers in his own words.
+  //
+  // Block shape:
+  //   { id, kind:'topic', type:'video-typed', minutes,
+  //     subject, tag, title,
+  //     video: {
+  //       title: 'Kickoff video — Soft Lies',
+  //       ytId: 'wbftlDzIALA',
+  //       creditLine: 'TEDxKids@ElCajon — Georgia Haukom'
+  //     },
+  //     typedQuestions: [
+  //       { q: 'In your own words...', minChars: 140 },
+  //       { q: 'What stuck with you...', minChars: 100 }
+  //     ],
+  //     cta: 'Done' }
+  // ============================================================
+  function videoTyped(host, block) {
+    const tag = block.tag || (block.subject || '');
+    const title = block.title || (block.video && block.video.title) || 'Watch the video';
+    const v = block.video || {};
+    const ytId = v.ytId || '';
+    const credit = v.creditLine || '';
+    const qs = Array.isArray(block.typedQuestions) ? block.typedQuestions : [];
+
+    host.innerHTML = `
+      ${topRail(0, tag)}
+      ${moduleHead(block.subject || 'Today', title)}
+      <div class="reading-layout module-narrow" style="grid-template-columns: 1fr;">
+        ${credit ? `<div style="font-size:12px; color:var(--ink-quiet); margin-bottom:var(--space-3); font-family:'Geist',system-ui,sans-serif;">From <strong>${credit}</strong></div>` : ''}
+        <div style="background:#000; border-radius:var(--r-md); overflow:hidden; aspect-ratio:16/9; margin-bottom:var(--space-4);">
+          <iframe id="vt-iframe" style="width:100%; height:100%; border:0;"
+            src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&controls=1&fs=0&enablejsapi=1&disablekb=1&iv_load_policy=3"
+            allow="accelerometer; encrypted-media; gyroscope"></iframe>
+        </div>
+        <div style="font-size:13px; color:var(--ink-quiet); margin-bottom:var(--space-5); font-family:'Geist',system-ui,sans-serif;">Watch the whole video. Then answer below in your own words — no clicking past.</div>
+        ${qs.map((q, qi) => {
+          const minC = q.minChars || 120;
+          return `
+            <div class="vt-q" data-qi="${qi}" style="background:#FFF; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-md); padding:var(--space-5); margin-bottom:var(--space-4);">
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">Question ${qi + 1}</div>
+              <div style="font-family:var(--font-serif); font-size:17px; line-height:1.45; margin-bottom:var(--space-3);">${q.q}</div>
+              <textarea data-qi="${qi}" rows="4" placeholder="Type your answer..." style="width:100%; box-sizing:border-box; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-sm); padding:var(--space-3); font-family:'Geist',system-ui,sans-serif; font-size:15px; line-height:1.5; color:var(--ink); background:#FBFAF6; outline:none; resize:vertical; min-height:110px;"></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:var(--space-2); font-size:13px;">
+                <div class="vt-counter" data-qi="${qi}" style="color:var(--ink-quiet);">0 / ${minC} characters</div>
+                <div class="vt-spell" data-qi="${qi}" style="color:var(--ink-quiet);">Spelling: will check at the word count</div>
+              </div>
+              <div class="vt-words" data-qi="${qi}" style="display:none; background:#FFF6E5; border:1px solid #E5B947; border-radius:var(--r-sm); padding:var(--space-3); margin-top:var(--space-2);">
+                <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#8B5E14; margin-bottom:var(--space-2);">Spelling — fix these</div>
+                <div class="vt-list" data-qi="${qi}" style="font-family:'Geist',system-ui,sans-serif; font-size:14px; line-height:1.7; color:var(--ink);"></div>
+                <div style="margin-top:var(--space-1); font-size:12px; color:var(--ink-quiet);">Tap a word to mark it as a name or special word.</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <div class="center-actions">
+          <button class="btn-primary" id="vt-submit" disabled style="opacity:0.5;">Answer every question to continue</button>
+        </div>
+      </div>
+    `;
+    startBlockTimer(host, block);
+
+    const submit = host.querySelector('#vt-submit');
+    const perQuestion = qs.map((q, qi) => ({
+      qi,
+      minChars: q.minChars || 120,
+      userMarkedOK: new Set(),
+      seq: 0,
+      passed: false
+    }));
+
+    function updateSubmit() {
+      const allPassed = perQuestion.every(p => p.passed);
+      if (allPassed && qs.length > 0) {
+        submit.disabled = false;
+        submit.style.opacity = '1';
+        submit.textContent = block.cta || 'Done';
+      } else {
+        submit.disabled = true;
+        submit.style.opacity = '0.5';
+        const remaining = perQuestion.filter(p => !p.passed).length;
+        submit.textContent = `${remaining} question${remaining === 1 ? '' : 's'} left to answer`;
+      }
+    }
+
+    function renderSuspectsFor(qi, suspects) {
+      const p = perQuestion[qi];
+      const wordsBox = host.querySelector(`.vt-words[data-qi="${qi}"]`);
+      const listBox = host.querySelector(`.vt-list[data-qi="${qi}"]`);
+      const spellStatus = host.querySelector(`.vt-spell[data-qi="${qi}"]`);
+      if (suspects.length === 0) {
+        p.passed = true;
+        wordsBox.style.display = 'none';
+        spellStatus.textContent = 'Spelling: clean';
+        spellStatus.style.color = '#2D6B3C';
+      } else {
+        p.passed = false;
+        wordsBox.style.display = 'block';
+        spellStatus.textContent = `Spelling: ${suspects.length} word${suspects.length === 1 ? '' : 's'} to check`;
+        spellStatus.style.color = '#8B5E14';
+        listBox.innerHTML = suspects.map(w => `
+          <span style="display:inline-flex; align-items:center; gap:4px; background:#FFE8B0; padding:4px 10px; border-radius:999px; margin:3px 4px 3px 0; font-weight:600;">
+            ${w}
+            <button data-mark-ok="${w}" data-qi="${qi}" style="background:transparent; border:none; cursor:pointer; font-size:11px; color:#8B5E14; padding:0 2px;" title="Mark as a name / accept">✓</button>
+          </span>
+        `).join('');
+        listBox.querySelectorAll('[data-mark-ok]').forEach(btn => {
+          btn.onclick = () => {
+            p.userMarkedOK.add(btn.dataset.markOk);
+            refreshFor(qi);
+          };
+        });
+      }
+      updateSubmit();
+    }
+
+    async function refreshFor(qi) {
+      const p = perQuestion[qi];
+      const mySeq = ++p.seq;
+      const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
+      const counter = host.querySelector(`.vt-counter[data-qi="${qi}"]`);
+      const spellStatus = host.querySelector(`.vt-spell[data-qi="${qi}"]`);
+      const wordsBox = host.querySelector(`.vt-words[data-qi="${qi}"]`);
+      const text = ta.value;
+      const chars = text.trim().length;
+      counter.textContent = `${chars} / ${p.minChars} characters`;
+      counter.style.color = chars >= p.minChars ? '#2D6B3C' : 'var(--ink-quiet)';
+
+      if (chars < p.minChars) {
+        p.passed = false;
+        wordsBox.style.display = 'none';
+        spellStatus.textContent = 'Spelling: will check at the word count';
+        spellStatus.style.color = 'var(--ink-quiet)';
+        updateSubmit();
+        return;
+      }
+
+      let suspects = _initialFlag(text).filter(w => !p.userMarkedOK.has(w));
+      if (mySeq === p.seq) renderSuspectsFor(qi, suspects);
+      if (suspects.length === 0) return;
+
+      spellStatus.textContent = `Spelling: checking ${suspects.length} word${suspects.length === 1 ? '' : 's'} with dictionary...`;
+      spellStatus.style.color = '#8B5E14';
+      const confirmed = (await _confirmInvalid(suspects)).filter(w => !p.userMarkedOK.has(w));
+      if (mySeq !== p.seq) return;
+      renderSuspectsFor(qi, confirmed);
+    }
+
+    qs.forEach((_, qi) => {
+      const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
+      ta.addEventListener('input', () => refreshFor(qi));
+      ta.addEventListener('blur', () => refreshFor(qi));
+    });
+
+    submit.onclick = () => {
+      if (submit.disabled) return;
+      const answers = qs.map((q, qi) => {
+        const ta = host.querySelector(`textarea[data-qi="${qi}"]`);
+        return { q: q.q, body: ta ? ta.value.trim() : '' };
+      });
+      if (window.SS && window.SS.saveWritingPiece) {
+        answers.forEach(a => { if (a.body) window.SS.saveWritingPiece(a.q, a.body); });
+      }
+      if (window.SS && window.SS.saveArtifact) {
+        window.SS.saveArtifact({ kind: 'video-typed', block_id: block.id, ytId, answers, title: block.title });
+      }
+      complete(block.id, { ytId, answers, budgetMinutes: block.minutes });
+    };
+
+    updateSubmit();
+  }
+
+  // ============================================================
   // FRIDAY 2026-05-29 — Teach-back, typing-precise, spelling-drill
   // Three new renderers built for the anti-clickthrough pivot. Each is
   // gated INSIDE the block (not at the hub). No way to advance without
@@ -3197,6 +3481,7 @@ window.SSMod = (function () {
     'report-card': reportCard,
     'teach-back': teachBack,
     'typing-precise': typingPrecise,
-    'spelling-drill': spellingDrill
+    'spelling-drill': spellingDrill,
+    'video-typed': videoTyped
   };
 })();

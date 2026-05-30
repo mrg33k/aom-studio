@@ -52,14 +52,23 @@ window.CURRICULUM.friday = {
     // SUBJECT 1 — WRITING (Soft Lies) — 30 modules
     // ============================================================
 
+    { id: 'w-00-video', kind: 'topic', type: 'video-typed', minutes: 8, subject: 'Writing', tag: 'Writing · Kickoff video',
+      title: 'Kickoff video — The Effects of Lying',
+      video: { title: 'Kickoff video — The Effects of Lying', ytId: 'wbftlDzIALA', creditLine: 'TEDxKids@ElCajon — Georgia Haukom' },
+      typedQuestions: [
+        { q: 'What did Georgia say lying actually does to your life over time — in your own words? Pick one specific cost she mentioned or one you thought of yourself.', minChars: 160 },
+        { q: 'Did anything she said remind you of a soft lie YOU said recently? Be specific — what was it, and what did you think when she described that pattern?', minChars: 140 }
+      ],
+      cta: 'Done' },
+
+
     { id: 'w-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 01 of 30',
       title: 'What is a soft lie?',
       body: [
         'A <strong>soft lie</strong> is a lie that doesn\'t feel like a lie. It sounds small. It sounds polite. But over time, soft lies do real damage — to other people, and to you.',
         'A soft lie is when you say something true-sounding to <strong>avoid the hard thing in front of you</strong>. The hard thing might be admitting you didn\'t do it. Or saying you don\'t understand. Or telling someone you\'re upset. Or doing actual work instead of pretending you did.'
       ],
-      check: { q: 'A soft lie is told to avoid what?',
-        choices: ['Telling the truth on a test', 'A hard thing right in front of you', 'Doing your handwriting neatly'], right: 1 },
+      typedCheck: { q: 'A soft lie is told to avoid what?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-02', kind: 'topic', type: 'concept', minutes: 5, subject: 'Writing', tag: 'Writing · 02 of 30',
@@ -72,8 +81,7 @@ window.CURRICULUM.friday = {
         '<strong>"I tried."</strong> When you didn\'t really try.',
         '<strong>"Almost done."</strong> When you haven\'t really started.'
       ],
-      check: { q: 'Which of these examples is the "big one" — the soft lie this whole day is about?',
-        choices: ['"I forgot"', '"Yeah, I get it"', '"I cleaned my room"'], right: 1 },
+      typedCheck: { q: 'Which of these examples is the "big one" — the soft lie this whole day is about?', minChars: 60 },
       cta: 'I see it' },
 
     { id: 'w-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 03 of 30',
@@ -88,8 +96,7 @@ window.CURRICULUM.friday = {
         'Wrong. Every time you say it without meaning it, three things happen at once: you fall behind because you didn\'t actually learn it. The person you said it to trusts you less the NEXT time you say something. And worst of all, you start to believe yourself — you can\'t tell the difference between what you really know and what you said you knew.',
         'That last one is the trap. People who fall into it spend years making decisions on a map that isn\'t real.'
       ],
-      check: { q: 'What\'s the worst thing about saying "I get it" when you don\'t?',
-        choices: ['You waste five minutes', 'You start lying to yourself and can\'t tell what you really know', 'The teacher gets mad'], right: 1 },
+      typedCheck: { q: 'What\'s the worst thing about saying "I get it" when you don\'t?', minChars: 60 },
       cta: 'Heavy' },
 
     { id: 'w-05', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 05 of 30',
@@ -99,8 +106,7 @@ window.CURRICULUM.friday = {
         '<strong>2. Problems get deferred.</strong> The soft lie buys you 5 minutes and costs you 5 days. The math you said you got? You\'ll still have to learn it eventually — but now you have to un-learn the fake confidence first.',
         '<strong>3. You lie to yourself.</strong> After enough soft lies, you can\'t tell what you actually know. You make decisions on a fake map.'
       ],
-      check: { q: 'A soft lie "buys you 5 minutes and costs you" what?',
-        choices: ['Nothing — it works out', '5 days', 'A dollar'], right: 1 },
+      typedCheck: { q: 'A soft lie "buys you 5 minutes and costs you" what?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-06', kind: 'topic', type: 'teach-back', minutes: 7, subject: 'Writing', tag: 'Writing · 06 of 30',
@@ -121,8 +127,7 @@ window.CURRICULUM.friday = {
         'That feeling is your warning bell. When you notice it, take ONE breath. Then say the harder thing instead. \"Actually, I don\'t totally get it — can you say it one more way?\" That\'s the move.',
         'It feels embarrassing the first 5 times. After that it feels like nothing. And it changes the whole rest of your life.'
       ],
-      check: { q: 'What\'s the move when you feel the soft-lie urge?',
-        choices: ['Push through and say it anyway', 'Take one breath, then say the harder true thing instead', 'Change the subject'], right: 1 },
+      typedCheck: { q: 'What\'s the move when you feel the soft-lie urge?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-09', kind: 'topic', type: 'teach-back', minutes: 5, subject: 'Writing', tag: 'Writing · 09 of 30',
@@ -137,8 +142,7 @@ window.CURRICULUM.friday = {
         'These feel like the polite thing to do. They feel like protecting your friend\'s feelings. But here\'s the trap: when you and your friends always tell each other soft lies, you stop knowing what each other actually thinks. The whole friendship runs on fake reads.',
         'The strongest friendships are the ones where people tell each other the truth — kindly, but truthfully. "Honestly, I don\'t love that game — wanna pick something else?"'
       ],
-      check: { q: 'What happens when friends always tell each other soft lies?',
-        choices: ['The friendship gets stronger over time', 'They stop knowing what each other actually thinks', 'They never disagree, which is great'], right: 1 },
+      typedCheck: { q: 'What happens when friends always tell each other soft lies?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-11', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 11 of 30',
@@ -148,8 +152,7 @@ window.CURRICULUM.friday = {
         'The trap with family: they\'re the people who NEED to trust your word the most. If your mom or dad can\'t trust what you say about little things (chores, screen time, homework), they can\'t trust you about big things either (where you\'re going, who you\'re with, what\'s really going on at school).',
         'The kids who get the most freedom from their parents are NOT the smoothest liars. They\'re the ones whose word can be trusted on small stuff, which earned them trust on big stuff.'
       ],
-      check: { q: 'How do kids actually earn more freedom from their parents?',
-        choices: ['By being the smoothest liars', 'By having their word trusted on small stuff', 'By being older'], right: 1 },
+      typedCheck: { q: 'How do kids actually earn more freedom from their parents?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-12', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 12 of 30',
@@ -165,8 +168,7 @@ window.CURRICULUM.friday = {
         'Every one of those sentences is a soft lie to yourself. They sound true. They feel safe. But they\'re you giving yourself permission to not try. Permission to not grow. Permission to stay exactly where you are.',
         'The kids who get really good at anything (music, sports, code, drawing, whatever) all have one thing in common: they stopped letting themselves get away with self-soft-lies.'
       ],
-      check: { q: 'What\'s the danger of soft lies you tell YOURSELF?',
-        choices: ['Nobody calls you out, so they sit there and shape your life', 'You forget them in a day', 'They\'re funny stories later'], right: 0 },
+      typedCheck: { q: 'What\'s the danger of soft lies you tell YOURSELF?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-14', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 14 of 30',
@@ -176,8 +178,7 @@ window.CURRICULUM.friday = {
         'Here\'s how the trap works: saying "later" gives your brain a small reward right now. You feel like you\'ve "decided" — the responsibility shifts off your shoulders. But your brain treats the rest of the day like it already DID the thing. So by the time later comes, your motivation is already spent.',
         'The honest version: "I don\'t want to do this right now." That sentence at least tells the truth. From there you can decide: do it anyway, or genuinely schedule it for a specific later time you\'ll actually keep.'
       ],
-      check: { q: 'Why is "I\'ll do it later" usually a soft lie?',
-        choices: ['You\'re going to do it', 'It gives your brain a reward and treats the day like you already did it', 'You really did forget'], right: 1 },
+      typedCheck: { q: 'Why is "I\'ll do it later" usually a soft lie?', minChars: 60 },
       cta: 'Heavy' },
 
     { id: 'w-15', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 15 of 30',
@@ -198,8 +199,7 @@ window.CURRICULUM.friday = {
         'Some of this is just being polite. But when EVERY post gets fake praise, nothing real gets through. Your friend who posts something they actually care about can\'t tell the real reactions from the polite ones.',
         'Honest move: don\'t hit like unless you actually looked. Don\'t comment "🔥🔥" unless something actually impressed you. Silence is more respectful than fake praise.'
       ],
-      check: { q: 'What\'s the cost of fake praise on every post?',
-        choices: ['No cost — it\'s just being nice', 'Nothing real gets through; real reactions can\'t be told from polite ones', 'It uses extra phone battery'], right: 1 },
+      typedCheck: { q: 'What\'s the cost of fake praise on every post?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-18', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 18 of 30',
@@ -209,8 +209,7 @@ window.CURRICULUM.friday = {
         'Signs someone\'s feeding you a soft lie: their answer is way faster than the question deserved. They use a phrase that\'s suspiciously polite ("I\'m good, all good, totally fine"). They look away or change the subject right after.',
         'When you notice — don\'t catch them out loud. Just file it. You don\'t have to call every soft lie. But knowing the ground you\'re standing on isn\'t real lets you ask better questions later.'
       ],
-      check: { q: 'What\'s the move when you spot someone using a soft lie on you?',
-        choices: ['Call them out immediately in front of everyone', 'File it; you don\'t have to call every one, but know the ground isn\'t real', 'Tell their parents'], right: 1 },
+      typedCheck: { q: 'What\'s the move when you spot someone using a soft lie on you?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-19', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 19 of 30',
@@ -226,8 +225,7 @@ window.CURRICULUM.friday = {
         'You almost never feel the line where it flips. There\'s no announcement. They just start checking your work behind your back. They stop asking for your opinion. They include you less in important things. By the time you notice, you\'ve been there for months.',
         'The flip side is also true. Every truth told — especially the uncomfortable ones — compounds in your favor.'
       ],
-      check: { q: 'How does trust math work?',
-        choices: ['Each lie costs the same amount', 'Like reverse compound interest — there\'s no announcement when it flips', 'Trust resets every year'], right: 1 },
+      typedCheck: { q: 'How does trust math work?', minChars: 60 },
       cta: 'Heavy' },
 
     { id: 'w-21', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 21 of 30',
@@ -237,8 +235,7 @@ window.CURRICULUM.friday = {
         'Honest sounds like: "I don\'t know yet, but I\'ll find out." "I haven\'t started — can I get to it tomorrow morning instead?" "I disagree with that part, but I see what you mean about the rest." "I\'m not really listening right now, can we talk about it after dinner?"',
         'Notice the shape: honest answers usually take more words than soft lies. They\'re slower. They cost a little discomfort up front. But they buy real trust over time.'
       ],
-      check: { q: 'What shape do honest answers usually have?',
-        choices: ['Shorter and faster than lies', 'More words, slower, cost a little discomfort up front', 'Always angry'], right: 1 },
+      typedCheck: { q: 'What shape do honest answers usually have?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-22', kind: 'topic', type: 'teach-back', minutes: 5, subject: 'Writing', tag: 'Writing · 22 of 30',
@@ -259,8 +256,7 @@ window.CURRICULUM.friday = {
         'The format that works: name the lie specifically, say what was true, and don\'t add a long explanation. "Hey — last week when I said I cleaned my room, it wasn\'t actually clean. I shoved stuff. I should have just told you. I\'ll do it for real this weekend."',
         'Notice what the apology does NOT include: excuses, blame, "but you also...", or a promise to never do it again (you probably will, you\'re human). Just: I lied. Here\'s the truth. Here\'s what\'s next.'
       ],
-      check: { q: 'What should a real apology for a soft lie NOT include?',
-        choices: ['What was actually true', 'Excuses, blame, or a promise to never do it again', 'A specific next step'], right: 1 },
+      typedCheck: { q: 'What should a real apology for a soft lie NOT include?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-25', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Writing', tag: 'Writing · 25 of 30',
@@ -275,8 +271,7 @@ window.CURRICULUM.friday = {
         'This is why catching yourself early matters. If you catch your soft-lie urge after 5 reps, you can undo it pretty fast. After 5,000 reps, the wiring is permanent. You\'ll lie to your future spouse, your future kids, your future boss without even noticing.',
         'You\'re 12. Your wiring is still soft. Every soft lie you catch right now is a permanent change to who you become.'
       ],
-      check: { q: 'Why does catching soft lies right now (at 12) matter so much?',
-        choices: ['It doesn\'t — adults break the habit easily', 'Your wiring is still soft; every catch is a permanent change to who you become', 'You get a sticker'], right: 1 },
+      typedCheck: { q: 'Why does catching soft lies right now (at 12) matter so much?', minChars: 60 },
       cta: 'Locked in' },
 
     { id: 'w-27', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 27 of 30',
@@ -286,8 +281,7 @@ window.CURRICULUM.friday = {
         'When someone\'s word is good, the people around them save energy. They don\'t have to verify. They don\'t have to brace for surprises. They can hand over bigger things — bigger projects, more money, more responsibility — because the cost of being wrong about that person\'s word is low.',
         'Smooth liars look like they\'re winning early — they get out of more trouble, they avoid more chores, they keep more options open. By 30, they\'re working twice as hard for half as many real opportunities, because the people around them quietly took them off the "trust this person with big stuff" list.'
       ],
-      check: { q: 'Why do smooth liars do worse by age 30?',
-        choices: ['They run out of jokes', 'People quietly take them off the "trust with big stuff" list', 'They get arrested'], right: 1 },
+      typedCheck: { q: 'Why do smooth liars do worse by age 30?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-28', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 28 of 30',
@@ -302,8 +296,7 @@ window.CURRICULUM.friday = {
         'That\'s OK. Catching yourself IS the work. The first 100 times you catch a soft lie before you say it, that\'s 100 reps of building real honesty. Most adults never even start.',
         'You\'re going to slip. We all do. The goal isn\'t perfect. The goal is noticing the next one, and the one after that.'
       ],
-      check: { q: 'What\'s the goal?',
-        choices: ['Never feeling the soft-lie urge again', 'Noticing the next one, and the one after that', 'Telling everyone what you learned'], right: 1 },
+      typedCheck: { q: 'What\'s the goal?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'w-30', kind: 'topic', type: 'concept', minutes: 3, subject: 'Writing', tag: 'Writing · 30 of 30',
@@ -313,13 +306,22 @@ window.CURRICULUM.friday = {
         'That\'s not knowledge anymore — that\'s muscle. Soft lies will keep showing up. You just got way better at spotting them in the moment.',
         'Writing subject locked in.'
       ],
-      check: { q: 'After 30 modules of this, what do you have that you didn\'t before?',
-        choices: ['Nothing — you knew it all already', 'Muscle, not just knowledge — you\'ll spot soft lies in the moment now', 'A sticker'], right: 1 },
+      typedCheck: { q: 'After 30 modules of this, what do you have that you didn\'t before?', minChars: 60 },
       cta: 'Lock it in' },
 
     // ============================================================
     // SUBJECT 2 — SPELLING (Problem + Solution) — 30 modules
     // ============================================================
+
+    { id: 's-00-video', kind: 'topic', type: 'video-typed', minutes: 8, subject: 'Spelling', tag: 'Spelling · Kickoff video',
+      title: 'Kickoff video — Don\'t Bring Me Problems, Bring Me Solutions',
+      video: { title: 'Kickoff video — Don\'t Bring Me Problems, Bring Me Solutions', ytId: 'xqZ0Typ5Y9w', creditLine: 'Nordic Business Forum — Adam Grant' },
+      typedQuestions: [
+        { q: "What is Adam Grant's main point about why people should bring solutions, not just problems? Say it in your own words.", minChars: 140 },
+        { q: "Think of one problem you've brought to a parent or teacher recently. If you had to redo it using Adam's rule, what would you say differently?", minChars: 160 }
+      ],
+      cta: 'Done' },
+
 
     { id: 's-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Spelling', tag: 'Spelling · 01 of 30',
       title: 'Never bring a problem without a solution',
@@ -328,8 +330,7 @@ window.CURRICULUM.friday = {
         'That\'s half-work. And in the real world, it makes people not want to deal with you.',
         'The rule for the rest of your life: <strong>whenever you bring a problem to someone, bring at least one proposed solution with it.</strong> Even if your solution is wrong. Even if you\'re not sure. The act of trying to solve it before you ask is what builds your brain.'
       ],
-      check: { q: 'When you bring a problem to someone, you should also bring what?',
-        choices: ['An apology', 'At least one proposed solution', 'A snack'], right: 1 },
+      typedCheck: { q: 'When you bring a problem to someone, you should also bring what?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Spelling', tag: 'Spelling · 02 of 30',
@@ -339,8 +340,7 @@ window.CURRICULUM.friday = {
         '<strong>Wrong:</strong> "I don\'t get the math homework."<br><strong>Right:</strong> "I don\'t get the math homework. I tried problem 3 and got stuck on the second step where you have to divide. Can we look at that part?"',
         'Notice what the "right" versions do: they name the problem, they show you tried, and they propose a path forward. That\'s the move every time.'
       ],
-      check: { q: 'The "right" versions all do three things — which one is NOT one of them?',
-        choices: ['Name the problem', 'Show you tried', 'Blame someone else'], right: 2 },
+      typedCheck: { q: 'The "right" versions all do three things — which one is NOT one of them?', minChars: 60 },
       cta: 'Clean' },
 
     { id: 's-03', kind: 'topic', type: 'spelling-drill', minutes: 5, subject: 'Spelling', tag: 'Spelling · 03 of 30',
@@ -356,8 +356,7 @@ window.CURRICULUM.friday = {
         'The kids who learn this rule early get treated like adults early. They get more responsibility. They get listened to. Adults at real jobs are expected to do this every single day.',
         'The flip side: the kids who only bring problems and wait for the answer become adults who only bring problems. People stop including them in important things.'
       ],
-      check: { q: 'What happens to kids who learn this rule early?',
-        choices: ['They get treated like adults early and get more responsibility', 'Nothing changes — adults still ignore them', 'They get more screen time'], right: 0 },
+      typedCheck: { q: 'What happens to kids who learn this rule early?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-05', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Spelling', tag: 'Spelling · 05 of 30',
@@ -378,8 +377,7 @@ window.CURRICULUM.friday = {
         '<strong>2. You build a track record.</strong> Even when your fix is wrong, you show you\'re a person who tries. People remember that.',
         '<strong>3. You get to choose.</strong> The person who proposes the first solution usually shapes the conversation. If you bring nothing, someone else picks for you.'
       ],
-      check: { q: 'Who usually shapes the conversation when there\'s a problem on the table?',
-        choices: ['The loudest person', 'The person who proposes the first solution', 'Whoever brought up the problem first'], right: 1 },
+      typedCheck: { q: 'Who usually shapes the conversation when there\'s a problem on the table?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-08', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Spelling', tag: 'Spelling · 08 of 30',
@@ -400,8 +398,7 @@ window.CURRICULUM.friday = {
         '<strong>Strong version:</strong> "I\'m bored — I was thinking about either practicing MPC for 20 minutes or finishing the Lego thing on my desk. Which would be better?" (Problem named, two solutions proposed, you\'re asking for help picking, not asking someone to fix it.)',
         'Notice that the strong version makes you MORE fun to be around. People want to help you when you\'ve already done some of the work. They get tired of you when you keep handing them blank problems.'
       ],
-      check: { q: 'What makes the "strong version" different from the lazy one?',
-        choices: ['It\'s longer', 'It proposes solutions and asks for help picking, not asks someone to fix it', 'It uses big words'], right: 1 },
+      typedCheck: { q: 'What makes the "strong version" different from the lazy one?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-11', kind: 'topic', type: 'spelling-drill', minutes: 5, subject: 'Spelling', tag: 'Spelling · 11 of 30',
@@ -417,8 +414,7 @@ window.CURRICULUM.friday = {
         'Try this next time you\'re about to say "I don\'t know": stop and ask yourself one question. "If I HAD to guess, what would I guess?" That guess is your first solution. It might be wrong. It\'s still better than "I don\'t know" because it gives the other person something to push on.',
         'The conversion is: "I don\'t know" → "If I had to guess, I\'d try X."'
       ],
-      check: { q: 'How do you convert "I don\'t know" into a real proposal?',
-        choices: ['Just say "I don\'t know" louder', 'Ask yourself "if I had to guess, what would I guess?" — that\'s your first solution', 'Google it and read the answer back'], right: 1 },
+      typedCheck: { q: 'How do you convert "I don\'t know" into a real proposal?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-13', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Spelling', tag: 'Spelling · 13 of 30',
@@ -434,8 +430,7 @@ window.CURRICULUM.friday = {
         'Now you have a real problem ("I can\'t figure out what word problems are asking") with a real solution shape ("Practice reading word problems out loud and underlining the question").',
         'A big problem is just lots of small problems wearing a trench coat.'
       ],
-      check: { q: 'What\'s the move when a problem feels too big to solve?',
-        choices: ['Wait for it to feel smaller', 'Break it into pieces small enough to actually solve', 'Forget about it'], right: 1 },
+      typedCheck: { q: 'What\'s the move when a problem feels too big to solve?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-15', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Spelling', tag: 'Spelling · 15 of 30',
@@ -457,8 +452,7 @@ window.CURRICULUM.friday = {
         'A real solution doesn\'t have to work. It has to be a real attempt — a thing you actually thought through, even if you\'re wrong. "I think we should try X" is a real attempt. "I don\'t know if this would work but maybe X" is also a real attempt.',
         'What\'s NOT a real attempt: "Whatever." "I guess." "It doesn\'t matter." Those are sneaky soft lies — they LOOK like solutions but they\'re you giving up while pretending not to.'
       ],
-      check: { q: 'What counts as a "real" attempt at a solution?',
-        choices: ['Only solutions you\'re 100% sure will work', 'A thing you actually thought through, even if you\'re wrong', 'Whatever the adult wants you to say'], right: 1 },
+      typedCheck: { q: 'What counts as a "real" attempt at a solution?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-18', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Spelling', tag: 'Spelling · 18 of 30',
@@ -473,8 +467,7 @@ window.CURRICULUM.friday = {
         'This works better than one solution for two reasons. First, it forces YOU to think harder — you can\'t just lock onto your first idea. Second, the person you\'re talking to feels like a partner instead of a judge. They\'re comparing your two paths, not deciding whether your one is good enough.',
         'You\'ll find that pretty often, neither A nor B is what gets picked — but a smarter third option comes out of the conversation. That only happens because you brought two.'
       ],
-      check: { q: 'Why does bringing TWO solutions usually work better than one?',
-        choices: ['It looks like you\'re trying harder', 'It forces you to think harder AND makes the other person a partner instead of a judge', 'Two is always better than one'], right: 1 },
+      typedCheck: { q: 'Why does bringing TWO solutions usually work better than one?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-20', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Spelling', tag: 'Spelling · 20 of 30',
@@ -495,8 +488,7 @@ window.CURRICULUM.friday = {
         'For big-than-you problems, the "solution" you bring is: "Here\'s what I think we should do FIRST." Not "here\'s the fix." Just the next step. "I think we should talk to the principal." "I think we should tell Mom and let her decide." "I think we should sit down with the coach as a team."',
         'Even on a problem you can\'t solve, you can propose the next step. That\'s still the rule working.'
       ],
-      check: { q: 'For a problem that\'s bigger than you, what does the "solution" look like?',
-        choices: ['Solving the whole thing yourself', 'The next step — not the full fix', 'Ignoring it because it\'s not your job'], right: 1 },
+      typedCheck: { q: 'For a problem that\'s bigger than you, what does the "solution" look like?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-23', kind: 'topic', type: 'concept', minutes: 4, subject: 'Spelling', tag: 'Spelling · 23 of 30',
@@ -506,8 +498,7 @@ window.CURRICULUM.friday = {
         'A few rules of thumb: parents for anything safety-related, money-related, or that affects the family. Friends for stuff about other friends, school social stuff, and how you\'re feeling. Teachers for school stuff specifically and things happening at school. Coaches for team stuff.',
         'When you don\'t know who to bring it to, that\'s a problem in itself — and the solution is to ask one trusted person "who would be the right person to bring this to?" That\'s your real first move.'
       ],
-      check: { q: 'When you don\'t know who to bring a problem to, what\'s the first move?',
-        choices: ['Bring it to whoever\'s closest', 'Ask one trusted person "who would be the right person?"', 'Bury it'], right: 1 },
+      typedCheck: { q: 'When you don\'t know who to bring a problem to, what\'s the first move?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-24', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Spelling', tag: 'Spelling · 24 of 30',
@@ -528,8 +519,7 @@ window.CURRICULUM.friday = {
         'Most people stop here and forget about it. The real rule has one more part: <strong>follow up.</strong> A day or a week later, circle back to the person you talked to. "Hey, that thing we talked about with the headphones — I ended up using the old pair like we said. Worked fine. Thanks." Or: "Hey, I tried that math approach but it didn\'t work — I think I need to take another look together. Got 10 minutes this weekend?"',
         'The follow-up is the secret weapon. It makes the person trust you for next time. It teaches you what worked and what didn\'t. Most kids skip it. Most adults skip it. The few people who do it stand out forever.'
       ],
-      check: { q: 'What\'s the secret weapon after you propose and a path gets picked?',
-        choices: ['Asking for a reward', 'Following up a day or week later — what worked, what didn\'t', 'Forgetting about it'], right: 1 },
+      typedCheck: { q: 'What\'s the secret weapon after you propose and a path gets picked?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-27', kind: 'topic', type: 'concept', minutes: 4, subject: 'Spelling', tag: 'Spelling · 27 of 30',
@@ -539,8 +529,7 @@ window.CURRICULUM.friday = {
         'When your solution doesn\'t work, the move is: don\'t hide it. Don\'t pretend the problem went away. Don\'t blame the solution on someone else. Go back to the person you proposed it to and say: "I tried X, it didn\'t work. Here\'s what I learned. I think we should try Y now."',
         'You just turned a wrong solution into another real attempt. The cycle keeps going. People notice this. They start to trust your judgment because you take responsibility for both the proposals AND the misses.'
       ],
-      check: { q: 'What\'s the move when your proposed solution turns out to be wrong?',
-        choices: ['Hide it and hope the problem goes away', 'Blame it on someone else', 'Go back, say what didn\'t work, propose the next attempt'], right: 2 },
+      typedCheck: { q: 'What\'s the move when your proposed solution turns out to be wrong?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 's-28', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Spelling', tag: 'Spelling · 28 of 30',
@@ -555,8 +544,7 @@ window.CURRICULUM.friday = {
         'It\'s not magic. It\'s just that the people who actually try to solve their own problems before asking — and who follow up afterwards — are RARE. There\'s less competition for being that person than you\'d think.',
         'You\'re 12. Most people don\'t figure this out until they\'re 30. You\'ve got an 18-year head start now if you take it.'
       ],
-      check: { q: 'Why is following this rule so powerful in life?',
-        choices: ['Magic — it\'s a secret only some kids learn', 'There\'s less competition for being that person than you\'d think', 'Adults give you money'], right: 1 },
+      typedCheck: { q: 'Why is following this rule so powerful in life?', minChars: 60 },
       cta: 'Heavy' },
 
     { id: 's-30', kind: 'topic', type: 'concept', minutes: 3, subject: 'Spelling', tag: 'Spelling · 30 of 30',
@@ -566,13 +554,22 @@ window.CURRICULUM.friday = {
         'You don\'t just KNOW the rule anymore. You\'ve practiced it five different ways. Next time something breaks or goes sideways, you already know what to do.',
         'Spelling subject locked in.'
       ],
-      check: { q: 'Next time something goes wrong, what\'s your first move?',
-        choices: ['Wait for someone to fix it', 'Name it, try to solve it, propose, follow up', 'Pretend it didn\'t happen'], right: 1 },
+      typedCheck: { q: 'Next time something goes wrong, what\'s your first move?', minChars: 60 },
       cta: 'Done' },
 
     // ============================================================
     // SUBJECT 3 — MPC ONE (Beat-Making) — 30 modules
     // ============================================================
+
+    { id: 'm-00-video', kind: 'topic', type: 'video-typed', minutes: 8, subject: 'MPC ONE', tag: 'MPC · Kickoff video',
+      title: 'Kickoff video — Your First Rock Drum Beat',
+      video: { title: 'Kickoff video — Your First Rock Drum Beat', ytId: 'kclUtptKsT8', creditLine: 'Drumeo' },
+      typedQuestions: [
+        { q: 'Where did the teacher say the KICK lands and where does the SNARE land? Use the numbers 1, 2, 3, and 4 in your answer.', minChars: 120 },
+        { q: "What's one thing the video showed you that you're going to try on the MPC today? Be specific — a counting trick, a hand pattern, anything.", minChars: 140 }
+      ],
+      cta: 'Done' },
+
 
     { id: 'm-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 01 of 30',
       title: 'What is a beat?',
@@ -581,8 +578,7 @@ window.CURRICULUM.friday = {
         'Music gets divided into <strong>bars</strong>. Each bar has 4 beats: <strong>1, 2, 3, 4</strong>. Then it loops. 1, 2, 3, 4. 1, 2, 3, 4. Forever.',
         'A "beat" — the kind you make on the MPC — is just a pattern of drum sounds placed on that 1-2-3-4 grid. Different sounds on different beats = different song.'
       ],
-      check: { q: 'How many beats are in one bar in 4/4 time?',
-        choices: ['Three', 'Four', 'Eight'], right: 1 },
+      typedCheck: { q: 'How many beats are in one bar in 4/4 time?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 02 of 30',
@@ -592,8 +588,7 @@ window.CURRICULUM.friday = {
         'Spelled out: <code>KICK . SNARE . KICK . SNARE .</code> — every bar.',
         'You\'ve heard this pattern in probably 80% of every song on the radio, on TikTok, on Roblox, on YouTube. It\'s the foundation. Today you learn to PLAY it instead of just hear it.'
       ],
-      check: { q: 'Where do the snares go in the basic pattern?',
-        choices: ['On the 1 and the 3', 'On the 2 and the 4', 'Wherever you want'], right: 1 },
+      typedCheck: { q: 'Where do the snares go in the basic pattern?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-03', kind: 'topic', type: 'concept', minutes: 3, subject: 'MPC ONE', tag: 'MPC · 03 of 30',
@@ -603,8 +598,7 @@ window.CURRICULUM.friday = {
         'You play WITH the click. If your kick lands at the same moment as the click on 1 and 3, you\'re "on the grid." If it lands a hair before or after, you\'re "rushing" or "dragging."',
         'The whole point of today\'s homework is to put your kicks and snares EXACTLY where the metronome says they should be. That\'s the skill. Everything fancy in music sits on top of that one skill.'
       ],
-      check: { q: 'What does "on the grid" mean?',
-        choices: ['Playing whenever feels right', 'Your hits land at the same moment as the metronome click', 'Playing only on whole notes'], right: 1 },
+      typedCheck: { q: 'What does "on the grid" mean?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-04', kind: 'topic', type: 'teach-back', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 04 of 30',
@@ -621,8 +615,7 @@ window.CURRICULUM.friday = {
         '<strong>Quarter note</strong> — one beat. Four of them fit per bar (1, 2, 3, 4). This is the level your kicks and snares live at.',
         '<strong>Eighth note</strong> — half a beat. Eight of them fit per bar (1-and-2-and-3-and-4-and). This is the level your hi-hats live at.'
       ],
-      check: { q: 'A quarter note is how long?',
-        choices: ['Half a beat', 'One beat', 'Two beats'], right: 1 },
+      typedCheck: { q: 'A quarter note is how long?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-06', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 06 of 30',
@@ -632,8 +625,7 @@ window.CURRICULUM.friday = {
         '60 BPM = one beat per second, like a slow ballad. 120 BPM = two beats per second, like most pop music. 90 BPM = right in between, which is why it\'s a great speed to learn on. Slow enough to actually land each hit. Fast enough to feel like real music.',
         'Hip-hop usually lives between 80-100 BPM. Trap hits around 140-160. EDM sits around 128. When you set the metronome to 90, you\'re practicing in the same pocket as most rap songs ever made.'
       ],
-      check: { q: 'What does BPM stand for?',
-        choices: ['Big Pads Music', 'Beats Per Minute', 'Beats Per Measure'], right: 1 },
+      typedCheck: { q: 'What does BPM stand for?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-07', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 07 of 30',
@@ -650,8 +642,7 @@ window.CURRICULUM.friday = {
         'Pattern: <code>K . . . K . . . K . . . K . . .</code> (across 4 bars).',
         'Record it. The goal: every kick lands at the same moment as the metronome click on 1 and on 3.'
       ],
-      check: { q: 'What\'s the BPM you set the metronome to for Sequence 1?',
-        choices: ['60', '90', '120'], right: 1 },
+      typedCheck: { q: 'What\'s the BPM you set the metronome to for Sequence 1?', minChars: 60 },
       cta: 'On it' },
 
     { id: 'm-09', kind: 'topic', type: 'teach-back', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 09 of 30',
@@ -666,8 +657,7 @@ window.CURRICULUM.friday = {
         'Velocity is what separates a robot-sounding beat from a beat that feels alive. If every kick is exactly the same volume, it sounds mechanical. If some are slightly heavier and some are softer, it sounds like a real drummer.',
         'For Sequence 1 we want all 4 kicks the same volume — that\'s the discipline. But starting in later sequences, we\'ll mess with velocity on purpose.'
       ],
-      check: { q: 'What\'s velocity on the MPC?',
-        choices: ['How fast you play', 'How hard you hit a pad — controls how loud and heavy the sound is', 'How many pads you hit at once'], right: 1 },
+      typedCheck: { q: 'What\'s velocity on the MPC?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-11', kind: 'topic', type: 'concept', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 11 of 30',
@@ -678,8 +668,7 @@ window.CURRICULUM.friday = {
         'Pattern: <code>K . S . K . S . K . S . K . S .</code>',
         'This is the "boom-CLAP-boom-CLAP" feel — the backbone of almost every modern song. Record 4 bars.'
       ],
-      check: { q: 'On Sequence 2, where do the snares land?',
-        choices: ['On 1 and 3', 'On 2 and 4', 'Everywhere'], right: 1 },
+      typedCheck: { q: 'On Sequence 2, where do the snares land?', minChars: 60 },
       cta: 'On it' },
 
     { id: 'm-12', kind: 'topic', type: 'teach-back', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 12 of 30',
@@ -697,8 +686,7 @@ window.CURRICULUM.friday = {
         '<strong>R&B:</strong> Same kick/snare with more space and softer hits.',
         'When you go listen to any song with this in mind, you\'ll hear it. You\'ll never un-hear it.'
       ],
-      check: { q: 'How widespread is the boom-CLAP pattern?',
-        choices: ['Just hip-hop', 'Pretty much every modern genre', 'Just one or two songs'], right: 1 },
+      typedCheck: { q: 'How widespread is the boom-CLAP pattern?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-14', kind: 'topic', type: 'concept', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 14 of 30',
@@ -709,8 +697,7 @@ window.CURRICULUM.friday = {
         'Counting it out loud: "one-AND-two-AND-three-AND-four-AND." Hit the hi-hat on every number AND every "and."',
         'On top of your kicks (1 and 3) and snares (2 and 4), the hi-hats fill in the spaces AND double the main beats: <code>K-h-S-h-K-h-S-h</code> per bar.'
       ],
-      check: { q: 'How many 8th notes are in one bar?',
-        choices: ['Four', 'Six', 'Eight'], right: 2 },
+      typedCheck: { q: 'How many 8th notes are in one bar?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-15', kind: 'topic', type: 'concept', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 15 of 30',
@@ -721,8 +708,7 @@ window.CURRICULUM.friday = {
         'Pattern: <code>K h S h K h S h</code> (per bar).',
         'If 8 hats per bar feels too fast, slow the metronome to 80 to lock it in, then bring it back to 90. Record 4 bars.'
       ],
-      check: { q: 'On every WHAT do the hi-hats land in Sequence 3?',
-        choices: ['Every beat (4 per bar)', 'Every 8th note (8 per bar)', 'Every 16th note (16 per bar)'], right: 1 },
+      typedCheck: { q: 'On every WHAT do the hi-hats land in Sequence 3?', minChars: 60 },
       cta: 'On it' },
 
     { id: 'm-16', kind: 'topic', type: 'teach-back', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 16 of 30',
@@ -738,8 +724,7 @@ window.CURRICULUM.friday = {
         '16th notes are where things get fast and detailed. Trap hi-hats run on 16ths (sometimes faster). Snare rolls before a drop run on 16ths. They\'re the "tickity-tickity" feel.',
         'You don\'t need to play 16ths today. But knowing they exist will help you hear them in other songs.'
       ],
-      check: { q: 'How many 16th notes are in one bar?',
-        choices: ['Eight', 'Sixteen', 'Thirty-two'], right: 1 },
+      typedCheck: { q: 'How many 16th notes are in one bar?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-18', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 18 of 30',
@@ -750,8 +735,7 @@ window.CURRICULUM.friday = {
         'Velocity control on the MPC is where ghost notes happen. A normal snare hit might be velocity 100. A ghost note might be velocity 30. Same pad, way softer.',
         'You don\'t need ghost notes today. They\'re a level-2 move. But great producers use them everywhere.'
       ],
-      check: { q: 'What makes a "ghost note" different from a regular hit?',
-        choices: ['It uses a different pad', 'It\'s a super-soft hit (low velocity) between the loud ones', 'It plays on a different beat'], right: 1 },
+      typedCheck: { q: 'What makes a "ghost note" different from a regular hit?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-19', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 19 of 30',
@@ -768,8 +752,7 @@ window.CURRICULUM.friday = {
         'The classic move: open hat on the "and" of beat 4 — right before the bar loops. The open hat rings out, gets cut off when the next bar starts, and gives the beat a small lift every loop. Almost every modern drum pattern uses this.',
         'On the MPC: you usually have a closed hat pad and an open hat pad as two different pads.'
       ],
-      check: { q: 'What\'s the classic spot for an open hi-hat in a beat?',
-        choices: ['On beat 1', 'On the "and" of beat 4 — right before the loop restarts', 'On every beat'], right: 1 },
+      typedCheck: { q: 'What\'s the classic spot for an open hi-hat in a beat?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-21', kind: 'topic', type: 'concept', minutes: 5, subject: 'MPC ONE', tag: 'MPC · 21 of 30',
@@ -782,8 +765,7 @@ window.CURRICULUM.friday = {
         '<strong>Open hat swap.</strong> Replace one of your closed hats with an open hat (the classic spot: the "and" of beat 4).',
         'Record 4 bars.'
       ],
-      check: { q: 'How many creative things should you add in Sequence 4?',
-        choices: ['Five', 'One', 'As many as you can think of'], right: 1 },
+      typedCheck: { q: 'How many creative things should you add in Sequence 4?', minChars: 60 },
       cta: 'On it' },
 
     { id: 'm-22', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'MPC ONE', tag: 'MPC · 22 of 30',
@@ -799,8 +781,7 @@ window.CURRICULUM.friday = {
         'Fills are like punctuation in writing. Without them, the beat just loops forever and the listener gets bored. With them, you create rhythm at a bigger scale — a "verse paragraph" → fill → "chorus paragraph" → fill, etc.',
         'Rule of thumb: too many fills makes the beat feel chaotic. Save them for the end of phrases.'
       ],
-      check: { q: 'What\'s a fill for, musically?',
-        choices: ['Filling up extra silence', 'Signaling "something\'s about to happen" — punctuation between phrases', 'Showing off'], right: 1 },
+      typedCheck: { q: 'What\'s a fill for, musically?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-24', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 24 of 30',
@@ -811,8 +792,7 @@ window.CURRICULUM.friday = {
         'Now clap along, but ONLY clap when you hear the snare. You should be clapping on the 2 and the 4 of every bar.',
         'If you can hold that clap through the whole song without losing your place, you\'ve internalized the foundation of 4/4 time.'
       ],
-      check: { q: 'When you clap along to a song, where do you clap?',
-        choices: ['On every beat', 'On the snare hits — the 2 and the 4', 'On the kicks'], right: 1 },
+      typedCheck: { q: 'When you clap along to a song, where do you clap?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-25', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'MPC ONE', tag: 'MPC · 25 of 30',
@@ -829,8 +809,7 @@ window.CURRICULUM.friday = {
         'For 16th notes: <em>"one-e-and-a, two-e-and-a, three-e-and-a, four-e-and-a"</em>',
         'When you\'re learning a new pattern, count out loud. Yes, it feels dumb. It works anyway. After enough reps the count moves into your head and you don\'t need to say it.'
       ],
-      check: { q: 'How do you count 8th notes out loud?',
-        choices: ['"one, two, three, four"', '"one-AND-two-AND-three-AND-four-AND"', '"one-e-and-a, two-e-and-a..."'], right: 1 },
+      typedCheck: { q: 'How do you count 8th notes out loud?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-27', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 27 of 30',
@@ -840,8 +819,7 @@ window.CURRICULUM.friday = {
         'Don\'t. Practice slow. Way slower than feels natural. If the final beat is at 90 BPM, practice the pattern at 60 BPM first. Get every hit dead-on the click. Then bring the tempo up 5 BPM at a time.',
         'This is how pros practice. It feels like nothing\'s happening. But every slow rep is hard-wiring the pattern into your hands. After enough slow reps, the speed comes for free.'
       ],
-      check: { q: 'How should you practice a new pattern?',
-        choices: ['As fast as you can to sound impressive', 'Way slower than feels natural, then bring tempo up 5 BPM at a time', 'At one random tempo each time'], right: 1 },
+      typedCheck: { q: 'How should you practice a new pattern?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-28', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'MPC ONE', tag: 'MPC · 28 of 30',
@@ -856,8 +834,7 @@ window.CURRICULUM.friday = {
         'They do this for 5-10 minutes before they touch any new beat. Because the foundation is everything. If your foundation gets shaky, every fancy thing on top of it sounds wrong.',
         'Once a week from now on, do this warm-up. 5 minutes. Just the basics. The pros aren\'t doing magic. They\'re just doing the boring thing forever.'
       ],
-      check: { q: 'What\'s the boring thing pro producers do every day before touching new beats?',
-        choices: ['Drink coffee', 'A 5-10 minute warm-up of the basic kick-snare pattern with the metronome', 'Watch tutorials'], right: 1 },
+      typedCheck: { q: 'What\'s the boring thing pro producers do every day before touching new beats?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'm-30', kind: 'topic', type: 'concept', minutes: 3, subject: 'MPC ONE', tag: 'MPC · 30 of 30',
@@ -868,13 +845,22 @@ window.CURRICULUM.friday = {
         'You\'re not pretending to know beats anymore. You actually do.',
         'MPC subject locked in.'
       ],
-      check: { q: 'What\'s the foundation of every beat you\'ll ever make?',
-        choices: ['Fancy fills', 'Kicks on 1 and 3, snares on 2 and 4, on the metronome', 'Loud volume'], right: 1 },
+      typedCheck: { q: 'What\'s the foundation of every beat you\'ll ever make?', minChars: 60 },
       cta: 'Done' },
 
     // ============================================================
     // SUBJECT 4 — ROBLOX CODING (Lua intro) — 30 modules
     // ============================================================
+
+    { id: 'c-00-video', kind: 'topic', type: 'video-typed', minutes: 8, subject: 'Roblox Coding', tag: 'Coding · Kickoff video',
+      title: 'Kickoff video — Intro to Lua in Roblox',
+      video: { title: 'Kickoff video — Intro to Lua in Roblox', ytId: 'LpSe6zut3ME', creditLine: 'B Ricey — How to SCRIPT in Roblox #1' },
+      typedQuestions: [
+        { q: "What is a script and what does Lua have to do with Roblox? Explain it like you're telling a friend who's never opened Roblox Studio.", minChars: 140 },
+        { q: "What's one thing from this video you want to try in Roblox Studio yourself? Could be a print statement, a variable, anything.", minChars: 120 }
+      ],
+      cta: 'Done' },
+
 
     { id: 'c-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 01 of 30',
       title: 'What is code?',
@@ -883,8 +869,7 @@ window.CURRICULUM.friday = {
         '<strong>Code is just instructions.</strong> A list of orders you give to a computer, one line at a time. The computer reads each line, does what it says, then moves to the next line. That\'s it. That\'s coding.',
         'Roblox uses a language called <strong>Lua</strong>. Say it out loud — "LOO-uh". When you build a Roblox game, you write Lua to make stuff happen.'
       ],
-      check: { q: 'What language does Roblox use for code?',
-        choices: ['Python', 'Lua', 'JavaScript'], right: 1 },
+      typedCheck: { q: 'What language does Roblox use for code?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 02 of 30',
@@ -895,8 +880,7 @@ window.CURRICULUM.friday = {
         'Later when the player gets a point, you can change what\'s in the box: <code>score = score + 1</code>. Now the box holds 1.',
         'Almost everything in a Roblox game is variables: the player\'s health, their coins, what level they\'re on.'
       ],
-      check: { q: 'What is a variable?',
-        choices: ['A box that holds a value, with a name you choose', 'A type of Roblox part', 'A sound effect'], right: 0 },
+      typedCheck: { q: 'What is a variable?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-03', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 03 of 30',
@@ -917,8 +901,7 @@ window.CURRICULUM.friday = {
         '<code>print("hello world")</code> — that line tells the computer: "show the words hello world on the screen."',
         'In Roblox Studio, when you run that line, you see "hello world" in the Output window. Every programmer ever has typed those exact words.'
       ],
-      check: { q: 'What does print() do?',
-        choices: ['Sends something to a real printer', 'Shows whatever\'s inside the parentheses on the screen', 'Deletes a variable'], right: 1 },
+      typedCheck: { q: 'What does print() do?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-06', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 06 of 30',
@@ -936,8 +919,7 @@ window.CURRICULUM.friday = {
         '<code>local debt = -5</code> — negative.',
         'No special syntax. No "integer" vs "float" choice like in other languages. Lua just figures out what kind of number you handed it.'
       ],
-      check: { q: 'How do you tell Lua what kind of number a variable holds?',
-        choices: ['You don\'t — Lua figures it out', 'You have to declare integer or float', 'You wrap it in special tags'], right: 0 },
+      typedCheck: { q: 'How do you tell Lua what kind of number a variable holds?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-08', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 08 of 30',
@@ -954,8 +936,7 @@ window.CURRICULUM.friday = {
         'The quotes are how Lua knows it\'s text and not a variable name. <code>name</code> without quotes is a variable. <code>"name"</code> with quotes is the actual word "name".',
         'You can also use single quotes if you want: <code>local greeting = \'hi\'</code>. Single or double — pick one and be consistent.'
       ],
-      check: { q: 'How do you tell Lua something is a string and not a variable name?',
-        choices: ['Use ALL CAPS', 'Wrap it in quotes (single or double)', 'Add the word "string" before it'], right: 1 },
+      typedCheck: { q: 'How do you tell Lua something is a string and not a variable name?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-10', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 10 of 30',
@@ -972,8 +953,7 @@ window.CURRICULUM.friday = {
         'You can use math anywhere Lua expects a number. <code>local total = 5 + 3</code> stores 8. <code>local doubled = score * 2</code> stores twice whatever score is.',
         'Order of operations works the same as math class: parentheses first, then multiply/divide, then add/subtract.'
       ],
-      check: { q: 'What symbol does Lua use for multiplication?',
-        choices: ['×', 'x', '*'], right: 2 },
+      typedCheck: { q: 'What symbol does Lua use for multiplication?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-12', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 12 of 30',
@@ -995,8 +975,7 @@ window.CURRICULUM.friday = {
         'Every if/then needs an <code>end</code> at the bottom to close it off. Forget the end and the whole thing breaks.',
         'Every game decision in Roblox is an if/then. If the player touches the wall, take 5 health away. If the timer hits zero, end the round. All if/thens stacked up.'
       ],
-      check: { q: 'What goes at the bottom of every if/then block in Lua?',
-        choices: ['end', 'stop', 'close'], right: 0 },
+      typedCheck: { q: 'What goes at the bottom of every if/then block in Lua?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-15', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Roblox Coding', tag: 'Coding · 15 of 30',
@@ -1018,8 +997,7 @@ window.CURRICULUM.friday = {
         'You can also chain with <code>elseif</code>: <code>if x > 0 then print("positive") elseif x < 0 then print("negative") else print("zero") end</code>. Three paths, one runs based on the value of x.',
         'Every game with branching outcomes uses if/else somewhere.'
       ],
-      check: { q: 'What does else do in an if/then statement?',
-        choices: ['Runs only if the condition is true', 'Runs when the condition is false — the "otherwise" path', 'Skips the whole block'], right: 1 },
+      typedCheck: { q: 'What does else do in an if/then statement?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-18', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Roblox Coding', tag: 'Coding · 18 of 30',
@@ -1036,8 +1014,7 @@ window.CURRICULUM.friday = {
         '<strong>while loop</strong> — runs as long as a condition is true. <code>while health > 0 do takeDamage() end</code> keeps running as long as health is above 0.',
         'Both end with the word <code>end</code>, just like if/then.'
       ],
-      check: { q: 'What\'s the difference between for and while loops?',
-        choices: ['for runs a set number of times; while runs as long as a condition is true', 'while is faster than for', 'They\'re the same thing'], right: 0 },
+      typedCheck: { q: 'What\'s the difference between for and while loops?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-20', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Roblox Coding', tag: 'Coding · 20 of 30',
@@ -1059,8 +1036,7 @@ window.CURRICULUM.friday = {
         'Why use comments? Because three months from now when you open your old code, you will have NO idea what you were doing. Comments are your future self a small gift.',
         'Good comment: <code>-- give the player 10 extra coins for finishing the level</code>. Bad comment: <code>-- add 10 to coins</code> (you can read that from the code itself).'
       ],
-      check: { q: 'What\'s a comment for?',
-        choices: ['Makes the code run faster', 'A note for humans — the computer ignores it', 'Hides code from other players'], right: 1 },
+      typedCheck: { q: 'What\'s a comment for?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-23', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 23 of 30',
@@ -1077,8 +1053,7 @@ window.CURRICULUM.friday = {
         'Functions can take inputs (called <strong>parameters</strong>): <code>function greet(name) print("hi " .. name) end</code>. Now <code>greet("Ethan")</code> prints "hi Ethan". The two dots <code>..</code> mean "join strings together."',
         'Why functions? Because if you do the same thing in 5 places, you can write the function once and call it 5 times. Change one line, all 5 spots update.'
       ],
-      check: { q: 'Why use functions?',
-        choices: ['Makes code look fancy', 'Write something once, use it many times — change once, all callers update', 'Required by Lua'], right: 1 },
+      typedCheck: { q: 'Why use functions?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-25', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Roblox Coding', tag: 'Coding · 25 of 30',
@@ -1100,8 +1075,7 @@ window.CURRICULUM.friday = {
         'Common Roblox events: <code>Players.PlayerAdded</code> (someone joined), <code>Players.PlayerRemoving</code> (someone left), <code>part.Touched</code> (something hit a part), <code>button.MouseButton1Click</code> (button clicked).',
         'Events are the heart of Roblox programming. Most game code is "when X happens, do Y."'
       ],
-      check: { q: 'What\'s an event in Roblox?',
-        choices: ['A scheduled time of day', 'A thing that happens that your code can react to', 'A type of variable'], right: 1 },
+      typedCheck: { q: 'What\'s an event in Roblox?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-28', kind: 'topic', type: 'concept', minutes: 5, subject: 'Roblox Coding', tag: 'Coding · 28 of 30',
@@ -1112,8 +1086,7 @@ window.CURRICULUM.friday = {
         'Look at it. You can read every line. Variable. Comment. Event. Math. String concatenation. if/then. end.',
         'You just went from "I don\'t know coding" to "I can read this script and tell you what it does." That happened today.'
       ],
-      check: { q: 'What does this tiny script do when the player touches lava?',
-        choices: ['Resets the game', 'Takes 10 health, prints the new health, and shows "Game over!" if health drops to 0 or below', 'Adds 10 coins'], right: 1 },
+      typedCheck: { q: 'What does this tiny script do when the player touches lava?', minChars: 60 },
       cta: 'Got it' },
 
     { id: 'c-29', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Roblox Coding', tag: 'Coding · 29 of 30',
@@ -1128,8 +1101,7 @@ window.CURRICULUM.friday = {
         'You can\'t say you don\'t know coding anymore. You know coding. You can open Roblox Studio tomorrow and start a real script.',
         'Coding subject locked in.'
       ],
-      check: { q: 'What can you say now that you couldn\'t say this morning?',
-        choices: ['"I know everything about Roblox"', '"I can read a Roblox script and write basic Lua"', '"I\'m a professional programmer"'], right: 1 },
+      typedCheck: { q: 'What can you say now that you couldn\'t say this morning?', minChars: 60 },
       cta: 'Done' },
 
     { id: 'report-card-fri', kind: 'drill', type: 'report-card', title: 'Friday — show Mom & Dad', minutes: 2 }
