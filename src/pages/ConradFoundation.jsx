@@ -1,277 +1,390 @@
-import React, { useState, useEffect } from 'react'
-import './ConradFoundation.css'
+import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+
+/**
+ * ConradFoundation — pitch page for Nancy Conrad / Conrad Foundation.
+ *
+ * Design system mirrors HigherOrbitsPitch (Higher Orbits):
+ *   - bg `#0C0C0C` ground, text `#F0ECE6` warm bone, accent `#E85D26` AOM orange
+ *   - font-display-serif (Playfair Display) headlines, italic accent in orange
+ *   - font-mono kicker 10.5px tracking-[0.28em] uppercase
+ *   - Framer Motion fadeUp animations on scroll
+ *   - Water as visual + conceptual highlight throughout
+ *
+ * R1 redesign — 2026-05-30 — dark theme, Higher Orbits style
+ */
+
+// ─── Animation helper ─────────────────────────────────────────────────────────
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-40px' },
+  transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
+});
+
+// ─── Reusable components ──────────────────────────────────────────────────────
+
+function Kicker({ children, className = '' }) {
+  return (
+    <p className={`font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#E85D26] ${className}`}>
+      {children}
+    </p>
+  );
+}
+
+function StatBlock({ value, label, delay = 0.05 }) {
+  return (
+    <motion.div className="text-left" {...fadeUp(delay)}>
+      <p className="font-display-serif text-[56px] md:text-[80px] leading-[0.9] tracking-[-0.025em] text-[#F0ECE6]">
+        {value}
+      </p>
+      <p className="font-body text-[13px] md:text-[14px] text-[#F0ECE6]/55 mt-3 leading-[1.5] max-w-[20ch]">
+        {label}
+      </p>
+    </motion.div>
+  );
+}
+
+function Deliverable({ title, desc }) {
+  return (
+    <li className="flex gap-5 py-6 border-b border-[#F0ECE6]/[0.08] last:border-0">
+      <span className="w-1.5 h-1.5 rounded-full bg-[#E85D26] mt-[14px] flex-shrink-0" />
+      <div className="flex-1">
+        <p className="font-display-serif text-[22px] md:text-[26px] leading-[1.15] tracking-[-0.015em] text-[#F0ECE6] mb-2">
+          {title}
+        </p>
+        <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/65 leading-[1.65]">
+          {desc}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+function ProcessStep({ n, title, body }) {
+  return (
+    <motion.div className="flex gap-6 md:gap-8" {...fadeUp(n * 0.06)}>
+      <span className="font-mono text-[11px] tracking-[0.22em] text-[#E85D26] pt-[7px] w-8 flex-shrink-0">
+        {String(n + 1).padStart(2, '0')}
+      </span>
+      <div className="flex-1 pb-10 border-b border-[#F0ECE6]/[0.08] last:border-0 last:pb-0">
+        <p className="font-display-serif text-[26px] md:text-[32px] leading-[1.1] tracking-[-0.02em] text-[#F0ECE6] mb-3">
+          {title}
+        </p>
+        <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/65 leading-[1.7] max-w-[55ch]">
+          {body}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+function OutcomeCard({ n, title, desc, delay = 0 }) {
+  return (
+    <motion.div
+      className="border border-[#F0ECE6]/[0.10] rounded-xl bg-[#F0ECE6]/[0.02] p-6 md:p-8"
+      {...fadeUp(delay)}
+    >
+      <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26] block mb-4">
+        {String(n).padStart(2, '0')}
+      </span>
+      <h3 className="font-display-serif text-[22px] md:text-[28px] leading-[1.15] tracking-[-0.02em] text-[#F0ECE6] mb-3">
+        {title}
+      </h3>
+      <p className="font-body text-[14px] md:text-[15px] text-[#F0ECE6]/65 leading-[1.65]">
+        {desc}
+      </p>
+    </motion.div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ConradFoundation() {
-  const [platformTab, setPlatformTab] = useState('cohort')
+  const [platformTab, setPlatformTab] = useState('cohort');
+  const videoRef = useRef(null);
 
   useEffect(() => {
-    const meta = document.createElement('meta')
-    meta.name = 'robots'
-    meta.content = 'noindex,nofollow'
-    document.head.appendChild(meta)
-    return () => meta.remove()
-  }, [])
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex,nofollow';
+    document.head.appendChild(meta);
+    document.title = 'Mission Water · Conrad Foundation | AOM';
+    return () => meta.remove();
+  }, []);
 
-  const nancyVideoPath = '/ConradFoundation/nancy-sample-tile-v1.mp4?v=2'
-  const nancyStillPath = '/ConradFoundation/nancy-still-placeholder.jpg?v=2'
-  const nancyMasterclassStill = '/ConradFoundation/nancy-expert-masterclass.jpg'
-  const zoomMockupPath = '/ConradFoundation/zoom-mockup.jpg'
+  const nancyVideoPath = '/ConradFoundation/nancy-sample-tile-v1.mp4?v=2';
+  const nancyStillPath = '/ConradFoundation/nancy-still-placeholder.jpg?v=2';
 
   return (
-    <div className="bg-[#FDF6EC] text-[#0C0C0C] antialiased">
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 1 — THE HOOK (cream, left-aligned, type-only)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen border-b border-[#0C0C0C]/12 flex items-center">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto w-full">
-          <div className="flex items-center gap-4 mb-8 md:mb-10">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              Confidential · For Nancy Conrad · 2026
-            </p>
-          </div>
-          <h1 className="font-display-serif text-[56px] sm:text-[72px] md:text-[112px] lg:text-[128px] leading-[0.92] tracking-[-0.025em] max-w-[1200px]">
-            What happens when there's <em className="font-display-italic italic font-medium text-[#E85D26]">no more water?</em>
-          </h1>
-          <div className="mt-10 md:mt-14 max-w-md">
-            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#0C0C0C]/55">
-              Nancy Conrad
-            </p>
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#0C0C0C]/45 mt-1.5">
-              Founding Chairman · Conrad Foundation
-            </p>
-          </div>
-        </div>
-        <div className="absolute bottom-8 left-6 md:left-12 flex items-center gap-3">
-          <span className="w-6 h-px bg-[#0C0C0C]/35" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#0C0C0C]/45">Scroll</p>
+    <div
+      className="bg-[#0C0C0C] text-[#F0ECE6] min-h-screen antialiased"
+      style={{ fontFeatureSettings: '"liga" 1, "kern" 1' }}
+    >
+
+      {/* ──────────────────────────────── HERO ────────────────────────────── */}
+      <section className="relative pt-28 md:pt-40 pb-24 md:pb-32 px-6 md:px-12">
+        <div className="max-w-[1280px] mx-auto">
+          <motion.div {...fadeUp()}>
+            <div className="inline-flex items-center gap-3 border border-[#E85D26]/30 bg-[#0C0C0C]/60 backdrop-blur-sm px-3.5 py-1.5 rounded-full mb-10">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E85D26] animate-pulse" />
+              <Kicker className="!text-[#F0ECE6]">For Nancy Conrad · Conrad Foundation</Kicker>
+            </div>
+          </motion.div>
+
+          <motion.h1
+            className="font-display-serif text-[14vw] md:text-[80px] lg:text-[104px] xl:text-[128px] leading-[0.88] tracking-[-0.035em] max-w-[1000px]"
+            {...fadeUp(0.1)}
+          >
+            What happens when there's{' '}
+            <em className="font-display-italic italic font-medium text-[#E85D26]">no more water?</em>
+          </motion.h1>
+
+          <motion.p
+            className="font-body text-[17px] md:text-[20px] text-[#F0ECE6]/75 mt-10 leading-[1.6] max-w-[58ch]"
+            {...fadeUp(0.2)}
+          >
+            Twenty years building critical thinking in youth. Now she needs the world to find Mission Water — and AOM is the activation engine that makes that happen.
+          </motion.p>
+
+          <motion.p
+            className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#F0ECE6]/45 mt-8"
+            {...fadeUp(0.28)}
+          >
+            The marketing + activation engine for Mission Water
+          </motion.p>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 2 — HERO TILE (black, Nancy video)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="border-b border-[#FDF6EC]/15 bg-[#0C0C0C] text-[#FDF6EC]">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto">
-          <div className="flex items-center gap-4 mb-8">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              Field report · Meet the person asking
-            </p>
-          </div>
-          <h2 className="font-display-serif text-[44px] md:text-[72px] lg:text-[88px] leading-[0.95] tracking-[-0.025em] mb-12 md:mb-16 max-w-[1100px]">
-            Meet the <em className="font-display-italic italic font-medium text-[#E85D26]">person</em> asking.
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-            <div className="lg:col-span-8">
-              <div className="aspect-[16/9] relative overflow-hidden border border-[#FDF6EC]/15 bg-black">
-                <video
-                  className="w-full h-full object-cover"
-                  controls
-                  playsInline
-                  preload="metadata"
-                  poster={nancyStillPath}
-                >
-                  <source src={nancyVideoPath} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#FDF6EC]/50 mt-4">
-                Nancy Conrad · 90 seconds · Filmed by AOM
-              </p>
-            </div>
-
-            <div className="lg:col-span-4 lg:pt-2">
-              <ul className="border-t border-[#FDF6EC]/20">
-                {[
-                  ['01', 'Twenty years'],
-                  ['02', 'Students from Alabama to Afghanistan'],
-                  ['03', 'Critical thinking as diplomacy'],
-                  ['04', 'The program she wants to scale'],
-                ].map(([num, line]) => (
-                  <li
-                    key={num}
-                    className="flex items-baseline gap-4 border-b border-[#FDF6EC]/20 py-5"
-                  >
-                    <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] shrink-0">
-                      {num}
-                    </span>
-                    <span className="font-display-serif text-[20px] md:text-[22px] leading-[1.2] tracking-[-0.01em]">
-                      {line}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {/* ──────────────────────────── FOUNDATION STATS ────────────────────── */}
+      <section className="px-6 md:px-12 pb-24 md:pb-32">
+        <div className="max-w-[1280px] mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-14 border-t border-[#F0ECE6]/[0.10] pt-14 md:pt-20">
+            <StatBlock value="20+" label="years building critical thinking in youth" delay={0.05} />
+            <StatBlock value="3" label="continents — Alabama to Afghanistan" delay={0.10} />
+            <StatBlock value="1st" label="of a curriculum line — Water, Space, Plants" delay={0.15} />
+            <StatBlock value="Conrad" label="Challenge validated the model" delay={0.20} />
           </div>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 3 — CURRICULUM LINE (cream, table-of-contents)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="border-b border-[#0C0C0C]/12">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto">
-          <div className="flex items-center gap-4 mb-7">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              The series · Volume one of many
-            </p>
-          </div>
-          <h2 className="font-display-serif text-[44px] md:text-[72px] lg:text-[88px] leading-[0.95] tracking-[-0.025em] mb-14 md:mb-16 max-w-[1100px]">
-            One curriculum line. <em className="font-display-italic italic font-medium text-[#E85D26]">Water is just the first.</em>
-          </h2>
+      {/* ──────────────────────────── NANCY'S VISION ──────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20 items-start">
 
-          <div className="border-t-2 border-[#0C0C0C]">
-            {[
-              {
-                num: '01',
-                topic: 'Water',
-                hook: 'What happens when there\'s no more water?',
-                status: 'The first',
-                live: true,
-              },
-              {
-                num: '02',
-                topic: 'Space',
-                hook: 'In Nancy\'s words —',
-                status: 'Coming next',
-                live: false,
-              },
-              {
-                num: '03',
-                topic: 'Plants',
-                hook: 'In Nancy\'s words —',
-                status: 'Coming next',
-                live: false,
-              },
-              {
-                num: '04',
-                topic: 'Open',
-                hook: 'In Nancy\'s words —',
-                status: 'TBD with Nancy',
-                live: false,
-              },
-            ].map((row) => (
-              <div
-                key={row.num}
-                className="border-b border-[#0C0C0C]/15 grid grid-cols-12 gap-x-6 py-7 md:py-9"
+          {/* Video column */}
+          <motion.div className="md:col-span-5" {...fadeUp()}>
+            <div className="aspect-video relative overflow-hidden rounded-xl bg-[#1A1A1A]">
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                controls
+                playsInline
+                preload="metadata"
+                poster={nancyStillPath}
+                onLoadedMetadata={() => { if (videoRef.current) videoRef.current.currentTime = 10; }}
               >
-                <div className="col-span-12 md:col-span-2 flex items-baseline gap-3 mb-3 md:mb-0">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26]">
-                    {row.num}
-                  </span>
-                  <p className="font-display-serif text-[22px] md:text-[26px] tracking-[-0.015em]">
-                    {row.topic}
-                  </p>
+                <source src={nancyVideoPath} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/35 mt-4">
+              Nancy Conrad · Filmed by AOM
+            </p>
+          </motion.div>
+
+          {/* Text column */}
+          <motion.div className="md:col-span-7 md:col-start-6" {...fadeUp(0.12)}>
+            <Kicker>Nancy's vision</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              Twenty years building the{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">model.</em>
+            </h2>
+            <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.7]">
+              The Conrad Challenge taught critical thinking to students across continents — Alabama to Afghanistan — and proved the model works. Mission Water is the first of a curriculum line that scales to Space, Plants, and beyond.
+            </p>
+            <p className="font-display-serif text-[22px] md:text-[26px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6] pt-6 mt-2">
+              Now she needs the world to find it.{' '}
+              <em className="font-display-italic italic text-[#E85D26]">That's where we come in.</em>
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ──────────────────────────── FIVE OUTCOMES ───────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <motion.div className="max-w-[760px] mb-16 md:mb-20" {...fadeUp()}>
+            <Kicker>Five core outcomes</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[72px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              What a student becomes after{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">Water.</em>
+            </h2>
+            <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
+              Every student who completes the NoBoxToolBox Water Needs Your Voice program walks away shaped in five measurable ways. These aren't soft goals — they're the curriculum design.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <OutcomeCard
+              n={1}
+              title="Water Literate"
+              desc="Rivers, aquifers, climate realities — how water actually works. Students understand the science before they argue about the policy."
+              delay={0.05}
+            />
+            <OutcomeCard
+              n={2}
+              title="Civically Ready"
+              desc="Water law, governance, public process — how decisions get made. Students learn to navigate the systems that shape their communities."
+              delay={0.10}
+            />
+            <OutcomeCard
+              n={3}
+              title="Culturally Grounded"
+              desc="Indigenous stewardship, rural knowledge, equity at the center. Water isn't just infrastructure — it's history, culture, and identity."
+              delay={0.15}
+            />
+            <OutcomeCard
+              n={4}
+              title="Workforce Ready"
+              desc="STEM, infrastructure, conservation, public service — pathways open. The water crisis needs the next generation to step into it."
+              delay={0.20}
+            />
+            <OutcomeCard
+              n={5}
+              title="Community Connected"
+              desc="Families engaged. Local conversations. Real stakes. Students bring the mission home — to parents, neighbors, city councils."
+              delay={0.25}
+            />
+            <motion.div
+              className="border border-[#E85D26]/25 rounded-xl bg-gradient-to-br from-[#E85D26]/[0.06] to-transparent p-6 md:p-8 flex flex-col justify-between"
+              {...fadeUp(0.30)}
+            >
+              <p className="font-display-serif text-[20px] md:text-[24px] leading-[1.2] tracking-[-0.015em] text-[#F0ECE6]">
+                Water is first. Space, Plants, and beyond are next.
+              </p>
+              <p className="font-body text-[13px] text-[#F0ECE6]/50 mt-4 leading-[1.6]">
+                The NoBoxToolBox model scales to every major challenge the next generation will inherit.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────────────── PROGRAM STRUCTURE ───────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20">
+          <motion.div className="md:col-span-4" {...fadeUp()}>
+            <Kicker>Program structure</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              How the{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">cohort runs.</em>
+            </h2>
+            <div className="mt-10 space-y-4 border-t border-[#F0ECE6]/[0.08] pt-8">
+              {[
+                ['Ages', '13–22 · Out-of-school'],
+                ['Duration', '6 weeks · 12 sessions'],
+                ['Format', 'Live + on-demand'],
+                ['Deliverable', 'Pick a water issue. Argue your solution. Present it.'],
+              ].map(([label, value]) => (
+                <div key={label} className="flex gap-4">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#E85D26] w-20 flex-shrink-0 pt-0.5">{label}</p>
+                  <p className="font-body text-[14px] text-[#F0ECE6]/75 leading-[1.5]">{value}</p>
                 </div>
-                <div className="col-span-12 md:col-span-8">
-                  {row.live ? (
-                    <p className="font-display-serif text-[26px] md:text-[38px] leading-[1.1] tracking-[-0.02em] text-[#0C0C0C]">
-                      "{row.hook}"
-                    </p>
-                  ) : (
-                    <p className="font-display-italic italic text-[22px] md:text-[28px] leading-[1.2] tracking-[-0.01em] text-[#0C0C0C]/40">
-                      {row.hook}
-                    </p>
-                  )}
-                </div>
-                <div className="col-span-12 md:col-span-2 md:text-right flex md:block items-center mt-3 md:mt-2">
-                  <p
-                    className={`font-mono text-[10.5px] uppercase tracking-[0.22em] ${
-                      row.live ? 'text-[#E85D26]' : 'text-[#0C0C0C]/45'
-                    }`}
-                  >
-                    {row.status}
-                  </p>
-                </div>
-              </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <div className="md:col-span-8 md:col-start-6">
+            {[
+              { title: 'Week 1–2: The water system.', body: 'Rivers, aquifers, climate. Urban supply and scarcity. The Colorado River as a living case study. Students learn the system before they argue about it.' },
+              { title: 'Week 3: Agriculture vs. everything.', body: 'Farming pulls the most water. Industry pulls the second-most. Cities pull the third. Students dig into who gets to decide when there isn\'t enough.' },
+              { title: 'Week 4: The expert library.', body: 'Pre-recorded sessions from water scientists, engineers, indigenous leaders, and policy makers. Available on-demand. Filmed by AOM, not a Zoom recording.' },
+              { title: 'Week 5: The dilemma round.', body: 'Phoenix farmers vs. Vegas casinos. Both pull from the Colorado. Whose claim is stronger? Students argue both sides in 90 seconds. Class votes.' },
+              { title: 'Week 6: Showcase.', body: 'Students present their local water issue and proposed solution. Families, teachers, community members are in the room. Real stakes.' },
+            ].map((s, i) => (
+              <ProcessStep key={i} n={i} title={s.title} body={s.body} />
             ))}
           </div>
-
-          <p className="font-display-serif text-[24px] md:text-[34px] leading-[1.25] tracking-[-0.015em] text-[#0C0C0C]/75 mt-14 md:mt-16 max-w-[900px]">
-            Mission Water is the first. AOM owns the system that makes the next
-            eight feel like <em className="font-display-italic italic text-[#E85D26]">one program.</em>
-          </p>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 4 — PLATFORM (black, clickable demo)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="border-b border-[#FDF6EC]/15 bg-[#0C0C0C] text-[#FDF6EC]">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto">
-          <div className="flex items-center gap-4 mb-7">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              The platform · Pillar one
+      {/* ──────────────────────────── PLATFORM DEMO ──────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <motion.div className="max-w-[760px] mb-16 md:mb-20" {...fadeUp()}>
+            <Kicker>The platform</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[72px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              Built for Water.{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">Reusable for everything after.</em>
+            </h2>
+            <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
+              The Masterclass Platform is the infrastructure every NoBoxToolBox course runs on — expert library, cohort management, student submissions, and live sessions. Water builds it. Space and Plants inherit it.
             </p>
-          </div>
-          <h2 className="font-display-serif text-[44px] md:text-[72px] lg:text-[88px] leading-[0.95] tracking-[-0.025em] mb-14 md:mb-16 max-w-[1100px]">
-            Built for Water. Reusable for <em className="font-display-italic italic font-medium text-[#E85D26]">every masterclass after.</em>
-          </h2>
+          </motion.div>
 
-          {/* Mock shell */}
-          <div className="border border-[#FDF6EC]/15 bg-[#0C0C0C]">
+          {/* Platform shell */}
+          <motion.div
+            className="border border-[#F0ECE6]/[0.10] rounded-2xl bg-[#F0ECE6]/[0.02] overflow-hidden"
+            {...fadeUp(0.1)}
+          >
             {/* Shell chrome */}
-            <div className="flex items-center justify-between px-5 md:px-7 py-4 border-b border-[#FDF6EC]/15">
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#FDF6EC]/55">
+            <div className="flex items-center justify-between px-6 md:px-8 py-5 border-b border-[#F0ECE6]/[0.08] bg-[#F0ECE6]/[0.03]">
+              <p className="font-mono text-[9.5px] uppercase tracking-[0.28em] text-[#F0ECE6]/50">
                 conradfoundation.org / masterclass
               </p>
-              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#E85D26]">
-                Live preview
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E85D26] animate-pulse" />
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/40">
+                  Live
+                </p>
+              </div>
             </div>
 
             {/* Tab nav */}
-            <div className="flex flex-wrap gap-6 md:gap-10 px-5 md:px-7 pt-5 border-b border-[#FDF6EC]/15">
+            <div className="flex flex-wrap gap-8 px-6 md:px-8 pt-4 border-b border-[#F0ECE6]/[0.08]">
               {[
-                ['cohort', 'cohort'],
+                ['cohort', 'cohort home'],
                 ['schedule', 'schedule'],
-                ['expert', 'experts'],
+                ['expert', 'outcomes'],
                 ['deliverables', 'submit'],
               ].map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setPlatformTab(key)}
-                  className={`pb-4 font-mono text-[11px] uppercase tracking-[0.28em] transition-colors relative ${
+                  className={`pb-4 font-mono text-[10px] uppercase tracking-[0.26em] transition-colors relative ${
                     platformTab === key
-                      ? 'text-[#E85D26]'
-                      : 'text-[#FDF6EC]/55 hover:text-[#FDF6EC]'
+                      ? 'text-[#F0ECE6]'
+                      : 'text-[#F0ECE6]/35 hover:text-[#F0ECE6]/60'
                   }`}
                 >
                   {label}
                   {platformTab === key && (
-                    <span className="absolute left-0 right-0 -bottom-px h-px bg-[#E85D26]" />
+                    <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-[#E85D26]" />
                   )}
                 </button>
               ))}
             </div>
 
-            {/* Shell content */}
-            <div className="px-5 md:px-10 py-10 md:py-14 min-h-[420px]">
+            {/* Tab content */}
+            <div className="px-6 md:px-8 py-10 md:py-12 min-h-[380px]">
+
               {platformTab === 'cohort' && (
                 <div>
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-5">
-                    Cohort home · Mission Water · Spring 2026
-                  </p>
-                  <h3 className="font-display-serif text-[32px] md:text-[52px] leading-[1.0] tracking-[-0.02em] max-w-[900px] mb-12">
-                    What happens when there's <em className="font-display-italic italic font-medium text-[#E85D26]">no more water?</em>
+                  <Kicker className="mb-4">Water Needs Your Voice</Kicker>
+                  <h3 className="font-display-serif text-[28px] md:text-[44px] leading-[1.0] tracking-[-0.025em] max-w-[800px] mb-10">
+                    Pick a local water issue. Propose a solution. Present it.
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                     {[
-                      ['Cohort', '50 students'],
+                      ['Ages', '13–22 · Out-of-school'],
                       ['Duration', '6 weeks · 12 sessions'],
-                      ['Distribution', 'Live + on-demand'],
+                      ['Format', 'Live + on-demand'],
                     ].map(([label, value]) => (
-                      <div key={label} className="border-t-2 border-[#E85D26] pt-4">
-                        <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#FDF6EC]/55 mb-2">
-                          {label}
-                        </p>
-                        <p className="font-display-serif text-[28px] md:text-[34px] leading-[1.05] tracking-[-0.02em]">
-                          {value}
-                        </p>
+                      <div key={label} className="border-t border-[#F0ECE6]/[0.10] pt-4">
+                        <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/40 mb-2">{label}</p>
+                        <p className="font-display-serif text-[20px] md:text-[24px] leading-[1.1] tracking-[-0.02em] text-[#F0ECE6]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -279,79 +392,40 @@ export default function ConradFoundation() {
               )}
 
               {platformTab === 'schedule' && (
-                <div>
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-5">
-                    Six weeks · Twelve sessions
-                  </p>
-                  <div className="border-t border-[#FDF6EC]/20">
-                    {[
-                      ['01', 'Week 1', 'Water systems & climate', 'Tue · 6pm PT · Live'],
-                      ['02', 'Week 2', 'Urban water — supply, scarcity, design', 'Tue · 6pm PT · Live'],
-                      ['03', 'Week 3', 'Agriculture and the Colorado River', 'Tue · 6pm PT · Live'],
-                      ['04', 'Week 4', 'Expert library — pre-recorded faculty', 'On-demand'],
-                      ['05', 'Week 5', 'Student dilemmas & defense', 'Tue · 6pm PT · Live'],
-                      ['06', 'Week 6', 'Showcase + deliverables', 'Live + livestream'],
-                    ].map(([num, week, title, when]) => (
-                      <div
-                        key={num}
-                        className="grid grid-cols-12 gap-x-4 border-b border-[#FDF6EC]/20 py-5"
-                      >
-                        <span className="col-span-1 font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26]">
-                          {num}
-                        </span>
-                        <p className="col-span-2 md:col-span-2 font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#FDF6EC]/55">
-                          {week}
-                        </p>
-                        <p className="col-span-9 md:col-span-6 font-display-serif text-[18px] md:text-[22px] leading-[1.2] tracking-[-0.01em]">
-                          {title}
-                        </p>
-                        <p className="hidden md:block md:col-span-3 font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#FDF6EC]/55 text-right">
-                          {when}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-0">
+                  {[
+                    ['Week 1', 'Water systems & climate'],
+                    ['Week 2', 'Urban water — supply & scarcity'],
+                    ['Week 3', 'Agriculture & the Colorado River'],
+                    ['Week 4', 'Expert library — pre-recorded'],
+                    ['Week 5', 'Student dilemmas & defense'],
+                    ['Week 6', 'Showcase + deliverables'],
+                  ].map(([week, title]) => (
+                    <div
+                      key={week}
+                      className="flex items-start justify-between gap-4 py-4 border-b border-[#F0ECE6]/[0.08]"
+                    >
+                      <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#E85D26] shrink-0">{week}</p>
+                      <p className="font-display-serif text-[16px] md:text-[18px] leading-[1.2] tracking-[-0.01em] text-[#F0ECE6] flex-1 text-right">{title}</p>
+                    </div>
+                  ))}
                 </div>
               )}
 
               {platformTab === 'expert' && (
                 <div>
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-5">
-                    Expert library · Permanent assets
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
+                  <Kicker className="mb-6">Five outcomes</Kicker>
+                  <div className="space-y-0">
                     {[
-                      [
-                        'Nancy Conrad',
-                        'Founding Chairman · Conrad Foundation',
-                        'Twenty years scaling STEM education across continents.',
-                      ],
-                      [
-                        'Regional water director',
-                        'Colorado River compact authority',
-                        'The legal architecture behind every drop in the southwest.',
-                      ],
-                      [
-                        'Water technologist',
-                        'Industry · Innovation',
-                        'Hard tradeoffs: agriculture, infrastructure, climate.',
-                      ],
-                      [
-                        'Student alum',
-                        'Conrad Challenge cohort',
-                        'What it looks like when a teenager argues the science.',
-                      ],
-                    ].map(([name, role, body]) => (
-                      <div key={name} className="border-t border-[#FDF6EC]/20 pt-5">
-                        <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-3">
-                          {role}
-                        </p>
-                        <h4 className="font-display-serif text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.015em] mb-3">
-                          {name}
-                        </h4>
-                        <p className="font-body text-[15px] text-[#FDF6EC]/70 leading-[1.6]">
-                          {body}
-                        </p>
+                      ['Water Literate', 'Rivers, aquifers, climate realities — how water actually works.'],
+                      ['Civically Ready', 'Water law, governance, public process — how decisions get made.'],
+                      ['Culturally Grounded', 'Indigenous stewardship, rural knowledge, equity at the center.'],
+                      ['Workforce Ready', 'STEM, infrastructure, conservation, public service — pathways open.'],
+                      ['Community Connected', 'Families engaged. Local conversations. Real stakes.'],
+                    ].map(([outcome, desc]) => (
+                      <div key={outcome} className="border-b border-[#F0ECE6]/[0.08] py-5 last:border-0">
+                        <h4 className="font-display-serif text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.015em] text-[#F0ECE6] mb-1">{outcome}</h4>
+                        <p className="font-body text-[14px] md:text-[15px] leading-[1.5] text-[#F0ECE6]/55">{desc}</p>
                       </div>
                     ))}
                   </div>
@@ -360,237 +434,240 @@ export default function ConradFoundation() {
 
               {platformTab === 'deliverables' && (
                 <div>
-                  <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-5">
-                    Student deliverable · Upload
-                  </p>
-                  <h3 className="font-display-serif text-[28px] md:text-[40px] leading-[1.05] tracking-[-0.02em] max-w-[800px] mb-10">
-                    Argue your case. <em className="font-display-italic italic font-medium text-[#E85D26]">Send the proof.</em>
+                  <h3 className="font-display-serif text-[24px] md:text-[36px] leading-[1.05] tracking-[-0.02em] max-w-[600px] mb-4">
+                    Argue your case. Upload your proof.
                   </h3>
-                  <div className="border-2 border-dashed border-[#FDF6EC]/25 px-8 py-12 md:py-16 text-center">
-                    <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#FDF6EC]/55 mb-3">
-                      Drop file · Video, doc, or deck
-                    </p>
-                    <p className="font-display-serif text-[20px] md:text-[24px] leading-[1.3] tracking-[-0.01em] text-[#FDF6EC]/85">
-                      Or click to browse
+                  <p className="font-body text-[14px] text-[#F0ECE6]/55 mb-8 max-w-[50ch]">
+                    Students research a local water issue, build a proposal, and present it. The platform handles the submission, the cohort handles the critique.
+                  </p>
+                  <div className="border border-dashed border-[#F0ECE6]/[0.15] rounded-xl px-8 py-12 text-center">
+                    <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/35 mb-2">Video, doc, or deck</p>
+                    <p className="font-display-serif text-[16px] md:text-[18px] leading-[1.3] tracking-[-0.01em] text-[#F0ECE6]/45">
+                      Drop file or click to browse
                     </p>
                   </div>
                 </div>
               )}
             </div>
-          </div>
-
-          <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.3] tracking-[-0.015em] text-[#FDF6EC]/75 mt-12 md:mt-14 max-w-[900px]">
-            Built for Water. Same shell hosts Space, Plants, and every course she launches —{' '}
-            <em className="font-display-italic italic text-[#E85D26]">without rebuilding it.</em>
-          </p>
+          </motion.div>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 5 — EXPERT FILMING (cream, split-screen)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="border-b border-[#0C0C0C]/12">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto">
-          <div className="flex items-center gap-4 mb-7">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              Expert filming · Pillar two
-            </p>
+      {/* ──────────────────────────── WHY AOM ────────────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20">
+          <motion.div className="md:col-span-4" {...fadeUp()}>
+            <Kicker>The activation engine</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              Why{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">AOM.</em>
+            </h2>
+          </motion.div>
+
+          <div className="md:col-span-8 md:col-start-6">
+            <motion.p
+              className="font-body text-[17px] md:text-[19px] text-[#F0ECE6]/80 leading-[1.7] mb-10"
+              {...fadeUp(0.1)}
+            >
+              The curriculum exists. The model is proven. What Mission Water needs now is an activation engine — the marketing, the media, the expert capture, and the partnership infrastructure that makes the world find it.
+            </motion.p>
+
+            <ul className="border border-[#F0ECE6]/[0.10] rounded-2xl bg-[#F0ECE6]/[0.02] px-6 md:px-8">
+              <Deliverable
+                title="Expert filming, done right."
+                desc="Standard Zoom recordings are washed out, awkward, and gone after the call. AOM films experts lit, framed, and archived — reusable forever in the platform library."
+              />
+              <Deliverable
+                title="Critical thinking dilemmas, built in."
+                desc="Phoenix farmers vs. Vegas casinos. Both pull from the Colorado River. Students argue both sides in 90 seconds. Class votes. This is the core pedagogical engine AOM helps design and produce."
+              />
+              <Deliverable
+                title="Partnership infrastructure, on-brand."
+                desc="Sponsors put their name on the platform, an expert, a course, or a dilemma. AOM builds the pitch deck, the activation assets, and the visual identity that makes a sponsor say yes."
+              />
+              <Deliverable
+                title="The curriculum line, scaled."
+                desc="Water is first. AOM builds the marketing activation model that carries it — then replicates it when Space, Plants, and the next challenge come online."
+              />
+            </ul>
           </div>
-          <h2 className="font-display-serif text-[44px] md:text-[72px] lg:text-[88px] leading-[0.95] tracking-[-0.025em] mb-14 md:mb-16 max-w-[1100px]">
-            Recorded once. <em className="font-display-italic italic font-medium text-[#E85D26]">Used forever.</em>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            <figure>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#0C0C0C]/55 mb-4">
-                A · Standard zoom recording
-              </p>
-              <div className="aspect-[16/9] relative overflow-hidden border border-[#0C0C0C]/15 bg-[#0C0C0C]/5">
-                <img
-                  src={zoomMockupPath}
-                  alt="Standard Zoom recording — washed, lo-res, awkward framing"
-                  className="w-full h-full object-cover opacity-90"
-                  loading="lazy"
-                />
-              </div>
-              <p className="font-display-serif text-[20px] md:text-[22px] leading-[1.3] tracking-[-0.01em] mt-5 text-[#0C0C0C]/65">
-                Washed. Awkward. Gone after the call.
-              </p>
-            </figure>
-
-            <figure>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-4">
-                B · AOM expert capture
-              </p>
-              <div className="aspect-[16/9] relative overflow-hidden border border-[#0C0C0C]/15 bg-[#0C0C0C]">
-                <img
-                  src={nancyMasterclassStill}
-                  alt="Nancy Conrad — MasterClass-tier expert capture by AOM"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <p className="font-display-serif text-[20px] md:text-[22px] leading-[1.3] tracking-[-0.01em] mt-5">
-                Lit. Framed. Archived. <em className="font-display-italic italic text-[#E85D26]">Reusable forever.</em>
-              </p>
-            </figure>
-          </div>
-
-          <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.3] tracking-[-0.015em] text-[#0C0C0C]/75 mt-14 md:mt-16 max-w-[900px]">
-            When the expert library outlives the live cast,{' '}
-            <em className="font-display-italic italic text-[#E85D26]">the program compounds.</em>
-          </p>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 6 — DILEMMA (cream, letterpress pull-quote)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="border-b border-[#0C0C0C]/12">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto">
-          <div className="flex items-center gap-4 mb-7">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              Session 04 · Critical-thinking stim
-            </p>
-          </div>
+      {/* ──────────────────────── PARTNERSHIP ENGINE ──────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <motion.div className="max-w-[760px] mb-16 md:mb-20" {...fadeUp()}>
+            <Kicker>Sponsorship</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[72px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              Four ways sponsors put their name on the{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">mission.</em>
+            </h2>
+          </motion.div>
 
-          <figure className="max-w-[1100px]">
-            <blockquote className="font-display-serif text-[56px] sm:text-[72px] md:text-[112px] lg:text-[128px] leading-[0.92] tracking-[-0.025em] text-[#0C0C0C]">
-              Phoenix farmers{' '}
-              <em className="font-display-italic italic font-medium text-[#E85D26]">vs.</em>{' '}
-              Vegas casinos.
-            </blockquote>
-            <p className="font-display-serif text-[24px] md:text-[34px] leading-[1.25] tracking-[-0.015em] text-[#0C0C0C]/75 mt-10 md:mt-12 max-w-[800px]">
-              Both pull from the Colorado River. Whose claim is stronger?
-            </p>
-            <figcaption className="flex items-center gap-3 mt-10 md:mt-12 border-t border-[#0C0C0C]/15 pt-5 max-w-[600px]">
-              <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26]">
-                →
-              </span>
-              <span className="font-mono text-[10.5px] uppercase tracking-[0.28em] text-[#0C0C0C]/65">
-                Argue both sides · 90 seconds · Class votes
-              </span>
-            </figcaption>
-          </figure>
-
-          <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.3] tracking-[-0.015em] text-[#0C0C0C]/75 mt-16 md:mt-20 max-w-[900px]">
-            Critical thinking isn't a theme. <em className="font-display-italic italic text-[#E85D26]">It's the engine.</em> Every session ends with a dilemma students have to defend in front of each other.
-          </p>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 7 — PARTNERSHIP ENGINE (black, sponsor grid)
-         ───────────────────────────────────────────────────────────── */}
-      <section className="border-b border-[#FDF6EC]/15 bg-[#0C0C0C] text-[#FDF6EC]">
-        <div className="px-6 md:px-12 py-24 md:py-32 max-w-[1440px] mx-auto">
-          <div className="flex items-center gap-4 mb-7">
-            <span className="w-10 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26]">
-              The partnership engine
-            </p>
-          </div>
-          <h2 className="font-display-serif text-[44px] md:text-[72px] lg:text-[88px] leading-[0.95] tracking-[-0.025em] mb-14 md:mb-16 max-w-[1200px]">
-            You fund the foundation through <em className="font-display-italic italic font-medium text-[#E85D26]">partnerships.</em>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 border-t border-l border-[#FDF6EC]/15">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               {
-                num: '01',
-                title: 'Sponsor the platform',
-                body: 'Their name on the infrastructure every course runs on. Permanent. Reusable. Visible every time a student logs in.',
-                tag: 'Pillar one',
+                n: '01',
+                title: 'Sponsor the Platform',
+                desc: 'Their name on the infrastructure every course runs on — Water, Space, Plants, and beyond. Permanent infrastructure credit.',
               },
               {
-                num: '02',
-                title: 'Sponsor an expert',
-                body: 'A library asset that lives beyond the cohort. The interview, the deliverable, the citation — all carry their name.',
-                tag: 'Pillar two',
+                n: '02',
+                title: 'Sponsor an Expert',
+                desc: 'A library asset that lives beyond the cohort. AOM films the expert. The sponsor owns the session credit forever.',
               },
               {
-                num: '03',
-                title: 'Sponsor a course',
-                body: 'Their name on a hook the next decade of kids remembers. Water. Space. Plants. Whichever fits their domain.',
-                tag: 'Pillar four',
+                n: '03',
+                title: 'Sponsor a Course',
+                desc: "Their name on a hook students remember for years. 'Water Needs Your Voice, presented by [Sponsor].' That's brand in education.",
               },
               {
-                num: '04',
-                title: 'Sponsor a dilemma series',
-                body: 'Their domain — energy, health, agriculture — becomes a session module. Students argue inside their world.',
-                tag: 'Pillar five',
+                n: '04',
+                title: 'Sponsor a Dilemma',
+                desc: "Their domain becomes a session. Students argue in their world — pipeline economics, aquifer rights, municipal policy. Real industry, real stakes.",
               },
-            ].map((cell) => (
-              <div
-                key={cell.num}
-                className="border-r border-b border-[#FDF6EC]/15 p-8 md:p-10"
+            ].map((cell, i) => (
+              <motion.div
+                key={i}
+                className="border border-[#F0ECE6]/[0.10] rounded-xl bg-[#F0ECE6]/[0.02] p-6 md:p-8"
+                {...fadeUp(i * 0.06)}
               >
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#E85D26] mb-5">
-                  {cell.num}
-                </p>
-                <h3 className="font-display-serif text-[26px] md:text-[34px] leading-[1.05] tracking-[-0.02em] mb-5">
+                <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26] block mb-4">{cell.n}</span>
+                <h3 className="font-display-serif text-[22px] md:text-[28px] leading-[1.1] tracking-[-0.02em] text-[#F0ECE6] mb-3">
                   {cell.title}
                 </h3>
-                <p className="font-body text-[15px] md:text-[16px] text-[#FDF6EC]/75 leading-[1.65] mb-6">
-                  {cell.body}
+                <p className="font-body text-[14px] md:text-[15px] leading-[1.65] text-[#F0ECE6]/65">
+                  {cell.desc}
                 </p>
-                <p className="font-display-italic italic text-[15px] text-[#E85D26]">
-                  {cell.tag}
-                </p>
-              </div>
+              </motion.div>
             ))}
           </div>
-
-          <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.3] tracking-[-0.015em] text-[#FDF6EC]/75 mt-14 md:mt-16 max-w-[1000px]">
-            Each line above is something a sponsor can put their name on —{' '}
-            <em className="font-display-italic italic text-[#E85D26]">walk-in-ready</em> for the next meeting on your calendar.
-          </p>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SECTION 8 — CLOSE (cream, huge type)
-         ───────────────────────────────────────────────────────────── */}
-      <section>
-        <div className="px-6 md:px-12 py-28 md:py-44 max-w-[1440px] mx-auto">
-          <p className="font-mono text-[10.5px] uppercase tracking-[0.32em] text-[#E85D26] mb-10 md:mb-14">
-            Volume 001 · Ends here
-          </p>
-          <h2 className="font-display-serif text-[56px] sm:text-[80px] md:text-[120px] lg:text-[160px] leading-[0.88] tracking-[-0.03em] max-w-[1400px]">
-            We didn't bring you a deck.<br />
-            We brought you <em className="font-display-italic italic font-medium text-[#E85D26]">this page.</em>
-          </h2>
+      {/* ────────────────────── CURRICULUM LINE ─────────────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <motion.div className="max-w-[760px] mb-14" {...fadeUp()}>
+            <Kicker>What comes next</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              Water is first. The system scales to{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">Space, Plants, and beyond.</em>
+            </h2>
+          </motion.div>
 
-          <div className="mt-16 md:mt-20 grid grid-cols-1 md:grid-cols-12 gap-10">
-            <div className="md:col-span-7">
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26] mb-4">
-                Next step
-              </p>
-              <p className="font-display-serif text-[24px] md:text-[34px] leading-[1.25] tracking-[-0.015em] text-[#0C0C0C]/85">
-                One week with Patrik and the AOM team. We come back with this same
-                page — <em className="font-display-italic italic text-[#E85D26]">filled in for Water, Space, and Plants.</em>
-              </p>
-            </div>
-            <div className="md:col-span-5 md:text-right md:pt-2">
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#0C0C0C]/45">
-                Built for Nancy Conrad
-              </p>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#0C0C0C]/45 mt-1">
-                AOM Studio · 2026-05-13
-              </p>
-            </div>
+          <div className="space-y-3">
+            {[
+              { num: '01', topic: 'Water', hook: 'What happens when there\'s no more water?', status: 'Live now' },
+              { num: '02', topic: 'Space', hook: 'Hook TBD', status: 'Next' },
+              { num: '03', topic: 'Plants', hook: 'Hook TBD', status: 'Coming' },
+              { num: '04', topic: 'Future', hook: 'Hook TBD', status: 'TBD' },
+            ].map((row, i) => (
+              <motion.div
+                key={row.num}
+                className="border border-[#F0ECE6]/[0.10] rounded-xl px-6 py-5 md:py-6 flex items-start justify-between gap-6 bg-[#F0ECE6]/[0.02]"
+                {...fadeUp(i * 0.06)}
+              >
+                <div className="flex gap-6 flex-1 min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#E85D26] shrink-0 pt-0.5">{row.num}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#F0ECE6]/35 mb-1">{row.topic}</p>
+                    <p className="font-display-serif text-[16px] md:text-[18px] leading-[1.2] text-[#F0ECE6]">{row.hook}</p>
+                  </div>
+                </div>
+                <p className={`font-mono text-[9.5px] uppercase tracking-[0.22em] shrink-0 pt-1 ${row.status === 'Live now' ? 'text-[#E85D26]' : 'text-[#F0ECE6]/35'}`}>
+                  {row.status}
+                </p>
+              </motion.div>
+            ))}
           </div>
+        </div>
+      </section>
 
-          <div className="mt-16 md:mt-24 border-t-2 border-[#0C0C0C] pt-6 flex items-center gap-3">
-            <span className="w-6 h-px bg-[#E85D26]" />
-            <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#0C0C0C]/45">
-              aheadofmarket.com / conradfoundation
+      {/* ──────────────────────────── CLOSE / CTA ────────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+
+          {/* Hero CTA card */}
+          <motion.div
+            className="relative rounded-3xl border border-[#E85D26]/40 bg-gradient-to-br from-[#E85D26]/[0.06] to-transparent p-8 md:p-14 mb-10 overflow-hidden"
+            {...fadeUp()}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-14 items-start">
+              <div className="md:col-span-7">
+                <Kicker className="!text-[#E85D26]">Next step</Kicker>
+                <h2 className="font-display-serif text-[44px] md:text-[72px] leading-[0.92] tracking-[-0.025em] text-[#F0ECE6] mt-5">
+                  We didn't bring you a deck.{' '}
+                  <em className="font-display-italic italic font-medium text-[#E85D26]">We built this page.</em>
+                </h2>
+                <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-7 leading-[1.65] max-w-[48ch]">
+                  One week with Patrik and the AOM team. We come back with the full activation plan for Water — expert filming, marketing assets, partnership pitch deck, and the sponsorship infrastructure.
+                </p>
+              </div>
+
+              <div className="md:col-span-4 md:col-start-9 md:border-l md:border-[#F0ECE6]/[0.10] md:pl-10">
+                <Kicker className="!text-[#F0ECE6]/45 mb-5">What we need</Kicker>
+                <ul className="space-y-5">
+                  {[
+                    'An intro call with Nancy',
+                    'Access to NoBoxToolBox materials',
+                    'A week to get this right',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-baseline gap-3">
+                      <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26] flex-shrink-0">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="font-body text-[15px] text-[#F0ECE6]/75">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Closing line */}
+          <motion.div
+            className="rounded-2xl border border-[#F0ECE6]/[0.06] bg-[#F0ECE6]/[0.015] p-7 md:p-10"
+            {...fadeUp(0.1)}
+          >
+            <Kicker className="!text-[#F0ECE6]/40 mb-4">AOM Studio</Kicker>
+            <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6]">
+              Water is the crisis the next generation inherits.{' '}
+              <em className="font-display-italic italic text-[#E85D26]">Nancy's given them the tools to fight back. We help the world find her.</em>
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ──────────────────────────── FOOTER ────────────────────────────── */}
+      <footer className="px-6 md:px-12 py-16 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+          <div>
+            <a
+              href="https://aheadofmarket.com"
+              className="font-display-serif text-[28px] md:text-[36px] leading-[1] tracking-[-0.02em] text-[#F0ECE6] hover:text-[#E85D26] transition-colors no-underline"
+            >
+              Ahead of Market
+            </a>
+            <p className="font-body text-[13px] text-[#F0ECE6]/40 mt-2">
+              Pitch prepared for Nancy Conrad · Conrad Foundation
             </p>
           </div>
+          <div className="flex flex-col md:items-end gap-2">
+            <a
+              href="mailto:hello@aom-inhouse.com"
+              className="font-body text-[15px] text-[#F0ECE6]/70 hover:text-[#E85D26] transition-colors"
+            >
+              hello@aom-inhouse.com
+            </a>
+            <a
+              href="https://aheadofmarket.com"
+              className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6]/45 hover:text-[#E85D26] transition-colors"
+            >
+              aheadofmarket.com
+            </a>
+          </div>
         </div>
-      </section>
+      </footer>
     </div>
-  )
+  );
 }
