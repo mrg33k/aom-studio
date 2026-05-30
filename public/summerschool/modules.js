@@ -7,6 +7,72 @@
 window.SSMod = (function () {
   'use strict';
 
+  // ============================================================
+  // ANTI-COPY-PASTE GUARD (Patrik 2026-05-29 #4: "disable copy and paste
+  // from the text you write, hes a smart kid")
+  //
+  // Two delegated document-level listeners installed once at module load:
+  //   1. copy/cut on lesson text inside #app-host → blocked (he can't
+  //      grab the prompt or concept body and paste it into the answer).
+  //   2. paste into any textarea/input inside #app-host → blocked (so
+  //      even if he copied from somewhere else, it won't paste in).
+  // Allows: copy from his OWN typed textareas (so he can move text
+  // between his answers if he wants); selection itself (so dictionary
+  // tap-to-define still works); typing normally; backspace/delete.
+  // ============================================================
+  (function installNoCheating() {
+    if (typeof document === 'undefined') return;
+    if (document.__ssAntiCheatInstalled) return;
+    document.__ssAntiCheatInstalled = true;
+
+    const blockOnLessonText = (e) => {
+      const t = e.target;
+      // Copying FROM his own typed answer is fine.
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+      // If the selection is inside the lesson host, block.
+      const host = document.getElementById('app-host');
+      if (!host) return;
+      const sel = window.getSelection ? window.getSelection() : null;
+      let node = (sel && sel.anchorNode) || t;
+      while (node) {
+        if (node === host) { e.preventDefault(); return; }
+        node = node.parentNode;
+      }
+    };
+    document.addEventListener('copy', blockOnLessonText);
+    document.addEventListener('cut', blockOnLessonText);
+
+    document.addEventListener('paste', (e) => {
+      const t = e.target;
+      if (!t) return;
+      if (t.tagName !== 'TEXTAREA' && t.tagName !== 'INPUT') return;
+      // Walk up to confirm we're inside the lesson host (Friday + Tue + Wed
+      // all live inside #app-host).
+      const host = document.getElementById('app-host');
+      if (!host) return;
+      let node = t;
+      while (node) {
+        if (node === host) { e.preventDefault(); return; }
+        node = node.parentNode;
+      }
+    });
+
+    // Disable drag-and-drop into textareas/inputs — same exploit as paste.
+    document.addEventListener('drop', (e) => {
+      const t = e.target;
+      if (!t) return;
+      if (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT') {
+        const host = document.getElementById('app-host');
+        if (!host) return;
+        let node = t;
+        while (node) {
+          if (node === host) { e.preventDefault(); return; }
+          node = node.parentNode;
+        }
+      }
+    });
+  })();
+
   // Day-of-week routing — keep in sync with app.js. Picks today's curriculum;
   // ?day=<name> in URL overrides for preview. Fallback to monday.
   const DAY_NAMES_MOD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
