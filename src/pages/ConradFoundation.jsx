@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 /**
@@ -103,8 +103,6 @@ function OutcomeCard({ n, title, desc, delay = 0 }) {
 
 export default function ConradFoundation() {
   const [platformTab, setPlatformTab] = useState('cohort');
-  const videoRef = useRef(null);
-
   useEffect(() => {
     const meta = document.createElement('meta');
     meta.name = 'robots';
@@ -113,9 +111,6 @@ export default function ConradFoundation() {
     document.title = 'Mission Water · Conrad Foundation | AOM';
     return () => meta.remove();
   }, []);
-
-  const nancyVideoPath = '/ConradFoundation/nancy-sample-tile-v1.mp4?v=2';
-  const nancyStillPath = '/ConradFoundation/nancy-still-placeholder.jpg?v=2';
 
   return (
     <div
@@ -173,25 +168,34 @@ export default function ConradFoundation() {
       <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20 items-start">
 
-          {/* Video column */}
+          {/* Quote column */}
           <motion.div className="md:col-span-5" {...fadeUp()}>
-            <div className="aspect-video relative overflow-hidden rounded-xl bg-[#1A1A1A]">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                controls
-                playsInline
-                preload="metadata"
-                poster={nancyStillPath}
-                onLoadedMetadata={() => { if (videoRef.current) videoRef.current.currentTime = 10; }}
+            <div className="relative border border-[#E85D26]/25 rounded-xl bg-[#E85D26]/[0.04] p-8 md:p-10">
+              {/* Decorative quotemark */}
+              <span
+                className="absolute top-6 left-8 font-display-serif text-[80px] md:text-[100px] leading-none text-[#E85D26]/20 select-none pointer-events-none"
+                aria-hidden="true"
               >
-                <source src={nancyVideoPath} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+                &ldquo;
+              </span>
+              <blockquote className="relative pt-10">
+                <p className="font-display-serif text-[26px] md:text-[34px] leading-[1.25] tracking-[-0.02em] text-[#F0ECE6]">
+                  Water is not just a resource — it's the entry point for teaching young people
+                  how to{' '}
+                  <em className="font-display-italic italic text-[#E85D26]">
+                    think critically and solve the problems that matter.
+                  </em>
+                </p>
+                <footer className="mt-8 border-t border-[#F0ECE6]/[0.10] pt-6">
+                  <p className="font-display-serif text-[17px] md:text-[19px] text-[#F0ECE6]/80">
+                    Nancy Conrad
+                  </p>
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/40 mt-1">
+                    Founder · Conrad Foundation
+                  </p>
+                </footer>
+              </blockquote>
             </div>
-            <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/35 mt-4">
-              Nancy Conrad · Filmed by AOM
-            </p>
           </motion.div>
 
           {/* Text column */}
