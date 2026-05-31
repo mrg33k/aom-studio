@@ -871,7 +871,7 @@ export default function CornerV4() {
         roomName,
         timeAgo,
         badgeType: 'message',
-        messagePreview: preview,
+        messagePreview: item.text || '',
         suggestedReplies,
         // raw timestamp + routing keys for fetchCatchupContext
         timestamp: item.timestamp,
