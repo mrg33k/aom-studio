@@ -104,6 +104,7 @@
       color: var(--c-text2);
     }
 
+
     /* ─── Activity Indicator — corner:live-conversation R1 ──────────────── */
 
     #activity-indicator {
@@ -1893,6 +1894,12 @@
         response.innerHTML = `
           <div>Got it, working on that now...</div>
           <div class="message-timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          <div class="message-steps">
+            <div class="step">
+              <div class="step-dot"></div>
+              <div class="step-text">Processing your request</div>
+            </div>
+          </div>
         `;
         messagesEl.appendChild(response);
         messagesEl.scrollTop = messagesEl.scrollHeight;
