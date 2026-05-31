@@ -208,6 +208,9 @@ export default function ConradFoundation() {
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.7]">
               The Conrad Challenge taught critical thinking to students across continents — Alabama to Afghanistan — and proved the model works. Mission Water is the first of a curriculum line that scales to Space, Plants, and beyond.
             </p>
+            <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/60 mt-5 leading-[1.7]">
+              Plants in space take the water curriculum further — hydroponics, closed-loop resource systems, food security in zero-gravity environments. Every lesson learned here is a survival skill for Mars.
+            </p>
             <p className="font-display-serif text-[22px] md:text-[26px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6] pt-6 mt-2">
               Now she needs the world to find it.{' '}
               <em className="font-display-italic italic text-[#E85D26]">That's where we come in.</em>
@@ -310,6 +313,29 @@ export default function ConradFoundation() {
             ].map((s, i) => (
               <ProcessStep key={i} n={i} title={s.title} body={s.body} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────── THE FUTURE OF WATER IN SPACE ───────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20 items-center">
+            <motion.div className="md:col-span-6" {...fadeUp()}>
+              <Kicker>The expanding curriculum</Kicker>
+              <h2 className="font-display-serif text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+                The future of water is{' '}
+                <em className="font-display-italic italic font-medium text-[#E85D26]">in space.</em>
+              </h2>
+            </motion.div>
+            <motion.div className="md:col-span-6" {...fadeUp(0.12)}>
+              <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 leading-[1.7]">
+                Water scarcity on Earth is the training ground for the hardest problem in space: how do you purify, recycle, and sustain every drop when there's no more to find? The Mission Water curriculum doesn't stop at Earth's edge. Space exploration and Mars habitation require everything students learn here — and then some.
+              </p>
+              <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/55 mt-5 leading-[1.65]">
+                Water is the first chapter. Space is where the stakes get existential.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -564,7 +590,7 @@ export default function ConradFoundation() {
           <div className="space-y-3">
             {[
               { num: '01', topic: 'Water', hook: 'What happens when there\'s no more water?', status: 'Live now' },
-              { num: '02', topic: 'Space', hook: 'Hook TBD', status: 'Next' },
+              { num: '02', topic: 'Space', hook: 'What happens when water is the rarest resource in the universe?', status: 'Next' },
               { num: '03', topic: 'Plants', hook: 'Hook TBD', status: 'Coming' },
               { num: '04', topic: 'Future', hook: 'Hook TBD', status: 'TBD' },
             ].map((row, i) => (
