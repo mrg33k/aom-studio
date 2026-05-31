@@ -591,8 +591,8 @@ export default function ConradFoundation() {
             {[
               { num: '01', topic: 'Water', hook: 'What happens when there\'s no more water?', status: 'Live now' },
               { num: '02', topic: 'Space', hook: 'What happens when water is the rarest resource in the universe?', status: 'Next' },
-              { num: '03', topic: 'Plants', hook: 'Hook TBD', status: 'Coming' },
-              { num: '04', topic: 'Future', hook: 'Hook TBD', status: 'TBD' },
+              { num: '03', topic: 'Plants', hook: 'Plant Growth in Space', status: 'Coming' },
+              { num: '04', topic: 'Future', hook: 'The Future of Water in Space', status: 'TBD' },
             ].map((row, i) => (
               <motion.div
                 key={row.num}
