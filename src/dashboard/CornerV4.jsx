@@ -858,18 +858,10 @@ export default function CornerV4() {
         else timeAgo = `${Math.floor(diff / 86400000)}d ago`
       } catch (_) { timeAgo = '' }
 
-      // Suggested replies heuristic
-      const preview = item.text || ''
-      let suggestedReplies
-      if (preview.includes('?')) {
-        suggestedReplies = ['Yes', 'No', "I'll check later"]
-      } else if (/done|completed|finished|shipped/i.test(preview)) {
-        suggestedReplies = ['Approved', 'Decline', 'Thanks']
-      } else if (/task|update|progress/i.test(preview)) {
-        suggestedReplies = ['Got it', 'Keep going', "I'll review it"]
-      } else {
-        suggestedReplies = ['Got it', 'Tell me more', "I'll get back to you"]
-      }
+      // Suggested replies — only show when real suggestions exist.
+      // Heuristic canned replies dropped (R3 direction, 2026-05-30):
+      // all-canned chips feel worse than no chips at all.
+      const suggestedReplies = []
 
       return {
         id: item.id,
@@ -926,6 +918,24 @@ export default function CornerV4() {
     const key = notif._roomKey || notif._agent
     if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
   }, [])
+
+  // corner:notifications-catchup R3 — "Open room" from a catchup card.
+  // Closes the modal then routes into the correct room (mission > project > agent).
+  const handleCatchupOpenRoom = useCallback((notif) => {
+    if (!notif) return
+    setCatchupOpen(false)
+    if (notif._missionSlug && notif._project) {
+      handleSelectMission(
+        { slug: notif._missionSlug, name: notif.roomName },
+        { slug: notif._project },
+      )
+    } else if (notif._project) {
+      handleSelectProject({ slug: notif._project, name: notif.roomName })
+    } else {
+      const agentObj = (agents || []).find(a => a.slug === notif._agent)
+      if (agentObj) handleSelectAgent(agentObj)
+    }
+  }, [handleSelectAgent, handleSelectProject, handleSelectMission, agents])
 
   // corner:notifications-catchup R3 — context fetcher.
   // For each unread notification the modal shows, look up the last 2
@@ -2761,6 +2771,7 @@ export default function CornerV4() {
         onReply={handleCatchupReply}
         onSkip={handleCatchupSkip}
         onLoadContext={fetchCatchupContext}
+        onOpenRoom={handleCatchupOpenRoom}
       />
 
       {/* ── CORNER SUPPORT MODAL (non-Patrik tenants only) ───────────────── */}

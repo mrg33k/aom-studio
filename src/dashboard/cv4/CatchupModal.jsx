@@ -82,7 +82,7 @@ function ConfettiPiece({ index }) {
 
 // ── Notification Card ─────────────────────────────────────────────────────────
 
-function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext }) {
+function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, onOpenRoom }) {
   const [expanded, setExpanded] = useState(false)
   const [inputVal, setInputVal] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -164,13 +164,21 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext }
             {notif.senderName}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-            <span style={{
-              fontSize: 11, color: C.muted,
-              fontFamily: "'JetBrains Mono', monospace",
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
+            <button
+              onClick={() => onOpenRoom && onOpenRoom(notif)}
+              style={{
+                fontSize: 11, color: onOpenRoom ? C.accent : C.muted,
+                fontFamily: "'JetBrains Mono', monospace",
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                background: 'none', border: 'none', padding: 0,
+                cursor: onOpenRoom ? 'pointer' : 'default',
+                textDecoration: onOpenRoom ? 'underline' : 'none',
+                textDecorationColor: 'rgba(16,185,129,0.4)',
+                textUnderlineOffset: 2,
+              }}
+            >
               {notif.roomName}
-            </span>
+            </button>
             <div style={{ width: 3, height: 3, borderRadius: '50%', background: C.muted, flexShrink: 0 }} />
             <span style={{ fontSize: 11, color: C.muted, whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
               {notif.timeAgo}
@@ -261,6 +269,28 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext }
           </button>
         )}
       </div>
+
+      {/* Open room link — navigate into the full conversation */}
+      {onOpenRoom && (
+        <button
+          onClick={() => onOpenRoom(notif)}
+          style={{
+            alignSelf: 'flex-start',
+            fontSize: 12,
+            color: C.text2,
+            background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0,
+            fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+            display: 'flex', alignItems: 'center', gap: 4,
+            marginTop: -4,
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Open room
+        </button>
+      )}
 
       {/* Suggested reply chips */}
       {notif.suggestedReplies && notif.suggestedReplies.length > 0 && (
@@ -451,7 +481,7 @@ function CompletionScreen({ replied, skipped, senderNames, onClose }) {
 
 // ── Main Modal ────────────────────────────────────────────────────────────────
 
-export default function CatchupModal({ isOpen, notifications, onClose, onReply, onSkip, onLoadContext }) {
+export default function CatchupModal({ isOpen, notifications, onClose, onReply, onSkip, onLoadContext, onOpenRoom }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   // R21b — direction is purely a CSS-animation hint passed to the current
   // card. We render ONE card at a time and remount on index change, so
@@ -732,6 +762,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
                 onChipReply={handleChipReply}
                 onTextReply={handleTextReply}
                 onLoadContext={onLoadContext}
+                onOpenRoom={onOpenRoom}
               />
             ) : isComplete ? (
               <CompletionScreen
