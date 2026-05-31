@@ -8,16 +8,19 @@
 //
 // Data sources:
 //   1. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
-//   2. /api/dashboard/files?type=uploads&client={world}[&project={slug}]  — chat-uploaded
-//      files (RAG-tunnel storage, surfaced via the messages table). Added R79-f14
-//      so screenshots dropped in chat appear under the Media filter.
-//   3. /api/dashboard/files?type=text&client={world}  — text_files / scaffold MDs
-//   4. /api/dashboard/project-files?slug={slug}  — disk-based files inside the
+//      (legacy bucket reader; slated for retirement in Leg 3).
+//   2. /api/dashboard/files?type=text&client={world}  — text_files / scaffold MDs
+//   3. /api/dashboard/project-files?slug={slug}  — disk-based files inside the
 //      project + mission folders (canon + research drops + ANY deliverable an
 //      agent creates in the mission home). Added R79-f15 (2026-05-25) so files
 //      agents write to disk during a session appear automatically — no upload
 //      step required. Bodies fetch via /api/dashboard/project-file?path=&raw=1
 //      which streams the bytes with the right Content-Type.
+//   4. rag-server /list-chat-files  — single source of truth for per-chat
+//      uploads. Walks the active chat's Uploads/ folder + merges legacy
+//      flat-root attachments from the messages table (R79-f23 Leg 2 R0/R1/R4).
+//      Replaces the prior /api/dashboard/files?type=uploads metadata-filter
+//      pattern which was retired in Leg 2 R2 (2026-05-30).
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -851,41 +854,6 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       })))
       .catch(() => [])
 
-    // Chat-uploaded files (RAG-tunnel storage, mined from the messages table).
-    // R79-f14 (2026-05-25): screenshots dropped in chat now appear under the
-    // Media filter without waiting on a tunnel-list endpoint or a storage
-    // migration.
-    // R79-f19 (2026-05-29): pass mission scope when the panel is drilled
-    // into a mission room so we only see files uploaded in THAT mission's
-    // chat. The agent_slug path is the 1:1-room case — caller passes
-    // `agentSlug` instead of `projectSlug` when scoped to an agent.
-    const uploadsScope = []
-    if (projectSlug) uploadsScope.push(`project=${encodeURIComponent(projectSlug)}`)
-    if (missionSlug) uploadsScope.push(`mission=${encodeURIComponent(missionSlug)}`)
-    const chatUploadsP = authFetch(
-      `/api/dashboard/files?type=uploads&client=${encodeURIComponent(world)}${uploadsScope.length ? '&' + uploadsScope.join('&') : ''}`
-    )
-      .then(r => r.ok ? r.json() : null)
-      .then(body => (body?.files || []).map(f => ({
-        name: f.name,
-        relativePath: f.relativePath || f.name,
-        url: f.url,
-        age: relativeAge(f.date),
-        kind: fileKind(f.name, f.mime),
-        size: f.size,
-        mime: f.mime,
-        _ts: f.date ? new Date(f.date).getTime() : 0,
-        // 2026-05-29 R79-f21: chat uploads come pre-filtered by the server
-        // (project= and mission= are applied in api/dashboard/files.js).
-        // Tag them so the client-side mission filter below doesn't drop them.
-        // Without this tag, the panel's missions/<slug>/ path-prefix filter
-        // would throw them away because chat uploads aren't filesystem files
-        // with that path shape.
-        _source: 'chat-upload',
-        missionSlug: missionSlug || null,
-      })))
-      .catch(() => [])
-
     // text_files / scaffold MDs (mission canon: VISION/CONTEXT/BUILD/RESEARCH).
     // These live under the project slug as their client_id. R10-11: use the
     // real filename path (e.g. "research/README.md") instead of wrapping under
@@ -979,14 +947,15 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
           .catch(() => [])
       : Promise.resolve([])
 
-    // R79-f23 Leg 2 R1 (2026-05-30): primary source for per-chat-folder uploads.
-    // The rag-server /list-chat-files endpoint walks one folder (the active
-    // chat's Uploads/) and returns the file list directly. This replaces the
-    // metadata-filter chatUploadsP source in subsequent rounds; for R1 it
-    // runs alongside as an A/B verification before R2 deletes the legacy
-    // sources. Uses the rag tunnel + Supabase JWT (same auth posture as
-    // /upload-file-binary). Empty list if folder doesn't exist (e.g. no
-    // uploads yet in this chat) — not an error.
+    // R79-f23 Leg 2 R1/R4 (2026-05-30): single source of truth for per-chat
+    // uploads. The rag-server /list-chat-files endpoint walks the active
+    // chat's Uploads/ folder AND merges legacy flat-root attachments from
+    // the messages table (R4 backcompat). Replaced the prior 4-source
+    // Promise.all metadata-filter pattern; R2 (also 2026-05-30) deleted
+    // the legacy chatUploadsP source + the R79-f20 server-side OR-NULL
+    // bandaid that fed it. Uses the rag tunnel + Supabase JWT (same auth
+    // posture as /upload-file-binary). Empty list when folder doesn't
+    // exist yet — not an error.
     const chatFilesP = projectSlug
       ? (async () => {
           try {
@@ -1022,31 +991,25 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
         })()
       : Promise.resolve([])
 
-    Promise.all([uploadsP, textP, chatUploadsP, projectFilesP, chatFilesP]).then(([uploads, texts, chatUploads, diskFiles, chatFolderFiles]) => {
+    Promise.all([uploadsP, textP, projectFilesP, chatFilesP]).then(([uploads, texts, diskFiles, chatFolderFiles]) => {
       if (cancelled) return
       // Project-scope text files (skip ones tagged for other projects).
       const scopedTexts = projectSlug
         ? texts.filter(t => !t.textProject || t.textProject === projectSlug)
         : texts
-      // Dedupe by relativePath — Storage uploads (freshly mirrored) shadow
-      // the events-table scaffold rows that carry the same canonical filename.
-      // Storage uploads come first, then chat uploads (RAG tunnel), then text
-      // scaffolds. We dedupe on URL primarily (chat uploads have unique RAG
-      // URLs) and on normalized name (so an upload named CONTEXT.md doesn't
-      // double-render alongside the scaffold).
+      // Dedupe by URL primarily (chat folder files carry unique RAG URLs) and
+      // on normalized name (so a chat-folder upload named CONTEXT.md doesn't
+      // double-render alongside the scaffold row that points at the same
+      // canonical filename).
       const seen = new Set()
       const seenUrls = new Set()
-      // Order matters: storage > chat uploads > disk files > scaffold rows.
-      // Disk files (R79-f15) cover the same canonical paths as the scaffold
-      // rows for VISION/CONTEXT/BUILD/RESEARCH, but with fresher mtimes and
-      // real on-disk locations — they win the dedup so the viewer reads the
-      // file the agent actually wrote to.
-      // R79-f23 Leg 2 R1: chatFolderFiles first — direct read of the active
-      // chat's Uploads/ folder is the source of truth for per-chat uploads.
-      // Existing sources stay alongside for one round so we can A/B before
-      // R2 drops the legacy paths. URL dedup catches the overlap (same file
-      // surfaced by both new endpoint and legacy chatUploads).
-      const merged = [...chatFolderFiles, ...uploads, ...chatUploads, ...diskFiles, ...scopedTexts].filter(f => {
+      // Order matters: chat-folder files first (source of truth for active
+      // chat uploads — walks the per-chat folder AND merges legacy flat-root
+      // attachments via the rag-server /list-chat-files endpoint), then
+      // Storage uploads, then disk files (R79-f15 — covers the same canonical
+      // paths as the scaffold rows for VISION/CONTEXT/BUILD/RESEARCH but with
+      // fresher mtimes and real on-disk locations), then scaffold text rows.
+      const merged = [...chatFolderFiles, ...uploads, ...diskFiles, ...scopedTexts].filter(f => {
         if (!f.url) return false
         if (seenUrls.has(f.url)) return false
         seenUrls.add(f.url)
@@ -1067,15 +1030,10 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
           .filter(f =>
             f.missionSlug === missionSlug ||
             (f.relativePath || '').startsWith(prefix) ||
-            // 2026-05-29 R79-f21: chat uploads are pre-filtered server-side
-            // by api/dashboard/files.js (project= AND mission= filters apply
-            // there with the permissive OR-NULL clause). Tagged with
-            // _source='chat-upload' upstream so we don't drop them just
-            // because they lack a filesystem path prefix.
-            f._source === 'chat-upload' ||
-            // R79-f23 Leg 2 R1: same posture for chat-folder reads from the
-            // rag-server walk endpoint. The endpoint scopes by chat folder,
-            // so any file it returns is in-scope by construction.
+            // R79-f23 Leg 2 R1: chat-folder reads come pre-scoped from the
+            // rag-server /list-chat-files endpoint — any file it returns is
+            // in-scope by construction. Tag check lets them pass even
+            // without a filesystem path prefix.
             f._source === 'chat-folder'
           )
           .map(f => ({
