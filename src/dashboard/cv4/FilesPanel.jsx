@@ -6,21 +6,26 @@
 //   FILE BROWSER     — folder tree (missions as folders, files inside)
 //     inline viewer: images/video/audio open below the clicked row
 //
-// Data sources:
-//   1. /api/dashboard/files?type=images&prefix={world}/{slug}/  — Supabase Storage uploads
-//      (legacy bucket reader; slated for retirement in Leg 3).
-//   2. /api/dashboard/files?type=text&client={world}  — text_files / scaffold MDs
-//   3. /api/dashboard/project-files?slug={slug}  — disk-based files inside the
-//      project + mission folders (canon + research drops + ANY deliverable an
-//      agent creates in the mission home). Added R79-f15 (2026-05-25) so files
-//      agents write to disk during a session appear automatically — no upload
-//      step required. Bodies fetch via /api/dashboard/project-file?path=&raw=1
-//      which streams the bytes with the right Content-Type.
-//   4. rag-server /list-chat-files  — single source of truth for per-chat
-//      uploads. Walks the active chat's Uploads/ folder + merges legacy
+// Data sources (post-R79-f23 Leg 2 R3, three sources):
+//   1. rag-server /list-chat-files  — single source of truth for per-chat
+//      uploads. Walks the active chat's Uploads/ folder AND merges legacy
 //      flat-root attachments from the messages table (R79-f23 Leg 2 R0/R1/R4).
-//      Replaces the prior /api/dashboard/files?type=uploads metadata-filter
-//      pattern which was retired in Leg 2 R2 (2026-05-30).
+//   2. /api/dashboard/project-files?slug={slug}  — disk-based files inside the
+//      project + mission folders (canon + research drops + ANY deliverable an
+//      agent creates in the mission home). Added R79-f15 (2026-05-25). Bodies
+//      fetch via /api/dashboard/project-file?path=&raw=1 which streams the
+//      bytes with the right Content-Type.
+//   3. /api/dashboard/files?type=text&client={world}  — text_files / scaffold
+//      MDs (events-table mirror; secondary to projectFilesP for canon docs).
+//
+// Retired sources:
+//   • /api/dashboard/files?type=images  — Supabase Storage bucket reader,
+//     retired R79-f23 Leg 2 R3 (2026-05-30). Pillar 7 forbids user files in
+//     Supabase. Bucket holds only stale canon-MD mirrors + one mp4 already
+//     surfaced by projectFilesP. See research/2026-05-30-r3-storage-bucket-audit.md.
+//   • /api/dashboard/files?type=uploads  — chat-upload metadata filter,
+//     retired R79-f23 Leg 2 R2 (2026-05-30). Functionality moved to source #1
+//     via the new rag-server walk endpoint + legacy-attachment merge.
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
@@ -837,23 +842,6 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
     setFiles([])
     setActiveFile(null)
 
-    // Project-scoped if a project is selected, else all world files.
-    const prefix = projectSlug ? `${world}/${projectSlug}/` : `${world}/`
-
-    // Recursive Supabase Storage walk (every file under prefix with full path).
-    const uploadsP = authFetch(`/api/dashboard/files?type=images&recursive=1&prefix=${encodeURIComponent(prefix)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(body => (body?.files || []).map(f => ({
-        name: f.name,
-        relativePath: f.relativePath || f.name,
-        url: f.url,
-        age: relativeAge(f.date),
-        kind: fileKind(f.name),
-        size: f.size,
-        _ts: f.date ? new Date(f.date).getTime() : 0,
-      })))
-      .catch(() => [])
-
     // text_files / scaffold MDs (mission canon: VISION/CONTEXT/BUILD/RESEARCH).
     // These live under the project slug as their client_id. R10-11: use the
     // real filename path (e.g. "research/README.md") instead of wrapping under
@@ -991,7 +979,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
         })()
       : Promise.resolve([])
 
-    Promise.all([uploadsP, textP, projectFilesP, chatFilesP]).then(([uploads, texts, diskFiles, chatFolderFiles]) => {
+    Promise.all([textP, projectFilesP, chatFilesP]).then(([texts, diskFiles, chatFolderFiles]) => {
       if (cancelled) return
       // Project-scope text files (skip ones tagged for other projects).
       const scopedTexts = projectSlug
@@ -1006,10 +994,11 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       // Order matters: chat-folder files first (source of truth for active
       // chat uploads — walks the per-chat folder AND merges legacy flat-root
       // attachments via the rag-server /list-chat-files endpoint), then
-      // Storage uploads, then disk files (R79-f15 — covers the same canonical
-      // paths as the scaffold rows for VISION/CONTEXT/BUILD/RESEARCH but with
-      // fresher mtimes and real on-disk locations), then scaffold text rows.
-      const merged = [...chatFolderFiles, ...uploads, ...diskFiles, ...scopedTexts].filter(f => {
+      // disk files (R79-f15 — covers canon MDs at VISION/CONTEXT/BUILD/RESEARCH
+      // with fresh mtimes and real on-disk paths plus every deliverable an
+      // agent wrote inside the project tree), then scaffold text rows
+      // (events-table mirror, secondary to disk).
+      const merged = [...chatFolderFiles, ...diskFiles, ...scopedTexts].filter(f => {
         if (!f.url) return false
         if (seenUrls.has(f.url)) return false
         seenUrls.add(f.url)
