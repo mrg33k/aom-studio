@@ -626,30 +626,34 @@ export default function ConradFoundation() {
           >
             <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-14 items-start">
               <div className="md:col-span-7">
-                <Kicker className="!text-[#E85D26]">Next step</Kicker>
+                <Kicker className="!text-[#E85D26]">Let's build it together</Kicker>
                 <h2 className="font-display-serif text-[44px] md:text-[72px] leading-[0.92] tracking-[-0.025em] text-[#F0ECE6] mt-5">
-                  We didn't bring you a deck.{' '}
-                  <em className="font-display-italic italic font-medium text-[#E85D26]">We built this page.</em>
+                  We move at your pace.{' '}
+                  <em className="font-display-italic italic font-medium text-[#E85D26]">On your priorities.</em>
                 </h2>
                 <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-7 leading-[1.65] max-w-[48ch]">
-                  One week with Patrik and the AOM team. Full activation plan for Water — expert filming, marketing assets, partnership pitch deck, sponsorship infrastructure.
+                  Mission Water has the model. AOM brings the activation engine. The best conversation is the one where we figure out together what matters most right now — and start there.
                 </p>
               </div>
 
               <div className="md:col-span-4 md:col-start-9 md:border-l md:border-[#F0ECE6]/[0.10] md:pl-10">
-                <Kicker className="!text-[#F0ECE6]/45 mb-5">What we need</Kicker>
+                <Kicker className="!text-[#F0ECE6]/45 mb-5">Where we could start</Kicker>
                 <ul className="space-y-5">
                   {[
-                    'An intro call with Nancy',
-                    'Access to NoBoxToolBox materials',
-                    'A week to get this right',
+                    'Build the platform first — get the cohort infrastructure ready',
+                    'Capture the experts — film the library before anything else',
+                    'Define the brand — how Mission Water looks and sounds to the world',
+                    'Build the partnership engine — sponsorship infrastructure and pitch deck',
                   ].map((item, i) => (
                     <li key={i} className="flex items-baseline gap-3">
-                      <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26] flex-shrink-0">{String(i + 1).padStart(2, '0')}</span>
-                      <span className="font-body text-[15px] text-[#F0ECE6]/75">{item}</span>
+                      <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26] flex-shrink-0 mt-0.5">→</span>
+                      <span className="font-body text-[14px] md:text-[15px] text-[#F0ECE6]/70 leading-[1.5]">{item}</span>
                     </li>
                   ))}
                 </ul>
+                <p className="font-body text-[13px] text-[#F0ECE6]/40 mt-8 leading-[1.6]">
+                  Nancy chooses what helps most. We're here to support the mission, not define it.
+                </p>
               </div>
             </div>
           </motion.div>
