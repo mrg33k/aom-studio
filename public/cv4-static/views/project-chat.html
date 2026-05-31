@@ -104,42 +104,6 @@
       color: var(--c-text2);
     }
 
-    .message-steps {
-      display: flex;
-      flex-direction: column;
-      gap: var(--sp-sm);
-      margin-top: var(--sp-md);
-      padding-top: var(--sp-md);
-      border-top: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .step {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--sp-sm);
-      font-size: var(--fs-sm);
-    }
-
-    .step-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--c-accent);
-      margin-top: 6px;
-      flex-shrink: 0;
-      animation: breathing-dot 2s ease-in-out infinite;
-    }
-
-    .step.done .step-dot {
-      background-color: var(--c-muted);
-      animation: none;
-    }
-
-    .step-text {
-      flex: 1;
-      line-height: var(--lh-normal);
-    }
-
     /* ─── Activity Indicator — corner:live-conversation R1 ──────────────── */
 
     #activity-indicator {
@@ -635,6 +599,7 @@
 
     /* ── Mail section (R2 corner:left-menu) ─────────────────────── */
     .mail-section {
+      margin-top: var(--sp-lg);
       margin-bottom: var(--sp-sm);
     }
     .mail-toggle {
@@ -919,19 +884,6 @@
       <span>Home</span>
     </a>
 
-    <!-- Mail section (R2 corner:left-menu) — closed by default, orange dot on new mail -->
-    <div class="mail-section" id="mail-section">
-      <button class="mail-toggle" id="mail-toggle-btn" onclick="mailToggle()" aria-expanded="false" aria-label="Mail inbox">
-        <span class="mail-icon">✉</span>
-        <span class="mail-label">Mail</span>
-        <span class="mail-unread-dot" id="mail-unread-dot" aria-label="New mail"></span>
-        <span class="mail-disc" id="mail-disc">▶</span>
-      </button>
-      <div class="mail-drawer" id="mail-drawer" role="region" aria-label="Recent mail">
-        <!-- seed rows; real rows injected by mailLoadPreview() -->
-      </div>
-    </div>
-
     <!-- New project CTA -->
     <button class="tree-new-root-btn" onclick="treeCreateProject()">
       <span>+</span>
@@ -944,6 +896,19 @@
          Save-in-place: create and rename update local state immediately. -->
     <div class="project-tree" id="project-tree" role="tree" aria-label="Projects and missions">
       <div class="tree-loading">Loading…</div>
+    </div>
+
+    <!-- Mail section (R2 corner:left-menu) — closed by default, orange dot on new mail -->
+    <div class="mail-section" id="mail-section">
+      <button class="mail-toggle" id="mail-toggle-btn" onclick="mailToggle()" aria-expanded="false" aria-label="Mail inbox">
+        <span class="mail-icon">✉</span>
+        <span class="mail-label">Mail</span>
+        <span class="mail-unread-dot" id="mail-unread-dot" aria-label="New mail"></span>
+        <span class="mail-disc" id="mail-disc">▶</span>
+      </button>
+      <div class="mail-drawer" id="mail-drawer" role="region" aria-label="Recent mail">
+        <!-- seed rows; real rows injected by mailLoadPreview() -->
+      </div>
     </div>
 
   </div>
@@ -1400,16 +1365,6 @@
       <div class="message assistant">
         <div>Good morning. Ambition has 5 active missions right now. Phase 2 keyword research is 60% complete, and the brand refresh is queued for your review. What would you like to focus on first?</div>
         <div class="message-timestamp">10:34 AM</div>
-        <div class="message-steps">
-          <div class="step done">
-            <div class="step-dot"></div>
-            <div class="step-text">Read Ambition CONTEXT and BUILD</div>
-          </div>
-          <div class="step done">
-            <div class="step-dot"></div>
-            <div class="step-text">Reviewed active missions</div>
-          </div>
-        </div>
       </div>
 
       <div class="message user">
@@ -1420,20 +1375,6 @@
       <div class="message assistant">
         <div>On it. I'll pull the latest brand files and compile team feedback into a single view for you.</div>
         <div class="message-timestamp">10:36 AM</div>
-        <div class="message-steps">
-          <div class="step done">
-            <div class="step-dot"></div>
-            <div class="step-text">Reading brand refresh VISION</div>
-          </div>
-          <div class="step">
-            <div class="step-dot"></div>
-            <div class="step-text">Pulling Steffen's feedback on direction</div>
-          </div>
-          <div class="step">
-            <div class="step-dot"></div>
-            <div class="step-text">Compiling design review notes</div>
-          </div>
-        </div>
       </div>
 
       <div class="message user">
@@ -1952,12 +1893,6 @@
         response.innerHTML = `
           <div>Got it, working on that now...</div>
           <div class="message-timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-          <div class="message-steps">
-            <div class="step">
-              <div class="step-dot"></div>
-              <div class="step-text">Processing your request</div>
-            </div>
-          </div>
         `;
         messagesEl.appendChild(response);
         messagesEl.scrollTop = messagesEl.scrollHeight;

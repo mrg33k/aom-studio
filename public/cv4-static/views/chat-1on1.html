@@ -286,59 +286,6 @@
     }
 
     /* Message steps */
-    .msg-steps {
-      margin-top: var(--sp-md);
-      padding-top: var(--sp-md);
-      border-top: 1px solid var(--c-border-faint);
-      display: flex;
-      flex-direction: column;
-      gap: var(--sp-sm);
-    }
-
-    .msg-step {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--sp-sm);
-      font-size: 12px;
-      color: var(--c-text2);
-      line-height: var(--lh-normal);
-      cursor: pointer;
-    }
-
-    .msg-step-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background-color: var(--c-muted);
-      flex-shrink: 0;
-      margin-top: 4px;
-      transition: background-color 0.2s ease;
-    }
-
-    .msg-step.active .msg-step-dot {
-      background-color: var(--c-accent);
-      animation: breathing-dot 2s ease-in-out infinite;
-    }
-
-    .msg-step.done .msg-step-dot {
-      background-color: var(--c-muted);
-    }
-
-    .msg-step-body { flex: 1; }
-    .msg-step-label { display: block; }
-
-    .msg-step-detail {
-      font-size: 11px;
-      color: var(--c-muted);
-      margin-top: 2px;
-      display: none;
-      line-height: 1.5;
-    }
-
-    .msg-step.expanded .msg-step-detail {
-      display: block;
-    }
-
     /* Day separator */
     .day-separator {
       display: flex;
@@ -1364,16 +1311,6 @@
           <div class="msg-bubble">
             <p>Morning. Ready for the brand refresh. What's the brief?</p>
           </div>
-          <div class="msg-steps">
-            <div class="msg-step done">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body"><span class="msg-step-label">Read Ambition CONTEXT + VISION</span></div>
-            </div>
-            <div class="msg-step done">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body"><span class="msg-step-label">Loaded previous brand guidelines</span></div>
-            </div>
-          </div>
         </div>
 
         <div class="msg user">
@@ -1395,30 +1332,6 @@
           <div class="msg-bubble">
             <p>On it. Scanning competitors and building 3 brand directions. ~12 minutes.</p>
             <p>Each direction: color palette, type stack, hero layout, and one-liner positioning statement.</p>
-          </div>
-          <div class="msg-steps">
-            <div class="msg-step done">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body">
-                <span class="msg-step-label">Read Ambition CONTEXT + VISION</span>
-                <span class="msg-step-detail">Confirmed: mechanical engineering agency, B2B, industrial clients, mid-market.</span>
-              </div>
-            </div>
-            <div class="msg-step active">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body">
-                <span class="msg-step-label">Scanning 6 competitor brands</span>
-                <span class="msg-step-detail">Palantir · Linear · Vercel · Flexport · Relativity · SpaceX. Extracting type stacks, color palettes, and layout patterns.</span>
-              </div>
-            </div>
-            <div class="msg-step">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body"><span class="msg-step-label">Building 3 direction moodboards</span></div>
-            </div>
-            <div class="msg-step">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body"><span class="msg-step-label">Writing positioning summaries</span></div>
-            </div>
           </div>
         </div>
 
