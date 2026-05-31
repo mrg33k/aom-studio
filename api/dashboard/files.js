@@ -346,13 +346,12 @@ export default async function handler(req, res) {
       // POST body (or fell through detectProjectFromText) get dropped from
       // every project view despite carrying the right metadata.
       if (project) baseFilters.push(`or=(project.eq.${encodeURIComponent(project)},and(project.is.null,metadata->>project_slug.eq.${encodeURIComponent(project)}))`)
-      // 2026-05-29: mission filter is permissive — show uploads where
-      // mission_slug matches the room AND uploads from this project that
-      // don't have a mission_slug at all (pre-scope uploads, drawer-less
-      // direct-URL uploads, anything the scope tag didn't reach). This
-      // keeps every file the user dropped into the chat visible in the
-      // room they uploaded it in, even if the scope metadata is missing.
-      if (mission) baseFilters.push(`or=(metadata->>mission_slug.eq.${encodeURIComponent(mission)},metadata->>mission_slug.is.null)`)
+      // 2026-05-30 R79-f23 Leg 2 R2: drop the permissive OR-NULL bandaid —
+      // it was the workaround for chat uploads that didn't carry mission
+      // scope. chatUploadsP was retired in the same round (FilesPanel.jsx
+      // now reads /list-chat-files), so this endpoint's only remaining
+      // consumers (if any) get the strict mission filter they need.
+      if (mission) baseFilters.push(`metadata->>mission_slug=eq.${encodeURIComponent(mission)}`)
       if (agent) baseFilters.push(`metadata->>agent_slug=eq.${encodeURIComponent(agent)}`)
 
       const urlSingle = `${SUPABASE_URL}/rest/v1/messages?${baseFilters.join('&')}&metadata->attachment=not.is.null`
