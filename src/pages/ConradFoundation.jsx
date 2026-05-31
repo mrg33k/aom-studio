@@ -140,7 +140,7 @@ export default function ConradFoundation() {
             className="font-body text-[17px] md:text-[20px] text-[#F0ECE6]/75 mt-10 leading-[1.6] max-w-[58ch]"
             {...fadeUp(0.2)}
           >
-            Twenty years building critical thinking in youth. Now she needs the world to find Mission Water — and AOM is the activation engine that makes that happen.
+            Twenty years. Critical thinking. Youth. Now the world needs to find Mission Water — and AOM is the activation engine that makes it happen.
           </motion.p>
 
           <motion.p
@@ -156,10 +156,10 @@ export default function ConradFoundation() {
       <section className="px-6 md:px-12 pb-24 md:pb-32">
         <div className="max-w-[1280px] mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-14 border-t border-[#F0ECE6]/[0.10] pt-14 md:pt-20">
-            <StatBlock value="20+" label="years building critical thinking in youth" delay={0.05} />
-            <StatBlock value="3" label="continents — Alabama to Afghanistan" delay={0.10} />
-            <StatBlock value="1st" label="of a curriculum line — Water, Space, Plants" delay={0.15} />
-            <StatBlock value="Conrad" label="Challenge validated the model" delay={0.20} />
+            <StatBlock value="20+" label="years. Critical thinking in youth." delay={0.05} />
+            <StatBlock value="3" label="continents. Alabama to Afghanistan." delay={0.10} />
+            <StatBlock value="1st" label="in the curriculum line. Water, Space, Plants." delay={0.15} />
+            <StatBlock value="Conrad" label="Challenge. The model is proven." delay={0.20} />
           </div>
         </div>
       </section>
@@ -206,10 +206,10 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">model.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.7]">
-              The Conrad Challenge taught critical thinking to students across continents — Alabama to Afghanistan — and proved the model works. Mission Water is the first of a curriculum line that scales to Space, Plants, and beyond.
+              The Conrad Challenge proved the model — Alabama to Afghanistan. Mission Water is first in a curriculum line: Water, Space, Plants.
             </p>
             <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/60 mt-5 leading-[1.7]">
-              Plants in space take the water curriculum further — hydroponics, closed-loop resource systems, food security in zero-gravity environments. Every lesson learned here is a survival skill for Mars.
+              Plants in space extend the water curriculum — hydroponics, closed-loop systems, food security in zero-g. Every lesson here is a survival skill for Mars.
             </p>
             <p className="font-display-serif text-[22px] md:text-[26px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6] pt-6 mt-2">
               Now she needs the world to find it.{' '}
@@ -229,7 +229,7 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">Water.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
-              Every student who completes the NoBoxToolBox Water Needs Your Voice program walks away shaped in five measurable ways. These aren't soft goals — they're the curriculum design.
+              Every student who completes Water Needs Your Voice walks away shaped in five ways. Not soft goals — curriculum design.
             </p>
           </motion.div>
 
@@ -237,31 +237,31 @@ export default function ConradFoundation() {
             <OutcomeCard
               n={1}
               title="Water Literate"
-              desc="Rivers, aquifers, climate realities — how water actually works. Students understand the science before they argue about the policy."
+              desc="Rivers, aquifers, climate realities. The science before the policy debate."
               delay={0.05}
             />
             <OutcomeCard
               n={2}
               title="Civically Ready"
-              desc="Water law, governance, public process — how decisions get made. Students learn to navigate the systems that shape their communities."
+              desc="Water law, governance, public process. How decisions get made — and how to navigate them."
               delay={0.10}
             />
             <OutcomeCard
               n={3}
               title="Culturally Grounded"
-              desc="Indigenous stewardship, rural knowledge, equity at the center. Water isn't just infrastructure — it's history, culture, and identity."
+              desc="Indigenous stewardship, rural knowledge, equity at the center. Water is history, culture, identity."
               delay={0.15}
             />
             <OutcomeCard
               n={4}
               title="Workforce Ready"
-              desc="STEM, infrastructure, conservation, public service — pathways open. The water crisis needs the next generation to step into it."
+              desc="STEM, infrastructure, conservation, public service — pathways into the crisis."
               delay={0.20}
             />
             <OutcomeCard
               n={5}
               title="Community Connected"
-              desc="Families engaged. Local conversations. Real stakes. Students bring the mission home — to parents, neighbors, city councils."
+              desc="Families engaged. Local conversations. Real stakes."
               delay={0.25}
             />
             <motion.div
@@ -272,7 +272,7 @@ export default function ConradFoundation() {
                 Water is first. Space, Plants, and beyond are next.
               </p>
               <p className="font-body text-[13px] text-[#F0ECE6]/50 mt-4 leading-[1.6]">
-                The NoBoxToolBox model scales to every major challenge the next generation will inherit.
+                The NoBoxToolBox model scales to every challenge the next generation inherits.
               </p>
             </motion.div>
           </div>
@@ -305,11 +305,11 @@ export default function ConradFoundation() {
 
           <div className="md:col-span-8 md:col-start-6">
             {[
-              { title: 'Week 1–2: The water system.', body: 'Rivers, aquifers, climate. Urban supply and scarcity. The Colorado River as a living case study. Students learn the system before they argue about it.' },
-              { title: 'Week 3: Agriculture vs. everything.', body: 'Farming pulls the most water. Industry pulls the second-most. Cities pull the third. Students dig into who gets to decide when there isn\'t enough.' },
-              { title: 'Week 4: The expert library.', body: 'Pre-recorded sessions from water scientists, engineers, indigenous leaders, and policy makers. Available on-demand. Filmed by AOM, not a Zoom recording.' },
-              { title: 'Week 5: The dilemma round.', body: 'Phoenix farmers vs. Vegas casinos. Both pull from the Colorado. Whose claim is stronger? Students argue both sides in 90 seconds. Class votes.' },
-              { title: 'Week 6: Showcase.', body: 'Students present their local water issue and proposed solution. Families, teachers, community members are in the room. Real stakes.' },
+              { title: 'Week 1–2: The water system.', body: 'Rivers, aquifers, climate. Urban supply and scarcity. The Colorado River as the case study. Learn the system before arguing about it.' },
+              { title: 'Week 3: Agriculture vs. everything.', body: 'Farming, industry, cities — who gets the water? Students dig into who decides when there isn\'t enough.' },
+              { title: 'Week 4: The expert library.', body: 'Water scientists, engineers, indigenous leaders, policy makers — on-demand. Filmed by AOM, not a Zoom recording.' },
+              { title: 'Week 5: The dilemma round.', body: 'Phoenix farmers vs. Vegas casinos. Both pull from the Colorado. Whose claim is stronger? 90 seconds. Class votes.' },
+              { title: 'Week 6: Showcase.', body: 'Students present their local water issue and solution. Families, teachers, community in the room. Real stakes.' },
             ].map((s, i) => (
               <ProcessStep key={i} n={i} title={s.title} body={s.body} />
             ))}
@@ -330,7 +330,7 @@ export default function ConradFoundation() {
             </motion.div>
             <motion.div className="md:col-span-6" {...fadeUp(0.12)}>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 leading-[1.7]">
-                Water scarcity on Earth is the training ground for the hardest problem in space: how do you purify, recycle, and sustain every drop when there's no more to find? The Mission Water curriculum doesn't stop at Earth's edge. Space exploration and Mars habitation require everything students learn here — and then some.
+                Water scarcity on Earth is the training ground for the hardest problem in space — how do you purify, recycle, and sustain every drop when there's no more? Mission Water doesn't stop at Earth's edge. Mars habitation requires everything learned here, and more.
               </p>
               <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/55 mt-5 leading-[1.65]">
                 Water is the first chapter. Space is where the stakes get existential.
@@ -350,7 +350,7 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">Reusable for everything after.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
-              The Masterclass Platform is the infrastructure every NoBoxToolBox course runs on — expert library, cohort management, student submissions, and live sessions. Water builds it. Space and Plants inherit it.
+              Expert library, cohort management, submissions, live sessions — the infrastructure every NoBoxToolBox course runs on. Water builds it. Space and Plants inherit it.
             </p>
           </motion.div>
 
@@ -468,7 +468,7 @@ export default function ConradFoundation() {
                     Argue your case. Upload your proof.
                   </h3>
                   <p className="font-body text-[14px] text-[#F0ECE6]/55 mb-8 max-w-[50ch]">
-                    Students research a local water issue, build a proposal, and present it. The platform handles the submission, the cohort handles the critique.
+                    Research a local water issue. Build a proposal. Present it. The platform handles the submission, the cohort handles the critique.
                   </p>
                   <div className="border border-dashed border-[#F0ECE6]/[0.15] rounded-xl px-8 py-12 text-center">
                     <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/35 mb-2">Video, doc, or deck</p>
@@ -499,25 +499,25 @@ export default function ConradFoundation() {
               className="font-body text-[17px] md:text-[19px] text-[#F0ECE6]/80 leading-[1.7] mb-10"
               {...fadeUp(0.1)}
             >
-              The curriculum exists. The model is proven. What Mission Water needs now is an activation engine — the marketing, the media, the expert capture, and the partnership infrastructure that makes the world find it.
+              The curriculum exists. The model is proven. Mission Water needs one thing now: an activation engine — marketing, media, expert capture, partnership infrastructure.
             </motion.p>
 
             <ul className="border border-[#F0ECE6]/[0.10] rounded-2xl bg-[#F0ECE6]/[0.02] px-6 md:px-8">
               <Deliverable
                 title="Expert filming, done right."
-                desc="Standard Zoom recordings are washed out, awkward, and gone after the call. AOM films experts lit, framed, and archived — reusable forever in the platform library."
+                desc="Standard Zoom recordings are washed out and gone. AOM films experts lit, framed, archived — reusable in the platform library."
               />
               <Deliverable
                 title="Critical thinking dilemmas, built in."
-                desc="Phoenix farmers vs. Vegas casinos. Both pull from the Colorado River. Students argue both sides in 90 seconds. Class votes. This is the core pedagogical engine AOM helps design and produce."
+                desc="Phoenix farmers vs. Vegas casinos. Both pull from the Colorado. 90 seconds. Class votes. AOM designs and produces this engine."
               />
               <Deliverable
                 title="Partnership infrastructure, on-brand."
-                desc="Sponsors put their name on the platform, an expert, a course, or a dilemma. AOM builds the pitch deck, the activation assets, and the visual identity that makes a sponsor say yes."
+                desc="Sponsors put their name on the platform, an expert, a course, or a dilemma. AOM builds the pitch deck, assets, and identity that makes a sponsor say yes."
               />
               <Deliverable
                 title="The curriculum line, scaled."
-                desc="Water is first. AOM builds the marketing activation model that carries it — then replicates it when Space, Plants, and the next challenge come online."
+                desc="Water is first. AOM builds the activation model — and replicates it when Space, Plants, and the next challenge arrive."
               />
             </ul>
           </div>
@@ -632,7 +632,7 @@ export default function ConradFoundation() {
                   <em className="font-display-italic italic font-medium text-[#E85D26]">We built this page.</em>
                 </h2>
                 <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-7 leading-[1.65] max-w-[48ch]">
-                  One week with Patrik and the AOM team. We come back with the full activation plan for Water — expert filming, marketing assets, partnership pitch deck, and the sponsorship infrastructure.
+                  One week with Patrik and the AOM team. Full activation plan for Water — expert filming, marketing assets, partnership pitch deck, sponsorship infrastructure.
                 </p>
               </div>
 
