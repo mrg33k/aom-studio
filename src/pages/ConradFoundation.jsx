@@ -11,7 +11,8 @@ import { motion } from 'framer-motion';
  *   - Framer Motion fadeUp animations on scroll
  *
  * R2 — 2026-06-01 — rescoped to platform-first pitch + video options
- * Structure: Space hook → 20 years → Water is first → Platform → Video (AOM or yours) → Next steps
+ * R3 — 2026-06-01 — added Budget section (no price, open-ended question)
+ * Structure: Space hook → 20 years → Water is first → Platform → Video (AOM or yours) → Budget → Next steps
  */
 
 // ─── Animation helper ─────────────────────────────────────────────────────────
@@ -385,6 +386,39 @@ export default function ConradFoundation() {
                   </li>
                 ))}
               </ul>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ──── BUDGET ────────────────────────────────────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20 items-start">
+
+            <motion.div className="md:col-span-5" {...fadeUp()}>
+              <Kicker>Budget</Kicker>
+              <h2 className="font-display-serif text-[42px] md:text-[72px] leading-[0.93] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+                No price.{' '}
+                <em className="font-display-italic italic font-medium text-[#E85D26]">A question.</em>
+              </h2>
+            </motion.div>
+
+            <motion.div className="md:col-span-6 md:col-start-7" {...fadeUp(0.1)}>
+              <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 leading-[1.7] mb-10">
+                The Conrad Foundation is built on partnerships and sponsorships.
+                Mission Water's budget is still being shaped — scope, structure, what it needs to launch right.
+                That's the stage you're in. And that's exactly where this conversation belongs — before anyone locks in a number.
+              </p>
+              <div className="border border-[#E85D26]/25 rounded-xl bg-[#E85D26]/[0.03] p-8 md:p-10">
+                <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6]">
+                  Based on what you see here — what do you think this partnership is worth to Mission Water?
+                </p>
+                <p className="font-body text-[14px] text-[#F0ECE6]/50 mt-6 leading-[1.6]">
+                  We're not here with a quote. We want to hear your read on what this means to the Foundation and the program. That's the starting point.
+                </p>
+              </div>
             </motion.div>
 
           </div>
