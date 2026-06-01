@@ -407,9 +407,9 @@ export default function ConradFoundation() {
 
             <motion.div className="md:col-span-6 md:col-start-7" {...fadeUp(0.1)}>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 leading-[1.7] mb-10">
-                The Conrad Foundation is built on partnerships and sponsorships.
-                Mission Water's budget is still being shaped — scope, structure, what it needs to launch right.
-                That's the stage you're in. And that's exactly where this conversation belongs — before anyone locks in a number.
+                The Conrad Foundation is built on partnerships and sponsorships, and for a program like Mission Water,
+                scope and structure are still being defined. Budget grows naturally from that process.
+                This felt like the right moment to reach out — while there's still room to shape it together.
               </p>
               <div className="border border-[#E85D26]/25 rounded-xl bg-[#E85D26]/[0.03] p-8 md:p-10">
                 <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6]">
