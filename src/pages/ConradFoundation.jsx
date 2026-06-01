@@ -110,9 +110,12 @@ export default function ConradFoundation() {
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.7] max-w-[52ch]">
               The Conrad Challenge proved it — Alabama to Afghanistan. Mission Water is first.
             </p>
+            <p className="font-body text-[13px] text-[#F0ECE6]/40 mt-5 leading-[1.6] max-w-[48ch]">
+              Founded in honor of Pete Conrad — astronaut, Apollo 12, the third man to walk on the moon.
+            </p>
             <div className="grid grid-cols-3 gap-8 mt-12 border-t border-[#F0ECE6]/[0.08] pt-10">
               <StatBlock value="20+" label="years building the model." delay={0.05} />
-              <StatBlock value="3" label="continents. Alabama to Afghanistan." delay={0.10} />
+              <StatBlock value="many" label="continents. Alabama to Afghanistan." delay={0.10} />
               <StatBlock value="Conrad" label="Challenge. The proof." delay={0.15} />
             </div>
           </motion.div>
@@ -205,7 +208,7 @@ export default function ConradFoundation() {
             <Kicker>What we're offering</Kicker>
             <h2 className="font-display-serif text-[42px] md:text-[72px] leading-[0.93] tracking-[-0.025em] text-[#F0ECE6] mt-6">
               A platform built for{' '}
-              <em className="font-display-italic italic font-medium text-[#E85D26]">her courses.</em>
+              <em className="font-display-italic italic font-medium text-[#E85D26]">these courses.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
               Expert library, cohort management, live sessions, submissions. Built for Water. Reusable for Space, Plants, and beyond.
