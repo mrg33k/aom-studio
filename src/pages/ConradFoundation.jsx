@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
  *
  * R2 — 2026-06-01 — rescoped to platform-first pitch + video options
  * R3 — 2026-06-01 — added Budget section (no price, open-ended question)
+ * R4 — 2026-06-01 — tightened all copy (cut wordiness, 1-2 sentences per block)
  * Structure: Space hook → 20 years → Water is first → Platform → Video (AOM or yours) → Budget → Next steps
  */
 
@@ -107,7 +108,7 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">model.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.7] max-w-[52ch]">
-              The Conrad Challenge proved it — Alabama to Afghanistan. Critical thinking as diplomacy. Mission Water is the first course in a curriculum Nancy has been building for twenty years.
+              The Conrad Challenge proved it — Alabama to Afghanistan. Mission Water is first.
             </p>
             <div className="grid grid-cols-3 gap-8 mt-12 border-t border-[#F0ECE6]/[0.08] pt-10">
               <StatBlock value="20+" label="years building the model." delay={0.05} />
@@ -156,7 +157,7 @@ export default function ConradFoundation() {
                 <em className="font-display-italic italic font-medium text-[#E85D26]">first.</em>
               </h2>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 mt-8 leading-[1.7]">
-                What happens when there's no more water? That's the question this course is built around. Water launches the curriculum. Space and Plants follow.
+                What happens when there's no more water? Water launches the curriculum. Space and Plants follow.
               </p>
             </motion.div>
 
@@ -207,7 +208,7 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">her courses.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
-              Expert library, cohort management, live sessions, student submissions — the infrastructure Mission Water runs on. Built for Water. Reusable for Space, Plants, and every course after.
+              Expert library, cohort management, live sessions, submissions. Built for Water. Reusable for Space, Plants, and beyond.
             </p>
           </motion.div>
 
@@ -342,7 +343,7 @@ export default function ConradFoundation() {
                   <em className="font-display-italic italic text-[#E85D26]">it.</em>
                 </h3>
                 <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/70 leading-[1.7]">
-                  We film Nancy and every expert — lit, framed, MasterClass-tier. Each session becomes a library asset that lives beyond the cohort. No Zoom recordings. No awkward angles. A library that compounds with every course.
+                  We film Nancy and every expert — lit, framed, MasterClass-tier. Each session builds the library.
                 </p>
               </div>
               <ul className="space-y-3 mt-auto pt-6 border-t border-[#F0ECE6]/[0.10]">
@@ -371,7 +372,7 @@ export default function ConradFoundation() {
                   <em className="font-display-italic italic text-[#E85D26]">video.</em>
                 </h3>
                 <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/70 leading-[1.7]">
-                  Already have footage? Existing recordings, talks, sessions — we structure it, host it, and make it work on the platform. You own the content. We build the infrastructure around it.
+                  Already have footage? We structure it, host it on the platform. You own the content. We build around it.
                 </p>
               </div>
               <ul className="space-y-3 mt-auto pt-6 border-t border-[#F0ECE6]/[0.10]">
@@ -402,7 +403,7 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">your pace.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65] max-w-[52ch]">
-              There's no single right starting point. The best conversation is the one where we figure out together what helps Mission Water most right now.
+              What helps Mission Water most. That's the conversation.
             </p>
           </motion.div>
 
@@ -411,17 +412,17 @@ export default function ConradFoundation() {
               {
                 n: '01',
                 title: 'Talk through the platform.',
-                desc: 'See how the infrastructure would work for Mission Water — what a cohort looks like, how the expert library runs, how students submit.',
+                desc: 'See what a cohort looks like, how the library runs, how students submit.',
               },
               {
                 n: '02',
                 title: 'Explore video options.',
-                desc: "Walk through what fits — whether we produce it together or you bring existing footage. No commitment. Just the conversation.",
+                desc: "Walk through what fits — produce it together or bring your own footage. No commitment.",
               },
               {
                 n: '03',
-                title: 'Discuss how we can best support the mission.',
-                desc: 'Open conversation. No predetermined scope. What does Mission Water need right now, and how can AOM help?',
+                title: 'How we can help.',
+                desc: 'Open conversation. What does Mission Water need right now?',
               },
             ].map((card, i) => (
               <motion.div
@@ -457,16 +458,14 @@ export default function ConradFoundation() {
 
             <motion.div className="md:col-span-6 md:col-start-7" {...fadeUp(0.1)}>
               <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 leading-[1.7] mb-10">
-                The Conrad Foundation is built on partnerships and sponsorships, and for a program like Mission Water,
-                scope and structure are still being defined. Budget grows naturally from that process.
-                This felt like the right moment to reach out — while there's still room to shape it together.
+                Scope and structure are still open. Now's the moment to shape it together.
               </p>
               <div className="border border-[#E85D26]/25 rounded-xl bg-[#E85D26]/[0.03] p-8 md:p-10">
                 <p className="font-display-serif text-[22px] md:text-[30px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6]">
                   Based on what you see here — what do you think this partnership is worth to Mission Water?
                 </p>
                 <p className="font-body text-[14px] text-[#F0ECE6]/50 mt-6 leading-[1.6]">
-                  We're not here with a quote. We want to hear your read on what this means to the Foundation and the program. That's the starting point.
+                  That's the starting point.
                 </p>
               </div>
             </motion.div>
