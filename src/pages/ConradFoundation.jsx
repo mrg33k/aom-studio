@@ -84,7 +84,7 @@ export default function ConradFoundation() {
           >
             The future of water
             <br />
-            is in{' '}
+            in{' '}
             <em className="font-display-italic italic font-medium text-[#E85D26]">space.</em>
           </motion.h1>
 
