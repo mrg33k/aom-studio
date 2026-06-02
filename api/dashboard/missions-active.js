@@ -67,15 +67,17 @@ export default async function handler(req, res) {
   // Pull last_message_at per mission, scoped to recent activity.
   const missionLastSeenAt = new Map()
   try {
+    // messages timestamp column is `timestamp`, not `created_at` (querying
+    // created_at 400s and silently zeroes out recency). See missions-tree.js.
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?select=created_at,metadata&metadata->>mission_slug=not.is.null&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=500`,
+      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,metadata&metadata->>mission_slug=not.is.null&timestamp=gte.${encodeURIComponent(sinceIso)}&order=timestamp.desc&limit=500`,
       { headers: supabaseHeaders() },
     )
     if (r.ok) {
       const rows = await r.json()
       for (const row of (rows || [])) {
         const rawSlug = row?.metadata?.mission_slug
-        const at = row?.created_at
+        const at = row?.timestamp
         if (!rawSlug || !at) continue
         const slug = canonicalizeMissionSlug(rawSlug, MISSION_SLUG_LOOKUP)
         if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)

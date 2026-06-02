@@ -123,15 +123,20 @@ export default async function handler(req, res) {
   const missionLastSeenAt = new Map()
   try {
     const sinceIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    // NB: the messages table's timestamp column is `timestamp`, not
+    // `created_at`. Querying created_at returns a 400 (column does not
+    // exist), the r.ok guard swallows it, and every mission ends up with
+    // last_message_at=null — which silently defeats the recency sort in
+    // both the project list and the mission list. Use `timestamp`.
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?select=created_at,metadata&metadata->>mission_slug=not.is.null&created_at=gte.${encodeURIComponent(sinceIso)}&order=created_at.desc&limit=500`,
+      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,metadata&metadata->>mission_slug=not.is.null&timestamp=gte.${encodeURIComponent(sinceIso)}&order=timestamp.desc&limit=500`,
       { headers: supabaseHeaders() },
     )
     if (r.ok) {
       const rows = await r.json()
       for (const row of (rows || [])) {
         const rawSlug = row?.metadata?.mission_slug
-        const at = row?.created_at
+        const at = row?.timestamp
         if (!rawSlug || !at) continue
         const slug = canonicalizeMissionSlug(rawSlug, MISSION_SLUG_LOOKUP)
         if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)

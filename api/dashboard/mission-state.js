@@ -98,14 +98,16 @@ async function lastMessageStats(canonicalSlug, rawSlug) {
     const forms = rawSlug && rawSlug !== canonicalSlug ? [canonicalSlug, rawSlug] : [canonicalSlug]
     const inExpr = '(' + forms.map(s => '"' + s + '"').join(',') + ')'
     const filter = `metadata->>mission_slug=in.${encodeURIComponent(inExpr)}`
+    // messages timestamp column is `timestamp`, not `created_at`. See
+    // missions-tree.js — querying created_at 400s and returns null.
     const newestR = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?select=created_at&${filter}&order=created_at.desc&limit=1`,
+      `${SUPABASE_URL}/rest/v1/messages?select=timestamp&${filter}&order=timestamp.desc&limit=1`,
       { headers: supabaseHeaders() },
     )
     let last_message_at = null
     if (newestR.ok) {
       const rows = await newestR.json()
-      last_message_at = rows?.[0]?.created_at || null
+      last_message_at = rows?.[0]?.timestamp || null
     }
     let message_count = 0
     try {
