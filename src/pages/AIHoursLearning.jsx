@@ -776,6 +776,9 @@ function ClientView({ client, onLogout, onClientUpdate }) {
   const [advancing, setAdvancing] = useState(false)
   const [advanceConfirmed, setAdvanceConfirmed] = useState(false)
   const [advanceError, setAdvanceError] = useState(null)
+  const [showContact, setShowContact] = useState(false)
+  const [contactMessage, setContactMessage] = useState('')
+  const [contactSent, setContactSent] = useState(false)
   const currentSession = client.current_session || 1
   const completedCount = currentSession - 1
   const progressPct = Math.round((completedCount / 5) * 100)
@@ -814,6 +817,20 @@ function ClientView({ client, onLogout, onClientUpdate }) {
       setAdvanceError('Something went wrong. Please try again.')
     }
     setAdvancing(false)
+  }
+
+  function handleContactSubmit(e) {
+    e.preventDefault()
+    if (!contactMessage.trim()) return
+    const subject = encodeURIComponent(`AI Hours Question — ${client.client_name}`)
+    const body = encodeURIComponent(`Hi Courtney,\n\n${contactMessage.trim()}\n\n— ${client.client_name}`)
+    window.location.href = `mailto:hello@aom-inhouse.com?subject=${subject}&body=${body}`
+    setContactSent(true)
+    setTimeout(() => {
+      setShowContact(false)
+      setContactMessage('')
+      setContactSent(false)
+    }, 3000)
   }
 
   return (
@@ -1043,14 +1060,100 @@ function ClientView({ client, onLogout, onClientUpdate }) {
             <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 4 }}>Questions between sessions?</div>
             <div style={{ fontSize: 14, color: INK_MUTED }}>AOM is here to help. Reach out anytime.</div>
           </div>
-          <a
-            href="mailto:hello@aom-inhouse.com"
-            style={{ ...styles.btn, textDecoration: 'none' }}
+          <button
+            onClick={() => setShowContact(true)}
+            style={{ ...styles.btn }}
           >
             Contact AOM
-          </a>
+          </button>
         </div>
       </div>
+
+      {/* ── Contact Modal ── */}
+      {showContact && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(26,26,22,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9000, padding: 24,
+          }}
+          onClick={() => { setShowContact(false); setContactMessage(''); setContactSent(false) }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 12, padding: 40, maxWidth: 460, width: '100%',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {contactSent ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
+                    <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: GREEN_CHECK }}>Message sent</span>
+                </div>
+                <p style={{ fontSize: 14, color: INK_MUTED, margin: 0 }}>
+                  Your email app should have opened. AOM will be in touch soon.
+                </p>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 20, fontWeight: 700, color: INK, marginBottom: 8 }}>Send AOM a message</div>
+                <p style={{ fontSize: 14, color: INK_MUTED, marginTop: 0, marginBottom: 24 }}>
+                  Have a question between sessions? Reach out and we'll get back to you.
+                </p>
+                <form onSubmit={handleContactSubmit}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: INK, marginBottom: 8 }}>
+                    Your message
+                  </label>
+                  <textarea
+                    value={contactMessage}
+                    onChange={e => setContactMessage(e.target.value)}
+                    placeholder="What's on your mind?"
+                    rows={5}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 6,
+                      padding: '12px 14px',
+                      fontSize: 14,
+                      color: INK,
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                    }}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                    <button
+                      type="submit"
+                      disabled={!contactMessage.trim()}
+                      style={{
+                        ...styles.btn,
+                        opacity: contactMessage.trim() ? 1 : 0.5,
+                        cursor: contactMessage.trim() ? 'pointer' : 'default',
+                      }}
+                    >
+                      Send message
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowContact(false); setContactMessage('') }}
+                      style={{ ...styles.btn, ...styles.btnSecondary }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1068,6 +1171,8 @@ function TeamView({ user, onLogout }) {
   const [addingSaving, setAddingSaving] = useState(false)
   const [addError, setAddError] = useState(null)
   const [newClientConfirm, setNewClientConfirm] = useState(null)
+  const [markStates, setMarkStates] = useState({}) // { [clientId]: 'loading' | 'done' }
+  const [markConfirm, setMarkConfirm] = useState(null) // { client_name, new_session }
 
   const WORDLIST = ['APEX', 'NOVA', 'EDGE', 'PEAK', 'CORE', 'GRID', 'LINK', 'MARK', 'NEXT', 'PLUS', 'RISE', 'STAR', 'BOLD', 'CALM', 'FLUX', 'GLOW', 'IRON', 'JADE', 'KEEN', 'LOFT', 'MINT', 'NODE', 'OPEN', 'PORT', 'REEF', 'SAGE', 'TIDE', 'VAST', 'WAVE', 'ZINC', 'ECHO', 'FAST', 'HERO', 'JUMP', 'LEAD', 'ONYX', 'PINE', 'RUBY', 'SAFE', 'WARD']
 
@@ -1125,6 +1230,28 @@ function TeamView({ user, onLogout }) {
     setAddForm({ name: '', email: '', notes: '' })
     setAddError(null)
     setNewClientConfirm(null)
+  }
+
+  async function handleMarkComplete(client) {
+    if (client.current_session >= 5) return
+    const clientId = client.id
+    setMarkStates(prev => ({ ...prev, [clientId]: 'loading' }))
+    try {
+      const newSession = client.current_session + 1
+      const { error } = await supabase
+        .from('ai_hours_clients')
+        .update({ current_session: newSession })
+        .eq('id', clientId)
+      if (error) throw error
+      setMarkConfirm({ client_name: client.client_name, new_session: newSession })
+      await loadClients()
+      setTimeout(() => {
+        setMarkStates(prev => { const s = { ...prev }; delete s[clientId]; return s })
+        setMarkConfirm(null)
+      }, 6000)
+    } catch {
+      setMarkStates(prev => { const s = { ...prev }; delete s[clientId]; return s })
+    }
   }
 
   function toggleFacil(sessionNum, key) {
@@ -1398,6 +1525,7 @@ function TeamView({ user, onLogout }) {
                       <th style={styles.th}>Email</th>
                       <th style={styles.th}>Access Code</th>
                       <th style={styles.th}>Progress</th>
+                      <th style={styles.th}>Action</th>
                       <th style={styles.th}>Notes</th>
                     </tr>
                   </thead>
@@ -1454,6 +1582,29 @@ function TeamView({ user, onLogout }) {
                             </span>
                           </div>
                         </td>
+                        <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
+                          {client.current_session >= 5 ? (
+                            <span style={{ fontSize: 12, color: GREEN_CHECK, fontWeight: 600 }}>✓ Complete</span>
+                          ) : (
+                            <button
+                              onClick={() => handleMarkComplete(client)}
+                              disabled={markStates[client.id] === 'loading'}
+                              style={{
+                                fontSize: 12,
+                                padding: '6px 14px',
+                                background: markStates[client.id] === 'loading' ? BORDER : AOM_ORANGE,
+                                color: markStates[client.id] === 'loading' ? INK_MUTED : '#fff',
+                                border: 'none',
+                                borderRadius: 4,
+                                cursor: markStates[client.id] === 'loading' ? 'default' : 'pointer',
+                                fontWeight: 600,
+                                transition: 'background 0.15s',
+                              }}
+                            >
+                              {markStates[client.id] === 'loading' ? 'Saving…' : 'Mark Complete'}
+                            </button>
+                          )}
+                        </td>
                         <td style={{ ...styles.td, fontSize: 13, color: INK_MUTED, maxWidth: 200 }}>
                           {client.notes || '—'}
                         </td>
@@ -1464,9 +1615,26 @@ function TeamView({ user, onLogout }) {
               </div>
             )}
 
-            <div style={{ marginTop: 24, fontSize: 13, color: INK_MUTED }}>
-              To update a client's session progress or add notes, update their record directly in the Supabase dashboard or ask Elon to run the update.
-            </div>
+            {markConfirm && (
+              <div style={{
+                marginTop: 20,
+                background: '#F0FBF4',
+                border: `1px solid ${GREEN_CHECK}`,
+                borderRadius: 8,
+                padding: '14px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}>
+                <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
+                  <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
+                  <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span style={{ fontSize: 14, color: GREEN_CHECK, fontWeight: 600 }}>
+                  Session {markConfirm.new_session} unlocked for {markConfirm.client_name}
+                </span>
+              </div>
+            )}
           </>
         )}
       </div>
