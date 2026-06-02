@@ -671,12 +671,18 @@ function SessionStatusIcon({ status }) {
 
 // ─── Access Code Gate ─────────────────────────────────────────────────────────
 
-function AccessCodeGate({ onSuccess }) {
+function AccessCodeGate({ onClientSuccess, onAdminSuccess }) {
+  const [loginMode, setLoginMode] = useState('client') // 'client' | 'admin'
+  // Client fields
   const [code, setCode] = useState('')
+  // Admin fields
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function handleSubmit(e) {
+  async function handleClientSubmit(e) {
     e.preventDefault()
     if (!code.trim()) return
     setLoading(true)
@@ -698,11 +704,52 @@ function AccessCodeGate({ onSuccess }) {
 
       // Store in localStorage for session persistence
       localStorage.setItem('ai_hours_client', JSON.stringify(data))
-      onSuccess(data)
+      onClientSuccess(data)
     } catch {
       setError('Something went wrong. Please try again.')
     }
     setLoading(false)
+  }
+
+  async function handleAdminSubmit(e) {
+    e.preventDefault()
+    if (!email.trim() || !password) return
+    setLoading(true)
+    setError(null)
+
+    try {
+      if (!supabase) throw new Error('Service unavailable')
+      const { data, error: authErr } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+
+      if (authErr || !data?.user) {
+        setError('Invalid email or password. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      if (!AOM_TEAM_EMAILS.includes(data.user.email)) {
+        await supabase.auth.signOut()
+        setError('This account does not have AOM team access. Use your client access code instead.')
+        setLoading(false)
+        return
+      }
+
+      onAdminSuccess(data.user)
+    } catch {
+      setError('Something went wrong. Please try again.')
+    }
+    setLoading(false)
+  }
+
+  function switchMode(newMode) {
+    setLoginMode(newMode)
+    setError(null)
+    setCode('')
+    setEmail('')
+    setPassword('')
   }
 
   return (
@@ -719,50 +766,143 @@ function AccessCodeGate({ onSuccess }) {
       {/* Gate */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
         <div style={{ maxWidth: 440, width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ ...styles.heroEyebrow, color: AOM_ORANGE, textAlign: 'center', marginBottom: 16 }}>
-              AI Hours Consulting
-            </div>
-            <h1 style={{
-              fontFamily: '"Instrument Serif", Georgia, serif',
-              fontSize: 36,
-              fontWeight: 400,
-              color: INK,
-              marginBottom: 16,
-              letterSpacing: '-0.02em',
-            }}>
-              Welcome back
-            </h1>
-            <p style={{ fontSize: 16, color: INK_MUTED, lineHeight: 1.6 }}>
-              Enter the access code AOM provided to access your learning materials.
-            </p>
+
+          {/* Mode tabs */}
+          <div style={{
+            display: 'flex',
+            borderRadius: 8,
+            border: `1px solid ${BORDER}`,
+            overflow: 'hidden',
+            marginBottom: 40,
+          }}>
+            {[
+              { key: 'client', label: 'I have a client code' },
+              { key: 'admin', label: 'AOM Team login' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => switchMode(tab.key)}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderRight: tab.key === 'client' ? `1px solid ${BORDER}` : 'none',
+                  background: loginMode === tab.key ? AOM_ORANGE : '#fff',
+                  color: loginMode === tab.key ? '#fff' : INK_MUTED,
+                  fontSize: 13,
+                  fontWeight: loginMode === tab.key ? 600 : 400,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <input
-                type="text"
-                value={code}
-                onChange={e => setCode(e.target.value)}
-                placeholder="AOM-XXXX-000"
-                style={styles.input}
-                autoFocus
-                disabled={loading}
-              />
-            </div>
-            {error && <div style={styles.errorBox}>{error}</div>}
-            <button
-              type="submit"
-              style={{ ...styles.btn, width: '100%', justifyContent: 'center', marginTop: 16, opacity: loading ? 0.7 : 1 }}
-              disabled={loading}
-            >
-              {loading ? 'Checking...' : 'Access My Sessions'}
-            </button>
-          </form>
+          {loginMode === 'client' ? (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: 36 }}>
+                <h1 style={{
+                  fontFamily: '"Instrument Serif", Georgia, serif',
+                  fontSize: 36,
+                  fontWeight: 400,
+                  color: INK,
+                  marginBottom: 12,
+                  letterSpacing: '-0.02em',
+                }}>
+                  Welcome back
+                </h1>
+                <p style={{ fontSize: 16, color: INK_MUTED, lineHeight: 1.6, margin: 0 }}>
+                  Enter the access code AOM provided to view your sessions.
+                </p>
+              </div>
 
-          <p style={{ fontSize: 13, color: INK_MUTED, textAlign: 'center', marginTop: 24 }}>
-            Don't have a code? <a href="mailto:hello@aom-inhouse.com" style={{ color: AOM_ORANGE, textDecoration: 'none' }}>Contact AOM</a> to get started.
-          </p>
+              <form onSubmit={handleClientSubmit}>
+                <div style={{ marginBottom: 16 }}>
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                    placeholder="AOM-XXXX-000"
+                    style={styles.input}
+                    autoFocus
+                    disabled={loading}
+                  />
+                </div>
+                {error && <div style={styles.errorBox}>{error}</div>}
+                <button
+                  type="submit"
+                  style={{ ...styles.btn, width: '100%', justifyContent: 'center', marginTop: 16, opacity: loading ? 0.7 : 1 }}
+                  disabled={loading}
+                >
+                  {loading ? 'Checking...' : 'Access My Sessions'}
+                </button>
+              </form>
+
+              <p style={{ fontSize: 13, color: INK_MUTED, textAlign: 'center', marginTop: 24 }}>
+                Don't have a code? <a href="mailto:hello@aom-inhouse.com" style={{ color: AOM_ORANGE, textDecoration: 'none' }}>Contact AOM</a> to get started.
+              </p>
+            </>
+          ) : (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: 36 }}>
+                <h1 style={{
+                  fontFamily: '"Instrument Serif", Georgia, serif',
+                  fontSize: 36,
+                  fontWeight: 400,
+                  color: INK,
+                  marginBottom: 12,
+                  letterSpacing: '-0.02em',
+                }}>
+                  AOM Team
+                </h1>
+                <p style={{ fontSize: 16, color: INK_MUTED, lineHeight: 1.6, margin: 0 }}>
+                  Sign in with your AOM email to access the facilitator view.
+                </p>
+              </div>
+
+              <form onSubmit={handleAdminSubmit}>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: INK_MUTED, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="you@aom-inhouse.com"
+                    style={{ ...styles.input, letterSpacing: 'normal', textTransform: 'none' }}
+                    autoFocus
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: INK_MUTED, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{ ...styles.input, letterSpacing: '0.15em', textTransform: 'none' }}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                {error && <div style={styles.errorBox}>{error}</div>}
+                <button
+                  type="submit"
+                  style={{ ...styles.btn, width: '100%', justifyContent: 'center', marginTop: 16, opacity: loading ? 0.7 : 1 }}
+                  disabled={loading || !email.trim() || !password}
+                >
+                  {loading ? 'Signing in...' : 'Sign In as AOM Team'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -1892,7 +2032,12 @@ export default function AIHoursLearning() {
   }
 
   if (mode === 'gate') {
-    return <AccessCodeGate onSuccess={data => { setClientData(data); setMode('client') }} />
+    return (
+      <AccessCodeGate
+        onClientSuccess={data => { setClientData(data); setMode('client') }}
+        onAdminSuccess={user => { setTeamUser(user); setMode('team') }}
+      />
+    )
   }
 
   if (mode === 'client') {
