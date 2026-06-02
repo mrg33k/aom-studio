@@ -696,6 +696,7 @@ function AccessCodeGate({ onClientSuccess }) {
   const [adminPassword, setAdminPassword] = useState('')
   const [adminLoading, setAdminLoading] = useState(false)
   const [adminError, setAdminError] = useState(null)
+  const [adminChecking, setAdminChecking] = useState(false)
 
   async function handleClientSubmit(e) {
     e.preventDefault()
@@ -724,6 +725,42 @@ function AccessCodeGate({ onClientSuccess }) {
       setError('Something went wrong. Please try again.')
     }
     setLoading(false)
+  }
+
+  async function handleAdminLinkClick() {
+    // When the tiny "Admin" link is clicked, immediately check if there's already
+    // a valid session — if so, redirect straight to admin without showing the form.
+    setAdminChecking(true)
+    try {
+      // Check isolated AI Hours admin session
+      const stored = localStorage.getItem('ai-hours-admin-session')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed?.email && isAOMTeamMember(parsed.email)) {
+          window.location.replace('/ai-hours/admin')
+          return
+        }
+      }
+    } catch {
+      localStorage.removeItem('ai-hours-admin-session')
+    }
+
+    try {
+      // Check Corner Supabase session
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user && isAOMTeamMember(session.user.email)) {
+          // Stamp the AI Hours session so /ai-hours/admin recognizes them without re-auth
+          localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: session.user.email }))
+          window.location.replace('/ai-hours/admin')
+          return
+        }
+      }
+    } catch { /* ignore */ }
+
+    // No active session — show the login form
+    setAdminChecking(false)
+    setShowAdmin(true)
   }
 
   async function handleAdminSubmit(e) {
@@ -844,21 +881,23 @@ function AccessCodeGate({ onClientSuccess }) {
           <div style={{ marginTop: 48, textAlign: 'center' }}>
             {!showAdmin ? (
               <button
-                onClick={() => setShowAdmin(true)}
+                onClick={handleAdminLinkClick}
+                disabled={adminChecking}
                 style={{
                   background: 'none',
                   border: 'none',
                   padding: 0,
                   fontSize: 10,
                   color: '#c8c2bb',
-                  cursor: 'pointer',
+                  cursor: adminChecking ? 'default' : 'pointer',
                   textDecoration: 'none',
                   letterSpacing: '0.02em',
+                  opacity: adminChecking ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { e.target.style.color = '#9ca3af'; e.target.style.textDecoration = 'underline' }}
+                onMouseEnter={e => { if (!adminChecking) { e.target.style.color = '#9ca3af'; e.target.style.textDecoration = 'underline' } }}
                 onMouseLeave={e => { e.target.style.color = '#c8c2bb'; e.target.style.textDecoration = 'none' }}
               >
-                Admin
+                {adminChecking ? '...' : 'Admin'}
               </button>
             ) : (
               <div style={{
@@ -2008,30 +2047,9 @@ export default function AIHoursLearning() {
 
   useEffect(() => {
     async function init() {
-      // AOM team members go to the admin route — redirect silently.
-      // Check isolated AI Hours session first (no Supabase auth read needed).
-      try {
-        const stored = localStorage.getItem('ai-hours-admin-session')
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          if (parsed?.email && isAOMTeamMember(parsed.email)) {
-            window.location.replace('/ai-hours/admin')
-            return
-          }
-        }
-      } catch {
-        localStorage.removeItem('ai-hours-admin-session')
-      }
-
-      // Fall back: if already signed into Corner as AOM team, redirect (read-only, no auth change)
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user && isAOMTeamMember(user.email)) {
-          window.location.replace('/ai-hours/admin')
-          return
-        }
-        // Authenticated but not AOM team — fall through to client gate
-      }
+      // Always show the client access code screen first — no auto-redirects to admin.
+      // If a facilitator wants to access admin, they click the tiny "Admin" link at the bottom.
+      // The Admin link checks for an existing session and redirects directly without re-auth.
 
       // Check for stored client session
       const stored = localStorage.getItem('ai_hours_client')
