@@ -9,10 +9,16 @@ import { supabase } from '../dashboard/lib/supabase.js'
 
 // Any @aom-inhouse.com email gets admin access automatically.
 // patrikmatheson@gmail.com is explicitly included as it's not an @aom-inhouse.com address.
+// courtney@corner.aheadofmarket.com is explicitly included — her OAuth email.
+const ADMIN_ALLOWLIST = [
+  'patrikmatheson@gmail.com',
+  'courtney@corner.aheadofmarket.com',
+]
+
 function isAOMTeamMember(email) {
   if (!email) return false
   const normalized = email.trim().toLowerCase()
-  return normalized.endsWith('@aom-inhouse.com') || normalized === 'patrikmatheson@gmail.com'
+  return normalized.endsWith('@aom-inhouse.com') || ADMIN_ALLOWLIST.includes(normalized)
 }
 
 const AOM_ORANGE = '#E85D26'
