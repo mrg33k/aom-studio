@@ -71,6 +71,10 @@ const PROMPTS = {
       label: 'New Client Welcome',
       prompt: `Write a warm welcome email to send to a new client of my ${answers.business_type || 'business'}. Confirm what we're doing together, set clear expectations for communication, and make them feel confident they made the right choice. Keep it under 200 words.`,
     },
+    {
+      label: 'Client Check-In Message',
+      prompt: `Write a short, genuine check-in message I can send to a current client of my ${answers.business_type || 'business'} who I haven't heard from in a while. The goal is to stay top of mind, show I care, and open the door for future work — without being salesy. Keep it under 75 words.`,
+    },
   ],
   'hiring': (answers) => [
     {
@@ -92,6 +96,10 @@ const PROMPTS = {
     {
       label: 'Onboarding Checklist',
       prompt: `Create a simple first-week onboarding checklist for a new ${answers.role_hiring || 'team member'} at my ${answers.business_type || 'business'}. Include: day 1 logistics, who to meet, tools to set up, and one small win they should accomplish in the first week.`,
+    },
+    {
+      label: 'Performance Review Template',
+      prompt: `Create a simple quarterly performance review template for a ${answers.role_hiring || 'team member'} at my ${answers.business_type || 'business'}. Include sections for: what they did well, where they need to grow, one specific goal for next quarter, and a rating scale that isn't vague. Keep it fair, honest, and easy to have a real conversation around.`,
     },
   ],
   'sales': (answers) => [
@@ -115,6 +123,10 @@ const PROMPTS = {
       label: 'Meeting Prep Brief',
       prompt: `I have a sales meeting with a potential client for my ${answers.business_type || 'business'}. Write me a pre-meeting brief template I can fill out in 10 minutes — their business, what problem they want to solve, what objections I might face, and the one outcome I'm driving toward in this meeting.`,
     },
+    {
+      label: 'Referral Request Script',
+      prompt: `Write a script or message template I can use to ask happy clients of my ${answers.business_type || 'business'} for a referral. Make it feel natural — not transactional. Give me a version I can send by text or email, and a version I can say in person. The goal is to make asking feel like a normal, easy conversation.`,
+    },
   ],
   'operations': (answers) => [
     {
@@ -136,6 +148,10 @@ const PROMPTS = {
     {
       label: 'Process Audit Prompt',
       prompt: `I run a ${answers.business_type || 'business'} and want to identify where I'm wasting the most time. Ask me 10 diagnostic questions that will help me spot the processes that should be automated, delegated, or eliminated. Format as a numbered list I can work through one by one.`,
+    },
+    {
+      label: 'Hiring vs. Systemizing',
+      prompt: `I run a ${answers.business_type || 'business'} and I'm spending too much time on ${answers.ops_pain || 'day-to-day operations'}. Help me figure out whether I should hire someone, build a system to handle it, or automate it. Ask me 5 questions that will make the right answer obvious.`,
     },
   ],
   'content': (answers) => [
@@ -159,6 +175,10 @@ const PROMPTS = {
       label: 'Bio / About Section',
       prompt: `Write a compelling About section for my ${answers.business_type || 'business'} to use on our website and ${answers.content_platform || 'social media'}. Lead with what we do and who we help. Include what makes us different and what a client can expect when they work with us. Keep it under 150 words and write it in first person.`,
     },
+    {
+      label: 'Google Review Request',
+      prompt: `Write a short, natural message I can send to happy clients of my ${answers.business_type || 'business'} asking them to leave a Google review. Give me 3 versions — one for text, one for email, and one for in-person. Make it easy to say yes and include a placeholder where I'll put the direct review link.`,
+    },
   ],
   'finance': (answers) => [
     {
@@ -180,6 +200,10 @@ const PROMPTS = {
     {
       label: 'Financial Report Summary',
       prompt: `Write a simple monthly financial summary template for my ${answers.business_type || 'business'} that I can use to understand where things stand. Include: revenue vs last month, biggest expense categories, profit margin estimate, and one financial decision I should make this month based on the numbers.`,
+    },
+    {
+      label: 'Price Increase Letter',
+      prompt: `I need to raise my prices at my ${answers.business_type || 'business'}. Write a professional but warm email to send to existing clients announcing the change. Acknowledge the relationship, explain the reason briefly without over-apologizing, give them enough notice, and make it feel respectful — not like a form letter.`,
     },
   ],
 };
