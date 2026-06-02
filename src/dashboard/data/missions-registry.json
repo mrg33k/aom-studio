@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-31T00:18:28.342Z",
+  "generated_at": "2026-06-02T19:27:54.006Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -2950,10 +2950,24 @@
       "project_slug": "space-rising",
       "workstream": "website",
       "name": "Membership Page",
-      "status": "NEW",
+      "status": "ACTIVE",
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/space-rising/missions/membership-page"
+    },
+    {
+      "slug": "space-rising:nat-geo-uplift",
+      "raw_slug": "nat-geo-uplift",
+      "folder_name": "nat-geo-uplift",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": "website",
+      "name": "Nat Geo Uplift",
+      "status": "v1-gap-closure-in-flight",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/nat-geo-uplift"
     },
     {
       "slug": "space-rising:podcast-pipeline",
@@ -3201,8 +3215,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 24,
-      "in_flight": 24,
+      "total": 25,
+      "in_flight": 25,
       "done": 0
     },
     {
