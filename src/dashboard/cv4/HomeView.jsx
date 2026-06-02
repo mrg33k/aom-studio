@@ -175,14 +175,27 @@ export default function HomeView({
     })
   }
 
-  // Record a project visit — called right before routing away from home
-  function recordVisit(slug) {
+  // Record a visit — called right before routing away from home.
+  // Accepts a project slug and an optional mission slug.
+  // Mission visits are stored as 'm:{projSlug}/{missionSlug}' so they share
+  // the same localStorage map as project visits without colliding.
+  function recordVisit(projSlug, missionSlug) {
     const ts = Date.now()
     setRecentVisits(prev => {
-      const next = { ...prev, [slug]: ts }
+      const next = { ...prev, [projSlug]: ts }
+      if (missionSlug) next['m:' + projSlug + '/' + missionSlug] = ts
       writeStored(RECENT_VISITS_KEY + ':' + userId, next)
       return next
     })
+  }
+
+  // Return the effective timestamp for a mission, incorporating its visit record.
+  // Used when sorting missions inside an expanded project accordion.
+  function missionEffectiveTs(projSlug, m) {
+    const key = 'm:' + projSlug + '/' + m.slug
+    const visitTs = recentVisits[key] || 0
+    const msgTs = m.last_message_at ? new Date(m.last_message_at).getTime() : 0
+    return Math.max(visitTs, msgTs)
   }
 
   // Missions per project — fetched from /api/dashboard/missions-tree (same
@@ -302,9 +315,11 @@ export default function HomeView({
     }
   }
 
-  // Project select — record the visit then route
+  // Project select — record the visit then route.
+  // Records both the project visit AND the mission visit (if a mission was clicked)
+  // so that mission lists re-sort with the most recently visited mission at the top.
   function handleProjectSelect(proj, mission) {
-    recordVisit(proj.slug)
+    recordVisit(proj.slug, mission?.slug || null)
     onSelectProject && onSelectProject(proj, mission)
   }
 
@@ -478,7 +493,10 @@ export default function HomeView({
             {recentProjects.map(p => {
               const isPinned = pinnedProjects.includes(p.slug)
               const isExpanded = !!expandedProjects[p.slug]
-              const missions = missionsByProject[p.slug] || []
+              // Re-sort missions at render time so recently-visited missions float to top.
+              const missions = [...(missionsByProject[p.slug] || [])].sort((a, b) =>
+                missionEffectiveTs(p.slug, b) - missionEffectiveTs(p.slug, a)
+              )
               return (
                 <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
                   <div className="hm-proj-head">
@@ -566,7 +584,10 @@ export default function HomeView({
               {allProjects.map(p => {
                 const isPinned = pinnedProjects.includes(p.slug)
                 const isExpanded = !!expandedProjects[p.slug]
-                const missions = missionsByProject[p.slug] || []
+                // Re-sort missions at render time so recently-visited missions float to top.
+                const missions = [...(missionsByProject[p.slug] || [])].sort((a, b) =>
+                  missionEffectiveTs(p.slug, b) - missionEffectiveTs(p.slug, a)
+                )
                 return (
                   <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
                     <div className="hm-proj-head">
