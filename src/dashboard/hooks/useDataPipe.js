@@ -627,6 +627,19 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
     // this catches state after a dropped subscription. 60s keeps the bill sane.
     const timer = setInterval(fetchAll, 60000)
 
+    // corner:dashboard-speed (2026-06-02): kill the re-download storm.
+    // Each realtime event used to call fetchAll() immediately, so a burst of
+    // agent_status / task / message changes (constant during active use)
+    // fired N full ~225KB downloads back-to-back — the dashboard felt slow /
+    // "still struggling" while agents worked. Coalesce realtime triggers into
+    // ONE fetch per window. Mount + 60s poll stay immediate; only the
+    // event-driven refetches are debounced.
+    let realtimeDebounce = null
+    const scheduleFetch = () => {
+      if (realtimeDebounce) clearTimeout(realtimeDebounce)
+      realtimeDebounce = setTimeout(() => { realtimeDebounce = null; fetchAll() }, 2500)
+    }
+
     // Supabase Realtime subscriptions -- instant updates without waiting for poll.
     // Only active where supabase client is configured (production + local with env vars).
     let agentStatusChannel = null
@@ -636,30 +649,30 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
       const cid = channelIdRef.current
       console.log('[Corner Realtime] Subscribing to agent_status, tasks, messages... id:', cid)
 
-      // agent_status table: any change triggers full refresh (RNB, alive dots, agent status)
+      // agent_status table: any change triggers a (debounced) refresh (RNB, alive dots, agent status)
       agentStatusChannel = supabase
         .channel(`agent-status-changes-${cid}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
           console.log('[Corner Realtime] agent_status changed')
-          fetchAll()
+          scheduleFetch()
         })
         .subscribe((status) => console.log('[Corner Realtime] agent_status sub:', status))
 
-      // tasks table: any change triggers refresh (new tasks, status changes -> pills + RNB)
+      // tasks table: any change triggers (debounced) refresh (new tasks, status changes -> pills + RNB)
       tasksChannel = supabase
         .channel(`tasks-changes-${cid}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
           console.log('[Corner Realtime] tasks changed')
-          fetchAll()
+          scheduleFetch()
         })
         .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
 
-      // messages table: INSERT triggers refresh (new chat messages update throughput + unread)
+      // messages table: INSERT triggers (debounced) refresh (new chat messages update throughput + unread)
       messagesChannel = supabase
         .channel(`messages-inserts-${cid}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
           console.log('[Corner Realtime] messages INSERT')
-          fetchAll()
+          scheduleFetch()
         })
         .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
     } else {
@@ -668,6 +681,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
 
     return () => {
       clearInterval(timer)
+      if (realtimeDebounce) clearTimeout(realtimeDebounce)
       if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)
