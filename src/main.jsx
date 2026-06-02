@@ -84,6 +84,7 @@ const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 const TenantSignupPage = lazy(() => import('./pages/TenantSignupPage.jsx'))
 const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
+const ConradFoundation2 = lazy(() => import('./pages/ConradFoundation2.jsx'))
 const HolisticBalance = lazy(() => import('./pages/HolisticBalance.jsx'))
 const AOMStats = lazy(() => import('./pages/AOMStats.jsx'))
 const V2Home = lazy(() => import('./pages/V2Home.jsx'))
@@ -289,6 +290,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/conrad-foundation" element={<ConradFoundation />} />
           <Route path="/conrad" element={<ConradFoundation />} />
           <Route path="/nancy" element={<ConradFoundation />} />
+          <Route path="/conradfoundation2" element={<ConradFoundation2 />} />
           <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
