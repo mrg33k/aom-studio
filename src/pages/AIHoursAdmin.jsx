@@ -7,7 +7,13 @@ import { supabase } from '../dashboard/lib/supabase.js'
 // Bookmark this URL. Do not share with clients.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AOM_TEAM_EMAILS = ['patrikmatheson@gmail.com', 'hello@aom-inhouse.com']
+// Any @aom-inhouse.com email gets admin access automatically.
+// patrikmatheson@gmail.com is explicitly included as it's not an @aom-inhouse.com address.
+function isAOMTeamMember(email) {
+  if (!email) return false
+  const normalized = email.trim().toLowerCase()
+  return normalized.endsWith('@aom-inhouse.com') || normalized === 'patrikmatheson@gmail.com'
+}
 
 const AOM_ORANGE = '#E85D26'
 const AOM_ORANGE_LIGHT = '#F47A48'
@@ -689,7 +695,7 @@ function AdminLoginGate({ onSuccess }) {
         setLoading(false)
         return
       }
-      if (!data.user || !AOM_TEAM_EMAILS.includes(data.user.email)) {
+      if (!data.user || !isAOMTeamMember(data.user.email)) {
         await supabase.auth.signOut()
         setError('This login is for AOM team members only.')
         setLoading(false)
@@ -1477,7 +1483,7 @@ export default function AIHoursAdmin() {
     async function init() {
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user && AOM_TEAM_EMAILS.includes(user.email)) {
+        if (user && isAOMTeamMember(user.email)) {
           setTeamUser(user)
           setMode('team')
           return

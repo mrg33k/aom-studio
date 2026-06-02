@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Users, TrendingUp, LayoutGrid,
-  PenTool, BarChart2, ArrowRight, Copy, Check, RotateCcw,
+  PenTool, BarChart2, ArrowRight, Copy, Check, RotateCcw, Mail, Send,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
@@ -412,6 +412,30 @@ function StepQuestions({ category, onNext }) {
 // ─── Step 3: Prompts ────────────────────────────────────────────────────────
 function StepPrompts({ category, answers, onNext }) {
   const promptList = PROMPTS[category]?.(answers) || [];
+  const [email, setEmail] = useState('');
+  const [emailState, setEmailState] = useState('idle'); // idle | loading | sent | error
+
+  const validEmail = email.trim().length > 3 && email.includes('@') && email.includes('.');
+
+  async function handleEmailSubmit() {
+    if (!validEmail || emailState === 'loading' || emailState === 'sent') return;
+    setEmailState('loading');
+    try {
+      const res = await fetch('/api/guide-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          category,
+          prompts: promptList.map((p) => ({ label: p.label, prompt: p.prompt })),
+        }),
+      });
+      if (res.ok) setEmailState('sent');
+      else setEmailState('error');
+    } catch {
+      setEmailState('error');
+    }
+  }
 
   return (
     <motion.div
@@ -428,10 +452,99 @@ function StepPrompts({ category, answers, onNext }) {
         Copy any of these directly into ChatGPT or Claude.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {promptList.map((p) => (
           <PromptCard key={p.label} label={p.label} prompt={p.prompt} />
         ))}
+      </div>
+
+      {/* Email capture — optional, sends prompts to inbox */}
+      <div
+        className="rounded-xl p-6 mb-8"
+        style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)' }}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <Mail size={16} style={{ color: ORANGE }} />
+          <h3 className="font-headline text-base text-[#0C0C0C]">
+            Get these sent to your inbox
+          </h3>
+        </div>
+        <p className="font-body text-sm text-black/55 mb-5 leading-relaxed">
+          Enter your email and we&apos;ll send your personalized prompts directly to you.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (emailState === 'error') setEmailState('idle');
+            }}
+            placeholder="you@yourcompany.com"
+            disabled={emailState === 'sent' || emailState === 'loading'}
+            className="flex-1 rounded-xl px-4 py-3 font-body text-sm text-[#0C0C0C] placeholder:text-black/30 outline-none transition-all duration-200"
+            style={{
+              background: '#fff',
+              border: '1px solid rgba(0,0,0,0.15)',
+              opacity: emailState === 'sent' ? 0.6 : 1,
+            }}
+            onFocus={(e) => { e.target.style.borderColor = ORANGE; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(0,0,0,0.15)'; }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && validEmail && emailState === 'idle') {
+                handleEmailSubmit();
+              }
+            }}
+          />
+          <button
+            onClick={handleEmailSubmit}
+            disabled={!validEmail || emailState === 'loading' || emailState === 'sent'}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-headline text-sm tracking-wide transition-all duration-200 whitespace-nowrap"
+            style={{
+              background: emailState === 'sent'
+                ? 'rgba(74,222,128,0.15)'
+                : validEmail && emailState !== 'loading' ? ORANGE : 'rgba(0,0,0,0.06)',
+              color: emailState === 'sent'
+                ? '#16a34a'
+                : validEmail && emailState !== 'loading' ? '#fff' : 'rgba(0,0,0,0.25)',
+              border: emailState === 'sent' ? '1px solid rgba(74,222,128,0.3)' : 'none',
+              cursor: validEmail && emailState === 'idle' ? 'pointer' : 'default',
+            }}
+          >
+            {emailState === 'loading' && (
+              <>
+                <Send size={14} />
+                Sending...
+              </>
+            )}
+            {emailState === 'sent' && (
+              <>
+                <Check size={14} />
+                Sent! Check your inbox.
+              </>
+            )}
+            {(emailState === 'idle' || emailState === 'error') && (
+              <>
+                Send my prompts
+                <ArrowRight size={14} />
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="mt-3 min-h-[18px]">
+          {emailState === 'error' && (
+            <p className="font-body text-xs" style={{ color: '#dc2626' }}>
+              Something went wrong — try again.
+            </p>
+          )}
+          {emailState !== 'error' && (
+            <p className="font-body text-xs text-black/35">
+              No spam. Just your prompts.
+            </p>
+          )}
+        </div>
       </div>
 
       <button
