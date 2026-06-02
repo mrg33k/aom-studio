@@ -732,44 +732,51 @@ function AccessCodeGate({ onClientSuccess }) {
     setAdminError(null)
 
     try {
-      if (!supabase) throw new Error('Service unavailable')
+      // If already logged into AI Hours admin session (isolated from Corner), redirect directly
+      try {
+        const aiHoursSession = localStorage.getItem('ai-hours-admin-session')
+        if (aiHoursSession) {
+          const parsed = JSON.parse(aiHoursSession)
+          if (parsed?.email && isAOMTeamMember(parsed.email)) {
+            window.location.replace('/ai-hours/admin')
+            return
+          }
+        }
+      } catch { /* ignore */ }
 
-      // If already logged in as an AOM team member, go straight to admin — no re-auth needed.
-      // If the existing session is NOT an AOM team member (e.g. a client's Corner session),
-      // fall through and sign in with the provided credentials instead of rejecting.
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user && isAOMTeamMember(session.user.email)) {
-        window.location.replace('/ai-hours/admin')
-        return
+      // If already logged into Corner as AOM team member, redirect directly (read-only session check)
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user && isAOMTeamMember(session.user.email)) {
+          // Stamp the AI Hours session so /ai-hours/admin recognizes them without re-auth
+          localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: session.user.email }))
+          window.location.replace('/ai-hours/admin')
+          return
+        }
       }
 
-      // No AOM team session active — sign in with provided credentials.
-      // Note: this replaces any existing non-AOM session, which is acceptable for admin access.
+      // No active AOM session — validate via server-side endpoint (does NOT touch Corner session)
       if (!adminEmail.trim() || !adminPassword.trim()) {
         setAdminError('Please enter your email and password.')
         setAdminLoading(false)
         return
       }
 
-      const { data, error: authErr } = await supabase.auth.signInWithPassword({
-        email: adminEmail.trim(),
-        password: adminPassword,
+      const res = await fetch('/api/ai-hours/admin-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: adminEmail.trim(), password: adminPassword }),
       })
+      const result = await res.json()
 
-      if (authErr || !data?.user) {
-        setAdminError('Invalid email or password.')
+      if (!result.ok) {
+        setAdminError(result.error || 'Invalid email or password.')
         setAdminLoading(false)
         return
       }
 
-      if (!isAOMTeamMember(data.user.email)) {
-        await supabase.auth.signOut()
-        setAdminError('This account does not have admin access.')
-        setAdminLoading(false)
-        return
-      }
-
-      // Redirect to admin view
+      // Store isolated AI Hours session — never touches supabase.auth
+      localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: result.email }))
       window.location.replace('/ai-hours/admin')
     } catch {
       setAdminError('Something went wrong. Please try again.')
@@ -2001,7 +2008,22 @@ export default function AIHoursLearning() {
 
   useEffect(() => {
     async function init() {
-      // AOM team members go to the admin route — redirect silently
+      // AOM team members go to the admin route — redirect silently.
+      // Check isolated AI Hours session first (no Supabase auth read needed).
+      try {
+        const stored = localStorage.getItem('ai-hours-admin-session')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (parsed?.email && isAOMTeamMember(parsed.email)) {
+            window.location.replace('/ai-hours/admin')
+            return
+          }
+        }
+      } catch {
+        localStorage.removeItem('ai-hours-admin-session')
+      }
+
+      // Fall back: if already signed into Corner as AOM team, redirect (read-only, no auth change)
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user && isAOMTeamMember(user.email)) {

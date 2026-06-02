@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react'
+// NOTE: We do NOT use supabase.auth.signIn/signOut here — that would contaminate
+// the Corner dashboard session. Instead, admin auth goes through /api/ai-hours/admin-auth
+// and DB calls go through /api/ai-hours/clients (both use service role server-side).
+// The admin session is stored in 'ai-hours-admin-session' localStorage only.
 import { supabase } from '../dashboard/lib/supabase.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -691,23 +695,21 @@ function AdminLoginGate({ onSuccess }) {
     setLoading(true)
     setError(null)
     try {
-      if (!supabase) throw new Error('Service unavailable')
-      const { data, error: authErr } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
+      // Server-side auth — does NOT touch supabase.auth state (no session contamination)
+      const res = await fetch('/api/ai-hours/admin-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       })
-      if (authErr) {
-        setError('Invalid email or password.')
+      const result = await res.json()
+      if (!result.ok) {
+        setError(result.error || 'Invalid email or password.')
         setLoading(false)
         return
       }
-      if (!data.user || !isAOMTeamMember(data.user.email)) {
-        await supabase.auth.signOut()
-        setError('This login is for AOM team members only.')
-        setLoading(false)
-        return
-      }
-      onSuccess(data.user)
+      // Store session in its own localStorage key — completely separate from Corner auth
+      localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: result.email }))
+      onSuccess({ email: result.email })
     } catch {
       setError('Something went wrong. Please try again.')
     }
@@ -837,12 +839,14 @@ function TeamView({ user, onLogout }) {
   }, [])
 
   async function loadClients() {
-    if (!supabase) return
-    const { data } = await supabase
-      .from('ai_hours_clients')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setClients(data || [])
+    // Use service-role API endpoint — no Supabase auth session required
+    try {
+      const res = await fetch('/api/ai-hours/clients')
+      const result = await res.json()
+      setClients(result.clients || [])
+    } catch {
+      setClients([])
+    }
     setClientsLoading(false)
   }
 
@@ -858,27 +862,33 @@ function TeamView({ user, onLogout }) {
     setAddingSaving(true)
     setAddError(null)
     const access_code = generateAccessCode(clients.length)
-    const { data, error } = await supabase
-      .from('ai_hours_clients')
-      .insert({
-        access_code,
-        client_name: addForm.name.trim(),
-        email: addForm.email.trim() || null,
-        current_session: 1,
-        granted_by: 'aom',
-        notes: addForm.notes.trim() || null,
+    try {
+      const res = await fetch('/api/ai-hours/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_code,
+          client_name: addForm.name.trim(),
+          email: addForm.email.trim() || null,
+          current_session: 1,
+          granted_by: 'aom',
+          notes: addForm.notes.trim() || null,
+        }),
       })
-      .select()
-      .single()
-    if (error) {
-      setAddError(error.message)
+      const result = await res.json()
+      if (!result.ok) {
+        setAddError(result.error || 'Failed to add client.')
+        setAddingSaving(false)
+        return
+      }
+      setNewClientConfirm({ access_code, client_name: addForm.name.trim() })
+      setAddForm({ name: '', email: '', notes: '' })
       setAddingSaving(false)
-      return
+      await loadClients()
+    } catch {
+      setAddError('Something went wrong. Please try again.')
+      setAddingSaving(false)
     }
-    setNewClientConfirm({ access_code, client_name: addForm.name.trim() })
-    setAddForm({ name: '', email: '', notes: '' })
-    setAddingSaving(false)
-    await loadClients()
   }
 
   function closeAddClientModal() {
@@ -894,11 +904,13 @@ function TeamView({ user, onLogout }) {
     setMarkStates(prev => ({ ...prev, [clientId]: 'loading' }))
     try {
       const newSession = client.current_session + 1
-      const { error } = await supabase
-        .from('ai_hours_clients')
-        .update({ current_session: newSession })
-        .eq('id', clientId)
-      if (error) throw error
+      const res = await fetch(`/api/ai-hours/clients?id=${clientId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_session: newSession }),
+      })
+      const result = await res.json()
+      if (!result.ok) throw new Error(result.error)
       setMarkConfirm({ client_name: client.client_name, new_session: newSession })
       await loadClients()
       setTimeout(() => {
@@ -1706,21 +1718,42 @@ export default function AIHoursAdmin() {
 
   useEffect(() => {
     async function init() {
+      // First: check our own isolated AI Hours session (separate from Corner auth)
+      try {
+        const stored = localStorage.getItem('ai-hours-admin-session')
+        if (stored) {
+          const session = JSON.parse(stored)
+          if (session?.email && isAOMTeamMember(session.email)) {
+            setTeamUser({ email: session.email })
+            setMode('team')
+            return
+          }
+        }
+      } catch {
+        localStorage.removeItem('ai-hours-admin-session')
+      }
+
+      // Second: if already signed into Corner as an AOM team member, auto-admit them
+      // (read-only check — does NOT modify the Corner session)
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user && isAOMTeamMember(user.email)) {
-          setTeamUser(user)
+          // Stamp an AI Hours session so subsequent loads skip re-auth
+          localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: user.email }))
+          setTeamUser({ email: user.email })
           setMode('team')
           return
         }
       }
+
       setMode('login')
     }
     init()
   }, [])
 
-  async function handleLogout() {
-    if (supabase) await supabase.auth.signOut()
+  function handleLogout() {
+    // Clear ONLY the AI Hours session — never touch supabase.auth (that's Corner's session)
+    localStorage.removeItem('ai-hours-admin-session')
     setTeamUser(null)
     setMode('login')
   }
