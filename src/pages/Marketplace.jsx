@@ -337,7 +337,7 @@ export default function Marketplace() {
           <div>
             <h3 className="font-headline text-2xl text-white mb-2">Want the full picture?</h3>
             <p className="font-body text-sm text-white/50 max-w-sm">
-              The AI Audit goes deeper — a full look at your business and a custom roadmap
+              The AI Flow goes deeper — a full look at your business and a custom roadmap
               for where AI can save you the most time.
             </p>
           </div>
@@ -345,7 +345,7 @@ export default function Marketplace() {
             href="/book"
             className="flex items-center gap-2 px-6 py-3 rounded-xl font-headline text-sm tracking-wide border border-white/20 text-white hover:border-white/50 transition-all whitespace-nowrap"
           >
-            Book an AI Audit
+            Book an AI Flow
             <ArrowRight size={16} />
           </a>
         </div>

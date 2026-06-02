@@ -101,7 +101,7 @@ const EXPLORE_CARDS = [
   { label: 'AI OPERATIONS', title: 'The System', desc: 'How AOM builds AI workflows for SMBs.', href: '/system', sage: true },
   { label: 'STRATEGY', title: 'Briefs Hub', desc: 'Deep-dive strategy briefs for every vertical.', href: '/briefs', sage: false },
   { label: 'DASHBOARD', title: 'Client Portal', desc: 'Your private operations dashboard.', href: '/dashboard', sage: true },
-  { label: 'ONBOARDING', title: 'AI Audit Tool', desc: 'Start your AI operations audit.', href: '/audit/test', sage: false },
+  { label: 'ONBOARDING', title: 'AI Flow Tool', desc: 'Start your AI operations audit.', href: '/audit/test', sage: false },
 ];
 
 const SERVICE_OPTIONS = ['Video', 'Website', 'Social Media', 'AI Advisory', 'Other'];

@@ -212,7 +212,7 @@ function BobbySection() {
         <NumberedItem number={1} title="CTA intake flow (this week)" description="Multi-step form: What's your business? What do you need? Budget range? Captures leads at 11pm on a Tuesday. Highest-leverage thing to ship." color={CYAN} />
         <NumberedItem number={2} title="Vertical landing pages" description="One for construction, one for small businesses. 'Your competitors are posting and you're not. Here's what $3k/month gets you.' Gives Jacob specific URLs for outreach." color={CYAN} />
         <NumberedItem number={3} title="Case studies section" description="Ambition launches Thursday = instant shippable case study. Before/after. What we built. What it costs monthly." color={CYAN} />
-        <NumberedItem number={4} title="AI services: not a page, just a tile" description="Single 'AI Audit' offer on services page. One thing, one price, one outcome." color={CYAN} />
+        <NumberedItem number={4} title="AI services: not a page, just a tile" description="Single 'AI Flow' offer on services page. One thing, one price, one outcome." color={CYAN} />
         <NumberedItem number={5} title="/outreach-plan as sales demo" description="Anonymize slightly. 'This is what we built for ourselves. We can build it for you.'" color={CYAN} />
       </Card>
 

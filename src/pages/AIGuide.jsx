@@ -463,7 +463,7 @@ function StepCTA({ onReset }) {
         <span style={{ color: ORANGE }}>your whole business?</span>
       </h2>
       <p className="font-body text-lg text-white/55 mb-10 leading-relaxed">
-        The AI Audit is a deep dive into your entire operation — we find every place AI can
+        The AI Flow is a deep dive into your entire operation — we find every place AI can
         save you time, money, or headcount, and hand you a custom roadmap.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -474,7 +474,7 @@ function StepCTA({ onReset }) {
           className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl font-headline text-base tracking-wide"
           style={{ background: ORANGE, color: '#fff' }}
         >
-          Book an AI Audit
+          Book an AI Flow
           <ArrowRight size={18} />
         </motion.button>
         <button
