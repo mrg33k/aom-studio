@@ -1801,7 +1801,7 @@ function MessageList({ roomType = 'agent' }) {
                 }
                 if (!displaySteps || displaySteps.length === 0) return null
                 return (
-                  <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12, order: 1 }}>
+                  <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
                     <StepThread
                       steps={displaySteps}
                       settled={settledFlag}
