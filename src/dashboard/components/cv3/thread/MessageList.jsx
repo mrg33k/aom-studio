@@ -1257,17 +1257,6 @@ function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* R65-impl: live-thread step chain above assistant reply. */}
-                  {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
-                    <div style={{ marginBottom: msg.text ? 10 : 0 }}>
-                      <StepThread
-                        steps={stepsByMessageId[msg.id]}
-                        settled={Boolean(msg.text)}
-                        isError={msg.metadata?.status === 'error'}
-                        agentColor={roomColor}
-                      />
-                    </div>
-                  )}
                   {/* Text bubble */}
                   {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url || msg.metadata?.attachments?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text))) && (() => {
                     const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
@@ -1320,6 +1309,17 @@ function MessageList({ roomType = 'agent' }) {
                       </div>
                     )
                   })()}
+                  {/* R65-impl: live-thread step chain below assistant reply. */}
+                  {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
+                    <div style={{ marginTop: msg.text ? 10 : 0 }}>
+                      <StepThread
+                        steps={stepsByMessageId[msg.id]}
+                        settled={Boolean(msg.text)}
+                        isError={msg.metadata?.status === 'error'}
+                        agentColor={roomColor}
+                      />
+                    </div>
+                  )}
                   {/* corner:suggested-responses — tap-to-send chips under the
                        assistant bubble. Quiet pills, hover to lift, click to
                        send the chip text as the user's next message. Absence
