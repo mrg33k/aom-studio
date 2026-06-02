@@ -939,6 +939,13 @@ function TeamView({ user, onLogout }) {
   const [clients, setClients] = useState([])
   const [clientsLoading, setClientsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('sessions')
+  const [showAddClient, setShowAddClient] = useState(false)
+  const [addForm, setAddForm] = useState({ name: '', email: '', notes: '' })
+  const [addingSaving, setAddingSaving] = useState(false)
+  const [addError, setAddError] = useState(null)
+  const [newClientConfirm, setNewClientConfirm] = useState(null)
+
+  const WORDLIST = ['APEX', 'NOVA', 'EDGE', 'PEAK', 'CORE', 'GRID', 'LINK', 'MARK', 'NEXT', 'PLUS', 'RISE', 'STAR', 'BOLD', 'CALM', 'FLUX', 'GLOW', 'IRON', 'JADE', 'KEEN', 'LOFT', 'MINT', 'NODE', 'OPEN', 'PORT', 'REEF', 'SAGE', 'TIDE', 'VAST', 'WAVE', 'ZINC', 'ECHO', 'FAST', 'HERO', 'JUMP', 'LEAD', 'ONYX', 'PINE', 'RUBY', 'SAFE', 'WARD']
 
   useEffect(() => {
     loadClients()
@@ -952,6 +959,48 @@ function TeamView({ user, onLogout }) {
       .order('created_at', { ascending: false })
     setClients(data || [])
     setClientsLoading(false)
+  }
+
+  function generateAccessCode(existingCount) {
+    const word = WORDLIST[Math.floor(Math.random() * WORDLIST.length)]
+    const num = String(existingCount + 1).padStart(3, '0')
+    return `AOM-${word}-${num}`
+  }
+
+  async function handleAddClient(e) {
+    e.preventDefault()
+    if (!addForm.name.trim()) return
+    setAddingSaving(true)
+    setAddError(null)
+    const access_code = generateAccessCode(clients.length)
+    const { data, error } = await supabase
+      .from('ai_hours_clients')
+      .insert({
+        access_code,
+        client_name: addForm.name.trim(),
+        email: addForm.email.trim() || null,
+        current_session: 1,
+        granted_by: 'aom',
+        notes: addForm.notes.trim() || null,
+      })
+      .select()
+      .single()
+    if (error) {
+      setAddError(error.message)
+      setAddingSaving(false)
+      return
+    }
+    setNewClientConfirm({ access_code, client_name: addForm.name.trim() })
+    setAddForm({ name: '', email: '', notes: '' })
+    setAddingSaving(false)
+    await loadClients()
+  }
+
+  function closeAddClientModal() {
+    setShowAddClient(false)
+    setAddForm({ name: '', email: '', notes: '' })
+    setAddError(null)
+    setNewClientConfirm(null)
   }
 
   function toggleFacil(sessionNum, key) {
@@ -1194,12 +1243,12 @@ function TeamView({ user, onLogout }) {
               <div style={styles.sectionLabel} style={{ marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
                 Client Management
               </div>
-              <a
-                href="mailto:hello@aom-inhouse.com?subject=New AI Hours Client"
-                style={{ ...styles.btn, fontSize: 13, padding: '10px 18px', textDecoration: 'none' }}
+              <button
+                onClick={() => setShowAddClient(true)}
+                style={{ ...styles.btn, fontSize: 13, padding: '10px 18px' }}
               >
                 + Add Client
-              </a>
+              </button>
             </div>
 
             {clientsLoading ? (
@@ -1314,6 +1363,171 @@ function TeamView({ user, onLogout }) {
           </div>
         </div>
       </div>
+
+      {/* ── Add Client Modal ── */}
+      {showAddClient && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(26,26,22,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9000, padding: 24,
+          }}
+          onClick={closeAddClientModal}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 12, padding: 40, maxWidth: 480, width: '100%',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {newClientConfirm ? (
+              /* ── Confirmation ── */
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
+                    <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: GREEN_CHECK }}>Client Added</span>
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: INK, marginBottom: 24 }}>
+                  {newClientConfirm.client_name}
+                </div>
+                <div style={{
+                  background: CREAM_WARM, border: `1px solid ${BORDER}`, borderRadius: 8,
+                  padding: '24px 28px', marginBottom: 24, textAlign: 'center',
+                }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                    color: INK_MUTED, marginBottom: 12,
+                  }}>
+                    Access Code — Share with client
+                  </div>
+                  <div style={{
+                    fontFamily: 'monospace', fontSize: 30, fontWeight: 700,
+                    color: AOM_ORANGE, letterSpacing: '0.06em', marginBottom: 16,
+                  }}>
+                    {newClientConfirm.access_code}
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(newClientConfirm.access_code)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '8px 18px', background: '#fff', color: INK,
+                      border: `1px solid ${BORDER}`, borderRadius: 6,
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    Copy Code
+                  </button>
+                </div>
+                <p style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.65, marginBottom: 28 }}>
+                  Give this code to your client. They'll enter it at <strong>/ai-hours</strong> to access their sessions and track their progress.
+                </p>
+                <button
+                  onClick={closeAddClientModal}
+                  style={{ ...styles.btn, width: '100%', justifyContent: 'center' }}
+                >
+                  Done
+                </button>
+              </>
+            ) : (
+              /* ── Form ── */
+              <>
+                <div style={{ marginBottom: 28 }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: INK, margin: '0 0 6px' }}>Add Client</h2>
+                  <p style={{ fontSize: 14, color: INK_MUTED, margin: 0 }}>
+                    An access code will be generated automatically.
+                  </p>
+                </div>
+                <form onSubmit={handleAddClient}>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                      textTransform: 'uppercase', color: INK_MUTED,
+                      display: 'block', marginBottom: 6,
+                    }}>
+                      Client Name <span style={{ color: AOM_ORANGE }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ambition Mechanical"
+                      value={addForm.name}
+                      onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                      required
+                      autoFocus
+                      style={{
+                        ...styles.input, letterSpacing: 'normal', textTransform: 'none',
+                        padding: '12px 14px', fontSize: 15,
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                      textTransform: 'uppercase', color: INK_MUTED,
+                      display: 'block', marginBottom: 6,
+                    }}>
+                      Email <span style={{ color: LOCK_GRAY, fontWeight: 400 }}>(optional)</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="client@example.com"
+                      value={addForm.email}
+                      onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+                      style={{
+                        ...styles.input, letterSpacing: 'normal', textTransform: 'none',
+                        padding: '12px 14px', fontSize: 15,
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 24 }}>
+                    <label style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                      textTransform: 'uppercase', color: INK_MUTED,
+                      display: 'block', marginBottom: 6,
+                    }}>
+                      Notes <span style={{ color: LOCK_GRAY, fontWeight: 400 }}>(optional)</span>
+                    </label>
+                    <textarea
+                      placeholder="e.g. HVAC contractor, Phoenix metro, first session June 10..."
+                      value={addForm.notes}
+                      onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))}
+                      rows={3}
+                      style={{
+                        ...styles.input, letterSpacing: 'normal', textTransform: 'none',
+                        padding: '12px 14px', fontSize: 15,
+                        resize: 'vertical', fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
+                  {addError && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{addError}</div>}
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button
+                      type="button"
+                      onClick={closeAddClientModal}
+                      style={{ ...styles.btn, ...styles.btnSecondary, flex: 1, justifyContent: 'center' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!addForm.name.trim() || addingSaving}
+                      style={{
+                        ...styles.btn, flex: 2, justifyContent: 'center',
+                        opacity: (!addForm.name.trim() || addingSaving) ? 0.65 : 1,
+                      }}
+                    >
+                      {addingSaving ? 'Adding...' : 'Add Client →'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
