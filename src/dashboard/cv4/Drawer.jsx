@@ -189,7 +189,7 @@ export default function CV4Drawer({
           is_done: !!m.is_done,
         })
       }
-      map.set(p.slug, { missions, missionMeta, unfiled: p.unfiled_tasks || [], tree: p.tree || null })
+      map.set(p.slug, { missions, missionMeta, unfiled: p.unfiled_tasks || [], tree: p.tree || null, projectLastMessageAt: p.last_message_at || null })
     }
     return map
   }, [tasksTree])
@@ -623,12 +623,19 @@ function DrawerBody({
           // Projects with no activity data fall to the bottom alphabetically.
           [...projectRooms].sort((a, b) => {
             const getRecent = (slug) => {
-              const meta = tasksByProject?.get(slug)?.missionMeta
-              if (!meta || meta.size === 0) return 0
+              const entry = tasksByProject?.get(slug)
               let max = 0
-              for (const m of meta.values()) {
-                const t = m?.last_message_at ? new Date(m.last_message_at).getTime() : 0
-                if (t > max) max = t
+              // Project-level recency (newest message anywhere in the project,
+              // including project chat — not just mission-tagged messages).
+              const projTs = entry?.projectLastMessageAt
+              if (projTs) max = new Date(projTs).getTime()
+              // Also fold in per-mission timestamps as a safety net.
+              const meta = entry?.missionMeta
+              if (meta && meta.size > 0) {
+                for (const m of meta.values()) {
+                  const t = m?.last_message_at ? new Date(m.last_message_at).getTime() : 0
+                  if (t > max) max = t
+                }
               }
               return max
             }

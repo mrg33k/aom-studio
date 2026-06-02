@@ -115,31 +115,50 @@ export default async function handler(req, res) {
   // task query, no more "1 in flight" labels, no more unfiled_tasks.
   const tasks = []
 
-  // R4 — fetch the newest message per mission_slug so the drawer can light
-  // an "active" dot from real activity instead of the flat mission status
-  // field. Pulls the last 14 days of mission-tagged messages and reduces
-  // to one row per mission (the first hit wins because results come back
-  // desc by created_at). Capped at 500 rows to keep the response tight.
+  // Fetch the newest message per PROJECT and per MISSION so the drawer can
+  // sort both lists by real recent activity (and light the "active" dot).
+  //
+  // Two design points that matter:
+  //
+  //  1. NO mission_slug filter. Project-level chat (messages with no
+  //     mission_slug) MUST count toward a project's recency — otherwise a
+  //     project the user actively chats in, but not inside a specific
+  //     mission, never floats up. (This was the "I was in Holistic an hour
+  //     ago but it's buried" bug: her recent messages were project-level,
+  //     so the mission-only query missed them and the project sank.) Every
+  //     message carries a `project` field, including mission-tagged ones, so
+  //     one unfiltered query feeds both maps — project recency is the max
+  //     across all of a project's messages, mission recency is per slug.
+  //
+  //  2. `timestamp`, not `created_at`. The messages table's column is
+  //     `timestamp`; querying created_at 400s, the r.ok guard swallows it,
+  //     and every recency value ends up null — silently defeating the sort.
+  //
+  // 60-day window (was 14d — longer so recency reflects more than two weeks)
+  // and a 2000-row cap so quieter projects/missions aren't starved out of
+  // the newest rows by a noisy world.
   const missionLastSeenAt = new Map()
+  const projectLastSeenAt = new Map()
   try {
-    const sinceIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
-    // NB: the messages table's timestamp column is `timestamp`, not
-    // `created_at`. Querying created_at returns a 400 (column does not
-    // exist), the r.ok guard swallows it, and every mission ends up with
-    // last_message_at=null — which silently defeats the recency sort in
-    // both the project list and the mission list. Use `timestamp`.
+    const sinceIso = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,metadata&metadata->>mission_slug=not.is.null&timestamp=gte.${encodeURIComponent(sinceIso)}&order=timestamp.desc&limit=500`,
+      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,project,metadata&timestamp=gte.${encodeURIComponent(sinceIso)}&order=timestamp.desc&limit=2000`,
       { headers: supabaseHeaders() },
     )
     if (r.ok) {
       const rows = await r.json()
       for (const row of (rows || [])) {
-        const rawSlug = row?.metadata?.mission_slug
         const at = row?.timestamp
-        if (!rawSlug || !at) continue
-        const slug = canonicalizeMissionSlug(rawSlug, MISSION_SLUG_LOOKUP)
-        if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
+        if (!at) continue
+        // Project-level recency (first hit per project wins — rows are desc).
+        const proj = row?.project
+        if (proj && !projectLastSeenAt.has(proj)) projectLastSeenAt.set(proj, at)
+        // Mission-level recency (only mission-tagged rows).
+        const rawSlug = row?.metadata?.mission_slug
+        if (rawSlug) {
+          const slug = canonicalizeMissionSlug(rawSlug, MISSION_SLUG_LOOKUP)
+          if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
+        }
       }
     }
   } catch { /* dot just won't light; missions still render */ }
@@ -308,9 +327,23 @@ export default async function handler(req, res) {
     }
     const tree = buildSubtree(null)
 
+    // Project-level recency = newest message anywhere in the project
+    // (project chat OR any mission). Falls back to the max mission timestamp
+    // if the project field wasn't on the rows for some reason.
+    let projectLastMessageAt = projectLastSeenAt.get(proj.slug) || null
+    for (const m of missions) {
+      if (m.last_message_at && (!projectLastMessageAt || m.last_message_at > projectLastMessageAt)) {
+        projectLastMessageAt = m.last_message_at
+      }
+    }
+
     projects.push({
       slug: proj.slug,
       name: proj.name,
+      // Newest activity anywhere in the project — drives the project-list
+      // recency sort in Drawer.jsx. Includes project-level chat, not just
+      // mission-tagged messages.
+      last_message_at: projectLastMessageAt,
       // Flat list kept for backwards-compat with existing consumers
       // (Drawer.jsx + the cv4 mission-tree mockup before R-MP-2 wires
       // the nested shape). Workstreams + tree added in parallel.
