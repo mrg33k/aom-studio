@@ -88,6 +88,7 @@ const HolisticBalance = lazy(() => import('./pages/HolisticBalance.jsx'))
 const AOMStats = lazy(() => import('./pages/AOMStats.jsx'))
 const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
+const AIHoursLearning = lazy(() => import('./pages/AIHoursLearning.jsx'))
 // corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
 const ReaderDemo = lazy(() => import('./dashboard/pages/ReaderDemo.jsx'))
 // corner:files-in-app R79-f3 — local demo of the FilesPanel primitive
@@ -292,6 +293,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/artlink" element={<ArtlinkBrand />} />
           <Route path="/artlink-pitch" element={<ArtlinkSitePitch />} />
           <Route path="/blacknight" element={<Blacknight />} />
+          <Route path="/ai-hours" element={<AIHoursLearning />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
