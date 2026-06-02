@@ -24,6 +24,10 @@ import { authFetch } from '../lib/authFetch.js'
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
 const EXPANDED_PROJECTS_KEY = 'cv4_expanded_projects'
+// Tracks when user last visited each project room (keyed by slug, value = timestamp ms)
+const RECENT_VISITS_KEY = 'cv4_recent_visits'
+// Tracks which home sections are collapsed (keys: 'recents', 'agents', 'allProjects')
+const SECTION_COLLAPSED_KEY = 'cv4_section_collapsed'
 
 function readStored(key, fallback) {
   try {
@@ -113,6 +117,28 @@ function relativeTime(iso) {
   } catch (_) { return '' }
 }
 
+// Chevron SVG — rotates 90° when section is collapsed
+function Chevron({ collapsed }) {
+  return (
+    <svg
+      width="12" height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{
+        transition: 'transform 180ms ease',
+        transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+        flexShrink: 0,
+      }}
+    >
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  )
+}
+
 export default function HomeView({
   user,
   worldId,
@@ -129,6 +155,35 @@ export default function HomeView({
   const [expandedProjects, setExpandedProjects] = useState(() => readStored(EXPANDED_PROJECTS_KEY + ':' + userId, {}))
   const [searchText, setSearchText] = useState('')
   const greeting = useMemo(() => pickGreeting(), [])
+
+  // Live recents: track the last time the user visited each project room.
+  // Written immediately when they click a project, so even 1 second ago shows up.
+  const [recentVisits, setRecentVisits] = useState(() =>
+    readStored(RECENT_VISITS_KEY + ':' + userId, {})
+  )
+
+  // Section collapse state — persisted per user
+  const [collapsedSections, setCollapsedSections] = useState(() =>
+    readStored(SECTION_COLLAPSED_KEY + ':' + userId, { recents: false, agents: false, allProjects: false })
+  )
+
+  function toggleSection(key) {
+    setCollapsedSections(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      writeStored(SECTION_COLLAPSED_KEY + ':' + userId, next)
+      return next
+    })
+  }
+
+  // Record a project visit — called right before routing away from home
+  function recordVisit(slug) {
+    const ts = Date.now()
+    setRecentVisits(prev => {
+      const next = { ...prev, [slug]: ts }
+      writeStored(RECENT_VISITS_KEY + ':' + userId, next)
+      return next
+    })
+  }
 
   // Missions per project — fetched from /api/dashboard/missions-tree (same
   // endpoint RightMenu uses). projectRooms from useDataPipe doesn't include
@@ -199,23 +254,24 @@ export default function HomeView({
   }, [agents, pinnedAgents])
 
   // Recent (top 5): pinned first, then chronologically by effective last activity.
-  // Effective activity = max(project.last_message_at, latest mission.last_message_at).
-  // useDataPipe doesn't set last_message_at on projectRooms, so we derive recency
-  // from the missions data which does carry timestamps. This means a project bubbles
-  // up to "recent" when any of its missions has recent activity.
+  // Effective activity = max(recentVisit timestamp, project.last_message_at, latest mission.last_message_at).
+  // recentVisits is the highest-priority signal — written immediately when the user clicks a room.
+  // This means a room they just left will always appear at the top of RECENTS.
   const { recentProjects, allProjects } = useMemo(() => {
     if (!projectRooms || projectRooms.length === 0) return { recentProjects: [], allProjects: [] }
     const pinSet = new Set(pinnedProjects)
 
-    // Compute effective last-active timestamp per project
+    // Compute effective last-active timestamp per project.
+    // recentVisits[slug] is highest priority — written on every project navigation.
     const effectiveTs = (p) => {
+      const visitTs = recentVisits[p.slug] || 0           // user just visited this room
       const projTs = p.last_message_at ? new Date(p.last_message_at).getTime() : 0
       const missions = missionsByProject[p.slug] || []
       const missionTs = missions.reduce((max, m) => {
         const t = m.last_message_at ? new Date(m.last_message_at).getTime() : 0
         return t > max ? t : max
       }, 0)
-      return Math.max(projTs, missionTs)
+      return Math.max(visitTs, projTs, missionTs)
     }
 
     const sorted = [...projectRooms].sort((a, b) => {
@@ -230,7 +286,7 @@ export default function HomeView({
       .filter(p => !recentSlugs.has(p.slug))
       .sort((a, b) => (a.name || a.slug || '').localeCompare(b.name || b.slug || ''))
     return { recentProjects: recent, allProjects: rest }
-  }, [projectRooms, pinnedProjects, missionsByProject])
+  }, [projectRooms, pinnedProjects, missionsByProject, recentVisits])
 
   function toggleAgentPin(slug) {
     setPinnedAgents(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug])
@@ -246,6 +302,12 @@ export default function HomeView({
     if (!wasExpanded && (!missionsByProject[slug] || missionsByProject[slug].length === 0)) {
       fetchMissions()
     }
+  }
+
+  // Project select — record the visit then route
+  function handleProjectSelect(proj, mission) {
+    recordVisit(proj.slug)
+    onSelectProject && onSelectProject(proj, mission)
   }
 
   return (
@@ -268,7 +330,13 @@ export default function HomeView({
         [data-cv4-home] .hm-search-icon { position:absolute; left:18px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:#5A6F8C; pointer-events:none; }
         [data-cv4-home] .hm-search-hint { position:absolute; right:16px; top:50%; transform:translateY(-50%); font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; letter-spacing:.10em; color:#5A6F8C; text-transform:uppercase; pointer-events:none; }
         [data-cv4-home] .hm-section { margin-bottom:40px; }
-        [data-cv4-home] .hm-section-label { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#5A6F8C; padding:0 0 12px; border-bottom:1px solid rgba(255,255,255,.055); margin-bottom:4px; }
+        [data-cv4-home] .hm-section-header { display:flex; align-items:center; gap:8px; padding:0 0 12px; border-bottom:1px solid rgba(255,255,255,.055); margin-bottom:4px; cursor:pointer; user-select:none; }
+        [data-cv4-home] .hm-section-header:hover .hm-section-label { color:#A7B5C8; }
+        [data-cv4-home] .hm-section-header:hover .hm-section-chevron { color:#A7B5C8; }
+        [data-cv4-home] .hm-section-label { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#5A6F8C; flex:1; transition:color 120ms ease; }
+        [data-cv4-home] .hm-section-chevron { color:#5A6F8C; display:flex; align-items:center; transition:color 120ms ease; }
+        [data-cv4-home] .hm-section-body { overflow:hidden; transition:opacity 200ms ease; }
+        [data-cv4-home] .hm-section-body.collapsed { display:none; }
         [data-cv4-home] .hm-row { display:flex; align-items:center; gap:14px; padding:13px 0; cursor:pointer; text-decoration:none; color:#E8EBEF; border-bottom:1px solid rgba(255,255,255,.035); transition:background-color 120ms ease, padding-left 160ms ease; background:none; border-left:none; border-right:none; border-top:none; width:100%; font-family:inherit; text-align:left; }
         [data-cv4-home] .hm-row:hover { background:rgba(255,255,255,.018); padding-left:8px; }
         [data-cv4-home] .hm-row:last-of-type { border-bottom:none; }
@@ -306,7 +374,9 @@ export default function HomeView({
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-search input::placeholder { color:rgba(42,38,32,0.5); }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-search-icon,
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-search-hint { color:rgba(42,38,32,0.5); }
-        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-section-label { color:rgba(42,38,32,0.5); border-bottom-color:rgba(0,0,0,0.08); }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-section-label { color:rgba(42,38,32,0.5); }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-section-header { border-bottom-color:rgba(0,0,0,0.08); }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-section-chevron { color:rgba(42,38,32,0.5); }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-row { color:#2A2620; border-bottom-color:rgba(0,0,0,0.06); }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-row:hover { background:rgba(0,0,0,0.025); }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-agent-name { color:#2A2620; }
@@ -355,109 +425,59 @@ export default function HomeView({
 
         {/* Agents */}
         <div className="hm-section">
-          <div className="hm-section-label">Agents</div>
-          {visibleAgents.length === 0 && (
-            <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No agents pinned yet.</div>
-          )}
-          {visibleAgents.map(a => (
-            <button key={a.slug} className="hm-row" onClick={() => onSelectAgent && onSelectAgent(a)}>
-              <span className="hm-agent-dot"></span>
-              <span className="hm-agent-name">{a.name || a.slug}</span>
-              <span className="hm-agent-meta">{relativeTime(a.last_message_at)}</span>
-              <button
-                className={'hm-pin' + (pinnedAgents.includes(a.slug) || (pinnedAgents.length === 0 && a.is_ea) ? ' pinned' : '')}
-                onClick={(e) => { e.stopPropagation(); toggleAgentPin(a.slug) }}
-                title={pinnedAgents.includes(a.slug) ? 'Unpin' : 'Pin'}
-                aria-label={(pinnedAgents.includes(a.slug) ? 'Unpin ' : 'Pin ') + (a.name || a.slug)}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+          <div
+            className="hm-section-header"
+            onClick={() => toggleSection('agents')}
+            role="button"
+            aria-expanded={!collapsedSections.agents}
+            aria-label="Toggle agents section"
+          >
+            <span className="hm-section-label">Agents</span>
+            <span className="hm-section-chevron">
+              <Chevron collapsed={collapsedSections.agents} />
+            </span>
+          </div>
+          <div className={'hm-section-body' + (collapsedSections.agents ? ' collapsed' : '')}>
+            {visibleAgents.length === 0 && (
+              <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No agents pinned yet.</div>
+            )}
+            {visibleAgents.map(a => (
+              <button key={a.slug} className="hm-row" onClick={() => onSelectAgent && onSelectAgent(a)}>
+                <span className="hm-agent-dot"></span>
+                <span className="hm-agent-name">{a.name || a.slug}</span>
+                <span className="hm-agent-meta">{relativeTime(a.last_message_at)}</span>
+                <button
+                  className={'hm-pin' + (pinnedAgents.includes(a.slug) || (pinnedAgents.length === 0 && a.is_ea) ? ' pinned' : '')}
+                  onClick={(e) => { e.stopPropagation(); toggleAgentPin(a.slug) }}
+                  title={pinnedAgents.includes(a.slug) ? 'Unpin' : 'Pin'}
+                  aria-label={(pinnedAgents.includes(a.slug) ? 'Unpin ' : 'Pin ') + (a.name || a.slug)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+                </button>
               </button>
-            </button>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Projects */}
+        {/* Recent Projects */}
         <div className="hm-section">
-          <div className="hm-section-label">Recent</div>
-          {recentProjects.length === 0 && (
-            <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No projects yet.</div>
-          )}
-          {recentProjects.map(p => {
-            const isPinned = pinnedProjects.includes(p.slug)
-            const isExpanded = !!expandedProjects[p.slug]
-            const missions = missionsByProject[p.slug] || []
-            return (
-              <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
-                <div className="hm-proj-head">
-                  <button
-                    className="hm-proj-name"
-                    onClick={() => onSelectProject && onSelectProject(p, null)}
-                  >{p.name || p.slug}</button>
-                  <button
-                    className="hm-icon-btn chat"
-                    onClick={() => onSelectProject && onSelectProject(p, null)}
-                    title={'Open ' + (p.name || p.slug) + ' chat'}
-                    aria-label={'Open ' + (p.name || p.slug) + ' chat'}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                      <path d="M4 3 H20 A2 2 0 0 1 22 5 V15 A2 2 0 0 1 20 17 H8 L3 22 V5 A2 2 0 0 1 4 3 Z"/>
-                    </svg>
-                  </button>
-                  <button
-                    className="hm-icon-btn"
-                    onClick={() => toggleExpand(p.slug)}
-                    title="Toggle missions"
-                    aria-label={'Toggle ' + (p.name || p.slug) + ' missions'}
-                  >
-                    <svg className="hm-caret-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                  <button
-                    className={'hm-pin' + (isPinned ? ' pinned' : '')}
-                    onClick={() => toggleProjectPin(p.slug)}
-                    title={isPinned ? 'Unpin' : 'Pin'}
-                    aria-label={(isPinned ? 'Unpin ' : 'Pin ') + (p.name || p.slug)}
-                  >
-                    {isPinned ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
-                    )}
-                  </button>
-                </div>
-                {isExpanded && missions.length > 0 && (
-                  <div className="hm-missions">
-                    {missions.map(m => (
-                      <button
-                        key={m.slug}
-                        className="hm-mission"
-                        onClick={() => onSelectProject && onSelectProject(p, m)}
-                      >
-                        <span className={'hm-mdot' + (m.status === 'running' || m.status === 'active' ? ' active' : m.status === 'queued' ? ' queued' : '')}></span>
-                        <span className="hm-mname">{m.name || m.slug}</span>
-                        <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {isExpanded && missions.length === 0 && (
-                  <div className="hm-missions">
-                    <div style={{ padding: '9px 16px', color: '#5A6F8C', fontSize: 13, fontStyle: 'italic' }}>No missions yet.</div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* ALL PROJECTS — every project the user has access to, alphabetical.
-            Sits below the recent-5 so users can find anything that's not
-            currently pinned/recent without leaving home. */}
-        {allProjects.length > 0 && (
-          <div className="hm-section">
-            <div className="hm-section-label">All Projects</div>
-            {allProjects.map(p => {
+          <div
+            className="hm-section-header"
+            onClick={() => toggleSection('recents')}
+            role="button"
+            aria-expanded={!collapsedSections.recents}
+            aria-label="Toggle recents section"
+          >
+            <span className="hm-section-label">Recent</span>
+            <span className="hm-section-chevron">
+              <Chevron collapsed={collapsedSections.recents} />
+            </span>
+          </div>
+          <div className={'hm-section-body' + (collapsedSections.recents ? ' collapsed' : '')}>
+            {recentProjects.length === 0 && (
+              <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No projects yet.</div>
+            )}
+            {recentProjects.map(p => {
               const isPinned = pinnedProjects.includes(p.slug)
               const isExpanded = !!expandedProjects[p.slug]
               const missions = missionsByProject[p.slug] || []
@@ -466,11 +486,11 @@ export default function HomeView({
                   <div className="hm-proj-head">
                     <button
                       className="hm-proj-name"
-                      onClick={() => onSelectProject && onSelectProject(p, null)}
+                      onClick={() => handleProjectSelect(p, null)}
                     >{p.name || p.slug}</button>
                     <button
                       className="hm-icon-btn chat"
-                      onClick={() => onSelectProject && onSelectProject(p, null)}
+                      onClick={() => handleProjectSelect(p, null)}
                       title={'Open ' + (p.name || p.slug) + ' chat'}
                       aria-label={'Open ' + (p.name || p.slug) + ' chat'}
                     >
@@ -507,7 +527,7 @@ export default function HomeView({
                         <button
                           key={m.slug}
                           className="hm-mission"
-                          onClick={() => onSelectProject && onSelectProject(p, m)}
+                          onClick={() => handleProjectSelect(p, m)}
                         >
                           <span className={'hm-mdot' + (m.status === 'running' || m.status === 'active' ? ' active' : m.status === 'queued' ? ' queued' : '')}></span>
                           <span className="hm-mname">{m.name || m.slug}</span>
@@ -524,6 +544,95 @@ export default function HomeView({
                 </div>
               )
             })}
+          </div>
+        </div>
+
+        {/* ALL PROJECTS — every project the user has access to, alphabetical.
+            Sits below the recent-5 so users can find anything that's not
+            currently pinned/recent without leaving home. */}
+        {allProjects.length > 0 && (
+          <div className="hm-section">
+            <div
+              className="hm-section-header"
+              onClick={() => toggleSection('allProjects')}
+              role="button"
+              aria-expanded={!collapsedSections.allProjects}
+              aria-label="Toggle all projects section"
+            >
+              <span className="hm-section-label">All Projects</span>
+              <span className="hm-section-chevron">
+                <Chevron collapsed={collapsedSections.allProjects} />
+              </span>
+            </div>
+            <div className={'hm-section-body' + (collapsedSections.allProjects ? ' collapsed' : '')}>
+              {allProjects.map(p => {
+                const isPinned = pinnedProjects.includes(p.slug)
+                const isExpanded = !!expandedProjects[p.slug]
+                const missions = missionsByProject[p.slug] || []
+                return (
+                  <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
+                    <div className="hm-proj-head">
+                      <button
+                        className="hm-proj-name"
+                        onClick={() => handleProjectSelect(p, null)}
+                      >{p.name || p.slug}</button>
+                      <button
+                        className="hm-icon-btn chat"
+                        onClick={() => handleProjectSelect(p, null)}
+                        title={'Open ' + (p.name || p.slug) + ' chat'}
+                        aria-label={'Open ' + (p.name || p.slug) + ' chat'}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                          <path d="M4 3 H20 A2 2 0 0 1 22 5 V15 A2 2 0 0 1 20 17 H8 L3 22 V5 A2 2 0 0 1 4 3 Z"/>
+                        </svg>
+                      </button>
+                      <button
+                        className="hm-icon-btn"
+                        onClick={() => toggleExpand(p.slug)}
+                        title="Toggle missions"
+                        aria-label={'Toggle ' + (p.name || p.slug) + ' missions'}
+                      >
+                        <svg className="hm-caret-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+                      <button
+                        className={'hm-pin' + (isPinned ? ' pinned' : '')}
+                        onClick={() => toggleProjectPin(p.slug)}
+                        title={isPinned ? 'Unpin' : 'Pin'}
+                        aria-label={(isPinned ? 'Unpin ' : 'Pin ') + (p.name || p.slug)}
+                      >
+                        {isPinned ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+                        )}
+                      </button>
+                    </div>
+                    {isExpanded && missions.length > 0 && (
+                      <div className="hm-missions">
+                        {missions.map(m => (
+                          <button
+                            key={m.slug}
+                            className="hm-mission"
+                            onClick={() => handleProjectSelect(p, m)}
+                          >
+                            <span className={'hm-mdot' + (m.status === 'running' || m.status === 'active' ? ' active' : m.status === 'queued' ? ' queued' : '')}></span>
+                            <span className="hm-mname">{m.name || m.slug}</span>
+                            <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {isExpanded && missions.length === 0 && (
+                      <div className="hm-missions">
+                        <div style={{ padding: '9px 16px', color: '#5A6F8C', fontSize: 13, fontStyle: 'italic' }}>No missions yet.</div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
