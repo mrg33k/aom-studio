@@ -2,16 +2,42 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText, Users, Zap, Star, Clock,
-  Check, ArrowRight, Download
+  Check, ArrowRight, Download,
+  MessageSquare, TrendingUp, LayoutGrid, PenTool, BarChart2,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 import SiteFooter from '../components/SiteFooter';
 
 const ORANGE = '#E85D26';
 
 // ─── Product catalog ────────────────────────────────────────────────────────
-// To add a new product: add an object to this array. No component changes needed.
+// To add a new product: add an object to this array.
+// Free products: set `free: true` + `href: '/internal-route'` (no gumroadUrl needed).
 const PRODUCTS = [
+  {
+    id: 'ai-guide',
+    badge: 'FREE TOOL',
+    title: 'The AI Business Guide',
+    subtitle:
+      'Interactive guide to using AI prompts for your business — free to explore. Answer 2 questions, get personalized prompts you can use today.',
+    free: true,
+    href: '/ai-guide',
+    stats: [
+      { value: '30+', label: 'Prompts' },
+      { value: '6', label: 'Categories' },
+      { value: 'Free', label: 'Forever' },
+    ],
+    categories: [
+      { icon: MessageSquare, title: 'Client Communications', desc: 'Follow-ups, project updates, difficult client responses, and welcome emails — done in seconds.', count: 5 },
+      { icon: Users,         title: 'Hiring & Team',         desc: 'Job postings, interview questions, offer letters, and onboarding checklists.',               count: 5 },
+      { icon: TrendingUp,    title: 'Sales & Outreach',      desc: 'Cold emails, follow-up sequences, objection responses, and proposal intros.',                count: 5 },
+      { icon: LayoutGrid,    title: 'Operations',            desc: 'SOPs, delegation briefs, weekly agendas, and process audit prompts.',                        count: 5 },
+      { icon: PenTool,       title: 'Content & Marketing',   desc: 'Social captions, content calendars, case studies, and bio copy.',                           count: 5 },
+      { icon: BarChart2,     title: 'Finance & Reporting',   desc: 'Invoice follow-ups, pricing scripts, expense reviews, and cash flow questions.',             count: 5 },
+    ],
+    callout: 'Answer 2 quick questions — walk away with prompts you can use today.',
+  },
   {
     id: 'ai-prompt-playbook',
     badge: 'DIGITAL DOWNLOAD',
@@ -45,9 +71,19 @@ const PRODUCTS = [
 
 // ─── ProductCard (grid tile) ────────────────────────────────────────────────
 function ProductCard({ product, onSelect, selected }) {
+  const navigate = useNavigate();
+
+  function handleClick() {
+    if (product.free && product.href) {
+      navigate(product.href);
+    } else {
+      onSelect(product);
+    }
+  }
+
   return (
     <motion.button
-      onClick={() => onSelect(product)}
+      onClick={handleClick}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2 }}
       className="text-left w-full rounded-xl p-6 cursor-pointer transition-all duration-200"
@@ -58,19 +94,26 @@ function ProductCard({ product, onSelect, selected }) {
     >
       <span
         className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded mb-4"
-        style={{ background: 'rgba(232,93,38,0.15)', color: ORANGE }}
+        style={{
+          background: product.free ? 'rgba(74,222,128,0.12)' : 'rgba(232,93,38,0.15)',
+          color: product.free ? '#4ade80' : ORANGE,
+        }}
       >
         {product.badge}
       </span>
       <h3 className="font-headline text-xl text-white mb-2 leading-snug">{product.title}</h3>
       <p className="font-body text-sm text-white/60 mb-5 leading-relaxed">{product.subtitle}</p>
       <div className="flex items-center justify-between">
-        <span className="font-headline text-2xl text-white">${product.price}</span>
+        {product.free ? (
+          <span className="font-headline text-2xl" style={{ color: '#4ade80' }}>Free</span>
+        ) : (
+          <span className="font-headline text-2xl text-white">${product.price}</span>
+        )}
         <span
           className="text-xs font-body font-semibold tracking-wide px-3 py-1.5 rounded"
           style={{ background: ORANGE, color: '#fff' }}
         >
-          Get it →
+          {product.free ? 'Explore free →' : 'Get it →'}
         </span>
       </div>
     </motion.button>
@@ -97,6 +140,7 @@ function ComingSoonCard() {
 
 // ─── ProductDetail (expanded view + sticky buy card) ────────────────────────
 function ProductDetail({ product }) {
+  const navigate = useNavigate();
   if (!product) return null;
 
   return (
@@ -167,34 +211,67 @@ function ProductDetail({ product }) {
             className="rounded-2xl p-6 space-y-5"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
-            <div>
-              <div className="font-headline text-3xl text-white">${product.price}</div>
-              <div className="font-body text-sm text-white/40 mt-0.5">One-time purchase</div>
-            </div>
-
-            <ul className="space-y-2">
-              {product.includes.map((item) => (
-                <li key={item} className="flex items-start gap-2.5">
-                  <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: ORANGE }} />
-                  <span className="font-body text-sm text-white/70">{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <a
-              href={product.gumroadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-headline text-sm tracking-wide hover:brightness-110 transition-all duration-200"
-              style={{ background: ORANGE, color: '#fff' }}
-            >
-              <Download size={16} />
-              Buy Now — ${product.price}
-            </a>
-
-            <p className="font-body text-xs text-white/30 text-center">
-              Instant download. Secure checkout via Gumroad.
-            </p>
+            {product.free ? (
+              <>
+                <div>
+                  <div className="font-headline text-3xl" style={{ color: '#4ade80' }}>Free</div>
+                  <div className="font-body text-sm text-white/40 mt-0.5">No account required</div>
+                </div>
+                <ul className="space-y-2">
+                  {[
+                    '30+ personalized prompts',
+                    'Covers 6 key business areas',
+                    'Ready to use in ChatGPT or Claude',
+                    'Works in under 3 minutes',
+                    'No login required',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#4ade80' }} />
+                      <span className="font-body text-sm text-white/70">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => navigate(product.href)}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-headline text-sm tracking-wide hover:brightness-110 transition-all duration-200"
+                  style={{ background: ORANGE, color: '#fff' }}
+                >
+                  <ArrowRight size={16} />
+                  Start the Guide — Free
+                </button>
+                <p className="font-body text-xs text-white/30 text-center">
+                  No email. No signup. Instant access.
+                </p>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="font-headline text-3xl text-white">${product.price}</div>
+                  <div className="font-body text-sm text-white/40 mt-0.5">One-time purchase</div>
+                </div>
+                <ul className="space-y-2">
+                  {product.includes.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: ORANGE }} />
+                      <span className="font-body text-sm text-white/70">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={product.gumroadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-headline text-sm tracking-wide hover:brightness-110 transition-all duration-200"
+                  style={{ background: ORANGE, color: '#fff' }}
+                >
+                  <Download size={16} />
+                  Buy Now — ${product.price}
+                </a>
+                <p className="font-body text-xs text-white/30 text-center">
+                  Instant download. Secure checkout via Gumroad.
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -204,6 +281,7 @@ function ProductDetail({ product }) {
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function Marketplace() {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState(PRODUCTS[0]);
 
   return (

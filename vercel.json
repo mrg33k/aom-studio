@@ -45,6 +45,7 @@
     { "source": "/roi-calculator", "destination": "/index.html" },
     { "source": "/book", "destination": "/index.html" },
     { "source": "/marketplace", "destination": "/index.html" },
+    { "source": "/ai-guide", "destination": "/index.html" },
     { "source": "/ai/:path*", "destination": "/index.html" },
     { "source": "/case-study", "destination": "/index.html" },
     { "source": "/corner", "destination": "/index.html" },
