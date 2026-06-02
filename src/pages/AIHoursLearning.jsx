@@ -9,6 +9,8 @@ import { supabase } from '../dashboard/lib/supabase.js'
 //   Client (access code): session progress view for their current engagement
 // ─────────────────────────────────────────────────────────────────────────────
 
+const AOM_TEAM_EMAILS = ['patrikmatheson@gmail.com', 'hello@aom-inhouse.com']
+
 const AOM_ORANGE = '#E85D26'
 const AOM_ORANGE_LIGHT = '#F47A48'
 const AOM_ORANGE_PALE = '#FFF1EB'
@@ -769,16 +771,49 @@ function AccessCodeGate({ onSuccess }) {
 
 // ─── Client Session View ──────────────────────────────────────────────────────
 
-function ClientView({ client, onLogout }) {
+function ClientView({ client, onLogout, onClientUpdate }) {
   const [expandedSession, setExpandedSession] = useState(client.current_session)
+  const [advancing, setAdvancing] = useState(false)
+  const [advanceConfirmed, setAdvanceConfirmed] = useState(false)
+  const [advanceError, setAdvanceError] = useState(null)
   const currentSession = client.current_session || 1
   const completedCount = currentSession - 1
   const progressPct = Math.round((completedCount / 5) * 100)
+  const isLastSession = currentSession === 5
+  const isComplete = currentSession > 5
 
   function getStatus(sessionNum) {
     if (sessionNum < currentSession) return 'done'
-    if (sessionNum === currentSession) return 'current'
+    if (sessionNum === currentSession && !isComplete) return 'current'
     return 'locked'
+  }
+
+  async function handleAdvance() {
+    if (advancing || isLastSession && advanceConfirmed) return
+    setAdvancing(true)
+    setAdvanceError(null)
+    try {
+      const newSession = currentSession + 1
+      const { data, error: dbErr } = await supabase
+        .from('ai_hours_clients')
+        .update({ current_session: newSession })
+        .eq('access_code', client.access_code)
+        .select()
+        .single()
+      if (dbErr || !data) {
+        setAdvanceError('Could not update your progress. Please try again or contact AOM.')
+        setAdvancing(false)
+        return
+      }
+      // Update localStorage and parent state
+      localStorage.setItem('ai_hours_client', JSON.stringify(data))
+      onClientUpdate(data)
+      setAdvanceConfirmed(true)
+      setExpandedSession(newSession <= 5 ? newSession : null)
+    } catch {
+      setAdvanceError('Something went wrong. Please try again.')
+    }
+    setAdvancing(false)
   }
 
   return (
@@ -897,6 +932,95 @@ function ClientView({ client, onLogout }) {
                       <span style={styles.leaveWithLabel}>You'll leave with:</span>
                       <span>{session.leaveWith}</span>
                     </div>
+
+                    {/* Advance button — only for current session, not last */}
+                    {status === 'current' && !isLastSession && !advanceConfirmed && (
+                      <div style={{
+                        marginTop: 28,
+                        paddingTop: 28,
+                        borderTop: `1px solid ${BORDER_SOFT}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        maxWidth: 560,
+                      }}>
+                        <div style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.6 }}>
+                          Completed this session with your AOM facilitator? Mark it done to unlock the next session.
+                        </div>
+                        {advanceError && <div style={styles.errorBox}>{advanceError}</div>}
+                        <button
+                          onClick={handleAdvance}
+                          disabled={advancing}
+                          style={{
+                            ...styles.btn,
+                            alignSelf: 'flex-start',
+                            opacity: advancing ? 0.7 : 1,
+                          }}
+                        >
+                          {advancing
+                            ? 'Saving...'
+                            : `Mark Session ${sessionNum} Complete → Advance to Session ${sessionNum + 1}`}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Last session — program complete CTA */}
+                    {status === 'current' && isLastSession && !advanceConfirmed && (
+                      <div style={{
+                        marginTop: 28,
+                        paddingTop: 28,
+                        borderTop: `1px solid ${BORDER_SOFT}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        maxWidth: 560,
+                      }}>
+                        <div style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.6 }}>
+                          This is your final session. Once you've completed it with your AOM facilitator, mark the program complete.
+                        </div>
+                        {advanceError && <div style={styles.errorBox}>{advanceError}</div>}
+                        <button
+                          onClick={handleAdvance}
+                          disabled={advancing}
+                          style={{
+                            ...styles.btn,
+                            alignSelf: 'flex-start',
+                            opacity: advancing ? 0.7 : 1,
+                            background: GREEN_CHECK,
+                          }}
+                        >
+                          {advancing ? 'Saving...' : 'Mark Program Complete →'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Advance confirmed */}
+                    {status === 'current' && advanceConfirmed && (
+                      <div style={{
+                        marginTop: 28,
+                        paddingTop: 28,
+                        borderTop: `1px solid ${BORDER_SOFT}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        maxWidth: 560,
+                      }}>
+                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
+                          <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
+                          <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: GREEN_CHECK }}>
+                            {isLastSession ? 'Program complete! Great work.' : `Session ${sessionNum} marked complete.`}
+                          </div>
+                          {!isLastSession && (
+                            <div style={{ fontSize: 13, color: INK_MUTED, marginTop: 2 }}>
+                              Session {sessionNum + 1} is now unlocked above.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1544,11 +1668,12 @@ export default function AIHoursLearning() {
       // Check for authenticated AOM team session first
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
+        if (user && AOM_TEAM_EMAILS.includes(user.email)) {
           setTeamUser(user)
           setMode('team')
           return
         }
+        // Authenticated but not AOM team — fall through to client gate
       }
 
       // Check for stored client session
@@ -1603,7 +1728,13 @@ export default function AIHoursLearning() {
   }
 
   if (mode === 'client') {
-    return <ClientView client={clientData} onLogout={handleLogout} />
+    return (
+      <ClientView
+        client={clientData}
+        onLogout={handleLogout}
+        onClientUpdate={newData => setClientData(newData)}
+      />
+    )
   }
 
   if (mode === 'team') {
