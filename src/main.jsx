@@ -89,6 +89,7 @@ const AOMStats = lazy(() => import('./pages/AOMStats.jsx'))
 const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
 const AIHoursLearning = lazy(() => import('./pages/AIHoursLearning.jsx'))
+const Marketplace = lazy(() => import('./pages/Marketplace.jsx'))
 // corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
 const ReaderDemo = lazy(() => import('./dashboard/pages/ReaderDemo.jsx'))
 // corner:files-in-app R79-f3 — local demo of the FilesPanel primitive
@@ -271,6 +272,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/ai/gemma-4/gemini" element={<Gemma4BriefGemini />} />
           <Route path="/ai/gemma-4/deepseek" element={<Gemma4BriefDeepseek />} />
           <Route path="/book" element={<BookAudit />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/corner" element={<Corner />} />
           <Route path="/skills" element={<Skills />} />
           <Route path="/settings" element={<Settings />} />

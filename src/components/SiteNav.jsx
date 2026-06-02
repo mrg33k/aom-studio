@@ -23,6 +23,7 @@ const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Work', href: '/#work' },
   { label: 'AI', href: '/ai' },
+  { label: 'Marketplace', href: '/marketplace' },
 ];
 
 export default function SiteNav({ transparent = false, onStartProject }) {
