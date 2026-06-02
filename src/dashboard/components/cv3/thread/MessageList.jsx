@@ -1822,7 +1822,7 @@ function MessageList({ roomType = 'agent' }) {
           user-bubble chain doesn't cover). Otherwise the inline render owns
           the chain so it's tightly coupled to the user's bubble. */}
       {inFlight && lastUserMsgIdx !== visibleMessages.length - 1 && (
-        <div style={{ paddingLeft: 38, paddingBottom: 4, order: 999 }}>
+        <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
           <StepThread
             steps={syntheticSteps.length > 0 ? syntheticSteps : [{
               id: 'synthetic-thinking',
