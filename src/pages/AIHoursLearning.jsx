@@ -670,13 +670,20 @@ function SessionStatusIcon({ status }) {
 }
 
 // ─── Access Code Gate ─────────────────────────────────────────────────────────
-// Client-only gate — no admin UI visible here.
-// AOM team uses /ai-hours/admin (separate hidden route).
+// Client-only gate — admin link is intentionally hidden at the bottom.
+// AOM team clicks the tiny "Admin" link to reveal the email/password form.
 
 function AccessCodeGate({ onClientSuccess }) {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Admin panel state
+  const [showAdmin, setShowAdmin] = useState(false)
+  const [adminEmail, setAdminEmail] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminLoading, setAdminLoading] = useState(false)
+  const [adminError, setAdminError] = useState(null)
 
   async function handleClientSubmit(e) {
     e.preventDefault()
@@ -705,6 +712,40 @@ function AccessCodeGate({ onClientSuccess }) {
       setError('Something went wrong. Please try again.')
     }
     setLoading(false)
+  }
+
+  async function handleAdminSubmit(e) {
+    e.preventDefault()
+    if (!adminEmail.trim() || !adminPassword.trim()) return
+    setAdminLoading(true)
+    setAdminError(null)
+
+    try {
+      if (!supabase) throw new Error('Service unavailable')
+      const { data, error: authErr } = await supabase.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: adminPassword,
+      })
+
+      if (authErr || !data?.user) {
+        setAdminError('Invalid email or password.')
+        setAdminLoading(false)
+        return
+      }
+
+      if (!AOM_TEAM_EMAILS.includes(data.user.email)) {
+        await supabase.auth.signOut()
+        setAdminError('This account does not have admin access.')
+        setAdminLoading(false)
+        return
+      }
+
+      // Redirect to admin view
+      window.location.replace('/ai-hours/admin')
+    } catch {
+      setAdminError('Something went wrong. Please try again.')
+    }
+    setAdminLoading(false)
   }
 
   return (
@@ -745,7 +786,7 @@ function AccessCodeGate({ onClientSuccess }) {
                 onChange={e => setCode(e.target.value)}
                 placeholder="AOM-XXXX-000"
                 style={styles.input}
-                autoFocus
+                autoFocus={!showAdmin}
                 disabled={loading}
               />
             </div>
@@ -762,6 +803,106 @@ function AccessCodeGate({ onClientSuccess }) {
           <p style={{ fontSize: 13, color: INK_MUTED, textAlign: 'center', marginTop: 24 }}>
             Don't have a code? <a href="mailto:hello@aom-inhouse.com" style={{ color: AOM_ORANGE, textDecoration: 'none' }}>Contact AOM</a> to get started.
           </p>
+
+          {/* ── Hidden admin link + inline form ── */}
+          <div style={{ marginTop: 48, textAlign: 'center' }}>
+            {!showAdmin ? (
+              <button
+                onClick={() => setShowAdmin(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: 10,
+                  color: '#c8c2bb',
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+                onMouseEnter={e => { e.target.style.color = '#9ca3af'; e.target.style.textDecoration = 'underline' }}
+                onMouseLeave={e => { e.target.style.color = '#c8c2bb'; e.target.style.textDecoration = 'none' }}
+              >
+                Admin
+              </button>
+            ) : (
+              <div style={{
+                marginTop: 4,
+                padding: '20px',
+                background: CREAM_WARM,
+                border: `1px solid ${BORDER}`,
+                borderRadius: 8,
+                textAlign: 'left',
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: INK_MUTED, marginBottom: 14, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  AOM Team Login
+                </div>
+                <form onSubmit={handleAdminSubmit}>
+                  <div style={{ marginBottom: 10 }}>
+                    <input
+                      type="email"
+                      value={adminEmail}
+                      onChange={e => setAdminEmail(e.target.value)}
+                      placeholder="Email"
+                      autoFocus
+                      style={{
+                        ...styles.input,
+                        letterSpacing: 'normal',
+                        textTransform: 'none',
+                        padding: '11px 14px',
+                        fontSize: 14,
+                      }}
+                      disabled={adminLoading}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <input
+                      type="password"
+                      value={adminPassword}
+                      onChange={e => setAdminPassword(e.target.value)}
+                      placeholder="Password"
+                      style={{
+                        ...styles.input,
+                        letterSpacing: 'normal',
+                        textTransform: 'none',
+                        padding: '11px 14px',
+                        fontSize: 14,
+                      }}
+                      disabled={adminLoading}
+                    />
+                  </div>
+                  {adminError && <div style={{ ...styles.errorBox, marginBottom: 12 }}>{adminError}</div>}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="submit"
+                      style={{
+                        ...styles.btn,
+                        flex: 1,
+                        justifyContent: 'center',
+                        fontSize: 13,
+                        padding: '10px 16px',
+                        opacity: adminLoading ? 0.7 : 1,
+                      }}
+                      disabled={adminLoading}
+                    >
+                      {adminLoading ? 'Signing in...' : 'Sign in'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowAdmin(false); setAdminEmail(''); setAdminPassword(''); setAdminError(null) }}
+                      style={{
+                        ...styles.btn,
+                        ...styles.btnSecondary,
+                        fontSize: 13,
+                        padding: '10px 14px',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
