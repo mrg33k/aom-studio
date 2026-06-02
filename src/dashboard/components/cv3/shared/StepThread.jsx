@@ -150,6 +150,9 @@ export default function StepThread({ steps, settled, isError, isStalled = false,
   useEffect(() => { ensureStyles() }, [])
   if (!steps || steps.length === 0) return null
   const sorted = [...steps].sort((a, b) => (a.step_index ?? 0) - (b.step_index ?? 0))
+  // R10: keep only last 3 steps visible (FIFO queue). Older steps exist in data but don't render.
+  const MAX_VISIBLE_STEPS = 3
+  const visible = sorted.slice(-MAX_VISIBLE_STEPS)
   return (
     <div
       data-testid="step-thread"
@@ -163,8 +166,8 @@ export default function StepThread({ steps, settled, isError, isStalled = false,
         transition: 'opacity 0.45s ease',
       }}
     >
-      {sorted.map((step, idx) => {
-        const prev = idx > 0 ? sorted[idx - 1] : null
+      {visible.map((step, idx) => {
+        const prev = idx > 0 ? visible[idx - 1] : null
         const connectorActive = !!prev && (step.status === 'in_progress' || prev.status === 'in_progress')
         return (
           <React.Fragment key={step.id || `step-${step.step_index}`}>
