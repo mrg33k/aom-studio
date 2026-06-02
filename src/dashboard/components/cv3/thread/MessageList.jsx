@@ -1077,8 +1077,13 @@ function MessageList({ roomType = 'agent' }) {
             : (treatAsCurrentUser ? { avatar_url: currentUser?.user_metadata?.avatar_url } : null)
           const senderAvatar = senderProfile?.avatar_url || null
           const msgFlagged = needsVerificationIds?.has?.(msg.id)
+
+          // R12 fix: steps are parented to the latest USER message, not to the assistant's own ID.
+          // Find the most recent user message at or before this index.
+          const userMsgForSteps = isUser ? msg : arr.slice(0, idx).reverse().find(m => m.role === 'user')
           const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
             ? stepsByMessageId[msg.id]
+            : !isUser && userMsgForSteps ? (stepsByMessageId[userMsgForSteps.id] || null)
             : null
           // R75-b5: settle when the assistant reply arrives (not just on next user msg).
           // This dims the chain and flips data-status to 'done' the moment the reply lands.
