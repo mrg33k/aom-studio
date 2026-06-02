@@ -253,13 +253,13 @@ export default function HomeView({
     return agents.filter(a => a.is_ea)
   }, [agents, pinnedAgents])
 
-  // Recent (top 5): pinned first, then chronologically by effective last activity.
+  // Recent (top 5): sorted purely by effective last activity (most recent first).
   // Effective activity = max(recentVisit timestamp, project.last_message_at, latest mission.last_message_at).
   // recentVisits is the highest-priority signal — written immediately when the user clicks a room.
-  // This means a room they just left will always appear at the top of RECENTS.
+  // This means a room they just left will always appear at the top of RECENTS, regardless of pinning.
+  // Pinning is preserved for UI affordance but does not change sort order.
   const { recentProjects, allProjects } = useMemo(() => {
     if (!projectRooms || projectRooms.length === 0) return { recentProjects: [], allProjects: [] }
-    const pinSet = new Set(pinnedProjects)
 
     // Compute effective last-active timestamp per project.
     // recentVisits[slug] is highest priority — written on every project navigation.
@@ -274,10 +274,8 @@ export default function HomeView({
       return Math.max(visitTs, projTs, missionTs)
     }
 
+    // Sort by recency only — most recently visited/active projects come first.
     const sorted = [...projectRooms].sort((a, b) => {
-      const aPin = pinSet.has(a.slug)
-      const bPin = pinSet.has(b.slug)
-      if (aPin !== bPin) return aPin ? -1 : 1
       return effectiveTs(b) - effectiveTs(a)
     })
     const recent = sorted.slice(0, 5)
