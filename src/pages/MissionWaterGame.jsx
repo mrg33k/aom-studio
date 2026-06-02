@@ -1,352 +1,837 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * MissionWaterGame — Chapter 1: "Earth is running out."
+ * MissionWaterGame — Chapter 1: "Earth Is Running Out."
  *
- * An interactive decision-based scenario where the player is dropped into
- * a city crisis and must make 5 critical water management decisions.
+ * Branching narrative prototype: cadet investigates one of three regional
+ * water crises (Phoenix / Mumbai / São Paulo), makes a strategic recommendation,
+ * earns Discovery badges, then converges at the Mission Council for a reveal
+ * connecting Earth's water crisis to the Moon (Chapter 2 teaser).
  *
  * Design system: matches ConradFoundation2.jsx
- *   - bg #0C0C0C, text #F0ECE6 warm bone, accent #E85D26 AOM orange
- *   - font-display-serif (Playfair Display) for scenario headlines
- *   - font-mono (JetBrains Mono) for kickers/stats
- *   - Framer Motion card transitions
+ *   bg #080810 deep space, text #F0ECE6 warm bone, AOM orange #E85D26,
+ *   data blue #3B82F6. Framer Motion scene transitions.
  *
- * Route: /missionwater
- * Task id: 0d354c79-27cc-4c7a-b817-87be932cebf2
+ * Routes: /MissionWaterGame and /mission-water-game (also /missionwater legacy).
+ * Task id: 58f26be2-a44f-48e0-bd48-19f093e19147
  */
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
 
 // ─── Game data ────────────────────────────────────────────────────────────────
 
-const DECISIONS = [
-  {
-    id: 0,
-    kicker: 'Chapter 1 · Earth Is Running Out',
-    title: 'Day one.',
-    subtitle: 'The reservoir hits 18%.',
-    scenario:
-      "Mesa Verde. Population 2.3 million. The drought is in its fourth year. Engineers estimate forty days of water remain at current usage rates. The mayor's call lasted forty-seven seconds: 'Fix it.' You are the city's water engineer. The room is silent. Everyone is waiting for you to speak.",
-    choices: [
-      {
-        id: 'A',
-        label: 'Residential first.',
-        detail: 'Cut industrial and agricultural allocations by 60%. Protect the citizens.',
-        delta: { water: 0, health: 2, economy: -2 },
-        consequence:
-          'Industry slows. Unemployment begins to climb. But the taps run. Families trust the city.',
-      },
-      {
-        id: 'B',
-        label: 'Keep the economy moving.',
-        detail: 'Maintain industrial output. Implement household rationing instead.',
-        delta: { water: -3, health: -1, economy: 2 },
-        consequence:
-          'The economy holds — for now. Rationing is unpopular. Hospitals start reporting stress cases.',
-      },
-      {
-        id: 'C',
-        label: 'Equal shares for all.',
-        detail: 'Distribute cuts evenly across every sector. No one gets exactly what they need.',
-        delta: { water: -1, health: 0, economy: 0 },
-        consequence:
-          'Everyone is frustrated. No single sector is protected. The city holds — barely. For now.',
-      },
+const BRANCHES = {
+  phoenix: {
+    id: 'phoenix',
+    title: 'Phoenix, Arizona',
+    subtitle: 'Aquifer Emergency',
+    coordinates: '33.4484° N, 112.0740° W',
+    accentColor: '#E85D26',
+    hook: 'A river that should be flowing is bone-dry. The aquifer beneath is collapsing.',
+    arrival: `You land outside Phoenix at 0600 hours. Desert air is already 102°F.\n\nYour contact, Dr. Sarah Mendez, meets you at a dry riverbed that was flowing six months ago. She hands you a ground-penetrating radar readout. The numbers are worse than the reports suggested.`,
+    crisisHeadline: 'The Ogallala Aquifer is disappearing.',
+    crisisText: `The largest underground freshwater source in North America is being consumed 8x faster than rainfall can replenish it. It took 10,000 years to fill. At current withdrawal rates, it reaches critical depletion within 25 years — and cities, farms, and 2 million households collapse with it.`,
+    data: [
+      { label: 'Annual depth loss', value: '3.2 ft/year', status: 'critical' },
+      { label: 'Withdrawal vs. recharge rate', value: '8× faster', status: 'critical' },
+      { label: 'Years to critical level', value: '< 25 years', status: 'warning' },
+      { label: 'Population dependent', value: '2.3 million', status: 'neutral' },
     ],
-  },
-  {
-    id: 1,
-    kicker: 'Decision 2 · Infrastructure',
-    title: 'The pipes are failing.',
-    subtitle: '30% of the water disappears before it reaches anyone.',
-    scenario:
-      'Your infrastructure team confirms it: the pipe network is ancient. Nearly a third of all water is lost underground — pressure failures, cracked joints, century-old clay. Fixing it will cost $220 million and take four months. The city council is divided. The county engineer calls it "engineering malpractice to delay any further." Every day you wait is water you cannot get back.',
+    scienceBadge: 'Groundwater Hydrology',
+    scienceNote: 'Aquifers are underground rock layers saturated with water. Fossil aquifers formed over thousands of years during wetter climates. Once depleted, they cannot be meaningfully recharged on human timescales — making them non-renewable resources.',
+    choiceQuestion: 'The regional water board needs your recommendation. Two viable interventions are on the table:',
     choices: [
-      {
-        id: 'A',
-        label: 'Emergency repairs. Start now.',
-        detail: 'Fund the repairs immediately. Borrow if needed. Stop the bleeding.',
-        delta: { water: 5, health: 1, economy: -2 },
-        consequence:
-          'Work begins overnight. Pressure spikes, then steadies. The city recovers 8% of daily capacity within three weeks.',
-      },
-      {
-        id: 'B',
-        label: 'Smart meters instead.',
-        detail: "Cheaper. Track usage city-wide, find leaks, change behavior. Slower payoff.",
-        delta: { water: 2, health: 0, economy: -1 },
-        consequence:
-          'Usage data reveals pockets of massive waste. Behavior shifts in some neighborhoods. Not fast enough — but it helps.',
-      },
-      {
-        id: 'C',
-        label: 'Focus resources elsewhere.',
-        detail: 'The pipes will hold another season. Bigger priorities exist.',
-        delta: { water: -3, health: -1, economy: 1 },
-        consequence:
-          'Two major bursts within the week. Forty million gallons lost into the desert floor. The city is furious.',
-      },
+      { id: 'a', label: 'Emergency Conservation Mandate', description: 'Reduce agricultural water usage 40% through mandatory rationing and precision smart-irrigation technology.', icon: '📊' },
+      { id: 'b', label: 'Managed Aquifer Recharge (MAR)', description: 'Inject treated stormwater and reclaimed water back into the aquifer using a network of deep injection wells.', icon: '💉' },
     ],
+    outcomes: {
+      a: {
+        headline: 'Conservation holds.',
+        text: `Precision drip irrigation and soil moisture sensors cut farm water use by 43%. Phoenix's water table stabilizes — but agricultural output drops 28%, straining food supply chains across the Southwest.\n\nYou've bought time. But not a solution. Demand management can slow depletion; it cannot reverse it alone.`,
+        discovery: 'Conservation engineering slows the loss but cannot reverse it. Behavioral change + technology must work together — and even together, they only buy time unless supply is also addressed.',
+        badge: 'Demand-Side Water Management',
+      },
+      b: {
+        headline: 'The injection wells are working.',
+        text: `Stormwater capture and wastewater reclamation begins refilling the aquifer at 3× the natural recharge rate. The water table rises 0.8 feet in year one.\n\nBut treated water requires energy. Energy generation requires cooling water. The cycle reveals itself: solving water requires solving energy. They are the same problem.`,
+        discovery: 'Managed Aquifer Recharge proves human-engineered water cycles can mimic natural ones — but the energy cost creates a new dependency. Water and energy infrastructure are inseparable.',
+        badge: 'Aquifer Recharge Technology',
+      },
+    },
   },
-  {
-    id: 2,
-    kicker: 'Decision 3 · Agriculture',
-    title: 'The farms.',
-    subtitle: 'Agriculture consumes 70% of the region\'s water.',
-    scenario:
-      'Farming families have worked this valley for generations. Almonds. Cotton. Alfalfa — water-intensive crops in a water-starved land. The state wants mandatory cutbacks. Farmers call it a death sentence for their livelihoods. Scientists say it is the only path to a functioning city. Both groups are right. You have to choose anyway.',
+  mumbai: {
+    id: 'mumbai',
+    title: 'Mumbai, India',
+    subtitle: 'Chemical Contamination Crisis',
+    coordinates: '19.0760° N, 72.8777° E',
+    accentColor: '#A855F7',
+    hook: 'The river runs the color of rust. The contamination has reached the drinking water.',
+    arrival: `You arrive at the Ulhas River estuary at the end of monsoon season. The water should be clear after four months of rain.\n\nInstead, it runs the color of rust. Researcher Priya Sharma hands you a field testing kit without a word. The readings come back in 90 seconds. You stare at the screen.`,
+    crisisHeadline: 'Forever chemicals. Everywhere.',
+    crisisText: `PFAS — per- and polyfluoroalkyl substances — from electronics manufacturing have saturated 47km of river. They don't break down. They accumulate in fish, enter the drinking water, and reach 4 million households. Safe exposure limits were exceeded years ago. No one knew.`,
+    data: [
+      { label: 'PFAS concentration detected', value: '840 ppt (limit: 70 ppt)', status: 'critical' },
+      { label: 'River length contaminated', value: '47 km', status: 'critical' },
+      { label: 'Bioaccumulation in local fish', value: '3,400× above water levels', status: 'warning' },
+      { label: 'Households drinking this water', value: '4.2 million', status: 'neutral' },
+    ],
+    scienceBadge: 'Environmental Chemistry',
+    scienceNote: 'PFAS compounds contain carbon-fluorine bonds — among the strongest in chemistry. They resist heat, water, and biological breakdown, earning the name "forever chemicals." They travel through soil into groundwater, accumulate up the food chain, and persist in human tissue for years.',
+    choiceQuestion: 'Two intervention strategies are ready for deployment. The decision affects 4 million people immediately:',
     choices: [
-      {
-        id: 'A',
-        label: 'Mandate 40% farm reductions.',
-        detail: "It will hurt. But the math doesn't work any other way.",
-        delta: { water: 5, health: 1, economy: -3 },
-        consequence:
-          'Protests outside City Hall. Three farms file for bankruptcy. But the reservoir rises for the first time in two years.',
-      },
-      {
-        id: 'B',
-        label: 'Incentivize drought-resistant crops.',
-        detail: 'Subsidize the transition. Make adaptation worth it for farmers.',
-        delta: { water: 3, health: 1, economy: -1 },
-        consequence:
-          'Adoption is slow but real. Three major operations convert. The regional food system begins — slowly — to shift.',
-      },
-      {
-        id: 'C',
-        label: 'Agriculture stays untouched.',
-        detail: 'The food supply matters too. Find the water somewhere else.',
-        delta: { water: -4, health: 0, economy: 2 },
-        consequence:
-          'Farmers are relieved. Water usage climbs. The reservoir drops to 11%. A federal warning arrives.',
-      },
+      { id: 'a', label: 'Source Containment Protocol', description: 'Mandate zero-discharge manufacturing with closed-loop production lines and establish a 2km industrial buffer zone around waterways.', icon: '🏭' },
+      { id: 'b', label: 'Advanced Filtration Network', description: 'Deploy granular activated carbon and reverse osmosis filters at 200 community water access points across the contamination zone.', icon: '🔬' },
     ],
+    outcomes: {
+      a: {
+        headline: 'The source is cut.',
+        text: `Closed-loop manufacturing eliminates new PFAS discharge. River concentrations begin dropping — slowly. Very slowly.\n\nExisting contamination in riverbed sediment will continue leaching chemicals for 15-20 years. Preventing new harm is necessary. But it cannot undo the legacy. Both source control and remediation are required.`,
+        discovery: 'Source control prevents future harm but cannot address existing contamination. Environmental recovery requires two parallel tracks: stopping the input and cleaning what is already there.',
+        badge: 'Industrial Water Law',
+      },
+      b: {
+        headline: 'The filters catch what the river cannot.',
+        text: `Granular activated carbon removes 94% of PFAS at point-of-use. The water reaching households tests safe within 60 days.\n\nBut the saturated filters are now solid waste — packed with concentrated forever chemicals. Safe water was produced. A new disposal crisis begins. The contamination didn't disappear. It moved.`,
+        discovery: 'Filtration treats the symptom, not the cause. Every contaminant removed from water must go somewhere — revealing that pollution is never destroyed, only relocated.',
+        badge: 'Water Treatment Engineering',
+      },
+    },
   },
-  {
-    id: 3,
-    kicker: 'Decision 4 · Public Response',
-    title: 'The public.',
-    subtitle: '2.3 million people. Some are watering lawns right now.',
-    scenario:
-      'A study reveals voluntary conservation reduced usage by 3%. Mandatory restrictions could triple that — but enforcement requires a budget you do not have. A water pricing system could shift behavior through economics: use less, pay less; use more, pay dramatically more. The city is watching what you do. They want a signal.',
+  saopaulo: {
+    id: 'saopaulo',
+    title: 'São Paulo, Brazil',
+    subtitle: 'Climate-Driven Water Crisis',
+    coordinates: '23.5505° S, 46.6333° W',
+    accentColor: '#10B981',
+    hook: 'A reservoir for 9 million people has dropped to 8%. The rain pattern has shifted.',
+    arrival: `The Cantareira reservoir once supplied 9 million people. You are standing at what used to be the waterline — 12 meters above you.\n\nClimate scientist Dr. Lucas Ferreira points at the horizon. "La Niña moved the rain north. Four years ago. It hasn't come back. And the models say it won't."`,
+    crisisHeadline: 'The rain went somewhere else.',
+    crisisText: `Shifts in Pacific Ocean temperatures have redirected the atmospheric rivers that São Paulo depends on. Four years of drought. The Cantareira system is at 8% capacity. Climate models show this pattern becoming semi-permanent by 2050 — not an anomaly, but the new baseline.`,
+    data: [
+      { label: 'Cantareira reservoir level', value: '8% capacity', status: 'critical' },
+      { label: 'Rainfall deficit (4-year average)', value: '43% below historical', status: 'critical' },
+      { label: 'Population without reliable water', value: '9.1 million', status: 'neutral' },
+      { label: 'Probability of permanent shift by 2050', value: '67%', status: 'warning' },
+    ],
+    scienceBadge: 'Climate Hydrology',
+    scienceNote: 'La Niña is a periodic cooling of Pacific Ocean surface temperatures that alters global wind and rainfall patterns. As climate change warms the baseline ocean temperature, La Niña and El Niño cycles intensify — making the rainfall that billions depend on increasingly unpredictable.',
+    choiceQuestion: 'The São Paulo water authority needs a strategy deployable within 18 months. Two options have cleared engineering review:',
     choices: [
-      {
-        id: 'A',
-        label: 'Mandatory restrictions. Enforce them.',
-        detail: 'Issue city-wide water use limits. Fine violators. Make it real.',
-        delta: { water: 4, health: -1, economy: 0 },
-        consequence:
-          'Compliance reaches 71%. Tension in city council. Conservation numbers are undeniable.',
-      },
-      {
-        id: 'B',
-        label: 'Lead with education.',
-        detail: 'School programs. Block captains. Door-to-door guidance. Make it a movement.',
-        delta: { water: 1, health: 2, economy: 0 },
-        consequence:
-          'Social change is slow. But the city feels different. Water becomes the defining conversation of the decade.',
-      },
-      {
-        id: 'C',
-        label: 'Tiered water pricing.',
-        detail: 'Use less, pay less. Use more, pay much more.',
-        delta: { water: 3, health: 0, economy: 1 },
-        consequence:
-          'Wealthy households barely notice. Lower-income families cut usage dramatically. Equity debate erupts at city hall.',
-      },
+      { id: 'a', label: 'Atmospheric Water Intervention', description: 'Deploy cloud seeding aircraft using silver iodide particles to stimulate rainfall formation over the watershed catchment area.', icon: '☁️' },
+      { id: 'b', label: 'Inter-Basin Water Transfer', description: 'Construct 340km of pipeline infrastructure to divert water from the Paraná River system directly to the Cantareira reservoirs.', icon: '🔧' },
     ],
+    outcomes: {
+      a: {
+        headline: 'The clouds respond — partially.',
+        text: `Cloud seeding increases local rainfall by 11-16% when conditions are favorable. In years 1-2, the program adds approximately 180 billion liters to the watershed.\n\nBut La Niña means fewer clouds to seed. The intervention works at the margins, not at scale. It buys weeks, not seasons. Weather modification supplements natural systems. It cannot replace them.`,
+        discovery: 'Atmospheric interventions require the right conditions to function. They can enhance what nature provides but cannot manufacture what nature has withdrawn. Adaptation requires working with climate patterns, not against them.',
+        badge: 'Atmospheric Science',
+      },
+      b: {
+        headline: 'Water crosses a continent.',
+        text: `The pipeline delivers 31 cubic meters per second from the Paraná system. Cantareira stabilizes at 40% within 18 months. The immediate crisis is resolved.\n\nBut downstream ecosystems dependent on Paraná water flow show signs of stress within six months. Water was moved. The problem moved with it — upstream solved, downstream destabilized.`,
+        discovery: 'Hydraulic infrastructure can redistribute water across regions but displaces ecological stress to the source basin. Every large-scale water solution creates a new system boundary to manage.',
+        badge: 'Hydraulic Engineering',
+      },
+    },
   },
-  {
-    id: 4,
-    kicker: 'Decision 5 · The Long Game',
-    title: 'The final call.',
-    subtitle: 'The reservoir is at a turning point.',
-    scenario:
-      "You've made hard calls. The city has made sacrifices. Now, a regional authority offers a one-time emergency water supply — enough to stabilize the reservoir for two years, but it will drain the emergency fund. The state is offering low-interest bonds to build a desalination plant: expensive, a three-year build, but it ends the dependency permanently. Or trust the conservation measures and hold the line without new spending.",
-    choices: [
-      {
-        id: 'A',
-        label: 'Buy the emergency supply.',
-        detail: 'Use the emergency fund. Buy time. The city needs to breathe.',
-        delta: { water: 8, health: 2, economy: -3 },
-        consequence:
-          'The reservoir climbs to safe levels. The city exhales. The emergency fund is empty — but the crisis is paused.',
-      },
-      {
-        id: 'B',
-        label: 'Commission the desalination plant.',
-        detail: '$800 million. A three-year build. But Mesa Verde will never thirst again.',
-        delta: { water: 2, health: 1, economy: -3 },
-        consequence:
-          'Ground breaks in the desert. A long road ahead. But the city has declared its future — and the world is watching.',
-      },
-      {
-        id: 'C',
-        label: 'Hold the line.',
-        detail: 'The conservation work is real. Trust it. No new spending.',
-        delta: { water: -1, health: 0, economy: 2 },
-        consequence:
-          'A gamble. The reservoir stabilizes — just barely. The city is exposed. One dry winter from the edge again.',
-      },
-    ],
-  },
-];
+};
 
-// ─── Outcome logic ────────────────────────────────────────────────────────────
+// ─── Animation helpers ────────────────────────────────────────────────────────
 
-function getOutcome(stats) {
-  const { water, health, economy } = stats;
+const sceneTransition = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+};
 
-  if (water >= 28 && health >= 8 && economy >= 4) {
-    return {
-      grade: 'A',
-      label: 'Resilient',
-      title: 'The city holds.',
-      subtitle: 'Mesa Verde becomes a model for water resilience.',
-      body:
-        "Through difficult trade-offs and long-term thinking, your decisions stabilized the city and built a foundation others can study. The crisis exposed what Mesa Verde was made of. The work is not done — but the city is proof that change is possible when it has to be.",
-      color: '#22c55e',
-      borderColor: 'border-green-500/30',
-      bgColor: 'bg-green-500/5',
-    };
-  }
-  if (water >= 20 || (health >= 6 && economy >= 5)) {
-    return {
-      grade: 'B',
-      label: 'Surviving',
-      title: 'The city survives.',
-      subtitle: 'Some losses. Some wins. The work continues.',
-      body:
-        "Your decisions prevented catastrophe but left real damage. Population stress, economic strain, or water insecurity — one of these defines the next decade. The crisis revealed what matters. The next engineer inherits a harder problem but a cleaner path.",
-      color: '#f59e0b',
-      borderColor: 'border-amber-500/30',
-      bgColor: 'bg-amber-500/5',
-    };
-  }
-  if (water >= 10) {
-    return {
-      grade: 'C',
-      label: 'Critical',
-      title: 'The city struggles.',
-      subtitle: 'Critical services are maintained. Just barely.',
-      body:
-        "Mesa Verde is in permanent crisis mode. Emergency declarations. Federal intervention. The decisions made here will be studied for what not to do. But the city still stands. And sometimes standing is everything.",
-      color: '#ef4444',
-      borderColor: 'border-red-500/30',
-      bgColor: 'bg-red-500/5',
-    };
-  }
-  return {
-    grade: 'D',
-    label: 'Collapse',
-    title: 'The taps go dry.',
-    subtitle: 'Mesa Verde is evacuated.',
-    body:
-      "280,000 residents leave in the first wave. The national guard arrives to manage the rest. The city that grew out of the desert has returned to it. The decisions made here will be studied by every city facing the same future — as a warning.",
-    color: '#991b1b',
-    borderColor: 'border-red-900/40',
-    bgColor: 'bg-red-900/10',
-  };
+const statusColor = (status) => {
+  if (status === 'critical') return '#EF4444';
+  if (status === 'warning') return '#F59E0B';
+  return '#F0ECE6';
+};
+
+// ─── Reusable subcomponents ───────────────────────────────────────────────────
+
+function Kicker({ children, color = '#E85D26', className = '' }) {
+  return (
+    <p
+      className={`font-mono text-[10.5px] uppercase tracking-[0.28em] ${className}`}
+      style={{ color }}
+    >
+      {children}
+    </p>
+  );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StatBar({ label, value, max, color, icon }) {
-  const pct = clamp((value / max) * 100, 0, 100);
+function Badge({ label, accent = '#E85D26' }) {
   return (
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center justify-between mb-1">
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#F0ECE6]/40">
-          {icon} {label}
-        </span>
-        <span className="font-mono text-[10px] text-[#F0ECE6]/60">{value}</span>
-      </div>
-      <div className="h-0.5 bg-[#F0ECE6]/10 rounded-full overflow-hidden">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ backgroundColor: color }}
-          initial={false}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        />
+    <motion.span
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="inline-flex items-center gap-2 border rounded-full px-3.5 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.18em]"
+      style={{
+        borderColor: `${accent}55`,
+        background: `${accent}10`,
+        color: '#F0ECE6',
+      }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} />
+      {label}
+    </motion.span>
+  );
+}
+
+function PrimaryButton({ children, onClick, disabled = false, accent = '#E85D26' }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="font-mono text-[11px] uppercase tracking-[0.22em] px-6 py-3.5 rounded-full border transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+      style={{
+        borderColor: disabled ? '#F0ECE655' : accent,
+        background: disabled ? 'transparent' : accent,
+        color: disabled ? '#F0ECE655' : '#0B0B12',
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) e.currentTarget.style.transform = 'translateY(-1px)';
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) e.currentTarget.style.transform = 'translateY(0)';
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function HUD({ phase, branch, discoveriesCount }) {
+  const hidden = phase === 'intro' || phase === 'briefing';
+  if (hidden) return null;
+
+  let location = 'Mission Council';
+  if (branch && BRANCHES[branch] && phase.startsWith(branch)) {
+    location = BRANCHES[branch].title;
+  } else if (phase === 'choose_region') {
+    location = 'Mission Selection';
+  } else if (phase === 'revelation' || phase === 'chapter2_teaser') {
+    location = 'Council Chamber';
+  }
+
+  return (
+    <div
+      className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md border-b"
+      style={{ background: 'rgba(8,8,16,0.75)', borderColor: '#F0ECE61A' }}
+    >
+      <div className="max-w-[1280px] mx-auto px-5 md:px-8 py-3 flex items-center justify-between gap-3 text-[10px] md:text-[11px]">
+        <div className="font-mono uppercase tracking-[0.22em] text-[#E85D26]">
+          Mission Water · CH.1
+        </div>
+        <div className="font-mono uppercase tracking-[0.18em] text-[#F0ECE6]/60 hidden sm:block truncate">
+          {location}
+        </div>
+        <div className="font-mono uppercase tracking-[0.22em] text-[#F0ECE6]/80">
+          {discoveriesCount} {discoveriesCount === 1 ? 'discovery' : 'discoveries'}
+        </div>
       </div>
     </div>
   );
 }
 
-function ConsequenceBadge({ text }) {
+// ─── Scene components ─────────────────────────────────────────────────────────
+
+function IntroScene({ onBegin }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="border border-[#E85D26]/25 bg-[#E85D26]/5 rounded px-4 py-3 mb-8"
+      key="intro"
+      {...sceneTransition}
+      className="min-h-screen flex flex-col items-center justify-center px-6 text-center relative overflow-hidden"
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#E85D26] mb-1">
-        ← Consequence
-      </p>
-      <p className="font-body text-[14px] text-[#F0ECE6]/65 leading-relaxed italic">
-        {text}
-      </p>
+      {/* Starfield-ish backdrop */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(60)].map((_, i) => (
+          <span
+            key={i}
+            className="absolute rounded-full bg-[#F0ECE6]"
+            style={{
+              top: `${(i * 53) % 100}%`,
+              left: `${(i * 71) % 100}%`,
+              width: `${(i % 3) + 1}px`,
+              height: `${(i % 3) + 1}px`,
+              opacity: ((i % 5) + 1) * 0.08,
+            }}
+          />
+        ))}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, rgba(232,93,38,0.07) 0%, rgba(8,8,16,0) 60%)',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-[900px]">
+        <Kicker className="mb-8">Conrad Foundation · A prototype</Kicker>
+        <h1 className="font-display-serif text-[18vw] md:text-[140px] leading-[0.88] tracking-[-0.04em] mb-8">
+          Mission{' '}
+          <em className="font-display-italic italic font-medium text-[#E85D26]">Water.</em>
+        </h1>
+        <p className="font-display-serif text-[20px] md:text-[28px] text-[#F0ECE6]/75 leading-[1.25] tracking-[-0.015em] mb-4 max-w-[36ch] mx-auto">
+          The future of water starts with a choice.
+        </p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-[#E85D26] mb-14">
+          Chapter 1 — Earth Is Running Out
+        </p>
+        <PrimaryButton onClick={onBegin}>Begin Mission</PrimaryButton>
+      </div>
     </motion.div>
   );
 }
 
-function ChoiceCard({ choice, onSelect, disabled }) {
-  const [hovered, setHovered] = useState(false);
-
+function BriefingScene({ cadetName, setCadetName, onAccept }) {
+  const valid = cadetName.trim().length >= 2;
   return (
-    <motion.button
-      className={`
-        w-full text-left border rounded-sm px-5 py-5 transition-colors duration-200
-        ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-        ${hovered ? 'border-[#E85D26]/50 bg-[#E85D26]/5' : 'border-[#F0ECE6]/10 bg-[#F0ECE6]/[0.02]'}
-      `}
-      onHoverStart={() => !disabled && setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      onClick={() => !disabled && onSelect(choice)}
-      whileHover={disabled ? {} : { scale: 1.01 }}
-      whileTap={disabled ? {} : { scale: 0.99 }}
-      transition={{ duration: 0.15 }}
+    <motion.div
+      key="briefing"
+      {...sceneTransition}
+      className="min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16"
     >
-      <div className="flex items-start gap-3">
-        <span
-          className={`
-            font-mono text-[11px] font-bold w-5 h-5 flex items-center justify-center
-            rounded-sm shrink-0 mt-0.5 transition-colors duration-200
-            ${hovered ? 'bg-[#E85D26] text-white' : 'bg-[#F0ECE6]/10 text-[#F0ECE6]/50'}
-          `}
+      <div className="max-w-[760px] w-full">
+        <div
+          className="border rounded-2xl p-8 md:p-12"
+          style={{ borderColor: '#F0ECE61A', background: 'rgba(15,15,24,0.6)' }}
         >
-          {choice.id}
-        </span>
-        <div className="min-w-0">
-          <p className="font-display-serif font-semibold text-[17px] text-[#F0ECE6] leading-tight mb-1.5">
-            {choice.label}
+          <Kicker className="mb-3">Mission Water Council · Cadet Intake</Kicker>
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#F0ECE6]/45 mb-10">
+            Date: June 2047
+          </div>
+
+          <h2 className="font-display-serif text-[36px] md:text-[56px] leading-[0.95] tracking-[-0.025em] mb-8">
+            Three water crises.{' '}
+            <em className="font-display-italic italic text-[#E85D26]">Three regions.</em>{' '}
+            One team.
+          </h2>
+
+          <p className="font-body text-[15px] md:text-[17px] text-[#F0ECE6]/70 leading-[1.65] mb-12 max-w-[58ch]">
+            You are being assigned to investigate. Your findings will determine the next mission directive. Every cadet's discoveries become part of the council's understanding of what's happening to Earth's water.
           </p>
-          <p className="font-body text-[13px] text-[#F0ECE6]/50 leading-relaxed">
-            {choice.detail}
-          </p>
+
+          <label className="block">
+            <Kicker className="mb-3">Cadet identifier</Kicker>
+            <input
+              type="text"
+              value={cadetName}
+              onChange={(e) => setCadetName(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full bg-transparent border-b font-display-serif text-[28px] md:text-[36px] text-[#F0ECE6] focus:outline-none pb-3 placeholder:text-[#F0ECE6]/25"
+              style={{ borderColor: '#F0ECE640' }}
+              maxLength={36}
+            />
+          </label>
+
+          <div className="mt-12">
+            <PrimaryButton onClick={onAccept} disabled={!valid}>
+              Accept Mission
+            </PrimaryButton>
+          </div>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
+  );
+}
+
+function ChooseRegionScene({ cadetName, onChoose }) {
+  return (
+    <motion.div key="choose_region" {...sceneTransition} className="min-h-screen px-6 pt-28 pb-16">
+      <div className="max-w-[1180px] mx-auto">
+        <div className="mb-14 max-w-[720px]">
+          <Kicker className="mb-3">Cadet {cadetName} · Region assignment</Kicker>
+          <h2 className="font-display-serif text-[40px] md:text-[64px] leading-[0.95] tracking-[-0.025em]">
+            Pick your{' '}
+            <em className="font-display-italic italic text-[#E85D26]">investigation.</em>
+          </h2>
+          <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/55 mt-5 leading-[1.6] max-w-[52ch]">
+            Three teams are deploying simultaneously. Three different crises. Your route is yours to choose.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {Object.values(BRANCHES).map((b) => (
+            <button
+              key={b.id}
+              onClick={() => onChoose(b.id)}
+              className="text-left border rounded-2xl p-7 md:p-8 transition-all duration-300 group"
+              style={{ borderColor: '#F0ECE61A', background: 'rgba(15,15,24,0.5)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = b.accentColor;
+                e.currentTarget.style.background = 'rgba(20,20,30,0.7)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#F0ECE61A';
+                e.currentTarget.style.background = 'rgba(15,15,24,0.5)';
+              }}
+            >
+              <Kicker color={b.accentColor} className="mb-4">
+                {b.subtitle}
+              </Kicker>
+              <h3 className="font-display-serif text-[28px] md:text-[34px] leading-[1.02] tracking-[-0.02em] mb-5">
+                {b.title}
+              </h3>
+              <p className="font-body text-[14.5px] text-[#F0ECE6]/70 leading-[1.55] mb-6 min-h-[4.5em]">
+                {b.hook}
+              </p>
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-[#F0ECE6]/40 mb-5">
+                {b.coordinates}
+              </div>
+              <div
+                className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] transition-colors"
+                style={{ color: b.accentColor }}
+              >
+                Investigate <span aria-hidden>→</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function ArrivalScene({ branch, onNext }) {
+  return (
+    <motion.div
+      key={`${branch.id}_arrival`}
+      {...sceneTransition}
+      className="min-h-screen px-6 pt-28 pb-16 flex flex-col justify-center"
+    >
+      <div className="max-w-[1180px] mx-auto w-full">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-12 md:gap-16 items-start">
+          <div>
+            <Kicker color={branch.accentColor} className="mb-4">
+              Arrival
+            </Kicker>
+            <h2 className="font-display-serif text-[40px] md:text-[60px] leading-[0.95] tracking-[-0.025em] mb-6">
+              {branch.title}
+            </h2>
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/45 mb-2">
+              {branch.subtitle}
+            </div>
+            <div className="font-mono text-[10.5px] tracking-[0.18em] text-[#F0ECE6]/35">
+              {branch.coordinates}
+            </div>
+          </div>
+
+          <div>
+            {branch.arrival.split('\n\n').map((para, i) => (
+              <p
+                key={i}
+                className="font-display-italic italic text-[19px] md:text-[22px] leading-[1.55] text-[#F0ECE6]/80 mb-6 max-w-[52ch]"
+              >
+                {para}
+              </p>
+            ))}
+            <div className="mt-10">
+              <PrimaryButton onClick={onNext} accent={branch.accentColor}>
+                Assess the situation
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function DiscoveryScene({ branch, onNext }) {
+  return (
+    <motion.div
+      key={`${branch.id}_discovery`}
+      {...sceneTransition}
+      className="min-h-screen px-6 pt-28 pb-20"
+    >
+      <div className="max-w-[1080px] mx-auto">
+        <Kicker color={branch.accentColor} className="mb-4">
+          Field Data · {branch.title}
+        </Kicker>
+        <h2 className="font-display-serif text-[40px] md:text-[64px] leading-[0.95] tracking-[-0.025em] mb-6">
+          {branch.crisisHeadline}
+        </h2>
+        <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/75 leading-[1.65] mb-12 max-w-[64ch]">
+          {branch.crisisText}
+        </p>
+
+        {/* Data terminal */}
+        <div
+          className="border rounded-2xl overflow-hidden mb-12"
+          style={{ borderColor: '#3B82F633', background: 'rgba(12,18,30,0.6)' }}
+        >
+          <div
+            className="px-5 md:px-7 py-3 border-b flex items-center justify-between"
+            style={{ borderColor: '#3B82F622', background: 'rgba(59,130,246,0.06)' }}
+          >
+            <Kicker color="#3B82F6">Telemetry</Kicker>
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#3B82F6]/70">
+              LIVE
+            </span>
+          </div>
+          {branch.data.map((row, i) => (
+            <div
+              key={i}
+              className="px-5 md:px-7 py-4 grid grid-cols-[1fr_auto] items-center gap-4 border-b last:border-b-0"
+              style={{ borderColor: '#3B82F61A' }}
+            >
+              <div className="font-body text-[13.5px] md:text-[14.5px] text-[#F0ECE6]/75">
+                {row.label}
+              </div>
+              <div
+                className="font-mono text-[13px] md:text-[14px] tracking-[0.04em] tabular-nums"
+                style={{ color: statusColor(row.status) }}
+              >
+                {row.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Discovery unlocked */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-10"
+        >
+          <Kicker color={branch.accentColor} className="mb-4">
+            Discovery unlocked
+          </Kicker>
+          <Badge label={branch.scienceBadge} accent={branch.accentColor} />
+        </motion.div>
+
+        <div
+          className="border rounded-2xl p-6 md:p-8 mb-12"
+          style={{ borderColor: '#F0ECE61A', background: 'rgba(15,15,24,0.5)' }}
+        >
+          <Kicker className="mb-3">The science</Kicker>
+          <p className="font-body text-[15px] md:text-[16.5px] text-[#F0ECE6]/80 leading-[1.65]">
+            {branch.scienceNote}
+          </p>
+        </div>
+
+        <PrimaryButton onClick={onNext} accent={branch.accentColor}>
+          Make your recommendation
+        </PrimaryButton>
+      </div>
+    </motion.div>
+  );
+}
+
+function ChoiceScene({ branch, onChoose }) {
+  return (
+    <motion.div
+      key={`${branch.id}_choice`}
+      {...sceneTransition}
+      className="min-h-screen px-6 pt-28 pb-16"
+    >
+      <div className="max-w-[1180px] mx-auto">
+        <div className="max-w-[760px] mb-12">
+          <Kicker color={branch.accentColor} className="mb-4">
+            Cadet decision · {branch.title}
+          </Kicker>
+          <h2 className="font-display-serif text-[34px] md:text-[52px] leading-[1.0] tracking-[-0.025em] mb-6">
+            Which path do you{' '}
+            <em className="font-display-italic italic text-[#E85D26]">recommend?</em>
+          </h2>
+          <p className="font-body text-[15px] md:text-[16.5px] text-[#F0ECE6]/70 leading-[1.6]">
+            {branch.choiceQuestion}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {branch.choices.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onChoose(c.id)}
+              className="text-left border rounded-2xl p-7 md:p-9 transition-all duration-300"
+              style={{ borderColor: '#F0ECE61A', background: 'rgba(15,15,24,0.5)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#E85D26';
+                e.currentTarget.style.background = 'rgba(232,93,38,0.07)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#F0ECE61A';
+                e.currentTarget.style.background = 'rgba(15,15,24,0.5)';
+              }}
+            >
+              <div className="text-[32px] mb-5">{c.icon}</div>
+              <h3 className="font-display-serif text-[26px] md:text-[30px] leading-[1.05] tracking-[-0.02em] mb-4">
+                {c.label}
+              </h3>
+              <p className="font-body text-[14.5px] text-[#F0ECE6]/70 leading-[1.6] mb-7">
+                {c.description}
+              </p>
+              <div className="inline-flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E85D26]">
+                Choose this approach <span aria-hidden>→</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function OutcomeScene({ branch, choiceId, onNext }) {
+  const outcome = branch.outcomes[choiceId];
+  return (
+    <motion.div
+      key={`${branch.id}_outcome`}
+      {...sceneTransition}
+      className="min-h-screen px-6 pt-28 pb-20"
+    >
+      <div className="max-w-[1000px] mx-auto">
+        <Kicker color={branch.accentColor} className="mb-4">
+          Outcome
+        </Kicker>
+        <h2 className="font-display-serif text-[40px] md:text-[64px] leading-[0.95] tracking-[-0.025em] mb-10">
+          {outcome.headline}
+        </h2>
+        {outcome.text.split('\n\n').map((para, i) => (
+          <p
+            key={i}
+            className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/80 leading-[1.7] mb-6 max-w-[64ch]"
+          >
+            {para}
+          </p>
+        ))}
+
+        {/* Discovery insight */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="border-l-2 pl-6 md:pl-8 py-3 my-12"
+          style={{ borderColor: '#E85D26' }}
+        >
+          <Kicker className="mb-3">Discovery</Kicker>
+          <p className="font-display-serif text-[20px] md:text-[24px] italic font-medium text-[#F0ECE6]/90 leading-[1.4] tracking-[-0.015em] max-w-[58ch]">
+            {outcome.discovery}
+          </p>
+        </motion.div>
+
+        <div className="mb-12">
+          <Kicker className="mb-4">Badge earned</Kicker>
+          <Badge label={outcome.badge} accent="#E85D26" />
+        </div>
+
+        <PrimaryButton onClick={onNext}>Return to Mission Council</PrimaryButton>
+      </div>
+    </motion.div>
+  );
+}
+
+function CouncilScene({ cadetName, branch, discoveries, onNext }) {
+  return (
+    <motion.div
+      key="council"
+      {...sceneTransition}
+      className="min-h-screen px-6 pt-28 pb-16 flex flex-col justify-center"
+    >
+      <div className="max-w-[1000px] mx-auto w-full">
+        <Kicker className="mb-4">Mission Water Council · Cadet Debrief</Kicker>
+        <h2 className="font-display-serif text-[40px] md:text-[64px] leading-[0.95] tracking-[-0.025em] mb-8">
+          Welcome back,{' '}
+          <em className="font-display-italic italic text-[#E85D26]">{cadetName}.</em>
+        </h2>
+        <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/80 leading-[1.7] mb-12 max-w-[60ch]">
+          You've uncovered the {branch.subtitle.toLowerCase()} in {branch.title}. But you're not the only cadet out there. Three teams. Three different crises. And we've found something that connects them all.
+        </p>
+
+        <div className="mb-14">
+          <Kicker className="mb-5">Your discoveries</Kicker>
+          <div className="flex flex-wrap gap-3">
+            {discoveries.map((d, i) => (
+              <Badge key={i} label={d} accent={branch.accentColor} />
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t pt-10" style={{ borderColor: '#F0ECE61A' }}>
+          <p className="font-display-italic italic text-[18px] md:text-[22px] text-[#F0ECE6]/65 leading-[1.55] mb-10 max-w-[58ch]">
+            The other teams are reporting in. What we've put together is something nobody expected.
+          </p>
+          <PrimaryButton onClick={onNext}>See what we found</PrimaryButton>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function RevelationScene({ lastDiscoveryText, onNext }) {
+  return (
+    <motion.div key="revelation" {...sceneTransition} className="min-h-screen px-6 pt-28 pb-20">
+      <div className="max-w-[1000px] mx-auto">
+        <Kicker className="mb-5">The connection</Kicker>
+
+        <p className="font-display-serif text-[26px] md:text-[36px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6]/85 mb-8 max-w-[28ch]">
+          What you found on Earth...
+        </p>
+
+        <div className="border-l-2 pl-6 md:pl-8 py-3 my-10" style={{ borderColor: '#E85D26' }}>
+          <p className="font-display-serif italic text-[19px] md:text-[22px] text-[#F0ECE6]/85 leading-[1.5] max-w-[58ch]">
+            {lastDiscoveryText}
+          </p>
+        </div>
+
+        <p className="font-display-serif text-[26px] md:text-[36px] leading-[1.2] tracking-[-0.02em] text-[#F0ECE6]/85 mb-12 max-w-[36ch]">
+          ...mirrors what we found{' '}
+          <em className="font-display-italic italic text-[#E85D26]">somewhere else.</em>
+        </p>
+
+        {/* Lunar data card */}
+        <div
+          className="border rounded-2xl p-7 md:p-10 mb-14"
+          style={{ borderColor: '#3B82F633', background: 'rgba(12,18,30,0.7)' }}
+        >
+          <Kicker color="#3B82F6" className="mb-4">
+            Lunar South Pole · Confirmed
+          </Kicker>
+          <h3 className="font-display-serif text-[28px] md:text-[40px] leading-[1.0] tracking-[-0.02em] mb-6">
+            Water ice.{' '}
+            <em className="font-display-italic italic text-[#3B82F6]">600 million metric tons.</em>
+          </h3>
+          <p className="font-body text-[15px] md:text-[16.5px] text-[#F0ECE6]/75 leading-[1.65] max-w-[60ch] mb-6">
+            Permanently shadowed craters at the lunar south pole. Frozen since before life on Earth. The same distribution problem you investigated: water in the wrong place, in the wrong state.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-7">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#3B82F6]/70 mb-1.5">
+                Temperature
+              </div>
+              <div className="font-mono text-[15px] tabular-nums text-[#F0ECE6]/90">−230 °C</div>
+            </div>
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#3B82F6]/70 mb-1.5">
+                Confirmed by
+              </div>
+              <div className="font-mono text-[15px] tabular-nums text-[#F0ECE6]/90">
+                LCROSS · 2009
+              </div>
+            </div>
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#3B82F6]/70 mb-1.5">
+                Accessible state
+              </div>
+              <div className="font-mono text-[15px] tabular-nums text-[#F0ECE6]/90">Ice crystals</div>
+            </div>
+          </div>
+        </div>
+
+        <p className="font-display-serif text-[22px] md:text-[28px] leading-[1.3] tracking-[-0.02em] text-[#F0ECE6]/85 mb-14 max-w-[42ch]">
+          Earth's water crisis isn't just about Earth. The same forces that trap water on the Moon are teaching us how to{' '}
+          <em className="font-display-italic italic text-[#E85D26]">free it.</em> That's why Mission Water looks up.
+        </p>
+
+        {/* Pete Conrad quote */}
+        <div
+          className="border rounded-2xl p-7 md:p-9 mb-14"
+          style={{ borderColor: '#E85D2633', background: 'rgba(232,93,38,0.05)' }}
+        >
+          <Kicker className="mb-4">In memoriam</Kicker>
+          <p className="font-display-serif italic text-[22px] md:text-[28px] leading-[1.35] text-[#F0ECE6]/90 tracking-[-0.015em] mb-5">
+            "If you can't be good, be colorful."
+          </p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#E85D26] mb-5">
+            Pete Conrad · Apollo 12 Commander
+          </p>
+          <p className="font-body text-[14.5px] text-[#F0ECE6]/65 leading-[1.65] max-w-[56ch]">
+            He believed anyone could reach the stars. This mission exists because of that belief.
+          </p>
+        </div>
+
+        <PrimaryButton onClick={onNext}>See what's next</PrimaryButton>
+      </div>
+    </motion.div>
+  );
+}
+
+function Chapter2TeaserScene({ cadetName, discoveries, branchAccent }) {
+  const mailto = `mailto:hello@aom-inhouse.com?subject=${encodeURIComponent(
+    `Mission Water — ${cadetName} Discovery Report`
+  )}&body=${encodeURIComponent(
+    `Cadet: ${cadetName}\n\nDiscoveries unlocked:\n${discoveries
+      .map((d) => `· ${d}`)
+      .join('\n')}\n\nReady for Chapter 2.`
+  )}`;
+
+  return (
+    <motion.div
+      key="chapter2_teaser"
+      {...sceneTransition}
+      className="min-h-screen px-6 pt-28 pb-20"
+    >
+      <div className="max-w-[1000px] mx-auto">
+        <Kicker className="mb-5">Chapter 1 Complete</Kicker>
+        <h2 className="font-display-serif text-[48px] md:text-[80px] leading-[0.9] tracking-[-0.03em] mb-10">
+          The Moon holds{' '}
+          <em className="font-display-italic italic text-[#E85D26]">the answer.</em>
+        </h2>
+
+        <div className="border-l-2 pl-6 md:pl-8 py-3 my-10" style={{ borderColor: branchAccent }}>
+          <p className="font-display-italic italic text-[19px] md:text-[24px] text-[#F0ECE6]/80 leading-[1.5] max-w-[58ch]">
+            Destination: Lunar South Pole. Objective: Extract water from permanently shadowed craters at −230 °C. Mission brief uploading...
+          </p>
+        </div>
+
+        <div
+          className="border rounded-2xl p-7 md:p-9 my-12"
+          style={{ borderColor: '#F0ECE61A', background: 'rgba(15,15,24,0.5)' }}
+        >
+          <Kicker className="mb-2">Cadet</Kicker>
+          <p className="font-display-serif text-[28px] md:text-[36px] mb-8 tracking-[-0.02em]">
+            {cadetName}
+          </p>
+          <Kicker className="mb-4">Discoveries earned</Kicker>
+          <div className="flex flex-wrap gap-3">
+            {discoveries.map((d, i) => (
+              <Badge key={i} label={d} accent={branchAccent} />
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <a
+            href={mailto}
+            className="inline-block font-mono text-[11px] uppercase tracking-[0.22em] px-6 py-3.5 rounded-full border transition-all duration-300"
+            style={{ borderColor: '#E85D26', background: '#E85D26', color: '#0B0B12' }}
+          >
+            Share your results
+          </a>
+        </div>
+
+        <p className="font-body text-[13px] text-[#F0ECE6]/45 leading-[1.6] max-w-[58ch]">
+          This is a prototype of the Mission Water Platform, developed for the Conrad Foundation by{' '}
+          <a
+            href="https://aheadofmarket.com"
+            className="underline decoration-[#F0ECE6]/30 hover:text-[#F0ECE6]/70 transition-colors"
+          >
+            Ahead of Market
+          </a>
+          .
+        </p>
+      </div>
+    </motion.div>
   );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const INITIAL_STATS = { water: 18, health: 7, economy: 6 };
-
 export default function MissionWaterGame() {
-  const [phase, setPhase] = useState('intro'); // 'intro' | 'game' | 'outcome'
-  const [step, setStep] = useState(0);
-  const [stats, setStats] = useState(INITIAL_STATS);
-  const [history, setHistory] = useState([]); // { choice, consequence, delta }
-  const [choosing, setChoosing] = useState(false);
-  const scrollRef = useRef(null);
+  const [phase, setPhase] = useState('intro');
+  const [branch, setBranch] = useState(null);
+  const [branchChoice, setBranchChoice] = useState(null);
+  const [discoveries, setDiscoveries] = useState([]);
+  const [cadetName, setCadetName] = useState('');
 
   useEffect(() => {
     const meta = document.createElement('meta');
@@ -357,455 +842,137 @@ export default function MissionWaterGame() {
     return () => meta.remove();
   }, []);
 
-  function handleStart() {
-    setPhase('game');
-    setStep(0);
-    setStats(INITIAL_STATS);
-    setHistory([]);
-  }
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [phase]);
 
-  function handleRestart() {
-    setPhase('intro');
-    setStep(0);
-    setStats(INITIAL_STATS);
-    setHistory([]);
-    setChoosing(false);
-  }
+  const currentBranch = branch ? BRANCHES[branch] : null;
+  const currentOutcome =
+    currentBranch && branchChoice ? currentBranch.outcomes[branchChoice] : null;
+  const branchAccent = currentBranch ? currentBranch.accentColor : '#E85D26';
 
-  function handleChoice(choice) {
-    if (choosing) return;
-    setChoosing(true);
+  const beginMission = () => setPhase('briefing');
+  const acceptMission = () => setPhase('choose_region');
 
-    const delta = choice.delta;
-    const newStats = {
-      water: clamp(stats.water + delta.water, 0, 50),
-      health: clamp(stats.health + delta.health, 0, 10),
-      economy: clamp(stats.economy + delta.economy, 0, 10),
-    };
+  const chooseRegion = (regionId) => {
+    setBranch(regionId);
+    setPhase(`${regionId}_arrival`);
+  };
 
-    setStats(newStats);
-    setHistory((prev) => [
-      ...prev,
-      { choiceId: choice.id, consequence: choice.consequence, delta },
-    ]);
+  const toDiscovery = () => {
+    const b = BRANCHES[branch];
+    setDiscoveries((prev) =>
+      prev.includes(b.scienceBadge) ? prev : [...prev, b.scienceBadge]
+    );
+    setPhase(`${branch}_discovery`);
+  };
 
-    // Short delay before advancing — lets stats animate
-    setTimeout(() => {
-      if (step + 1 >= DECISIONS.length) {
-        setPhase('outcome');
-      } else {
-        setStep((s) => s + 1);
-      }
-      setChoosing(false);
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }, 500);
-  }
+  const toChoice = () => setPhase(`${branch}_choice`);
 
-  const decision = DECISIONS[step];
-  const lastEntry = history.length > 0 ? history[history.length - 1] : null;
-  const outcome = getOutcome(stats);
+  const makeChoice = (choiceId) => {
+    setBranchChoice(choiceId);
+    const outcomeBadge = BRANCHES[branch].outcomes[choiceId].badge;
+    setDiscoveries((prev) =>
+      prev.includes(outcomeBadge) ? prev : [...prev, outcomeBadge]
+    );
+    setPhase(`${branch}_outcome`);
+  };
+
+  const toCouncil = () => setPhase('council');
+  const toRevelation = () => setPhase('revelation');
+  const toChapter2 = () => setPhase('chapter2_teaser');
 
   return (
     <div
-      ref={scrollRef}
-      className="bg-[#0C0C0C] text-[#F0ECE6] min-h-screen antialiased overflow-x-hidden"
-      style={{ fontFeatureSettings: '"liga" 1, "kern" 1' }}
+      className="min-h-screen antialiased relative"
+      style={{
+        background: '#080810',
+        color: '#F0ECE6',
+        fontFeatureSettings: '"liga" 1, "kern" 1',
+      }}
     >
+      <HUD phase={phase} branch={branch} discoveriesCount={discoveries.length} />
+
       <AnimatePresence mode="wait">
-        {/* ──────────────────── INTRO ──────────────────── */}
-        {phase === 'intro' && (
-          <motion.div
-            key="intro"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6 }}
-            className="min-h-screen flex flex-col justify-between px-6 md:px-16 pt-20 pb-16"
-          >
-            {/* Nav bar */}
-            <div className="flex items-center justify-between mb-16">
-              <a
-                href="/conradfoundation2"
-                className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#F0ECE6]/30 hover:text-[#F0ECE6]/60 transition-colors"
-              >
-                ← Mission Water Platform
-              </a>
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#E85D26]/60">
-                Interactive · Chapter 1
-              </span>
-            </div>
+        {phase === 'intro' && <IntroScene key="intro" onBegin={beginMission} />}
 
-            {/* Hero content */}
-            <div className="max-w-[800px] mx-auto w-full flex-1 flex flex-col justify-center">
-              <motion.p
-                className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26] mb-8"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.6 }}
-              >
-                Mission Water · Conrad Foundation
-              </motion.p>
-
-              <motion.h1
-                className="font-display-serif text-[13vw] sm:text-[72px] md:text-[88px] lg:text-[104px] leading-[0.9] tracking-[-0.03em] mb-8"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.18, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              >
-                Earth is running{' '}
-                <em className="font-display-italic italic text-[#E85D26]">out.</em>
-              </motion.h1>
-
-              <motion.p
-                className="font-display-serif text-[18px] md:text-[22px] text-[#F0ECE6]/60 leading-[1.4] max-w-[52ch] mb-6"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.26, duration: 0.6 }}
-              >
-                You are the water engineer for Mesa Verde. Population 2.3 million.
-                Reservoir at{' '}
-                <em className="font-display-italic italic text-[#F0ECE6]/80">18%.</em>
-              </motion.p>
-
-              <motion.p
-                className="font-body text-[14px] md:text-[15px] text-[#F0ECE6]/40 leading-relaxed max-w-[45ch] mb-14"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.34, duration: 0.6 }}
-              >
-                Five decisions stand between the city and collapse. There are no easy choices here.
-                Only consequences.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.42, duration: 0.5 }}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
-              >
-                <button
-                  onClick={handleStart}
-                  className="group inline-flex items-center gap-3 bg-[#E85D26] text-white font-mono text-[11px] uppercase tracking-[0.2em] px-8 py-4 rounded-sm hover:bg-[#FF6B2B] transition-colors duration-200"
-                >
-                  Begin Chapter 1
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
-                </button>
-                <a
-                  href="/conradfoundation2"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#F0ECE6]/30 hover:text-[#F0ECE6]/60 transition-colors py-4"
-                >
-                  View the full platform pitch
-                </a>
-              </motion.div>
-            </div>
-
-            {/* Scenario stats preview */}
-            <motion.div
-              className="mt-16 pt-8 border-t border-[#F0ECE6]/[0.06]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.55, duration: 0.6 }}
-            >
-              <div className="grid grid-cols-3 gap-6 max-w-[500px]">
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#F0ECE6]/30 mb-1">
-                    Water Reserve
-                  </p>
-                  <p className="font-display-serif text-[28px] text-[#60a5fa]">18<span className="text-[14px] text-[#F0ECE6]/30">%</span></p>
-                </div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#F0ECE6]/30 mb-1">
-                    Population
-                  </p>
-                  <p className="font-display-serif text-[28px] text-[#F0ECE6]/70">2.3<span className="text-[14px] text-[#F0ECE6]/30">M</span></p>
-                </div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#F0ECE6]/30 mb-1">
-                    Days Remaining
-                  </p>
-                  <p className="font-display-serif text-[28px] text-[#ef4444]">40</p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+        {phase === 'briefing' && (
+          <BriefingScene
+            key="briefing"
+            cadetName={cadetName}
+            setCadetName={setCadetName}
+            onAccept={acceptMission}
+          />
         )}
 
-        {/* ──────────────────── GAME ──────────────────── */}
-        {phase === 'game' && (
-          <motion.div
-            key={`game-${step}`}
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="min-h-screen flex flex-col px-6 md:px-16 pt-10 pb-16"
-          >
-            {/* Top bar: back link + progress + stats */}
-            <div className="mb-10">
-              {/* Back + step */}
-              <div className="flex items-center justify-between mb-6">
-                <button
-                  onClick={handleRestart}
-                  className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/25 hover:text-[#F0ECE6]/50 transition-colors"
-                >
-                  ← Restart
-                </button>
-                <div className="flex items-center gap-1.5">
-                  {DECISIONS.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-6 h-0.5 rounded-full transition-colors duration-300 ${
-                        i < step
-                          ? 'bg-[#E85D26]/60'
-                          : i === step
-                          ? 'bg-[#E85D26]'
-                          : 'bg-[#F0ECE6]/10'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="font-mono text-[10px] text-[#F0ECE6]/25 uppercase tracking-[0.15em]">
-                  {step + 1} / {DECISIONS.length}
-                </span>
-              </div>
-
-              {/* Stats bars */}
-              <div className="flex gap-6 max-w-[640px]">
-                <StatBar
-                  label="Water"
-                  value={stats.water}
-                  max={50}
-                  color="#60a5fa"
-                  icon="◈"
-                />
-                <StatBar
-                  label="Health"
-                  value={stats.health}
-                  max={10}
-                  color="#4ade80"
-                  icon="◉"
-                />
-                <StatBar
-                  label="Economy"
-                  value={stats.economy}
-                  max={10}
-                  color="#fbbf24"
-                  icon="◆"
-                />
-              </div>
-            </div>
-
-            {/* Consequence from previous choice */}
-            {lastEntry && <ConsequenceBadge text={lastEntry.consequence} />}
-
-            {/* Scenario card */}
-            <div className="flex-1 max-w-[800px] w-full">
-              <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26] mb-5">
-                {decision.kicker}
-              </p>
-
-              <h2 className="font-display-serif text-[10vw] sm:text-[52px] md:text-[64px] leading-[0.92] tracking-[-0.03em] mb-3">
-                {decision.title}
-              </h2>
-
-              <p className="font-display-serif text-[16px] md:text-[20px] text-[#F0ECE6]/50 italic mb-7 leading-[1.3]">
-                {decision.subtitle}
-              </p>
-
-              <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/60 leading-[1.7] max-w-[58ch] mb-12">
-                {decision.scenario}
-              </p>
-
-              {/* Choice cards */}
-              <div className="space-y-3">
-                {decision.choices.map((choice) => (
-                  <ChoiceCard
-                    key={choice.id}
-                    choice={choice}
-                    onSelect={handleChoice}
-                    disabled={choosing}
-                  />
-                ))}
-              </div>
-
-              {/* Reminder line */}
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#F0ECE6]/15 mt-8">
-                Your choice changes the city's trajectory. Choose carefully.
-              </p>
-            </div>
-          </motion.div>
+        {phase === 'choose_region' && (
+          <ChooseRegionScene
+            key="choose_region"
+            cadetName={cadetName}
+            onChoose={chooseRegion}
+          />
         )}
 
-        {/* ──────────────────── OUTCOME ──────────────────── */}
-        {phase === 'outcome' && (
-          <motion.div
-            key="outcome"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7 }}
-            className="min-h-screen flex flex-col px-6 md:px-16 pt-16 pb-16"
-          >
-            {/* Final stats */}
-            <div className="max-w-[800px] w-full mx-auto">
-              <motion.p
-                className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#E85D26] mb-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-              >
-                Chapter 1 · Complete
-              </motion.p>
+        {currentBranch && phase === `${branch}_arrival` && (
+          <ArrivalScene
+            key={`${branch}_arrival`}
+            branch={currentBranch}
+            onNext={toDiscovery}
+          />
+        )}
 
-              {/* Grade badge */}
-              <motion.div
-                className={`inline-flex items-center gap-3 border ${outcome.borderColor} ${outcome.bgColor} rounded-sm px-5 py-3 mb-10`}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.6 }}
-              >
-                <span
-                  className="font-display-serif text-[36px] font-bold leading-none"
-                  style={{ color: outcome.color }}
-                >
-                  {outcome.grade}
-                </span>
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#F0ECE6]/40">
-                    City Status
-                  </p>
-                  <p className="font-mono text-[13px]" style={{ color: outcome.color }}>
-                    {outcome.label}
-                  </p>
-                </div>
-              </motion.div>
+        {currentBranch && phase === `${branch}_discovery` && (
+          <DiscoveryScene
+            key={`${branch}_discovery`}
+            branch={currentBranch}
+            onNext={toChoice}
+          />
+        )}
 
-              {/* Outcome headline */}
-              <motion.h2
-                className="font-display-serif text-[9vw] sm:text-[48px] md:text-[64px] leading-[0.92] tracking-[-0.03em] mb-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.28, duration: 0.7 }}
-              >
-                {outcome.title}
-              </motion.h2>
+        {currentBranch && phase === `${branch}_choice` && (
+          <ChoiceScene
+            key={`${branch}_choice`}
+            branch={currentBranch}
+            onChoose={makeChoice}
+          />
+        )}
 
-              <motion.p
-                className="font-display-serif text-[16px] md:text-[20px] italic text-[#F0ECE6]/50 mb-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.36, duration: 0.6 }}
-              >
-                {outcome.subtitle}
-              </motion.p>
+        {currentBranch && phase === `${branch}_outcome` && branchChoice && (
+          <OutcomeScene
+            key={`${branch}_outcome`}
+            branch={currentBranch}
+            choiceId={branchChoice}
+            onNext={toCouncil}
+          />
+        )}
 
-              <motion.p
-                className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/60 leading-[1.75] max-w-[58ch] mb-14"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.44, duration: 0.6 }}
-              >
-                {outcome.body}
-              </motion.p>
+        {phase === 'council' && currentBranch && (
+          <CouncilScene
+            key="council"
+            cadetName={cadetName}
+            branch={currentBranch}
+            discoveries={discoveries}
+            onNext={toRevelation}
+          />
+        )}
 
-              {/* Final stats grid */}
-              <motion.div
-                className="grid grid-cols-3 gap-px border border-[#F0ECE6]/[0.06] rounded-sm overflow-hidden mb-14"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.52, duration: 0.6 }}
-              >
-                {[
-                  { label: 'Water Reserve', value: `${stats.water}%`, color: '#60a5fa' },
-                  { label: 'Population Health', value: `${stats.health}/10`, color: '#4ade80' },
-                  { label: 'Economy', value: `${stats.economy}/10`, color: '#fbbf24' },
-                ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="bg-[#F0ECE6]/[0.02] px-5 py-6 text-center"
-                  >
-                    <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#F0ECE6]/30 mb-2">
-                      {s.label}
-                    </p>
-                    <p
-                      className="font-display-serif text-[28px] leading-none"
-                      style={{ color: s.color }}
-                    >
-                      {s.value}
-                    </p>
-                  </div>
-                ))}
-              </motion.div>
+        {phase === 'revelation' && currentOutcome && (
+          <RevelationScene
+            key="revelation"
+            lastDiscoveryText={currentOutcome.discovery}
+            onNext={toChapter2}
+          />
+        )}
 
-              {/* Decision log */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
-                className="mb-14"
-              >
-                <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#F0ECE6]/25 mb-5">
-                  Your decisions
-                </p>
-                <div className="space-y-3">
-                  {history.map((entry, i) => {
-                    const dec = DECISIONS[i];
-                    const choice = dec.choices.find((c) => c.id === entry.choiceId);
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-start gap-4 border-l-2 border-[#E85D26]/20 pl-4 py-1"
-                      >
-                        <span className="font-mono text-[10px] text-[#F0ECE6]/25 mt-0.5 shrink-0">
-                          {i + 1}
-                        </span>
-                        <div>
-                          <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#F0ECE6]/30 mb-0.5">
-                            {dec.title.replace(/\.$/, '')}
-                          </p>
-                          <p className="font-body text-[13px] text-[#F0ECE6]/60">
-                            {choice?.label}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-
-              {/* CTA row */}
-              <motion.div
-                className="flex flex-col sm:flex-row gap-4 pb-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.68, duration: 0.6 }}
-              >
-                <button
-                  onClick={handleRestart}
-                  className="group inline-flex items-center gap-3 bg-[#E85D26] text-white font-mono text-[11px] uppercase tracking-[0.2em] px-8 py-4 rounded-sm hover:bg-[#FF6B2B] transition-colors duration-200"
-                >
-                  Try again
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">↺</span>
-                </button>
-                <a
-                  href="/conradfoundation2"
-                  className="group inline-flex items-center gap-3 border border-[#F0ECE6]/15 text-[#F0ECE6]/50 font-mono text-[11px] uppercase tracking-[0.2em] px-8 py-4 rounded-sm hover:border-[#F0ECE6]/30 hover:text-[#F0ECE6]/70 transition-colors duration-200"
-                >
-                  View the platform pitch
-                  <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
-                </a>
-              </motion.div>
-
-              {/* Footer note */}
-              <div className="border-t border-[#F0ECE6]/[0.06] pt-8">
-                <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#F0ECE6]/20">
-                  Conrad Foundation · Mission Water · Interactive Chapter 1 prototype
-                </p>
-              </div>
-            </div>
-          </motion.div>
+        {phase === 'chapter2_teaser' && (
+          <Chapter2TeaserScene
+            key="chapter2_teaser"
+            cadetName={cadetName}
+            discoveries={discoveries}
+            branchAccent={branchAccent}
+          />
         )}
       </AnimatePresence>
     </div>

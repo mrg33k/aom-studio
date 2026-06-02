@@ -293,6 +293,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/nancy" element={<ConradFoundation />} />
           <Route path="/conradfoundation2" element={<ConradFoundation2 />} />
           <Route path="/missionwater" element={<MissionWaterGame />} />
+          <Route path="/MissionWaterGame" element={<MissionWaterGame />} />
+          <Route path="/mission-water-game" element={<MissionWaterGame />} />
           <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
