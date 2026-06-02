@@ -18,6 +18,18 @@ import SkillsBadge from './SkillsBadge.jsx'
 import { MissionContextMenu, ProjectContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
 import useChatDispatch from '../components/cv3/useChatDispatch.js'
 
+// R5 — sort missions the same way projects sort: most recently active
+// (newest last_message_at) floats to the top. Among missions with no
+// recent activity, keep active ahead of done, then alphabetical. Mirrors
+// the project-level recency sort and HomeView's mission ordering.
+function byMissionRecency(a, b) {
+  const ta = a?.last_message_at ? new Date(a.last_message_at).getTime() : 0
+  const tb = b?.last_message_at ? new Date(b.last_message_at).getTime() : 0
+  if (ta !== tb) return tb - ta                          // most recent first
+  if (!!a?.is_done !== !!b?.is_done) return a?.is_done ? 1 : -1  // active before done
+  return (a?.name || '').localeCompare(b?.name || '')    // alpha fallback
+}
+
 const PANEL_WIDTH = 300
 const MENU = {
   bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -641,12 +653,10 @@ function DrawerBody({
                     name: display,
                     status: meta?.status || null,
                     is_done: !!meta?.is_done,
+                    last_message_at: meta?.last_message_at || null,
                     projectSlug: p.slug,
                   }
-                }).sort((a, b) => {
-                  if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
-                  return (a.name || '').localeCompare(b.name || '')
-                })
+                }).sort(byMissionRecency)
               : staticMissions
             const isExpanded = expanded.has(p.slug)
             const hasMissions = missions.length > 0
@@ -942,7 +952,8 @@ function MissionTreeBranch({ nodes, projectSlug, projectName, expanded, onToggle
   // R-MP-2 — recursive renderer for a project's nested mission tree.
   // Each parent gets a chevron toggle controlled by the shared `expanded`
   // Set (same one that opens projects). Children indent by depth.
-  return nodes.map(node => {
+  // R5 — sort by recent activity (same as the flat list + projects).
+  return [...nodes].sort(byMissionRecency).map(node => {
     const hasChildren = Array.isArray(node.children) && node.children.length > 0
     const missionKey = node.slug // already "<projectSlug>:<rawSlug>"
     const isExpanded = expanded.has(missionKey)

@@ -44,6 +44,17 @@ function supabaseHeaders() {
 // Active task statuses: anything not done|failed|dismissed.
 const ACTIVE_STATUSES = ['queued', 'running', 'waiting', 'blocked', 'needs_input']
 
+// corner:left-menu R5 — sort missions by recent activity (newest
+// last_message_at first), matching the project-level recency sort. Among
+// missions with no recent activity, keep active ahead of done, then alpha.
+function byMissionRecency(a, b) {
+  const ta = a?.last_message_at ? new Date(a.last_message_at).getTime() : 0
+  const tb = b?.last_message_at ? new Date(b.last_message_at).getTime() : 0
+  if (ta !== tb) return tb - ta
+  if (!!a?.is_done !== !!b?.is_done) return a?.is_done ? 1 : -1
+  return (a?.name || '').localeCompare(b?.name || '')
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -246,10 +257,7 @@ export default async function handler(req, res) {
   for (const proj of projectMap.values()) {
     const missions = []
     for (const m of proj.missions.values()) missions.push(m)
-    missions.sort((a, b) => {
-      if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
-      return (a.name || '').localeCompare(b.name || '')
-    })
+    missions.sort(byMissionRecency)
 
     // R-MP-3 — group by workstream. Missions with workstream:null fall
     // into the "Other" bucket. Workstream order: alphabetical by name,
@@ -290,10 +298,7 @@ export default async function handler(req, res) {
     }
     function buildSubtree(parentRawSlug) {
       const list = (childrenByParent.get(parentRawSlug) || []).slice()
-      list.sort((a, b) => {
-        if (a.is_done !== b.is_done) return a.is_done ? 1 : -1
-        return (a.name || '').localeCompare(b.name || '')
-      })
+      list.sort(byMissionRecency)
       return list.map(m => ({ ...m, children: buildSubtree(m.raw_slug) }))
     }
     const tree = buildSubtree(null)
