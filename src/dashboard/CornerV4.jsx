@@ -1039,6 +1039,14 @@ export default function CornerV4() {
   // dropping to the home view. The task list IS the room directory.
   const handleBackFromConversation = useCallback(() => {
     const wasTaskRoom = !!selectedAgent?.isTaskRoom
+    // Record the project being left so it surfaces at the top of RECENTS on home
+    if (conversationTarget?.slug && conversationTarget?.type === 'project') {
+      try {
+        const key = 'cv4_recent_visits:' + currentUser?.id
+        const existing = JSON.parse(localStorage.getItem(key) || '{}')
+        localStorage.setItem(key, JSON.stringify({ ...existing, [conversationTarget.slug]: Date.now() }))
+      } catch (_) {}
+    }
     setSelectedAgent(null)
     setConversationTarget(null)
     if (routeProjectId) {
@@ -1048,7 +1056,7 @@ export default function CornerV4() {
     if (wasTaskRoom) {
       setTab('tasks')
     }
-  }, [navigate, routeProjectId, selectedAgent?.isTaskRoom])
+  }, [navigate, routeProjectId, selectedAgent?.isTaskRoom, conversationTarget, currentUser?.id])
 
   // ── World switching ───────────────────────────────────────────────────────
 
@@ -2212,6 +2220,14 @@ export default function CornerV4() {
             aria-label="Go to home"
             title="Home"
             onClick={() => {
+              // Record the project being left so it surfaces at the top of RECENTS on home
+              if (conversationTarget?.slug && conversationTarget?.type === 'project') {
+                try {
+                  const key = 'cv4_recent_visits:' + currentUser?.id
+                  const existing = JSON.parse(localStorage.getItem(key) || '{}')
+                  localStorage.setItem(key, JSON.stringify({ ...existing, [conversationTarget.slug]: Date.now() }))
+                } catch (_) {}
+              }
               setSelectedAgent(null)
               setConversationTarget(null)
               setActiveTool(null)
