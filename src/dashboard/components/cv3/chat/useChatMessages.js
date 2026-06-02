@@ -16,6 +16,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 import { authFetch } from '../../../lib/authFetch.js'
+import { missionSlugsMatch } from '../../../data/canonicalize-mission-slug.js'
+
+// corner:dashboard-speed (2026-06-02): mission-scope isolation for project chat.
+// The chat-display query filtered by project only and DROPPED the mission, so
+// every mission room under a project shared one chat pool — Courtney's
+// ai-education chat surfaced in Patrik's aom-project rooms ("the room thinks
+// it's another chat"). This matcher restores isolation: a mission room shows
+// only its mission's messages; the project chat (no mission) shows only
+// project-level messages with no mission tag. Uses missionSlugsMatch so the
+// inconsistent stored formats (`brand` vs `aheadofmarket:brand`) both match.
+function makeMissionMatcher(missionSlug) {
+  return (m) => {
+    const tag = (m && m.metadata && m.metadata.mission_slug) || ''
+    if (missionSlug) return missionSlugsMatch(tag, missionSlug)
+    return !tag
+  }
+}
 
 // Merge new rows into existing messages, dedup by id, preserve any optimistic
 // temp-/bridge-stream-/voice- entries that don't yet have a real server row.
@@ -323,18 +340,21 @@ export default function useChatMessages({
     // full room history regardless of which channel a sender used.
     const sharedCid = `shared:${selectedProject.slug}`
     const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
+    const matchesMission = makeMissionMatcher(selectedProject.missionSlug)
     supabase
       .from('messages')
       .select('*')
       .in('client_id', clientIds)
       .or(`project.eq.${selectedProject.slug},agent.eq.project:${selectedProject.slug}`)
       .order('timestamp', { ascending: false })
-      .limit(200)
+      .limit(400)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
-        if (!error && data) setMessages(data.reverse())
+        // Mission-scope isolation: keep only rows for THIS mission room (or
+        // only un-missioned project-level rows when no mission is selected).
+        if (!error && data) setMessages(data.filter(matchesMission).reverse())
       })
-  }, [worldId, selectedProject?.slug, selectedProject?.isShared, selectedAgent?.slug])
+  }, [worldId, selectedProject?.slug, selectedProject?.missionSlug, selectedProject?.isShared, selectedAgent?.slug])
 
   // ── Realtime + self-heal: project chat ───────────────────────────────────
   useEffect(() => {
@@ -353,15 +373,16 @@ export default function useChatMessages({
       if (!active) return
       try {
         const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
+        const matchesMission = makeMissionMatcher(selectedProject.missionSlug)
         const { data, error } = await supabase
           .from('messages')
           .select('*')
           .in('client_id', clientIds)
           .or(`project.eq.${selectedProject.slug},agent.eq.project:${selectedProject.slug}`)
           .order('timestamp', { ascending: false })
-          .limit(200)
+          .limit(400)
         if (!active || error || !Array.isArray(data)) return
-        const ordered = data.reverse()
+        const ordered = data.filter(matchesMission).reverse()
         setMessages(prev => mergeServerRows(prev, ordered))
       } catch (_) { /* best-effort */ }
     }
@@ -386,6 +407,14 @@ export default function useChatMessages({
           window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
           window.__R53_BLEED_LOG__.push({ side: 'project-thread', expected: selectedProject.slug, got: msg.project, agent: msg.agent, id: msg.id, ts: Date.now() })
         }
+        return
+      }
+      // Mission-scope isolation (2026-06-02): drop inserts for a DIFFERENT
+      // mission than the one this room is scoped to (or any mission-tagged
+      // message when we're in the un-missioned project chat). Without this a
+      // live message from a sibling mission room bleeds in.
+      if (!makeMissionMatcher(selectedProject.missionSlug)(msg)) {
+        console.debug('[useChatMessages] project-thread DROP: mission mismatch', { room: selectedProject.missionSlug || '(project)', got: msg?.metadata?.mission_slug })
         return
       }
       console.debug('[useChatMessages] project-thread ACCEPT → setMessages', { id: msg.id, role: msg.role })
@@ -483,7 +512,7 @@ export default function useChatMessages({
         document.removeEventListener('visibilitychange', onFocus)
       }
     }
-  }, [worldId, selectedProject?.slug, selectedProject?.isShared, selectedAgent?.slug])
+  }, [worldId, selectedProject?.slug, selectedProject?.missionSlug, selectedProject?.isShared, selectedAgent?.slug])
 
   // ── R65-impl: subscribe to message_step events for the active surface ────
   // Fetches an initial history window (last 20 step events for the current
