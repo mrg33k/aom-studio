@@ -126,6 +126,12 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
       e.preventDefault()
       handleSend()
     }
+    // R3 — stop space key from bubbling to parent keyboard handlers
+    // that might route rooms. Space is a normal char and the parent
+    // shouldn't intercept it. stopPropagation allows typing but blocks bubbling.
+    if (e.key === ' ') {
+      e.stopPropagation()
+    }
   }, [handleSend])
 
   // R21b — One card on screen at a time. Parent passes a fresh key each time
@@ -763,7 +769,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
             {!isComplete && notifications[currentIndex] ? (
               <NotifCard
-                key={currentIndex}
+                key={notifications[currentIndex]?.id}
                 notif={notifications[currentIndex]}
                 direction={direction}
                 onChipReply={handleChipReply}
