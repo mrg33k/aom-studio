@@ -181,11 +181,11 @@ export default function BookAudit() {
                 <ChevronLeft size={14} /> aheadofmarket.com
               </a>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#E85D26] mb-4">
-                AI Operations Audit
+                AI Flow
               </p>
               <div className="w-12 h-[2px] bg-[#E85D26] mb-6" />
               <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] leading-[0.92] max-w-[20ch]">
-                BOOK YOUR AUDIT.
+                BOOK YOUR AI FLOW.
               </h1>
               <p className="font-body text-lg md:text-xl text-[#A89F96] mt-6 max-w-2xl leading-relaxed">
                 A $2,500 deep dive into your operations. We find where AI saves you time and money, then build you a roadmap to get there.

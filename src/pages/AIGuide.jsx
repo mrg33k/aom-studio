@@ -194,11 +194,11 @@ function ProgressDots({ step, total }) {
           className="h-1.5 rounded-full transition-all duration-300"
           style={{
             width: i === step ? 28 : 8,
-            background: i <= step ? ORANGE : 'rgba(255,255,255,0.15)',
+            background: i <= step ? ORANGE : 'rgba(0,0,0,0.12)',
           }}
         />
       ))}
-      <span className="ml-2 font-body text-xs text-white/30">
+      <span className="ml-2 font-body text-xs text-black/35">
         Step {step + 1} of {total}
       </span>
     </div>
@@ -219,10 +219,10 @@ function PromptCard({ label, prompt }) {
   return (
     <div
       className="rounded-xl p-5 space-y-3 flex flex-col"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+      style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)' }}
     >
-      <div className="font-headline text-sm text-white">{label}</div>
-      <p className="font-body text-sm text-white/60 leading-relaxed flex-1">{prompt}</p>
+      <div className="font-headline text-sm text-[#0C0C0C]">{label}</div>
+      <p className="font-body text-sm text-black/60 leading-relaxed flex-1">{prompt}</p>
       <div className="flex items-center gap-3 pt-1">
         <button
           onClick={handleCopy}
@@ -236,7 +236,7 @@ function PromptCard({ label, prompt }) {
           {copied ? <Check size={12} /> : <Copy size={12} />}
           {copied ? 'Copied ✓' : 'Copy prompt'}
         </button>
-        <span className="font-body text-xs text-white/25">Use this in ChatGPT or Claude →</span>
+        <span className="font-body text-xs text-black/35">Use this in ChatGPT or Claude →</span>
       </div>
     </div>
   );
@@ -258,11 +258,11 @@ function StepWelcome({ onNext }) {
       >
         FREE INTERACTIVE TOOL
       </span>
-      <h1 className="font-display-serif text-5xl md:text-6xl text-white leading-tight mb-5">
+      <h1 className="font-display-serif text-5xl md:text-6xl text-[#0C0C0C] leading-tight mb-5">
         Find out exactly how<br />
         <span style={{ color: ORANGE }}>AI can help your business.</span>
       </h1>
-      <p className="font-body text-lg text-white/55 mb-10 leading-relaxed max-w-xl mx-auto">
+      <p className="font-body text-lg text-black/55 mb-10 leading-relaxed max-w-xl mx-auto">
         Answer a few questions. Walk away with AI prompts you can actually use today.
       </p>
       <motion.button
@@ -291,10 +291,10 @@ function StepCategory({ onNext }) {
       transition={{ duration: 0.35 }}
     >
       <ProgressDots step={0} total={3} />
-      <h2 className="font-display-serif text-3xl md:text-4xl text-white mb-2 leading-snug">
+      <h2 className="font-display-serif text-3xl md:text-4xl text-[#0C0C0C] mb-2 leading-snug">
         What&apos;s your biggest challenge right now?
       </h2>
-      <p className="font-body text-white/45 mb-8">Pick the one that fits best.</p>
+      <p className="font-body text-black/45 mb-8">Pick the one that fits best.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {CATEGORIES.map(({ id, label, icon: Icon }) => {
@@ -307,19 +307,19 @@ function StepCategory({ onNext }) {
               transition={{ duration: 0.15 }}
               className="text-left p-5 rounded-xl transition-all duration-200"
               style={{
-                background: isSelected ? 'rgba(232,93,38,0.08)' : 'rgba(255,255,255,0.03)',
-                border: isSelected ? `1.5px solid ${ORANGE}` : '1px solid rgba(255,255,255,0.1)',
+                background: isSelected ? 'rgba(232,93,38,0.08)' : '#fff',
+                border: isSelected ? `1.5px solid ${ORANGE}` : '1px solid rgba(0,0,0,0.1)',
               }}
             >
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
-                style={{ background: isSelected ? `rgba(232,93,38,0.2)` : 'rgba(255,255,255,0.06)' }}
+                style={{ background: isSelected ? `rgba(232,93,38,0.15)` : 'rgba(0,0,0,0.05)' }}
               >
-                <Icon size={20} style={{ color: isSelected ? ORANGE : 'rgba(255,255,255,0.5)' }} />
+                <Icon size={20} style={{ color: isSelected ? ORANGE : 'rgba(0,0,0,0.35)' }} />
               </div>
               <span
                 className="font-headline text-base"
-                style={{ color: isSelected ? '#fff' : 'rgba(255,255,255,0.75)' }}
+                style={{ color: isSelected ? ORANGE : 'rgba(0,0,0,0.65)' }}
               >
                 {label}
               </span>
@@ -333,8 +333,8 @@ function StepCategory({ onNext }) {
         disabled={!selected}
         className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide transition-all duration-200"
         style={{
-          background: selected ? ORANGE : 'rgba(255,255,255,0.06)',
-          color: selected ? '#fff' : 'rgba(255,255,255,0.25)',
+          background: selected ? ORANGE : 'rgba(0,0,0,0.06)',
+          color: selected ? '#fff' : 'rgba(0,0,0,0.25)',
           cursor: selected ? 'pointer' : 'not-allowed',
         }}
       >
@@ -364,29 +364,29 @@ function StepQuestions({ category, onNext }) {
       transition={{ duration: 0.35 }}
     >
       <ProgressDots step={1} total={3} />
-      <h2 className="font-display-serif text-3xl md:text-4xl text-white mb-2 leading-snug">
+      <h2 className="font-display-serif text-3xl md:text-4xl text-[#0C0C0C] mb-2 leading-snug">
         Tell us a little about your situation.
       </h2>
-      <p className="font-body text-white/45 mb-8">
+      <p className="font-body text-black/45 mb-8">
         Your answers get woven directly into the prompts.
       </p>
 
       <div className="space-y-6 max-w-xl mb-8">
         {questions.map((q) => (
           <div key={q.id}>
-            <label className="block font-headline text-sm text-white mb-2">{q.label}</label>
+            <label className="block font-headline text-sm text-[#0C0C0C] mb-2">{q.label}</label>
             <input
               type="text"
               value={answers[q.id] || ''}
               onChange={(e) => handleChange(q.id, e.target.value)}
               placeholder={q.placeholder}
-              className="w-full rounded-xl px-4 py-3 font-body text-sm text-white placeholder:text-white/25 outline-none transition-all duration-200"
+              className="w-full rounded-xl px-4 py-3 font-body text-sm text-[#0C0C0C] placeholder:text-black/30 outline-none transition-all duration-200"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                background: '#fff',
+                border: '1px solid rgba(0,0,0,0.15)',
               }}
               onFocus={(e) => { e.target.style.borderColor = ORANGE; }}
-              onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(0,0,0,0.15)'; }}
             />
           </div>
         ))}
@@ -397,8 +397,8 @@ function StepQuestions({ category, onNext }) {
         disabled={!allFilled}
         className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide transition-all duration-200"
         style={{
-          background: allFilled ? ORANGE : 'rgba(255,255,255,0.06)',
-          color: allFilled ? '#fff' : 'rgba(255,255,255,0.25)',
+          background: allFilled ? ORANGE : 'rgba(0,0,0,0.06)',
+          color: allFilled ? '#fff' : 'rgba(0,0,0,0.25)',
           cursor: allFilled ? 'pointer' : 'not-allowed',
         }}
       >
@@ -421,10 +421,10 @@ function StepPrompts({ category, answers, onNext }) {
       transition={{ duration: 0.35 }}
     >
       <ProgressDots step={2} total={3} />
-      <h2 className="font-display-serif text-3xl md:text-4xl text-white mb-2 leading-snug">
+      <h2 className="font-display-serif text-3xl md:text-4xl text-[#0C0C0C] mb-2 leading-snug">
         Your personalized prompts.
       </h2>
-      <p className="font-body text-white/45 mb-8">
+      <p className="font-body text-black/45 mb-8">
         Copy any of these directly into ChatGPT or Claude.
       </p>
 
@@ -458,11 +458,11 @@ function StepCTA({ onReset }) {
       transition={{ duration: 0.35 }}
       className="max-w-2xl mx-auto text-center py-16"
     >
-      <h2 className="font-display-serif text-4xl md:text-5xl text-white leading-tight mb-5">
+      <h2 className="font-display-serif text-4xl md:text-5xl text-[#0C0C0C] leading-tight mb-5">
         Want AI working across<br />
         <span style={{ color: ORANGE }}>your whole business?</span>
       </h2>
-      <p className="font-body text-lg text-white/55 mb-10 leading-relaxed">
+      <p className="font-body text-lg text-black/55 mb-10 leading-relaxed">
         The AI Flow is a deep dive into your entire operation — we find every place AI can
         save you time, money, or headcount, and hand you a custom roadmap.
       </p>
@@ -479,7 +479,7 @@ function StepCTA({ onReset }) {
         </motion.button>
         <button
           onClick={onReset}
-          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-body text-sm text-white/40 hover:text-white/70 transition-colors duration-200"
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-body text-sm text-black/40 hover:text-black/70 transition-colors duration-200"
         >
           <RotateCcw size={14} />
           Start over
@@ -502,7 +502,7 @@ export default function AIGuide() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0C0C0C', color: '#F0ECE6' }}>
+    <div className="min-h-screen" style={{ background: '#FAFAF9', color: '#0C0C0C' }}>
       <SiteNav />
 
       <div className="pt-28 pb-24 px-6 max-w-5xl mx-auto">

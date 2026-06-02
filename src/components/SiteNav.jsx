@@ -22,7 +22,7 @@ import CTAButton from './home/CTAButton';
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Work', href: '/#work' },
-  { label: 'AI', href: '/ai' },
+  { label: 'AI Flow', href: '/ai-guide' },
   { label: 'Marketplace', href: '/marketplace' },
 ];
 

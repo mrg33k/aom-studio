@@ -311,7 +311,7 @@ export default function AuditTest() {
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="max-w-2xl">
               <span className="font-body text-sm tracking-[0.3em] uppercase block mb-2" style={{ color: ORANGE }}>AOM AI Advisory</span>
               <div className="w-12 h-[2px] mx-auto mb-8" style={{ background: ORANGE }} />
-              <h1 className="font-headline text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">Your AI Operations Audit Starts Here</h1>
+              <h1 className="font-headline text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">Your AI Flow Starts Here</h1>
               <p className="font-body text-xl text-[#8A847C] mb-4 max-w-lg mx-auto">This takes about 15 minutes. There are no wrong answers.</p>
               <p className="font-body text-lg text-[#5A5550] mb-12 max-w-lg mx-auto">We just need to understand how your business actually runs so we can show you where AI fits.</p>
               <button onClick={next} className="inline-flex items-center gap-3 px-10 py-5 rounded-full font-headline text-xl font-bold text-white transition-all hover:scale-105 hover:shadow-orange-glow-lg" style={{ background: ORANGE }}>
@@ -525,7 +525,7 @@ export default function AuditTest() {
             <TextArea label="Anything else you want us to know?" value={data.anythingElse} onChange={(v) => set('anythingElse', v)} placeholder="No question is too small..." rows={3} />
             <div className="mt-8">
               <button onClick={next} className="w-full inline-flex items-center justify-center gap-3 px-10 py-5 rounded-full font-headline text-xl font-bold text-white transition-all hover:scale-[1.02] hover:shadow-orange-glow-lg" style={{ background: ORANGE }}>
-                Submit My Audit <ArrowRight size={22} />
+                Submit My AI Flow <ArrowRight size={22} />
               </button>
             </div>
           </ContentSlide>
@@ -546,7 +546,7 @@ export default function AuditTest() {
                 className="inline-flex items-center gap-2 px-10 py-5 font-headline text-xl font-bold text-white transition-all hover:scale-[1.02]"
                 style={{ background: ORANGE, boxShadow: '0 4px 24px rgba(232, 93, 38, 0.2)' }}
               >
-                Book Your Audit Session <ArrowRight size={22} />
+                Book Your AI Flow <ArrowRight size={22} />
               </a>
               <div className="bg-[#151515] p-8 max-w-md mx-auto text-left border border-white/10 mt-10">
                 <h3 className="font-headline text-lg font-bold text-white mb-4">What happens next:</h3>
