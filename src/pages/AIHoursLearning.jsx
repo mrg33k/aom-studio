@@ -728,22 +728,17 @@ function AccessCodeGate({ onClientSuccess }) {
     try {
       if (!supabase) throw new Error('Service unavailable')
 
-      // Always check for an existing session first — never call signIn if one exists,
-      // because signIn overwrites the active Corner session and logs the user out.
+      // If already logged in as an AOM team member, go straight to admin — no re-auth needed.
+      // If the existing session is NOT an AOM team member (e.g. a client's Corner session),
+      // fall through and sign in with the provided credentials instead of rejecting.
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        if (isAOMTeamMember(session.user.email)) {
-          // Already logged in as AOM team — go straight to admin, no signIn needed
-          window.location.replace('/ai-hours/admin')
-          return
-        } else {
-          setAdminError('This account does not have admin access.')
-          setAdminLoading(false)
-          return
-        }
+      if (session?.user && isAOMTeamMember(session.user.email)) {
+        window.location.replace('/ai-hours/admin')
+        return
       }
 
-      // No active session — safe to sign in without clobbering anything
+      // No AOM team session active — sign in with provided credentials.
+      // Note: this replaces any existing non-AOM session, which is acceptable for admin access.
       if (!adminEmail.trim() || !adminPassword.trim()) {
         setAdminError('Please enter your email and password.')
         setAdminLoading(false)
