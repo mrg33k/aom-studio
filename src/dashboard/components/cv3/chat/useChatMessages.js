@@ -551,51 +551,18 @@ export default function useChatMessages({
     }
     refetchStepsRef.current = refetchSteps
 
-    const handleInsert = (payload) => {
-      const row = payload?.new
-      if (!row) return
-      if (row.event_type !== 'message_step') return
-      const p = row.payload || {}
-      if ((p.client_id || '') !== worldId) return
-      if (surfaceAgent && row.agent !== surfaceAgent) return
-      if (surfaceProject && (p.project || '') !== surfaceProject) return
-      const pid = p.parent_message_id
-      if (!pid) return
-      setStepsByMessageId(prev => {
-        const existing = prev[pid] || []
-        if (existing.some(s => s.id === row.id)) return prev
-        const next = [...existing, {
-          id: row.id,
-          step_index: p.step_index ?? 0,
-          text: p.text || '',
-          status: p.status || 'in_progress',
-          timestamp: row.timestamp,
-        }]
-        return { ...prev, [pid]: next }
-      })
-    }
-
-    const subscribe = () => {
-      if (!active) return
-      try { if (channel) supabase.removeChannel(channel) } catch (_) {}
-      channel = supabase
-        .channel(`cv3-steps-${worldId}-${surfaceAgent || surfaceProject}-${Date.now()}`)
-        .on('postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'events' },
-          handleInsert)
-        .subscribe((status) => {
-          if (!active) return
-          if (status === 'SUBSCRIBED') {
-            retryAttemptRef.current = 0
-            refetchSteps()
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.warn(`[R74] steps channel status=${status}, reconnecting…`)
-            retryTimer = scheduleReconnect(retryAttemptRef, subscribe)
-          }
-        })
-    }
-
-    subscribe()
+    // PERF (2026-06-01, corner:live-conversation): removed the realtime
+    // subscription to the high-write `events` table. It listened to EVERY
+    // events INSERT (no server-side filter); RLS blocks delivery to the
+    // browser so its handler never fired -- steps have always arrived via
+    // refetchSteps polling (this initial call + the focus listener below +
+    // the new-assistant-message and 4s safety-net effects). The dead channel
+    // still forced Supabase Realtime to RLS-evaluate the entire events stream
+    // (~1.2k rows/hr from tool_activity + liberal step emission) for every
+    // open tab, adding latency to the messages channel that delivers new
+    // messages/attachments/images. Removing it is zero behavior change for
+    // steps and frees the realtime pipe.
+    refetchSteps()
 
     const onFocus = () => { if (active) refetchSteps() }
     if (typeof window !== 'undefined') {
