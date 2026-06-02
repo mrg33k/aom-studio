@@ -460,16 +460,16 @@ function StepPrompts({ category, answers, onNext }) {
 
       {/* Email capture — optional, sends prompts to inbox */}
       <div
-        className="rounded-xl p-6 mb-8"
-        style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)' }}
+        className="rounded-xl p-8 mb-8"
+        style={{ background: '#fff', border: '2px solid rgba(232,93,38,0.25)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
       >
         <div className="flex items-center gap-2 mb-2">
           <Mail size={16} style={{ color: ORANGE }} />
-          <h3 className="font-headline text-base text-[#0C0C0C]">
+          <h3 className="font-headline text-lg text-[#0C0C0C]">
             Get these sent to your inbox
           </h3>
         </div>
-        <p className="font-body text-sm text-black/55 mb-5 leading-relaxed">
+        <p className="font-body text-base text-black/65 mb-5 leading-relaxed">
           Enter your email and we&apos;ll send your personalized prompts directly to you.
         </p>
 
@@ -483,10 +483,10 @@ function StepPrompts({ category, answers, onNext }) {
             }}
             placeholder="you@yourcompany.com"
             disabled={emailState === 'sent' || emailState === 'loading'}
-            className="flex-1 rounded-xl px-4 py-3 font-body text-sm text-[#0C0C0C] placeholder:text-black/30 outline-none transition-all duration-200"
+            className="flex-1 rounded-xl px-4 py-4 font-body text-base text-[#0C0C0C] placeholder:text-black/30 outline-none transition-all duration-200"
             style={{
               background: '#fff',
-              border: '1px solid rgba(0,0,0,0.15)',
+              border: '2px solid rgba(0,0,0,0.15)',
               opacity: emailState === 'sent' ? 0.6 : 1,
             }}
             onFocus={(e) => { e.target.style.borderColor = ORANGE; }}
@@ -500,7 +500,7 @@ function StepPrompts({ category, answers, onNext }) {
           <button
             onClick={handleEmailSubmit}
             disabled={!validEmail || emailState === 'loading' || emailState === 'sent'}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-headline text-sm tracking-wide transition-all duration-200 whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl font-headline text-base tracking-wide transition-all duration-200 whitespace-nowrap"
             style={{
               background: emailState === 'sent'
                 ? 'rgba(74,222,128,0.15)'
@@ -547,14 +547,16 @@ function StepPrompts({ category, answers, onNext }) {
         </div>
       </div>
 
-      <button
-        onClick={onNext}
-        className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide"
-        style={{ background: ORANGE, color: '#fff' }}
-      >
-        Want AI across your whole business?
-        <ArrowRight size={16} />
-      </button>
+      <div className="flex justify-center">
+        <button
+          onClick={onNext}
+          className="inline-flex items-center gap-2 px-9 py-4 rounded-xl font-headline text-base tracking-wide"
+          style={{ background: ORANGE, color: '#fff', boxShadow: '0 4px 18px rgba(232,93,38,0.3)' }}
+        >
+          Want AI across your whole business?
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </motion.div>
   );
 }
